@@ -1,3 +1,7 @@
+import { getRequestId } from "@/utils/requestId";
+
+export { getRequestId };
+
 export function generateRequestId() {
-  return crypto.randomUUID();
+  return getRequestId();
 }

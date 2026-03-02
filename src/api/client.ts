@@ -1,7 +1,7 @@
 import axios from "axios";
-import { v4 as uuid } from "uuid";
 import { ENV } from "@/config/env";
 import { getStoredAccessToken } from "@/services/token";
+import { getRequestId } from "@/api/requestId";
 
 let lastUnauthorizedUrl: string | null = null;
 
@@ -22,7 +22,7 @@ api.interceptors.request.use((config) => {
 
   const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || getStoredAccessToken();
   config.headers = config.headers ?? {};
-  config.headers["X-Request-Id"] = uuid();
+  config.headers["X-Request-Id"] = getRequestId();
 
   if (token) {
     config.headers = {
@@ -64,7 +64,7 @@ api.interceptors.response.use(
 );
 
 export async function apiFetch(input: RequestInfo, init: RequestInit = {}) {
-  const requestId = uuid();
+  const requestId = getRequestId();
 
   const response = await fetch(input, {
     ...init,

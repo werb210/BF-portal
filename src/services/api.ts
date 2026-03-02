@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "@/config/api";
+import { getRequestId } from "@/api/requestId";
 
 function normalizePath(path: string) {
   if (!path.startsWith("/")) path = `/${path}`;
@@ -31,7 +32,7 @@ const navigateTo = (path: string) => {
 };
 
 export async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const requestId = crypto.randomUUID();
+  const requestId = getRequestId();
   const res = await fetch(url, {
     credentials: "include",
     headers: {

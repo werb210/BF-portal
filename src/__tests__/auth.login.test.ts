@@ -109,7 +109,7 @@ describe("auth login", () => {
         phone: "+15555550100",
         code: "123456"
       },
-      { skipAuth: true, skipRequestId: true }
+      { skipAuth: true }
     );
     apiPostSpy.mockRestore();
   });

@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance, type AxiosRequestConfig } from "axios";
 import { getStoredAccessToken } from "@/services/token";
+import { getRequestId } from "@/api/requestId";
 
 function resolveBaseURL(): string {
   if (process.env.NODE_ENV === "test") {
@@ -55,7 +56,7 @@ export const api: AxiosInstance = axios.create({
 
 // ✅ Attach bearer header for any consumer of this api instance (including tests).
 api.interceptors.request.use((config) => {
-  const requestId = crypto.randomUUID();
+  const requestId = getRequestId();
   const existingHeaders = (config.headers as Record<string, string> | undefined) ?? {};
   config.headers = {
     ...existingHeaders,

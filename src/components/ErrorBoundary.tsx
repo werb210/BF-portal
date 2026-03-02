@@ -1,4 +1,5 @@
 import React from "react";
+import { getRequestId } from "@/utils/requestId";
 
 export class ErrorBoundary extends React.Component<React.PropsWithChildren, { hasError: boolean }> {
   constructor(props: React.PropsWithChildren) {
@@ -8,6 +9,10 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren, { ha
 
   static getDerivedStateFromError() {
     return { hasError: true };
+  }
+
+  componentDidCatch() {
+    console.error("UI render failure", { requestId: getRequestId() });
   }
 
   render() {

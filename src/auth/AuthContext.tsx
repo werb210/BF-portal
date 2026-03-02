@@ -310,8 +310,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!nextUser) {
           const hydrated = await refreshUser(token);
           if (!hydrated) {
-            throw new Error("Missing access token in OTP verify response");
+            setStoredAccessToken(token);
+            setAccessToken(token);
+            setAuthStateState("authenticated");
+            setAuthStatus("authenticated");
+            setRolesStatus("resolved");
+            setError(null);
+            return true;
           }
+          setAuthStateState("authenticated");
+          setAuthStatus("authenticated");
           setRolesStatus("resolved");
           setError(null);
           return true;

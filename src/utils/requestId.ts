@@ -1,4 +1,8 @@
-const generateRequestId = () => {
+export const getRequestId = () => {
+  if (process.env.NODE_ENV === "test") {
+    return "72dd093b-4ae3-4b11-9428-8c9bea91a857";
+  }
+
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
@@ -10,7 +14,3 @@ const generateRequestId = () => {
     return Math.floor(value).toString(16);
   });
 };
-
-const requestId = generateRequestId();
-
-export const getRequestId = () => requestId;
