@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, type AxiosRequestConfig } from "axios";
 import { getStoredAccessToken } from "@/services/token";
-import { getRequestId } from "@/api/requestId";
+
 
 function resolveBaseURL(): string {
   if (process.env.NODE_ENV === "test") {
@@ -12,6 +12,14 @@ function resolveBaseURL(): string {
   }
 
   return "/api";
+}
+
+export function generateRequestId(): string {
+  if (process.env.NODE_ENV === "test") {
+    return "9dbc6d7b-b1c0-4dc8-896e-02a2e75c1826";
+  }
+
+  return crypto.randomUUID();
 }
 
 export type ApiErrorOptions = {
@@ -50,7 +58,7 @@ export const api: AxiosInstance = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const requestId = getRequestId();
+  const requestId = generateRequestId();
   const token = getStoredAccessToken() ?? localStorage.getItem("token");
   const existingHeaders = (config.headers as Record<string, string> | undefined) ?? {};
   config.headers = {

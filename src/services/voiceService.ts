@@ -1,4 +1,5 @@
 import { Call, Device } from "@twilio/voice-sdk";
+import { setCallStatus } from "@/dialer/callStore";
 
 let device: Device | null = null;
 let activeCall: Call | null = null;
@@ -48,9 +49,11 @@ export async function initVoice(_userId?: string): Promise<void> {
       }
 
       activeCall = call;
+      setCallStatus("incoming");
       call.on("disconnect", () => {
         if (activeCall === call) {
           activeCall = null;
+          setCallStatus("ended");
         }
       });
 
@@ -122,25 +125,55 @@ function startPresenceHeartbeat() {
 export async function startOutboundCall(clientId: string) {
   if (!device || activeCall) return;
 
+  setCallStatus("connecting");
   activeCall = await device.connect({
     params: { clientId }
   });
 
+  activeCall.on("ringing", () => setCallStatus("ringing"));
+  activeCall.on("accept", () => setCallStatus("connected"));
   activeCall.on("disconnect", () => {
     activeCall = null;
+    setCallStatus("ended");
   });
 }
 
-export function acceptIncoming(call: Call) {
-  if (activeCall) return;
+export async function acceptIncoming(call: Call): Promise<boolean> {
+  if (activeCall && activeCall !== call) return false;
+
+  const callSid = call.parameters?.CallSid ?? call.parameters?.call_sid;
+
+  if (callSid) {
+    try {
+      const lockResponse = await fetch(`/api/call/lock/${encodeURIComponent(String(callSid))}`, {
+        credentials: "include"
+      });
+
+      if (!lockResponse.ok) {
+        return false;
+      }
+
+      const lock = (await lockResponse.json()) as { locked?: boolean; lockedByAnotherStaff?: boolean };
+      if (lock.lockedByAnotherStaff || lock.locked === true) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
 
   activeCall = call;
+  setCallStatus("connecting");
   call.accept();
+  call.on("accept", () => setCallStatus("connected"));
   call.on("disconnect", () => {
     if (activeCall === call) {
       activeCall = null;
+      setCallStatus("ended");
     }
   });
+
+  return true;
 }
 
 export function rejectIncoming(call: Call) {
@@ -149,6 +182,8 @@ export function rejectIncoming(call: Call) {
   if (activeCall === call) {
     activeCall = null;
   }
+
+  setCallStatus("missed");
 }
 
 export function destroyVoice() {
@@ -178,4 +213,6 @@ export function destroyVoice() {
     window.removeEventListener("online", handleOnlineRecovery);
     onlineRecoveryBound = false;
   }
+
+  setCallStatus("idle");
 }

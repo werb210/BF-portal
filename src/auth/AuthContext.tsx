@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import api from "@/lib/api";
 import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
 import { destroyVoice } from "@/services/voiceService";
+import { setCallStatus } from "@/dialer/callStore";
 import {
   clearStoredAuth,
   getStoredAccessToken,
@@ -111,6 +112,8 @@ const getTestAuthOverride = (): TestAuthOverride | null => {
  * Tests that render without a Provider MUST NOT auto-authenticate.
  * Otherwise /login redirects and smoke tests cannot find the "Staff Login" heading.
  */
+const destroyDevice = destroyVoice;
+
 const TEST_AUTH_STUB: AuthContextValue = {
   authState: "unauthenticated",
   status: "unauthenticated",
@@ -356,7 +359,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await logoutService();
     } finally {
       clearAuth();
-      destroyVoice();
+      destroyDevice();
+      setCallStatus("idle");
 
       useDialerStore.getState().closeDialer();
       useDialerStore.getState().resetCall();

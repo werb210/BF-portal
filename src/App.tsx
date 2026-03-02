@@ -4,7 +4,9 @@ import { AuthContext, AuthProvider } from "@/auth/AuthContext";
 import { roleIn } from "@/auth/roles";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import IncomingCallModal from "@/components/IncomingCallModal";
+import { ActiveCallBanner } from "@/components/ActiveCallBanner";
 import ProtectedRoute from "@/routes/ProtectedRoute";
+import { useServerCallSync } from "@/dialer/useServerCallSync";
 import { initVoice } from "@/services/voiceService";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
@@ -31,10 +33,17 @@ function VoiceBootstrap() {
   return null;
 }
 
+function ServerCallSyncBootstrap() {
+  useServerCallSync();
+  return null;
+}
+
 const AppRoutes = () => (
   <BrowserRouter>
     <SessionGuard />
     <VoiceBootstrap />
+    <ServerCallSyncBootstrap />
+    <ActiveCallBanner />
     <IncomingCallModal />
     {process.env.NODE_ENV === "test" ? <AuthProbe /> : null}
     <Routes>

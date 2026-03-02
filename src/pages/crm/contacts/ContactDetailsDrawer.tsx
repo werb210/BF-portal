@@ -10,6 +10,7 @@ import TimelineFeed from "@/pages/crm/timeline/TimelineFeed";
 import { useDialerStore } from "@/state/dialer.store";
 import { startOutboundCall } from "@/services/voiceService";
 import CreditReadinessPanel from "@/components/crm/CreditReadinessPanel";
+import { VoicemailList } from "@/components/VoicemailList";
 
 interface ContactDetailsDrawerProps {
   contact: Contact | null;
@@ -178,6 +179,9 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
           <Button onClick={handleAddNote} className="mt-2">
             Save Note
           </Button>
+        </Card>
+        <Card title="Voicemails">
+          <VoicemailList clientId={contact.id} />
         </Card>
         <Card title="CRM Timeline">
           <TimelineFeed entityId={contact.id} entityType="contact" initialEvents={timeline} />

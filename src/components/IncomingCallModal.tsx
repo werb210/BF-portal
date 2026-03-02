@@ -24,9 +24,11 @@ export default function IncomingCallModal() {
         <div className="flex justify-center gap-4">
           <button
             className="rounded bg-green-600 px-4 py-2 text-white"
-            onClick={() => {
-              acceptIncoming(call);
-              setCall(null);
+            onClick={async () => {
+              const accepted = await acceptIncoming(call);
+              if (accepted) {
+                setCall(null);
+              }
             }}
           >
             Accept
