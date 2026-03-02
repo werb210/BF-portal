@@ -111,9 +111,18 @@ export default function LoginPage() {
     setEndpoint("/auth/otp/verify");
 
     try {
-      await verifyOtp({ phone: normalizedPhone, code: nextCode });
+      const verified = await verifyOtp({ phone: normalizedPhone, code: nextCode });
+      if (!verified) {
+        throw new Error("Verification failed");
+      }
     } catch (err) {
-      readApiError(err, "Invalid verification code failed", true);
+      setStatusMessage(null);
+      const message = err instanceof Error ? err.message : "";
+      if (/failed/i.test(message)) {
+        readApiError(err, "Verification failed", false);
+      } else {
+        readApiError(err, "Invalid verification code", true);
+      }
     } finally {
       setVerifying(false);
     }

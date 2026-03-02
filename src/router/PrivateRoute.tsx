@@ -16,7 +16,6 @@ export default function PrivateRoute({
     status === "loading" ||
     authState === "loading" ||
     authStatus === "loading" ||
-    rolesStatus === "loading" ||
     !authReady
 
   if (isLoading) {
@@ -27,7 +26,11 @@ export default function PrivateRoute({
     return <Navigate to="/login" replace />
   }
 
-  if (allowedRoles && !roleIn(role, allowedRoles)) {
+  if (isAuthenticated && rolesStatus !== "resolved") {
+    return null
+  }
+
+  if (allowedRoles && rolesStatus === "resolved" && !roleIn(role, allowedRoles)) {
     return <AccessRestricted requiredRoles={allowedRoles} />
   }
 

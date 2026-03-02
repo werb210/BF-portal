@@ -32,8 +32,10 @@ export type OtpStartResult = {
 };
 
 export type OtpVerifyResponse = {
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
+  role?: string;
+  error?: string;
 };
 
 export async function startOtp(payload: { phone: string }): Promise<OtpStartResult | null> {
@@ -78,6 +80,14 @@ export async function verifyOtp({
     success: true as const,
     data: otpResponse.data
   };
+
+  if (response.data?.error === "invalid_otp") {
+    throw new Error("Verification failed");
+  }
+
+  if (!response.data?.accessToken) {
+    throw new Error("Missing access token");
+  }
 
   try {
     await apiRequest<{ id: string; role: string }>({

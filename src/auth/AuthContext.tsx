@@ -89,6 +89,8 @@ const normalizeAuthUser = (user: AuthUser): AuthUser => {
   };
 };
 
+const hasResolvedRole = (user: AuthUser) => Boolean(user?.role);
+
 const isTestMode = () => process.env.NODE_ENV === "test";
 
 const getTestAuthOverride = (): TestAuthOverride | null => {
@@ -223,7 +225,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         setAuthStateState("authenticated");
         setAuthStatus("authenticated");
-        setRolesStatus("resolved");
+        setRolesStatus(hasResolvedRole(nextUser) ? "resolved" : "loading");
         setError(null);
         return true;
       } catch {
@@ -255,9 +257,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setStoredUser(session.user);
         setAccessToken(session.accessToken);
         setUserState(normalizeAuthUser(session.user as AuthUser));
+        const hydratedUser = normalizeAuthUser(session.user as AuthUser);
         setAuthStateState("authenticated");
         setAuthStatus("authenticated");
-        setRolesStatus("resolved");
+        setRolesStatus(hasResolvedRole(hydratedUser) ? "resolved" : "loading");
         setIsHydratingSession(false);
         return;
       }
@@ -291,14 +294,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const tokens = await verifyOtpService({ phone, code });
         const token = tokens?.accessToken;
+        const role = tokens?.role;
 
         if (!token) {
-          throw new Error("Missing token");
+          throw new Error("Missing access token");
         }
 
         setStoredAccessToken(token);
         setAccessToken(token);
         setPendingPhoneNumber(null);
+
+        if (!role) {
+          const hydrated = await refreshUser(token);
+          if (!hydrated) {
+            throw new Error("Missing access token");
+          }
+          setError(null);
+          return true;
+        }
+
+        const nextUser = normalizeAuthUser({ role });
+        setStoredUser(nextUser);
+        void writeSession({ accessToken: token, user: nextUser });
+        setUserState(nextUser);
         setAuthStateState("authenticated");
         setAuthStatus("authenticated");
         setRolesStatus("resolved");
@@ -306,11 +324,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         return true;
       } catch (err) {
+        const message = err instanceof Error ? err.message : "Missing access token";
         setAuthStateState("unauthenticated");
         setAuthStatus("unauthenticated");
         setRolesStatus("resolved");
-        const message = err instanceof Error ? err.message : "Missing access token";
-        setError(message.includes("token") ? message : "Missing access token");
+        setUserState(null);
+        setAccessToken(null);
+        setError(message.toLowerCase().includes("access token") ? message : message.includes("failed") ? message : "Verification failed");
         return false;
       }
     },
