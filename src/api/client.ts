@@ -1,4 +1,5 @@
 import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
 import { ENV } from "@/config/env";
 import { getStoredAccessToken } from "@/services/token";
 
@@ -6,7 +7,6 @@ export const api = axios.create({
   baseURL: ENV.API_BASE_URL,
   withCredentials: true
 });
-
 
 api.interceptors.request.use((config) => {
   if (process.env.NODE_ENV === "test") {
@@ -18,11 +18,17 @@ api.interceptors.request.use((config) => {
   }
 
   const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || getStoredAccessToken();
+  const requestId = uuidv4();
+
+  config.headers = {
+    ...(config.headers as Record<string, string>),
+    "X-Request-Id": requestId
+  } as any;
 
   if (token) {
     config.headers = {
       ...(config.headers as Record<string, string>),
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token}`
     } as any;
   }
 
@@ -30,8 +36,12 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  response => response,
-  error => {
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+
     if (!error.response) {
       console.error("Network error:", error);
       return Promise.reject({
@@ -48,6 +58,25 @@ api.interceptors.response.use(
     });
   }
 );
+
+export async function apiFetch(input: RequestInfo, init: RequestInit = {}) {
+  const requestId = uuidv4();
+
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      ...(init.headers || {}),
+      "X-Request-Id": requestId,
+      "Content-Type": "application/json"
+    }
+  });
+
+  if (response.status === 401) {
+    window.location.href = "/login";
+  }
+
+  return response;
+}
 
 export const clientApi = api;
 export const otpStart = (payload: { phone: string }) => api.post("/auth/otp/start", payload);
