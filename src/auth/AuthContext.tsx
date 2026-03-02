@@ -304,7 +304,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAccessToken(token);
         setPendingPhoneNumber(null);
 
-        let nextUser = normalizeAuthUser(tokens?.user ?? (role ? { role } : null));
+        const nextUser = normalizeAuthUser(tokens?.user ?? (role ? { role } : null));
 
         if (!nextUser) {
           const hydrated = await refreshUser(token);
