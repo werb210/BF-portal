@@ -1,7 +1,5 @@
-export default function AccessRestricted() {
-  return (
-    <div role="alert">
-      Access restricted.
-    </div>
-  );
+export function AccessRestricted() {
+  return <div>Access restricted.</div>;
 }
+
+export default AccessRestricted;

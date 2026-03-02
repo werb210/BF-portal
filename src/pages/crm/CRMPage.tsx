@@ -8,6 +8,7 @@ import { ContactSubmissions } from "@/features/support/ContactSubmissions";
 import { useAuth } from "@/hooks/useAuth";
 import ContinuationLeadsPanel from "./ContinuationLeadsPanel";
 import CreditReadinessList from "@/components/CreditReadinessList";
+import { AccessRestricted } from "@/components/AccessRestricted";
 
 type CrmView = "contacts" | "companies" | "timeline" | "website-leads" | "continuations" | "credit-readiness";
 
@@ -61,10 +62,19 @@ const CRMContent = () => {
   );
 };
 
-const CRMPage = () => (
-  <RequireRole roles={["Admin", "Staff"]}>
-    <CRMContent />
-  </RequireRole>
-);
+const CRMPage = () => {
+  const { user } = useAuth();
+  const role = user?.role?.toLowerCase();
+
+  if (role !== "admin" && role !== "staff") {
+    return <AccessRestricted />;
+  }
+
+  return (
+    <RequireRole roles={["Admin", "Staff"]}>
+      <CRMContent />
+    </RequireRole>
+  );
+};
 
 export default CRMPage;

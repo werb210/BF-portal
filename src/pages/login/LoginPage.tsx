@@ -13,6 +13,22 @@ const normalizePhone = (value: string) => {
   return `+${digits}`;
 };
 
+export function resolvePostLoginDestination(role: string): string {
+  const normalizedRole = role.toLowerCase();
+
+  switch (normalizedRole) {
+    case "admin":
+    case "staff":
+      return "/admin/ai";
+    case "lender":
+      return "/lenders";
+    case "referrer":
+      return "/referrals";
+    default:
+      return "/unauthorized";
+  }
+}
+
 export default function LoginPage() {
   const { authenticated, authStatus, startOtp, verifyOtp } = useAuth();
   const navigate = useNavigate();

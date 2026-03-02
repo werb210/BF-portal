@@ -1,10 +1,9 @@
-export type UserRole = "admin" | "staff" | "lender" | "referrer";
-
-export function resolvePostLoginDestination(role: UserRole): string {
+export function resolvePostLoginDestination(role: string): string {
   switch (role) {
     case "admin":
-    case "staff":
       return "/admin";
+    case "staff":
+      return "/dashboard";
     case "lender":
       return "/lenders";
     case "referrer":

@@ -63,7 +63,8 @@ const createAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue
 
 export const renderWithProviders = (ui: ReactElement, options: ExtendedRenderOptions = {}) => {
   const { route = "/", role = "Staff", auth = {}, ...rest } = options;
-  const authedUser = mockAuthedUser(role);
+  const effectiveRole = (auth.role as TestRole | undefined) ?? ((auth.user as { role?: TestRole } | undefined)?.role ?? role);
+  const authedUser = mockAuthedUser(effectiveRole);
   const queryClient = createQueryClient();
   const shouldWrapRouter = ui.type !== MemoryRouter && ui.type !== RouterProvider;
 
@@ -72,12 +73,12 @@ export const renderWithProviders = (ui: ReactElement, options: ExtendedRenderOpt
       <QueryClientProvider client={queryClient}>
         {shouldWrapRouter ? (
           <MemoryRouter initialEntries={[route]}>
-            <AuthContext.Provider value={createAuthValue({ user: authedUser, role, roles: [role], ...auth })}>
+            <AuthContext.Provider value={createAuthValue({ user: authedUser, role: effectiveRole, roles: [effectiveRole], ...auth })}>
               <BusinessUnitProvider>{children}</BusinessUnitProvider>
             </AuthContext.Provider>
           </MemoryRouter>
         ) : (
-          <AuthContext.Provider value={createAuthValue({ user: authedUser, role, roles: [role], ...auth })}>
+          <AuthContext.Provider value={createAuthValue({ user: authedUser, role: effectiveRole, roles: [effectiveRole], ...auth })}>
             <BusinessUnitProvider>{children}</BusinessUnitProvider>
           </AuthContext.Provider>
         )}

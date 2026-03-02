@@ -1,5 +1,5 @@
 import axios from "axios";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuid } from "uuid";
 import { ENV } from "@/config/env";
 import { getStoredAccessToken } from "@/services/token";
 
@@ -18,12 +18,8 @@ api.interceptors.request.use((config) => {
   }
 
   const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || getStoredAccessToken();
-  const requestId = uuidv4();
-
-  config.headers = {
-    ...(config.headers as Record<string, string>),
-    "X-Request-Id": requestId
-  } as any;
+  config.headers = config.headers ?? {};
+  config.headers["X-Request-Id"] = uuid();
 
   if (token) {
     config.headers = {
@@ -36,31 +32,31 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error?.response?.status === 401 && typeof window !== "undefined") {
-      window.location.href = "/login";
+  (res) => res,
+  (err) => {
+    if (err?.response?.status === 401) {
+      window.location.assign("/login");
     }
 
-    if (!error.response) {
-      console.error("Network error:", error);
+    if (!err.response) {
+      console.error("Network error:", err);
       return Promise.reject({
         status: 0,
-        message: error?.message ?? "Network error"
+        message: err?.message ?? "Network error"
       });
     }
 
-    console.error("API error:", error.response.status);
+    console.error("API error:", err.response.status);
     return Promise.reject({
-      status: error.response.status,
-      message: (error.response.data as { message?: string } | undefined)?.message ?? error.message ?? "Request failed",
-      data: error.response.data
+      status: err.response.status,
+      message: (err.response.data as { message?: string } | undefined)?.message ?? err.message ?? "Request failed",
+      data: err.response.data
     });
   }
 );
 
 export async function apiFetch(input: RequestInfo, init: RequestInit = {}) {
-  const requestId = uuidv4();
+  const requestId = uuid();
 
   const response = await fetch(input, {
     ...init,
