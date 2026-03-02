@@ -29,6 +29,7 @@ const CallHistoryTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const [dateFilter, setDateFilter] = useState<DateFilter>(7);
   const [data, setData] = useState<CallHistoryRecord[]>([]);
+  const [now] = useState(() => Date.now());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const { user } = useAuth();
@@ -65,7 +66,6 @@ const CallHistoryTab = () => {
   }, [applicationId]);
 
   const calls = useMemo(() => {
-    const now = Date.now();
     const cutoff = now - dateFilter * 24 * 60 * 60 * 1000;
 
     return [...data]
@@ -80,7 +80,7 @@ const CallHistoryTab = () => {
         const bTime = new Date(b.created_at ?? b.started_at ?? "").getTime();
         return bTime - aTime;
       });
-  }, [data, dateFilter]);
+  }, [data, dateFilter, now]);
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view calls.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading call history…</div>;
