@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Card from "@/components/ui/Card";
 import { fetchStaffCallStats } from "@/api/dialer";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,7 +35,7 @@ const formatDuration = (seconds: number) => {
 
 const CallPerformanceCard = () => {
   const [dateFilter, setDateFilter] = useState<DateFilter>(7);
-  const [data, setData] = useState<Partial<Record<string, CallStats>> & CallStats>(fallbackStats);
+  const [stats, setStats] = useState<CallStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const { user } = useAuth();
@@ -51,14 +51,15 @@ const CallPerformanceCard = () => {
         if (!mounted) return;
         const payload = response?.data;
         if (payload && typeof payload === "object") {
-          setData(payload as Partial<Record<string, CallStats>> & CallStats);
+          setStats(payload as CallStats);
           return;
         }
-        setData(fallbackStats);
+        setStats(fallbackStats);
       })
       .catch(() => {
         if (!mounted) return;
         setError(true);
+        setStats(fallbackStats);
       })
       .finally(() => {
         if (!mounted) return;
@@ -70,11 +71,7 @@ const CallPerformanceCard = () => {
     };
   }, [dateFilter]);
 
-  const stats = useMemo(() => {
-    if ("totalCalls" in data) return (data as CallStats) ?? fallbackStats;
-    const keyed = data as Partial<Record<string, CallStats>>;
-    return keyed[String(dateFilter)] ?? fallbackStats;
-  }, [data, dateFilter]);
+  const resolvedStats = stats ?? fallbackStats;
 
   return (
     <Card title="Call Performance">
@@ -91,16 +88,16 @@ const CallPerformanceCard = () => {
       {error ? <p>Unable to load call metrics.</p> : null}
       {!isLoading && !error ? (
         <>
-          <p>Total Calls ({dateFilter} days): {stats.totalCalls ?? 0}</p>
-          <p>Avg Duration: {formatDuration(stats.avgDurationSeconds ?? 0)}</p>
-          <p>Missed Call %: {Number(stats.missedCallPercent ?? 0).toFixed(1)}%</p>
-          <p>Voicemail Count: {stats.voicemailCount ?? 0}</p>
+          <p>Total Calls ({dateFilter} days): {resolvedStats.totalCalls ?? 0}</p>
+          <p>Avg Duration: {formatDuration(resolvedStats.avgDurationSeconds ?? 0)}</p>
+          <p>Missed Call %: {Number(resolvedStats.missedCallPercent ?? 0).toFixed(1)}%</p>
+          <p>Voicemail Count: {resolvedStats.voicemailCount ?? 0}</p>
 
-          {role === "Admin" && stats.leaderboard?.length ? (
+          {role === "Admin" && resolvedStats.leaderboard?.length ? (
             <div className="mt-3">
               <h4 className="font-medium">Staff leaderboard</h4>
               <ul>
-                {stats.leaderboard.map((entry) => (
+                {resolvedStats.leaderboard.map((entry) => (
                   <li key={entry.staffName}>
                     {entry.staffName}: {entry.totalCalls} calls
                   </li>
