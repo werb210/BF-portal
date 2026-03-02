@@ -31,10 +31,12 @@ const navigateTo = (path: string) => {
 };
 
 export async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const requestId = crypto.randomUUID();
   const res = await fetch(url, {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      "X-Request-Id": requestId,
       ...(options.headers ?? {})
     },
     ...options

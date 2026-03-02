@@ -1,7 +1,7 @@
 export default function ErrorScreen() {
   return (
     <div role="alert">
-      Something went wrong.
+      Unexpected error
     </div>
   );
 }

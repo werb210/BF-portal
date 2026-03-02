@@ -55,6 +55,14 @@ export const api: AxiosInstance = axios.create({
 
 // ✅ Attach bearer header for any consumer of this api instance (including tests).
 api.interceptors.request.use((config) => {
+  const requestId = crypto.randomUUID();
+  const existingHeaders = (config.headers as Record<string, string> | undefined) ?? {};
+  config.headers = {
+    ...existingHeaders,
+    "Content-Type": "application/json",
+    "X-Request-Id": requestId,
+  } as any;
+
   const token = readToken();
   const skipAuth = (config as AuthRequestConfig).skipAuth;
 

@@ -17,7 +17,7 @@ const server = setupServer(
   http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
     const contentType = request.headers.get("content-type") ?? "";
     expect(contentType.toLowerCase()).toContain("application/json");
-    expect(request.headers.has("x-request-id")).toBe(false);
+    expect(request.headers.has("x-request-id")).toBe(true);
     startOtpSpy(await request.json());
     return HttpResponse.json({ requestId: "req-otp" }, {
       status: 200,

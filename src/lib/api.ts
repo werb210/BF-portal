@@ -49,7 +49,14 @@ export const api: AxiosInstance = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  const requestId = crypto.randomUUID();
   const token = getStoredAccessToken() ?? localStorage.getItem("token");
+  const existingHeaders = (config.headers as Record<string, string> | undefined) ?? {};
+  config.headers = {
+    ...existingHeaders,
+    "Content-Type": "application/json",
+    "X-Request-Id": requestId,
+  } as any;
   if (token && !config.headers?.Authorization) {
     config.headers = {
       ...(config.headers as Record<string, string> | undefined),
