@@ -196,26 +196,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsHydratingSession(true);
 
       try {
-        let nextUser: AuthUser = null;
+        const nextUser = await (async (): Promise<AuthUser> => {
+          try {
+            const profile = await api.get("/auth/me", {
+              headers: { Authorization: `Bearer ${token}` },
+              withCredentials: false,
+            });
 
-        try {
-          const profile = await api.get("/auth/me", {
-            headers: { Authorization: `Bearer ${token}` },
-            withCredentials: false,
-          });
-          nextUser = normalizeAuthUser(profile.data?.user ?? profile.data);
-        } catch {
-          nextUser = null;
-        }
+            return normalizeAuthUser(profile.data?.user ?? profile.data);
+          } catch {
+            const response = await fetch("/api/auth/me", {
+              headers: { Authorization: `Bearer ${token}` },
+              credentials: "include",
+            });
 
-        if (!nextUser) {
-          const response = await fetch("/api/auth/me", {
-            headers: { Authorization: `Bearer ${token}` },
-            credentials: "include",
-          });
-          if (!response.ok) throw new Error("Unable to hydrate auth session.");
-          nextUser = normalizeAuthUser(await response.json());
-        }
+            if (!response.ok) {
+              throw new Error("Unable to hydrate auth session.");
+            }
+
+            return normalizeAuthUser(await response.json());
+          }
+        })();
 
         setStoredAccessToken(token);
         setStoredUser(nextUser);
