@@ -12,7 +12,7 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren, { ha
 
   render() {
     if (this.state.hasError) {
-      return <div role="alert">Something went wrong.</div>;
+      return <div role="alert">Unexpected error</div>;
     }
 
     return this.props.children;

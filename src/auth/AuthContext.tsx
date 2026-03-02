@@ -297,23 +297,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const role = tokens?.role;
 
         if (!token) {
-          throw new Error("Missing access token");
+          throw new Error("Missing access token in OTP verify response");
         }
 
         setStoredAccessToken(token);
         setAccessToken(token);
         setPendingPhoneNumber(null);
 
-        if (!role) {
+        let nextUser = normalizeAuthUser(tokens?.user ?? (role ? { role } : null));
+
+        if (!nextUser) {
           const hydrated = await refreshUser(token);
           if (!hydrated) {
-            throw new Error("Missing access token");
+            throw new Error("Missing access token in OTP verify response");
           }
+          setRolesStatus("resolved");
           setError(null);
           return true;
         }
 
-        const nextUser = normalizeAuthUser({ role });
         setStoredUser(nextUser);
         void writeSession({ accessToken: token, user: nextUser });
         setUserState(nextUser);
@@ -324,7 +326,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         return true;
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Missing access token";
+        const message = err instanceof Error ? err.message : "Missing access token in OTP verify response";
         setAuthStateState("unauthenticated");
         setAuthStatus("unauthenticated");
         setRolesStatus("resolved");

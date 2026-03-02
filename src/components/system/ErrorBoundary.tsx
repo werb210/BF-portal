@@ -23,7 +23,7 @@ export default class ErrorBoundary extends React.Component<React.PropsWithChildr
     if (this.state.hasError) {
       return (
         <div style={{ padding: "2rem" }}>
-          <h2>Something went wrong.</h2>
+          <div role="alert">Unexpected error</div>
           <p>Please refresh or contact admin.</p>
         </div>
       );

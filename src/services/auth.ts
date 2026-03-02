@@ -35,13 +35,13 @@ export type OtpVerifyResponse = {
   accessToken?: string;
   refreshToken?: string;
   role?: string;
+  user?: AuthenticatedUser;
   error?: string;
 };
 
 export async function startOtp(payload: { phone: string }): Promise<OtpStartResult | null> {
   const response = await apiClient.post<OtpStartResponse>("/auth/otp/start", payload, {
-    skipAuth: true,
-    skipRequestId: true
+    skipAuth: true
   });
 
   if (!response.success) {
@@ -71,8 +71,7 @@ export async function verifyOtp({
     "/auth/otp/verify",
     { phone, code },
     {
-      skipAuth: true,
-      skipRequestId: true
+      skipAuth: true
     } as AuthRequestConfig
   );
 
@@ -95,8 +94,7 @@ export async function verifyOtp({
       url: "/auth/me",
       headers: { Authorization: `Bearer ${response.data.accessToken}` },
       withCredentials: false,
-      skipAuth: true,
-      skipRequestId: true
+      skipAuth: true
     });
   } catch {
     // Auth context will retry /auth/me; do not block OTP success on profile fetch.
