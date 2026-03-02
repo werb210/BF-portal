@@ -1,4 +1,8 @@
 import { http, HttpResponse } from "msw";
+import authMeFixture from "@/test/fixtures/auth-me.json";
+import healthFixture from "@/test/fixtures/health.json";
+import featureFlagsFixture from "@/test/fixtures/feature-flags.json";
+import crmCountsFixture from "@/test/fixtures/crm-counts.json";
 
 const lendersFixture = [
   {
@@ -31,12 +35,13 @@ export const handlers = [
   http.options("*/api/auth/me", () => new HttpResponse(null, { status: 204 })),
   http.options("*/api/audit/activity", () => new HttpResponse(null, { status: 204 })),
 
-  http.get("*/health", () => HttpResponse.json({ status: "ok" }, { status: 200 })),
-  http.get("*/api/health", () => HttpResponse.json({ status: "ok" }, { status: 200 })),
-  http.get("*/api/_int/production-readiness", () => HttpResponse.json({ ready: true, status: "ok" }, { status: 200 })),
+  http.get("*/health", () => HttpResponse.json(healthFixture, { status: 200 })),
+  http.get("*/api/health", () => HttpResponse.json(healthFixture, { status: 200 })),
+  http.get("*/api/_int/production-readiness", () => HttpResponse.json({ ready: true, ...healthFixture }, { status: 200 })),
   http.get("*/api/_int/routes", () => HttpResponse.json({ routes: [] }, { status: 200 })),
+  http.get("*/api/config/feature-flags", () => HttpResponse.json(featureFlagsFixture, { status: 200 })),
 
-  http.get("*/api/auth/me", () => HttpResponse.json({ id: "u1", role: "Staff", email: "staff@example.com" }, { status: 200 })),
+  http.get("*/api/auth/me", () => HttpResponse.json(authMeFixture, { status: 200 })),
   http.post("*/api/auth/otp/start", () => new HttpResponse(null, { status: 204, headers: { "x-twilio-sid": "twilio-sid" } })),
   http.post("*/api/auth/otp/verify", () => HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" }, { status: 200 })),
 
@@ -44,8 +49,8 @@ export const handlers = [
   http.options("*/api/secure", () => new HttpResponse(null, { status: 204 })),
   http.get("*/api/secure", () => HttpResponse.json({ message: "Unauthorized" }, { status: 401 })),
 
-  http.get("*/api/crm/leads/count", () => HttpResponse.json({ count: 0 }, { status: 200 })),
-  http.get("*/api/support/live/count", () => HttpResponse.json({ count: 0 }, { status: 200 })),
+  http.get("*/api/crm/leads/count", () => HttpResponse.json({ count: crmCountsFixture.leads }, { status: 200 })),
+  http.get("*/api/support/live/count", () => HttpResponse.json({ count: crmCountsFixture.liveSupport }, { status: 200 })),
   http.get("*/api/public/lender-count", () => HttpResponse.json({ count: lendersFixture.length }, { status: 200 })),
 
   http.get("*/api/analytics/campaign-revenue", () => HttpResponse.json([], { status: 200 })),

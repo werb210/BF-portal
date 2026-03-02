@@ -1,11 +1,12 @@
 import { render, type RenderOptions } from "@testing-library/react";
-import { type ReactElement, type ReactNode } from "react";
+import { type ReactElement } from "react";
 import { MemoryRouter, RouterProvider } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthContext, type AuthContextValue } from "@/auth/AuthContext";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
 import { DEFAULT_BUSINESS_UNIT } from "@/types/businessUnit";
 import { LenderAuthProvider } from "@/lender/auth/LenderAuthContext";
+import { mockAuthedUser, type TestRole } from "@/test/utils/auth";
 
 const createQueryClient = () =>
   new QueryClient({
@@ -17,6 +18,7 @@ const createQueryClient = () =>
 
 type ExtendedRenderOptions = Omit<RenderOptions, "wrapper"> & {
   route?: string;
+  role?: TestRole;
   auth?: Partial<AuthContextValue>;
 };
 
@@ -60,7 +62,8 @@ const createAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue
 };
 
 export const renderWithProviders = (ui: ReactElement, options: ExtendedRenderOptions = {}) => {
-  const { route = "/", auth = {}, ...rest } = options;
+  const { route = "/", role = "Staff", auth = {}, ...rest } = options;
+  const authedUser = mockAuthedUser(role);
   const queryClient = createQueryClient();
   const shouldWrapRouter = ui.type !== MemoryRouter && ui.type !== RouterProvider;
 
@@ -69,12 +72,12 @@ export const renderWithProviders = (ui: ReactElement, options: ExtendedRenderOpt
       <QueryClientProvider client={queryClient}>
         {shouldWrapRouter ? (
           <MemoryRouter initialEntries={[route]}>
-            <AuthContext.Provider value={createAuthValue(auth)}>
+            <AuthContext.Provider value={createAuthValue({ user: authedUser, role, roles: [role], ...auth })}>
               <BusinessUnitProvider>{children}</BusinessUnitProvider>
             </AuthContext.Provider>
           </MemoryRouter>
         ) : (
-          <AuthContext.Provider value={createAuthValue(auth)}>
+          <AuthContext.Provider value={createAuthValue({ user: authedUser, role, roles: [role], ...auth })}>
             <BusinessUnitProvider>{children}</BusinessUnitProvider>
           </AuthContext.Provider>
         )}
