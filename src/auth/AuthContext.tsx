@@ -58,8 +58,8 @@ export type AuthContextValue = {
   isHydratingSession: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   startOtp: (payload: OtpStartPayload) => Promise<boolean>;
-  verifyOtp: (payload: OtpVerifyPayload) => Promise<boolean>;
-  loginWithOtp: (payload: OtpVerifyPayload) => Promise<boolean>;
+  verifyOtp: (payloadOrPhone: OtpVerifyPayload | string, codeArg?: string) => Promise<boolean>;
+  loginWithOtp: (payloadOrPhone: OtpVerifyPayload | string, codeArg?: string) => Promise<boolean>;
   refreshUser: (tokenOverride?: string | null) => Promise<boolean>;
   clearAuth: () => void;
   logout: () => Promise<void>;
@@ -277,15 +277,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const verifyOtp = useCallback(
-    async ({ phone, code }: OtpVerifyPayload) => {
+    async (payloadOrPhone: OtpVerifyPayload | string, codeArg?: string) => {
+      const payload =
+        typeof payloadOrPhone === "string"
+          ? { phone: payloadOrPhone, code: codeArg ?? "" }
+          : payloadOrPhone;
+      const { phone, code } = payload;
+
       setAuthStateState("loading");
       setAuthStatus("loading");
       setRolesStatus("loading");
-      const tokens = await verifyOtpService({ phone, code });
-      setStoredAccessToken(tokens.accessToken);
-      setAccessToken(tokens.accessToken);
-      setPendingPhoneNumber(null);
-      return refreshUser(tokens.accessToken);
+
+      try {
+        const tokens = await verifyOtpService({ phone, code });
+        const token = tokens?.accessToken;
+
+        if (!token) {
+          throw new Error("Missing token");
+        }
+
+        setStoredAccessToken(token);
+        setAccessToken(token);
+        setPendingPhoneNumber(null);
+        setAuthStateState("authenticated");
+        setAuthStatus("authenticated");
+        setRolesStatus("resolved");
+        setError(null);
+
+        return true;
+      } catch (err) {
+        setAuthStateState("unauthenticated");
+        setAuthStatus("unauthenticated");
+        setRolesStatus("resolved");
+        const message = err instanceof Error ? err.message : "Missing access token";
+        setError(message.includes("token") ? message : "Missing access token");
+        return false;
+      }
     },
     [refreshUser]
   );
