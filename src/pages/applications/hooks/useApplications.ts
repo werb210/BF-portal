@@ -3,9 +3,9 @@
    ========================================================= */
 
 import { useQuery } from "@tanstack/react-query";
-import { pipelineApi } from "@/pages/applications/pipeline/pipeline.api";
+import { pipelineApi } from "@/core/engines/pipeline/pipeline.api";
 import { retryUnlessClientError } from "@/api/retryPolicy";
-import type { PipelineApplication } from "@/pages/applications/pipeline/pipeline.types";
+import type { PipelineApplication } from "@/core/engines/pipeline/pipeline.types";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";
 import { normalizeBusinessUnit } from "@/types/businessUnit";
 

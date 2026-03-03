@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { MockedFunction } from "vitest";
 import PipelinePage from "./PipelinePage";
+import { PipelineEngineProvider } from "./PipelineEngineProvider";
 import { renderWithProviders } from "@/test/testUtils";
 import { pipelineApi } from "./pipeline.api";
 import { usePipelineStore } from "./pipeline.store";
@@ -56,7 +57,23 @@ const renderPipeline = () =>
   renderWithProviders(
     <MemoryRouter initialEntries={["/pipeline"]}>
       <Routes>
-        <Route path="/pipeline" element={<PipelinePage />} />
+        <Route
+          path="/pipeline"
+          element={
+            <PipelineEngineProvider
+              config={{
+                businessUnit: "BF",
+                api: {
+                  fetchPipeline: pipelineApi.fetchPipeline,
+                  updateStage: vi.fn(),
+                  exportApplications: pipelineApi.exportApplications
+                }
+              }}
+            >
+              <PipelinePage />
+            </PipelineEngineProvider>
+          }
+        />
         <Route path="/applications/:id" element={<ApplicationShellPage />} />
       </Routes>
     </MemoryRouter>

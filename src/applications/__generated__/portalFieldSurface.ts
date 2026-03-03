@@ -5,91 +5,91 @@ export const PORTAL_FIELD_SURFACE = {
       location: "pipeline_card",
       mode: "action",
       source: "application",
-      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+      file: "src/core/engines/pipeline/PipelineCard.tsx"
     },
     {
       key: "businessName",
       location: "pipeline_card",
       mode: "read-only",
       source: "application",
-      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+      file: "src/core/engines/pipeline/PipelineCard.tsx"
     },
     {
       key: "productCategory",
       location: "pipeline_card",
       mode: "read-only",
       source: "application",
-      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+      file: "src/core/engines/pipeline/PipelineCard.tsx"
     },
     {
       key: "requestedAmount",
       location: "pipeline_card",
       mode: "read-only",
       source: "application",
-      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+      file: "src/core/engines/pipeline/PipelineCard.tsx"
     },
     {
       key: "updatedAt",
       location: "pipeline_card",
       mode: "read-only",
       source: "application",
-      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+      file: "src/core/engines/pipeline/PipelineCard.tsx"
     },
     {
       key: "createdAt",
       location: "pipeline_card",
       mode: "read-only",
       source: "application",
-      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+      file: "src/core/engines/pipeline/PipelineCard.tsx"
     },
     {
       key: "ocr_completed_at",
       location: "pipeline_card",
       mode: "read-only",
       source: "ocr",
-      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+      file: "src/core/engines/pipeline/PipelineCard.tsx"
     },
     {
       key: "banking_completed_at",
       location: "pipeline_card",
       mode: "read-only",
       source: "banking",
-      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+      file: "src/core/engines/pipeline/PipelineCard.tsx"
     },
     {
       key: "documents.required",
       location: "pipeline_card",
       mode: "read-only",
       source: "documents",
-      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+      file: "src/core/engines/pipeline/PipelineCard.tsx"
     },
     {
       key: "documents.submitted",
       location: "pipeline_card",
       mode: "read-only",
       source: "documents",
-      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+      file: "src/core/engines/pipeline/PipelineCard.tsx"
     },
     {
       key: "contactName",
       location: "pipeline_card",
       mode: "read-only",
       source: "application",
-      file: "src/pages/applications/pipeline/PipelinePage.tsx"
+      file: "src/core/engines/pipeline/PipelinePage.tsx"
     },
     {
       key: "submissionMethod",
       location: "pipeline_card",
       mode: "read-only",
       source: "application",
-      file: "src/pages/applications/pipeline/PipelinePage.tsx"
+      file: "src/core/engines/pipeline/PipelinePage.tsx"
     },
     {
       key: "stage",
       location: "pipeline_card",
       mode: "read-only",
       source: "application",
-      file: "src/pages/applications/pipeline/PipelinePage.tsx"
+      file: "src/core/engines/pipeline/PipelinePage.tsx"
     },
     {
       key: "applicantName",

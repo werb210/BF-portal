@@ -2,8 +2,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import DrawerHeader from "@/pages/applications/drawer/DrawerHeader";
-import PipelineCard from "@/pages/applications/pipeline/PipelineCard";
-import type { PipelineApplication } from "@/pages/applications/pipeline/pipeline.types";
+import PipelineCard from "@/core/engines/pipeline/PipelineCard";
+import type { PipelineApplication } from "@/core/engines/pipeline/pipeline.types";
 import { renderWithProviders } from "@/test/testUtils";
 import { fetchApplicationDetails } from "@/api/applications";
 

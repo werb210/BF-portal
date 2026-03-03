@@ -7,7 +7,7 @@ import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
-import { normalizeStageId } from "@/pages/applications/pipeline/pipeline.types";
+import { normalizeStageId } from "@/core/engines/pipeline/pipeline.types";
 import { trackPortalEvent } from "@/lib/portalTracking";
 
 const ALLOWED_UPLOAD_STAGE = "LENDERS_SENT";

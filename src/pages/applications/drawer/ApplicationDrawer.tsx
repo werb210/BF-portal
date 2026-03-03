@@ -11,7 +11,7 @@ import NotesTab from "./tab-notes/NotesTab";
 import LendersTab from "./tab-lenders/LendersTab";
 import CallHistoryTab from "./tab-call-history/CallHistoryTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
-import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
+import { usePipelineStore } from "@/core/engines/pipeline/pipeline.store";
 
 const tabContentMap: Partial<Record<DrawerTabId, JSX.Element>> = {
   application: <ApplicationTab />,

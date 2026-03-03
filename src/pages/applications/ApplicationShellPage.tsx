@@ -6,7 +6,7 @@ import AppLoading from "@/components/layout/AppLoading";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import ApplicationCard from "@/pages/applications/ApplicationCard";
 import type { DrawerTab } from "@/pages/applications/drawer/DrawerTabs";
-import { PIPELINE_STAGE_LABELS, normalizeStageId } from "@/pages/applications/pipeline/pipeline.types";
+import { PIPELINE_STAGE_LABELS, normalizeStageId } from "@/core/engines/pipeline/pipeline.types";
 import { fetchPortalApplication, openPortalApplication } from "@/api/applications";
 import { fetchApplicationReadiness } from "@/api/readiness";
 

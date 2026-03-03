@@ -2,22 +2,18 @@ import { cleanup, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { MockedFunction } from "vitest";
-import PipelinePage from "@/pages/applications/pipeline/PipelinePage";
+import PipelinePage from "@/core/engines/pipeline/PipelinePage";
+import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
 import { renderWithProviders } from "@/test/testUtils";
-import { pipelineApi } from "@/pages/applications/pipeline/pipeline.api";
-import { updatePortalApplication } from "@/api/applications";
-import type { PipelineApplication, PipelineStage } from "@/pages/applications/pipeline/pipeline.types";
-import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
+import { pipelineApi } from "@/core/engines/pipeline/pipeline.api";
+import type { PipelineApplication, PipelineStage } from "@/core/engines/pipeline/pipeline.types";
+import { usePipelineStore } from "@/core/engines/pipeline/pipeline.store";
 
-vi.mock("@/pages/applications/pipeline/pipeline.api", () => ({
+vi.mock("@/core/engines/pipeline/pipeline.api", () => ({
   pipelineApi: {
     fetchPipeline: vi.fn(),
     exportApplications: vi.fn()
   }
-}));
-
-vi.mock("@/api/applications", () => ({
-  updatePortalApplication: vi.fn()
 }));
 
 const LocationDisplay = () => {
@@ -66,10 +62,19 @@ const renderPipeline = (initialEntries = ["/pipeline"], role: string | null = "A
         <Route
           path="/pipeline"
           element={
-            <>
+            <PipelineEngineProvider
+              config={{
+                businessUnit: "BF",
+                api: {
+                  fetchPipeline: pipelineApi.fetchPipeline,
+                  updateStage: vi.fn(),
+                  exportApplications: pipelineApi.exportApplications
+                }
+              }}
+            >
               <PipelinePage />
               <LocationDisplay />
-            </>
+            </PipelineEngineProvider>
           }
         />
       </Routes>
@@ -170,7 +175,23 @@ describe("PipelinePage filters and bulk actions", () => {
     renderWithProviders(
       <MemoryRouter initialEntries={["/pipeline"]}>
         <Routes>
-          <Route path="/pipeline" element={<PipelinePage />} />
+          <Route
+            path="/pipeline"
+            element={
+              <PipelineEngineProvider
+                config={{
+                  businessUnit: "BF",
+                  api: {
+                    fetchPipeline: pipelineApi.fetchPipeline,
+                    updateStage: vi.fn(),
+                    exportApplications: pipelineApi.exportApplications
+                  }
+                }}
+              >
+                <PipelinePage />
+              </PipelineEngineProvider>
+            }
+          />
         </Routes>
       </MemoryRouter>,
       { auth: { user: { id: "viewer", email: "viewer@test.com", role: "Viewer" } } }
@@ -182,14 +203,40 @@ describe("PipelinePage filters and bulk actions", () => {
   });
 
   it("moves selected applications to the next stage", async () => {
-    renderPipeline();
+    const updateStage = vi.fn().mockResolvedValue({});
+
+    renderWithProviders(
+      <MemoryRouter initialEntries={["/pipeline"]}>
+        <Routes>
+          <Route
+            path="/pipeline"
+            element={
+              <PipelineEngineProvider
+                config={{
+                  businessUnit: "BF",
+                  api: {
+                    fetchPipeline: pipelineApi.fetchPipeline,
+                    updateStage,
+                    exportApplications: pipelineApi.exportApplications
+                  }
+                }}
+              >
+                <PipelinePage />
+              </PipelineEngineProvider>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+      { auth: { user: { id: "1", email: "user@test.com", role: "Admin" } } }
+    );
+
     await userEvent.click(await screen.findByLabelText("Select Acme Co"));
     const moveButton = screen.getByRole("button", { name: /Move to next stage/i });
     await userEvent.click(moveButton);
     await userEvent.click(await screen.findByRole("button", { name: /Confirm/i }));
 
     await waitFor(() => {
-      expect(updatePortalApplication).toHaveBeenCalledWith("app-1", { stage: "IN_REVIEW" });
+      expect(updateStage).toHaveBeenCalledWith("app-1", "IN_REVIEW");
     });
   });
 });

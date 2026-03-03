@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PIPELINE_STAGE_ORDER } from "@/pages/applications/pipeline/pipeline.types";
+import { PIPELINE_STAGE_ORDER } from "@/core/engines/pipeline/pipeline.types";
 import { TABS } from "@/pages/applications/drawer/DrawerTabs";
 import portalStructure from "@/_artifacts/portal-v1-structure.json";
 

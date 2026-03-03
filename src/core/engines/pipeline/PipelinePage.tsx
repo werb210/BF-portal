@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Card from "@/components/ui/Card";
@@ -16,9 +16,9 @@ import {
 import { normalizeStageId } from "./pipeline.types";
 import { usePipelineStore } from "./pipeline.store";
 import { useSilo } from "@/hooks/useSilo";
-import { pipelineApi } from "./pipeline.api";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
+import { PipelineEngineContext } from "./PipelineEngineProvider";
 
 const NoPipelineAvailable = ({ silo }: { silo: string }) => (
   <div className="pipeline-empty">Pipeline is not available for the {silo} silo.</div>
@@ -48,6 +48,9 @@ const buildSearchParams = (filters: PipelineFiltersState) => {
 };
 
 const PipelinePage = () => {
+  const config = useContext(PipelineEngineContext);
+  if (!config) throw new Error("PipelineEngineProvider missing");
+
   const { silo } = useSilo();
   const navigate = useNavigate();
   const filters = usePipelineStore((state) => state.currentFilters);
@@ -67,7 +70,7 @@ const PipelinePage = () => {
     error
   } = useQuery({
     queryKey: ["pipeline", filters],
-    queryFn: ({ signal }) => pipelineApi.fetchPipeline(filters, { signal }),
+    queryFn: ({ signal }) => config.api.fetchPipeline(filters, { signal }),
     staleTime: 60_000,
     refetchOnWindowFocus: false,
     refetchInterval: 15_000

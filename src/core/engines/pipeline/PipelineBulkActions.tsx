@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { PipelineApplication, PipelineStage } from "./pipeline.types";
 import { evaluateStageTransition, normalizeStageId, sortPipelineStages } from "./pipeline.types";
-import { updatePortalApplication } from "@/api/applications";
-import { pipelineApi } from "./pipeline.api";
+import { PipelineEngineContext } from "./PipelineEngineProvider";
 import Modal from "@/components/ui/Modal";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { logActivity } from "@/hooks/useActivityLog";
@@ -31,6 +30,9 @@ const resolveNextStage = (card: PipelineApplication, stages: PipelineStage[]): s
 };
 
 const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: PipelineBulkActionsProps) => {
+  const config = useContext(PipelineEngineContext);
+  if (!config) throw new Error("PipelineEngineProvider missing");
+
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const selectedCount = selectedCards.length;
@@ -69,7 +71,7 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
   }, [selectedCount, stageTransitions]);
 
   const exportMutation = useMutation({
-    mutationFn: () => pipelineApi.exportApplications(selectedCards.map((card) => card.id)),
+    mutationFn: () => config.api.exportApplications?.(selectedCards.map((card) => card.id)) ?? Promise.reject(new Error("Export is not supported for this business unit")),
     onSuccess: (blob) => {
       void logActivity("bulk_export", {
         count: selectedCards.length,
@@ -122,7 +124,7 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
       await Promise.all(
         stageTransitions.map((entry) =>
           entry.nextStage
-            ? updatePortalApplication(entry.card.id, { stage: entry.nextStage })
+            ? config.api.updateStage(entry.card.id, entry.nextStage)
             : Promise.resolve(null)
         )
       );

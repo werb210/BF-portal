@@ -1,5 +1,7 @@
-import PipelinePage from "./pipeline/PipelinePage";
+import PipelinePage from "@/core/engines/pipeline/PipelinePage";
+import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
 import SLFPipelinePage from "./slf/SLFPipelinePage";
+import { bfPipelineAdapter } from "@/silos/bf/bf.pipeline.adapter";
 import { useSilo } from "@/hooks/useSilo";
 import RequireRole from "@/components/auth/RequireRole";
 
@@ -10,7 +12,16 @@ const ApplicationsContent = () => {
     return <SLFPipelinePage />;
   }
 
-  return <PipelinePage />;
+  return (
+    <PipelineEngineProvider
+      config={{
+        businessUnit: "BF",
+        api: bfPipelineAdapter
+      }}
+    >
+      <PipelinePage />
+    </PipelineEngineProvider>
+  );
 };
 
 const ApplicationsPage = () => (

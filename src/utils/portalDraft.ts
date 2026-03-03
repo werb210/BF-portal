@@ -1,4 +1,4 @@
-import type { PipelineFilters } from "@/pages/applications/pipeline/pipeline.types";
+import type { PipelineFilters } from "@/core/engines/pipeline/pipeline.types";
 import type { DrawerTabId } from "@/pages/applications/drawer/DrawerTabs";
 
 const STORAGE_KEY = "portal.application.draft";

@@ -3,9 +3,9 @@ import "@testing-library/jest-dom/vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import PipelineFilters from "@/pages/applications/pipeline/PipelineFilters";
+import PipelineFilters from "@/core/engines/pipeline/PipelineFilters";
 import { renderWithProviders } from "@/test/testUtils";
-import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
+import { usePipelineStore } from "@/core/engines/pipeline/pipeline.store";
 
 describe("submission method filters", () => {
   it("updates the submission method filter", async () => {
