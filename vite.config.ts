@@ -14,19 +14,15 @@ export default defineConfig({
         theme_color: "#020C1C",
         background_color: "#020C1C",
         display: "standalone",
-        start_url: "/",
-        scope: "/"
+        start_url: "/"
       },
       workbox: {
         navigateFallback: "/index.html",
         runtimeCaching: [
           {
-            urlPattern: /^https?:\/\/api\./,
+            urlPattern: /^https:\/\/.*\/api\/.*$/i,
             handler: "NetworkFirst",
-            options: {
-              cacheName: "api-cache",
-              networkTimeoutSeconds: 10
-            }
+            options: { cacheName: "api-cache" }
           }
         ]
       }
