@@ -5,6 +5,7 @@ import type { MockedFunction } from "vitest";
 import PipelinePage from "./PipelinePage";
 import { PipelineEngineProvider } from "./PipelineEngineProvider";
 import { renderWithProviders } from "@/test/testUtils";
+import { TestProviders } from "@/test/TestProviders";
 import { pipelineApi } from "./pipeline.api";
 import { usePipelineStore } from "./pipeline.store";
 import { type PipelineApplication, type PipelineStage } from "./pipeline.types";
@@ -60,18 +61,20 @@ const renderPipeline = () =>
         <Route
           path="/pipeline"
           element={
-            <PipelineEngineProvider
-              config={{
-                businessUnit: "BF",
-                api: {
-                  fetchPipeline: pipelineApi.fetchPipeline,
-                  updateStage: vi.fn(),
-                  exportApplications: pipelineApi.exportApplications
-                }
-              }}
-            >
-              <PipelinePage />
-            </PipelineEngineProvider>
+            <TestProviders>
+              <PipelineEngineProvider
+                config={{
+                  businessUnit: "BF",
+                  api: {
+                    fetchPipeline: pipelineApi.fetchPipeline,
+                    updateStage: vi.fn(),
+                    exportApplications: pipelineApi.exportApplications
+                  }
+                }}
+              >
+                <PipelinePage />
+              </PipelineEngineProvider>
+            </TestProviders>
           }
         />
         <Route path="/applications/:id" element={<ApplicationShellPage />} />

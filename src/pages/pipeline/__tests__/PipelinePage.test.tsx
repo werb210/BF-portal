@@ -5,6 +5,7 @@ import type { MockedFunction } from "vitest";
 import PipelinePage from "@/core/engines/pipeline/PipelinePage";
 import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
 import { renderWithProviders } from "@/test/testUtils";
+import { TestProviders } from "@/test/TestProviders";
 import { pipelineApi } from "@/core/engines/pipeline/pipeline.api";
 import type { PipelineApplication, PipelineStage } from "@/core/engines/pipeline/pipeline.types";
 import { usePipelineStore } from "@/core/engines/pipeline/pipeline.store";
@@ -62,19 +63,21 @@ const renderPipeline = (initialEntries = ["/pipeline"], role: string | null = "A
         <Route
           path="/pipeline"
           element={
-            <PipelineEngineProvider
-              config={{
-                businessUnit: "BF",
-                api: {
-                  fetchPipeline: pipelineApi.fetchPipeline,
-                  updateStage: vi.fn(),
-                  exportApplications: pipelineApi.exportApplications
-                }
-              }}
-            >
-              <PipelinePage />
-              <LocationDisplay />
-            </PipelineEngineProvider>
+            <TestProviders>
+              <PipelineEngineProvider
+                config={{
+                  businessUnit: "BF",
+                  api: {
+                    fetchPipeline: pipelineApi.fetchPipeline,
+                    updateStage: vi.fn(),
+                    exportApplications: pipelineApi.exportApplications
+                  }
+                }}
+              >
+                <PipelinePage />
+                <LocationDisplay />
+              </PipelineEngineProvider>
+            </TestProviders>
           }
         />
       </Routes>

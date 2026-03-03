@@ -4,8 +4,14 @@ import { getSiloFromHost, type Silo } from "./silo";
 
 const SiloContext = createContext<Silo>("BF");
 
-export function SiloProvider({ children }: { children: ReactNode }) {
-  const silo = getSiloFromHost();
+export function SiloProvider({
+  children,
+  forcedSilo
+}: {
+  children: ReactNode;
+  forcedSilo?: Silo;
+}) {
+  const silo = forcedSilo ?? getSiloFromHost();
 
   return <SiloContext.Provider value={silo}>{children}</SiloContext.Provider>;
 }

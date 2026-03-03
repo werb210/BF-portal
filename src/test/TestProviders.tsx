@@ -1,6 +1,6 @@
-import { ReactNode } from "react"
-import { AuthProvider } from "@/context/AuthContext"
+import React from "react";
+import { SiloProvider } from "@/core/SiloContext";
 
-export function TestProviders({ children }: { children: ReactNode }) {
-  return <AuthProvider>{children}</AuthProvider>
+export function TestProviders({ children }: { children: React.ReactNode }) {
+  return <SiloProvider forcedSilo="BF">{children}</SiloProvider>;
 }
