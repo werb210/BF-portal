@@ -8,21 +8,40 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "auto",
       manifest: {
-        name: "Boreal Staff Portal",
+        name: "Boreal Client Portal",
         short_name: "Boreal",
-        theme_color: "#020C1C",
-        background_color: "#020C1C",
+        description: "Boreal Financial Client Portal",
+        start_url: "/",
+        scope: "/",
         display: "standalone",
-        start_url: "/"
+        background_color: "#020C1C",
+        theme_color: "#020C1C",
+        icons: [
+          {
+            src: "/icons/icon-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any"
+          },
+          {
+            src: "/icons/icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any"
+          }
+        ]
       },
       workbox: {
-        navigateFallback: "/index.html",
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\/api\/.*$/i,
+            urlPattern: /^https:\/\/.*\/api\/.*/i,
             handler: "NetworkFirst",
-            options: { cacheName: "api-cache" }
+            options: {
+              cacheName: "api-cache",
+              networkTimeoutSeconds: 10
+            }
           }
         ]
       }
