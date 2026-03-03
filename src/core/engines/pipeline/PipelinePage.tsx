@@ -10,19 +10,15 @@ import PipelineBulkActions from "./PipelineBulkActions";
 import {
   buildStageLabelMap,
   sortPipelineStages,
-  type PipelineFilters as PipelineFiltersState,
-  type PipelineStage
+  type PipelineFilters as PipelineFiltersState
 } from "./pipeline.types";
 import { normalizeStageId } from "./pipeline.types";
 import { usePipelineStore } from "./pipeline.store";
-import { useSilo } from "@/hooks/useSilo";
+import { useSilo } from "@/core/SiloContext";
+import { pipelineStages } from "@/pipeline/stages";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
 import { PipelineEngineContext } from "./PipelineEngineProvider";
-
-const NoPipelineAvailable = ({ silo }: { silo: string }) => (
-  <div className="pipeline-empty">Pipeline is not available for the {silo} silo.</div>
-);
 
 const readFiltersFromParams = (params: URLSearchParams) => {
   const next: Record<string, string> = {};
@@ -51,7 +47,8 @@ const PipelinePage = () => {
   const config = useContext(PipelineEngineContext);
   if (!config) throw new Error("PipelineEngineProvider missing");
 
-  const { silo } = useSilo();
+  const silo = useSilo();
+  const stages = pipelineStages[silo];
   const navigate = useNavigate();
   const filters = usePipelineStore((state) => state.currentFilters);
   const selectedIds = usePipelineStore((state) => state.selectedApplicationIds);
@@ -76,7 +73,11 @@ const PipelinePage = () => {
     refetchInterval: 15_000
   });
 
-  const orderedStages = useMemo(() => sortPipelineStages(data?.stages ?? []), [data?.stages]);
+  const orderedStages = useMemo(() => {
+    const stageSet = new Set(stages.map((stage) => normalizeStageId(stage)));
+    const filteredStages = (data?.stages ?? []).filter((stage) => stageSet.has(normalizeStageId(stage.id)));
+    return sortPipelineStages(filteredStages);
+  }, [data?.stages, stages]);
   const stageLabelMap = useMemo(() => buildStageLabelMap(orderedStages), [orderedStages]);
   const applications = data?.applications ?? [];
 
@@ -113,9 +114,6 @@ const PipelinePage = () => {
 
   useEffect(() => () => resetPipeline(), [resetPipeline]);
 
-  if (silo !== "BF") {
-    return <NoPipelineAvailable silo={silo} />;
-  }
 
   const handleCardClick = (id: string) => {
     navigate(`/applications/${id}`);
