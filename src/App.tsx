@@ -14,6 +14,7 @@ import LendersPage from "@/pages/Lenders";
 import AuthProbe from "@/tests/components/AuthProbe";
 import { useAuth } from "@/auth/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import DialerButton from "@/components/DialerButton";
 import MobileShell from "@/mobile/MobileShell";
 
 function SessionGuard() {
@@ -46,6 +47,7 @@ const AppRoutes = () => (
     <ServerCallSyncBootstrap />
     <ActiveCallBanner />
     <IncomingCallModal />
+    <DialerButton />
     {process.env.NODE_ENV === "test" ? <AuthProbe /> : null}
     <MobileShell>
       <Routes>

@@ -216,3 +216,17 @@ export function destroyVoice() {
 
   setCallStatus("idle");
 }
+
+// Added compatibility APIs for the slide-in dialer component.
+export async function initializeVoice(identity: string): Promise<void> {
+  await initVoice(identity);
+}
+
+export function getDevice() {
+  return device;
+}
+
+export async function makeCall(to: string) {
+  await startOutboundCall(to);
+  return activeCall;
+}
