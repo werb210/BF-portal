@@ -1,6 +1,9 @@
+import { registerSW } from "virtual:pwa-register";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+
+registerSW({ immediate: true });
 
 const rootElement = document.getElementById("root");
 

@@ -14,6 +14,7 @@ import LendersPage from "@/pages/Lenders";
 import AuthProbe from "@/tests/components/AuthProbe";
 import { useAuth } from "@/auth/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import MobileShell from "@/mobile/MobileShell";
 
 function SessionGuard() {
   usePortalSessionGuard();
@@ -46,26 +47,28 @@ const AppRoutes = () => (
     <ActiveCallBanner />
     <IncomingCallModal />
     {process.env.NODE_ENV === "test" ? <AuthProbe /> : null}
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/lenders/*"
-        element={
-          <ProtectedRoute>
-            <LendersPage />
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+    <MobileShell>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lenders/*"
+          element={
+            <ProtectedRoute>
+              <LendersPage />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </MobileShell>
   </BrowserRouter>
 );
 
