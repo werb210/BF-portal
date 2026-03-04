@@ -8,7 +8,7 @@ import CampaignRevenue from "@/components/CampaignRevenue";
 import CommissionTrendChart from "@/components/CommissionTrendChart";
 import CallPerformanceCard from "@/components/CallPerformanceCard";
 import { useAuth } from "@/hooks/useAuth";
-import PortalDialer from "@/telephony/components/PortalDialer";
+import { logger } from "@/utils/logger";
 
 interface LenderMetrics {
   lenderName: string;
@@ -42,7 +42,6 @@ const DashboardPage = () => {
   const [lenderMetrics, setLenderMetrics] = useState<LenderMetrics[]>([]);
   const [revenueSummary, setRevenueSummary] = useState<RevenueSummary | null>(null);
   const [priorityLeads, setPriorityLeads] = useState<LeadIntelligence[]>([]);
-  const [showDialer, setShowDialer] = useState(false);
 
   const safeRevenueSummary: RevenueSummary = {
     totalFunded: revenueSummary?.totalFunded ?? 0,
@@ -62,7 +61,7 @@ const DashboardPage = () => {
     })
       .then((res) => res.json())
       .then(setRevenueSummary)
-      .catch(console.error);
+      .catch(error => logger.error("Failed to load revenue summary", { error }));
   }, []);
 
   useEffect(() => {
@@ -75,7 +74,7 @@ const DashboardPage = () => {
     })
       .then((res) => res.json())
       .then((data) => setLenderMetrics(data))
-      .catch(console.error);
+      .catch(error => logger.error("Failed to load lender performance", { error }));
   }, []);
 
   useEffect(() => {
@@ -101,7 +100,7 @@ const DashboardPage = () => {
 
         setPriorityLeads(sorted);
       })
-      .catch(console.error);
+      .catch(error => logger.error("Failed to load priority leads", { error }));
   }, []);
 
   if (isLoading) {
@@ -115,8 +114,6 @@ const DashboardPage = () => {
   return (
     <RequireRole roles={["Admin", "Staff"]}>
       <div className="page">
-        <button onClick={() => setShowDialer(true)}>Dialer</button>
-        {showDialer && <PortalDialer />}
         <div className="executive-kpi-grid mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="kpi-card">
             <Card title="Total Funded">

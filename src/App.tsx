@@ -17,6 +17,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DialerButton from "@/components/DialerButton";
 import MobileShell from "@/mobile/MobileShell";
 import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
+import PortalDialer from "./telephony/components/PortalDialer";
 
 function SessionGuard() {
   usePortalSessionGuard();
@@ -48,6 +49,7 @@ const AppRoutes = () => (
     <ActiveCallBanner />
     <IncomingCallModal />
     <DialerButton />
+    <PortalDialer />
     {process.env.NODE_ENV === "test" ? <AuthProbe /> : null}
     <MobileShell>
       <Routes>

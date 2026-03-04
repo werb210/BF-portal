@@ -1,13 +1,15 @@
 import { useCallState } from "../state/callState";
 
 export default function IncomingCallOverlay() {
-  const { incomingCall, setActiveCall, clearCall } = useCallState();
+  const { incomingCall, setActiveCall, setCallStatus, setErrorMessage, clearCall } = useCallState();
 
   if (!incomingCall) return null;
 
   const accept = () => {
     incomingCall.accept();
     setActiveCall(incomingCall);
+    setCallStatus("in_call");
+    setErrorMessage(undefined);
   };
 
   const decline = () => {
