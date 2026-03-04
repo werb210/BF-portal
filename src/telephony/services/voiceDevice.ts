@@ -1,57 +1,42 @@
-import { Device, Call } from "@twilio/voice-sdk";
+import { Device } from "@twilio/voice-sdk";
 
 let device: Device | null = null;
-let activeCall: Call | null = null;
+let activeCall: any = null;
 
-export async function initializeVoice(token: string) {
+export async function bootstrapVoice(token: string) {
   device = new Device(token, {
-    codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
-    logLevel: 1
+    enableRingingState: true
   });
 
   device.on("registered", () => {
-    console.log("Portal voice device registered");
+    console.log("Twilio device registered");
   });
 
-  device.on("incoming", (call: Call) => {
+  device.on("incoming", (call) => {
     console.log("Incoming call");
 
     activeCall = call;
 
-    call.on("disconnect", () => {
-      activeCall = null;
-    });
-
     call.accept();
+  });
+
+  device.on("disconnect", () => {
+    console.log("Call ended");
+
+    activeCall = null;
   });
 
   await device.register();
 }
 
-export function getDevice() {
-  return device;
-}
+export function dialNumber(number: string) {
+  if (!device) return;
 
-export function getActiveCall() {
-  return activeCall;
-}
-
-export async function startCall(number: string) {
-  if (!device) {
-    throw new Error("Device not initialized");
-  }
-
-  activeCall = await device.connect({
+  activeCall = device.connect({
     params: {
       To: number
     }
   });
-
-  activeCall.on("disconnect", () => {
-    activeCall = null;
-  });
-
-  return activeCall;
 }
 
 export function hangupCall() {
@@ -62,9 +47,13 @@ export function hangupCall() {
 }
 
 export function muteCall() {
-  if (activeCall) activeCall.mute(true);
+  if (activeCall) {
+    activeCall.mute(true);
+  }
 }
 
 export function unmuteCall() {
-  if (activeCall) activeCall.mute(false);
+  if (activeCall) {
+    activeCall.mute(false);
+  }
 }
