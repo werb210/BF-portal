@@ -1,37 +1,37 @@
+import { answerIncomingCall, declineIncomingCall } from "@/telephony/bootstrapVoice";
 import { useCallState } from "../state/callState";
 
+function getCallerLabel(call: unknown): string {
+  if (!call || typeof call !== "object") {
+    return "Unknown caller";
+  }
+
+  const parameters = (call as { parameters?: Record<string, string> }).parameters;
+  const from = parameters?.From || parameters?.Caller;
+  return from || "Unknown caller";
+}
+
 export default function IncomingCallOverlay() {
-  const { incomingCall, setActiveCall, setCallStatus, setErrorMessage, clearCall } = useCallState();
+  const incomingCall = useCallState(state => state.incomingCall);
 
   if (!incomingCall) return null;
 
-  const accept = () => {
-    incomingCall.accept();
-    setActiveCall(incomingCall);
-    setCallStatus("in_call");
-    setErrorMessage(undefined);
-  };
-
-  const decline = () => {
-    incomingCall.reject();
-    clearCall();
-  };
-
   return (
-    <div className="fixed bottom-6 right-6 bg-white shadow-lg rounded-lg p-4 w-72">
-      <div className="font-semibold mb-2">Incoming Call</div>
+    <div className="fixed bottom-6 right-6 z-50 w-72 rounded-lg bg-white p-4 shadow-lg">
+      <div className="mb-1 font-semibold">Incoming Call</div>
+      <div className="mb-3 text-sm text-slate-600">{getCallerLabel(incomingCall)}</div>
 
       <div className="flex gap-2">
         <button
-          onClick={accept}
-          className="flex-1 bg-green-600 text-white rounded px-3 py-2"
+          onClick={answerIncomingCall}
+          className="flex-1 rounded bg-green-600 px-3 py-2 text-white"
         >
           Answer
         </button>
 
         <button
-          onClick={decline}
-          className="flex-1 bg-red-600 text-white rounded px-3 py-2"
+          onClick={declineIncomingCall}
+          className="flex-1 rounded bg-red-600 px-3 py-2 text-white"
         >
           Decline
         </button>

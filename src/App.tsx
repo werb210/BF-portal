@@ -30,7 +30,10 @@ function VoiceBootstrap() {
   useEffect(() => {
     if (process.env.NODE_ENV === "test") return;
     if (!roleIn(role, ["Admin", "Staff"])) return;
-    void bootstrapVoice();
+
+    void bootstrapVoice().catch(() => {
+      // bootstrapVoice writes a user-facing error state.
+    });
   }, [role]);
 
   return null;

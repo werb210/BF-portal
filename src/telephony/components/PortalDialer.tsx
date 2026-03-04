@@ -38,10 +38,8 @@ export default function PortalDialer() {
         return "Ringing";
       case "in_call":
         return "In Call";
-      case "ended":
-        return "Ended";
       case "failed":
-        return "Failed";
+        return "Error";
       default:
         return "Idle";
     }
