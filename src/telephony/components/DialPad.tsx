@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { startCall } from "../services/voiceDevice";
+import { dialNumber } from "../services/voiceDevice";
 
 export default function DialPad() {
   const [number, setNumber] = useState("");
@@ -8,7 +8,7 @@ export default function DialPad() {
     if (!number) return;
 
     try {
-      await startCall(number);
+      dialNumber(number);
     } catch (err) {
       console.error("Call failed", err);
     }
