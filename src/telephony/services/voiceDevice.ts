@@ -4,9 +4,7 @@ let device: Device | null = null;
 let activeCall: any = null;
 
 export async function bootstrapVoice(token: string) {
-  device = new Device(token, {
-    enableRingingState: true
-  });
+  device = new Device(token);
 
   device.on("registered", () => {
     console.log("Twilio device registered");
