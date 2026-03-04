@@ -1,18 +1,11 @@
 import { Device, Call } from "@twilio/voice-sdk";
+import { fetchVoiceToken } from "../../api/voice";
 
 let device: Device | null = null;
 let activeCall: Call | null = null;
 
 export async function initializeVoice(identity: string) {
-  const res = await fetch("/telephony/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ identity })
-  });
-
-  const { token } = await res.json();
+  const token = await fetchVoiceToken(identity);
 
   device = new Device(token, {
     codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],

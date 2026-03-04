@@ -15,7 +15,7 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 
-void initializeVoice("staff_user");
+void initializeVoice("staff_portal");
 
 if (import.meta.env.MODE === "production") {
   root.render(
