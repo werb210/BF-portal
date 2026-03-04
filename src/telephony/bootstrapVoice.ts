@@ -1,5 +1,6 @@
 import { Device, Call } from "@twilio/voice-sdk";
 import { getVoiceToken } from "./api/getVoiceToken";
+import { useCallState } from "./state/callState";
 
 let device: Device | null = null;
 let activeCall: Call | null = null;
@@ -15,14 +16,12 @@ export async function bootstrapVoice() {
 
   device.on("incoming", (call: Call) => {
     console.log("Incoming client call");
-
-    activeCall = call;
+    useCallState.getState().setIncomingCall(call);
 
     call.on("disconnect", () => {
       activeCall = null;
+      useCallState.getState().clearCall();
     });
-
-    call.accept();
   });
 
   device.on("error", (error: Error) => {
