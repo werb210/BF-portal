@@ -1,22 +1,31 @@
 import { Device, Call } from "@twilio/voice-sdk";
-import { fetchVoiceToken } from "../../api/voice";
 
 let device: Device | null = null;
 let activeCall: Call | null = null;
 
-export async function initializeVoice(identity: string) {
-  const token = await fetchVoiceToken(identity);
-
+export async function initializeVoice(token: string) {
   device = new Device(token, {
     codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
-    closeProtection: true
+    logLevel: 1
+  });
+
+  device.on("registered", () => {
+    console.log("Portal voice device registered");
   });
 
   device.on("incoming", (call: Call) => {
+    console.log("Incoming call");
+
     activeCall = call;
+
+    call.on("disconnect", () => {
+      activeCall = null;
+    });
+
+    call.accept();
   });
 
-  device.register();
+  await device.register();
 }
 
 export function getDevice() {
@@ -27,13 +36,19 @@ export function getActiveCall() {
   return activeCall;
 }
 
-export async function startCall(destination: string) {
+export async function startCall(number: string) {
   if (!device) {
-    throw new Error("Voice device not initialized");
+    throw new Error("Device not initialized");
   }
 
   activeCall = await device.connect({
-    params: { to: destination }
+    params: {
+      To: number
+    }
+  });
+
+  activeCall.on("disconnect", () => {
+    activeCall = null;
   });
 
   return activeCall;
@@ -51,13 +66,5 @@ export function muteCall() {
 }
 
 export function unmuteCall() {
-  if (activeCall) activeCall.mute(false);
-}
-
-export function holdCall() {
-  if (activeCall) activeCall.mute(true);
-}
-
-export function resumeCall() {
   if (activeCall) activeCall.mute(false);
 }

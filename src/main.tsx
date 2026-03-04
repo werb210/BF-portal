@@ -3,6 +3,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { SiloProvider } from "@/core/SiloContext";
+import { fetchVoiceToken } from "./api/voice";
 import { initializeVoice } from "./telephony/services/voiceDevice";
 
 registerSW({ immediate: true });
@@ -15,7 +16,12 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 
-void initializeVoice("staff_portal");
+async function bootstrapVoice() {
+  const token = await fetchVoiceToken("staff_portal");
+  await initializeVoice(token);
+}
+
+void bootstrapVoice();
 
 if (import.meta.env.MODE === "production") {
   root.render(

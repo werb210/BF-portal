@@ -4,9 +4,14 @@ import { startCall } from "../services/voiceDevice";
 export default function DialPad() {
   const [number, setNumber] = useState("");
 
-  const call = async () => {
+  const handleDial = async () => {
     if (!number) return;
-    await startCall(number);
+
+    try {
+      await startCall(number);
+    } catch (err) {
+      console.error("Call failed", err);
+    }
   };
 
   return (
@@ -17,7 +22,7 @@ export default function DialPad() {
         placeholder="Enter number"
       />
 
-      <button onClick={call}>Call</button>
+      <button onClick={handleDial}>Call</button>
     </div>
   );
 }
