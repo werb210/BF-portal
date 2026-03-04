@@ -3,141 +3,189 @@ import { getVoiceToken } from "./api/getVoiceToken";
 import { useCallState } from "./state/callState";
 
 let device: Device | null = null;
+let bootstrapPromise: Promise<Device> | null = null;
 let activeCall: Call | null = null;
 
-const setFailure = (message: string) => {
-  useCallState.getState().setCallStatus("failed");
-  useCallState.getState().setErrorMessage(message);
+const activeStatuses = new Set(["connecting", "ringing", "in_call"]);
+
+const clearActiveCall = (call?: Call) => {
+  if (!call || activeCall === call) {
+    activeCall = null;
+  }
 };
 
-const resetCallState = () => {
-  activeCall = null;
-  useCallState.getState().clearCall();
+const onCallDisconnected = (call?: Call) => {
+  clearActiveCall(call);
+  useCallState.getState().endCall();
+};
+
+const setFailure = (message: string) => {
+  clearActiveCall();
+  useCallState.getState().setCallFailed(message);
 };
 
 const bindCallHandlers = (call: Call) => {
   call.on("ringing", () => {
-    useCallState.getState().setCallStatus("ringing");
+    useCallState.getState().setCallRinging();
   });
 
   call.on("accept", () => {
-    useCallState.getState().setActiveCall(call);
-    useCallState.getState().setCallStatus("in_call");
-    useCallState.getState().setErrorMessage(undefined);
+    activeCall = call;
+    useCallState.getState().setCallInProgress(call);
   });
 
   call.on("disconnect", () => {
-    useCallState.getState().setCallStatus("ended");
-    resetCallState();
+    onCallDisconnected(call);
   });
 
   call.on("cancel", () => {
-    useCallState.getState().setCallStatus("ended");
-    resetCallState();
+    onCallDisconnected(call);
+  });
+
+  call.on("reject", () => {
+    onCallDisconnected(call);
   });
 
   call.on("error", (error: Error) => {
-    setFailure(error.message || "Call failed.");
-    resetCallState();
+    const message = error.message || "Call failed.";
+    setFailure(message);
   });
 };
+
+async function initializeDevice() {
+  const token = await getVoiceToken("staff_portal");
+  const nextDevice = new Device(token);
+
+  nextDevice.on("incoming", (call: Call) => {
+    const state = useCallState.getState();
+
+    if (activeStatuses.has(state.callStatus)) {
+      call.reject();
+      return;
+    }
+
+    state.receiveIncomingCall(call);
+    bindCallHandlers(call);
+  });
+
+  nextDevice.on("error", (error: Error) => {
+    setFailure(error.message || "Voice device error.");
+  });
+
+  nextDevice.on("cancel", () => {
+    onCallDisconnected();
+  });
+
+  nextDevice.on("unregistered", () => {
+    onCallDisconnected();
+    setFailure("Voice device disconnected. Please try again.");
+    device = null;
+    bootstrapPromise = null;
+  });
+
+  await nextDevice.register();
+  device = nextDevice;
+  return nextDevice;
+}
 
 export async function bootstrapVoice() {
   if (device) {
     return device;
   }
 
-  try {
-    const token = await getVoiceToken("staff_portal");
-    device = new Device(token);
-
-    device.on("incoming", (call: Call) => {
-      const state = useCallState.getState();
-
-      if (state.callStatus === "connecting" || state.callStatus === "ringing" || state.callStatus === "in_call") {
-        call.reject();
-        return;
-      }
-
-      state.setIncomingCall(call);
-      state.setCallStatus("ringing");
-      state.setErrorMessage(undefined);
-      bindCallHandlers(call);
-    });
-
-    device.on("error", (error: Error) => {
-      setFailure(error.message || "Voice device error.");
-      resetCallState();
-    });
-
-    device.on("unregistered", () => {
-      setFailure("Voice device disconnected. Please try again.");
-      resetCallState();
-      device = null;
-    });
-
-    await device.register();
-    return device;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to initialize voice calling.";
-    setFailure(message);
-    device = null;
-    throw error;
+  if (!bootstrapPromise) {
+    bootstrapPromise = initializeDevice()
+      .catch(error => {
+        const message = error instanceof Error ? error.message : "Unable to initialize voice calling.";
+        setFailure(message);
+        device = null;
+        throw error;
+      })
+      .finally(() => {
+        if (!device) {
+          bootstrapPromise = null;
+        }
+      });
   }
+
+  return bootstrapPromise;
 }
 
 export async function startPortalCall(to: string) {
   const voiceDevice = device ?? (await bootstrapVoice());
-  const normalizedTo = to.replace(/\D/g, "");
+  const normalizedDigits = to.replace(/\D/g, "");
 
-  if (!voiceDevice) {
-    throw new Error("Voice device not initialized");
-  }
-
-  if (!normalizedTo) {
+  if (!normalizedDigits) {
     throw new Error("Enter a valid phone number.");
   }
 
-  useCallState.getState().setOutgoingTo(normalizedTo);
-  useCallState.getState().setCallStatus("connecting");
-  useCallState.getState().setErrorMessage(undefined);
+  const normalizedTo = `+${normalizedDigits}`;
+  const state = useCallState.getState();
+
+  if (activeStatuses.has(state.callStatus)) {
+    throw new Error("A call is already in progress.");
+  }
+
+  state.startOutgoingCall(normalizedTo);
 
   try {
-    activeCall = await voiceDevice.connect({
+    const call = await voiceDevice.connect({
       params: {
         To: normalizedTo
       }
     });
 
-    useCallState.getState().setActiveCall(activeCall);
-    bindCallHandlers(activeCall);
+    activeCall = call;
+    useCallState.getState().setCallInProgress(call);
+    bindCallHandlers(call);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to start call.";
     setFailure(message);
-    resetCallState();
     throw error;
   }
 }
 
-export function hangupPortalCall() {
-  if (!activeCall) {
-    resetCallState();
+export function answerIncomingCall() {
+  const { incomingCall } = useCallState.getState();
+
+  if (!incomingCall) {
     return;
   }
 
-  activeCall.disconnect();
-  useCallState.getState().setCallStatus("ended");
-  resetCallState();
+  incomingCall.accept();
+  activeCall = incomingCall;
+  useCallState.getState().acceptIncomingCall(incomingCall);
+}
+
+export function declineIncomingCall() {
+  const { incomingCall } = useCallState.getState();
+
+  if (!incomingCall) {
+    useCallState.getState().declineIncomingCall();
+    return;
+  }
+
+  incomingCall.reject();
+  clearActiveCall(incomingCall);
+  useCallState.getState().declineIncomingCall();
+}
+
+export function hangupPortalCall() {
+  const currentCall = activeCall;
+
+  if (!currentCall) {
+    useCallState.getState().endCall();
+    return;
+  }
+
+  currentCall.disconnect();
+  onCallDisconnected(currentCall);
 }
 
 export function muteCall() {
-  if (activeCall) {
-    activeCall.mute(true);
-  }
+  activeCall?.mute(true);
 }
 
 export function unmuteCall() {
-  if (activeCall) {
-    activeCall.mute(false);
-  }
+  activeCall?.mute(false);
 }
