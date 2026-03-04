@@ -7,7 +7,7 @@ import IncomingCallModal from "@/components/IncomingCallModal";
 import { ActiveCallBanner } from "@/components/ActiveCallBanner";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import { useServerCallSync } from "@/dialer/useServerCallSync";
-import { initVoice } from "@/services/voiceService";
+import { bootstrapVoice } from "@/telephony/bootstrapVoice";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
@@ -23,14 +23,13 @@ function SessionGuard() {
 }
 
 function VoiceBootstrap() {
-  const { user, role } = useAuth();
+  const { role } = useAuth();
 
   useEffect(() => {
     if (process.env.NODE_ENV === "test") return;
-    if (!user?.id) return;
     if (!roleIn(role, ["Admin", "Staff"])) return;
-    void initVoice(user.id);
-  }, [role, user?.id]);
+    void bootstrapVoice();
+  }, [role]);
 
   return null;
 }
