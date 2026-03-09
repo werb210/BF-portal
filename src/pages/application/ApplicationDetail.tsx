@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ChangeEvent, useState } from "react";
 import { apiClient } from "@/api/httpClient";
 import OfferUploader from "@/components/offers/OfferUploader";
 import ChatPanel from "@/components/chat/ChatPanel";
@@ -18,9 +18,19 @@ const defaultMatches: LenderMatch[] = [
   { lender: "Lender B", likelihood: 72 }
 ];
 
+const ALLOWED_FILE_TYPES = new Set([
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "image/png",
+  "image/jpeg"
+]);
+const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
+
 const ApplicationDetail = ({ applicationId = "app-1" }: { applicationId?: string }) => {
   const [activeTab, setActiveTab] = useState<TabName>("Application");
   const [selectedLenders, setSelectedLenders] = useState<Record<string, boolean>>({});
+  const [uploadError, setUploadError] = useState<string>("");
 
   const handleDocAction = async (status: "accepted" | "rejected") => {
     const reason = status === "rejected" ? window.prompt("Rejection reason") : "Accepted";
@@ -33,6 +43,22 @@ const ApplicationDetail = ({ applicationId = "app-1" }: { applicationId?: string
       .filter(([, selected]) => selected)
       .map(([lender]) => lender);
     await apiClient.post("/lender-submissions", { applicationId, lenders });
+  };
+
+  const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!ALLOWED_FILE_TYPES.has(file.type)) {
+      setUploadError("Invalid file type. Allowed: PDF, DOCX, XLSX, PNG, JPG.");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      setUploadError("File is too large. Max size is 25 MB.");
+      event.target.value = "";
+      return;
+    }
+    setUploadError("");
   };
 
   return (
@@ -72,11 +98,12 @@ const ApplicationDetail = ({ applicationId = "app-1" }: { applicationId?: string
                       onChange={(event) => setSelectedLenders((prev) => ({ ...prev, [match.lender]: event.target.checked }))}
                     />
                   </td>
-                  <td><input type="file" /></td>
+                  <td><input type="file" onChange={handleFileSelection} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {uploadError ? <div role="alert">{uploadError}</div> : null}
           <button type="button" onClick={() => void sendSelected()}>Send Selected</button>
         </div>
       ) : null}

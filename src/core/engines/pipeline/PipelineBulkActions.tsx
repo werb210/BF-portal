@@ -138,6 +138,18 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
           to: entry.nextStage
         }))
       }).catch(() => undefined);
+      queryClient.setQueriesData(
+        { queryKey: ["pipeline"] },
+        (current: { stages: PipelineStage[]; applications: PipelineApplication[] } | undefined) => {
+          if (!current) return current;
+          const updatedApplications = current.applications.map((application) => {
+            const transition = stageTransitions.find((entry) => entry.card.id === application.id);
+            if (!transition?.nextStage) return application;
+            return { ...application, stage: transition.nextStage };
+          });
+          return { ...current, applications: updatedApplications };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
       onClearSelection();
     }

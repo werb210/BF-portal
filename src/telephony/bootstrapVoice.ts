@@ -5,6 +5,7 @@ import { useCallState } from "./state/callState";
 let device: Device | null = null;
 let bootstrapPromise: Promise<Device> | null = null;
 let activeCall: Call | null = null;
+let deviceInitialized = false;
 
 const activeStatuses = new Set(["connecting", "ringing", "in_call"]);
 
@@ -53,6 +54,11 @@ const bindCallHandlers = (call: Call) => {
 };
 
 async function initializeDevice() {
+  if (deviceInitialized) {
+    if (device) return device;
+    if (bootstrapPromise) return bootstrapPromise;
+  }
+  deviceInitialized = true;
   const token = await getVoiceToken("staff_portal");
   const nextDevice = new Device(token);
 
@@ -81,6 +87,7 @@ async function initializeDevice() {
     setFailure("Voice device disconnected. Please try again.");
     device = null;
     bootstrapPromise = null;
+    deviceInitialized = false;
   });
 
   await nextDevice.register();
@@ -99,6 +106,7 @@ export async function bootstrapVoice() {
         const message = error instanceof Error ? error.message : "Unable to initialize voice calling.";
         setFailure(message);
         device = null;
+        deviceInitialized = false;
         throw error;
       })
       .finally(() => {

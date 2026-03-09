@@ -46,6 +46,10 @@
     "src/**/__tests__/**",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
-    "src/test/**"
+    "src/test/**",
+    "routes/**",
+    "middleware/**",
+    "src/modules/**/*.routes.ts",
+    "src/modules/**/*.controller.ts"
   ]
 }

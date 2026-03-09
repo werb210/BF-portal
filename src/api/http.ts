@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosInstance, type AxiosRequestConfig } from "axios";
 import { getStoredAccessToken } from "@/services/token";
 import { getRequestId } from "@/api/requestId";
+import toast from "react-hot-toast";
 
 function resolveBaseURL(): string {
   if (process.env.NODE_ENV === "test") {
@@ -74,6 +75,15 @@ api.interceptors.request.use((config) => {
     } as any;
   }
 
+  const method = config.method?.toUpperCase();
+  if (method && ["POST", "PATCH", "DELETE"].includes(method)) {
+    const headers = (config.headers as Record<string, string>) ?? {};
+    if (!headers["Idempotency-Key"]) {
+      headers["Idempotency-Key"] = crypto.randomUUID();
+      config.headers = headers as any;
+    }
+  }
+
   return config;
 });
 
@@ -102,6 +112,7 @@ api.interceptors.response.use(
     if (process.env.NODE_ENV === "test") {
       return Promise.reject(error);
     }
+    toast.error(error.message || "Request failed");
     return Promise.reject(error);
   }
 );

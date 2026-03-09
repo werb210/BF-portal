@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import PipelineCard from "./PipelineCard";
 import type { PipelineApplication, PipelineStage } from "./pipeline.types";
 
@@ -38,6 +40,14 @@ const PipelineColumn = ({
   selectable,
   onSelectCard
 }: PipelineColumnProps) => {
+  const parentRef = useRef<HTMLDivElement | null>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: cards.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 180,
+    overscan: 6
+  });
+
   return (
     <div className="pipeline-column" data-stage={stage.id} data-testid={`pipeline-column-${stage.id}`}>
       <div className="pipeline-column__header">
@@ -47,7 +57,7 @@ const PipelineColumn = ({
         </div>
         {stage.terminal && <span className="pipeline-column__pill">Terminal</span>}
       </div>
-      <div className="pipeline-column__body">
+      <div className="pipeline-column__body" ref={parentRef}>
         {isLoading && (
           <>
             <LoadingSkeleton />
@@ -55,17 +65,39 @@ const PipelineColumn = ({
           </>
         )}
         {!isLoading && !cards.length && <EmptyState label={stageLabel} />}
-        {cards.map((card) => (
-          <PipelineCard
-            key={card.id}
-            card={card}
-            stageId={stage.id}
-            onClick={onCardClick}
-            isSelected={selectedIds.includes(card.id)}
-            selectable={selectable}
-            onSelectChange={onSelectCard}
-          />
-        ))}
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: "100%",
+            position: "relative"
+          }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const card = cards[virtualRow.index];
+            if (!card) return null;
+            return (
+              <div
+                key={card.id}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualRow.start}px)`
+                }}
+              >
+                <PipelineCard
+                  card={card}
+                  stageId={stage.id}
+                  onClick={onCardClick}
+                  isSelected={selectedIds.includes(card.id)}
+                  selectable={selectable}
+                  onSelectChange={onSelectCard}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

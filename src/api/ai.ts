@@ -1,26 +1,19 @@
-import axios from "axios";
 import api from "./client";
-
-const aiApi = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "",
-});
+import { apiClient } from "@/lib/apiClient";
 
 export async function fetchEscalatedSessions() {
-  const res = await aiApi.get("/api/ai/escalated");
-  return res.data;
+  return apiClient.get("/api/ai/escalated");
 }
 
 export async function fetchSessionMessages(sessionId: string) {
-  const res = await aiApi.get(`/api/ai/session/${sessionId}`);
-  return res.data;
+  return apiClient.get(`/api/ai/session/${sessionId}`);
 }
 
 export async function sendStaffMessage(sessionId: string, message: string) {
-  const res = await aiApi.post("/api/ai/staff-message", {
+  return apiClient.post("/api/ai/staff-message", {
     sessionId,
     message,
   });
-  return res.data;
 }
 
 export async function fetchActiveChats() {
