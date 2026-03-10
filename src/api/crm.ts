@@ -1,7 +1,8 @@
-import api from "@/api/client";
 import { apiClient } from "@/lib/apiClient";
 import { useCrmStore } from "@/state/crm.store";
 import type { CRMLead } from "@/types/crm";
+
+type ApiLead = Record<string, unknown>;
 
 export type Contact = {
   id: string;
@@ -477,11 +478,11 @@ export const createContactApplication = async (payload: {
 };
 
 export async function fetchLeads() {
-  return api.get("/crm/leads");
+  return apiClient.get<ApiLead[] | { leads?: ApiLead[] }>("/api/crm/leads");
 }
 
 export async function fetchLeadById(id: string) {
-  return api.get(`/crm/leads/${id}`);
+  return apiClient.get(`/api/crm/leads/${id}`);
 }
 
 export async function fetchCreditReadinessLeads(): Promise<CRMLead[]> {
@@ -493,11 +494,9 @@ export async function convertReadinessToApplication(id: string) {
 }
 
 export async function fetchChatSessions() {
-  const res = await api.get("/chat/sessions");
-  return res.data;
+  return apiClient.get("/api/chat/sessions");
 }
 
 export async function fetchContinuationLeads() {
-  const res = await api.get("/api/application/continuations");
-  return res.data;
+  return apiClient.get("/api/application/continuations");
 }

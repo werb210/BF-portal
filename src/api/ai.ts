@@ -1,5 +1,12 @@
-import api from "./client";
 import { apiClient } from "@/lib/apiClient";
+
+type AiSession = { id: string; source?: string; status: string };
+type AiMessage = { role: string; content: string };
+
+type AiSessionDetail = {
+  session: AiSession;
+  messages: AiMessage[];
+};
 
 export async function fetchEscalatedSessions() {
   return apiClient.get("/api/ai/escalated");
@@ -17,36 +24,33 @@ export async function sendStaffMessage(sessionId: string, message: string) {
 }
 
 export async function fetchActiveChats() {
-  const res = await api.get("/ai/portal/chats");
-  return res.data;
+  return apiClient.get("/api/ai/portal/chats");
 }
 
 export async function sendPortalStaffMessage(sessionId: string, message: string) {
-  return api.post(`/ai/portal/chats/${sessionId}/message`, { message });
+  return apiClient.post(`/api/ai/portal/chats/${sessionId}/message`, { message });
 }
 
 export async function closeChat(sessionId: string) {
-  return api.post(`/ai/portal/chats/${sessionId}/close`);
+  return apiClient.post(`/api/ai/portal/chats/${sessionId}/close`);
 }
 
 export async function fetchActiveAiSessions() {
-  const res = await api.get("/api/ai/sessions?status=ai");
-  return res.data;
+  return apiClient.get<AiSession[]>("/api/ai/sessions?status=ai");
 }
 
 export async function fetchAiMessages(sessionId: string) {
-  const res = await api.get(`/api/ai/sessions/${sessionId}`);
-  return res.data;
+  return apiClient.get<AiSessionDetail>(`/api/ai/sessions/${sessionId}`);
 }
 
 export async function takeOverSession(sessionId: string) {
-  return api.post(`/api/ai/sessions/${sessionId}/takeover`);
+  return apiClient.post(`/api/ai/sessions/${sessionId}/takeover`);
 }
 
 export async function sendSessionStaffMessage(sessionId: string, message: string) {
-  return api.post(`/api/ai/sessions/${sessionId}/message`, { message });
+  return apiClient.post(`/api/ai/sessions/${sessionId}/message`, { message });
 }
 
 export async function closeSession(sessionId: string) {
-  return api.post(`/api/ai/sessions/${sessionId}/close`);
+  return apiClient.post(`/api/ai/sessions/${sessionId}/close`);
 }

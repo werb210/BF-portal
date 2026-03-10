@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { biFetch } from "../../../api/biClient";
 import ActivityTimeline from "../components/ActivityTimeline";
+import { apiClient } from "@/lib/apiClient";
 
 type Application = {
   id: string;
@@ -10,6 +12,15 @@ type Application = {
     annualPremium?: number;
   };
 };
+
+const ALLOWED_FILE_TYPES = new Set([
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "image/png",
+  "image/jpeg"
+]);
+const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
 
 export default function BILenderPortal() {
   const [apps, setApps] = useState<Application[]>([]);
@@ -31,17 +42,25 @@ export default function BILenderPortal() {
 
     for (let i = 0; i < files.length; i++) {
       const file = files.item(i);
-      if (file) {
-        formData.append("files", file);
+      if (!file) continue;
+      if (!ALLOWED_FILE_TYPES.has(file.type)) {
+        toast.error("Invalid file type. Allowed: PDF, DOCX, XLSX, PNG, JPG.");
+        return;
       }
+      if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+        toast.error("File is too large. Max size is 25 MB.");
+        return;
+      }
+      formData.append("files", file);
     }
 
-    await fetch(`/api/bi/application/${appId}/documents`, {
-      method: "POST",
-      body: formData
+    await apiClient.post(`/api/bi/application/${appId}/documents`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
     });
 
-    alert("Documents uploaded");
+    toast.success("Documents uploaded");
     void load();
   }
 

@@ -197,3 +197,17 @@ export function muteCall() {
 export function unmuteCall() {
   activeCall?.mute(false);
 }
+
+
+export async function destroyVoiceDevice() {
+  if (activeCall) {
+    activeCall.disconnect();
+  }
+  activeCall = null;
+  if (device) {
+    device.destroy();
+  }
+  device = null;
+  bootstrapPromise = null;
+  deviceInitialized = false;
+}
