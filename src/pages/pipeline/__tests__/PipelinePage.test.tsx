@@ -10,6 +10,28 @@ import { pipelineApi } from "@/core/engines/pipeline/pipeline.api";
 import type { PipelineApplication, PipelineStage } from "@/core/engines/pipeline/pipeline.types";
 import { usePipelineStore } from "@/core/engines/pipeline/pipeline.store";
 
+const mockApplications = [
+  {
+    id: "app-1",
+    businessName: "Acme Co",
+    stage: "RECEIVED",
+    requestedAmount: 100000,
+    productType: "term-loan",
+    submissionMethod: "API"
+  }
+];
+
+vi.mock("@tanstack/react-virtual", () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 180,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        start: index * 180
+      }))
+  })
+}));
+
 vi.mock("@/core/engines/pipeline/pipeline.api", () => ({
   pipelineApi: {
     fetchPipeline: vi.fn(),
@@ -31,10 +53,8 @@ const stages: PipelineStage[] = [
 
 const baseCards: PipelineApplication[] = [
   {
-    id: "app-1",
-    businessName: "Acme Co",
+    ...mockApplications[0],
     requestedAmount: 50000,
-    stage: "RECEIVED",
     createdAt: "2024-01-01T10:00:00.000Z",
     updatedAt: "2024-01-03T10:00:00.000Z"
   },
