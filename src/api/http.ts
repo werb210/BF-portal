@@ -77,7 +77,7 @@ api.interceptors.request.use((config) => {
   }
 
   const method = config.method?.toUpperCase();
-  if (method && ["POST", "PATCH", "DELETE"].includes(method)) {
+  if (!skipAuth && method && ["POST", "PATCH", "DELETE"].includes(method)) {
     const headers = (config.headers as Record<string, string>) ?? {};
     if (!headers["Idempotency-Key"]) {
       headers["Idempotency-Key"] = typeof crypto !== "undefined" && "randomUUID" in crypto
