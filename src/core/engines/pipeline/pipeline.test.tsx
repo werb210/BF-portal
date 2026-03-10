@@ -33,29 +33,26 @@ const pipelineStages: PipelineStage[] = [
   { id: "REJECTED", label: "Rejected" }
 ];
 
-const sampleCards: PipelineApplication[] = [
+const mockApplications: PipelineApplication[] = [
   {
     id: "app-1",
-    businessName: "Acme Co",
-    requestedAmount: 50000,
-    productCategory: "startup",
+    businessName: "Acme Co.",
+    requestedAmount: 100000,
+    productType: "term-loan",
+    submissionMethod: "API",
     stage: "RECEIVED",
     createdAt: "2024-01-01T10:00:00.000Z",
     updatedAt: "2024-01-03T10:00:00.000Z"
-  },
-  {
-    id: "app-2",
-    businessName: "Beacon LLC",
-    requestedAmount: 250000,
-    productCategory: "sba",
-    stage: "DOCUMENTS_REQUIRED",
-    createdAt: "2024-01-02T10:00:00.000Z",
-    updatedAt: "2024-01-04T10:00:00.000Z"
   }
 ];
 
-const renderPipeline = () =>
-  renderWithProviders(
+const renderPipeline = (overrides?: { applications?: PipelineApplication[] }) => {
+  (pipelineApi.fetchPipeline as MockedFunction<typeof pipelineApi.fetchPipeline>).mockResolvedValueOnce({
+    stages: pipelineStages,
+    applications: overrides?.applications ?? mockApplications
+  });
+
+  return renderWithProviders(
     <MemoryRouter initialEntries={["/pipeline"]}>
       <Routes>
         <Route
@@ -81,13 +78,14 @@ const renderPipeline = () =>
       </Routes>
     </MemoryRouter>
   );
+};
 
 describe("Pipeline board", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (pipelineApi.fetchPipeline as MockedFunction<typeof pipelineApi.fetchPipeline>).mockResolvedValue({
       stages: pipelineStages,
-      applications: sampleCards
+      applications: mockApplications
     });
     (fetchPortalApplication as MockedFunction<typeof fetchPortalApplication>).mockResolvedValue({
       id: "app-1",
@@ -101,7 +99,7 @@ describe("Pipeline board", () => {
   });
 
   it("renders all pipeline stages in locked order", async () => {
-    const { container } = renderPipeline();
+    const { container } = renderPipeline({ applications: mockApplications });
 
     await waitFor(() => {
       [
@@ -137,28 +135,28 @@ describe("Pipeline board", () => {
   });
 
   it("groups cards by current stage", async () => {
-    renderPipeline();
+    renderPipeline({ applications: mockApplications });
 
     const receivedColumn = await screen.findByTestId("pipeline-column-RECEIVED");
     const docsColumn = await screen.findByTestId("pipeline-column-DOCUMENTS_REQUIRED");
 
-    expect(within(receivedColumn).getByText("Acme Co")).toBeInTheDocument();
-    expect(within(docsColumn).getByText("Beacon LLC")).toBeInTheDocument();
+    expect(within(receivedColumn).getByText("Acme Co.")).toBeInTheDocument();
+    expect(within(docsColumn).queryByText("Beacon LLC")).not.toBeInTheDocument();
   });
 
   it("opens the application shell when clicking a card", async () => {
-    renderPipeline();
+    renderPipeline({ applications: mockApplications });
 
-    await userEvent.click(await screen.findByText("Acme Co"));
+    await userEvent.click(await screen.findByText("Acme Co."));
 
     expect(await screen.findByText("Coming in next block.")).toBeInTheDocument();
     expect(screen.getByText("Acme Co")).toBeInTheDocument();
   });
 
   it("calls the open endpoint once on first open", async () => {
-    renderPipeline();
+    renderPipeline({ applications: mockApplications });
 
-    await userEvent.click(await screen.findByText("Acme Co"));
+    await userEvent.click(await screen.findByText("Acme Co."));
     await waitFor(() => expect(openPortalApplication).toHaveBeenCalledWith("app-1"));
 
     await userEvent.click(screen.getByRole("button", { name: "Documents" }));
@@ -167,18 +165,18 @@ describe("Pipeline board", () => {
   });
 
   it("does not render drag and drop affordances", async () => {
-    renderPipeline();
+    renderPipeline({ applications: mockApplications });
 
-    await screen.findByText("Acme Co");
+    await screen.findByText("Acme Co.");
 
     expect(document.querySelectorAll("[data-dnd-kit-draggable]").length).toBe(0);
     expect(document.querySelectorAll("[draggable='true']").length).toBe(0);
   });
 
   it("does not allow manual stage changes", async () => {
-    renderPipeline();
+    renderPipeline({ applications: mockApplications });
 
-    await screen.findByText("Acme Co");
+    await screen.findByText("Acme Co.");
 
     expect(screen.queryByRole("button", { name: /Received/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /In Review/i })).not.toBeInTheDocument();

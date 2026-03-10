@@ -2,6 +2,11 @@ import "@testing-library/jest-dom/vitest";
 import { TextDecoder, TextEncoder } from "node:util";
 import { vi } from "vitest";
 
+vi.mock("@tanstack/react-virtual", async () => {
+  const mod = await import("../test/mocks/reactVirtual");
+  return mod;
+});
+
 /**
  * JSDOM stability/polyfills for common UI deps.
  * Keep this file minimal and deterministic.
