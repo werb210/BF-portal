@@ -9,7 +9,7 @@ import { ActiveCallBanner } from "@/components/ActiveCallBanner";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import RequireRole from "@/components/auth/RequireRole";
 import { useServerCallSync } from "@/dialer/useServerCallSync";
-import { bootstrapVoice } from "@/telephony/bootstrapVoice";
+import { bootstrapVoice, destroyVoiceDevice } from "@/telephony/bootstrapVoice";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
@@ -42,6 +42,10 @@ function VoiceBootstrap() {
     void bootstrapVoice().catch(() => {
       // bootstrapVoice writes a user-facing error state.
     });
+
+    return () => {
+      void destroyVoiceDevice();
+    };
   }, [role]);
 
   return null;

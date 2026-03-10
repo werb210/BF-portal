@@ -106,8 +106,7 @@ export default function LeadsPage() {
 
   const loadLeads = async () => {
     try {
-      const response = await fetchLeads();
-      const data = response.data as ApiLead[] | { leads?: ApiLead[] };
+      const data = await fetchLeads();
       const payload = Array.isArray(data) ? data : (data.leads ?? []);
       setLeads(payload.map(toLead));
     } catch {

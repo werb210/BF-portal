@@ -59,10 +59,11 @@ export const api: AxiosInstance = axios.create({
 api.interceptors.request.use((config) => {
   const requestId = getRequestId();
   const existingHeaders = (config.headers as Record<string, string> | undefined) ?? {};
+  const isFormData = typeof FormData !== "undefined" && config.data instanceof FormData;
   config.headers = {
     ...existingHeaders,
-    "Content-Type": "application/json",
     "X-Request-Id": requestId,
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
   } as any;
 
   const token = readToken();
@@ -79,7 +80,9 @@ api.interceptors.request.use((config) => {
   if (method && ["POST", "PATCH", "DELETE"].includes(method)) {
     const headers = (config.headers as Record<string, string>) ?? {};
     if (!headers["Idempotency-Key"]) {
-      headers["Idempotency-Key"] = crypto.randomUUID();
+      headers["Idempotency-Key"] = typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `idempotency_${Math.random().toString(36).slice(2, 10)}`;
       config.headers = headers as any;
     }
   }
