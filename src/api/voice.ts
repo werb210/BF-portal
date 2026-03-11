@@ -1,8 +1,8 @@
-import { ENV } from "@/config/env";
+import { apiUrl } from "@/config/api";
 
 export async function fetchVoiceToken(identity: string) {
   const params = new URLSearchParams({ identity });
-  const res = await fetch(`${ENV.API_BASE_URL}/voice/token?${params.toString()}`);
+  const res = await fetch(apiUrl(`/voice/token?${params.toString()}`));
 
   if (!res.ok) {
     throw new Error("Failed to fetch voice token");

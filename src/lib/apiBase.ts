@@ -1,6 +1,6 @@
-import { API_BASE, apiUrl } from "@/config/api";
+import { API_BASE_URL, apiUrl } from "@/config/api";
 
-export const API_BASE_URL = API_BASE;
+export { API_BASE_URL };
 
 export function withApiBase(path: string): string {
   if (path.startsWith("http")) return path;
