@@ -2,7 +2,7 @@ import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
 import { getAccessToken } from "@/lib/authToken";
-import { getApiBaseUrl } from "@/config/api";
+import { API_BASE } from "@/config/api";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { logger } from "@/utils/logger";
 
@@ -20,8 +20,7 @@ export const portalApiRoutes: RouteDescriptor[] = [
 ];
 
 const AUTH_ROUTE_PREFIXES = ["/api/auth/otp", "/api/auth/me", "/api/auth/logout"];
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || getApiBaseUrl();
-const apiBaseUrl = rawBaseUrl;
+const apiBaseUrl = API_BASE;
 
 const normalizePath = (path: string) =>
   path

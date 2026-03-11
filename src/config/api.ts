@@ -1,3 +1,8 @@
-import { ENV } from "@/config/env";
+export const API_BASE = "https://api.boreal.financial";
 
-export const getApiBaseUrl = (): string => String(ENV.API_BASE_URL ?? "");
+export function apiUrl(path: string) {
+  if (!path.startsWith("/")) {
+    path = "/" + path;
+  }
+  return `${API_BASE}${path}`;
+}

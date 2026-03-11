@@ -1,12 +1,8 @@
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ??
-  (import.meta.env.PROD
-    ? "https://slf-api.azurewebsites.net"
-    : "http://localhost:3000");
+import { API_BASE, apiUrl } from "@/config/api";
+
+export const API_BASE_URL = API_BASE;
 
 export function withApiBase(path: string): string {
   if (path.startsWith("http")) return path;
-
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `${API_BASE_URL}${cleanPath}`;
+  return apiUrl(path);
 }
