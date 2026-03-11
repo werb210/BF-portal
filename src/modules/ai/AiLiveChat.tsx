@@ -12,7 +12,7 @@ export default function AiLiveChat({ sessionId }: { sessionId: string }) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    fetch(`/api/ai/session/${sessionId}`)
+    fetch(withApiBase(`/api/ai/session/${sessionId}`))
       .then((res) => res.json())
       .then(setMessages)
       .catch(() => setMessages([]));

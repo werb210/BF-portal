@@ -19,6 +19,7 @@ import { logger } from "@/utils/logger";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";
 import { normalizeBusinessUnit } from "@/types/businessUnit";
 import { BUSINESS_UNIT_CONFIG } from "@/config/businessUnitConfig";
+import { withApiBase } from "@/lib/apiBase";
 
 type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | "contact-forms";
 
@@ -45,7 +46,7 @@ const WebsiteIssuesPanel = () => {
   }
 
   async function deleteIssue(id: string) {
-    await fetch(`/api/support/issues/${id}`, { method: "DELETE" });
+    await fetch(withApiBase(`/api/support/issues/${id}`), { method: "DELETE" });
     setIssues((previous) => previous.filter((issue) => issue.id !== id));
   }
 

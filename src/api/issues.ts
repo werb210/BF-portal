@@ -1,4 +1,5 @@
 import { apiClient } from "@/api/httpClient";
+import { withApiBase } from "@/lib/apiBase";
 
 export type WebsiteIssue = {
   id: string;
@@ -15,7 +16,7 @@ export async function resolveIssue(id: string) {
 }
 
 export async function deleteIssue(id: string) {
-  await fetch(`/api/support/issues/${id}`, {
+  await fetch(withApiBase(`/api/support/issues/${id}`), {
     method: "DELETE"
   });
 }

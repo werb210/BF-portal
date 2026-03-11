@@ -1,5 +1,7 @@
+import { withApiBase } from "@/lib/apiBase";
+
 export async function biFetch(path: string, options?: RequestInit) {
-  const res = await fetch(`/api/bi${path}`, {
+  const res = await fetch(withApiBase(`/api/bi${path}`), {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",

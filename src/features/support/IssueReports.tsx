@@ -29,7 +29,7 @@ function IssueReports({ isAdmin = true }: IssueReportsProps) {
   }
 
   async function resolveIssue(id: string) {
-    await fetch(`/api/support/report/${id}`, { method: "DELETE" });
+    await fetch(withApiBase(`/api/support/report/${id}`), { method: "DELETE" });
     setIssues((prev) => prev.filter((issue) => issue.id !== id));
   }
 
