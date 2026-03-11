@@ -76,7 +76,7 @@ describe("auth login", () => {
     }));
 
     const response = await api.post<{ requestId?: string }>(
-      "/auth/otp/start",
+      "/api/auth/otp/start",
       { phone: "+15555550100" },
       { adapter: startAdapter } as any
     );
@@ -104,7 +104,7 @@ describe("auth login", () => {
     });
 
     expect(apiPostSpy).toHaveBeenCalledWith(
-      "/auth/otp/verify",
+      "/api/auth/otp/verify",
       {
         phone: "+15555550100",
         code: "123456"
@@ -119,7 +119,7 @@ describe("auth login", () => {
     expect(adapter).toHaveBeenCalledOnce();
   });
 
-  it("hydrates user from /api/auth/me on reload", async () => {
+  it("hydrates user from /api/api/auth/me on reload", async () => {
     setStoredAccessToken("test-token");
     const adapter = vi.fn(async (config) => ({
       data: {
@@ -146,7 +146,7 @@ describe("auth login", () => {
     expect(passedConfig.withCredentials).not.toBe(true);
   });
 
-  it("verifyOtp triggers /api/auth/me and updates status", async () => {
+  it("verifyOtp triggers /api/api/auth/me and updates status", async () => {
     const postSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
       data: { accessToken: "access", refreshToken: "refresh" },
       status: 200,

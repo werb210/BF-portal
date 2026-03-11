@@ -18,12 +18,12 @@ describe("otp client", () => {
     await client.otpStart({ phone: "+15555550100" });
 
     expect(apiInstance.defaults.baseURL).toBe(import.meta.env.VITE_API_BASE_URL);
-    expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/start", { phone: "+15555550100" });
+    expect(apiPostSpy).toHaveBeenCalledWith("/api/auth/otp/start", { phone: "+15555550100" });
 
     const config: InternalAxiosRequestConfig & { skipRequestId?: boolean } = {
       headers: new AxiosHeaders(),
       method: "post",
-      url: "/auth/otp/start",
+      url: "/api/auth/otp/start",
       skipRequestId: true
     };
     const updatedConfig = attachRequestIdAndLog(config);
