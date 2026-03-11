@@ -2,17 +2,14 @@ import axios, { AxiosError, AxiosInstance, type AxiosRequestConfig } from "axios
 import { getStoredAccessToken } from "@/services/token";
 import { getRequestId } from "@/api/requestId";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "@/lib/apiBase";
 
 function resolveBaseURL(): string {
   if (process.env.NODE_ENV === "test") {
-    return "http://localhost/api";
+    return "http://localhost";
   }
 
-  if (import.meta.env?.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-
-  return "/api";
+  return API_BASE_URL;
 }
 
 function readToken(): string | null {

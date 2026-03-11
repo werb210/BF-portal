@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "@/lib/apiBase";
+
 const required = [
   "VITE_API_BASE_URL",
   "VITE_JWT_STORAGE_KEY"
@@ -21,13 +23,7 @@ const isTestEnv =
   import.meta.env.MODE === "test";
 
 export const ENV = {
-  API_BASE_URL:
-    getEnv("VITE_API_BASE_URL") ||
-    (isTestEnv
-      ? "http://localhost/api"
-      : window.location.hostname.includes("boreal.financial")
-        ? "https://api.staff.boreal.financial"
-        : "/api"),
+  API_BASE_URL: isTestEnv ? "http://localhost" : API_BASE_URL,
 
   JWT_STORAGE_KEY:
     getEnv("VITE_JWT_STORAGE_KEY") || "boreal_staff_token"

@@ -8,6 +8,6 @@ export async function verifyOtp(phone: string, code: string) {
   return res.data;
 }
 
-export const fetchCurrentUser = () => api.get<AuthenticatedUser>("/auth/me");
+export const fetchCurrentUser = () => api.get<AuthenticatedUser>("/api/auth/me");
 
-export const logout = () => api.post<void>("/auth/logout");
+export const logout = () => api.post<void>("/api/auth/logout");

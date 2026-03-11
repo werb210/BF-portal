@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { Silo } from "../types/silo";
 import { normalizeRole, roleIn, type Role } from "@/auth/roles";
+import { withApiBase } from "@/lib/apiBase";
 
 export interface AuthContextValue {
   status: "loading" | "authenticated:resolved" | "unauthenticated";
@@ -29,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hydrate = async () => {
     try {
-      const res = await fetch("/api/auth/me", {
+      const res = await fetch(withApiBase("/api/auth/me"), {
         credentials: "include",
       });
 

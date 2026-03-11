@@ -13,6 +13,7 @@ import type { AuthenticatedUser } from "@/services/auth";
 import { normalizeRole, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import { clearSession, readSession, writeSession } from "@/utils/sessionStore";
+import { withApiBase } from "@/lib/apiBase";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";
@@ -201,14 +202,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const nextUser = await (async (): Promise<AuthUser> => {
           try {
-            const profile = await api.get("/auth/me", {
+            const profile = await api.get("/api/auth/me", {
               headers: { Authorization: `Bearer ${token}` },
               withCredentials: false,
             });
 
             return normalizeAuthUser(profile.data?.user ?? profile.data);
           } catch {
-            const response = await fetch("/api/auth/me", {
+            const response = await fetch(withApiBase("/api/auth/me"), {
               headers: { Authorization: `Bearer ${token}` },
               credentials: "include",
             });

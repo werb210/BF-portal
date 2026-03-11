@@ -40,7 +40,7 @@ export type OtpVerifyResponse = {
 };
 
 export async function startOtp(payload: { phone: string }): Promise<OtpStartResult | null> {
-  const response = await apiClient.post<OtpStartResponse>("/auth/otp/start", payload, {
+  const response = await apiClient.post<OtpStartResponse>("/api/auth/otp/start", payload, {
     skipAuth: true
   });
 
@@ -68,7 +68,7 @@ export async function verifyOtp({
   code: string;
 }): Promise<OtpVerifyResponse> {
   const otpResponse = await clientApi.post<OtpVerifyResponse>(
-    "/auth/otp/verify",
+    "/api/auth/otp/verify",
     { phone, code },
     {
       skipAuth: true
@@ -91,7 +91,7 @@ export async function verifyOtp({
   try {
     await apiRequest<{ id: string; role: string }>({
       method: "GET",
-      url: "/auth/me",
+      url: "/api/auth/me",
       headers: { Authorization: `Bearer ${response.data.accessToken}` },
       withCredentials: false,
       skipAuth: true
@@ -104,7 +104,7 @@ export async function verifyOtp({
 }
 
 export async function logout(): Promise<void> {
-  const response = await apiClient.post("/auth/logout");
+  const response = await apiClient.post("/api/auth/logout");
   if (!response.success) {
     throw new ApiError({
       status: response.error.status ?? 500,

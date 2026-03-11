@@ -83,7 +83,7 @@ export async function apiFetch(input: RequestInfo, init: RequestInit = {}) {
 }
 
 export const clientApi = api;
-export const otpStart = (payload: { phone: string }) => api.post("/auth/otp/start", payload);
-export const otpVerify = (payload: { phone: string; code: string }) => api.post("/auth/otp/verify", payload);
+export const otpStart = (payload: { phone: string }) => api.post("/api/auth/otp/start", payload);
+export const otpVerify = (payload: { phone: string; code: string }) => api.post("/api/auth/otp/verify", payload);
 
 export default api;
