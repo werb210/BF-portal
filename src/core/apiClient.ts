@@ -1,44 +1,38 @@
-import axios, { AxiosHeaders, type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
-import { generateCorrelationId } from "./correlation";
-import { getAccessToken } from "@/lib/authToken";
-import { API_BASE_URL } from "@/lib/apiBase";
-
-function normalizeApiRequestUrl(url: AxiosRequestConfig["url"]): AxiosRequestConfig["url"] {
-  if (!url || typeof url !== "string") return url;
-  if (/^https?:\/\//i.test(url)) return url;
-
-  const baseEndsWithApi = API_BASE_URL.endsWith("/api");
-  const startsWithApi = url === "/api" || url.startsWith("/api/");
-  if (baseEndsWithApi && startsWithApi) {
-    const trimmed = url.replace(/^\/api/, "");
-    return trimmed.length ? trimmed : "/";
-  }
-
-  return url;
-}
-
-type ApiRequestConfig = InternalAxiosRequestConfig & {
-  skipAuth?: boolean;
-};
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: API_BASE_URL
+  baseURL: "/api",
+  withCredentials: true
 });
 
-api.interceptors.request.use((config: ApiRequestConfig) => {
-  config.url = normalizeApiRequestUrl(config.url);
-  const headers = AxiosHeaders.from(config.headers ?? {});
-  headers.set("X-Correlation-Id", generateCorrelationId());
+const token = localStorage.getItem("bf_token");
 
-  if (!config.skipAuth) {
-    const token = getAccessToken();
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
+if (token) {
+  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+}
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("bf_token");
+
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
   }
 
-  config.headers = headers;
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("bf_token");
+      delete api.defaults.headers.common["Authorization"];
+      window.location.href = "/login";
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default api;

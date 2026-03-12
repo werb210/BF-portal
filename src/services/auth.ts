@@ -1,44 +1,19 @@
-import api from "@/lib/api";
+import api from "../core/apiClient";
 
-export type OtpStartPayload = { phone: string };
-export type OtpVerifyPayload = { phone: string; code: string };
+export async function verifyOtp(phone: string, code: string) {
+  const res = await api.post("/auth/otp/verify", { phone, code });
 
-export type AuthenticatedUser = {
-  id?: string;
-  email?: string;
-  role?: string;
-  roles?: string[];
-  capabilities?: string[];
-};
+  const token = res?.data?.token;
 
-export async function startOtp({ phone }: OtpStartPayload) {
-  const res = await api.post("/api/auth/otp/start", { phone }, { skipAuth: true });
+  if (token) {
+    localStorage.setItem("bf_token", token);
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  }
+
   return res.data;
 }
 
-export async function verifyOtp({ phone, code }: OtpVerifyPayload) {
-  const res = await api.post("/api/auth/otp/verify", { phone, code }, { skipAuth: true });
-
-  const data = res.data;
-
-  const token = data.token || data.accessToken || data.access_token || data.jwt || null;
-
-  if (token) {
-    localStorage.setItem("boreal_staff_token", token);
-  }
-
-  if (data.user) {
-    localStorage.setItem("boreal_staff_user", JSON.stringify(data.user));
-  }
-
-  return data;
-}
-
-export async function logout() {
-  try {
-    await api.post("/api/auth/logout");
-  } catch {}
-
-  localStorage.removeItem("boreal_staff_token");
-  localStorage.removeItem("boreal_staff_user");
+export function logout() {
+  localStorage.removeItem("bf_token");
+  delete api.defaults.headers.common["Authorization"];
 }
