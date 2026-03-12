@@ -1,6 +1,16 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const DEFAULT_API_BASE_URL = "https://api.staff.boreal.financial";
 
-export const API_BASE_URL = (API_BASE || "").replace(/\/$/, "");
+const rawApiBase =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  DEFAULT_API_BASE_URL;
+
+function normalizeApiBaseUrl(base: string): string {
+  return base.replace(/\/$/, "").replace(/\/api$/, "");
+}
+
+export const API_BASE = rawApiBase;
+export const API_BASE_URL = normalizeApiBaseUrl(rawApiBase);
 
 export function apiUrl(path: string): string {
   if (!path.startsWith("/")) {
@@ -10,7 +20,6 @@ export function apiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
 }
 
-export { API_BASE };
 export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }

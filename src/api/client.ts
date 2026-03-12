@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getToken } from "@/auth/tokenStorage";
 
-const baseURL = process.env.NODE_ENV === "test" ? "http://localhost" : import.meta.env.VITE_API_BASE_URL;
+const baseURL = process.env.NODE_ENV === "test" ? "http://localhost" : (import.meta.env.VITE_API_URL || "https://api.staff.boreal.financial");
 
 const apiClient = axios.create({
   baseURL,
