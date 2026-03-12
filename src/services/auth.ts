@@ -1,11 +1,12 @@
-import api from "../api/client";
+import api from "@/lib/api";
+
+export async function startOtp(phone: string) {
+  const res = await api.post("/auth/otp/start", { phone });
+  return res.data;
+}
 
 export async function verifyOtp(phone: string, code: string) {
-  const res = await api.post(
-    "/auth/otp/verify",
-    { phone, code },
-    { headers: { "Content-Type": "application/json" } }
-  );
+  const res = await api.post("/auth/otp/verify", { phone, code });
 
   const data = res.data;
 
@@ -25,4 +26,13 @@ export async function verifyOtp(phone: string, code: string) {
   }
 
   return data;
+}
+
+export async function logout() {
+  try {
+    await api.post("/auth/logout");
+  } catch {}
+
+  localStorage.removeItem("boreal_staff_token");
+  localStorage.removeItem("boreal_staff_user");
 }
