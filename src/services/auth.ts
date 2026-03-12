@@ -1,21 +1,27 @@
 import api from "@/lib/api";
 
-export async function startOtp(phone: string) {
-  const res = await api.post("/api/auth/otp/start", { phone });
+export type OtpStartPayload = { phone: string };
+export type OtpVerifyPayload = { phone: string; code: string };
+
+export type AuthenticatedUser = {
+  id?: string;
+  email?: string;
+  role?: string;
+  roles?: string[];
+  capabilities?: string[];
+};
+
+export async function startOtp({ phone }: OtpStartPayload) {
+  const res = await api.post("/api/auth/otp/start", { phone }, { skipAuth: true });
   return res.data;
 }
 
-export async function verifyOtp(phone: string, code: string) {
-  const res = await api.post("/api/auth/otp/verify", { phone, code });
+export async function verifyOtp({ phone, code }: OtpVerifyPayload) {
+  const res = await api.post("/api/auth/otp/verify", { phone, code }, { skipAuth: true });
 
   const data = res.data;
 
-  const token =
-    data.token ||
-    data.accessToken ||
-    data.access_token ||
-    data.jwt ||
-    null;
+  const token = data.token || data.accessToken || data.access_token || data.jwt || null;
 
   if (token) {
     localStorage.setItem("boreal_staff_token", token);

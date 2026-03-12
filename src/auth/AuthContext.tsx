@@ -113,6 +113,33 @@ const getTestAuthOverride = (): TestAuthOverride | null => {
  * Tests that render without a Provider MUST NOT auto-authenticate.
  * Otherwise /login redirects and smoke tests cannot find the "Staff Login" heading.
  */
+const clearInvalidTokenArtifacts = () => {
+  clearStoredAuth();
+  localStorage.removeItem("token");
+  localStorage.removeItem("accessToken");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("accessToken");
+  delete api.defaults.headers.common["Authorization"];
+};
+
+const getErrorStatus = (error: unknown): number | undefined => {
+  if (!error || typeof error !== "object") return undefined;
+  if ("status" in error && typeof (error as { status?: unknown }).status === "number") {
+    return (error as { status: number }).status;
+  }
+  if ("response" in error) {
+    const status = (error as { response?: { status?: unknown } }).response?.status;
+    return typeof status === "number" ? status : undefined;
+  }
+  return undefined;
+};
+
+const createHttpError = (status: number, message: string) => {
+  const error = new Error(message) as Error & { status: number };
+  error.status = status;
+  return error;
+};
+
 const destroyDevice = destroyVoice;
 
 const TEST_AUTH_STUB: AuthContextValue = {
@@ -184,6 +211,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const token = tokenOverride ?? accessToken ?? getStoredAccessToken();
 
       if (!token) {
+        clearInvalidTokenArtifacts();
         clearAuth();
         return false;
       }
@@ -215,7 +243,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
 
             if (!response.ok) {
-              throw new Error("Unable to hydrate auth session.");
+              throw createHttpError(response.status, "Unable to hydrate auth session.");
             }
 
             return normalizeAuthUser(await response.json());
@@ -233,7 +261,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setRolesStatus(hasResolvedRole(nextUser) ? "resolved" : "loading");
         setError(null);
         return true;
-      } catch {
+      } catch (error) {
+        if (getErrorStatus(error) === 401) {
+          clearInvalidTokenArtifacts();
+          if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
+        }
+
         setUserState(null);
         clearAuth();
         return false;

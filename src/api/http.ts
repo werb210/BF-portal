@@ -12,6 +12,21 @@ function resolveBaseURL(): string {
   return API_BASE_URL;
 }
 
+
+function normalizeApiRequestUrl(url: AxiosRequestConfig["url"]): AxiosRequestConfig["url"] {
+  if (!url || typeof url !== "string") return url;
+  if (/^https?:\/\//i.test(url)) return url;
+
+  const baseEndsWithApi = resolveBaseURL().endsWith("/api");
+  const startsWithApi = url === "/api" || url.startsWith("/api/");
+  if (baseEndsWithApi && startsWithApi) {
+    const trimmed = url.replace(/^\/api/, "");
+    return trimmed.length ? trimmed : "/";
+  }
+
+  return url;
+}
+
 function readToken(): string | null {
   // Backward compatible with both keys used across the repo.
   return getStoredAccessToken() || localStorage.getItem("token") || localStorage.getItem("accessToken") || null;
@@ -54,6 +69,7 @@ export const api: AxiosInstance = axios.create({
 
 // ✅ Attach bearer header for any consumer of this api instance (including tests).
 api.interceptors.request.use((config) => {
+  config.url = normalizeApiRequestUrl(config.url);
   const requestId = getRequestId();
   const existingHeaders = (config.headers as Record<string, string> | undefined) ?? {};
   const isFormData = typeof FormData !== "undefined" && config.data instanceof FormData;

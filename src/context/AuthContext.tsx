@@ -28,11 +28,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.getItem("token")
   );
 
+  const clearInvalidTokenArtifacts = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("boreal_staff_token");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("accessToken");
+  };
+
   const hydrate = async () => {
+    const storedToken = localStorage.getItem("token") ?? localStorage.getItem("boreal_staff_token");
+    if (!storedToken) {
+      setUser(null);
+      setRole(null);
+      setAllowedSilos([]);
+      setStatus("unauthenticated");
+      return;
+    }
+
     try {
       const res = await fetch(withApiBase("/api/auth/me"), {
         credentials: "include",
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+        },
       });
+
+      if (res.status === 401) {
+        clearInvalidTokenArtifacts();
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+        throw new Error("Unauthorized");
+      }
 
       if (!res.ok) throw new Error();
 

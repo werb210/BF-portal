@@ -10,6 +10,21 @@ function resolveBaseURL(): string {
   return API_BASE_URL;
 }
 
+
+function normalizeApiRequestUrl(url: AxiosRequestConfig["url"]): AxiosRequestConfig["url"] {
+  if (!url || typeof url !== "string") return url;
+  if (/^https?:\/\//i.test(url)) return url;
+
+  const baseEndsWithApi = resolveBaseURL().endsWith("/api");
+  const startsWithApi = url === "/api" || url.startsWith("/api/");
+  if (baseEndsWithApi && startsWithApi) {
+    const trimmed = url.replace(/^\/api/, "");
+    return trimmed.length ? trimmed : "/";
+  }
+
+  return url;
+}
+
 export function generateRequestId(): string {
   if (process.env.NODE_ENV === "test") {
     return "9dbc6d7b-b1c0-4dc8-896e-02a2e75c1826";
@@ -54,6 +69,7 @@ export const api: AxiosInstance = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  config.url = normalizeApiRequestUrl(config.url);
   const requestId = generateRequestId();
   const token = getStoredAccessToken() ?? localStorage.getItem("token");
   const existingHeaders = (config.headers as Record<string, string> | undefined) ?? {};

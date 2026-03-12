@@ -79,7 +79,7 @@ describe("auth failure safeguards", () => {
       vi.fn(async () => ({
         ok: true,
         status: 200,
-        json: async () => ["/auth/otp/start"]
+        json: async () => ["/api/auth/otp/start"]
       }))
     );
 
