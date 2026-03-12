@@ -119,7 +119,7 @@ describe("auth login", () => {
     expect(adapter).toHaveBeenCalledOnce();
   });
 
-  it("hydrates user from /api/api/auth/me on reload", async () => {
+  it("hydrates user from /api/auth/me on reload", async () => {
     setStoredAccessToken("test-token");
     const adapter = vi.fn(async (config) => ({
       data: {
@@ -146,7 +146,7 @@ describe("auth login", () => {
     expect(passedConfig.withCredentials).not.toBe(true);
   });
 
-  it("verifyOtp triggers /api/api/auth/me and updates status", async () => {
+  it("verifyOtp triggers /api/auth/me and updates status", async () => {
     const postSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
       data: { accessToken: "access", refreshToken: "refresh" },
       status: 200,
