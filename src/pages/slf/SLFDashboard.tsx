@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
 import { createApi } from "../../api/apiFactory";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../auth/AuthContext";
 import type { SLFDeal } from "../../types/slf";
 
 export default function SLFDashboard() {

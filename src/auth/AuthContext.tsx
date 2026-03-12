@@ -10,7 +10,7 @@ import {
   setStoredUser,
 } from "@/services/token";
 import type { AuthenticatedUser } from "@/services/auth";
-import { normalizeRole, type Role } from "@/auth/roles";
+import { normalizeRole, roleIn, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import { clearSession, readSession, writeSession } from "@/utils/sessionStore";
 import { withApiBase } from "@/lib/apiBase";
@@ -48,6 +48,10 @@ export type AuthContextValue = {
   rolesStatus: RolesStatus;
   user: AuthUser;
   accessToken: string | null;
+  token: string | null;
+  allowedSilos: string[];
+  canAccessSilo: (silo: string) => boolean;
+  canAccessRole: (roles: Role[]) => boolean;
   role: Role | null;
   roles: Role[];
   capabilities: string[];
@@ -77,8 +81,8 @@ const normalizeUserRoles = (user: AuthUser): Role[] => {
   if (!user) return [];
   const source = Array.isArray(user.roles) && user.roles.length ? user.roles : user.role ? [user.role] : [];
   return source
-    .map((entry) => normalizeRole(entry))
-    .filter((entry): entry is Role => entry !== null);
+    .map((entry: string) => normalizeRole(entry))
+    .filter((entry: Role | null): entry is Role => entry !== null);
 };
 
 const normalizeAuthUser = (user: AuthUser): AuthUser => {
@@ -149,6 +153,10 @@ const TEST_AUTH_STUB: AuthContextValue = {
   rolesStatus: "resolved",
   user: null,
   accessToken: null,
+  token: null,
+  allowedSilos: [],
+  canAccessSilo: () => true,
+  canAccessRole: () => false,
   role: null,
   roles: [],
   capabilities: [],
@@ -440,8 +448,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       rolesStatus: isTestAuthenticated ? "resolved" : rolesStatus,
       user: testUser,
       accessToken,
+      token: accessToken,
       role: testRole ?? normalizeRole(testUser?.role ?? null),
       roles: normalizeUserRoles(testUser),
+      allowedSilos: [],
+      canAccessSilo: () => true,
+      canAccessRole: (allowedRoles) => roleIn(testRole ?? normalizeRole(testUser?.role ?? null), allowedRoles),
       capabilities: testUser?.capabilities ?? [],
       error,
       pendingPhoneNumber,

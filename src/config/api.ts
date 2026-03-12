@@ -1,21 +1,16 @@
-const RAW_API_BASE_URL = "https://api.staff.boreal.financial/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-export const API_BASE_URL = RAW_API_BASE_URL.replace(/\/$/, "");
+export const API_BASE_URL = (API_BASE || "").replace(/\/$/, "");
 
 export function apiUrl(path: string): string {
   if (!path.startsWith("/")) {
     path = `/${path}`;
   }
 
-  const baseEndsWithApi = API_BASE_URL.endsWith("/api");
-  const pathStartsWithApi = path === "/api" || path.startsWith("/api/");
-  const normalizedPath = baseEndsWithApi && pathStartsWithApi ? path.replace(/^\/api/, "") || "/" : path;
-
-  return `${API_BASE_URL}${normalizedPath}`;
+  return `${API_BASE_URL}${path}`;
 }
 
-// Backward-compatible exports for existing imports.
-export const API_BASE = API_BASE_URL;
+export { API_BASE };
 export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }

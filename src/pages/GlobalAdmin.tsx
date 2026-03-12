@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createApi } from "../api/apiFactory";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../auth/AuthContext";
 
 type CountState = {
   bfApplications: number;

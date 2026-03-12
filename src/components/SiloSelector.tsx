@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useSilo } from "../context/SiloContext";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../auth/AuthContext";
 import { SILOS } from "../types/silo";
 import type { Silo } from "../types/silo";
 

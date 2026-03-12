@@ -21,7 +21,7 @@ export async function initVoice(_userId?: string): Promise<void> {
   registrationInProgress = true;
 
   try {
-    const res = await fetch(withApiBase("/api/voice/token"), {
+    const res = await fetch(withApiBase("/api/telephony/token"), {
       method: "POST",
       credentials: "include"
     });
@@ -85,7 +85,7 @@ function scheduleTokenRefresh() {
 
   tokenRefreshTimer = setTimeout(async () => {
     try {
-      const res = await fetch(withApiBase("/api/voice/token"), {
+      const res = await fetch(withApiBase("/api/telephony/token"), {
         method: "POST",
         credentials: "include"
       });
@@ -111,7 +111,7 @@ function startPresenceHeartbeat() {
   heartbeatInterval = window.setInterval(() => {
     if (!device) return;
 
-    void fetch(withApiBase("/api/voice/presence"), {
+    void fetch(withApiBase("/api/telephony/presence"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

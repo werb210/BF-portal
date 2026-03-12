@@ -17,7 +17,7 @@ import PipelinePage from "@/core/engines/pipeline/PipelinePage";
 import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
 import { pipelineApi } from "@/core/engines/pipeline/pipeline.api";
 import ApplicationDetail from "@/pages/application/ApplicationDetail";
-import AuthProbe from "@/tests/components/AuthProbe";
+import AuthProbe from "@/__tests__/support/AuthProbe";
 import { useAuth } from "@/auth/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ToastProvider from "@/components/ui/ToastProvider";

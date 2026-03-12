@@ -2,7 +2,7 @@ import { apiClient } from "@/lib/apiClient";
 
 export async function getVoiceToken(identity: string): Promise<string> {
   try {
-    const data = await apiClient.get<{ token?: string }>(`/api/voice/token?identity=${encodeURIComponent(identity)}`);
+    const data = await apiClient.get<{ token?: string }>(`/api/telephony/token?identity=${encodeURIComponent(identity)}`);
     if (!data?.token) {
       throw new Error("Voice token missing from response.");
     }

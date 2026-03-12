@@ -10,7 +10,7 @@ export default function CommissionTrendChart() {
   const [data, setData] = useState<TrendData[]>([]);
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem("boreal_staff_token");
 
     fetch(withApiBase("/api/analytics/commission-trend"), {
       headers: {

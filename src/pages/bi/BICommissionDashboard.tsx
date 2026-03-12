@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSilo } from "../../context/SiloContext";
 import { createApi } from "../../api/apiFactory";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../auth/AuthContext";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 import { usePolling } from "../../hooks/usePolling";
 import Skeleton from "../../components/Skeleton";

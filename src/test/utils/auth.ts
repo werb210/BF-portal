@@ -10,8 +10,8 @@ export const mockAuthedUser = (role: TestRole = "Staff") => {
     role
   };
 
-  localStorage.setItem("portal_access_token", "test-token");
-  localStorage.setItem("portal_refresh_token", "test-refresh-token");
+  localStorage.setItem("boreal_staff_token", "test-token");
+  
 
   server.use(
     http.get("*/api/auth/me", () => HttpResponse.json(user, { status: 200 }))

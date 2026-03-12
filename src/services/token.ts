@@ -1,19 +1,20 @@
-const TOKEN_KEY = "boreal_staff_token"
-const USER_KEY = "boreal_staff_user"
+import { clearToken, getToken, setToken } from "@/auth/tokenStorage";
+
+const USER_KEY = "boreal_staff_user";
 
 export function setStoredAccessToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token)
+  setToken(token);
 }
 
 export function getStoredAccessToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
+  return getToken();
 }
 
 export function clearStoredAuth() {
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(USER_KEY)
+  clearToken();
+  localStorage.removeItem(USER_KEY);
 }
 
 export function setStoredUser(user: unknown) {
-  localStorage.setItem(USER_KEY, JSON.stringify(user))
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }

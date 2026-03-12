@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import SiloSelector from "../../components/SiloSelector";
 import { createApi } from "../../api/apiFactory";
 import { useSilo } from "../../context/SiloContext";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../auth/AuthContext";
 
 export default function BFDashboard() {
   const { silo } = useSilo();

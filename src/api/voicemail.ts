@@ -15,7 +15,7 @@ function resolveApiUrl(path: string): string {
 
 export async function fetchVoicemails(clientId: string): Promise<Voicemail[]> {
   try {
-    const res = await fetch(resolveApiUrl(`/api/voicemails?clientId=${encodeURIComponent(clientId)}`), {
+    const res = await fetch(resolveApiUrl(`/api/telephonymails?clientId=${encodeURIComponent(clientId)}`), {
       credentials: "include"
     });
 

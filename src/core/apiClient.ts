@@ -1,18 +1,19 @@
 import axios from "axios";
+import { clearToken, getToken } from "@/auth/tokenStorage";
 
 const api = axios.create({
   baseURL: "/api",
   withCredentials: true
 });
 
-const token = localStorage.getItem("bf_token");
+const token = getToken();
 
 if (token) {
   api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 }
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("bf_token");
+  const token = getToken();
 
   if (token) {
     config.headers = config.headers || {};
@@ -26,7 +27,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("bf_token");
+      clearToken();
       delete api.defaults.headers.common["Authorization"];
       window.location.href = "/login";
     }

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../auth/AuthContext";
 import { useSilo } from "../context/SiloContext";
 import AccessRestricted from "./auth/AccessRestricted";
 import { roleIn, type Role } from "@/auth/roles";

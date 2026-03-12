@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 import {
-import { withApiBase } from "@/lib/apiBase";
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar
 } from "recharts";
+import apiClient from "@/api/client";
 
 interface OverviewData {
   autonomy: any;
@@ -24,27 +26,18 @@ export default function MayaIntelligence() {
   const [roiProjection, setRoiProjection] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch(withApiBase("/api/maya/overview"))
-      .then(res => res.json())
-      .then(setData);
+    apiClient.get("/api/maya/overview")
+      .then((res) => setData(res.data))
+      .catch(() => setData(null));
   }, []);
 
   async function simulateROI() {
-    const res = await fetch(withApiBase("/api/maya/roi-simulate"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ budget: roiInput })
-    });
-    const json = await res.json();
-    setRoiProjection(json.projectedRevenue);
+    const res = await apiClient.post("/api/maya/roi-simulate", { budget: roiInput });
+    setRoiProjection(res.data.projectedRevenue);
   }
 
   async function rollbackModel(version: string) {
-    await fetch(withApiBase("/api/maya/model-rollback"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ version })
-    });
+    await apiClient.post("/api/maya/model-rollback", { version });
     alert("Model rolled back.");
   }
 
@@ -54,9 +47,24 @@ export default function MayaIntelligence() {
     <div className="p-6 space-y-14">
       <h1 className="text-2xl font-bold">Maya Executive Intelligence</h1>
 
-      {/* Funding Heatmap */}
+      {data.clusterDistribution?.length ? (
+        <Card>
+          <h2 className="font-semibold mb-2">Cluster Distribution</h2>
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart>
+              <Pie data={data.clusterDistribution} dataKey="count" nameKey="label" outerRadius={100}>
+                {data.clusterDistribution.map((_, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </Card>
+      ) : null}
+
       {data.fundingHeatmap && (
-        <div>
+        <Card>
           <h2 className="font-semibold mb-2">Funding Probability Heatmap</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data.fundingHeatmap}>
@@ -67,11 +75,25 @@ export default function MayaIntelligence() {
               <Bar dataKey="probability" fill="#4f46e5" />
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </Card>
       )}
 
-      {/* ROI Simulator */}
-      <div>
+      {data.confidenceTrend && (
+        <Card>
+          <h2 className="font-semibold mb-2">Confidence Trend</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={data.confidenceTrend}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="confidence" stroke="#4f46e5" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
+      <Card>
         <h2 className="font-semibold mb-2">ROI Forecast Simulator</h2>
         <input
           type="number"
@@ -79,22 +101,18 @@ export default function MayaIntelligence() {
           onChange={(e) => setRoiInput(Number(e.target.value))}
           className="border p-2"
         />
-        <button
-          className="ml-3 bg-blue-600 text-white px-4 py-2 rounded"
-          onClick={simulateROI}
-        >
+        <Button className="ml-3" onClick={simulateROI}>
           Simulate
-        </button>
+        </Button>
         {roiProjection && (
           <p className="mt-2">
             Projected Revenue: ${roiProjection.toLocaleString()}
           </p>
         )}
-      </div>
+      </Card>
 
-      {/* Staff Performance Correlation */}
       {data.staffPerformance && (
-        <div>
+        <Card>
           <h2 className="font-semibold mb-2">Staff Performance Correlation</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data.staffPerformance}>
@@ -105,12 +123,11 @@ export default function MayaIntelligence() {
               <Bar dataKey="closeRate" fill="#16a34a" />
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </Card>
       )}
 
-      {/* ML Model Version Tracking */}
       {data.modelVersions && (
-        <div>
+        <Card>
           <h2 className="font-semibold mb-2">ML Model Versions</h2>
           <table className="w-full border">
             <thead>
@@ -128,18 +145,15 @@ export default function MayaIntelligence() {
                   <td>{v.accuracy}%</td>
                   <td>{new Date(v.created_at).toLocaleDateString()}</td>
                   <td>
-                    <button
-                      className="bg-red-500 text-white px-2 py-1 rounded"
-                      onClick={() => rollbackModel(v.version)}
-                    >
+                    <Button variant="secondary" onClick={() => rollbackModel(v.version)}>
                       Rollback
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
     </div>
   );

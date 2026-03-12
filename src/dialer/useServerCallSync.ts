@@ -28,7 +28,7 @@ export function useServerCallSync({ enabled = true }: ServerCallSyncOptions = {}
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(withApiBase("/api/call/status"), {
+        const res = await fetch(withApiBase("/api/telephony/call-status"), {
           credentials: "include"
         });
 
