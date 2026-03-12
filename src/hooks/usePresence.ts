@@ -1,3 +1,4 @@
+import { buildApiUrl } from "@/lib/apiClient";
 import { useEffect } from "react";
 
 export function usePresence(userId: string) {
@@ -5,7 +6,7 @@ export function usePresence(userId: string) {
     if (!userId) return;
 
     const interval = setInterval(() => {
-      void fetch(`${import.meta.env.VITE_STAFF_SERVER}/presence`, {
+      void fetch(buildApiUrl("/presence"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

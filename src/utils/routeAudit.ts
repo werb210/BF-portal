@@ -2,7 +2,7 @@ import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
 import { getAccessToken } from "@/lib/authToken";
-import { API_BASE } from "@/config/api";
+import { buildApiUrl } from "@/lib/apiClient";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { logger } from "@/utils/logger";
 
@@ -20,8 +20,6 @@ export const portalApiRoutes: RouteDescriptor[] = [
 ];
 
 const AUTH_ROUTE_PREFIXES = ["/api/auth/otp", "/api/auth/me", "/api/auth/logout"];
-const apiBaseUrl = API_BASE;
-
 const normalizePath = (path: string) =>
   path
     .replace(/\/+$/, "")
@@ -67,7 +65,7 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
   const token = getAccessToken();
   if (!token) return false;
   try {
-    const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
+    const response = await fetch(buildApiUrl("/auth/me"), {
       headers: {
         "X-Request-Id": requestId,
         Authorization: `Bearer ${token}`
@@ -94,7 +92,7 @@ export const runRouteAudit = async (): Promise<void> => {
   });
 
   try {
-    const response = await fetch(`${apiBaseUrl}/api/_int/routes`, {
+    const response = await fetch(buildApiUrl("/_int/routes"), {
       headers: { "X-Request-Id": requestId }
     });
 
