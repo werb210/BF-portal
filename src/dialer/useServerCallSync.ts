@@ -27,18 +27,21 @@ export function useServerCallSync({ enabled = true }: ServerCallSyncOptions = {}
     if (!enabled) return;
 
     const interval = setInterval(async () => {
-      try {
-        const data = (await getCallStatus()) as { status?: unknown };
+      const serverStatus = (await getCallStatus()) as { status?: unknown; activeCall?: unknown };
+      const activeCall = serverStatus?.activeCall ?? false;
 
-        if (!data || typeof data !== "object") {
-          return;
+      if (!serverStatus || typeof serverStatus !== "object") {
+        if (!activeCall) {
+          setCallStatus("idle");
         }
-        const status = asCallStatus(data.status);
-        if (status) {
-          setCallStatus(status);
-        }
-      } catch {
-        // Ignore network sync failures; next poll will retry.
+        return;
+      }
+
+      const status = asCallStatus(serverStatus.status);
+      if (status) {
+        setCallStatus(status);
+      } else if (!activeCall) {
+        setCallStatus("idle");
       }
     }, 5000);
 
