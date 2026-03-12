@@ -2,6 +2,9 @@ import axios, { AxiosError, AxiosInstance, type AxiosRequestConfig } from "axios
 import { getStoredAccessToken } from "@/services/token";
 import { API_BASE_URL } from "@/lib/apiBase";
 
+export const API_BASE =
+  import.meta.env.VITE_API_URL || "https://api.staff.boreal.financial";
+
 function resolveBaseURL(): string {
   if (process.env.NODE_ENV === "test") {
     return "http://localhost";
@@ -104,6 +107,24 @@ export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
       details: data,
     });
   }
+}
+
+export async function apiFetch(path: string, options: RequestInit = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`API ${response.status}: ${text}`);
+  }
+
+  return response.json();
 }
 
 api.interceptors.response.use(
