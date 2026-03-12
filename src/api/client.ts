@@ -1,11 +1,11 @@
 import axios from "axios";
 
-const api = axios.create({
+export const clientApi = axios.create({
   baseURL: "https://api.staff.boreal.financial/api",
   withCredentials: false,
 });
 
-api.interceptors.request.use((config) => {
+clientApi.interceptors.request.use((config) => {
   const token = localStorage.getItem("boreal_staff_token");
 
   if (token) {
@@ -16,4 +16,4 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export default api;
+export default clientApi;
