@@ -1,5 +1,10 @@
 import api from "../core/apiClient";
 
+export async function startOtp(phone: string) {
+  const res = await api.post("/auth/otp/start", { phone });
+  return res.data;
+}
+
 export async function verifyOtp(phone: string, code: string) {
   const res = await api.post("/auth/otp/verify", { phone, code });
 
