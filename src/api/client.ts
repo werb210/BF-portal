@@ -1,6 +1,5 @@
 import axios from "axios";
 import { ENV } from "@/config/env";
-import { getStoredAccessToken } from "@/services/token";
 import { getRequestId } from "@/api/requestId";
 
 let lastUnauthorizedUrl: string | null = null;
@@ -11,6 +10,8 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  const skipAuth = config.skipAuth === true;
+
   if (process.env.NODE_ENV === "test") {
     config.baseURL = "http://localhost";
   }
@@ -19,12 +20,15 @@ api.interceptors.request.use((config) => {
     config.url = `/api${config.url}`;
   }
 
+  const token =
+    localStorage.getItem("boreal_staff_token") ||
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("token");
 
-  const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || getStoredAccessToken();
   config.headers = config.headers ?? {};
   config.headers["X-Request-Id"] = getRequestId();
 
-  if (token) {
+  if (!skipAuth && token) {
     config.headers = {
       ...(config.headers as Record<string, string>),
       Authorization: `Bearer ${token}`

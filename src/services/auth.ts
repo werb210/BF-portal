@@ -33,6 +33,7 @@ export type OtpStartResult = {
 
 export type OtpVerifyResponse = {
   accessToken?: string;
+  token?: string;
   refreshToken?: string;
   role?: string;
   user?: AuthenticatedUser;
@@ -84,7 +85,10 @@ export async function verifyOtp({
     throw new Error("Verification failed");
   }
 
-  if (!response.data?.accessToken) {
+  const accessToken = response.data?.accessToken || response.data?.token;
+  const refreshToken = response.data?.refreshToken || null;
+
+  if (!accessToken) {
     throw new Error("Missing access token");
   }
 
@@ -92,7 +96,7 @@ export async function verifyOtp({
     await apiRequest<{ id: string; role: string }>({
       method: "GET",
       url: "/api/auth/me",
-      headers: { Authorization: `Bearer ${response.data.accessToken}` },
+      headers: { Authorization: `Bearer ${accessToken}` },
       withCredentials: false,
       skipAuth: true
     });
@@ -100,7 +104,7 @@ export async function verifyOtp({
     // Auth context will retry /auth/me; do not block OTP success on profile fetch.
   }
 
-  return response.data;
+  return { ...response.data, accessToken, refreshToken };
 }
 
 export async function logout(): Promise<void> {

@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
+import { clearStoredAuth } from "@/services/token";
 
 const normalizePhone = (value: string) => {
   const digits = value.replace(/\D/g, "");
@@ -75,6 +76,7 @@ export default function LoginPage() {
     setSending(true);
 
     try {
+      clearStoredAuth();
       await startOtp({ phone: phoneValue });
       setNormalizedPhone(phoneValue);
       setCodeSent(true);
