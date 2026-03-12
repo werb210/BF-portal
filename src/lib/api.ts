@@ -20,31 +20,38 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   return res.json()
 }
 
-export const api = {
-  request: async (path: string, options: RequestInit = {}) => {
-    const base =
-      import.meta.env.VITE_API_URL ||
-      "https://api.staff.boreal.financial"
+export async function request(
+  path: string,
+  options: RequestInit = {}
+) {
+  const base =
+    import.meta.env.VITE_API_URL ||
+    "https://api.staff.boreal.financial"
 
-    const url =
-      path.startsWith("http")
-        ? path
-        : `${base}${path.startsWith("/") ? "" : "/"}${path}`
+  const url =
+    path.startsWith("http")
+      ? path
+      : `${base}${path.startsWith("/") ? "" : "/"}${path}`
 
-    const res = await fetch(url, {
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      },
-      ...options
-    })
+  const res = await fetch(url, {
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    },
+    ...options
+  })
 
-    if (!res.ok) {
-      const text = await res.text()
-      throw new Error(text || `API ${res.status}`)
-    }
-
-    return res.json()
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `API ${res.status}`)
   }
+
+  return res.json()
 }
+
+export const api = {
+  request
+}
+
+export default api
