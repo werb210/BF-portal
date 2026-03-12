@@ -3,8 +3,18 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { SiloProvider } from "@/core/SiloContext";
+import { checkServerHealth } from "./services/healthService";
 
 registerSW({ immediate: true });
+
+checkServerHealth()
+  .then((data) => {
+    console.log("Server health:", data);
+  })
+  .catch((err) => {
+    console.error("Server connection failed:", err);
+  });
+
 
 const rootElement = document.getElementById("root");
 
