@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { withApiBase } from "@/lib/apiBase";
+import { getCallStatus } from "../services/telephonyService";
 import { setCallStatus, type CallStatus } from "./callStore";
 
 const VALID_STATUSES: ReadonlySet<CallStatus> = new Set([
@@ -28,17 +28,11 @@ export function useServerCallSync({ enabled = true }: ServerCallSyncOptions = {}
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(withApiBase("/api/telephony/call-status"), {
-          credentials: "include"
-        });
+        const data = (await getCallStatus()) as { status?: unknown };
 
-        if (res.status === 404) {
+        if (!data || typeof data !== "object") {
           return;
         }
-
-        if (!res.ok) return;
-
-        const data = (await res.json()) as { status?: unknown };
         const status = asCallStatus(data.status);
         if (status) {
           setCallStatus(status);
