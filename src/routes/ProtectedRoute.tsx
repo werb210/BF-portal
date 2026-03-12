@@ -1,27 +1,12 @@
-import { Navigate } from "react-router-dom"
-import { useAuth } from "@/auth/AuthContext"
+import { Navigate } from "react-router-dom";
+import { getToken } from "../auth/token";
 
-export default function ProtectedRoute({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const { status, authState, authStatus, rolesStatus, authReady, isAuthenticated } = useAuth()
+export default function ProtectedRoute({ children }: { children: JSX.Element }) {
+  const token = getToken();
 
-  const isLoading =
-    status === "loading" ||
-    authState === "loading" ||
-    authStatus === "loading" ||
-    rolesStatus === "loading" ||
-    !authReady
-
-  if (isLoading) {
-    return <div>Loading...</div>
+  if (!token) {
+    return <Navigate to="/login" replace />;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  return <>{children}</>
+  return children;
 }

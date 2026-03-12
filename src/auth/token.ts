@@ -1,21 +1,11 @@
-import { getAccessToken } from "@/lib/authToken";
+export const getToken = () => {
+  return localStorage.getItem("token") || "";
+};
 
-export function getAuthToken(): string | null {
-  return getAccessToken();
-}
+export const setToken = (token: string) => {
+  localStorage.setItem("token", token);
+};
 
-export function decodeToken(token?: string) {
-  if (!token) {
-    throw new Error("Token is undefined");
-  }
-  return atob(token);
-}
-
-export function decodeJwt(token?: string): any | null {
-  if (!token || !token.includes(".")) return null;
-  try {
-    return JSON.parse(decodeToken(token.split(".")[1]));
-  } catch {
-    return null;
-  }
-}
+export const clearToken = () => {
+  localStorage.removeItem("token");
+};

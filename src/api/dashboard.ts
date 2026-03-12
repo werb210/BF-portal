@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/httpClient";
+import { apiFetch } from "@/api/apiFetch";
 
 export type PipelineOverview = {
   newApplications: number;
@@ -42,12 +42,18 @@ export type DealMetrics = {
   lenderResponseTimeDays: number;
 };
 
-const withFallback = async <T>(request: Promise<unknown>, fallback: T): Promise<T> => {
+const withFallback = async <T>(request: Promise<Response>, fallback: T): Promise<T> => {
   try {
-    const result = await request;
+    const response = await request;
+    if (!response.ok) {
+      return fallback;
+    }
+
+    const result = (await response.json()) as unknown;
     if (result && typeof result === "object") {
       return { ...fallback, ...(result as Record<string, unknown>) } as T;
     }
+
     return fallback;
   } catch {
     return fallback;
@@ -56,7 +62,7 @@ const withFallback = async <T>(request: Promise<unknown>, fallback: T): Promise<
 
 export const dashboardApi = {
   getPipeline: () =>
-    withFallback<PipelineOverview>(apiClient.get("/api/dashboard/pipeline", { skipAuth: true }), {
+    withFallback<PipelineOverview>(apiFetch("/api/dashboard/pipeline"), {
       newApplications: 0,
       inReview: 0,
       requiresDocs: 0,
@@ -66,32 +72,32 @@ export const dashboardApi = {
       declined: 0
     }),
   getActions: () =>
-    withFallback<UrgentActions>(apiClient.get("/api/dashboard/actions", { skipAuth: true }), {
+    withFallback<UrgentActions>(apiFetch("/api/dashboard/actions"), {
       waitingOver24h: 0,
       missingDocuments: 0,
       offersExpiring: 0,
       awaitingClientResponse: 0
     }),
   getDocumentHealth: () =>
-    withFallback<DocumentHealth>(apiClient.get("/api/dashboard/document-health", { skipAuth: true }), {
+    withFallback<DocumentHealth>(apiFetch("/api/dashboard/document-health"), {
       missingBankStatements: 0,
       missingArAging: 0,
       rejectedDocuments: 0
     }),
   getLenderActivity: () =>
-    withFallback<LenderActivity>(apiClient.get("/api/dashboard/lender-activity", { skipAuth: true }), {
+    withFallback<LenderActivity>(apiFetch("/api/dashboard/lender-activity"), {
       recentSubmissions: 0,
       awaitingLenderResponse: 0,
       declinedSubmissions: 0
     }),
   getOffers: () =>
-    withFallback<OfferActivity>(apiClient.get("/api/dashboard/offers", { skipAuth: true }), {
+    withFallback<OfferActivity>(apiFetch("/api/dashboard/offers"), {
       newOffers: 0,
       acceptedOffers: 0,
       expiringOffers: 0
     }),
   getMetrics: () =>
-    withFallback<DealMetrics>(apiClient.get("/api/dashboard/metrics", { skipAuth: true }), {
+    withFallback<DealMetrics>(apiFetch("/api/dashboard/metrics"), {
       averageDealSize: 0,
       approvalRate: 0,
       averageApprovalTimeDays: 0,
