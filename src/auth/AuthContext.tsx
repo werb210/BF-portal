@@ -218,12 +218,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     async (tokenOverride?: string | null) => {
       const token = tokenOverride ?? accessToken ?? getStoredAccessToken();
 
-      if (!token) {
-        clearInvalidTokenArtifacts();
-        clearAuth();
-        return false;
-      }
-
       if (refreshingRef.current) {
         return false;
       }
@@ -239,24 +233,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const nextUser = await (async (): Promise<AuthUser> => {
           try {
             const profile = await api.get("/api/auth/me", {
-              headers: { Authorization: `Bearer ${token}` },
-              withCredentials: false,
+              ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+              withCredentials: true,
             });
 
             return normalizeAuthUser(profile.data?.user ?? profile.data);
           } catch {
             const response = await fetch(withApiBase("/api/auth/me"), {
               headers: {
-                Authorization: `Bearer ${token}`,
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 "Content-Type": "application/json",
               },
               credentials: "include",
             });
 
             if (response.status === 401) {
-              if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-                window.location.href = "/login";
-              }
               throw createHttpError(401, "Unauthorized");
             }
 
@@ -268,10 +259,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         })();
 
-        setStoredAccessToken(token);
+        if (token) {
+          setStoredAccessToken(token);
+        }
         setStoredUser(nextUser);
-        void writeSession({ accessToken: token, user: nextUser });
-        setAccessToken(token);
+        if (token) {
+          void writeSession({ accessToken: token, user: nextUser });
+        }
+        setAccessToken(token ?? null);
         setUserState(nextUser);
 
         setAuthStateState("authenticated");
@@ -282,9 +277,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error) {
         if (getErrorStatus(error) === 401) {
           clearInvalidTokenArtifacts();
-          if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-            window.location.href = "/login";
-          }
         }
 
         setUserState(null);
@@ -306,6 +298,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const token = getStoredAccessToken();
       if (token) {
         await refreshUser(token);
+        return;
+      }
+
+      const hydratedFromCookie = await refreshUser(null);
+      if (hydratedFromCookie) {
         return;
       }
 

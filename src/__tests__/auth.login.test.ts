@@ -143,7 +143,7 @@ describe("auth login", () => {
     expect(adapter).toHaveBeenCalled();
     const passedConfig = adapter.mock.calls[0][0];
     expect(passedConfig.headers?.Authorization).toBe("Bearer test-token");
-    expect(passedConfig.withCredentials).not.toBe(true);
+    expect(passedConfig.withCredentials).toBe(true);
   });
 
   it("verifyOtp triggers /api/auth/me and updates status", async () => {
@@ -171,7 +171,7 @@ describe("auth login", () => {
     await waitFor(() => expect(adapter).toHaveBeenCalled());
     const passedConfig = adapter.mock.calls[0][0];
     expect(passedConfig.headers?.Authorization).toBe("Bearer access");
-    expect(passedConfig.withCredentials).not.toBe(true);
+    expect(passedConfig.withCredentials).toBe(true);
     await waitFor(() =>
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );

@@ -183,7 +183,7 @@ describe("OTP auth requirements", () => {
 
     await waitFor(() => expect(adapter).toHaveBeenCalled());
     const passedConfig = adapter.mock.calls[0][0];
-    expect(passedConfig.withCredentials).not.toBe(true);
+    expect(passedConfig.withCredentials).toBe(true);
     expect(passedConfig.headers?.Authorization).toBe("Bearer stored-token");
   });
 });
