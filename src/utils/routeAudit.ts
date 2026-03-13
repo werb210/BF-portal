@@ -65,7 +65,7 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
   const token = getAccessToken();
   if (!token) return false;
   try {
-    const response = await fetch(buildApiUrl("/auth/me"), {
+    const response = await fetch(buildApiUrl("/api/auth/me"), {
       headers: {
         "X-Request-Id": requestId,
         Authorization: `Bearer ${token}`
