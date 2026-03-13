@@ -4,7 +4,7 @@ export const API_BASE_URL =
 
 export const API_TIMEOUT = 30000;
 
-export const API_BASE = API_BASE_URL;
+export const API_BASE = `${API_BASE_URL}/api`;
 
 export function apiUrl(path: string): string {
   if (!path.startsWith("/")) {
