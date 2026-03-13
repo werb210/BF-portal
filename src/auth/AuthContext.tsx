@@ -144,6 +144,8 @@ const createHttpError = (status: number, message: string) => {
   return error;
 };
 
+const isUnauthorizedError = (error: unknown) => getErrorStatus(error) === 401;
+
 const destroyDevice = destroyVoice;
 
 const TEST_AUTH_STUB: AuthContextValue = {
@@ -238,7 +240,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
 
             return normalizeAuthUser(profile.data?.user ?? profile.data);
-          } catch {
+          } catch (apiError) {
+            if (isUnauthorizedError(apiError)) {
+              return null;
+            }
+
             const response = await fetch(withApiBase("/api/auth/me"), {
               headers: {
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -259,6 +265,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         })();
 
+        if (!nextUser) {
+          clearInvalidTokenArtifacts();
+          setUserState(null);
+          setAccessToken(null);
+          setAuthStateState("unauthenticated");
+          setAuthStatus("unauthenticated");
+          setRolesStatus("resolved");
+          setError(null);
+          return false;
+        }
+
         if (token) {
           setStoredAccessToken(token);
         }
@@ -275,7 +292,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setError(null);
         return true;
       } catch (error) {
-        if (getErrorStatus(error) === 401) {
+        if (isUnauthorizedError(error)) {
           clearInvalidTokenArtifacts();
         }
 

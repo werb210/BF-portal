@@ -76,12 +76,26 @@ function AppShell() {
   );
 }
 
+function AuthenticatedShell() {
+  const { authStatus, authenticated } = useAuth();
+
+  if (authStatus === "loading") {
+    return null;
+  }
+
+  if (!authenticated || authStatus !== "authenticated") {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <AppShell />;
+}
+
 const AppRoutes = () => (
   <BrowserRouter>
     {process.env.NODE_ENV === "test" ? <AuthProbe /> : null}
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route element={<AppShell />}>
+      <Route element={<AuthenticatedShell />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route

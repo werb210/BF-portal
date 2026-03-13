@@ -14,14 +14,14 @@ export type AuthenticatedUser = {
 export async function startOtp(payload: { phone: string }) {
   const { phone } = payload;
 
-  return apiFetch("/api/auth/otp/start", {
+  return apiFetch("/api/auth/request", {
     method: "POST",
     body: JSON.stringify({ phone })
   });
 }
 
 export async function verifyOtp(payload: { phone: string; code: string }) {
-  const res = await api.post("/api/auth/otp/verify", payload);
+  const res = await api.post("/api/auth/verify", payload);
   const data = res?.data ?? {};
   const token = data.accessToken ?? data.token;
 

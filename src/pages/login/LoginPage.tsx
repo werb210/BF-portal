@@ -71,7 +71,7 @@ export default function LoginPage() {
   const requestOtpCode = async (phoneValue: string) => {
     setError(null);
     setRequestId(null);
-    setEndpoint("/api/auth/otp/start");
+    setEndpoint("/api/auth/request");
     setStatusMessage(null);
     setSending(true);
 
@@ -110,7 +110,7 @@ export default function LoginPage() {
     setVerifying(true);
     setError(null);
     setRequestId(null);
-    setEndpoint("/api/auth/otp/verify");
+    setEndpoint("/api/auth/verify");
 
     try {
       const verified = await verifyOtp({ phone: normalizedPhone, code: nextCode });
