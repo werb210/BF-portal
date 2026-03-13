@@ -18,19 +18,19 @@ export interface AiMessage {
 }
 
 export async function fetchAiSessions(): Promise<AiSession[]> {
-  const res = await api.get("/api/ai/sessions");
+  const res = await api.get("/api/chat/sessions");
   return res.data;
 }
 
 export async function fetchAiMessages(sessionId: string): Promise<AiMessage[]> {
-  const res = await api.get(`/api/ai/sessions/${sessionId}/messages`);
+  const res = await api.get(`/api/chat/sessions/${sessionId}/messages`);
   return res.data;
 }
 
 export async function sendHumanReply(sessionId: string, content: string) {
-  await api.post(`/api/ai/sessions/${sessionId}/human-reply`, { content });
+  await api.post(`/api/chat/sessions/${sessionId}/human-reply`, { content });
 }
 
 export async function closeAiSession(sessionId: string) {
-  await api.post(`/api/ai/sessions/${sessionId}/close`);
+  await api.post(`/api/chat/sessions/${sessionId}/close`);
 }

@@ -36,21 +36,21 @@ export async function closeChat(sessionId: string) {
 }
 
 export async function fetchActiveAiSessions() {
-  return apiClient.get<AiSession[]>("/api/ai/sessions?status=ai");
+  return apiClient.get<AiSession[]>("/api/chat/sessions?status=ai");
 }
 
 export async function fetchAiMessages(sessionId: string) {
-  return apiClient.get<AiSessionDetail>(`/api/ai/sessions/${sessionId}`);
+  return apiClient.get<AiSessionDetail>(`/api/chat/sessions/${sessionId}`);
 }
 
 export async function takeOverSession(sessionId: string) {
-  return apiClient.post(`/api/ai/sessions/${sessionId}/takeover`);
+  return apiClient.post(`/api/chat/sessions/${sessionId}/takeover`);
 }
 
 export async function sendSessionStaffMessage(sessionId: string, message: string) {
-  return apiClient.post(`/api/ai/sessions/${sessionId}/message`, { message });
+  return apiClient.post(`/api/chat/sessions/${sessionId}/message`, { message });
 }
 
 export async function closeSession(sessionId: string) {
-  return apiClient.post(`/api/ai/sessions/${sessionId}/close`);
+  return apiClient.post(`/api/chat/sessions/${sessionId}/close`);
 }

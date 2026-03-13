@@ -11,7 +11,7 @@ export default function AiQueueView() {
   const [sessions, setSessions] = useState<Session[]>([]);
 
   useEffect(() => {
-    fetch(withApiBase("/api/ai/sessions"))
+    fetch(withApiBase("/api/chat/sessions"))
       .then((res) => res.json())
       .then(setSessions)
       .catch(() => setSessions([]));

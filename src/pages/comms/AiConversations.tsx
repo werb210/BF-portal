@@ -19,7 +19,7 @@ export default function AiConversations() {
 
 
   useEffect(() => {
-    axios.get("/api/ai/conversations").then((res) => {
+    axios.get("/api/chat/sessions").then((res) => {
       setConvos(Array.isArray(res.data) ? res.data : []);
     });
   }, []);
