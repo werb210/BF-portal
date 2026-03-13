@@ -21,7 +21,11 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error?.response?.status;
+    const requestUrl = String(error?.config?.url || "");
+    const isAuthBootstrapRequest = requestUrl.includes("/api/auth/me");
+
+    if (status === 401 && !isAuthBootstrapRequest) {
       clearToken();
       delete apiClient.defaults.headers.common.Authorization;
       window.location.href = "/login";
