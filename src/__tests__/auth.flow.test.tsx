@@ -113,7 +113,7 @@ describe("auth flow", () => {
     expect(adapter).toHaveBeenCalled();
     const passedConfig = adapter.mock.calls[0][0];
     expect(passedConfig.headers?.Authorization).toBe("Bearer access");
-    expect(passedConfig.withCredentials).not.toBe(true);
+    expect(passedConfig.withCredentials).toBe(true);
   });
 
   it("does not redirect during auth hydration after OTP verification", async () => {
