@@ -11,6 +11,7 @@ import RequireRole from "@/components/auth/RequireRole";
 import { useServerCallSync } from "@/dialer/useServerCallSync";
 import { bootstrapVoice, destroyVoiceDevice } from "@/telephony/bootstrapVoice";
 import LoginPage from "@/pages/LoginPage";
+import AuthOtpPage from "@/pages/AuthOtpPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
 import PipelinePage from "@/core/engines/pipeline/PipelinePage";
@@ -95,6 +96,7 @@ const AppRoutes = () => (
     {process.env.NODE_ENV === "test" ? <AuthProbe /> : null}
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/otp" element={<AuthOtpPage />} />
       <Route element={<AuthenticatedShell />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
