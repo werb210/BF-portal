@@ -1,6 +1,5 @@
-import { apiClient } from "../lib/apiClient";
+import { safeFetch } from "@/utils/devApiGuard";
 
 export async function checkServerHealth() {
-  const res = await apiClient.get("/health");
-  return res.data;
+  return safeFetch("/health");
 }

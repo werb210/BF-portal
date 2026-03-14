@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AuthContext, AuthProvider } from "@/auth/AuthContext";
 import { roleIn } from "@/auth/roles";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
@@ -89,7 +89,7 @@ function AuthenticatedShell() {
 }
 
 const AppRoutes = () => (
-  <BrowserRouter>
+  <>
     {process.env.NODE_ENV === "test" ? <AuthProbe /> : null}
     <Routes>
       <Route path="/login" element={<LoginPage />} />
@@ -112,7 +112,7 @@ const AppRoutes = () => (
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
       </Route>
     </Routes>
-  </BrowserRouter>
+  </>
 );
 
 export default function App() {
