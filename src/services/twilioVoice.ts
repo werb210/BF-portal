@@ -25,6 +25,7 @@ export async function initializeTwilioVoice() {
   if (device) return device;
   const token = await fetchTwilioToken();
   device = createTwilioDevice(token);
+  await device.register?.();
   return device;
 }
 

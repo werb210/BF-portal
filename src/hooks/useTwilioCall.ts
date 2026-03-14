@@ -115,7 +115,6 @@ export const useTwilioCall = () => {
       return null;
     }
 
-    device.register?.();
 
     device.on?.("registered", () => setDeviceState("registered"));
     device.on?.("unregistered", () => setDeviceState("unregistered"));
