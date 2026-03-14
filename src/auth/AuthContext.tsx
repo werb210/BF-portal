@@ -377,13 +377,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!nextUser) {
           const hydrated = await refreshUser(token);
           if (!hydrated) {
-            setStoredAccessToken(token);
-            setAccessToken(token);
-            setAuthStateState("authenticated");
-            setAuthStatus("authenticated");
+            clearInvalidTokenArtifacts();
+            setPendingPhoneNumber(phone);
+            setAuthStateState("unauthenticated");
+            setAuthStatus("unauthenticated");
             setRolesStatus("resolved");
-            setError(null);
-            return true;
+            setError("Unable to load your account after OTP verification");
+            return false;
           }
           setAuthStateState("authenticated");
           setAuthStatus("authenticated");
