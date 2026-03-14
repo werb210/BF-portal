@@ -37,7 +37,12 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     throw new Error(`API error ${res.status}: ${text}`);
   }
 
-  return res.json();
+  const type = res.headers.get("content-type");
+  if (type && type.includes("application/json")) {
+    return res.json();
+  }
+
+  return res.text();
 }
 
 export const apiClient = axios.create({
