@@ -1,6 +1,7 @@
 import api from "../core/apiClient";
 import { clearToken, setToken } from "@/auth/tokenStorage";
 import { apiFetch } from "@/lib/api";
+import { normalizePhone } from "@/utils/phone";
 
 export type AuthenticatedUser = {
   id?: string;
@@ -12,7 +13,7 @@ export type AuthenticatedUser = {
 };
 
 export async function startOtp(payload: { phone: string }) {
-  const { phone } = payload;
+  const phone = normalizePhone(payload.phone);
 
   return apiFetch("/api/auth/otp/start", {
     method: "POST",
@@ -21,7 +22,11 @@ export async function startOtp(payload: { phone: string }) {
 }
 
 export async function verifyOtp(payload: { phone: string; code: string }) {
-  const res = await api.post("/api/auth/otp/verify", payload);
+  const normalizedPayload = {
+    phone: normalizePhone(payload.phone),
+    code: payload.code
+  };
+  const res = await api.post("/api/auth/otp/verify", normalizedPayload);
   const data = res?.data ?? {};
   const token = data.accessToken ?? data.token;
 

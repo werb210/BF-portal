@@ -11,9 +11,25 @@ export default function AnalyticsPage() {
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
 
   useEffect(() => {
+    const cacheKey = "portal:analytics:events";
+    const cachedEvents = sessionStorage.getItem(cacheKey);
+    if (cachedEvents) {
+      try {
+        const parsed = JSON.parse(cachedEvents);
+        setEvents(Array.isArray(parsed) ? parsed : []);
+        return;
+      } catch {
+        sessionStorage.removeItem(cacheKey);
+      }
+    }
+
     fetch(withApiBase("/api/analytics"))
       .then((res) => res.json())
-      .then((data) => setEvents(Array.isArray(data) ? data : []))
+      .then((data) => {
+        const nextEvents = Array.isArray(data) ? data : [];
+        setEvents(nextEvents);
+        sessionStorage.setItem(cacheKey, JSON.stringify(nextEvents));
+      })
       .catch(() => setEvents([]));
   }, []);
 
@@ -32,4 +48,3 @@ export default function AnalyticsPage() {
     </div>
   );
 }
-
