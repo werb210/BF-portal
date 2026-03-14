@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/api/apiClient";
 import AISessionList from "./AISessionList";
 
 type Conversation = {
@@ -19,7 +19,7 @@ export default function AiConversations() {
 
 
   useEffect(() => {
-    axios.get("/api/chat/sessions").then((res) => {
+    apiClient.get("/chat/sessions").then((res) => {
       setConvos(Array.isArray(res.data) ? res.data : []);
     });
   }, []);

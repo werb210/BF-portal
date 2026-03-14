@@ -1,24 +1,17 @@
-import axios from "axios"
+import { apiClient } from "@/api/apiClient"
 
 export async function acceptDocument(documentId: string) {
-
-  return axios.post(`/api/documents/${encodeURIComponent(documentId)}/accept`, {
-  })
-
+  return apiClient.post(`/documents/${encodeURIComponent(documentId)}/accept`, {})
 }
 
 export async function rejectDocument(documentId: string, category: string) {
-
-  return axios.post(`/api/documents/${encodeURIComponent(documentId)}/reject`, {
+  return apiClient.post(`/documents/${encodeURIComponent(documentId)}/reject`, {
     category
   })
-
 }
 
 export async function downloadDocument(documentId: string) {
-
-  return axios.get(`/api/documents/${documentId}/download`, {
+  return apiClient.get(`/documents/${documentId}/download`, {
     responseType: "blob"
   })
-
 }

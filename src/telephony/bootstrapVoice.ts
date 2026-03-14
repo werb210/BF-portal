@@ -1,5 +1,5 @@
 import { Call, Device } from "@twilio/voice-sdk";
-import { getVoiceToken } from "./api/getVoiceToken";
+import { getVoiceToken } from "./getVoiceToken";
 import { useCallState } from "./state/callState";
 
 let device: Device | null = null;
@@ -59,7 +59,7 @@ async function initializeDevice() {
     if (bootstrapPromise) return bootstrapPromise;
   }
   deviceInitialized = true;
-  const token = await getVoiceToken("staff_portal");
+  const token = await getVoiceToken();
   const nextDevice = new Device(token);
 
   nextDevice.on("incoming", (call: Call) => {

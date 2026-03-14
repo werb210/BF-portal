@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/api/apiClient";
 
 type CreditReadiness = {
   industry?: string;
@@ -15,8 +15,8 @@ export default function CreditReadinessPanel({ contactId }: { contactId: string 
   const [data, setData] = useState<CreditReadiness | null>(null);
 
   useEffect(() => {
-    axios
-      .get(`/api/portal/contacts/${contactId}/credit-readiness`)
+    apiClient
+      .get(`/portal/contacts/${contactId}/credit-readiness`)
       .then((res) => setData(res.data))
       .catch(() => {});
   }, [contactId]);

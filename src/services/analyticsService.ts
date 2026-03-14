@@ -1,6 +1,6 @@
-import axios from "axios";
+import { apiClient } from "@/api/apiClient";
 
 export const AnalyticsService = {
-  getEvents: () => axios.get("/api/analytics/events"),
-  getReadiness: () => axios.get("/api/analytics/readiness")
+  getEvents: () => apiClient.get("/analytics/events"),
+  getReadiness: () => apiClient.get("/analytics/readiness")
 };

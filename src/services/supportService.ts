@@ -1,6 +1,6 @@
-import axios from "axios";
+import { apiClient } from "@/api/apiClient";
 
 export const SupportService = {
-  listEscalations: () => axios.get("/api/support/escalations"),
-  listIssues: () => axios.get("/api/support/issues")
+  listEscalations: () => apiClient.get("/support/escalations"),
+  listIssues: () => apiClient.get("/support/issues")
 };

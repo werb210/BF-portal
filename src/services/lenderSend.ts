@@ -1,8 +1,7 @@
-import axios from "axios"
+import { apiClient } from "@/api/apiClient"
 
 export async function sendToLenders(applicationId: string, lenders: string[]) {
-
-  const res = await axios.post("/api/lenders/send", {
+  const res = await apiClient.post("/lenders/send", {
     applicationId,
     lenders
   })

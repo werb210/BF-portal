@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/api/apiClient";
 
 export default function AiKnowledgeUpload() {
   const [file, setFile] = useState<File | null>(null);
@@ -10,7 +10,7 @@ export default function AiKnowledgeUpload() {
     const form = new FormData();
     form.append("file", file);
 
-    await axios.post("/api/ai/admin/upload", form);
+    await apiClient.post("/ai/admin/upload", form);
     alert("Uploaded and ingested.");
   }
 

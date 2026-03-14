@@ -1,4 +1,4 @@
-import axios from "axios"
+import { apiClient } from "@/api/apiClient"
 
 export interface SendPayload {
   applicationId: string
@@ -6,7 +6,6 @@ export interface SendPayload {
 }
 
 export async function sendSelectedLenders(payload: SendPayload) {
-
   if (!payload.applicationId) {
     throw new Error("Missing applicationId")
   }
@@ -15,8 +14,8 @@ export async function sendSelectedLenders(payload: SendPayload) {
     throw new Error("No lenders selected")
   }
 
-  const res = await axios.post(
-    `/api/applications/${payload.applicationId}/send-to-lenders`,
+  const res = await apiClient.post(
+    `/applications/${payload.applicationId}/send-to-lenders`,
     { lenders: payload.lenders }
   )
 

@@ -1,4 +1,3 @@
-import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/api/httpClient";
 
@@ -196,7 +195,7 @@ export const useDeleteIssueMutation = () => {
 };
 
 export const AIService = {
-  listKnowledge: () => axios.get("/api/ai/knowledge"),
-  createKnowledge: (data: unknown) => axios.post("/api/ai/knowledge", data),
-  deleteKnowledge: (id: string) => axios.delete(`/api/ai/knowledge/${id}`)
+  listKnowledge: () => apiClient.get("/ai/knowledge"),
+  createKnowledge: (data: unknown) => apiClient.post("/ai/knowledge", data),
+  deleteKnowledge: (id: string) => apiClient.delete(`/ai/knowledge/${id}`)
 };

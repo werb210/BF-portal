@@ -1,16 +1,11 @@
-import axios from "axios"
+import { apiClient } from "@/api/apiClient"
 
 export async function acceptDocument(documentId: string) {
-
-  await axios.post(`/api/documents/${encodeURIComponent(documentId)}/accept`, {
-  })
-
+  await apiClient.post(`/documents/${encodeURIComponent(documentId)}/accept`, {})
 }
 
 export async function rejectDocument(documentId: string, category: string) {
-
-  await axios.post(`/api/documents/${encodeURIComponent(documentId)}/reject`, {
+  await apiClient.post(`/documents/${encodeURIComponent(documentId)}/reject`, {
     category
   })
-
 }
