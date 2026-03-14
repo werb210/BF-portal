@@ -20,24 +20,12 @@ if (!rootElement) {
   throw new Error("Root element not found");
 }
 
-const root = ReactDOM.createRoot(rootElement);
-
-if (import.meta.env.MODE === "production") {
-  root.render(
-    <React.StrictMode>
-      <SiloProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </SiloProvider>
-    </React.StrictMode>
-  );
-} else {
-  root.render(
+ReactDOM.createRoot(rootElement).render(
+  <React.StrictMode>
     <SiloProvider>
       <BrowserRouter>
         <App />
       </BrowserRouter>
     </SiloProvider>
-  );
-}
+  </React.StrictMode>
+);
