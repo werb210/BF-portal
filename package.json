@@ -16,6 +16,7 @@
     "lint": "eslint .",
     "verify": "npm run typecheck && npm run build",
     "check": "npm run typecheck",
+    "check:portal-api": "bash ./scripts/portal-final-api-check.sh",
     "audit:enterprise": "node scripts/enterprise-audit.js",
     "optimize:images": "node scripts/optimize-images.js",
     "prestart": "node ./scripts/verify-node-version.js",
