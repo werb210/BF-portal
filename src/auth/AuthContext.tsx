@@ -13,7 +13,7 @@ import type { AuthenticatedUser } from "@/services/auth";
 import { normalizeRole, roleIn, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import { clearSession, readSession, writeSession } from "@/utils/sessionStore";
-import { withApiBase } from "@/lib/apiBase";
+import { apiFetch } from "@/lib/apiFetch";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";
@@ -245,23 +245,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               return null;
             }
 
-            const response = await fetch(withApiBase("/api/auth/me"), {
-              headers: {
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                "Content-Type": "application/json",
-              },
-              credentials: "include",
-            });
-
-            if (response.status === 401) {
-              throw createHttpError(401, "Unauthorized");
+            try {
+              const payload = await apiFetch("/api/auth/me", {
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+              });
+              return normalizeAuthUser(payload as AuthUser);
+            } catch (fetchError) {
+              if (fetchError instanceof Error && fetchError.message.includes("API error 401")) {
+                throw createHttpError(401, "Unauthorized");
+              }
+              throw fetchError;
             }
-
-            if (!response.ok) {
-              throw createHttpError(response.status, "Unable to hydrate auth session.");
-            }
-
-            return normalizeAuthUser(await response.json());
           }
         })();
 

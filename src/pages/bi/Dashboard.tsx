@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { withApiBase } from "@/lib/apiBase";
+import { apiFetch } from "@/lib/apiFetch";
 
 type DashboardData = {
   totalApplications: number;
@@ -14,9 +14,8 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
-    fetch(withApiBase("/api/bi/dashboard"))
-      .then((res) => res.json())
-      .then(setData);
+    apiFetch("/api/bi/dashboard")
+      .then((res) => setData(res as DashboardData));
   }, []);
 
   if (!data) return <div>Loading...</div>;
