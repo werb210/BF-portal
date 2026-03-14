@@ -14,15 +14,12 @@ import LoginPage from "@/pages/LoginPage";
 import AuthOtpPage from "@/pages/AuthOtpPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
-import PipelinePage from "@/core/engines/pipeline/PipelinePage";
-import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
-import { pipelineApi } from "@/core/engines/pipeline/pipeline.api";
+import PipelinePage from "@/pages/pipeline/PipelinePage";
 import ApplicationDetail from "@/pages/application/ApplicationDetail";
 import AuthProbe from "@/__tests__/support/AuthProbe";
 import { useAuth } from "@/auth/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ToastProvider from "@/components/ui/ToastProvider";
-import { updatePipelineStage } from "@/api/pipeline";
 import DialerButton from "@/components/DialerButton";
 import MobileShell from "@/mobile/MobileShell";
 import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
@@ -105,18 +102,7 @@ const AppRoutes = () => (
           element={
             <ProtectedRoute>
               <RequireRole roles={["Admin", "Staff", "Marketing"]}>
-                <PipelineEngineProvider
-                  config={{
-                    businessUnit: "BF",
-                    api: {
-                      fetchPipeline: pipelineApi.fetchPipeline,
-                      updateStage: updatePipelineStage,
-                      exportApplications: pipelineApi.exportApplications
-                    }
-                  }}
-                >
-                  <PipelinePage />
-                </PipelineEngineProvider>
+                <PipelinePage />
               </RequireRole>
             </ProtectedRoute>
           }
