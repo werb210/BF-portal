@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { fetchPipeline } from "../../services/pipelineService"
+import ApplicationCard from "../../components/pipeline/ApplicationCard"
 
 export default function PipelinePage() {
 
@@ -35,15 +36,7 @@ export default function PipelinePage() {
             <h3>{stage.name}</h3>
 
             {(stage.cards || []).map((card:any)=>(
-              <div key={card.id} style={{
-                background:"#1e293b",
-                padding:"10px",
-                marginBottom:"10px",
-                borderRadius:"6px"
-              }}>
-                <strong>{card.company}</strong>
-                <div>{card.amount}</div>
-              </div>
+              <ApplicationCard key={card.id} card={card} />
             ))}
           </div>
         ))}
