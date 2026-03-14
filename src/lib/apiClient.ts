@@ -1,31 +1,43 @@
 import axios from "axios";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://server.boreal.financial";
+import { API_BASE } from "../config/apiBase";
 
 const API_TIMEOUT = 30000;
 
+function normalizeBase(base: string): string {
+  return (base || "").replace(/\/$/, "");
+}
+
+const API_BASE_URL = normalizeBase(API_BASE);
+
 export function buildApiUrl(path: string) {
   if (!path) {
-    return `${API_BASE_URL}/api`;
+    return API_BASE_URL;
   }
 
   if (path.startsWith("http")) {
     return path;
   }
 
-  let normalized = path;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
 
-  if (!normalized.startsWith("/")) {
-    normalized = `/${normalized}`;
+export async function apiFetch(path: string, options: RequestInit = {}) {
+  const res = await fetch(buildApiUrl(path), {
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    },
+    ...options
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API error ${res.status}: ${text}`);
   }
 
-  if (!normalized.startsWith("/api")) {
-    normalized = `/api${normalized}`;
-  }
-
-  return `${API_BASE_URL}${normalized}`;
+  return res.json();
 }
 
 export const apiClient = axios.create({
@@ -52,3 +64,5 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export default apiClient;
