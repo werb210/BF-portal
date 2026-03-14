@@ -2,16 +2,14 @@ import axios from "axios"
 
 export async function acceptDocument(documentId: string) {
 
-  return axios.post("/api/documents/accept", {
-    documentId
+  return axios.post(`/api/documents/${encodeURIComponent(documentId)}/accept`, {
   })
 
 }
 
 export async function rejectDocument(documentId: string, category: string) {
 
-  return axios.post("/api/documents/reject", {
-    documentId,
+  return axios.post(`/api/documents/${encodeURIComponent(documentId)}/reject`, {
     category
   })
 

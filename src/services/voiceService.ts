@@ -146,7 +146,7 @@ export async function acceptIncoming(call: Call): Promise<boolean> {
 
   if (callSid) {
     try {
-      const lockResponse = await fetch(withApiBase(`/api/call/lock/${encodeURIComponent(String(callSid))}`), {
+      const lockResponse = await fetch(withApiBase(`/api/calls/${encodeURIComponent(String(callSid))}/status`), {
         credentials: "include"
       });
 
