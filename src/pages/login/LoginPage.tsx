@@ -4,15 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
 import { clearStoredAuth } from "@/services/token";
-
-const normalizePhone = (value: string) => {
-  const digits = value.replace(/\D/g, "");
-  if (!digits) return "";
-  if (digits.startsWith("1") && digits.length === 11) return `+${digits}`;
-  if (value.trim().startsWith("+")) return `+${digits}`;
-  if (digits.length === 10) return `+1${digits}`;
-  return `+${digits}`;
-};
+import { normalizePhone } from "@/utils/phone";
 
 export function resolvePostLoginDestination(role: string): string {
   const normalizedRole = role.toLowerCase();
@@ -90,10 +82,13 @@ export default function LoginPage() {
   };
 
   const handleSendCode = async () => {
-    const parsedPhone = normalizePhone(phone);
-    if (!parsedPhone) return;
-
-    await requestOtpCode(parsedPhone);
+    try {
+      const parsedPhone = normalizePhone(phone);
+      await requestOtpCode(parsedPhone);
+    } catch {
+      setError("Invalid phone number format");
+      setRequestId("n/a");
+    }
   };
 
 

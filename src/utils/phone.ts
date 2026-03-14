@@ -1,20 +1,17 @@
-export function normalizeToE164(input: string, defaultCountry = "US"): string {
-  const digits = input.replace(/\D/g, "");
+export function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
 
-  if (defaultCountry === "US") {
-    if (digits.length === 10) return `+1${digits}`;
-    if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  if (digits.length === 10) {
+    return `+1${digits}`;
   }
 
-  if (input.startsWith("+") && digits.length >= 10) return `+${digits}`;
-
-  throw new Error("Invalid phone number");
-}
-
-export function safeNormalizeToE164(input: string, defaultCountry = "US"): string | null {
-  try {
-    return normalizeToE164(input, defaultCountry);
-  } catch {
-    return null;
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+${digits}`;
   }
+
+  if (phone.startsWith("+")) {
+    return phone;
+  }
+
+  throw new Error("Invalid phone number format");
 }
