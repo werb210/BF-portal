@@ -1,10 +1,11 @@
 import axios from "axios";
 import { API_BASE } from "../config/apiBase";
+import { normalizeApiPath } from "@/config/api";
 
 const API_TIMEOUT = 30000;
 
 function normalizeBase(base: string): string {
-  return (base || "").replace(/\/$/, "");
+  return (base || "").replace(/\/+$/, "");
 }
 
 const API_BASE_URL = normalizeBase(API_BASE);
@@ -18,8 +19,7 @@ export function buildApiUrl(path: string) {
     return path;
   }
 
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${API_BASE_URL}${normalizedPath}`;
+  return `${API_BASE_URL}${normalizeApiPath(path)}`;
 }
 
 export async function apiFetch(path: string, options: RequestInit = {}) {

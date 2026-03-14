@@ -3,6 +3,7 @@ import { getStoredAccessToken } from "@/services/token";
 import { getRequestId } from "@/api/requestId";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "@/lib/apiBase";
+import { normalizeApiPath } from "@/config/api";
 
 function resolveBaseURL(): string {
   if (process.env.NODE_ENV === "test") {
@@ -17,14 +18,7 @@ function normalizeApiRequestUrl(url: AxiosRequestConfig["url"]): AxiosRequestCon
   if (!url || typeof url !== "string") return url;
   if (/^https?:\/\//i.test(url)) return url;
 
-  const baseEndsWithApi = resolveBaseURL().endsWith("/api");
-  const startsWithApi = url === "/api" || url.startsWith("/api/");
-  if (baseEndsWithApi && startsWithApi) {
-    const trimmed = url.replace(/^\/api/, "");
-    return trimmed.length ? trimmed : "/";
-  }
-
-  return url;
+  return normalizeApiPath(url);
 }
 
 function readToken(): string | null {

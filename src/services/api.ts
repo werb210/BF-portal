@@ -1,12 +1,11 @@
 import { getRequestId } from "@/api/requestId";
-import { getApiBaseUrl } from "@/config/api";
+import { getApiBaseUrl, normalizeApiPath } from "@/config/api";
 import { apiClient } from "@/lib/apiClient";
 
 function normalizePath(path: string) {
   if (!path.startsWith("/")) path = `/${path}`;
   if (path === "/health") return path;
-  const trimmed = path.startsWith("/api/") ? path.replace(/^\/api/, "") : path;
-  return `/api${trimmed}`;
+  return normalizeApiPath(path);
 }
 
 function buildApiUrl(path: string) {
