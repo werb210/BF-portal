@@ -1,3 +1,4 @@
+import { apiClient } from "@/api/apiClient";
 import { useEffect, useState } from "react";
 
 export default function BiApplications() {
@@ -5,9 +6,9 @@ export default function BiApplications() {
   const [selected, setSelected] = useState<any>(null);
 
   useEffect(() => {
-    fetch(import.meta.env.VITE_BI_API + "/api/applications")
-      .then((r) => r.json())
-      .then(setApps);
+    apiClient
+      .get("/api/applications")
+      .then((response) => setApps(response.data));
   }, []);
 
   const totalPremium = apps.reduce(
@@ -21,11 +22,7 @@ export default function BiApplications() {
   );
 
   const updateStatus = async (id: number, status: string) => {
-    await fetch(import.meta.env.VITE_BI_API + `/api/applications/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
+    await apiClient.patch(`/api/applications/${id}`, { status });
 
     setApps(apps.map((a) => (a.id === id ? { ...a, status } : a)));
     setSelected((current: any) =>

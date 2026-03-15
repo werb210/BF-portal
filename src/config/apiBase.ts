@@ -8,9 +8,16 @@ declare global {
   }
 }
 
-const runtimeBase =
-  import.meta.env.VITE_API_BASE ||
-  window?.__ENV?.API_BASE ||
-  API_BASE_URL;
+function readRuntimeApiBase(): string {
+  return (
+    import.meta.env.VITE_API_BASE ||
+    window?.__ENV?.API_BASE ||
+    API_BASE_URL
+  );
+}
 
-export const API_BASE = normalizeApiBaseUrl(runtimeBase);
+export function getApiBase(): string {
+  return normalizeApiBaseUrl(readRuntimeApiBase());
+}
+
+export const API_BASE = getApiBase();
