@@ -25,8 +25,8 @@
 - Login page loads at `/login`.
 - OTP submit attempt from portal UI fails with network error.
 - Failed requests observed:
-  - `GET https://api.boreal.financial/api/api/auth/me` → `net::ERR_NAME_NOT_RESOLVED`
-  - `POST https://api.boreal.financial/api/api/auth/otp/start` → `net::ERR_NAME_NOT_RESOLVED`
+  - `GET https://server.boreal.financial/api/api/auth/me` → `net::ERR_NAME_NOT_RESOLVED`
+  - `POST https://server.boreal.financial/api/api/auth/otp/start` → `net::ERR_NAME_NOT_RESOLVED`
 
 ## Verification status against requested success criteria
 - Application created: **Not verifiable** (client app unavailable; backend unresolved).
