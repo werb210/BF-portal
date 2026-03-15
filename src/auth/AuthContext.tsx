@@ -197,7 +197,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
   const [isHydratingSession, setIsHydratingSession] = useState(true);
   const didHydrateRef = useRef(false);
+  const hydrationSettledRef = useRef(false);
   const refreshingRef = useRef(false);
+
+  const settleUnauthenticated = useCallback(() => {
+    setUserState(null);
+    setAccessToken(null);
+    setPendingPhoneNumber(null);
+    setError(null);
+    setAuthStateState("unauthenticated");
+    setAuthStatus("unauthenticated");
+    setRolesStatus("resolved");
+  }, []);
+
+  const endHydration = useCallback(() => {
+    if (hydrationSettledRef.current) return;
+    hydrationSettledRef.current = true;
+    setIsHydratingSession(false);
+  }, []);
 
   const clearAuth = useCallback(() => {
     clearStoredAuth();
@@ -206,15 +223,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     sessionStorage.clear();
     void clearSession();
 
-    setUserState(null);
-    setAccessToken(null);
-    setPendingPhoneNumber(null);
-    setError(null);
-    setAuthStateState("unauthenticated");
-    setAuthStatus("unauthenticated");
-    setRolesStatus("resolved");
-    setIsHydratingSession(false);
-  }, []);
+    settleUnauthenticated();
+    endHydration();
+  }, [endHydration, settleUnauthenticated]);
 
   const refreshUser = useCallback(
     async (tokenOverride?: string | null, options?: { deferHydrationEnd?: boolean }) => {
@@ -226,10 +237,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       refreshingRef.current = true;
 
-      setAuthStateState("loading");
-      setAuthStatus("loading");
-      setRolesStatus("loading");
-      setIsHydratingSession(true);
+      if (!options?.deferHydrationEnd) {
+        setAuthStateState("loading");
+        setAuthStatus("loading");
+        setRolesStatus("loading");
+      }
 
       try {
         const nextUser = await (async (): Promise<AuthUser> => {
@@ -263,12 +275,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (!nextUser) {
           clearInvalidTokenArtifacts();
-          setUserState(null);
-          setAccessToken(null);
-          setAuthStateState("unauthenticated");
-          setAuthStatus("unauthenticated");
-          setRolesStatus("resolved");
-          setError(null);
+          settleUnauthenticated();
           return false;
         }
 
@@ -290,19 +297,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error) {
         if (isUnauthorizedError(error)) {
           clearInvalidTokenArtifacts();
+          settleUnauthenticated();
+          return false;
         }
 
-        setUserState(null);
         clearAuth();
         return false;
       } finally {
         refreshingRef.current = false;
         if (!options?.deferHydrationEnd) {
-          setIsHydratingSession(false);
+          endHydration();
         }
       }
     },
-    [accessToken, clearAuth]
+    [accessToken, clearAuth, endHydration, settleUnauthenticated]
   );
 
   useEffect(() => {
@@ -310,15 +318,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     didHydrateRef.current = true;
 
     const hydrate = async () => {
+      setIsHydratingSession(true);
       const token = getStoredAccessToken();
-      if (token) {
-        await refreshUser(token);
-        return;
-      }
-
-      const hydratedFromCookie = await refreshUser(null, { deferHydrationEnd: true });
-      if (hydratedFromCookie) {
-        setIsHydratingSession(false);
+      const hydrated = await refreshUser(token ?? null, { deferHydrationEnd: true });
+      if (hydrated) {
+        endHydration();
         return;
       }
 
@@ -332,7 +336,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAuthStateState("authenticated");
         setAuthStatus("authenticated");
         setRolesStatus(hasResolvedRole(hydratedUser) ? "resolved" : "loading");
-        setIsHydratingSession(false);
+        endHydration();
         return;
       }
 
@@ -340,14 +344,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     void hydrate();
-  }, [clearAuth, refreshUser]);
+  }, [clearAuth, endHydration, refreshUser]);
 
   const startOtp = useCallback(async ({ phone }: OtpStartPayload) => {
     setPendingPhoneNumber(phone);
     setAuthStatus("pending");
     setRolesStatus("pending");
-    await startOtpService({ phone });
-    return true;
+    const started = await startOtpService({ phone });
+    return started !== false;
   }, []);
 
   const verifyOtp = useCallback(

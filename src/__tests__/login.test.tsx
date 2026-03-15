@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
 import { verifyOtp as verifyOtpService, startOtp as startOtpService } from "@/services/auth";
@@ -29,6 +29,11 @@ const renderLoginFlow = () =>
   );
 
 describe("login flow", () => {
+  beforeEach(() => {
+    mockedStartOtp.mockReset();
+    mockedVerifyOtp.mockReset();
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
   });
@@ -58,4 +63,45 @@ describe("login flow", () => {
     await waitFor(() => expect(mockedVerifyOtp).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByText("Dashboard")).toBeInTheDocument());
   });
+
+  it("fires Send code exactly once for rapid clicks", async () => {
+    mockedStartOtp.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(null), 25)));
+
+    renderLoginFlow();
+
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
+    const sendButton = screen.getByRole("button", { name: /Send code/i });
+    fireEvent.click(sendButton);
+    fireEvent.click(sendButton);
+
+    await waitFor(() => expect(mockedStartOtp).toHaveBeenCalledTimes(1));
+  });
+
+  it("stays on login step and shows an inline error when OTP start returns false", async () => {
+    mockedStartOtp.mockResolvedValue(false as unknown as null);
+
+    renderLoginFlow();
+
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+
+    await waitFor(() => expect(mockedStartOtp).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText(/Phone number/i)).toBeInTheDocument();
+    expect(screen.getByText(/Unable to send verification code/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/OTP digit 1/i)).not.toBeInTheDocument();
+  });
+
+  it("only advances to OTP verification step after OTP start succeeds", async () => {
+    mockedStartOtp.mockResolvedValue(null);
+
+    renderLoginFlow();
+
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+
+    expect(screen.queryByLabelText(/OTP digit 1/i)).not.toBeInTheDocument();
+    await waitFor(() => expect(mockedStartOtp).toHaveBeenCalledTimes(1));
+    expect(await screen.findByLabelText(/OTP digit 1/i)).toBeInTheDocument();
+  });
+
 });
