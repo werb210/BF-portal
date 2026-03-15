@@ -66,7 +66,7 @@ export type AuthContextValue = {
   startOtp: (payload: OtpStartPayload) => Promise<boolean>;
   verifyOtp: (payloadOrPhone: OtpVerifyPayload | string, codeArg?: string) => Promise<boolean>;
   loginWithOtp: (payloadOrPhone: OtpVerifyPayload | string, codeArg?: string) => Promise<boolean>;
-  refreshUser: (tokenOverride?: string | null) => Promise<boolean>;
+  refreshUser: (tokenOverride?: string | null, options?: { deferHydrationEnd?: boolean }) => Promise<boolean>;
   clearAuth: () => void;
   logout: () => Promise<void>;
   setAuth: (user: AuthUser) => void;
@@ -217,7 +217,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const refreshUser = useCallback(
-    async (tokenOverride?: string | null) => {
+    async (tokenOverride?: string | null, options?: { deferHydrationEnd?: boolean }) => {
       const token = tokenOverride ?? accessToken ?? getStoredAccessToken();
 
       if (refreshingRef.current) {
@@ -297,7 +297,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       } finally {
         refreshingRef.current = false;
-        setIsHydratingSession(false);
+        if (!options?.deferHydrationEnd) {
+          setIsHydratingSession(false);
+        }
       }
     },
     [accessToken, clearAuth]
@@ -314,8 +316,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      const hydratedFromCookie = await refreshUser(null);
+      const hydratedFromCookie = await refreshUser(null, { deferHydrationEnd: true });
       if (hydratedFromCookie) {
+        setIsHydratingSession(false);
         return;
       }
 

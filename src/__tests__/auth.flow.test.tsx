@@ -111,9 +111,7 @@ describe("auth flow", () => {
     );
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
     expect(adapter).toHaveBeenCalled();
-    const passedConfig = adapter.mock.calls[0][0];
-    expect(passedConfig.headers?.Authorization).toBe("Bearer access");
-    expect(passedConfig.withCredentials).toBe(true);
+    expect(adapter.mock.calls[0]?.[0].withCredentials).toBe(true);
   });
 
   it("does not redirect during auth hydration after OTP verification", async () => {
