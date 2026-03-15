@@ -1,12 +1,13 @@
+import { apiClient } from "@/api/apiClient";
 import { useEffect, useState } from "react";
 
 export default function BiCommission() {
   const [ledger, setLedger] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(import.meta.env.VITE_BI_API + "/api/ledger")
-      .then((r) => r.json())
-      .then(setLedger);
+    apiClient
+      .get("/api/ledger")
+      .then((response) => setLedger(response.data));
   }, []);
 
   const totalCommission = ledger.reduce(

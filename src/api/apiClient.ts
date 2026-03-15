@@ -1,28 +1,27 @@
 import axios from "axios";
+import { getApiBase } from "@/config/apiBase";
 
-function normalizeBase(url?: string) {
+function normalizeRequestPath(url?: string): string {
   if (!url) return "";
-  return url.replace(/\/api\/?$/, "");
+  if (/^https?:\/\//i.test(url)) return url;
+
+  const withLeadingSlash = url.startsWith("/") ? url : `/${url}`;
+  return withLeadingSlash === "/api"
+    ? "/"
+    : withLeadingSlash.replace(/^\/api(?=\/|$)/, "");
 }
 
-declare global {
-  interface Window {
-    RUNTIME_CONFIG?: {
-      API_BASE_URL?: string;
-    };
-  }
-}
-
-const base =
-  normalizeBase(import.meta.env.VITE_API_URL) ||
-  normalizeBase(window.RUNTIME_CONFIG?.API_BASE_URL) ||
-  "";
-
-export const apiClient = axios.create({
-  baseURL: `${base}/api`,
+const apiClient = axios.create({
+  baseURL: getApiBase(),
   withCredentials: true
 });
 
+apiClient.interceptors.request.use((config) => ({
+  ...config,
+  url: normalizeRequestPath(config.url)
+}));
+
+export { apiClient };
 export const get = <T = unknown>(url: string, config?: unknown) => apiClient.get<T>(url, config as any);
 export const post = <T = unknown>(url: string, data?: unknown, config?: unknown) => apiClient.post<T>(url, data, config as any);
 export const put = <T = unknown>(url: string, data?: unknown, config?: unknown) => apiClient.put<T>(url, data, config as any);
