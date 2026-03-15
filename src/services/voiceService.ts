@@ -1,6 +1,6 @@
 import { Call, Device } from "@twilio/voice-sdk";
 import { setCallStatus } from "@/dialer/callStore";
-import { withApiBase } from "@/lib/apiBase";
+import { apiClient } from "@/api/apiClient";
 import { getVoiceToken } from "@/telephony/getVoiceToken";
 
 let device: Device | null = null;
@@ -98,14 +98,9 @@ function startPresenceHeartbeat() {
   heartbeatInterval = window.setInterval(() => {
     if (!device) return;
 
-    void fetch(withApiBase("/api/telephony/presence"), {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        status: activeCall ? "busy" : "online",
-        source: "portal"
-      })
+    void apiClient.post("/telephony/presence", {
+      status: activeCall ? "busy" : "online",
+      source: "portal"
     });
   }, 15000);
 }
@@ -133,15 +128,8 @@ export async function acceptIncoming(call: Call): Promise<boolean> {
 
   if (callSid) {
     try {
-      const lockResponse = await fetch(withApiBase(`/api/calls/${encodeURIComponent(String(callSid))}/status`), {
-        credentials: "include"
-      });
-
-      if (!lockResponse.ok) {
-        return false;
-      }
-
-      const lock = (await lockResponse.json()) as { locked?: boolean; lockedByAnotherStaff?: boolean };
+      const lockResponse = await apiClient.get<{ locked?: boolean; lockedByAnotherStaff?: boolean }>(`/calls/${encodeURIComponent(String(callSid))}/status`);
+      const lock = lockResponse.data;
       if (lock.lockedByAnotherStaff || lock.locked === true) {
         return false;
       }

@@ -15,3 +15,11 @@ export function normalizePhone(phone: string): string {
 
   throw new Error("Invalid phone number format");
 }
+
+export function safeNormalizeToE164(phone: string): string {
+  try {
+    return normalizePhone(phone);
+  } catch {
+    return phone;
+  }
+}

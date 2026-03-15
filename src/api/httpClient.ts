@@ -1,16 +1,5 @@
-import axios, {
-  AxiosError,
-  type AxiosRequestConfig,
-  type AxiosResponse,
-  type InternalAxiosRequestConfig
-} from "axios";
-import { ApiError, api } from "@/api/http";
-import { reportAuthFailure } from "@/auth/authEvents";
-import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
-import { getAccessToken } from "@/lib/authToken";
-import { getStoredAccessToken } from "@/services/token";
-import { queueFailedMutation } from "@/utils/backgroundSyncQueue";
-import { setApiStatus } from "@/state/apiStatus";
+import type { AxiosRequestConfig } from "axios";
+import { apiClient as canonicalClient } from "@/api/apiClient";
 
 export type RequestOptions = AxiosRequestConfig & {
   skipAuth?: boolean;
@@ -20,150 +9,30 @@ export type ListResponse<T> = {
   items: T[];
 } & Record<string, unknown>;
 
-const generateIdempotencyKey = () => {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `idempotency_${Math.random().toString(36).slice(2, 10)}`;
-};
+const readToken = () => localStorage.getItem("accessToken") || localStorage.getItem("token");
 
-const buildConfig = (
-  options?: RequestOptions,
-  { idempotent = false }: { idempotent?: boolean } = {}
-): RequestOptions | undefined => {
-  const config = options ?? {};
-  if (config.skipAuth || !idempotent) return config;
-  const headers = {
-    ...(config.headers ?? {}),
-    "Idempotency-Key": generateIdempotencyKey(),
-    "Content-Type": "application/json"
-  } as Record<string, string>;
+const withAuthHeaders = (options?: RequestOptions) => {
+  if (options?.skipAuth) return options;
+  const token = readToken();
+  if (!token) return options;
   return {
-    ...config,
-    headers
+    ...options,
+    headers: {
+      ...(options?.headers ?? {}),
+      Authorization: `Bearer ${token}`
+    }
   };
 };
 
-const ensureAccessToken = (options?: RequestOptions) => {
-  if (options?.skipAuth) return;
-  const token = getStoredAccessToken() ?? getAccessToken();
-  if (!token) {
-    reportAuthFailure("missing-token");
-    throw new ApiError({
-      status: 401,
-      message: "Missing auth token",
-      details: { reason: "missing-token" }
-    });
-  }
-};
-
-const ensureOnlineForMutation = (path: string, method: "POST" | "PUT" | "PATCH" | "DELETE", data?: unknown) => {
-  if (typeof navigator === "undefined" || navigator.onLine) return;
-  queueFailedMutation({ path, method, body: data });
-  throw new ApiError({
-    status: 0,
-    message: "Offline: action queued for sync.",
-    details: { path, method }
-  });
-};
-
-const handleApiError = (error: unknown): never => {
-  if (error instanceof ApiError) {
-    if (error.status === 401) {
-      reportAuthFailure("unauthorized");
-    } else if (error.status === 403) {
-      reportAuthFailure("forbidden");
-      setApiStatus("forbidden");
-    } else if (error.status >= 500) {
-      setApiStatus("unavailable");
-    }
-  }
-  throw error;
-};
-
-const ensureSuccess = <T>(response: AxiosResponse<T>) => {
-  if (response.status >= 400) {
-    throw new ApiError({
-      status: response.status,
-      message: response.statusText || "Request failed",
-      details: response.data
-    });
-  }
-  setApiStatus("available");
-  return response;
-};
+const unwrap = async <T>(request: Promise<{ data: T }>) => (await request).data;
 
 export const apiClient = {
-  get: async <T>(path: string, options?: RequestOptions): Promise<T> => {
-    try {
-      ensureAccessToken(options);
-      const response = await api.get<T>(path, buildConfig(options));
-      return ensureSuccess(response).data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-  post: async <T>(path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
-    try {
-      ensureOnlineForMutation(path, "POST", data);
-      ensureAccessToken(options);
-      const response = await api.post<T>(path, data, buildConfig(options, { idempotent: true }));
-      return ensureSuccess(response).data;
-    } catch (error) {
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueFailedMutation({ path, method: "POST", body: data });
-      }
-      return handleApiError(error);
-    }
-  },
-  put: async <T>(path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
-    try {
-      ensureOnlineForMutation(path, "PUT", data);
-      ensureAccessToken(options);
-      const response = await api.put<T>(path, data, buildConfig(options, { idempotent: true }));
-      return ensureSuccess(response).data;
-    } catch (error) {
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueFailedMutation({ path, method: "PUT", body: data });
-      }
-      return handleApiError(error);
-    }
-  },
-  patch: async <T>(path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
-    try {
-      ensureOnlineForMutation(path, "PATCH", data);
-      ensureAccessToken(options);
-      const response = await api.patch<T>(path, data, buildConfig(options, { idempotent: true }));
-      return ensureSuccess(response).data;
-    } catch (error) {
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueFailedMutation({ path, method: "PATCH", body: data });
-      }
-      return handleApiError(error);
-    }
-  },
-  delete: async <T>(path: string, options?: RequestOptions): Promise<T> => {
-    try {
-      ensureOnlineForMutation(path, "DELETE");
-      ensureAccessToken(options);
-      const response = await api.delete<T>(path, buildConfig(options, { idempotent: true }));
-      return ensureSuccess(response).data;
-    } catch (error) {
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueFailedMutation({ path, method: "DELETE" });
-      }
-      return handleApiError(error);
-    }
-  },
-  getList: async <T>(path: string, options?: RequestOptions): Promise<ListResponse<T>> => {
-    try {
-      ensureAccessToken(options);
-      const response = await api.get<ListResponse<T>>(path, buildConfig(options));
-      return ensureSuccess(response).data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  }
+  get: <T>(path: string, options?: RequestOptions) => unwrap(canonicalClient.get<T>(path, withAuthHeaders(options))),
+  post: <T>(path: string, data?: unknown, options?: RequestOptions) => unwrap(canonicalClient.post<T>(path, data, withAuthHeaders(options))),
+  put: <T>(path: string, data?: unknown, options?: RequestOptions) => unwrap(canonicalClient.put<T>(path, data, withAuthHeaders(options))),
+  patch: <T>(path: string, data?: unknown, options?: RequestOptions) => unwrap(canonicalClient.patch<T>(path, data, withAuthHeaders(options))),
+  delete: <T>(path: string, options?: RequestOptions) => unwrap(canonicalClient.delete<T>(path, withAuthHeaders(options))),
+  getList: <T>(path: string, options?: RequestOptions) => unwrap(canonicalClient.get<ListResponse<T>>(path, withAuthHeaders(options)))
 };
 
 export default apiClient;
@@ -187,139 +56,24 @@ export const configureLenderApiClient = (config: LenderAuthConfig) => {
   lenderAuthConfig = config;
 };
 
-const lenderApiBaseURL = api.defaults.baseURL;
-const lenderApi = axios.create({
-  baseURL: lenderApiBaseURL
-});
-
-lenderApi.interceptors.request.use((config: InternalAxiosRequestConfig) => attachRequestIdAndLog(config));
-lenderApi.interceptors.response.use(
-  (response) => logResponse(response),
-  (error: AxiosError) => {
-    logError(error);
-    return Promise.reject(error);
-  }
-);
-
-const buildLenderConfig = (options?: RequestOptions): AxiosRequestConfig | undefined => {
-  if (!options) {
-    const tokens = lenderAuthConfig.tokenProvider();
-    if (!tokens?.accessToken) return undefined;
-    return {
-      headers: {
-        Authorization: `Bearer ${tokens.accessToken}`
-      }
-    };
-  }
-  const { skipAuth, ...config } = options;
-  if (skipAuth) return config;
+const lenderHeaders = (options?: RequestOptions) => {
+  if (options?.skipAuth) return options;
   const tokens = lenderAuthConfig.tokenProvider();
-  if (!tokens?.accessToken) return config;
+  if (!tokens?.accessToken) return options;
   return {
-    ...config,
+    ...options,
     headers: {
-      ...config.headers,
+      ...(options?.headers ?? {}),
       Authorization: `Bearer ${tokens.accessToken}`
     }
   };
 };
 
-const handleLenderError = (error: AxiosError) => {
-  const status = error.response?.status ?? 500;
-  const apiError = new ApiError({
-    status,
-    message: error.message,
-    code: (error.response?.data as { code?: string })?.code,
-    requestId: error.response?.headers?.["x-request-id"],
-    details: error.response?.data
-  });
-  if (status === 401) {
-    lenderAuthConfig.onUnauthorized?.();
-  }
-  throw apiError;
-};
-
 export const lenderApiClient = {
-  get: async <T>(path: string, options?: RequestOptions): Promise<T> => {
-    try {
-      const response = await lenderApi.get<T>(path, buildLenderConfig(options));
-      return response.data;
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        handleLenderError(error);
-      }
-      throw error;
-    }
-  },
-  post: async <T>(path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
-    try {
-      ensureOnlineForMutation(path, "POST", data);
-      const response = await lenderApi.post<T>(path, data, buildLenderConfig(options));
-      return response.data;
-    } catch (error) {
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueFailedMutation({ path, method: "POST", body: data });
-      }
-      if (error instanceof AxiosError) {
-        handleLenderError(error);
-      }
-      throw error;
-    }
-  },
-  put: async <T>(path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
-    try {
-      ensureOnlineForMutation(path, "PUT", data);
-      const response = await lenderApi.put<T>(path, data, buildLenderConfig(options));
-      return response.data;
-    } catch (error) {
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueFailedMutation({ path, method: "PUT", body: data });
-      }
-      if (error instanceof AxiosError) {
-        handleLenderError(error);
-      }
-      throw error;
-    }
-  },
-  patch: async <T>(path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
-    try {
-      ensureOnlineForMutation(path, "PATCH", data);
-      const response = await lenderApi.patch<T>(path, data, buildLenderConfig(options));
-      return response.data;
-    } catch (error) {
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueFailedMutation({ path, method: "PATCH", body: data });
-      }
-      if (error instanceof AxiosError) {
-        handleLenderError(error);
-      }
-      throw error;
-    }
-  },
-  delete: async <T>(path: string, options?: RequestOptions): Promise<T> => {
-    try {
-      ensureOnlineForMutation(path, "DELETE");
-      const response = await lenderApi.delete<T>(path, buildLenderConfig(options));
-      return response.data;
-    } catch (error) {
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueFailedMutation({ path, method: "DELETE" });
-      }
-      if (error instanceof AxiosError) {
-        handleLenderError(error);
-      }
-      throw error;
-    }
-  },
-  getList: async <T>(path: string, options?: RequestOptions): Promise<ListResponse<T>> => {
-    try {
-      const response = await lenderApi.get<ListResponse<T>>(path, buildLenderConfig(options));
-      return response.data;
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        handleLenderError(error);
-      }
-      throw error;
-    }
-  }
+  get: <T>(path: string, options?: RequestOptions) => unwrap(canonicalClient.get<T>(path, lenderHeaders(options))),
+  post: <T>(path: string, data?: unknown, options?: RequestOptions) => unwrap(canonicalClient.post<T>(path, data, lenderHeaders(options))),
+  put: <T>(path: string, data?: unknown, options?: RequestOptions) => unwrap(canonicalClient.put<T>(path, data, lenderHeaders(options))),
+  patch: <T>(path: string, data?: unknown, options?: RequestOptions) => unwrap(canonicalClient.patch<T>(path, data, lenderHeaders(options))),
+  delete: <T>(path: string, options?: RequestOptions) => unwrap(canonicalClient.delete<T>(path, lenderHeaders(options))),
+  getList: <T>(path: string, options?: RequestOptions) => unwrap(canonicalClient.get<ListResponse<T>>(path, lenderHeaders(options)))
 };
