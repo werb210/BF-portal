@@ -1,6 +1,7 @@
 import { Call, Device } from "@twilio/voice-sdk";
 import { setCallStatus } from "@/dialer/callStore";
 import { withApiBase } from "@/lib/apiBase";
+import { getVoiceToken } from "@/telephony/getVoiceToken";
 
 let device: Device | null = null;
 let activeCall: Call | null = null;
@@ -21,17 +22,8 @@ export async function initVoice(_userId?: string): Promise<void> {
   registrationInProgress = true;
 
   try {
-    const res = await fetch(withApiBase("/api/telephony/token"), {
-      method: "POST",
-      credentials: "include"
-    });
+    const token = await getVoiceToken();
 
-    if (!res.ok) {
-      registrationInProgress = false;
-      return;
-    }
-
-    const { token } = (await res.json()) as { token?: string };
     if (!token) {
       registrationInProgress = false;
       return;
@@ -85,14 +77,9 @@ function scheduleTokenRefresh() {
 
   tokenRefreshTimer = setTimeout(async () => {
     try {
-      const res = await fetch(withApiBase("/api/telephony/token"), {
-        method: "POST",
-        credentials: "include"
-      });
+      if (!device) return;
 
-      if (!res.ok || !device) return;
-
-      const { token } = (await res.json()) as { token?: string };
+      const token = await getVoiceToken();
       if (!token) return;
 
       device.updateToken(token);

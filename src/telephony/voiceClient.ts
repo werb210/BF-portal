@@ -1,11 +1,12 @@
 import { Device } from "@twilio/voice-sdk";
-import apiClient from "@/api/client";
+import { getVoiceToken } from "@/telephony/getVoiceToken";
 
 let device: Device | null = null;
 
 export async function initializeVoice(identity: string) {
-  const { data } = await apiClient.post("/api/telephony/token", { identity });
-  device = new Device(data.token);
+  void identity;
+  const token = await getVoiceToken();
+  device = new Device(token);
 
   device.on("registered", () => {
     console.log("Twilio device ready");
