@@ -195,8 +195,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [rolesStatus, setRolesStatus] = useState<RolesStatus>("loading");
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bootstrapped, setBootstrapped] = useState(false);
   const [isHydratingSession, setIsHydratingSession] = useState(true);
-  const didHydrateRef = useRef(false);
   const hydrationSettledRef = useRef(false);
   const refreshingRef = useRef(false);
 
@@ -314,37 +314,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    if (didHydrateRef.current) return;
-    didHydrateRef.current = true;
+    if (bootstrapped) return;
 
     const hydrate = async () => {
       setIsHydratingSession(true);
-      const token = getStoredAccessToken();
-      const hydrated = await refreshUser(token ?? null, { deferHydrationEnd: true });
-      if (hydrated) {
-        endHydration();
-        return;
-      }
+      try {
+        const token = getStoredAccessToken();
+        const hydrated = await refreshUser(token ?? null, { deferHydrationEnd: true });
+        if (hydrated) {
+          return;
+        }
 
-      const session = await readSession();
-      if (session?.accessToken && session.user) {
-        setStoredAccessToken(session.accessToken);
-        setStoredUser(session.user);
-        setAccessToken(session.accessToken);
-        setUserState(normalizeAuthUser(session.user as AuthUser));
-        const hydratedUser = normalizeAuthUser(session.user as AuthUser);
-        setAuthStateState("authenticated");
-        setAuthStatus("authenticated");
-        setRolesStatus(hasResolvedRole(hydratedUser) ? "resolved" : "loading");
-        endHydration();
-        return;
-      }
+        const session = await readSession();
+        if (session?.accessToken && session.user) {
+          setStoredAccessToken(session.accessToken);
+          setStoredUser(session.user);
+          setAccessToken(session.accessToken);
+          setUserState(normalizeAuthUser(session.user as AuthUser));
+          const hydratedUser = normalizeAuthUser(session.user as AuthUser);
+          setAuthStateState("authenticated");
+          setAuthStatus("authenticated");
+          setRolesStatus(hasResolvedRole(hydratedUser) ? "resolved" : "loading");
+          return;
+        }
 
-      clearAuth();
+        clearAuth();
+      } finally {
+        setBootstrapped(true);
+        endHydration();
+      }
     };
 
     void hydrate();
-  }, [clearAuth, endHydration, refreshUser]);
+  }, [bootstrapped, clearAuth, endHydration, refreshUser]);
 
   const startOtp = useCallback(async ({ phone }: OtpStartPayload) => {
     setPendingPhoneNumber(phone);
@@ -465,7 +467,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       : user;
 
   const isAuthenticated = isTestAuthenticated || authState === "authenticated";
-  const isLoading = !isTestAuthenticated && authState === "loading";
+  const isLoading = !isTestAuthenticated && (!bootstrapped || isHydratingSession || authState === "loading");
 
   const value = useMemo<AuthContextValue>(
     () => ({
