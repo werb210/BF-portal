@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +34,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
+  const sendingRef = useRef(false);
 
   useEffect(() => {
     if (authenticated && authStatus === "authenticated") {
@@ -61,6 +61,11 @@ export default function LoginPage() {
   };
 
   const requestOtpCode = async (phoneValue: string) => {
+    if (sendingRef.current) {
+      return;
+    }
+
+    sendingRef.current = true;
     setError(null);
     setRequestId(null);
     setEndpoint("/api/auth/otp/start");
@@ -69,7 +74,12 @@ export default function LoginPage() {
 
     try {
       clearStoredAuth();
-      await startOtp({ phone: phoneValue });
+      const started = await startOtp({ phone: phoneValue });
+      if (started === false) {
+        setError("Unable to send verification code.");
+        setRequestId("n/a");
+        return;
+      }
       setNormalizedPhone(phoneValue);
       setCodeSent(true);
       setStatusMessage("Code sent. Check your phone for the verification code.");
@@ -77,6 +87,7 @@ export default function LoginPage() {
       console.error("OTP start failed.", err);
       readApiError(err, "Unable to send verification code.");
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };

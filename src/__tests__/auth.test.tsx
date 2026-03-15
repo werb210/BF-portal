@@ -89,4 +89,30 @@ describe("token auth", () => {
     );
     expect(screen.getByTestId("email")).toHaveTextContent("restored@example.com");
   });
+  it("settles unauthenticated on /api/auth/me 401 without bootstrap loop", async () => {
+    setStoredAccessToken("expired-token");
+
+    const adapter = vi.fn(async (config) => ({
+      data: null,
+      status: 401,
+      statusText: "Unauthorized",
+      headers: {},
+      config
+    }));
+    api.defaults.adapter = adapter;
+
+    render(
+      <AuthProvider>
+        <TestAuthState />
+      </AuthProvider>
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated:resolved")
+    );
+
+    await waitFor(() => expect(adapter).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("email")).toHaveTextContent("");
+  });
+
 });
