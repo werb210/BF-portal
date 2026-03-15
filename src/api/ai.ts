@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/apiClient";
+import { get, post } from "@/api/apiClient";
 
 type AiSession = { id: string; source?: string; status: string };
 type AiMessage = { role: string; content: string };
@@ -9,48 +9,59 @@ type AiSessionDetail = {
 };
 
 export async function fetchEscalatedSessions() {
-  return apiClient.get("/api/ai/escalated");
+  const res = await get("/ai/escalated");
+  return res.data;
 }
 
 export async function fetchSessionMessages(sessionId: string) {
-  return apiClient.get(`/api/ai/session/${sessionId}`);
+  const res = await get(`/ai/session/${sessionId}`);
+  return res.data;
 }
 
 export async function sendStaffMessage(sessionId: string, message: string) {
-  return apiClient.post("/api/ai/staff-message", {
+  const res = await post("/ai/staff-message", {
     sessionId,
     message,
   });
+  return res.data;
 }
 
 export async function fetchActiveChats() {
-  return apiClient.get("/api/ai/portal/chats");
+  const res = await get("/ai/portal/chats");
+  return res.data;
 }
 
 export async function sendPortalStaffMessage(sessionId: string, message: string) {
-  return apiClient.post(`/api/ai/portal/chats/${sessionId}/message`, { message });
+  const res = await post(`/ai/portal/chats/${sessionId}/message`, { message });
+  return res.data;
 }
 
 export async function closeChat(sessionId: string) {
-  return apiClient.post(`/api/ai/portal/chats/${sessionId}/close`);
+  const res = await post(`/ai/portal/chats/${sessionId}/close`);
+  return res.data;
 }
 
 export async function fetchActiveAiSessions() {
-  return apiClient.get<AiSession[]>("/api/chat/sessions?status=ai");
+  const res = await get<AiSession[]>("/chat/sessions?status=ai");
+  return res.data;
 }
 
 export async function fetchAiMessages(sessionId: string) {
-  return apiClient.get<AiSessionDetail>(`/api/chat/sessions/${sessionId}`);
+  const res = await get<AiSessionDetail>(`/chat/sessions/${sessionId}`);
+  return res.data;
 }
 
 export async function takeOverSession(sessionId: string) {
-  return apiClient.post(`/api/chat/sessions/${sessionId}/takeover`);
+  const res = await post(`/chat/sessions/${sessionId}/takeover`);
+  return res.data;
 }
 
 export async function sendSessionStaffMessage(sessionId: string, message: string) {
-  return apiClient.post(`/api/chat/sessions/${sessionId}/message`, { message });
+  const res = await post(`/chat/sessions/${sessionId}/message`, { message });
+  return res.data;
 }
 
 export async function closeSession(sessionId: string) {
-  return apiClient.post(`/api/chat/sessions/${sessionId}/close`);
+  const res = await post(`/chat/sessions/${sessionId}/close`);
+  return res.data;
 }

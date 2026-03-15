@@ -8,7 +8,8 @@ export default function AIKnowledgeManager() {
 
   async function load() {
     const res = await AIService.listKnowledge();
-    setItems(res.data || []);
+    const nextItems = Array.isArray(res) ? res : (res as { data?: any[] })?.data ?? [];
+    setItems(nextItems);
   }
 
   async function save() {

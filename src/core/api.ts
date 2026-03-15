@@ -1,8 +1,3 @@
-import axios from "axios";
-import { getSiloFromHost } from "./silo";
+import { apiClient } from "@/api/apiClient";
 
-const silo = getSiloFromHost();
-
-export const api = axios.create({
-  baseURL: `/api/${silo.toLowerCase()}`
-});
+export const api = apiClient;
