@@ -1,9 +1,10 @@
 import { apiClient } from "@/api/apiClient";
+import { apiUrl } from "@/config/api";
 
 export { apiClient, apiClient as default, get, post, put, patch, del } from "@/api/apiClient";
 
 export function buildApiUrl(path: string) {
-  return path;
+  return apiUrl(path);
 }
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
