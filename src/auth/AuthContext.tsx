@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/api";
-import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
+import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService, getCurrentUser } from "@/services/auth";
 import { destroyVoice } from "@/services/voiceService";
 import { setCallStatus } from "@/dialer/callStore";
 import {
@@ -13,7 +13,6 @@ import type { AuthenticatedUser } from "@/services/auth";
 import { normalizeRole, roleIn, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import { clearSession, readSession, writeSession } from "@/utils/sessionStore";
-import { apiFetch } from "@/lib/apiFetch";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";
@@ -138,11 +137,6 @@ const getErrorStatus = (error: unknown): number | undefined => {
   return undefined;
 };
 
-const createHttpError = (status: number, message: string) => {
-  const error = new Error(message) as Error & { status: number };
-  error.status = status;
-  return error;
-};
 
 const isUnauthorizedError = (error: unknown) => getErrorStatus(error) === 401;
 
@@ -199,6 +193,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isHydratingSession, setIsHydratingSession] = useState(true);
   const hydrationSettledRef = useRef(false);
   const refreshingRef = useRef(false);
+  const bootstrapStartedRef = useRef(false);
 
   const settleUnauthenticated = useCallback(() => {
     setUserState(null);
@@ -244,34 +239,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        const nextUser = await (async (): Promise<AuthUser> => {
-          try {
-            const profile = await api.get("/api/auth/me", {
-              ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
-              withCredentials: true,
-            });
-
-            return normalizeAuthUser(profile.data?.user ?? profile.data);
-          } catch (apiError) {
-            if (isUnauthorizedError(apiError)) {
-              return null;
-            }
-
-            try {
-              const payload = await apiFetch("/api/auth/me", {
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-              });
-              return normalizeAuthUser(payload as AuthUser);
-            } catch (fetchError) {
-              if (fetchError instanceof Error && fetchError.message.includes("API error 401")) {
-                throw createHttpError(401, "Unauthorized");
-              }
-              throw fetchError;
-            }
-          }
-        })();
+        const nextUser = normalizeAuthUser((await getCurrentUser()) as AuthUser);
 
         if (!nextUser) {
           clearInvalidTokenArtifacts();
@@ -314,7 +282,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    if (bootstrapped) return;
+    if (bootstrapped || bootstrapStartedRef.current) return;
+    bootstrapStartedRef.current = true;
 
     const hydrate = async () => {
       setIsHydratingSession(true);
