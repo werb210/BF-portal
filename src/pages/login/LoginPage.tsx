@@ -2,13 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
-
-function normalizePhone(input: string) {
-  const digits = input.replace(/\D/g, "");
-  if (digits.length === 10) return `+1${digits}`;
-  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
-  return `+${digits}`;
-}
+import { normalizePhone } from "@/utils/normalizePhone";
 
 export function resolvePostLoginDestination(role: string): string {
   const normalizedRole = role.toLowerCase();
@@ -27,7 +21,7 @@ export function resolvePostLoginDestination(role: string): string {
 }
 
 export default function LoginPage() {
-  const { authenticated, authStatus, verifyOtp } = useAuth();
+  const { authenticated, authStatus, startOtp, verifyOtp } = useAuth();
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [normalizedPhone, setNormalizedPhone] = useState("");
@@ -77,33 +71,14 @@ export default function LoginPage() {
       setStatusMessage(null);
       setSending(true);
 
-      const payload = {
-        phone: normalizePhone(phoneValue),
-      };
+      const normalized = normalizePhone(phoneValue);
+      const started = await startOtp({ phone: phoneValue });
 
-      const response = await fetch("/api/auth/otp/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as {
-          error?: { message?: string };
-          message?: string;
-        } | null;
-        throw {
-          message: body?.error?.message ?? body?.message ?? "Failed to send verification code",
-          response: {
-            headers: {
-              "x-request-id": response.headers.get("x-request-id") ?? "n/a",
-            },
-            data: body,
-          },
-        };
+      if (!started) {
+        throw new Error("Failed to send verification code");
       }
 
-      setNormalizedPhone(payload.phone);
+      setNormalizedPhone(normalized);
       setCodeSent(true);
       setStatusMessage("Code sent. Check your phone for the verification code.");
     } catch (err: any) {

@@ -1,7 +1,7 @@
 import api from "../core/apiClient";
 import { clearToken, setToken } from "@/auth/tokenStorage";
 import { apiFetch } from "@/lib/api";
-import { normalizePhone } from "@/utils/phone";
+import { normalizePhone } from "../utils/normalizePhone";
 import { ENV } from "@/config/env";
 
 export type AuthenticatedUser = {
@@ -18,7 +18,8 @@ export async function startOtp(payload: { phone: string }) {
 
   return apiFetch("/api/auth/otp/start", {
     method: "POST",
-    body: { phone }
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone })
   });
 }
 
