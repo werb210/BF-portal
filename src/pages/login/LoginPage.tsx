@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
-import { normalizePhone } from "@/utils/phone";
 
 export function resolvePostLoginDestination(role: string): string {
   const normalizedRole = role.toLowerCase();
@@ -96,13 +95,12 @@ export default function LoginPage() {
   };
 
   const handleSendCode = async () => {
-    try {
-      const parsedPhone = normalizePhone(phone);
-      await requestOtpCode(parsedPhone);
-    } catch {
-      setError("Invalid phone number format");
-      setRequestId("n/a");
+    const rawPhone = phone.trim();
+    if (!rawPhone) {
+      return;
     }
+
+    await requestOtpCode(rawPhone);
   };
 
 
@@ -111,8 +109,8 @@ export default function LoginPage() {
     await requestOtpCode(normalizedPhone);
   };
 
-  const attemptVerify = async (nextCode: string) => {
-    if (nextCode.length !== 6 || !normalizedPhone) {
+  const handleVerify = async () => {
+    if (code.length !== 6 || !normalizedPhone) {
       return;
     }
 
@@ -122,7 +120,7 @@ export default function LoginPage() {
     setEndpoint("/api/auth/otp/verify");
 
     try {
-      const verified = await verifyOtp({ phone: normalizedPhone, code: nextCode });
+      const verified = await verifyOtp({ phone: normalizedPhone, code });
       if (!verified) {
         throw new Error("Verification failed");
       }
@@ -209,11 +207,20 @@ export default function LoginPage() {
               onChange={(event) => {
                 const next = event.target.value.replace(/\D/g, "").slice(0, 6);
                 setCode(next);
-                void attemptVerify(next);
               }}
               aria-label="OTP digit 1"
               disabled={verifying}
             />
+            <button
+              type="button"
+              className="mt-3 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+              onClick={() => {
+                void handleVerify();
+              }}
+              disabled={verifying || code.length !== 6}
+            >
+              {verifying ? "Verifying..." : "Verify"}
+            </button>
           </div>
         ) : null}
       </form>
