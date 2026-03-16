@@ -3,8 +3,6 @@ import { clearToken, setToken } from "@/auth/tokenStorage";
 import { apiFetch } from "@/lib/api";
 import { normalizePhone } from "@/utils/phone";
 import { ENV } from "@/config/env";
-import { getApiBase } from "@/config/apiBase";
-import { normalizeApiPath } from "@/config/api";
 
 export type AuthenticatedUser = {
   id?: string;
@@ -52,17 +50,13 @@ export function logout() {
   delete api.defaults.headers.common.Authorization;
 }
 
-const API_URL = getApiBase();
-const CURRENT_USER_PATH = normalizeApiPath("/users/me");
 
 export async function getCurrentUser() {
   const token = localStorage.getItem("access_token");
 
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
 
-  const res = await fetch(`${API_URL}${CURRENT_USER_PATH}`, {
+  const res = await fetch("/api/users/me", {
     headers: {
       Authorization: `Bearer ${token}`
     }
