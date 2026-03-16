@@ -30,7 +30,10 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     const response = await apiClient.request<T>({
       url: path,
       method: options.method,
-      data: options.body,
+      data:
+        typeof options.body === "string"
+          ? JSON.parse(options.body)
+          : options.body,
       headers: options.headers as Record<string, string> | undefined
     });
     return response.data;
