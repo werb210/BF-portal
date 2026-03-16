@@ -338,7 +338,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       try {
         const tokens = await verifyOtpService({ phone, code });
-        const token = tokens?.accessToken;
+        const token = tokens?.accessToken ?? tokens?.sessionToken;
         const role = tokens?.role;
 
         if (!token) {
@@ -351,31 +351,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         const nextUser = normalizeAuthUser(tokens?.user ?? (role ? { role } : null));
 
-        if (!nextUser) {
-          const hydrated = await refreshUser(token);
-          if (!hydrated) {
-            clearInvalidTokenArtifacts();
-            setPendingPhoneNumber(phone);
-            setAuthStateState("unauthenticated");
-            setAuthStatus("unauthenticated");
-            setRolesStatus("resolved");
-            setError("Unable to load your account after OTP verification");
-            return false;
-          }
-          setAuthStateState("authenticated");
-          setAuthStatus("authenticated");
-          setRolesStatus("resolved");
-          setError(null);
-          return true;
+        if (nextUser) {
+          setStoredUser(nextUser);
         }
-
-        setStoredUser(nextUser);
-        void writeSession({ accessToken: token, user: nextUser });
-        setUserState(nextUser);
+        void writeSession({ accessToken: token, user: nextUser ?? null });
+        setUserState(nextUser ?? null);
         setAuthStateState("authenticated");
         setAuthStatus("authenticated");
-        setRolesStatus("resolved");
+        setRolesStatus(nextUser && hasResolvedRole(nextUser) ? "resolved" : "loading");
         setError(null);
+
+        if (!nextUser) {
+          void refreshUser(token);
+        }
 
         return true;
       } catch (err) {

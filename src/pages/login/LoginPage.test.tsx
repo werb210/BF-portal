@@ -63,7 +63,7 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
-    await waitFor(() => expect(startOtp).toHaveBeenCalledWith({ phone: "+1 (555) 555-0100" }));
+    await waitFor(() => expect(startOtp).toHaveBeenCalledWith({ phone: "+15555550100" }));
     expect(await screen.findByLabelText(/OTP digit 1/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Verify/i })).toBeInTheDocument();
   });
@@ -113,6 +113,7 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByText(/Invalid verification code/i)).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /Resend code/i })).toBeEnabled();
     expect(screen.getByText(/Request ID: req-401/i)).toBeInTheDocument();
     expect(screen.getByText(/Endpoint: \/auth\/otp\/verify/i)).toBeInTheDocument();
   });

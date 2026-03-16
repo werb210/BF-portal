@@ -72,7 +72,7 @@ export default function LoginPage() {
       setSending(true);
 
       const normalized = normalizePhone(phoneValue);
-      const started = await startOtp({ phone: phoneValue });
+      const started = await startOtp({ phone: normalized });
 
       if (!started) {
         throw new Error("Failed to send verification code");

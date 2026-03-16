@@ -30,7 +30,14 @@ export async function verifyOtp(payload: { phone: string; code: string }) {
   };
   const res = await api.post("/api/auth/otp/verify", normalizedPayload);
   const data = res?.data ?? {};
-  const token = data.accessToken ?? data.token;
+  const authPayload = (data.auth ?? {}) as Record<string, unknown>;
+  const token =
+    (data.accessToken as string | undefined) ??
+    (data.sessionToken as string | undefined) ??
+    (data.token as string | undefined) ??
+    (authPayload.accessToken as string | undefined) ??
+    (authPayload.sessionToken as string | undefined) ??
+    (authPayload.token as string | undefined);
 
   if (token) {
     setToken(token);
@@ -44,6 +51,8 @@ export async function verifyOtp(payload: { phone: string; code: string }) {
   return {
     ...data,
     accessToken: token,
+    sessionToken: (data.sessionToken as string | undefined) ?? (authPayload.sessionToken as string | undefined),
+    user: (data.user as AuthenticatedUser | undefined) ?? (authPayload.user as AuthenticatedUser | undefined),
   };
 }
 
@@ -57,29 +66,6 @@ export function logout() {
 
 
 export async function getCurrentUser() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const token = window.localStorage.getItem("access_token");
-
-  if (!token) return null;
-
-  const res = await fetch("/api/users/me", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-
-  if (res.status === 401) {
-    window.localStorage.removeItem("access_token");
-    return null;
-  }
-
-  if (!res.ok) {
-    throw new Error(`Unable to load current user (${res.status})`);
-  }
-
-  return res.json();
+  const res = await api.get("/api/auth/me");
+  return res?.data ?? null;
 }
