@@ -56,11 +56,7 @@ const API_URL = getApiBase();
 const CURRENT_USER_PATH = normalizeApiPath("/users/me");
 
 export async function getCurrentUser() {
-  const token =
-    localStorage.getItem("access_token") ??
-    localStorage.getItem("accessToken") ??
-    localStorage.getItem("token") ??
-    sessionStorage.getItem(ENV.JWT_STORAGE_KEY);
+  const token = localStorage.getItem("access_token");
 
   if (!token) {
     return null;
@@ -69,15 +65,11 @@ export async function getCurrentUser() {
   const res = await fetch(`${API_URL}${CURRENT_USER_PATH}`, {
     headers: {
       Authorization: `Bearer ${token}`
-    },
-    credentials: "include"
+    }
   });
 
   if (res.status === 401) {
     localStorage.removeItem("access_token");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("token");
-    sessionStorage.removeItem(ENV.JWT_STORAGE_KEY);
     return null;
   }
 
