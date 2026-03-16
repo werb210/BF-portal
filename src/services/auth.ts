@@ -3,6 +3,8 @@ import { clearToken, setToken } from "@/auth/tokenStorage";
 import { apiFetch } from "@/lib/api";
 import { normalizePhone } from "@/utils/phone";
 import { ENV } from "@/config/env";
+import { getApiBase } from "@/config/apiBase";
+import { normalizeApiPath } from "@/config/api";
 
 export type AuthenticatedUser = {
   id?: string;
@@ -48,4 +50,36 @@ export async function verifyOtp(payload: { phone: string; code: string }) {
 export function logout() {
   clearToken();
   delete api.defaults.headers.common.Authorization;
+}
+
+const API_URL = getApiBase();
+const CURRENT_USER_PATH = normalizeApiPath("/users/me");
+
+export async function getCurrentUser() {
+  const token =
+    localStorage.getItem("access_token") ??
+    localStorage.getItem("accessToken") ??
+    localStorage.getItem("token") ??
+    sessionStorage.getItem(ENV.JWT_STORAGE_KEY);
+
+  if (!token) {
+    return null;
+  }
+
+  const res = await fetch(`${API_URL}${CURRENT_USER_PATH}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    credentials: "include"
+  });
+
+  if (res.status === 401) {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("token");
+    sessionStorage.removeItem(ENV.JWT_STORAGE_KEY);
+    return null;
+  }
+
+  return res.json();
 }
