@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
+import api from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
 export function resolvePostLoginDestination(role: string): string {
@@ -20,7 +21,7 @@ export function resolvePostLoginDestination(role: string): string {
 }
 
 export default function LoginPage() {
-  const { authenticated, authStatus, startOtp, verifyOtp } = useAuth();
+  const { authenticated, authStatus, verifyOtp } = useAuth();
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [normalizedPhone, setNormalizedPhone] = useState("");
@@ -32,7 +33,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
-  const sendingRef = useRef(false);
 
   useEffect(() => {
     if (authenticated && authStatus === "authenticated") {
@@ -63,50 +63,34 @@ export default function LoginPage() {
     setRequestId("n/a");
   };
 
-  const requestOtpCode = async (phoneValue: string) => {
-    if (sendingRef.current) {
-      return;
-    }
-
-    sendingRef.current = true;
-    setError(null);
-    setRequestId(null);
-    setEndpoint("/api/auth/otp/start");
-    setStatusMessage(null);
-    setSending(true);
-
+  const sendCode = async (phoneValue = phone) => {
     try {
-      const started = await startOtp({ phone: phoneValue });
-      if (started === false) {
-        setError("Unable to send verification code.");
-        setRequestId("n/a");
-        return;
-      }
-      setNormalizedPhone(phoneValue);
+      setError(null);
+      setRequestId(null);
+      setEndpoint("/api/auth/otp/start");
+      setStatusMessage(null);
+      setSending(true);
+
+      const phoneRaw = phoneValue.trim();
+
+      await api.post("/api/auth/otp/start", {
+        phone: phoneRaw,
+      });
+
+      setNormalizedPhone(phoneRaw);
       setCodeSent(true);
       setStatusMessage("Code sent. Check your phone for the verification code.");
-    } catch (err) {
-      console.error("OTP start failed.", err);
-      readApiError(err, "Unable to send verification code.");
+    } catch (err: any) {
+      setError(err?.response?.data?.error?.message || "Failed to send verification code");
+      setRequestId(err?.response?.headers?.["x-request-id"] ?? "n/a");
     } finally {
-      sendingRef.current = false;
       setSending(false);
     }
   };
 
-  const handleSendCode = async () => {
-    const rawPhone = phone.trim();
-    if (!rawPhone) {
-      return;
-    }
-
-    await requestOtpCode(rawPhone);
-  };
-
-
   const handleResendCode = async () => {
     if (!normalizedPhone) return;
-    await requestOtpCode(normalizedPhone);
+    await sendCode(normalizedPhone);
   };
 
   const handleVerify = async () => {
@@ -142,7 +126,7 @@ export default function LoginPage() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          void handleSendCode();
+          void sendCode();
         }}
         className="bg-white p-8 rounded shadow-md w-96"
       >
@@ -150,13 +134,13 @@ export default function LoginPage() {
 
         {statusMessage ? <div role="status" className="mb-4 text-sm text-green-700">{statusMessage}</div> : null}
 
-        {error ? (
-          <div role="alert" className="mb-4 text-sm text-red-600">
-            <div>{error}</div>
+        {error && (
+          <div role="alert" className="error mb-4 text-sm text-red-600">
+            {error}
             <div>Request ID: {requestId ?? "n/a"}</div>
             <div>Endpoint: {endpoint ?? "n/a"}</div>
           </div>
-        ) : null}
+        )}
 
         {!codeSent ? (
           <>
@@ -168,7 +152,8 @@ export default function LoginPage() {
                 type="tel"
                 className="w-full border px-3 py-2 rounded"
                 value={phone}
-                onChange={(event) => setPhone(event.target.value)}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(555) 555-5555"
                 required
                 disabled={sending}
               />
