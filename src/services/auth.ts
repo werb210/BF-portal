@@ -18,7 +18,7 @@ export async function startOtp(payload: { phone: string }) {
 
   return apiFetch("/api/auth/otp/start", {
     method: "POST",
-    body: JSON.stringify({ phone })
+    body: { phone }
   });
 }
 
