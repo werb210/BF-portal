@@ -12,7 +12,7 @@ import {
 import type { AuthenticatedUser } from "@/services/auth";
 import { normalizeRole, roleIn, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
-import { clearSession, readSession, writeSession } from "@/utils/sessionStore";
+import { clearSession, writeSession } from "@/utils/sessionStore";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";
@@ -118,6 +118,7 @@ const getTestAuthOverride = (): TestAuthOverride | null => {
  */
 const clearInvalidTokenArtifacts = () => {
   clearStoredAuth();
+  localStorage.removeItem("access_token");
   localStorage.removeItem("token");
   localStorage.removeItem("accessToken");
   sessionStorage.removeItem("token");
@@ -224,13 +225,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshUser = useCallback(
     async (tokenOverride?: string | null, options?: { deferHydrationEnd?: boolean }) => {
-      const token = tokenOverride ?? accessToken ?? getStoredAccessToken();
+      const token = tokenOverride ?? accessToken ?? getStoredAccessToken() ?? localStorage.getItem("access_token");
 
       if (refreshingRef.current) {
         return false;
       }
 
       refreshingRef.current = true;
+
+      if (token) {
+        localStorage.setItem("access_token", token);
+      }
 
       if (!options?.deferHydrationEnd) {
         setAuthStateState("loading");
@@ -288,26 +293,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const hydrate = async () => {
       setIsHydratingSession(true);
       try {
-        const token = getStoredAccessToken();
-        const hydrated = await refreshUser(token ?? null, { deferHydrationEnd: true });
+        const token = getStoredAccessToken() ?? localStorage.getItem("access_token");
+        if (!token) {
+          settleUnauthenticated();
+          return;
+        }
+
+        setStoredAccessToken(token);
+
+        const hydrated = await refreshUser(token, { deferHydrationEnd: true });
         if (hydrated) {
           return;
         }
 
-        const session = await readSession();
-        if (session?.accessToken && session.user) {
-          setStoredAccessToken(session.accessToken);
-          setStoredUser(session.user);
-          setAccessToken(session.accessToken);
-          setUserState(normalizeAuthUser(session.user as AuthUser));
-          const hydratedUser = normalizeAuthUser(session.user as AuthUser);
-          setAuthStateState("authenticated");
-          setAuthStatus("authenticated");
-          setRolesStatus(hasResolvedRole(hydratedUser) ? "resolved" : "loading");
-          return;
-        }
-
-        clearAuth();
+        settleUnauthenticated();
       } finally {
         setBootstrapped(true);
         endHydration();
@@ -315,7 +314,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     void hydrate();
-  }, [bootstrapped, clearAuth, endHydration, refreshUser]);
+  }, [bootstrapped, endHydration, refreshUser, settleUnauthenticated]);
 
   const startOtp = useCallback(async ({ phone }: OtpStartPayload) => {
     setPendingPhoneNumber(phone);
