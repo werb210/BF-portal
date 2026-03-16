@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
-import { clearStoredAuth } from "@/services/token";
 import { normalizePhone } from "@/utils/phone";
 
 export function resolvePostLoginDestination(role: string): string {
@@ -44,7 +43,12 @@ export default function LoginPage() {
 
   const readApiError = (err: unknown, fallback: string, preferFallback = false) => {
     if (err instanceof ApiError) {
-      setError(preferFallback ? fallback : (err.message || fallback));
+      const details = err.details as { message?: string; error?: string } | undefined;
+      const inlineMessage =
+        err.status === 400
+          ? details?.message ?? details?.error ?? err.message ?? fallback
+          : err.message ?? fallback;
+      setError(preferFallback ? fallback : inlineMessage);
       setRequestId(err.requestId ?? "n/a");
       return;
     }
@@ -73,7 +77,6 @@ export default function LoginPage() {
     setSending(true);
 
     try {
-      clearStoredAuth();
       const started = await startOtp({ phone: phoneValue });
       if (started === false) {
         setError("Unable to send verification code.");

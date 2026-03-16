@@ -34,6 +34,7 @@ export async function verifyOtp(payload: { phone: string; code: string }) {
   if (token) {
     setToken(token);
     if (typeof window !== "undefined") {
+      window.localStorage.setItem("access_token", token);
       window.sessionStorage.setItem(ENV.JWT_STORAGE_KEY, token);
     }
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
@@ -47,24 +48,36 @@ export async function verifyOtp(payload: { phone: string; code: string }) {
 
 export function logout() {
   clearToken();
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem("access_token");
+  }
   delete api.defaults.headers.common.Authorization;
 }
 
 
 export async function getCurrentUser() {
-  const token = localStorage.getItem("access_token");
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const token = window.localStorage.getItem("access_token");
 
   if (!token) return null;
 
   const res = await fetch("/api/users/me", {
+    method: "GET",
     headers: {
       Authorization: `Bearer ${token}`
     }
   });
 
   if (res.status === 401) {
-    localStorage.removeItem("access_token");
+    window.localStorage.removeItem("access_token");
     return null;
+  }
+
+  if (!res.ok) {
+    throw new Error(`Unable to load current user (${res.status})`);
   }
 
   return res.json();
