@@ -30,6 +30,7 @@ export async function verifyOtp(payload: { phone: string; code: string }) {
   };
   const res = await api.post("/api/auth/otp/verify", normalizedPayload);
   const data = res?.data ?? {};
+  console.log("OTP_VERIFY_RESPONSE", data);
   const authPayload = (data.auth ?? {}) as Record<string, unknown>;
   const token =
     (data.accessToken as string | undefined) ??
