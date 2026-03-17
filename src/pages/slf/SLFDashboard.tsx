@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
-import { createApi } from "../../api/apiFactory";
+import { createApi } from "@/apiFactory";
 import { useAuth } from "../../auth/AuthContext";
 import type { SLFDeal } from "../../types/slf";
 

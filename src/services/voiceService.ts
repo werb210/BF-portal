@@ -1,6 +1,6 @@
 import { Call, Device } from "@twilio/voice-sdk";
 import { setCallStatus } from "@/dialer/callStore";
-import { apiClient } from "@/api/apiClient";
+import { apiClient } from "@/api/client";
 import { getVoiceToken } from "@/telephony/getVoiceToken";
 
 let device: Device | null = null;

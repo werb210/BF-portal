@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/apiClient"
+import { apiClient } from "@/api/client"
 
 export interface SendPayload {
   applicationId: string

@@ -1,7 +1,7 @@
-import { apiClient } from "@/api/apiClient";
+import { apiClient } from "@/api/client";
 import { apiUrl } from "@/config/api";
 
-export { apiClient, apiClient as default, get, post, put, patch, del } from "@/api/apiClient";
+export { apiClient, apiClient as default, get, post, put, patch, del } from "@/api/client";
 
 export function buildApiUrl(path: string) {
   return apiUrl(path);
