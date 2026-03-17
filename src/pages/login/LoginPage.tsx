@@ -105,7 +105,7 @@ export default function LoginPage() {
     setEndpoint("/api/auth/otp/verify");
 
     try {
-      const verified = await verifyOtp({ phone: normalizedPhone, code });
+      const verified = await verifyOtp(normalizedPhone, code);
       if (!verified) {
         throw new Error("Verification failed");
       }

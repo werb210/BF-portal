@@ -44,7 +44,7 @@ const TestVerifyAction = () => {
     "button",
     {
       type: "button",
-      onClick: () => void verifyOtp({ code: "123456", phone: "+15555550100" })
+      onClick: () => void verifyOtp("+15555550100", "123456")
     },
     "Verify"
   );
@@ -98,7 +98,7 @@ describe("auth login", () => {
       config: {}
     } as any);
 
-    await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toEqual({
+    await expect(verifyOtp("+15555550100", "123456")).resolves.toEqual({
       accessToken: "access",
       refreshToken: "refresh"
     });

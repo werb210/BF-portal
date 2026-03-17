@@ -60,7 +60,7 @@ const TestVerifyAction = () => {
     "button",
     {
       type: "button",
-      onClick: () => void verifyOtp({ code: "123456", phone: "+15555550100" })
+      onClick: () => void verifyOtp("+15555550100", "123456")
     },
     "Verify"
   );
