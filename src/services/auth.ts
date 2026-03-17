@@ -1,8 +1,7 @@
 import api from "../core/apiClient";
-import { clearToken, setToken } from "@/auth/tokenStorage";
+import { clearToken } from "@/auth/tokenStorage";
 import { apiFetch } from "@/lib/api";
 import { normalizePhone } from "../utils/normalizePhone";
-import { ENV } from "@/config/env";
 
 export type AuthenticatedUser = {
   id?: string;
@@ -23,38 +22,34 @@ export async function startOtp(payload: { phone: string }) {
   });
 }
 
-export async function verifyOtp(payload: { phone: string; code: string }) {
-  const normalizedPayload = {
-    phone: normalizePhone(payload.phone),
-    code: payload.code
-  };
-  const res = await api.post("/api/auth/otp/verify", normalizedPayload);
-  const data = res?.data ?? {};
-  console.log("OTP_VERIFY_RESPONSE", data);
-  const authPayload = (data.auth ?? {}) as Record<string, unknown>;
-  const token =
-    (data.accessToken as string | undefined) ??
-    (data.sessionToken as string | undefined) ??
-    (data.token as string | undefined) ??
-    (authPayload.accessToken as string | undefined) ??
-    (authPayload.sessionToken as string | undefined) ??
-    (authPayload.token as string | undefined);
-
-  if (token) {
-    setToken(token);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("access_token", token);
-      window.sessionStorage.setItem(ENV.JWT_STORAGE_KEY, token);
+export async function verifyOtp(phone: string, code: string) {
+  const res = await fetch(
+    "https://server.boreal.financial/api/auth/otp/verify",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        phone,
+        code
+      })
     }
-    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+  );
+
+  const data = await res.json();
+
+  console.log("STAFF_OTP_VERIFY_RESPONSE", data);
+
+  if (!data.ok) {
+    throw new Error(data?.error?.message || "Verification failed");
   }
 
-  return {
-    ...data,
-    accessToken: token,
-    sessionToken: (data.sessionToken as string | undefined) ?? (authPayload.sessionToken as string | undefined),
-    user: (data.user as AuthenticatedUser | undefined) ?? (authPayload.user as AuthenticatedUser | undefined),
-  };
+  if (data.sessionToken) {
+    localStorage.setItem("access_token", data.sessionToken);
+  }
+
+  window.location.href = "/dashboard";
 }
 
 export function logout() {
