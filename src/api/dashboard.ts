@@ -1,4 +1,4 @@
-import { apiFetch } from "@/api/apiFetch";
+import { apiFetch } from "./apiFetch";
 
 export type PipelineOverview = {
   newApplications: number;

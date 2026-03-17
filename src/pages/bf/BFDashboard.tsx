@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import SiloSelector from "../../components/SiloSelector";
-import { createApi } from "../../api/apiFactory";
+import { createApi } from "@/apiFactory";
 import { useSilo } from "../../context/SiloContext";
 import { useAuth } from "../../auth/AuthContext";
 

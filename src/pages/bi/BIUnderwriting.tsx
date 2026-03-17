@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
 import { useAuth } from "../../auth/AuthContext";
-import { createApi } from "../../api/apiFactory";
+import { createApi } from "@/apiFactory";
 
 type UnderwritingApplication = {
   id: string;

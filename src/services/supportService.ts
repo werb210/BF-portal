@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/apiClient";
+import { apiClient } from "@/api/client";
 
 export const SupportService = {
   listEscalations: () => apiClient.get("/support/escalations"),

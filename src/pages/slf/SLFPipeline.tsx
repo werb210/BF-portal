@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
 import { useAuth } from "../../auth/AuthContext";
-import { createApi } from "../../api/apiFactory";
+import { createApi } from "@/apiFactory";
 import type { SLFDeal } from "../../types/slf";
 import { usePolling } from "../../hooks/usePolling";
 import Skeleton from "../../components/Skeleton";

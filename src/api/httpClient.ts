@@ -1,5 +1,5 @@
 import type { AxiosRequestConfig } from "axios";
-import { apiClient as canonicalClient } from "@/api/apiClient";
+import { apiClient as canonicalClient } from "@/api/client";
 
 export type RequestOptions = AxiosRequestConfig & {
   skipAuth?: boolean;

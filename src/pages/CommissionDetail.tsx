@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { createApi } from "../api/apiFactory";
+import { createApi } from "@/apiFactory";
 import { useAuth } from "../auth/AuthContext";
 import Skeleton from "../components/Skeleton";
 

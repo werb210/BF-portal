@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/apiClient";
+import { apiClient } from "@/api/client";
 import { useEffect, useState } from "react";
 
 export default function BiApplications() {
