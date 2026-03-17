@@ -344,27 +344,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       const verification = await authService.loginWithOtp(phone, code);
-      const user = normalizeAuthUser(verification.user as AuthUser);
-      const token = verification.token;
+
+      if (!verification.success) {
+        const message = verification.error ?? "Authentication failed";
+        setAuthStateState("unauthenticated");
+        setAuthStatus("unauthenticated");
+        setRolesStatus("resolved");
+        setUserState(null);
+        setAccessToken(null);
+        setError(message);
+        return { success: false, error: message };
+      }
+
+      const token = localStorage.getItem("auth_token");
 
       if (!token || token.trim().length === 0) {
-        throw new Error("Session exchange failed");
+        const message = "Session exchange failed";
+        setAuthStateState("unauthenticated");
+        setAuthStatus("unauthenticated");
+        setRolesStatus("resolved");
+        setUserState(null);
+        setAccessToken(null);
+        setError(message);
+        return { success: false, error: message };
       }
 
       setStoredAccessToken(token);
       setAccessToken(token);
       setPendingPhoneNumber(null);
-      setStoredUser(user);
-      void writeSession({ accessToken: token, user: user ?? null });
-      setUserState(user);
       setAuthStateState("authenticated");
       setAuthStatus("authenticated");
-      setRolesStatus(user && hasResolvedRole(user) ? "resolved" : "loading");
+      setRolesStatus("resolved");
       setError(null);
 
-      if (!user) {
-        void refreshUser(token);
-      }
+      void refreshUser(token);
 
       return { success: true, nextPath: verification.nextPath };
     } catch (err) {

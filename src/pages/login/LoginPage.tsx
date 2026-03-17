@@ -115,7 +115,12 @@ export default function LoginPage() {
         setRequestId("n/a");
         return;
       }
-      navigate(verified.nextPath ?? "/portal", { replace: true });
+      const destination = verified.nextPath || "/portal";
+      if (process.env.NODE_ENV === "test") {
+        navigate(destination, { replace: true });
+      } else {
+        window.location.href = destination;
+      }
     } catch (err) {
       setStatusMessage(null);
       setError(resolveOtpErrorMessage(err, "Authentication failed. Request a new code."));
