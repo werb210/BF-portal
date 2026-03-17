@@ -1,4 +1,4 @@
-import api from "../core/apiClient";
+import apiClient from "../core/apiClient";
 import { clearToken } from "@/auth/tokenStorage";
 import { apiFetch } from "@/lib/api";
 import { normalizePhone } from "../utils/normalizePhone";
@@ -23,33 +23,30 @@ export async function startOtp(payload: { phone: string }) {
 }
 
 export async function verifyOtp(phone: string, code: string) {
-  const res = await fetch(
-    "https://server.boreal.financial/api/auth/otp/verify",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        phone,
-        code
-      })
-    }
-  );
+  const res = await apiClient.post("/api/auth/otp/verify", {
+    phone,
+    code
+  });
 
-  const data = await res.json();
+  const data = res?.data;
 
   console.log("STAFF_OTP_VERIFY_RESPONSE", data);
 
-  if (!data.ok) {
+  if (!data?.ok) {
     throw new Error(data?.error?.message || "Verification failed");
   }
 
-  if (data.sessionToken) {
-    localStorage.setItem("access_token", data.sessionToken);
+  const sessionToken = data?.data?.sessionToken;
+
+  if (!sessionToken) {
+    throw new Error("Missing sessionToken");
   }
 
-  window.location.href = "/dashboard";
+  localStorage.setItem("access_token", sessionToken);
+
+  const nextPath = data?.data?.nextPath || "/dashboard";
+
+  window.location.href = nextPath;
 }
 
 export function logout() {
@@ -57,11 +54,11 @@ export function logout() {
   if (typeof window !== "undefined") {
     window.localStorage.removeItem("access_token");
   }
-  delete api.defaults.headers.common.Authorization;
+  delete apiClient.defaults.headers.common.Authorization;
 }
 
 
 export async function getCurrentUser() {
-  const res = await api.get("/api/auth/me");
+  const res = await apiClient.get("/api/auth/me");
   return res?.data ?? null;
 }
