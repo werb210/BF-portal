@@ -23,6 +23,8 @@ export async function startOtp(payload: { phone: string }) {
 }
 
 export async function verifyOtp(phone: string, code: string) {
+  console.log("OTP verify payload", { phone, code });
+
   const res = await apiClient.post("/api/auth/otp/verify", {
     phone,
     code
