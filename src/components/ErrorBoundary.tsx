@@ -1,4 +1,5 @@
 import React from "react";
+import { getRequestId } from "@/utils/requestId";
 
 type Props = { children: React.ReactNode };
 type State = { hasError: boolean };
@@ -14,15 +15,19 @@ class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("Portal runtime error:", error, info);
+    console.error("UI render failure", {
+      requestId: getRequestId(),
+      error,
+      info
+    });
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: 40 }}>
+        <div style={{ padding: 40 }} role="alert">
           <h2>Portal Error</h2>
-          <p>The portal encountered an unexpected error.</p>
+          <p>Unexpected error.</p>
           <p>Please refresh the page.</p>
         </div>
       );
