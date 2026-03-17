@@ -79,7 +79,7 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: /Verify/i }));
 
-    await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith({ code: "123456", phone: "+15555550100" }));
+    await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith("+15555550100", "123456"));
   });
 
   test("verify success does not show inline error", async () => {

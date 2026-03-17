@@ -52,7 +52,7 @@ describe("auth failure safeguards", () => {
     );
 
     await waitFor(() => expect(authRef).not.toBeNull());
-    const result = await authRef!.verifyOtp({ phone: "+15555550100", code: "123456" });
+    const result = await authRef!.verifyOtp("+15555550100", "123456");
     expect(result).toBe(false);
     await waitFor(() => expect(authRef!.error).toMatch(/access token/i));
   });
