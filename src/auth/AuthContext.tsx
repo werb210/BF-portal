@@ -39,6 +39,7 @@ declare global {
 
 export type OtpStartPayload = { phone: string };
 export type OtpVerifyPayload = { phone: string; code: string };
+export type OtpVerifyResult = { success: boolean; nextPath?: string; error?: string };
 
 export type AuthContextValue = {
   authState: AuthState;
@@ -63,8 +64,8 @@ export type AuthContextValue = {
   isHydratingSession: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   startOtp: (payload: OtpStartPayload) => Promise<boolean>;
-  verifyOtp: (phone: string, code: string) => Promise<boolean>;
-  loginWithOtp: (phone: string, code: string) => Promise<boolean>;
+  verifyOtp: (phone: string, code: string) => Promise<OtpVerifyResult>;
+  loginWithOtp: (phone: string, code: string) => Promise<OtpVerifyResult>;
   refreshUser: (tokenOverride?: string | null, options?: { deferHydrationEnd?: boolean }) => Promise<boolean>;
   clearAuth: () => void;
   logout: () => Promise<void>;
@@ -167,8 +168,8 @@ const TEST_AUTH_STUB: AuthContextValue = {
   isHydratingSession: false,
   login: async () => false,
   startOtp: async () => true,
-  verifyOtp: async () => true,
-  loginWithOtp: async () => true,
+  verifyOtp: async () => ({ success: true }),
+  loginWithOtp: async () => ({ success: true }),
   refreshUser: async () => true,
   clearAuth: () => undefined,
   logout: async () => {
@@ -336,16 +337,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return started !== false;
   }, []);
 
-  const verifyOtp = useCallback(async (phone: string, code: string) => {
+  const verifyOtp = useCallback(async (phone: string, code: string): Promise<OtpVerifyResult> => {
     setAuthStateState("loading");
     setAuthStatus("loading");
     setRolesStatus("loading");
 
     try {
-      const user = normalizeAuthUser((await authService.loginWithOtp(phone, code)) as AuthUser);
-      const token = localStorage.getItem("auth_token");
+      const verification = await authService.loginWithOtp(phone, code);
+      const user = normalizeAuthUser(verification.user as AuthUser);
+      const token = verification.token;
 
-      if (!token) {
+      if (!token || token.trim().length === 0) {
         throw new Error("Session exchange failed");
       }
 
@@ -364,7 +366,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         void refreshUser(token);
       }
 
-      return true;
+      return { success: true, nextPath: verification.nextPath };
     } catch (err) {
       const message = err instanceof Error ? err.message : "OTP login failed";
       console.error("OTP login failed", err);
@@ -374,7 +376,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUserState(null);
       setAccessToken(null);
       setError(message);
-      return false;
+      return { success: false, error: message };
     }
   }, [refreshUser]);
 

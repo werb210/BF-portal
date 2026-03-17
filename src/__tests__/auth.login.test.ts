@@ -4,9 +4,9 @@ import apiClient from "@/api/httpClient";
 import api from "@/api/client";
 import authApi from "@/lib/api";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
-import { loginWithOtp, verifyOtp } from "@/services/auth";
+import { loginWithOtp } from "@/services/auth";
 import { render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 import { clearStoredAuth } from "@/services/token";
 
@@ -112,9 +112,11 @@ describe("auth login", () => {
       config: {}
     } as any);
 
-    await expect(loginWithOtp("+15555550100", "123456")).resolves.toEqual(
-      mockVerifyResponse.data.user
-    );
+    await expect(loginWithOtp("+15555550100", "123456")).resolves.toEqual({
+      token: mockVerifyResponse.data.token,
+      user: mockVerifyResponse.data.user,
+      nextPath: "/portal"
+    });
 
     expect(localStorage.getItem("auth_token")).toBe(mockVerifyResponse.data.token);
     expect(localStorage.getItem("auth_user")).toBe(JSON.stringify(mockVerifyResponse.data.user));
@@ -193,6 +195,47 @@ describe("auth login", () => {
     expect(localStorage.getItem("auth_user")).toBe(JSON.stringify(mockVerifyResponse.data.user));
     await waitFor(() =>
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
+    );
+  });
+
+  it("treats ok=true with null token as failed authentication", async () => {
+    vi.spyOn(api, "post").mockResolvedValueOnce({
+      data: {
+        ok: true,
+        data: {
+          token: null,
+          user: { id: "user-id", role: "Staff" }
+        }
+      },
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config: {}
+    } as any);
+
+    await expect(loginWithOtp("+15555550100", "123456")).rejects.toThrow(
+      "Authentication failed. Request a new code."
+    );
+    expect(localStorage.getItem("auth_token")).toBeNull();
+  });
+
+  it("treats missing user as failed authentication", async () => {
+    vi.spyOn(api, "post").mockResolvedValueOnce({
+      data: {
+        ok: true,
+        data: {
+          token: "test-jwt-token",
+          user: null
+        }
+      },
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config: {}
+    } as any);
+
+    await expect(loginWithOtp("+15555550100", "123456")).rejects.toThrow(
+      "Authentication failed. Request a new code."
     );
   });
 });

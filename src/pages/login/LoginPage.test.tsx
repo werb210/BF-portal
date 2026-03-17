@@ -8,6 +8,15 @@ import { MemoryRouter } from "react-router-dom";
 
 let startOtpMock = vi.fn();
 let verifyOtpMock = vi.fn();
+let navigateMock = vi.fn();
+
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => navigateMock,
+  };
+});
 
 vi.mock("@/auth/AuthContext", () => ({
   useAuth: () => ({
@@ -39,6 +48,7 @@ describe("LoginPage", () => {
   beforeEach(() => {
     startOtpMock = vi.fn();
     verifyOtpMock = vi.fn();
+    navigateMock = vi.fn();
   });
 
   afterEach(() => {
@@ -57,7 +67,7 @@ describe("LoginPage", () => {
   };
 
   test("send code success transitions to verify step", async () => {
-    const startOtp = vi.fn().mockResolvedValue(true);
+    const startOtp = vi.fn().mockResolvedValue({ success: true });
     renderLogin(startOtp, vi.fn());
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
@@ -69,8 +79,8 @@ describe("LoginPage", () => {
   });
 
   test("verify button triggers network request", async () => {
-    const verifyOtp = vi.fn().mockResolvedValue(true);
-    renderLogin(vi.fn().mockResolvedValue(true), verifyOtp);
+    const verifyOtp = vi.fn().mockResolvedValue({ success: true });
+    renderLogin(vi.fn().mockResolvedValue({ success: true }), verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
@@ -80,11 +90,12 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Verify/i }));
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith("+15555550100", "123456"));
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/portal", { replace: true }));
   });
 
   test("verify success does not show inline error", async () => {
-    const verifyOtp = vi.fn().mockResolvedValue(true);
-    renderLogin(vi.fn().mockResolvedValue(true), verifyOtp);
+    const verifyOtp = vi.fn().mockResolvedValue({ success: true });
+    renderLogin(vi.fn().mockResolvedValue({ success: true }), verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
@@ -102,7 +113,7 @@ describe("LoginPage", () => {
     const verifyOtp = vi
       .fn()
       .mockRejectedValue(new ApiError({ status: 401, message: "Invalid code", requestId: "req-401" }));
-    renderLogin(vi.fn(), verifyOtp);
+    renderLogin(vi.fn().mockResolvedValue(true), verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
@@ -112,14 +123,49 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Verify/i }));
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByText(/Invalid verification code/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Invalid code/i)).toBeInTheDocument());
     expect(screen.getByRole("button", { name: /Resend code/i })).toBeEnabled();
     expect(screen.getByText(/Request ID: req-401/i)).toBeInTheDocument();
     expect(screen.getByText(/Endpoint: \/auth\/otp\/verify/i)).toBeInTheDocument();
   });
 
+  test("maps invalid_otp server error to user-friendly message", async () => {
+    const verifyOtp = vi.fn().mockRejectedValue(
+      new ApiError({
+        status: 401,
+        message: "Invalid code",
+        requestId: "req-otp",
+        details: { code: "invalid_otp" }
+      })
+    );
+    renderLogin(vi.fn().mockResolvedValue(true), verifyOtp);
+
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    await waitFor(() => expect(screen.getByLabelText(/OTP digit 1/i)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "000000" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verify/i }));
+
+    expect(await screen.findByText(/Invalid code. Request a new code and try again./i)).toBeInTheDocument();
+  });
+
+  test("shows missing-user authentication failure message", async () => {
+    const verifyOtp = vi.fn().mockResolvedValue({ success: false, error: "Authentication failed. Request a new code." });
+    renderLogin(vi.fn().mockResolvedValue(true), verifyOtp);
+
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    await waitFor(() => expect(screen.getByLabelText(/OTP digit 1/i)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "000000" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verify/i }));
+
+    expect(await screen.findByText(/Authentication failed. Request a new code./i)).toBeInTheDocument();
+  });
+
   test("no crash after successful otp start", async () => {
-    renderLogin(vi.fn().mockResolvedValue(true), vi.fn());
+    renderLogin(vi.fn().mockResolvedValue({ success: true }), vi.fn());
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));

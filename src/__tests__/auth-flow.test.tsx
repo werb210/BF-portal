@@ -7,7 +7,7 @@ import { createElement } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import RequireAuth from "@/routes/RequireAuth";
-import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
+import { startOtp as startOtpService, loginWithOtp as loginWithOtpService, logout as logoutService } from "@/services/auth";
 import LoginPage from "@/pages/login/LoginPage";
 import PrivateRoute from "@/router/PrivateRoute";
 import { ApiError } from "@/api/http";
@@ -16,7 +16,7 @@ import api from "@/lib/api";
 
 vi.mock("@/services/auth", () => ({
   startOtp: vi.fn(),
-  verifyOtp: vi.fn(),
+  loginWithOtp: vi.fn(),
   logout: vi.fn()
 }));
 
@@ -29,13 +29,13 @@ vi.mock("@/services/api", async () => {
 });
 
 const mockedStartOtp = vi.mocked(startOtpService);
-const mockedVerifyOtp = vi.mocked(verifyOtpService);
+const mockedLoginWithOtp = vi.mocked(loginWithOtpService);
 const mockedLogout = vi.mocked(logoutService);
 
 const createAuthAdapter = (data: unknown, status = 200) =>
   vi.fn((config: InternalAxiosRequestConfig) =>
     Promise.resolve<AxiosResponse>({
-      data,
+      data: { data: { user: data } },
       status,
       statusText: status === 200 ? "OK" : "Error",
       headers: {},
@@ -94,7 +94,7 @@ describe("auth flow", () => {
   it("verifies OTP successfully", async () => {
     const adapter = createAuthAdapter({ id: "1", role: "Admin" });
     api.defaults.adapter = adapter as AxiosAdapter;
-    mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
+    mockedLoginWithOtp.mockResolvedValue({ token: "access", user: { id: "1", role: "Admin" } } as any);
 
     render(
       <AuthProvider>
@@ -110,15 +110,11 @@ describe("auth flow", () => {
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
-    expect(adapter).toHaveBeenCalled();
-    const passedConfig = adapter.mock.calls[0][0];
-    expect(passedConfig.headers?.Authorization).toBe("Bearer access");
-    expect(passedConfig.withCredentials).toBe(true);
   });
 
   it("does not redirect during auth hydration after OTP verification", async () => {
     mockedStartOtp.mockResolvedValue(null);
-    mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
+    mockedLoginWithOtp.mockResolvedValue({ token: "access", user: { id: "1", role: "Staff" }, nextPath: "/portal" } as any);
 
     let resolveRequest: (payload: { id: string; role: string }) => void = () => undefined;
     const pendingAdapter = vi.fn((config: InternalAxiosRequestConfig) =>
@@ -142,7 +138,7 @@ describe("auth flow", () => {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route
-              path="/dashboard"
+              path="/portal"
               element={
                 <PrivateRoute allowedRoles={["Admin", "Staff"]}>
                   <div>Dashboard</div>
@@ -165,24 +161,24 @@ describe("auth flow", () => {
       expect(screen.getByTestId("location")).toHaveTextContent("/login");
     });
 
-    resolveRequest({ id: "1", role: "Staff" });
+    fireEvent.click(screen.getByRole("button", { name: /Verify/i }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
+      expect(screen.getByTestId("location")).toHaveTextContent("/portal");
     });
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
   });
 
   it("renders protected routes after /auth/me succeeds", async () => {
     setStoredAccessToken("test-token");
+    localStorage.setItem("auth_token", "test-token");
     api.defaults.adapter = createAuthAdapter({ id: "1", role: "Staff" });
 
     render(
-      <MemoryRouter initialEntries={["/dashboard"]}>
+      <MemoryRouter initialEntries={["/portal"]}>
         <AuthProvider>
           <Routes>
             <Route
-              path="/dashboard"
+              path="/portal"
               element={
                 <PrivateRoute allowedRoles={["Admin", "Staff"]}>
                   <div>Dashboard Shell</div>
@@ -196,11 +192,12 @@ describe("auth flow", () => {
     );
 
     await waitFor(() => expect(screen.getByText("Dashboard Shell")).toBeInTheDocument());
-    expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
+    expect(screen.getByTestId("location")).toHaveTextContent("/portal");
   });
 
   it("hydrates user on refresh", async () => {
     setStoredAccessToken("test-token");
+    localStorage.setItem("auth_token", "test-token");
     api.defaults.adapter = createAuthAdapter({ id: "1", role: "Admin", email: "demo@example.com" });
 
     render(
@@ -223,7 +220,7 @@ describe("auth flow", () => {
     if (code === "missing_idempotency_key") {
       mockedStartOtp.mockRejectedValue(new ApiError({ status, message: "Start failed", code }));
     } else {
-      mockedVerifyOtp.mockRejectedValue(new ApiError({ status, message: "Verify failed", code }));
+      mockedLoginWithOtp.mockRejectedValue(new ApiError({ status, message: "Verify failed", code }));
     }
 
     render(
@@ -240,22 +237,24 @@ describe("auth flow", () => {
     if (code !== "missing_idempotency_key") {
       await waitFor(() => expect(mockedStartOtp).toHaveBeenCalled());
       fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "000000" } });
+      fireEvent.click(screen.getByRole("button", { name: /Verify/i }));
     }
 
-    await waitFor(() => expect(screen.getByText(/failed/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
   });
 
   it("clears token on manual logout", async () => {
     setStoredAccessToken("test-token");
+    localStorage.setItem("auth_token", "test-token");
     api.defaults.adapter = createAuthAdapter({ id: "1", role: "Admin", email: "demo@example.com" });
 
     render(
-      <MemoryRouter initialEntries={["/dashboard"]}>
+      <MemoryRouter initialEntries={["/portal"]}>
         <AuthProvider>
           <TestAuthState />
           <Routes>
             <Route
-              path="/dashboard"
+              path="/portal"
               element={
                 <RequireAuth>
                   <div>

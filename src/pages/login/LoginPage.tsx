@@ -4,6 +4,15 @@ import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
 import { normalizePhone } from "@/utils/normalizePhone";
 
+const OTP_ERROR_MESSAGE_MAP: Record<string, string> = {
+  invalid_otp: "Invalid code. Request a new code and try again.",
+  expired: "Code expired. Request a new code.",
+  otp_session_expired: "Code expired. Request a new code.",
+  user_not_found: "This phone number is not linked to a portal user.",
+  otp_user_not_found: "This phone number is not linked to a portal user.",
+  auth_token_creation_failed: "Authentication failed. Request a new code.",
+};
+
 export function resolvePostLoginDestination(role: string): string {
   const normalizedRole = role.toLowerCase();
 
@@ -36,31 +45,26 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (authenticated && authStatus === "authenticated") {
-      navigate("/dashboard", { replace: true });
+      navigate("/portal", { replace: true });
     }
   }, [authenticated, authStatus, navigate]);
 
-  const readApiError = (err: unknown, fallback: string, preferFallback = false) => {
+  const resolveOtpErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof ApiError) {
-      const details = err.details as { message?: string; error?: string } | undefined;
-      const inlineMessage =
-        err.status === 400
-          ? details?.message ?? details?.error ?? err.message ?? fallback
-          : err.message ?? fallback;
-      setError(preferFallback ? fallback : inlineMessage);
-      setRequestId(err.requestId ?? "n/a");
-      return;
+      const details = err.details as { code?: string; message?: string } | undefined;
+      const code = details?.code ?? err.code;
+      if (code && OTP_ERROR_MESSAGE_MAP[code]) {
+        return OTP_ERROR_MESSAGE_MAP[code];
+      }
+      return details?.message ?? err.message ?? fallback;
     }
 
     const axiosLike = err as { message?: string; code?: string };
     if (axiosLike?.code === "ERR_NETWORK") {
-      setError("Network error. Please check your connection and retry.");
-      setRequestId("n/a");
-      return;
+      return "Network error. Please check your connection and retry.";
     }
 
-    setError(axiosLike?.message ?? fallback);
-    setRequestId("n/a");
+    return axiosLike?.message ?? fallback;
   };
 
   const sendCode = async (phoneValue = phone) => {
@@ -106,18 +110,16 @@ export default function LoginPage() {
 
     try {
       const verified = await verifyOtp(normalizedPhone, code);
-      if (!verified) {
-        setError("Authentication failed. Please request a new code.");
+      if (!verified.success) {
+        setError(verified.error || "Authentication failed. Request a new code.");
+        setRequestId("n/a");
         return;
       }
+      navigate(verified.nextPath ?? "/portal", { replace: true });
     } catch (err) {
       setStatusMessage(null);
-      const message = err instanceof Error ? err.message : "";
-      if (/failed/i.test(message)) {
-        readApiError(err, "Verification failed", false);
-      } else {
-        readApiError(err, "Invalid verification code", true);
-      }
+      setError(resolveOtpErrorMessage(err, "Authentication failed. Request a new code."));
+      setRequestId(err instanceof ApiError ? err.requestId ?? "n/a" : "n/a");
     } finally {
       setVerifying(false);
     }
