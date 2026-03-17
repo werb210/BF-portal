@@ -63,8 +63,8 @@ export type AuthContextValue = {
   isHydratingSession: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   startOtp: (payload: OtpStartPayload) => Promise<boolean>;
-  verifyOtp: (payloadOrPhone: OtpVerifyPayload | string, codeArg?: string) => Promise<boolean>;
-  loginWithOtp: (payloadOrPhone: OtpVerifyPayload | string, codeArg?: string) => Promise<boolean>;
+  verifyOtp: (phone: string, code: string) => Promise<boolean>;
+  loginWithOtp: (phone: string, code: string) => Promise<boolean>;
   refreshUser: (tokenOverride?: string | null, options?: { deferHydrationEnd?: boolean }) => Promise<boolean>;
   clearAuth: () => void;
   logout: () => Promise<void>;
@@ -325,19 +325,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const verifyOtp = useCallback(
-    async (payloadOrPhone: OtpVerifyPayload | string, codeArg?: string) => {
-      const payload =
-        typeof payloadOrPhone === "string"
-          ? { phone: payloadOrPhone, code: codeArg ?? "" }
-          : payloadOrPhone;
-      const { phone, code } = payload;
+    async (phone: string, code: string) => {
 
       setAuthStateState("loading");
       setAuthStatus("loading");
       setRolesStatus("loading");
 
       try {
-        const tokens = await verifyOtpService({ phone, code });
+        const tokens = await verifyOtpService(phone, code);
         const token = tokens?.accessToken ?? tokens?.sessionToken;
         const role = tokens?.role;
 

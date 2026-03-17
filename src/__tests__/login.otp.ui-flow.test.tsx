@@ -86,7 +86,7 @@ describe("login otp ui flow", () => {
     fireEvent.change(screen.getByLabelText(/otp digit 1/i), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: /verify/i }));
 
-    await waitFor(() => expect(verifyOtpMock).toHaveBeenCalledWith({ phone: "+15555550100", code: "123456" }));
+    await waitFor(() => expect(verifyOtpMock).toHaveBeenCalledWith("+15555550100", "123456"));
   });
 
   it("verify success path does not render inline error", async () => {

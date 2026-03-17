@@ -23,32 +23,29 @@ export async function startOtp(payload: { phone: string }) {
 }
 
 export async function verifyOtp(phone: string, code: string) {
-  console.log("OTP verify payload", { phone, code });
+  const normalizedPhone = normalizePhone(phone);
+
+  console.log("OTP verify payload", { phone: normalizedPhone, code });
 
   const res = await apiClient.post("/api/auth/otp/verify", {
-    phone,
+    phone: normalizedPhone,
     code
   });
 
   const data = res?.data;
 
-  console.log("STAFF_OTP_VERIFY_RESPONSE", data);
-
   if (!data?.ok) {
     throw new Error(data?.error?.message || "Verification failed");
   }
 
-  const sessionToken = data?.data?.sessionToken;
+  const payload = data?.data ?? data;
 
-  if (!sessionToken) {
-    throw new Error("Missing sessionToken");
-  }
-
-  localStorage.setItem("access_token", sessionToken);
-
-  const nextPath = data?.data?.nextPath || "/dashboard";
-
-  window.location.href = nextPath;
+  return {
+    accessToken: payload?.accessToken,
+    sessionToken: payload?.sessionToken,
+    role: payload?.role,
+    user: payload?.user,
+  };
 }
 
 export function logout() {
