@@ -19,15 +19,15 @@ const meSpy = vi.fn();
 let lendersAuthHeader: string | null = null;
 
 const server = setupServer(
-  http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
+  http.post("http://localhost/auth/otp/start", async ({ request }) => {
     startOtpSpy(await request.json());
     return new HttpResponse(null, { status: 204 });
   }),
-  http.post("http://localhost/api/auth/otp/verify", async ({ request }) => {
+  http.post("http://localhost/auth/otp/verify", async ({ request }) => {
     verifyOtpSpy(await request.json());
     return HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" });
   }),
-  http.get("*/api/auth/me", () => {
+  http.get("*/auth/me", () => {
     meSpy();
     return HttpResponse.json({ id: "1", role: "Staff" }, { status: 200 });
   }),
@@ -128,7 +128,7 @@ describe("auth server contract", () => {
     expect(screen.queryByLabelText(/phone number/i)).not.toBeInTheDocument();
   });
 
-  it("TEST 4 — OTP VERIFY FETCHES /api/auth/me AND NAVIGATES", async () => {
+  it("TEST 4 — OTP VERIFY FETCHES /auth/me AND NAVIGATES", async () => {
     const user = userEvent.setup();
 
     render(<TestApp />);

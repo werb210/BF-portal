@@ -171,7 +171,7 @@ describe("auth flow", () => {
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
   });
 
-  it("renders protected routes after /api/auth/me succeeds", async () => {
+  it("renders protected routes after /auth/me succeeds", async () => {
     setStoredAccessToken("test-token");
     api.defaults.adapter = createAuthAdapter({ id: "1", role: "Staff" });
 

@@ -67,7 +67,7 @@ export default function LoginPage() {
     try {
       setError(null);
       setRequestId(null);
-      setEndpoint("/api/auth/otp/start");
+      setEndpoint("/auth/otp/start");
       setStatusMessage(null);
       setSending(true);
 
@@ -102,7 +102,7 @@ export default function LoginPage() {
     setVerifying(true);
     setError(null);
     setRequestId(null);
-    setEndpoint("/api/auth/otp/verify");
+    setEndpoint("/auth/otp/verify");
 
     try {
       const verified = await verifyOtp(normalizedPhone, code);

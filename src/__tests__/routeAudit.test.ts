@@ -19,7 +19,7 @@ describe("route audit", () => {
 
   it("does not throw or set ui failure when audit fetch fails", async () => {
     fetchMock.mockImplementation((input: RequestInfo | URL) => {
-      if (String(input).includes("/api/auth/me")) {
+      if (String(input).includes("/auth/me")) {
         return Promise.resolve(new Response(null, { status: 401 }));
       }
       return Promise.reject(new Error("network down"));

@@ -74,7 +74,7 @@ describe("token auth", () => {
     expect(screen.getByTestId("email")).toHaveTextContent("demo@example.com");
   });
 
-  it("hydrates auth state from /api/auth/me", async () => {
+  it("hydrates auth state from /auth/me", async () => {
     setStoredAccessToken("test-token");
     api.defaults.adapter = createAuthAdapter({ id: "2", email: "restored@example.com", role: "Staff" });
 
@@ -89,7 +89,7 @@ describe("token auth", () => {
     );
     expect(screen.getByTestId("email")).toHaveTextContent("restored@example.com");
   });
-  it("settles unauthenticated on /api/auth/me 401 without bootstrap loop", async () => {
+  it("settles unauthenticated on /auth/me 401 without bootstrap loop", async () => {
     setStoredAccessToken("expired-token");
 
     const adapter = vi.fn(async (config) => ({

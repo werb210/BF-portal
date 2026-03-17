@@ -35,7 +35,7 @@ describe("auth contract", () => {
     api.defaults.adapter = originalAdapter;
   });
 
-  it("sets loading immediately and resolves roles after /api/auth/me", async () => {
+  it("sets loading immediately and resolves roles after /auth/me", async () => {
     clearStoredAuth();
     setStoredAccessToken("token");
 
