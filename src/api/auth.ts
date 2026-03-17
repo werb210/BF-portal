@@ -6,7 +6,7 @@ import apiClient from "./client";
 export { otpStart as startOtp };
 
 export async function verifyOtp(phone: string, code: string) {
-  return otpVerify({ phone, code });
+  return otpVerify(phone, code);
 }
 
 export const fetchCurrentUser = () =>
