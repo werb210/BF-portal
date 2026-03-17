@@ -4,8 +4,10 @@ apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("auth_token");
 
   if (token) {
-    config.headers = config.headers ?? {};
-    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+    config.headers = {
+      ...(config.headers as Record<string, string> | undefined),
+      Authorization: `Bearer ${token}`
+    } as any;
   }
 
   return config;

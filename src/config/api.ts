@@ -12,11 +12,13 @@ export function normalizeApiBaseUrl(rawBase: string): string {
     return "/api";
   }
 
-  if (normalized === "/api" || hasApiSuffix(normalized)) {
-    return normalized;
+  const withoutDuplicateApi = normalized.replace(/\/api\/api$/i, "/api");
+
+  if (withoutDuplicateApi === "/api" || hasApiSuffix(withoutDuplicateApi)) {
+    return withoutDuplicateApi;
   }
 
-  return `${normalized}/api`;
+  return `${withoutDuplicateApi}/api`;
 }
 
 export function normalizeApiPath(path: string): string {
