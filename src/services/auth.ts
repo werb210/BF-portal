@@ -40,6 +40,12 @@ export async function verifyOtp(phone: string, code: string) {
 
   const payload = data?.data ?? data;
 
+  const token = payload?.accessToken ?? payload?.sessionToken ?? null;
+
+  if (token) {
+    localStorage.setItem("auth_token", token);
+  }
+
   return {
     accessToken: payload?.accessToken,
     sessionToken: payload?.sessionToken,
@@ -60,4 +66,23 @@ export function logout() {
 export async function getCurrentUser() {
   const res = await apiClient.get("/api/auth/me");
   return res?.data ?? null;
+}
+
+export async function loginWithOtp(phone: string, code: string) {
+  const normalizedPhone = normalizePhone(phone);
+
+  const res = await apiClient.post("/api/auth/otp/verify", {
+    phone: normalizedPhone,
+    code
+  });
+
+  const payload = res?.data?.data ?? res?.data ?? {};
+  const token = payload?.token ?? payload?.accessToken ?? payload?.sessionToken;
+  const user = payload?.user ?? null;
+
+  if (token) {
+    localStorage.setItem("auth_token", token);
+  }
+
+  return user;
 }

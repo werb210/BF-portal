@@ -1,16 +1,33 @@
-import { getToken } from "@/auth/tokenStorage";
 import { apiClient } from "@/lib/apiClient";
 
 apiClient.interceptors.request.use((config) => {
-  const token = getToken();
+  const token = localStorage.getItem("auth_token");
 
   if (token) {
     config.headers = config.headers ?? {};
-    config.headers.Authorization = `Bearer ${token}`;
+    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
   }
 
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    if (err.response?.status === 401) {
+      const token = localStorage.getItem("auth_token");
+
+      if (!token) {
+        return Promise.reject(err);
+      }
+
+      localStorage.removeItem("auth_token");
+      window.location.href = "/login";
+    }
+
+    return Promise.reject(err);
+  }
+);
 
 export const clientApi = apiClient;
 export { apiClient };
