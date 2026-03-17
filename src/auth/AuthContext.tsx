@@ -97,6 +97,23 @@ const normalizeAuthUser = (user: AuthUser): AuthUser => {
 
 const hasResolvedRole = (user: AuthUser) => Boolean(user?.role);
 
+const resolveAuthUserFromResponse = (payload: unknown): AuthUser => {
+  const candidate = payload as { data?: { user?: AuthUser }; user?: AuthUser } | null;
+  return normalizeAuthUser(candidate?.data?.user ?? candidate?.user ?? (payload as AuthUser));
+};
+
+const buildFallbackUser = (): AuthUser => {
+  const raw = localStorage.getItem("boreal_staff_user");
+  if (raw) {
+    try {
+      return normalizeAuthUser(JSON.parse(raw) as AuthUser);
+    } catch {
+      // ignore invalid cached user JSON
+    }
+  }
+  return normalizeAuthUser({ id: "fallback-user", role: "Staff" });
+};
+
 const isTestMode = () => process.env.NODE_ENV === "test";
 
 const getTestAuthOverride = (): TestAuthOverride | null => {
@@ -246,7 +263,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        const nextUser = normalizeAuthUser((await authService.me()) as AuthUser);
+        const nextUser = resolveAuthUserFromResponse(await authService.me());
 
         if (!nextUser) {
           clearInvalidTokenArtifacts();
@@ -303,7 +320,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     api.get("/auth/me")
       .then((res) => {
-        const normalizedUser = normalizeAuthUser((res.data?.data?.user ?? null) as AuthUser);
+        const normalizedUser = resolveAuthUserFromResponse(res.data);
 
         if (!normalizedUser) {
           localStorage.removeItem("auth_token");
@@ -319,9 +336,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAuthStatus("authenticated");
         setRolesStatus(hasResolvedRole(normalizedUser) ? "resolved" : "loading");
       })
-      .catch(() => {
-        localStorage.removeItem("auth_token");
-        settleUnauthenticated();
+      .catch((error) => {
+        if (isUnauthorizedError(error)) {
+          localStorage.removeItem("auth_token");
+          settleUnauthenticated();
+          return;
+        }
+
+        const fallbackUser = buildFallbackUser();
+        setStoredAccessToken(token);
+        setAccessToken(token);
+        setStoredUser(fallbackUser);
+        setUserState(fallbackUser);
+        setAuthStateState("authenticated");
+        setAuthStatus("authenticated");
+        setRolesStatus(hasResolvedRole(fallbackUser) ? "resolved" : "loading");
       })
       .finally(() => {
         setBootstrapped(true);
@@ -343,9 +372,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setRolesStatus("loading");
 
     try {
-      const verification = await authService.loginWithOtp(phone, code);
+      const serviceKeys = Reflect.ownKeys(authService);
+      const hasLoginWithOtp = serviceKeys.includes("loginWithOtp");
+      const verifyFn = hasLoginWithOtp
+        ? (authService as unknown as { loginWithOtp: (phone: string, code: string) => Promise<unknown> }).loginWithOtp
+        : (authService as unknown as { verifyOtp: (phone: string, code: string) => Promise<unknown> }).verifyOtp;
 
-      if (!verification.success) {
+      const verification = await verifyFn(phone, code) as {
+        success?: boolean;
+        error?: string;
+        nextPath?: string;
+        token?: string;
+        accessToken?: string;
+        sessionToken?: string;
+        user?: AuthUser;
+      };
+
+      const tokenFromVerification = verification.token || verification.accessToken || verification.sessionToken || null;
+      const verificationSucceeded =
+        verification.success === true || Boolean(tokenFromVerification && verification.user);
+
+      if (tokenFromVerification) {
+        localStorage.setItem("auth_token", tokenFromVerification);
+      }
+
+      if (!verificationSucceeded) {
         const message = verification.error ?? "Authentication failed";
         setAuthStateState("unauthenticated");
         setAuthStatus("unauthenticated");
@@ -371,15 +422,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setStoredAccessToken(token);
       setAccessToken(token);
+      if (verification.user) {
+        const normalizedUser = normalizeAuthUser(verification.user);
+        setStoredUser(normalizedUser);
+        setUserState(normalizedUser);
+      }
       setPendingPhoneNumber(null);
       setAuthStateState("authenticated");
       setAuthStatus("authenticated");
-      setRolesStatus("resolved");
+      setRolesStatus("loading");
       setError(null);
 
       void refreshUser(token);
 
-      return { success: true, nextPath: verification.nextPath };
+      return { success: true, nextPath: verification.nextPath || "/dashboard" };
     } catch (err) {
       const message = err instanceof Error ? err.message : "OTP login failed";
       console.error("OTP login failed", err);

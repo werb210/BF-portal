@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,12 +42,17 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
+  const lastAutoVerifiedCodeRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (authenticated && authStatus === "authenticated") {
-      window.location.href = "/portal";
+    if (!codeSent && authenticated && authStatus === "authenticated") {
+      if (process.env.NODE_ENV === "test") {
+        navigate("/dashboard", { replace: true });
+      } else {
+        window.location.href = "/dashboard";
+      }
     }
-  }, [authenticated, authStatus, navigate]);
+  }, [authenticated, authStatus, codeSent, navigate]);
 
   const resolveOtpErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof ApiError) {
@@ -115,7 +120,7 @@ export default function LoginPage() {
         setRequestId("n/a");
         return;
       }
-      const destination = verified.nextPath || "/portal";
+      const destination = verified.nextPath || "/dashboard";
       if (process.env.NODE_ENV === "test") {
         navigate(destination, { replace: true });
       } else {
@@ -129,6 +134,12 @@ export default function LoginPage() {
       setVerifying(false);
     }
   };
+
+  useEffect(() => {
+    if (!codeSent) {
+      lastAutoVerifiedCodeRef.current = null;
+    }
+  }, [codeSent]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">

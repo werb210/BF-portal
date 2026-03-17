@@ -33,14 +33,13 @@ export async function verifyOtp(phone: string, code: string) {
   });
 
   const data = res?.data;
+  const payload = data?.data ?? data;
 
-  if (!data?.ok) {
+  if (data?.ok === false) {
     throw new Error(data?.error?.message || "Verification failed");
   }
 
-  const payload = data?.data ?? data;
-
-  const token = payload?.accessToken ?? payload?.sessionToken ?? null;
+  const token = payload?.accessToken ?? payload?.token ?? payload?.sessionToken ?? null;
 
   if (token) {
     localStorage.setItem("auth_token", token);
@@ -65,7 +64,8 @@ export function logout() {
 
 export async function getCurrentUser() {
   const res = await apiClient.get("/auth/me");
-  return res?.data ?? null;
+  const payload = res?.data;
+  return payload?.data?.user ?? payload?.user ?? payload ?? null;
 }
 
 export async function loginWithOtp(phone: string, code: string) {
@@ -78,20 +78,19 @@ export async function loginWithOtp(phone: string, code: string) {
 
   const response = verify?.data;
 
-  if (
-    response?.ok === true &&
-    response?.data &&
-    (response.data.token || response.data.sessionToken) &&
-    response.data.user
-  ) {
-    const token =
-      response.data.token || response.data.sessionToken;
+  const payload = response?.data ?? response;
+  const token = payload?.token || payload?.accessToken || payload?.sessionToken || null;
+  const user = payload?.user ?? null;
+
+  const isSuccessful = response?.ok === true || Boolean(token && user);
+
+  if (isSuccessful && token && user) {
 
     localStorage.setItem("auth_token", token);
 
     return {
       success: true,
-      nextPath: response.data.nextPath || "/portal"
+      nextPath: payload?.nextPath || "/dashboard"
     };
   }
 

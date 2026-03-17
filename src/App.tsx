@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Navigate, Outlet, Route, Routes, useInRouterContext } from "react-router-dom";
 import { AuthContext, AuthProvider } from "@/auth/AuthContext";
 import { roleIn } from "@/auth/roles";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
@@ -116,10 +116,17 @@ const AppRoutes = () => (
 
 export default function App() {
   const existingAuthContext = useContext(AuthContext);
+  const inRouterContext = useInRouterContext();
   const queryClient = useMemo(() => new QueryClient(), []);
 
+  const withOptionalRouter = (children: React.ReactNode) => {
+    if (inRouterContext) return children;
+    const path = typeof window !== "undefined" ? window.location.pathname || "/" : "/";
+    return <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>;
+  };
+
   if (existingAuthContext) {
-    return (
+    return withOptionalRouter(
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
           <AppRoutes />
@@ -128,7 +135,7 @@ export default function App() {
     );
   }
 
-  return (
+  return withOptionalRouter(
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
