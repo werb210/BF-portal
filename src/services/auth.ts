@@ -1,6 +1,7 @@
 import apiClient from "../core/apiClient";
 import { clearToken } from "@/auth/tokenStorage";
 import { apiFetch } from "@/lib/api";
+import { ApiError } from "@/api/http";
 import { normalizePhone } from "../utils/normalizePhone";
 
 export type AuthenticatedUser = {
@@ -77,16 +78,29 @@ export async function loginWithOtp(phone: string, code: string) {
   });
 
   const payload = verify?.data;
+  const responseData = payload?.data;
+  const token = typeof responseData?.token === "string" && responseData.token.trim().length > 0
+    ? responseData.token
+    : typeof responseData?.sessionToken === "string" && responseData.sessionToken.trim().length > 0
+      ? responseData.sessionToken
+      : null;
+  const user = responseData?.user ?? null;
 
-  if (!payload?.ok) {
-    throw new Error(payload?.error?.message ?? "Verification failed");
-  }
+  const isVerificationSuccess =
+    payload?.ok === true &&
+    Boolean(responseData) &&
+    Boolean(token) &&
+    user !== null;
 
-  const token = payload?.data?.token;
-  const user = payload?.data?.user ?? null;
-
-  if (!token) {
-    throw new Error("OTP verification returned no token");
+  if (!isVerificationSuccess) {
+    const errorCode = payload?.error?.code;
+    const errorMessage = payload?.error?.message ?? "Authentication failed. Request a new code.";
+    throw new ApiError({
+      status: 401,
+      code: typeof errorCode === "string" ? errorCode : undefined,
+      message: errorMessage,
+      details: payload?.error
+    });
   }
 
   localStorage.setItem("auth_token", token);
@@ -95,7 +109,13 @@ export async function loginWithOtp(phone: string, code: string) {
     localStorage.setItem("auth_user", JSON.stringify(user));
   }
 
-  return user;
+  return {
+    token,
+    user,
+    nextPath: typeof responseData?.nextPath === "string" && responseData.nextPath.trim().length > 0
+      ? responseData.nextPath
+      : undefined
+  };
 }
 
 export async function me() {

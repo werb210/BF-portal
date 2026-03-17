@@ -60,7 +60,7 @@ describe("login otp ui flow", () => {
 
   it("send code success transitions to verify step without crash", async () => {
     startOtpMock.mockResolvedValue({ ok: true });
-    verifyOtpMock.mockResolvedValue(true);
+    verifyOtpMock.mockResolvedValue({ success: true });
 
     renderLogin();
 
@@ -75,7 +75,7 @@ describe("login otp ui flow", () => {
 
   it("verify button triggers network request with phone and code", async () => {
     startOtpMock.mockResolvedValue(true);
-    verifyOtpMock.mockResolvedValue(true);
+    verifyOtpMock.mockResolvedValue({ success: true });
 
     renderLogin();
 
@@ -91,7 +91,7 @@ describe("login otp ui flow", () => {
 
   it("verify success path does not render inline error", async () => {
     startOtpMock.mockResolvedValue(true);
-    verifyOtpMock.mockResolvedValue(true);
+    verifyOtpMock.mockResolvedValue({ success: true });
 
     renderLogin();
 
