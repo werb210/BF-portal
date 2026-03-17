@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/api";
-import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService, getCurrentUser } from "@/services/auth";
+import * as authService from "@/services/auth";
 import { destroyVoice } from "@/services/voiceService";
 import { setCallStatus } from "@/dialer/callStore";
 import {
@@ -245,7 +245,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        const nextUser = normalizeAuthUser((await getCurrentUser()) as AuthUser);
+        const nextUser = normalizeAuthUser((await authService.me()) as AuthUser);
 
         if (!nextUser) {
           clearInvalidTokenArtifacts();
@@ -300,7 +300,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setIsHydratingSession(true);
 
-    getCurrentUser()
+    authService.me()
       .then((nextUser) => {
         const normalizedUser = normalizeAuthUser(nextUser as AuthUser);
 
@@ -332,67 +332,58 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setPendingPhoneNumber(phone);
     setAuthStatus("pending");
     setRolesStatus("pending");
-    const started = await startOtpService({ phone });
+    const started = await authService.startOtp({ phone });
     return started !== false;
   }, []);
 
-  const verifyOtp = useCallback(
-    async (phone: string, code: string) => {
+  const verifyOtp = useCallback(async (phone: string, code: string) => {
+    setAuthStateState("loading");
+    setAuthStatus("loading");
+    setRolesStatus("loading");
 
-      setAuthStateState("loading");
-      setAuthStatus("loading");
-      setRolesStatus("loading");
+    try {
+      const user = normalizeAuthUser((await authService.loginWithOtp(phone, code)) as AuthUser);
+      const token = localStorage.getItem("auth_token");
 
-      try {
-        const tokens = await verifyOtpService(phone, code);
-        const token = tokens?.accessToken ?? tokens?.sessionToken;
-        const role = tokens?.role;
-
-        if (!token) {
-          throw new Error("Missing access token in OTP verify response");
-        }
-
-        setStoredAccessToken(token);
-        setAccessToken(token);
-        setPendingPhoneNumber(null);
-
-        const nextUser = normalizeAuthUser(tokens?.user ?? (role ? { role } : null));
-
-        if (nextUser) {
-          setStoredUser(nextUser);
-        }
-        void writeSession({ accessToken: token, user: nextUser ?? null });
-        setUserState(nextUser ?? null);
-        setAuthStateState("authenticated");
-        setAuthStatus("authenticated");
-        setRolesStatus(nextUser && hasResolvedRole(nextUser) ? "resolved" : "loading");
-        setError(null);
-
-        if (!nextUser) {
-          void refreshUser(token);
-        }
-
-        return true;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Missing access token in OTP verify response";
-        setAuthStateState("unauthenticated");
-        setAuthStatus("unauthenticated");
-        setRolesStatus("resolved");
-        setUserState(null);
-        setAccessToken(null);
-        setError(message.toLowerCase().includes("access token") ? message : message.includes("failed") ? message : "Verification failed");
-        return false;
+      if (!token) {
+        throw new Error("Session exchange failed");
       }
-    },
-    [refreshUser]
-  );
+
+      setStoredAccessToken(token);
+      setAccessToken(token);
+      setPendingPhoneNumber(null);
+      setStoredUser(user);
+      void writeSession({ accessToken: token, user: user ?? null });
+      setUserState(user);
+      setAuthStateState("authenticated");
+      setAuthStatus("authenticated");
+      setRolesStatus(user && hasResolvedRole(user) ? "resolved" : "loading");
+      setError(null);
+
+      if (!user) {
+        void refreshUser(token);
+      }
+
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "OTP login failed";
+      console.error("OTP login failed", err);
+      setAuthStateState("unauthenticated");
+      setAuthStatus("unauthenticated");
+      setRolesStatus("resolved");
+      setUserState(null);
+      setAccessToken(null);
+      setError(message);
+      return false;
+    }
+  }, [refreshUser]);
 
   const login = useCallback(async () => false, []);
   const loginWithOtp = verifyOtp;
 
   const logout = useCallback(async () => {
     try {
-      await logoutService();
+      await authService.logout();
     } finally {
       clearAuth();
       destroyDevice();

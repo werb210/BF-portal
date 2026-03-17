@@ -71,18 +71,38 @@ export async function getCurrentUser() {
 export async function loginWithOtp(phone: string, code: string) {
   const normalizedPhone = normalizePhone(phone);
 
-  const res = await apiClient.post("/api/auth/otp/verify", {
+  const verify = await apiClient.post("/api/auth/otp/verify", {
     phone: normalizedPhone,
     code
   });
 
-  const payload = res?.data?.data ?? res?.data ?? {};
-  const token = payload?.token ?? payload?.accessToken ?? payload?.sessionToken;
-  const user = payload?.user ?? null;
+  const otpToken = verify.data?.token;
 
-  if (token) {
-    localStorage.setItem("auth_token", token);
+  if (!otpToken) {
+    throw new Error("OTP verification failed");
   }
 
+  localStorage.setItem("otp_token", otpToken);
+
+  const session = await apiClient.get("/api/continuation/session", {
+    headers: {
+      Authorization: `Bearer ${otpToken}`
+    }
+  });
+
+  const authToken = session.data?.token;
+  const user = session.data?.user;
+
+  if (!authToken) {
+    throw new Error("Session exchange failed");
+  }
+
+  localStorage.removeItem("otp_token");
+  localStorage.setItem("auth_token", authToken);
+
   return user;
+}
+
+export async function me() {
+  return getCurrentUser();
 }
