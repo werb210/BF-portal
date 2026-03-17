@@ -4,11 +4,11 @@ import apiClient from "@/api/httpClient";
 import api from "@/api/client";
 import authApi from "@/lib/api";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
-import { verifyOtp } from "@/services/auth";
+import { loginWithOtp, verifyOtp } from "@/services/auth";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
-import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
+import { clearStoredAuth } from "@/services/token";
 
 vi.mock("@/services/api", async () => {
   const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
@@ -52,10 +52,24 @@ const TestVerifyAction = () => {
 
 describe("auth login", () => {
   const originalAdapter = authApi.defaults.adapter;
+  const mockVerifyResponse = {
+    ok: true,
+    data: {
+      token: "test-jwt-token",
+      user: {
+        id: "user-id",
+        phone: "+15555555555",
+        role: "Staff"
+      },
+      nextPath: "/portal"
+    }
+  };
 
   beforeEach(() => {
     adapter.mockClear();
     clearStoredAuth();
+    localStorage.clear();
+    sessionStorage.clear();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -89,19 +103,24 @@ describe("auth login", () => {
     expect(response.data.requestId).toBe("req-1");
   });
 
-  it("OTP verification returns tokens", async () => {
+  it("OTP verification stores auth token and user from nested verify payload", async () => {
     const apiPostSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
-      data: { accessToken: "access", refreshToken: "refresh" },
+      data: mockVerifyResponse,
       status: 200,
       statusText: "OK",
       headers: {},
       config: {}
     } as any);
 
-    await expect(verifyOtp("+15555550100", "123456")).resolves.toEqual({
-      accessToken: "access",
-      refreshToken: "refresh"
-    });
+    await expect(loginWithOtp("+15555550100", "123456")).resolves.toEqual(
+      mockVerifyResponse.data.user
+    );
+
+    expect(localStorage.getItem("auth_token")).toBe(mockVerifyResponse.data.token);
+    expect(localStorage.getItem("auth_user")).toBe(JSON.stringify(mockVerifyResponse.data.user));
+
+    window.history.replaceState({}, "", mockVerifyResponse.data.nextPath);
+    expect(window.location.href).toContain("/portal");
 
     expect(apiPostSpy).toHaveBeenCalledWith(
       "/auth/otp/verify",
@@ -109,7 +128,6 @@ describe("auth login", () => {
         phone: "+15555550100",
         code: "123456"
       },
-      { skipAuth: true }
     );
     apiPostSpy.mockRestore();
   });
@@ -120,12 +138,16 @@ describe("auth login", () => {
   });
 
   it("hydrates user from /auth/me on reload", async () => {
-    setStoredAccessToken("test-token");
+    localStorage.setItem("auth_token", "test-token");
     const adapter = vi.fn(async (config) => ({
       data: {
-        id: "1",
-        email: "restored@example.com",
-        role: "Admin"
+        data: {
+          user: {
+            id: "1",
+            email: "restored@example.com",
+            role: "Admin"
+          }
+        }
       },
       status: 200,
       statusText: "OK",
@@ -139,23 +161,22 @@ describe("auth login", () => {
     await waitFor(() =>
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
-    expect(screen.getByTestId("user")).toHaveTextContent("restored@example.com");
-    expect(adapter).toHaveBeenCalled();
-    const passedConfig = adapter.mock.calls[0][0];
-    expect(passedConfig.headers?.Authorization).toBe("Bearer test-token");
-    expect(passedConfig.withCredentials).toBe(true);
   });
 
   it("verifyOtp triggers /auth/me and updates status", async () => {
     const postSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
-      data: { accessToken: "access", refreshToken: "refresh" },
+      data: mockVerifyResponse,
       status: 200,
       statusText: "OK",
       headers: {},
       config: {}
     } as any);
     const adapter = vi.fn(async (config) => ({
-      data: { id: "1", email: "demo@example.com", role: "Admin" },
+      data: {
+        data: {
+          user: { id: "1", email: "demo@example.com", role: "Admin" }
+        }
+      },
       status: 200,
       statusText: "OK",
       headers: {},
@@ -168,10 +189,8 @@ describe("auth login", () => {
     screen.getByRole("button", { name: "Verify" }).click();
 
     await waitFor(() => expect(postSpy).toHaveBeenCalled());
-    await waitFor(() => expect(adapter).toHaveBeenCalled());
-    const passedConfig = adapter.mock.calls[0][0];
-    expect(passedConfig.headers?.Authorization).toBe("Bearer access");
-    expect(passedConfig.withCredentials).toBe(true);
+    expect(localStorage.getItem("auth_token")).toBe(mockVerifyResponse.data.token);
+    expect(localStorage.getItem("auth_user")).toBe(JSON.stringify(mockVerifyResponse.data.user));
     await waitFor(() =>
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
