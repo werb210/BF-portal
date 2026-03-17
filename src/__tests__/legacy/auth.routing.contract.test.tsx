@@ -39,7 +39,7 @@ describe("auth routing contract", () => {
   it("redirects authenticated users away from /login", async () => {
     setStoredAccessToken("test-token");
     server.use(
-      http.get("*/api/auth/me", () =>
+      http.get("*/auth/me", () =>
         HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 })
       )
     );
@@ -66,7 +66,7 @@ describe("auth routing contract", () => {
   it("blocks unauthenticated users from private routes without firing API calls", async () => {
     const lendersSpy = vi.fn();
     server.use(
-      http.get("*/api/auth/me", () => new HttpResponse(null, { status: 401 })),
+      http.get("*/auth/me", () => new HttpResponse(null, { status: 401 })),
       http.get("http://localhost/api/lenders", () => {
         lendersSpy();
         return HttpResponse.json({ items: [] });
@@ -157,7 +157,7 @@ describe("auth routing contract", () => {
     setStoredAccessToken("test-token");
     let callCount = 0;
     server.use(
-      http.get("http://localhost/api/auth/me", () =>
+      http.get("http://localhost/auth/me", () =>
         HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 })
       ),
       http.options("http://localhost/api/secure", () => new HttpResponse(null, { status: 204 })),

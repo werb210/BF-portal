@@ -14,7 +14,7 @@ export const mockAuthedUser = (role: TestRole = "Staff") => {
   
 
   server.use(
-    http.get("*/api/auth/me", () => HttpResponse.json(user, { status: 200 }))
+    http.get("*/auth/me", () => HttpResponse.json(user, { status: 200 }))
   );
 
   return user;

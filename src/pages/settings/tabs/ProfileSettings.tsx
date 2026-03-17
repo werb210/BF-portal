@@ -162,7 +162,7 @@ const ProfileSettings = () => {
         accessToken,
         accountEmail: accountEmail ?? undefined
       };
-      const exchange = await apiClient.post<{ email?: string; connected?: boolean }>("/api/auth/microsoft", payload);
+      const exchange = await apiClient.post<{ email?: string; connected?: boolean }>("/auth/microsoft", payload);
       const connectedEmail = exchange?.email ?? accountEmail ?? "";
       setMicrosoftConnection({ connected: true, email: connectedEmail });
     },

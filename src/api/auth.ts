@@ -10,8 +10,8 @@ export async function verifyOtp(phone: string, code: string) {
 }
 
 export const fetchCurrentUser = () =>
-  safeFetch<AuthenticatedUser>(withApiBase("/api/auth/me"), {
+  safeFetch<AuthenticatedUser>(withApiBase("/auth/me"), {
     credentials: "include"
   });
 
-export const logout = () => apiClient.post<void>("/api/auth/logout");
+export const logout = () => apiClient.post<void>("/auth/logout");

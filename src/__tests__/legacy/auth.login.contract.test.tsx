@@ -14,7 +14,7 @@ const verifyOtpSpy = vi.fn();
 const meSpy = vi.fn();
 
 const server = setupServer(
-  http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
+  http.post("http://localhost/auth/otp/start", async ({ request }) => {
     const contentType = request.headers.get("content-type") ?? "";
     expect(contentType.toLowerCase()).toContain("application/json");
     expect(request.headers.has("x-request-id")).toBe(true);
@@ -26,11 +26,11 @@ const server = setupServer(
       }
     });
   }),
-  http.post("http://localhost/api/auth/otp/verify", async ({ request }) => {
+  http.post("http://localhost/auth/otp/verify", async ({ request }) => {
     verifyOtpSpy(await request.json());
     return HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" });
   }),
-  http.get("*/api/auth/me", () => {
+  http.get("*/auth/me", () => {
     meSpy();
     return HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 });
   }),

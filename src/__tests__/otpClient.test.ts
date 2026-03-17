@@ -19,12 +19,12 @@ describe("otp client", () => {
     await client.otpStart({ phone: "+15555550100" });
 
     expect(apiInstance.defaults.baseURL).toBe(ENV.API_BASE_URL);
-    expect(apiPostSpy).toHaveBeenCalledWith("/api/auth/otp/start", { phone: "+15555550100" });
+    expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/start", { phone: "+15555550100" });
 
     const config: InternalAxiosRequestConfig & { skipRequestId?: boolean } = {
       headers: new AxiosHeaders(),
       method: "post",
-      url: "/api/auth/otp/start",
+      url: "/auth/otp/start",
       skipRequestId: true
     };
     const updatedConfig = attachRequestIdAndLog(config);

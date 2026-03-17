@@ -1,6 +1,13 @@
-import { apiClient } from "@/lib/apiClient";
+import axios from "axios";
 
-apiClient.interceptors.request.use((config) => {
+const api = axios.create({
+  baseURL: "https://server.boreal.financial/api",
+  timeout: 20000,
+  withCredentials: true
+});
+
+api.interceptors.request.use((config) => {
+
   const token = localStorage.getItem("auth_token");
 
   if (token) {
@@ -11,35 +18,8 @@ apiClient.interceptors.request.use((config) => {
   }
 
   return config;
+
 });
 
-apiClient.interceptors.response.use(
-  (r) => r,
-  (err) => {
-    if (err.response?.status === 401) {
-      const token = localStorage.getItem("auth_token");
-
-      if (!token) {
-        return Promise.reject(err);
-      }
-
-      localStorage.removeItem("auth_token");
-      window.location.href = "/login";
-    }
-
-    return Promise.reject(err);
-  }
-);
-
-export const clientApi = apiClient;
-export { apiClient };
-
-export async function otpStart(payload: { phone: string }) {
-  return apiClient.post("/api/auth/otp/start", payload);
-}
-
-export async function otpVerify(payload: { phone: string; code: string }) {
-  return apiClient.post("/api/auth/otp/verify", payload);
-}
-
-export default apiClient;
+export const clientApi = api;
+export default api;

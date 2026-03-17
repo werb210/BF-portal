@@ -5,7 +5,7 @@ export async function fetchContinuation(token: string) {
     throw new Error("Missing continuation token");
   }
 
-  return apiFetch(`/api/continuation/${token}`, {
+  return apiFetch(`/continuation/${token}`, {
     method: "GET",
   });
 }

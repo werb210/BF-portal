@@ -15,7 +15,7 @@ export type AuthenticatedUser = {
 export async function startOtp(payload: { phone: string }) {
   const phone = normalizePhone(payload.phone);
 
-  return apiFetch("/api/auth/otp/start", {
+  return apiFetch("/auth/otp/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ phone })
@@ -27,7 +27,7 @@ export async function verifyOtp(phone: string, code: string) {
 
   console.log("OTP verify payload", { phone: normalizedPhone, code });
 
-  const res = await apiClient.post("/api/auth/otp/verify", {
+  const res = await apiClient.post("/auth/otp/verify", {
     phone: normalizedPhone,
     code
   });
@@ -64,14 +64,14 @@ export function logout() {
 
 
 export async function getCurrentUser() {
-  const res = await apiClient.get("/api/auth/me");
+  const res = await apiClient.get("/auth/me");
   return res?.data ?? null;
 }
 
 export async function loginWithOtp(phone: string, code: string) {
   const normalizedPhone = normalizePhone(phone);
 
-  const verify = await apiClient.post("/api/auth/otp/verify", {
+  const verify = await apiClient.post("/auth/otp/verify", {
     phone: normalizedPhone,
     code
   });
@@ -84,7 +84,7 @@ export async function loginWithOtp(phone: string, code: string) {
 
   localStorage.setItem("otp_token", otpToken);
 
-  const session = await apiClient.get("/api/continuation/session", {
+  const session = await apiClient.get("/continuation/session", {
     headers: {
       Authorization: `Bearer ${otpToken}`
     }

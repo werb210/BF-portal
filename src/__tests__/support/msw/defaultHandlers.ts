@@ -2,7 +2,7 @@ import { http, HttpResponse } from "msw";
 
 
 export const defaultHandlers = [
-  http.options("*/api/auth/me", () => new HttpResponse(null, { status: 204 })),
+  http.options("*/auth/me", () => new HttpResponse(null, { status: 204 })),
   http.options("*/api/audit/activity", () => new HttpResponse(null, { status: 204 })),
 
   http.get("*/health", () => HttpResponse.json({ status: "ok" })),
@@ -11,9 +11,9 @@ export const defaultHandlers = [
   http.get("*/api/_int/production-readiness", () => HttpResponse.json({ ready: true, status: "ok" })),
   http.get("*/api/support/live/count", () => HttpResponse.json({ count: 0 })),
   http.get("*/api/public/lender-count", () => HttpResponse.json({ count: 0 })),
-  http.get("*/api/auth/me", () => HttpResponse.json({ id: "u1", role: "Staff", email: "staff@example.com" })),
-  http.post("*/api/auth/otp/start", () => new HttpResponse(null, { status: 204, headers: { "x-twilio-sid": "twilio-sid" } })),
-  http.post("*/api/auth/otp/verify", () => HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" })),
+  http.get("*/auth/me", () => HttpResponse.json({ id: "u1", role: "Staff", email: "staff@example.com" })),
+  http.post("*/auth/otp/start", () => new HttpResponse(null, { status: 204, headers: { "x-twilio-sid": "twilio-sid" } })),
+  http.post("*/auth/otp/verify", () => HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" })),
   http.post("*/api/audit/activity", () => new HttpResponse(null, { status: 204 })),
   http.options("*/api/secure", () => new HttpResponse(null, { status: 204 })),
   http.options("http://localhost/api/secure", () => new HttpResponse(null, { status: 204 })),

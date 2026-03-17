@@ -24,7 +24,7 @@ export default function ContinuationApplications() {
   const [apps, setApps] = useState<ContinuationApp[]>([]);
 
   useEffect(() => {
-    fetch(withApiBase("/api/continuation"))
+    fetch(withApiBase("/continuation"))
       .then((res) => res.json())
       .then((data: ContinuationApp[]) => {
         setApps(

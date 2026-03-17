@@ -34,7 +34,7 @@ describe("twilioVoice service", () => {
     destroyTwilioVoice();
   });
 
-  it("requests token from GET /api/telephony/token via shared loader", async () => {
+  it("requests token from GET /telephony/token via shared loader", async () => {
     getVoiceTokenMock.mockResolvedValue("TWILIO_TOKEN");
 
     await expect(fetchTwilioToken()).resolves.toBe("TWILIO_TOKEN");
