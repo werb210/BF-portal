@@ -300,9 +300,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setIsHydratingSession(true);
 
-    authService.me()
-      .then((nextUser) => {
-        const normalizedUser = normalizeAuthUser(nextUser as AuthUser);
+    api.get("/auth/me")
+      .then((res) => {
+        const normalizedUser = normalizeAuthUser((res.data?.data?.user ?? null) as AuthUser);
 
         if (!normalizedUser) {
           localStorage.removeItem("auth_token");
