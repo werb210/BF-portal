@@ -76,29 +76,24 @@ export async function loginWithOtp(phone: string, code: string) {
     code
   });
 
-  const otpToken = verify.data?.token;
+  const payload = verify?.data;
 
-  if (!otpToken) {
-    throw new Error("OTP verification failed");
+  if (!payload?.ok) {
+    throw new Error(payload?.error?.message ?? "Verification failed");
   }
 
-  localStorage.setItem("otp_token", otpToken);
+  const token = payload?.data?.token;
+  const user = payload?.data?.user ?? null;
 
-  const session = await apiClient.get("/continuation/session", {
-    headers: {
-      Authorization: `Bearer ${otpToken}`
-    }
-  });
-
-  const authToken = session.data?.token;
-  const user = session.data?.user;
-
-  if (!authToken) {
-    throw new Error("Session exchange failed");
+  if (!token) {
+    throw new Error("OTP verification returned no token");
   }
 
-  localStorage.removeItem("otp_token");
-  localStorage.setItem("auth_token", authToken);
+  localStorage.setItem("auth_token", token);
+
+  if (user) {
+    localStorage.setItem("auth_user", JSON.stringify(user));
+  }
 
   return user;
 }

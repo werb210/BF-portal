@@ -107,7 +107,8 @@ export default function LoginPage() {
     try {
       const verified = await verifyOtp(normalizedPhone, code);
       if (!verified) {
-        throw new Error("Verification failed");
+        setError("Authentication failed. Please request a new code.");
+        return;
       }
     } catch (err) {
       setStatusMessage(null);
