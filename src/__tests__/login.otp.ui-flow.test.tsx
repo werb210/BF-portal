@@ -67,7 +67,7 @@ describe("login otp ui flow", () => {
     fireEvent.change(screen.getByLabelText(/phone number/i), { target: { value: "+1 (555) 555-0100" } });
     fireEvent.click(screen.getByRole("button", { name: /send code/i }));
 
-    await waitFor(() => expect(startOtpMock).toHaveBeenCalledWith({ phone: "+1 (555) 555-0100" }));
+    await waitFor(() => expect(startOtpMock).toHaveBeenCalledWith({ phone: "+15555550100" }));
     expect(await screen.findByLabelText(/otp digit 1/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /verify/i })).toBeInTheDocument();
     expect(screen.queryByText(/Portal encountered an unexpected error/i)).not.toBeInTheDocument();
@@ -119,7 +119,7 @@ describe("login otp ui flow", () => {
     fireEvent.change(screen.getByLabelText(/otp digit 1/i), { target: { value: "000000" } });
     fireEvent.click(screen.getByRole("button", { name: /verify/i }));
 
-    expect(await screen.findByText(/Invalid verification code/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Invalid code/i)).toBeInTheDocument();
     expect(screen.getByText(/Request ID: req-otp/i)).toBeInTheDocument();
   });
 });

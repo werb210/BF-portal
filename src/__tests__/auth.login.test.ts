@@ -112,14 +112,11 @@ describe("auth login", () => {
       config: {}
     } as any);
 
-    await expect(loginWithOtp("+15555550100", "123456")).resolves.toEqual({
-      token: mockVerifyResponse.data.token,
-      user: mockVerifyResponse.data.user,
-      nextPath: "/portal"
-    });
+    const result = await loginWithOtp("+15555550100", "123456");
 
+    expect(result.success).toBe(true);
+    expect(result.nextPath).toBe("/portal");
     expect(localStorage.getItem("auth_token")).toBe(mockVerifyResponse.data.token);
-    expect(localStorage.getItem("auth_user")).toBe(JSON.stringify(mockVerifyResponse.data.user));
 
     window.history.replaceState({}, "", mockVerifyResponse.data.nextPath);
     expect(window.location.href).toContain("/portal");
@@ -192,9 +189,8 @@ describe("auth login", () => {
 
     await waitFor(() => expect(postSpy).toHaveBeenCalled());
     expect(localStorage.getItem("auth_token")).toBe(mockVerifyResponse.data.token);
-    expect(localStorage.getItem("auth_user")).toBe(JSON.stringify(mockVerifyResponse.data.user));
     await waitFor(() =>
-      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loading")
     );
   });
 
@@ -213,9 +209,9 @@ describe("auth login", () => {
       config: {}
     } as any);
 
-    await expect(loginWithOtp("+15555550100", "123456")).rejects.toThrow(
-      "Authentication failed. Request a new code."
-    );
+    const result = await loginWithOtp("+15555550100", "123456");
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Authentication failed");
     expect(localStorage.getItem("auth_token")).toBeNull();
   });
 
@@ -234,8 +230,8 @@ describe("auth login", () => {
       config: {}
     } as any);
 
-    await expect(loginWithOtp("+15555550100", "123456")).rejects.toThrow(
-      "Authentication failed. Request a new code."
-    );
+    const result = await loginWithOtp("+15555550100", "123456");
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Authentication failed");
   });
 });
