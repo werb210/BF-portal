@@ -45,7 +45,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (authenticated && authStatus === "authenticated") {
-      navigate("/portal", { replace: true });
+      window.location.href = "/portal";
     }
   }, [authenticated, authStatus, navigate]);
 
