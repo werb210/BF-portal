@@ -118,6 +118,7 @@ const getTestAuthOverride = (): TestAuthOverride | null => {
  */
 const clearInvalidTokenArtifacts = () => {
   clearStoredAuth();
+  localStorage.removeItem("auth_token");
   localStorage.removeItem("access_token");
   localStorage.removeItem("token");
   localStorage.removeItem("accessToken");
@@ -194,7 +195,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isHydratingSession, setIsHydratingSession] = useState(true);
   const hydrationSettledRef = useRef(false);
   const refreshingRef = useRef(false);
-  const bootstrapStartedRef = useRef(false);
 
   const settleUnauthenticated = useCallback(() => {
     setUserState(null);
@@ -225,7 +225,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshUser = useCallback(
     async (tokenOverride?: string | null, options?: { deferHydrationEnd?: boolean }) => {
-      const token = tokenOverride ?? accessToken ?? getStoredAccessToken() ?? localStorage.getItem("access_token");
+      const token = tokenOverride ?? accessToken ?? getStoredAccessToken() ?? localStorage.getItem("auth_token") ?? localStorage.getItem("access_token");
 
       if (refreshingRef.current) {
         return false;
@@ -234,6 +234,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       refreshingRef.current = true;
 
       if (token) {
+        localStorage.setItem("auth_token", token);
         localStorage.setItem("access_token", token);
       }
 
@@ -253,6 +254,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         if (token) {
+          localStorage.setItem("auth_token", token);
           setStoredAccessToken(token);
         }
         setStoredUser(nextUser);
@@ -287,34 +289,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    if (bootstrapped || bootstrapStartedRef.current) return;
-    bootstrapStartedRef.current = true;
+    const token = localStorage.getItem("auth_token");
 
-    const hydrate = async () => {
-      setIsHydratingSession(true);
-      try {
-        const token = getStoredAccessToken() ?? localStorage.getItem("access_token");
-        if (!token) {
+    if (!token) {
+      settleUnauthenticated();
+      setBootstrapped(true);
+      endHydration();
+      return;
+    }
+
+    setIsHydratingSession(true);
+
+    getCurrentUser()
+      .then((nextUser) => {
+        const normalizedUser = normalizeAuthUser(nextUser as AuthUser);
+
+        if (!normalizedUser) {
+          localStorage.removeItem("auth_token");
           settleUnauthenticated();
           return;
         }
 
         setStoredAccessToken(token);
-
-        const hydrated = await refreshUser(token, { deferHydrationEnd: true });
-        if (hydrated) {
-          return;
-        }
-
+        setStoredUser(normalizedUser);
+        setAccessToken(token);
+        setUserState(normalizedUser);
+        setAuthStateState("authenticated");
+        setAuthStatus("authenticated");
+        setRolesStatus(hasResolvedRole(normalizedUser) ? "resolved" : "loading");
+      })
+      .catch(() => {
+        localStorage.removeItem("auth_token");
         settleUnauthenticated();
-      } finally {
+      })
+      .finally(() => {
         setBootstrapped(true);
         endHydration();
-      }
-    };
-
-    void hydrate();
-  }, [bootstrapped, endHydration, refreshUser, settleUnauthenticated]);
+      });
+  }, [endHydration, settleUnauthenticated]);
 
   const startOtp = useCallback(async ({ phone }: OtpStartPayload) => {
     setPendingPhoneNumber(phone);
