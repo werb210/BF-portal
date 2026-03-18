@@ -1,38 +1,18 @@
-import { Navigate } from "react-router-dom"
-import { useAuth } from "@/auth/AuthContext"
-import AccessRestricted from "@/components/auth/AccessRestricted"
-import { roleIn, type Role } from "@/auth/roles"
+import type { ReactNode } from "react";
+import { getToken } from "@/lib/auth";
 
 export default function PrivateRoute({
   children,
-  allowedRoles,
 }: {
-  children: React.ReactNode
-  allowedRoles?: Role[]
+  children: ReactNode
+  allowedRoles?: unknown
 }) {
-  const { status, authState, authStatus, rolesStatus, authReady, isAuthenticated, role } = useAuth()
+  const token = getToken();
 
-  const isLoading =
-    status === "loading" ||
-    authState === "loading" ||
-    authStatus === "loading" ||
-    !authReady
-
-  if (isLoading) {
-    return <div>Loading...</div>
+  if (!token) {
+    window.location.href = "/login";
+    return null;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (isAuthenticated && rolesStatus !== "resolved") {
-    return null
-  }
-
-  if (allowedRoles && rolesStatus === "resolved" && !roleIn(role, allowedRoles)) {
-    return <AccessRestricted requiredRoles={allowedRoles} />
-  }
-
-  return <>{children}</>
+  return <>{children}</>;
 }

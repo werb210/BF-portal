@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getApiBase } from "@/config/apiBase";
 import { ENV } from "@/config/env";
-import { getStoredAccessToken } from "@/services/token";
+import { getToken } from "@/lib/auth";
 
 const sanitizePath = (url: string) => {
   return url.replace("/api/" + "api/", "/api/");
@@ -14,20 +14,16 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-
   if (config.url) {
     config.url = sanitizePath(config.url);
   }
 
-  const token = getStoredAccessToken() || localStorage.getItem("auth_token");
+  const token = getToken();
 
-  if (token) {
-    config.headers = config.headers ?? {};
-    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
-  }
+  config.headers = config.headers ?? {};
+  (config.headers as Record<string, string>).Authorization = token ? `Bearer ${token}` : "";
 
   return config;
-
 });
 
 export const apiClient = api;

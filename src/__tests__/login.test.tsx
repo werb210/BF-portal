@@ -40,7 +40,7 @@ describe("login flow", () => {
 
   it("navigates to portal after OTP verification", async () => {
     mockedStartOtp.mockResolvedValue(null);
-    mockedLoginWithOtp.mockResolvedValue({ success: true, token: "access", user: { id: "1", role: "Staff" }, nextPath: "/portal" } as any);
+    mockedLoginWithOtp.mockResolvedValue({ token: "access", user: { id: "1", role: "Staff" }, nextPath: "/portal" } as any);
     const fetchSpy = vi
       .fn()
       .mockResolvedValue(

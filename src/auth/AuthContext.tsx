@@ -13,6 +13,7 @@ import type { AuthenticatedUser } from "@/services/auth";
 import { normalizeRole, roleIn, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import { clearSession, writeSession } from "@/utils/sessionStore";
+import { clearToken, getToken, setToken } from "@/lib/auth";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";
@@ -125,7 +126,7 @@ const getTestAuthOverride = (): TestAuthOverride | null => {
  */
 const clearInvalidTokenArtifacts = () => {
   clearStoredAuth();
-  localStorage.removeItem("auth_token");
+  clearToken();
   delete api.defaults.headers.common["Authorization"];
 };
 
@@ -227,7 +228,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshUser = useCallback(
     async (tokenOverride?: string | null, options?: { deferHydrationEnd?: boolean }) => {
-      const token = tokenOverride ?? accessToken ?? getStoredAccessToken() ?? localStorage.getItem("auth_token");
+      const token = tokenOverride ?? accessToken ?? getStoredAccessToken() ?? getToken();
 
       if (refreshingRef.current) {
         return false;
@@ -236,7 +237,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       refreshingRef.current = true;
 
       if (token) {
-        localStorage.setItem("auth_token", token);
+        setToken(token);
       }
 
       if (!options?.deferHydrationEnd) {
@@ -256,7 +257,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         if (token) {
-          localStorage.setItem("auth_token", token);
+          setToken(token);
           setStoredAccessToken(token);
         }
         setStoredUser(nextUser);
@@ -291,7 +292,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
+    const token = getToken();
 
     if (!token) {
       settleUnauthenticated();
@@ -307,7 +308,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const normalizedUser = resolveAuthUserFromResponse(res.data);
 
         if (!normalizedUser) {
-          localStorage.removeItem("auth_token");
+          clearToken();
           settleUnauthenticated();
           return;
         }
@@ -322,11 +323,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       })
       .catch((error) => {
         if (isUnauthorizedError(error)) {
-          localStorage.removeItem("auth_token");
+          clearToken();
           settleUnauthenticated();
           return;
         }
-        localStorage.removeItem("auth_token");
+        clearToken();
         settleUnauthenticated();
       })
       .finally(() => {
@@ -351,24 +352,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const verification = await authService.loginWithOtp(phone, code);
       const tokenFromVerification = verification.token ?? null;
-      const verificationSucceeded = verification.success === true && Boolean(tokenFromVerification && verification.user);
-
       if (tokenFromVerification) {
-        localStorage.setItem("auth_token", tokenFromVerification);
+        setToken(tokenFromVerification);
       }
 
-      if (!verificationSucceeded) {
-        const message = verification.error ?? "Authentication failed";
-        setAuthStateState("unauthenticated");
-        setAuthStatus("unauthenticated");
-        setRolesStatus("resolved");
-        setUserState(null);
-        setAccessToken(null);
-        setError(message);
-        return { success: false, error: message };
-      }
-
-      const token = localStorage.getItem("auth_token");
+      const token = getToken();
 
       if (!token || token.trim().length === 0) {
         const message = "Session exchange failed";
@@ -396,7 +384,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       void refreshUser(token);
 
-      return { success: true, token, user: verification.user ?? null, nextPath: "/portal" };
+      return { success: true, token, user: verification.user ?? null, nextPath: verification.nextPath ?? "/portal" };
     } catch (err) {
       const message = err instanceof Error ? err.message : "OTP login failed";
       console.error("OTP login failed", err);

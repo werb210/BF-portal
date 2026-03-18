@@ -1,6 +1,6 @@
 export function connectSocket() {
 
-  const token = localStorage.getItem("auth_token");
+  const token = localStorage.getItem("bf_token");
 
   if (!token) {
     return;

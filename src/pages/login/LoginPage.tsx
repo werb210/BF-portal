@@ -10,7 +10,7 @@ const OTP_ERROR_MESSAGE_MAP: Record<string, string> = {
   otp_session_expired: "Code expired. Request a new code.",
   user_not_found: "This phone number is not linked to a portal user.",
   otp_user_not_found: "This phone number is not linked to a portal user.",
-  auth_token_creation_failed: "Authentication failed. Request a new code.",
+  bf_token_creation_failed: "Authentication failed. Request a new code.",
 };
 
 export function resolvePostLoginDestination(role: string): string {

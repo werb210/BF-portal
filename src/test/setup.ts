@@ -33,8 +33,8 @@ function makeStorage() {
   };
 }
 
-Object.defineProperty(window, "localStorage", { value: makeStorage(), configurable: true });
-Object.defineProperty(window, "sessionStorage", { value: makeStorage(), configurable: true });
+Object.defineProperty(window, "localStorage", { value: makeStorage(), configurable: true, writable: true });
+Object.defineProperty(window, "sessionStorage", { value: makeStorage(), configurable: true, writable: true });
 
 // --- matchMedia (used by responsive/layout logic)
 if (!window.matchMedia) {

@@ -22,7 +22,7 @@ const isTestEnv =
   import.meta.env.MODE === "test";
 
 export const ENV = {
-  API_BASE_URL: isTestEnv ? "http://localhost" : API_BASE_URL,
+  API_BASE_URL: "https://api.staff.boreal.financial",
 
   JWT_STORAGE_KEY:
     getEnv("VITE_JWT_STORAGE_KEY") || "boreal_staff_token"

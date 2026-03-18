@@ -31,7 +31,7 @@ export function normalizeApiPath(path: string): string {
 }
 
 export const API_BASE_URL = normalizeApiBaseUrl(
-  import.meta.env.VITE_API_URL || "https://server.boreal.financial/api"
+  "https://api.staff.boreal.financial"
 );
 
 export const API_TIMEOUT = 30000;

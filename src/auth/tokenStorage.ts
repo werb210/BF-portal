@@ -1,15 +1,13 @@
-const TOKEN_KEY = "auth_token";
+import { clearToken as clearAuthToken, getToken as getAuthToken, setToken as setAuthToken } from "@/lib/auth";
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
+  return getAuthToken();
 }
 
 export function setToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
-  sessionStorage.setItem(TOKEN_KEY, token);
+  setAuthToken(token);
 }
 
 export function clearToken() {
-  localStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(TOKEN_KEY);
+  clearAuthToken();
 }
