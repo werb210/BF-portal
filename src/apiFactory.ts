@@ -26,9 +26,17 @@ export function createApi(silo: ApiSilo, token: string) {
     const requestId = generateRequestId();
 
     config.headers = config.headers ?? {};
-    config.headers["x-request-id"] = requestId;
+    if (requestId && requestId.trim().length > 0) {
+      config.headers["x-request-id"] = requestId;
+    } else {
+      delete config.headers["x-request-id"];
+    }
 
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (token && token.trim().length > 0) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      delete config.headers.Authorization;
+    }
     config.headers["x-silo"] = silo;
     return config;
   });

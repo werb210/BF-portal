@@ -1,34 +1,21 @@
 import { ENV } from "@/config/env";
 import { decodeJwt } from "@/auth/jwt";
+import { clearToken as clearCanonicalToken, getToken as getCanonicalToken, setToken as setCanonicalToken } from "@/lib/auth";
 
 const ACCESS_TOKEN_KEY = ENV.JWT_STORAGE_KEY;
 
 let inMemoryAccessToken: string | null = null;
 
-const canUseSessionStorage = () =>
-  typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
-
 const readStoredToken = (): string | null => {
-  if (!canUseSessionStorage()) return null;
-  try {
-    return window.sessionStorage.getItem(ACCESS_TOKEN_KEY);
-  } catch {
-    return null;
-  }
+  return getCanonicalToken();
 };
 
 const writeStoredToken = (token: string | null) => {
-  if (!canUseSessionStorage()) return;
-  try {
-    if (!token) {
-      window.sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-      return;
-    }
-    // Security: keep JWTs scoped to browser session to reduce persistence risk after tab/browser close.
-    window.sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
-  } catch {
-    // ignore storage errors
+  if (!token) {
+    clearCanonicalToken();
+    return;
   }
+  setCanonicalToken(token);
 };
 
 const isExpired = (token: string | null) => {

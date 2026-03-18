@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosHeaders } from "axios";
 import { getApiBase } from "@/config/apiBase";
 import { ENV } from "@/config/env";
 import { getToken } from "@/lib/auth";
@@ -13,6 +13,13 @@ const api = axios.create({
   withCredentials: true
 });
 
+const isOtpEndpoint = (url?: string) => typeof url === "string" && /\/auth\/otp\/(start|verify)$/.test(url);
+
+const isNonEmptyHeaderValue = (value: unknown) => {
+  if (value === undefined || value === null) return false;
+  return String(value).trim().length > 0;
+};
+
 api.interceptors.request.use((config) => {
   if (config.url) {
     config.url = sanitizePath(config.url);
@@ -20,11 +27,22 @@ api.interceptors.request.use((config) => {
 
   const token = getToken();
 
-  config.headers = config.headers ?? {};
-  if (token) {
-    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+  if (!config.headers) {
+    config.headers = AxiosHeaders.from({});
+  }
+  const headers = config.headers as Record<string, unknown>;
+
+  const skipAuth = isOtpEndpoint(config.url);
+  if (!skipAuth && token) {
+    headers.Authorization = `Bearer ${token}`;
   } else {
-    delete (config.headers as Record<string, string>).Authorization;
+    delete headers.Authorization;
+  }
+
+  for (const key of Object.keys(headers)) {
+    if (!isNonEmptyHeaderValue(headers[key])) {
+      delete headers[key];
+    }
   }
 
   return config;

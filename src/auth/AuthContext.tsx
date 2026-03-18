@@ -99,8 +99,8 @@ const normalizeAuthUser = (user: AuthUser): AuthUser => {
 const hasResolvedRole = (user: AuthUser) => Boolean(user?.role);
 
 const resolveAuthUserFromResponse = (payload: unknown): AuthUser => {
-  const candidate = payload as { data?: { user?: AuthUser }; user?: AuthUser } | null;
-  return normalizeAuthUser(candidate?.data?.user ?? candidate?.user ?? (payload as AuthUser));
+  const candidate = payload as { data?: { user?: AuthUser } } | null;
+  return normalizeAuthUser(candidate?.data?.user ?? null);
 };
 
 
@@ -217,7 +217,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearAuth = useCallback(() => {
     clearStoredAuth();
-
     localStorage.clear();
     sessionStorage.clear();
     void clearSession();

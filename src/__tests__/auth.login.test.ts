@@ -126,6 +126,11 @@ describe("auth login", () => {
         phone: "+15555550100",
         code: "123456"
       },
+      {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
     );
     apiPostSpy.mockRestore();
   });
