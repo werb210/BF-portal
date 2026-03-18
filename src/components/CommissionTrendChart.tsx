@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { withApiBase } from "@/lib/apiBase";
+import { getToken } from "@/lib/auth";
 
 interface TrendData {
   date: string;
@@ -10,7 +11,7 @@ export default function CommissionTrendChart() {
   const [data, setData] = useState<TrendData[]>([]);
 
   useEffect(() => {
-    const token = localStorage.getItem("boreal_staff_token");
+    const token = getToken();
 
     const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 

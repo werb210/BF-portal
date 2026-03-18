@@ -25,5 +25,5 @@ export const ENV = {
   API_BASE_URL: "https://api.staff.boreal.financial",
 
   JWT_STORAGE_KEY:
-    getEnv("VITE_JWT_STORAGE_KEY") || "boreal_staff_token"
+    getEnv("VITE_JWT_STORAGE_KEY") || "bf_token"
 };

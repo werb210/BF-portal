@@ -2,6 +2,7 @@ import axios from "axios";
 import { reportError } from "@/utils/reportError";
 import { showToast } from "../utils/toastEvents";
 import { generateRequestId } from "./requestId";
+import { clearToken } from "@/lib/auth";
 
 export type ApiSilo = "bf" | "bi" | "slf" | "admin";
 
@@ -33,7 +34,7 @@ export function createApi(silo: ApiSilo, token: string) {
   });
 
   const logout = () => {
-    localStorage.removeItem("portal_token");
+    clearToken();
     window.location.href = "/login";
   };
 

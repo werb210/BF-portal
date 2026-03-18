@@ -10,7 +10,11 @@ if (token) {
 apiClient.interceptors.request.use((config) => {
   const currentToken = getToken();
   config.headers = config.headers ?? {};
-  (config.headers as Record<string, string>).Authorization = currentToken ? `Bearer ${currentToken}` : "";
+  if (currentToken) {
+    (config.headers as Record<string, string>).Authorization = `Bearer ${currentToken}`;
+  } else {
+    delete (config.headers as Record<string, string>).Authorization;
+  }
 
   return config;
 });
