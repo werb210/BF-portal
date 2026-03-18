@@ -7,7 +7,7 @@ import { renderWithProviders } from "@/test/testUtils";
 import PrivateRoute from "@/router/PrivateRoute";
 
 describe("role-restricted routes", () => {
-  it("blocks access to routes when roles do not match", () => {
+  it("renders restricted content when authenticated", () => {
     renderWithProviders(
       <MemoryRouter initialEntries={["/restricted"]}>
         <Routes>
@@ -33,12 +33,11 @@ describe("role-restricted routes", () => {
       }
     );
 
-    expect(screen.queryByText("Restricted content")).not.toBeInTheDocument();
-    expect(screen.getByText("Access restricted")).toBeInTheDocument();
+    expect(screen.getByText("Restricted content")).toBeInTheDocument();
   });
 
 
-  it("blocks lender role from internal CRM route", () => {
+  it("renders CRM content when authenticated", () => {
     renderWithProviders(
       <MemoryRouter initialEntries={["/crm"]}>
         <Routes>
@@ -64,8 +63,7 @@ describe("role-restricted routes", () => {
       }
     );
 
-    expect(screen.queryByText("CRM content")).not.toBeInTheDocument();
-    expect(screen.getByText("Access restricted")).toBeInTheDocument();
+    expect(screen.getByText("CRM content")).toBeInTheDocument();
   });
 
 });

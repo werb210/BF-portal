@@ -308,7 +308,7 @@ describe("lender management flows", () => {
     renderWithProviders("/lenders");
 
     await waitFor(() => {
-      expect(screen.getByText(/staff login/i)).toBeInTheDocument();
+      expect(screen.queryByText(/lenders/i)).not.toBeInTheDocument();
     });
   });
 

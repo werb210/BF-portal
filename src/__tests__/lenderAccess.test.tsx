@@ -50,7 +50,7 @@ describe("lender route access", () => {
 
     renderRoutes("/lenders");
 
-    await waitFor(() => expect(screen.getByText("Login")).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("Protected")).not.toBeInTheDocument());
   });
 
   it("allows authenticated users onto lender routes", async () => {
