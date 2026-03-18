@@ -1,7 +1,8 @@
 import { decodeJwt as decodeJwtPayload } from "./jwt";
+import { clearToken as clearAuthToken, getToken as readAuthToken, setToken as setAuthToken } from "@/lib/auth";
 
 export const getToken = () => {
-  return localStorage.getItem("token") || "";
+  return readAuthToken() || "";
 };
 
 export const getAuthToken = () => getToken() || null;
@@ -12,9 +13,9 @@ export const decodeJwt = (token?: string | null) => {
 };
 
 export const setToken = (token: string) => {
-  localStorage.setItem("token", token);
+  setAuthToken(token);
 };
 
 export const clearToken = () => {
-  localStorage.removeItem("token");
+  clearAuthToken();
 };
