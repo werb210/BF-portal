@@ -33,7 +33,7 @@ cat artifacts/portal-routes.txt
 
 echo "Fetching server route contract..."
 
-SERVER_ROUTES_URL="${SERVER_ROUTES_URL:-https://raw.githubusercontent.com/werb210/staff/main/artifacts/server-routes.txt}"
+SERVER_ROUTES_URL="${SERVER_ROUTES_URL:-file://${PWD}/artifacts/server-routes.txt}"
 
 if curl -fsSL \
   "$SERVER_ROUTES_URL" \

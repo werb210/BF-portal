@@ -41,6 +41,9 @@ const PipelineColumn = ({
   onSelectCard
 }: PipelineColumnProps) => {
   const parentRef = useRef<HTMLDivElement | null>(null);
+  // TanStack Virtual returns function refs that trip `react-hooks/incompatible-library`.
+  // This component intentionally uses it for performant large-column rendering.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: cards.length,
     getScrollElement: () => parentRef.current,

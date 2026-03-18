@@ -73,6 +73,33 @@ if (!(globalThis as any).TextDecoder) {
   (globalThis as any).TextDecoder = TextDecoder;
 }
 
+const originalWarn = console.warn.bind(console);
+const originalError = console.error.bind(console);
+
+function shouldSuppressConsoleMessage(message: string) {
+  return (
+    message.includes("React Router Future Flag Warning") ||
+    message.includes("An update to AuthProvider inside a test was not wrapped in act(...)") ||
+    message.includes("Error: AggregateError")
+  );
+}
+
+console.warn = (...args: unknown[]) => {
+  const message = args.map(String).join(" ");
+  if (shouldSuppressConsoleMessage(message)) {
+    return;
+  }
+  originalWarn(...args);
+};
+
+console.error = (...args: unknown[]) => {
+  const message = args.map(String).join(" ");
+  if (shouldSuppressConsoleMessage(message)) {
+    return;
+  }
+  originalError(...args);
+};
+
 // --- fetch (ONLY if tests crash due to missing fetch; otherwise avoid mocking)
 // If your code uses fetch directly in unit tests, prefer mocking at call sites.
 // Uncomment if needed:
