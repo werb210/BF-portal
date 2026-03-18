@@ -91,8 +91,11 @@ export default function LoginPage() {
       setCodeSent(true);
       setStatusMessage("Code sent. Check your phone for the verification code.");
     } catch (err: any) {
-      setError(err?.response?.data?.error?.message || "Failed to send verification code");
-      setRequestId(err?.response?.headers?.["x-request-id"] ?? "n/a");
+      setStatusMessage(null);
+      setError(resolveOtpErrorMessage(err, "Failed to send verification code"));
+      const apiError = err instanceof ApiError ? err : null;
+      const axiosLike = err as { response?: { headers?: Record<string, string> } };
+      setRequestId(apiError?.requestId ?? axiosLike?.response?.headers?.["x-request-id"] ?? "n/a");
     } finally {
       setSending(false);
     }
