@@ -25,47 +25,16 @@ function hasRequiredBrowserBinaries() {
 }
 
 if (!hasRequiredBrowserBinaries()) {
-  console.warn(
-    "⚠️ Playwright browser binaries are unavailable in this environment; skipping e2e suite."
-  );
-  process.exit(0);
+  console.error("❌ Playwright browser binaries are unavailable; e2e suite must not be skipped.");
+  process.exit(1);
 }
 
 const child = spawn("npx", ["playwright", "test"], {
   shell: process.platform === "win32",
-  stdio: ["inherit", "pipe", "pipe"],
+  stdio: "inherit",
   env: process.env
 });
 
-let combinedOutput = "";
-
-child.stdout.on("data", (chunk) => {
-  const text = String(chunk);
-  combinedOutput += text;
-  process.stdout.write(text);
-});
-
-child.stderr.on("data", (chunk) => {
-  const text = String(chunk);
-  combinedOutput += text;
-  process.stderr.write(text);
-});
-
 child.on("close", (code) => {
-  if (code === 0) {
-    process.exit(0);
-  }
-
-  const browserMissing =
-    combinedOutput.includes("Executable doesn't exist") ||
-    combinedOutput.includes("Please run the following command to download new browsers");
-
-  if (browserMissing) {
-    console.warn(
-      "⚠️ Playwright browser binaries are unavailable in this environment; treating e2e suite as skipped."
-    );
-    process.exit(0);
-  }
-
   process.exit(code ?? 1);
 });
