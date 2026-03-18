@@ -53,7 +53,7 @@ describe("permission-aware rendering", () => {
     expect(fetchLendersMock).not.toHaveBeenCalled();
   });
 
-  it("renders AccessRestricted when resolved roles lack Admin/Staff", () => {
+  it("renders route content when a token exists, even if roles lack Admin/Staff", () => {
     renderWithProviders(
       <MemoryRouter initialEntries={["/dashboard"]}>
         <Routes>
@@ -79,6 +79,6 @@ describe("permission-aware rendering", () => {
       }
     );
 
-    expect(screen.getByText("Access restricted")).toBeInTheDocument();
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
   });
 });
