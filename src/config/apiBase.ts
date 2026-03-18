@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-const CANONICAL_PROD_API_BASE = "https://server.boreal.financial/api";
+const CANONICAL_PROD_API_BASE = "https://api.staff.boreal.financial";
 
 function readRuntimeApiBase(): string {
   const runtimeBase = (

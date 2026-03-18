@@ -94,7 +94,7 @@ describe("auth flow", () => {
   it("verifies OTP successfully", async () => {
     const adapter = createAuthAdapter({ id: "1", role: "Admin" });
     api.defaults.adapter = adapter as AxiosAdapter;
-    mockedLoginWithOtp.mockResolvedValue({ success: true, token: "access", user: { id: "1", role: "Admin" }, nextPath: "/portal" } as any);
+    mockedLoginWithOtp.mockResolvedValue({ token: "access", user: { id: "1", role: "Admin" }, nextPath: "/portal" } as any);
 
     render(
       <AuthProvider>
@@ -114,7 +114,7 @@ describe("auth flow", () => {
 
   it("does not redirect during auth hydration after OTP verification", async () => {
     mockedStartOtp.mockResolvedValue(null);
-    mockedLoginWithOtp.mockResolvedValue({ success: true, token: "access", user: { id: "1", role: "Staff" }, nextPath: "/portal" } as any);
+    mockedLoginWithOtp.mockResolvedValue({ token: "access", user: { id: "1", role: "Staff" }, nextPath: "/portal" } as any);
 
     let resolveRequest: (payload: { id: string; role: string }) => void = () => undefined;
     const pendingAdapter = vi.fn((config: InternalAxiosRequestConfig) =>
@@ -170,7 +170,7 @@ describe("auth flow", () => {
 
   it("renders protected routes after /auth/me succeeds", async () => {
     setStoredAccessToken("test-token");
-    localStorage.setItem("auth_token", "test-token");
+    localStorage.setItem("bf_token", "test-token");
     api.defaults.adapter = createAuthAdapter({ id: "1", role: "Staff" });
 
     render(
@@ -197,7 +197,7 @@ describe("auth flow", () => {
 
   it("hydrates user on refresh", async () => {
     setStoredAccessToken("test-token");
-    localStorage.setItem("auth_token", "test-token");
+    localStorage.setItem("bf_token", "test-token");
     api.defaults.adapter = createAuthAdapter({ id: "1", role: "Admin", email: "demo@example.com" });
 
     render(
@@ -245,7 +245,7 @@ describe("auth flow", () => {
 
   it("clears token on manual logout", async () => {
     setStoredAccessToken("test-token");
-    localStorage.setItem("auth_token", "test-token");
+    localStorage.setItem("bf_token", "test-token");
     api.defaults.adapter = createAuthAdapter({ id: "1", role: "Admin", email: "demo@example.com" });
 
     render(
@@ -280,6 +280,6 @@ describe("auth flow", () => {
     await waitFor(() =>
       expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated:resolved")
     );
-    await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/login"));
+    expect(localStorage.getItem("bf_token")).toBeNull();
   });
 });

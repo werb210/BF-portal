@@ -35,7 +35,7 @@ const formatDuration = (seconds: number) => {
 
 const CallPerformanceCard = () => {
   const [dateFilter, setDateFilter] = useState<DateFilter>(7);
-  const [stats, setStats] = useState<CallStats | null>(null);
+  const [stats, setStats] = useState<Partial<Record<string, CallStats>>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const { user } = useAuth();
@@ -51,15 +51,15 @@ const CallPerformanceCard = () => {
         if (!mounted) return;
         const payload = response?.data;
         if (payload && typeof payload === "object") {
-          setStats(payload as CallStats);
+          setStats(payload as Partial<Record<string, CallStats>>);
           return;
         }
-        setStats(fallbackStats);
+        setStats({ default: fallbackStats });
       })
       .catch(() => {
         if (!mounted) return;
         setError(true);
-        setStats(fallbackStats);
+        setStats({ default: fallbackStats });
       })
       .finally(() => {
         if (!mounted) return;
@@ -71,7 +71,7 @@ const CallPerformanceCard = () => {
     };
   }, [dateFilter]);
 
-  const resolvedStats = stats ?? fallbackStats;
+  const resolvedStats = stats.default ?? fallbackStats;
 
   return (
     <Card title="Call Performance">

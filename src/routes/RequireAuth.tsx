@@ -1,28 +1,15 @@
 import React from "react";
-import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "@/auth/AuthContext";
-import AccessRestricted from "@/components/auth/AccessRestricted";
-import { roleIn, type Role } from "@/auth/roles";
+import { Outlet } from "react-router-dom";
+import { getToken } from "@/lib/auth";
 
 export default function RequireAuth(
-  { children, allowedRoles }: { children?: React.ReactNode; allowedRoles?: Role[] } = {}
+  { children }: { children?: React.ReactNode; allowedRoles?: unknown } = {}
 ) {
-  const { authState, authReady, isAuthenticated, role, rolesStatus } = useAuth();
+  const token = getToken();
 
-  if (!authReady || authState === "loading") {
-    return <div>Loading...</div>;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (isAuthenticated && rolesStatus !== "resolved") {
+  if (!token) {
+    window.location.href = "/login";
     return null;
-  }
-
-  if (allowedRoles && rolesStatus === "resolved" && !roleIn(role, allowedRoles)) {
-    return <AccessRestricted requiredRoles={allowedRoles} />;
   }
 
   return children ? <>{children}</> : <Outlet />;

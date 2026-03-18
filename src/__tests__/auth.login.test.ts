@@ -114,9 +114,8 @@ describe("auth login", () => {
 
     const result = await loginWithOtp("+15555550100", "123456");
 
-    expect(result.success).toBe(true);
     expect(result.nextPath).toBe("/portal");
-    expect(localStorage.getItem("auth_token")).toBe(mockVerifyResponse.data.token);
+    expect(localStorage.getItem("bf_token")).toBe(mockVerifyResponse.data.token);
 
     window.history.replaceState({}, "", mockVerifyResponse.data.nextPath);
     expect(window.location.href).toContain("/portal");
@@ -137,7 +136,7 @@ describe("auth login", () => {
   });
 
   it("hydrates user from /auth/me on reload", async () => {
-    localStorage.setItem("auth_token", "test-token");
+    localStorage.setItem("bf_token", "test-token");
     const adapter = vi.fn(async (config) => ({
       data: {
         data: {
@@ -188,7 +187,7 @@ describe("auth login", () => {
     screen.getByRole("button", { name: "Verify" }).click();
 
     await waitFor(() => expect(postSpy).toHaveBeenCalled());
-    expect(localStorage.getItem("auth_token")).toBe(mockVerifyResponse.data.token);
+    expect(localStorage.getItem("bf_token")).toBe(mockVerifyResponse.data.token);
     await waitFor(() =>
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
@@ -209,10 +208,8 @@ describe("auth login", () => {
       config: {}
     } as any);
 
-    const result = await loginWithOtp("+15555550100", "123456");
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Authentication failed");
-    expect(localStorage.getItem("auth_token")).toBeNull();
+    await expect(loginWithOtp("+15555550100", "123456")).rejects.toThrow("Invalid API response");
+    expect(localStorage.getItem("bf_token")).toBeNull();
   });
 
   it("treats missing user as failed authentication", async () => {
@@ -230,8 +227,6 @@ describe("auth login", () => {
       config: {}
     } as any);
 
-    const result = await loginWithOtp("+15555550100", "123456");
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Authentication failed");
+    await expect(loginWithOtp("+15555550100", "123456")).rejects.toThrow("Invalid API response");
   });
 });
