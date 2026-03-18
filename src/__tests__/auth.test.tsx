@@ -7,11 +7,11 @@ import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 import api from "@/lib/api";
 
-const createAuthAdapter = (data: unknown) =>
+const createAuthAdapter = (user: unknown, status = 200) =>
   vi.fn(async (config) => ({
-    data,
-    status: 200,
-    statusText: "OK",
+    data: { ok: true, data: { user } },
+    status,
+    statusText: status === 200 ? "OK" : "Unauthorized",
     headers: {},
     config
   }));
@@ -34,7 +34,9 @@ const TestSetAuth = () => {
       type: "button",
       onClick: () =>
         setAuth({
-          user: { id: "1", email: "demo@example.com", role: "Admin" }
+          id: "1",
+          email: "demo@example.com",
+          role: "Admin"
         })
     },
     "Set Auth"
@@ -92,13 +94,7 @@ describe("token auth", () => {
   it("settles unauthenticated on /auth/me 401 without bootstrap loop", async () => {
     setStoredAccessToken("expired-token");
 
-    const adapter = vi.fn(async (config) => ({
-      data: null,
-      status: 401,
-      statusText: "Unauthorized",
-      headers: {},
-      config
-    }));
+    const adapter = createAuthAdapter(null, 401);
     api.defaults.adapter = adapter;
 
     render(
