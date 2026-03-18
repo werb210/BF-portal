@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { act } from "@testing-library/react";
 import { renderWithProviders } from "@/test/testUtils";
 import { useNotificationPermissionPrompt } from "@/hooks/useNotificationPermissionPrompt";
 
@@ -47,7 +48,9 @@ describe("notification permission prompt", () => {
 
     expect(window.Notification.requestPermission).not.toHaveBeenCalled();
 
-    await vi.advanceTimersByTimeAsync(1300);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1300);
+    });
 
     expect(window.Notification.requestPermission).toHaveBeenCalledTimes(1);
   });

@@ -8,7 +8,7 @@ type CallStatus = {
 
 export async function getCallStatus(): Promise<CallStatus> {
   try {
-    const response = await apiClient.get("/telephony/call-status");
+    const response = await apiClient.get("/api/telephony/call-status");
 
     const data = response.data || {};
 

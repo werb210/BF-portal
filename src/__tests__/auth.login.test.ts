@@ -5,7 +5,7 @@ import api from "@/api/client";
 import authApi from "@/lib/api";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { loginWithOtp } from "@/services/auth";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 import { clearStoredAuth } from "@/services/token";
@@ -189,7 +189,9 @@ describe("auth login", () => {
 
     render(createElement(AuthProvider, null, createElement(TestVerifyAction), createElement(TestAuthState)));
 
-    screen.getByRole("button", { name: "Verify" }).click();
+    await act(async () => {
+      screen.getByRole("button", { name: "Verify" }).click();
+    });
 
     await waitFor(() => expect(postSpy).toHaveBeenCalled());
     expect(localStorage.getItem("bf_token")).toBe(mockVerifyResponse.data.token);
