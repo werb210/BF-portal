@@ -60,7 +60,7 @@
     "@capacitor/cli": "^7.5.0",
     "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.0.1",
+    "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.5.2",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
@@ -86,6 +86,6 @@
     "typescript": "^5.6.3",
     "vite": "^5.4.14",
     "vite-plugin-pwa": "^1.2.0",
-    "vitest": "^2.1.7"
+    "vitest": "^2.1.9"
   }
 }
