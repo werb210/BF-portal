@@ -163,6 +163,7 @@ const baseProduct: LenderProduct = {
 
 describe("lender management flows", () => {
   beforeEach(() => {
+    window.__TEST_AUTH__ = { isAuthenticated: true, role: "Admin" };
     clearStoredAuth();
     setStoredAccessToken("test-token");
     const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({ id: "u1", role: "Admin" }));
@@ -171,6 +172,7 @@ describe("lender management flows", () => {
   });
 
   afterEach(() => {
+    delete window.__TEST_AUTH__;
     clearStoredAuth();
     vi.clearAllMocks();
     vi.unstubAllGlobals();
@@ -298,6 +300,7 @@ describe("lender management flows", () => {
   });
 
   it("sends users to login when unauthenticated", async () => {
+    delete window.__TEST_AUTH__;
     clearStoredAuth();
     const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));
     vi.stubGlobal("fetch", fetchSpy);

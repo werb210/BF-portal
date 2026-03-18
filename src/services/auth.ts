@@ -23,33 +23,15 @@ export async function startOtp(payload: { phone: string }) {
 }
 
 export async function verifyOtp(phone: string, code: string) {
-  const normalizedPhone = normalizePhone(phone);
-
-  console.log("OTP verify payload", { phone: normalizedPhone, code });
-
-  const res = await apiClient.post("/auth/otp/verify", {
-    phone: normalizedPhone,
-    code
-  });
-
-  const data = res?.data;
-  const payload = data?.data ?? data;
-
-  if (data?.ok === false) {
-    throw new Error(data?.error?.message || "Verification failed");
-  }
-
-  const token = payload?.token ?? payload?.accessToken ?? payload?.sessionToken ?? null;
-
-  if (token) {
-    localStorage.setItem("auth_token", token);
+  const verified = await loginWithOtp(phone, code);
+  if (!verified.success || !verified.user) {
+    throw new Error(verified.error ?? "Verification failed");
   }
 
   return {
-    accessToken: payload?.accessToken,
-    sessionToken: payload?.sessionToken,
-    role: payload?.role,
-    user: payload?.user,
+    user: verified.user,
+    token: verified.token ?? null,
+    nextPath: verified.nextPath ?? "/portal",
   };
 }
 
@@ -75,11 +57,9 @@ export async function loginWithOtp(phone: string, code: string) {
 
   const response = verify?.data;
 
-  const payload = response?.data ?? response;
-  const token = payload?.token ?? payload?.accessToken ?? payload?.sessionToken ?? null;
+  const payload = response?.data;
+  const token = payload?.token ?? null;
   const user = payload?.user ?? null;
-  const nextPath = payload?.nextPath ?? "/portal";
-
   const isSuccessful = response?.ok === true && Boolean(token && user);
 
   if (isSuccessful) {
@@ -87,7 +67,9 @@ export async function loginWithOtp(phone: string, code: string) {
 
     return {
       success: true,
-      nextPath
+      token,
+      user,
+      nextPath: "/portal"
     };
   }
 

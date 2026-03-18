@@ -94,7 +94,7 @@ describe("auth flow", () => {
   it("verifies OTP successfully", async () => {
     const adapter = createAuthAdapter({ id: "1", role: "Admin" });
     api.defaults.adapter = adapter as AxiosAdapter;
-    mockedLoginWithOtp.mockResolvedValue({ token: "access", user: { id: "1", role: "Admin" } } as any);
+    mockedLoginWithOtp.mockResolvedValue({ success: true, token: "access", user: { id: "1", role: "Admin" }, nextPath: "/portal" } as any);
 
     render(
       <AuthProvider>
@@ -114,7 +114,7 @@ describe("auth flow", () => {
 
   it("does not redirect during auth hydration after OTP verification", async () => {
     mockedStartOtp.mockResolvedValue(null);
-    mockedLoginWithOtp.mockResolvedValue({ token: "access", user: { id: "1", role: "Staff" }, nextPath: "/portal" } as any);
+    mockedLoginWithOtp.mockResolvedValue({ success: true, token: "access", user: { id: "1", role: "Staff" }, nextPath: "/portal" } as any);
 
     let resolveRequest: (payload: { id: string; role: string }) => void = () => undefined;
     const pendingAdapter = vi.fn((config: InternalAxiosRequestConfig) =>
