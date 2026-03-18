@@ -5,16 +5,16 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
-import { verifyOtp as verifyOtpService, startOtp as startOtpService } from "@/services/auth";
+import { loginWithOtp as loginWithOtpService, startOtp as startOtpService } from "@/services/auth";
 
 vi.mock("@/services/auth", () => ({
   startOtp: vi.fn(),
-  verifyOtp: vi.fn(),
+  loginWithOtp: vi.fn(),
   logout: vi.fn()
 }));
 
 const mockedStartOtp = vi.mocked(startOtpService);
-const mockedVerifyOtp = vi.mocked(verifyOtpService);
+const mockedLoginWithOtp = vi.mocked(loginWithOtpService);
 
 const renderLoginFlow = () =>
   render(
@@ -22,7 +22,7 @@ const renderLoginFlow = () =>
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/dashboard" element={<div>Dashboard</div>} />
+          <Route path="/portal" element={<div>Portal</div>} />
         </Routes>
       </MemoryRouter>
     </AuthProvider>
@@ -31,16 +31,16 @@ const renderLoginFlow = () =>
 describe("login flow", () => {
   beforeEach(() => {
     mockedStartOtp.mockReset();
-    mockedVerifyOtp.mockReset();
+    mockedLoginWithOtp.mockReset();
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("navigates to dashboard after OTP verification", async () => {
+  it("navigates to portal after OTP verification", async () => {
     mockedStartOtp.mockResolvedValue(null);
-    mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
+    mockedLoginWithOtp.mockResolvedValue({ success: true, token: "access", user: { id: "1", role: "Staff" }, nextPath: "/portal" } as any);
     const fetchSpy = vi
       .fn()
       .mockResolvedValue(
@@ -60,8 +60,10 @@ describe("login flow", () => {
 
     fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "123456" } });
 
-    await waitFor(() => expect(mockedVerifyOtp).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByText("Dashboard")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /Verify/i }));
+
+    await waitFor(() => expect(mockedLoginWithOtp).toHaveBeenCalledWith("+15555550100", "123456"));
+    await waitFor(() => expect(screen.getByText("Portal")).toBeInTheDocument());
   });
 
   it("fires Send code exactly once for rapid clicks", async () => {
@@ -87,7 +89,7 @@ describe("login flow", () => {
 
     await waitFor(() => expect(mockedStartOtp).toHaveBeenCalledTimes(1));
     expect(screen.getByLabelText(/Phone number/i)).toBeInTheDocument();
-    expect(screen.getByText(/Unable to send verification code/i)).toBeInTheDocument();
+    expect(screen.getByText(/Failed to send verification code/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/OTP digit 1/i)).not.toBeInTheDocument();
   });
 

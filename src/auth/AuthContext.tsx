@@ -102,6 +102,7 @@ const resolveAuthUserFromResponse = (payload: unknown): AuthUser => {
   return normalizeAuthUser(candidate?.data?.user ?? candidate?.user ?? (payload as AuthUser));
 };
 
+
 const buildFallbackUser = (): AuthUser => {
   const raw = localStorage.getItem("boreal_staff_user");
   if (raw) {
@@ -137,11 +138,6 @@ const getTestAuthOverride = (): TestAuthOverride | null => {
 const clearInvalidTokenArtifacts = () => {
   clearStoredAuth();
   localStorage.removeItem("auth_token");
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("token");
-  localStorage.removeItem("accessToken");
-  sessionStorage.removeItem("token");
-  sessionStorage.removeItem("accessToken");
   delete api.defaults.headers.common["Authorization"];
 };
 
@@ -243,7 +239,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshUser = useCallback(
     async (tokenOverride?: string | null, options?: { deferHydrationEnd?: boolean }) => {
-      const token = tokenOverride ?? accessToken ?? getStoredAccessToken() ?? localStorage.getItem("auth_token") ?? localStorage.getItem("access_token");
+      const token = tokenOverride ?? accessToken ?? getStoredAccessToken() ?? localStorage.getItem("auth_token");
 
       if (refreshingRef.current) {
         return false;
@@ -253,7 +249,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (token) {
         localStorage.setItem("auth_token", token);
-        localStorage.setItem("access_token", token);
       }
 
       if (!options?.deferHydrationEnd) {
@@ -263,7 +258,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        const nextUser = resolveAuthUserFromResponse(await authService.me());
+        const response = await api.get("/auth/me");
+        const nextUser = resolveAuthUserFromResponse(response.data);
 
         if (!nextUser) {
           clearInvalidTokenArtifacts();
@@ -372,13 +368,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setRolesStatus("loading");
 
     try {
-      const serviceKeys = Reflect.ownKeys(authService);
-      const hasLoginWithOtp = serviceKeys.includes("loginWithOtp");
-      const verifyFn = hasLoginWithOtp
-        ? (authService as unknown as { loginWithOtp: (phone: string, code: string) => Promise<unknown> }).loginWithOtp
-        : (authService as unknown as { verifyOtp: (phone: string, code: string) => Promise<unknown> }).verifyOtp;
-
-      const verification = await verifyFn(phone, code) as {
+      const verification = await authService.loginWithOtp(phone, code) as {
         success?: boolean;
         error?: string;
         nextPath?: string;
@@ -435,7 +425,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       void refreshUser(token);
 
-      return { success: true, nextPath: verification.nextPath || "/dashboard" };
+      return { success: true, nextPath: verification.nextPath || "/portal" };
     } catch (err) {
       const message = err instanceof Error ? err.message : "OTP login failed";
       console.error("OTP login failed", err);

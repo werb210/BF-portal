@@ -63,7 +63,7 @@ test("real otp login works end-to-end", async ({ page }) => {
 
   await page.waitForURL((url) => !url.pathname.endsWith("/login"), { timeout: 15_000 });
 
-  const storedToken = await page.evaluate(() => localStorage.getItem("staff_access_token"));
+  const storedToken = await page.evaluate(() => localStorage.getItem("auth_token"));
   expect(storedToken).toBeTruthy();
 
   const lendersResponse = storedToken

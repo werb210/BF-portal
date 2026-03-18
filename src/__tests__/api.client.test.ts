@@ -34,7 +34,7 @@ describe("api client auth handling", () => {
     expect(adapter).toHaveBeenCalledOnce();
     const passedConfig = adapter.mock.calls[0][0];
     expect(passedConfig?.headers?.Authorization).toBe("Bearer test-token");
-    expect(buildRequestUrl(passedConfig ?? {})).toMatch(/\/api\/example$/);
+    expect(buildRequestUrl(passedConfig ?? {})).toMatch(/\/example$/);
   });
 
   it("adds an idempotency key to write requests", async () => {

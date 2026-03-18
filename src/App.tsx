@@ -94,7 +94,8 @@ const AppRoutes = () => (
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/otp" element={<AuthOtpPage />} />
       <Route element={<AuthenticatedShell />}>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/portal" replace />} />
+        <Route path="/portal" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route
           path="/pipeline"

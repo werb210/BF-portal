@@ -39,7 +39,7 @@ export async function verifyOtp(phone: string, code: string) {
     throw new Error(data?.error?.message || "Verification failed");
   }
 
-  const token = payload?.accessToken ?? payload?.token ?? payload?.sessionToken ?? null;
+  const token = payload?.token ?? payload?.accessToken ?? payload?.sessionToken ?? null;
 
   if (token) {
     localStorage.setItem("auth_token", token);
@@ -55,9 +55,6 @@ export async function verifyOtp(phone: string, code: string) {
 
 export function logout() {
   clearToken();
-  if (typeof window !== "undefined") {
-    window.localStorage.removeItem("access_token");
-  }
   delete apiClient.defaults.headers.common.Authorization;
 }
 
@@ -79,18 +76,18 @@ export async function loginWithOtp(phone: string, code: string) {
   const response = verify?.data;
 
   const payload = response?.data ?? response;
-  const token = payload?.token || payload?.accessToken || payload?.sessionToken || null;
+  const token = payload?.token ?? payload?.accessToken ?? payload?.sessionToken ?? null;
   const user = payload?.user ?? null;
+  const nextPath = payload?.nextPath ?? "/portal";
 
-  const isSuccessful = response?.ok === true || Boolean(token && user);
+  const isSuccessful = response?.ok === true && Boolean(token && user);
 
-  if (isSuccessful && token && user) {
-
+  if (isSuccessful) {
     localStorage.setItem("auth_token", token);
 
     return {
       success: true,
-      nextPath: payload?.nextPath || "/dashboard"
+      nextPath
     };
   }
 
