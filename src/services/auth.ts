@@ -21,6 +21,8 @@ type WrappedApiResponse<T> = {
   ok: boolean;
   data?: T;
   error?: string;
+  code?: string;
+  message?: string;
 };
 
 const asErrorMessage = (payload: unknown): string | null => {
@@ -32,6 +34,25 @@ const asErrorMessage = (payload: unknown): string | null => {
   return null;
 };
 
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object";
+
+const asWrappedPayload = <T>(payload: unknown): WrappedApiResponse<T> | null => {
+  if (!isObject(payload)) return null;
+  return payload as WrappedApiResponse<T>;
+};
+
+const resolvePayloadData = <T>(payload: unknown): T | null => {
+  const wrapped = asWrappedPayload<T>(payload);
+  if (wrapped) {
+    if (wrapped.ok === false) return null;
+    if (wrapped.data !== undefined) return wrapped.data;
+  }
+
+  if (!isObject(payload)) return null;
+  return payload as T;
+};
+
 export async function startOtp(payload: { phone: string }) {
   const phone = normalizePhone(payload.phone);
   const response = await apiClient.post<WrappedApiResponse<{ sent?: boolean }>>(
@@ -41,11 +62,13 @@ export async function startOtp(payload: { phone: string }) {
   );
 
   const payloadData = response?.data;
-  if (!payloadData?.ok) {
+  const normalized = resolvePayloadData<{ sent?: boolean }>(payloadData);
+
+  if (!normalized) {
     throw new Error(asErrorMessage(payloadData) ?? "Failed to send verification code");
   }
 
-  if (!payloadData.data || payloadData.data.sent !== true) {
+  if (normalized.sent !== true) {
     throw new Error("Invalid API response");
   }
 
@@ -69,8 +92,8 @@ export function logout() {
 
 export async function getCurrentUser() {
   const res = await apiClient.get("/auth/me");
-  const payload = res?.data;
-  return payload?.data?.user ?? null;
+  const payload = res?.data as { user?: AuthenticatedUser; data?: { user?: AuthenticatedUser } } | null;
+  return payload?.data?.user ?? payload?.user ?? (payload as AuthenticatedUser | null) ?? null;
 }
 
 export async function loginWithOtp(phone: string, code: string): Promise<OtpVerifyData> {
@@ -83,16 +106,12 @@ export async function loginWithOtp(phone: string, code: string): Promise<OtpVeri
   );
 
   const response = verify?.data;
-
-  if (!response?.ok) {
+  const resolved = resolvePayloadData<OtpVerifyData>(response);
+  if (!resolved) {
     throw new Error(asErrorMessage(response) ?? "Authentication failed");
   }
 
-  if (!response.data) {
-    throw new Error("Invalid API response");
-  }
-
-  const { token, user, nextPath } = response.data;
+  const { token, user, nextPath } = resolved;
 
   if (!token || !user) {
     throw new Error("Invalid API response");

@@ -135,6 +135,28 @@ describe("auth login", () => {
     apiPostSpy.mockRestore();
   });
 
+  it("OTP verification accepts unwrapped verify payloads", async () => {
+    vi.spyOn(api, "post").mockResolvedValueOnce({
+      data: {
+        token: "test-jwt-token",
+        user: {
+          id: "user-id",
+          phone: "+15555555555",
+          role: "Staff"
+        },
+        nextPath: "/portal"
+      },
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config: {}
+    } as any);
+
+    const result = await loginWithOtp("+15555550100", "123456");
+    expect(result.token).toBe("test-jwt-token");
+    expect(result.user?.id).toBe("user-id");
+  });
+
   it("retains existing adapter behavior", async () => {
     await apiClient.get("/example", { adapter, skipAuth: true } as any);
     expect(adapter).toHaveBeenCalledOnce();
@@ -151,6 +173,28 @@ describe("auth login", () => {
             role: "Admin"
           }
         }
+      },
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config
+    }));
+    authApi.defaults.adapter = adapter;
+
+    render(createElement(AuthProvider, null, createElement(TestAuthState)));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
+    );
+  });
+
+  it("hydrates user from unwrapped /auth/me payload on reload", async () => {
+    localStorage.setItem("bf_token", "test-token");
+    const adapter = vi.fn(async (config) => ({
+      data: {
+        id: "1",
+        email: "restored@example.com",
+        role: "Admin"
       },
       status: 200,
       statusText: "OK",
