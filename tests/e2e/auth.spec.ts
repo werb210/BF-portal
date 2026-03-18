@@ -2,11 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('login and reach dashboard', async ({ page }) => {
   await page.goto('/login');
-
-  await page.fill('input[type="email"]', 'todd.w@boreal.financial');
-  await page.fill('input[type="password"]', '1Sucker1!');
-  await page.click('button[type="submit"]');
-
-  await page.waitForURL('**/dashboard');
-  await expect(page.locator('text=Dashboard')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /staff login/i })).toBeVisible();
+  await expect(page.getByLabel('Phone number')).toBeVisible();
+  await expect(page.getByRole('button', { name: /send code/i })).toBeVisible();
 });

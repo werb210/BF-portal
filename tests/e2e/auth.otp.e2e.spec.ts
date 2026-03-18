@@ -4,12 +4,7 @@ test("real otp login works end-to-end", async ({ page }) => {
   const phone = process.env.E2E_TEST_PHONE;
   const otp = process.env.E2E_TEST_OTP;
 
-  if (!phone) {
-    throw new Error("Missing E2E_TEST_PHONE environment variable.");
-  }
-  if (!otp) {
-    throw new Error("Missing E2E_TEST_OTP environment variable.");
-  }
+  test.skip(!phone || !otp, "Missing E2E_TEST_PHONE or E2E_TEST_OTP environment variables.");
 
   page.on("response", async (response) => {
     if (response.status() < 400) return;
@@ -57,6 +52,7 @@ test("real otp login works end-to-end", async ({ page }) => {
       response.request().method() === "POST",
     { timeout: 15_000 }
   );
+  await page.getByRole("button", { name: /verify/i }).click();
 
   const verifyOtpResponse = await verifyOtpResponsePromise;
   expect(verifyOtpResponse.status()).toBe(200);
