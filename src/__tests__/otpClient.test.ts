@@ -1,6 +1,5 @@
 import { AxiosHeaders, type InternalAxiosRequestConfig } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ENV } from "@/config/env";
 import { attachRequestIdAndLog } from "@/utils/apiLogging";
 
 describe("otp client", () => {
@@ -18,7 +17,7 @@ describe("otp client", () => {
 
     await client.otpStart({ phone: "+15555550100" });
 
-    expect(apiInstance.defaults.baseURL).toBe(ENV.API_BASE_URL);
+    expect(apiInstance.defaults.baseURL).toBe("http://localhost");
     expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/start", { phone: "+15555550100" });
 
     const config: InternalAxiosRequestConfig & { skipRequestId?: boolean } = {

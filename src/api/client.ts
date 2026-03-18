@@ -1,6 +1,5 @@
 import axios, { AxiosHeaders } from "axios";
 import { getApiBase } from "@/config/apiBase";
-import { ENV } from "@/config/env";
 import { getToken } from "@/lib/auth";
 
 const sanitizePath = (url: string) => {
@@ -8,7 +7,7 @@ const sanitizePath = (url: string) => {
 };
 
 const api = axios.create({
-  baseURL: process.env.NODE_ENV === "test" ? ENV.API_BASE_URL : getApiBase(),
+  baseURL: process.env.NODE_ENV === "test" ? "http://localhost" : getApiBase(),
   timeout: 20000,
   withCredentials: true
 });

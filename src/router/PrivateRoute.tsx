@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 import { getToken } from "@/lib/auth";
 
 export default function PrivateRoute({
@@ -10,8 +11,7 @@ export default function PrivateRoute({
   const token = getToken();
 
   if (!token) {
-    window.location.href = "/login";
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
