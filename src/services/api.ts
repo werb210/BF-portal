@@ -65,7 +65,7 @@ export const redirectToLogin = () => {
 };
 
 export const redirectToDashboard = () => {
-  navigateTo("/dashboard");
+  navigateTo("/portal");
 };
 
 const getApiBaseUrlValue = () => getApiBaseUrl();
