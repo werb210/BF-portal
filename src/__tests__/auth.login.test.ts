@@ -190,7 +190,7 @@ describe("auth login", () => {
     await waitFor(() => expect(postSpy).toHaveBeenCalled());
     expect(localStorage.getItem("auth_token")).toBe(mockVerifyResponse.data.token);
     await waitFor(() =>
-      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loading")
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
   });
 

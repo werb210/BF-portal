@@ -33,6 +33,7 @@ vi.mock("@/auth/AuthContext", () => ({
     pendingPhoneNumber: null,
     startOtp: (...args: Parameters<typeof startOtpMock>) => startOtpMock(...args),
     verifyOtp: (...args: Parameters<typeof verifyOtpMock>) => verifyOtpMock(...args),
+    loginWithOtp: (...args: Parameters<typeof verifyOtpMock>) => verifyOtpMock(...args),
     login: async () => undefined,
     setAuth: () => undefined,
     setUser: () => undefined,

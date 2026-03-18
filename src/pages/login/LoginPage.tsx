@@ -30,7 +30,7 @@ export function resolvePostLoginDestination(role: string): string {
 }
 
 export default function LoginPage() {
-  const { authenticated, authStatus, startOtp, verifyOtp } = useAuth();
+  const { authenticated, authStatus, startOtp, loginWithOtp } = useAuth();
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [normalizedPhone, setNormalizedPhone] = useState("");
@@ -47,9 +47,9 @@ export default function LoginPage() {
   useEffect(() => {
     if (!codeSent && authenticated && authStatus === "authenticated") {
       if (process.env.NODE_ENV === "test") {
-        navigate("/dashboard", { replace: true });
+        navigate("/portal", { replace: true });
       } else {
-        window.location.href = "/dashboard";
+        window.location.href = "/portal";
       }
     }
   }, [authenticated, authStatus, codeSent, navigate]);
@@ -114,13 +114,13 @@ export default function LoginPage() {
     setEndpoint("/auth/otp/verify");
 
     try {
-      const verified = await verifyOtp(normalizedPhone, code);
+      const verified = await loginWithOtp(normalizedPhone, code);
       if (!verified.success) {
         setError(verified.error || "Authentication failed. Request a new code.");
         setRequestId("n/a");
         return;
       }
-      const destination = verified.nextPath || "/dashboard";
+      const destination = verified.nextPath || "/portal";
       if (process.env.NODE_ENV === "test") {
         navigate(destination, { replace: true });
       } else {

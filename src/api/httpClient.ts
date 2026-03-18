@@ -29,7 +29,7 @@ const createApiError = (status: number, message: string, code?: string) =>
   new ApiError({ status, message, code, details: { code } });
 
 const withHeaders = (path: string, method: string, options?: RequestOptions): AxiosRequestConfig => {
-  const headers = AxiosHeaders.from(options?.headers ?? {});
+  const headers = AxiosHeaders.from((options?.headers ?? {}) as any);
 
   headers.set("X-Request-Id", getRequestId());
 
@@ -112,7 +112,7 @@ export const configureLenderApiClient = (config: LenderAuthConfig) => {
 };
 
 const lenderHeaders = (method: string, options?: RequestOptions) => {
-  const headers = AxiosHeaders.from(options?.headers ?? {});
+  const headers = AxiosHeaders.from((options?.headers ?? {}) as any);
   headers.set("X-Request-Id", getRequestId());
 
   if (isWriteMethod(method) && !headers.get("Idempotency-Key")) {

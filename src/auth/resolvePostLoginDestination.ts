@@ -1,9 +1,9 @@
 export function resolvePostLoginDestination(role: string): string {
   switch (role) {
     case "admin":
-      return "/admin";
+      return "/portal";
     case "staff":
-      return "/dashboard";
+      return "/portal";
     case "lender":
       return "/lenders";
     case "referrer":

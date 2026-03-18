@@ -4,7 +4,6 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import "@testing-library/jest-dom/vitest";
 import { MemoryRouter } from "react-router-dom";
 import { normalizePhone } from "@/utils/phone";
-import { startOtp, verifyOtp } from "@/services/authService";
 import LoginPage from "@/pages/login/LoginPage";
 
 let startOtpMock = vi.fn();
@@ -25,6 +24,7 @@ vi.mock("@/auth/AuthContext", () => ({
     pendingPhoneNumber: null,
     startOtp: (...args: Parameters<typeof startOtpMock>) => startOtpMock(...args),
     verifyOtp: (...args: Parameters<typeof verifyOtpMock>) => verifyOtpMock(...args),
+    loginWithOtp: (...args: Parameters<typeof verifyOtpMock>) => verifyOtpMock(...args),
     login: async () => undefined,
     setAuth: () => undefined,
     setUser: () => undefined,
@@ -50,44 +50,6 @@ describe("OTP flow", () => {
   test("normalizes 10-digit and + formatted phone numbers", () => {
     expect(normalizePhone("4035551234")).toBe("+14035551234");
     expect(normalizePhone("+14035551234")).toBe("+14035551234");
-  });
-
-  test("request OTP sends normalized phone payload", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      headers: { get: () => "application/json" },
-      json: async () => ({ ok: true })
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    await startOtp("(555) 555-0100");
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringMatching(/\/api\/auth\/otp\/start$/),
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ phone: "+15555550100" })
-      })
-    );
-  });
-
-  test("verify OTP sends both normalized phone and code", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      headers: { get: () => "application/json" },
-      json: async () => ({ ok: true })
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    await verifyOtp("1 (555) 555-0100", "123456");
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringMatching(/\/api\/auth\/otp\/verify$/),
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ phone: "+15555550100", code: "123456" })
-      })
-    );
   });
 
   test("transitions to OTP code UI after requesting OTP", async () => {

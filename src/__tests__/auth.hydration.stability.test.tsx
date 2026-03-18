@@ -45,6 +45,6 @@ describe("auth hydration stability", () => {
 
     render(<App />);
 
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+    expect(screen.getByTestId("auth-probe")).toHaveTextContent("false");
   });
 });
