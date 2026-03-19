@@ -32,6 +32,7 @@ export default function Login() {
       {step === 'phone' && (
         <>
           <input
+            aria-label="Phone number"
             placeholder="Phone number"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}

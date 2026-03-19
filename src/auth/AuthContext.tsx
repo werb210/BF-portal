@@ -315,8 +315,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setIsHydratingSession(true);
 
-    getMe()
-      .then((res) => {
+    void (async () => {
+      try {
+        const res = await getMe();
         const normalizedUser = resolveAuthUserFromResponse(res.data);
 
         if (!normalizedUser) {
@@ -332,8 +333,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAuthStateState("authenticated");
         setAuthStatus("authenticated");
         setRolesStatus(hasResolvedRole(normalizedUser) ? "resolved" : "loading");
-      })
-      .catch((error) => {
+      } catch (error) {
         if (isUnauthorizedError(error)) {
           clearToken();
           settleUnauthenticated();
@@ -341,11 +341,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         clearToken();
         settleUnauthenticated();
-      })
-      .finally(() => {
+      } finally {
         setBootstrapped(true);
         endHydration();
-      });
+      }
+    })();
   }, [endHydration, settleUnauthenticated]);
 
   const startOtp = useCallback(async ({ phone }: OtpStartPayload) => {

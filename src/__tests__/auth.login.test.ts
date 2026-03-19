@@ -121,7 +121,7 @@ describe("auth login", () => {
     expect(window.location.href).toContain("/portal");
 
     expect(apiPostSpy).toHaveBeenCalledWith(
-      "/auth/otp/verify",
+      "/api/auth/otp/verify",
       {
         phone: "+15555550100",
         code: "123456"

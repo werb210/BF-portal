@@ -13,7 +13,7 @@ type RouteDescriptor = {
 
 export const portalApiRoutes: RouteDescriptor[] = [
   { method: "POST", path: "/auth/otp/start" },
-  { method: "POST", path: "/auth/otp/verify" },
+  { method: "POST", path: "/api/auth/otp/verify" },
   { method: "GET", path: "/auth/me" },
   { method: "POST", path: "/auth/logout" },
   { method: "GET", path: "/api/_int/routes" }

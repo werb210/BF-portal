@@ -20,7 +20,7 @@ describe("api client auth headers", () => {
     }));
 
     await api.post("/auth/otp/start", { phone: "+15555550100" }, { adapter } as any);
-    await api.post("/auth/otp/verify", { phone: "+15555550100", code: "123456" }, { adapter } as any);
+    await api.post("/api/auth/otp/verify", { phone: "+15555550100", code: "123456" }, { adapter } as any);
 
     expect(adapter).toHaveBeenCalledTimes(2);
     expect(adapter.mock.calls[0][0]?.headers?.Authorization).toBeUndefined();
