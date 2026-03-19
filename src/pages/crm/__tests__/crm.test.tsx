@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ContactsPage from "../contacts/ContactsPage";
@@ -25,6 +25,56 @@ const janeContact: Contact = {
   companyIds: ["co1"],
   applicationIds: ["app-1001"]
 };
+
+vi.mock("@/api/crm", async () => {
+  const actual = await vi.importActual<typeof import("@/api/crm")>("@/api/crm");
+  const company = {
+    id: "co1",
+    name: "Boreal Finance",
+    silo: "BF" as const,
+    industry: "Financial Services",
+    owner: "Alex",
+    tags: ["Priority"],
+    contactIds: ["c1"]
+  };
+  return {
+    ...actual,
+    fetchContacts: vi.fn(async () => [janeContact]),
+    fetchCompanies: vi.fn(async () => [company]),
+    fetchApplications: vi.fn(async () => [{ id: "app-1001", stage: "SUBMITTED", contactId: "c1" }]),
+    fetchContactCompanies: vi.fn(async () => [company]),
+    fetchCompanyContacts: vi.fn(async () => [janeContact]),
+    fetchTimeline: vi.fn(async () => [
+      { id: "t-call", entityId: "c1", entityType: "contact", type: "call", occurredAt: "2026-03-01T12:00:00.000Z", summary: "Outbound call to Jane" },
+      { id: "t-sms", entityId: "c1", entityType: "contact", type: "sms", occurredAt: "2026-03-01T11:55:00.000Z", summary: "SMS from Jane" },
+      { id: "t-email", entityId: "c1", entityType: "contact", type: "email", occurredAt: "2026-03-01T11:50:00.000Z", summary: "Sent approval docs" },
+      { id: "t-note", entityId: "c1", entityType: "contact", type: "note", occurredAt: "2026-03-01T11:45:00.000Z", summary: "Internal note" },
+      { id: "t-document", entityId: "c1", entityType: "contact", type: "document", occurredAt: "2026-03-01T11:40:00.000Z", summary: "Document uploaded" },
+      { id: "t-status", entityId: "c1", entityType: "contact", type: "status", occurredAt: "2026-03-01T11:35:00.000Z", summary: "Status changed" },
+      { id: "t-ai", entityId: "c1", entityType: "contact", type: "ai", occurredAt: "2026-03-01T11:30:00.000Z", summary: "AI recommendation" },
+      { id: "t-lender", entityId: "c1", entityType: "contact", type: "lender", occurredAt: "2026-03-01T11:25:00.000Z", summary: "Lender update" },
+      { id: "t-system", entityId: "c1", entityType: "contact", type: "system", occurredAt: "2026-03-01T11:20:00.000Z", summary: "System action" },
+      {
+        id: "t-auto-1",
+        entityId: "c1",
+        entityType: "contact",
+        type: "RULE_TRIGGERED",
+        occurredAt: "2026-03-01T10:00:00.000Z",
+        summary: "Important email not opened",
+        automation: { ruleId: "rule-1", triggerReason: "No response", delayCondition: "24h", action: "Send reminder" }
+      },
+      {
+        id: "t-auto-2",
+        entityId: "c1",
+        entityType: "contact",
+        type: "AUTO_SMS_SENT",
+        occurredAt: "2026-03-01T09:58:00.000Z",
+        summary: "SMS reminder sent",
+        automation: { ruleId: "rule-1", triggerReason: "No response", delayCondition: "24h", action: "Send reminder" }
+      }
+    ])
+  };
+});
 
 afterEach(() => {
   act(() => {

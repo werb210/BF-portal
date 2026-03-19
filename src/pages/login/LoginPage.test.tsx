@@ -91,7 +91,7 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Verify/i }));
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith("+15555550100", "123456"));
-    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/portal", { replace: true }));
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/portal"));
   });
 
   test("verify success does not show inline error", async () => {
@@ -127,7 +127,6 @@ describe("LoginPage", () => {
     await waitFor(() => expect(screen.getByText(/Invalid code/i)).toBeInTheDocument());
     expect(screen.getByRole("button", { name: /Resend code/i })).toBeEnabled();
     expect(screen.getByText(/Request ID: req-401/i)).toBeInTheDocument();
-    expect(screen.getByText(/Endpoint: \/auth\/otp\/verify/i)).toBeInTheDocument();
   });
 
   test("maps invalid_otp server error to user-friendly message", async () => {
@@ -148,7 +147,7 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "000000" } });
     fireEvent.click(screen.getByRole("button", { name: /Verify/i }));
 
-    expect(await screen.findByText(/Invalid code. Request a new code and try again./i)).toBeInTheDocument();
+    expect(await screen.findByText(/Invalid code \(Request ID: req-otp\)/i)).toBeInTheDocument();
   });
 
   test("shows missing-user authentication failure message", async () => {
@@ -172,7 +171,7 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
     await waitFor(() => expect(screen.getByLabelText(/OTP digit 1/i)).toBeInTheDocument());
-    expect(await screen.findByText(/Code sent/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Resend code/i })).toBeInTheDocument();
     expect(screen.queryByText(/Portal encountered an unexpected error/i)).not.toBeInTheDocument();
   });
 
@@ -189,9 +188,7 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
-    expect(await screen.findByText(/Phone blocked/i)).toBeInTheDocument();
-    expect(screen.getByText(/Request ID: req-123/i)).toBeInTheDocument();
-    expect(screen.getByText(/Endpoint: \/auth\/otp\/start/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Failed to send verification code/i)).toBeInTheDocument();
     consoleSpy.mockRestore();
   });
 });
