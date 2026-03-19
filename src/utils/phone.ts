@@ -4,3 +4,11 @@ export function normalizePhone(phone: string): string {
   if (!p.startsWith('1')) throw new Error("Invalid phone");
   return `+${p}`;
 }
+
+export function safeNormalizeToE164(phone: string): string | null {
+  try {
+    return normalizePhone(phone);
+  } catch {
+    return null;
+  }
+}

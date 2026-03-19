@@ -5,6 +5,7 @@ import { normalizePhone } from "../utils/normalizePhone";
 export type AuthenticatedUser = {
   id?: string;
   name?: string;
+  email?: string;
   role?: string;
   roles?: string[];
   capabilities?: string[];
