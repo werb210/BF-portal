@@ -1,19 +1,15 @@
 export function normalizePhone(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
+  let p = phone.replace(/\D/g, '');
 
-  if (digits.length === 10) {
-    return `+1${digits}`;
+  if (p.length === 10) {
+    p = '1' + p;
   }
 
-  if (digits.length === 11 && digits.startsWith("1")) {
-    return `+${digits}`;
+  if (!p.startsWith('1')) {
+    throw new Error('Invalid phone number');
   }
 
-  if (phone.startsWith("+")) {
-    return phone;
-  }
-
-  throw new Error("Invalid phone number format");
+  return `+${p}`;
 }
 
 export function safeNormalizeToE164(phone: string): string {

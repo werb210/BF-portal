@@ -1,3 +1,6 @@
+import { normalizePhone } from "@/utils/phone";
+
+const API = "https://api.staff.boreal.financial/api";
 const CANONICAL_TOKEN_KEY = "bf_token";
 const LEGACY_TOKEN_KEYS = ["token", "auth_token", "portal_token", "jwt"] as const;
 
@@ -49,4 +52,51 @@ export function clearToken() {
   for (const key of LEGACY_TOKEN_KEYS) {
     window.localStorage.removeItem(key);
   }
+}
+
+export async function sendOtp(phone: string) {
+  const normalized = normalizePhone(phone);
+
+  console.log("[SEND OTP]", normalized);
+
+  const res = await fetch(`${API}/auth/otp/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ phone: normalized }),
+  });
+
+  const data = await res.json();
+  console.log("[SEND OTP RESPONSE]", data);
+
+  if (!res.ok) throw new Error(data.message || "Send OTP failed");
+
+  return data;
+}
+
+export async function verifyOtp(phone: string, code: string) {
+  const normalized = normalizePhone(phone);
+
+  const payload = {
+    phone: normalized,
+    code: code.trim(),
+  };
+
+  console.log("[VERIFY OTP PAYLOAD]", payload);
+
+  const res = await fetch(`${API}/auth/otp/verify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  console.log("[VERIFY OTP RESPONSE]", data);
+
+  if (!res.ok) throw new Error(data.message || "Verify OTP failed");
+
+  return data;
 }
