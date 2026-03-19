@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/api";
+import { getMe, startOtp as startOtpRequest, verifyOtp as verifyOtpRequest } from "@/api/auth";
 import * as authService from "@/services/auth";
 import { destroyVoice } from "@/services/voiceService";
 import { setCallStatus } from "@/dialer/callStore";
@@ -21,7 +22,7 @@ export type AuthState = "loading" | "authenticated" | "unauthenticated";
 
 export type AuthUser = (AuthenticatedUser & {
   id?: string;
-  email?: string;
+  phone?: string;
   role?: string;
   capabilities?: string[];
   roles?: string[];
@@ -63,7 +64,7 @@ export type AuthContextValue = {
   isLoading: boolean;
   authReady: boolean;
   isHydratingSession: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: () => Promise<boolean>;
   startOtp: (payload: OtpStartPayload) => Promise<boolean>;
   verifyOtp: (phone: string, code: string) => Promise<OtpVerifyResult>;
   loginWithOtp: (phone: string, code: string) => Promise<OtpVerifyResult>;
@@ -109,7 +110,7 @@ const resolveAuthUserFromResponse = (payload: unknown): AuthUser => {
   const resolved = candidate?.data?.user ?? candidate?.user ?? (payload as AuthUser);
 
   if (!resolved || typeof resolved !== "object") return null;
-  const hasIdentity = typeof resolved.id === "string" || typeof resolved.email === "string";
+  const hasIdentity = typeof resolved.id === "string" || typeof resolved.phone === "string";
   if (!hasIdentity) return null;
 
   return normalizeAuthUser(resolved);
@@ -258,7 +259,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        const response = await api.get("/auth/me");
+        const response = await getMe();
         const nextUser = resolveAuthUserFromResponse(response.data);
 
         if (!nextUser) {
@@ -314,7 +315,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setIsHydratingSession(true);
 
-    api.get("/auth/me")
+    getMe()
       .then((res) => {
         const normalizedUser = resolveAuthUserFromResponse(res.data);
 
@@ -351,7 +352,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setPendingPhoneNumber(phone);
     setAuthStatus("pending");
     setRolesStatus("pending");
-    const started = await authService.startOtp({ phone });
+    await startOtpRequest(phone);
+    const started = true;
     return started !== false;
   }, []);
 
@@ -361,31 +363,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setRolesStatus("loading");
 
     try {
-      const verification = await authService.loginWithOtp(phone, code);
-      const tokenFromVerification = verification.token ?? null;
-      if (tokenFromVerification) {
-        setToken(tokenFromVerification);
-      }
+      await verifyOtpRequest(phone, code);
 
       const token = getToken();
 
-      if (!token || token.trim().length === 0) {
-        const message = "Session exchange failed";
-        setAuthStateState("unauthenticated");
-        setAuthStatus("unauthenticated");
-        setRolesStatus("resolved");
-        setUserState(null);
-        setAccessToken(null);
-        setError(message);
-        return { success: false, error: message };
-      }
-
-      setStoredAccessToken(token);
-      setAccessToken(token);
-      if (verification.user) {
-        const normalizedUser = normalizeAuthUser(verification.user);
-        setStoredUser(normalizedUser);
-        setUserState(normalizedUser);
+      if (token && token.trim().length > 0) {
+        setStoredAccessToken(token);
+        setAccessToken(token);
       }
       setPendingPhoneNumber(null);
       setAuthStateState("authenticated");
@@ -395,7 +379,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       void refreshUser(token);
 
-      return { success: true, token, user: verification.user ?? null, nextPath: verification.nextPath ?? "/portal" };
+      return { success: true, token: token ?? undefined, user: null, nextPath: "/dashboard" };
     } catch (err) {
       const message = err instanceof Error ? err.message : "OTP login failed";
       console.error("OTP login failed", err);
@@ -448,7 +432,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const testUser: AuthUser =
     isTestAuthenticated && !user
-      ? normalizeAuthUser({ id: "test-user", role: testRole ?? "Admin", email: "test@example.com" })
+      ? normalizeAuthUser({ id: "test-user", role: testRole ?? "Admin", phone: "+15555550123" })
       : user;
 
   const isAuthenticated = isTestAuthenticated || authState === "authenticated";

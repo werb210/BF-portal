@@ -4,7 +4,6 @@ import { normalizePhone } from "../utils/normalizePhone";
 
 export type AuthenticatedUser = {
   id?: string;
-  email?: string;
   name?: string;
   role?: string;
   roles?: string[];
@@ -56,7 +55,7 @@ const resolvePayloadData = <T>(payload: unknown): T | null => {
 export async function startOtp(payload: { phone: string }) {
   const phone = normalizePhone(payload.phone);
   const response = await apiClient.post<WrappedApiResponse<{ sent?: boolean }>>(
-    "/auth/otp/start",
+    "/api/auth/otp/start",
     { phone },
     { headers: { "Content-Type": "application/json" } }
   );
@@ -91,7 +90,7 @@ export function logout() {
 }
 
 export async function getCurrentUser() {
-  const res = await apiClient.get("/auth/me");
+  const res = await apiClient.get("/api/auth/me");
   const payload = res?.data as { user?: AuthenticatedUser; data?: { user?: AuthenticatedUser } } | null;
   return payload?.data?.user ?? payload?.user ?? (payload as AuthenticatedUser | null) ?? null;
 }
@@ -100,7 +99,7 @@ export async function loginWithOtp(phone: string, code: string): Promise<OtpVeri
   const normalizedPhone = normalizePhone(phone);
 
   const verify = await apiClient.post<WrappedApiResponse<OtpVerifyData>>(
-    "/auth/otp/verify",
+    "/api/auth/otp/verify",
     { phone: normalizedPhone, code },
     { headers: { "Content-Type": "application/json" } }
   );
