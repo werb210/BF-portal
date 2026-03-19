@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/api";
-import { getMe, startOtp as startOtpRequest, verifyOtp as verifyOtpRequest } from "@/api/auth";
+import { getMe } from "@/api/auth";
 import * as authService from "@/services/auth";
 import { destroyVoice } from "@/services/voiceService";
 import { setCallStatus } from "@/dialer/callStore";
@@ -352,8 +352,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setPendingPhoneNumber(phone);
     setAuthStatus("pending");
     setRolesStatus("pending");
-    await startOtpRequest(phone);
-    const started = true;
+    const started = await authService.startOtp({ phone });
     return started !== false;
   }, []);
 
@@ -363,11 +362,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setRolesStatus("loading");
 
     try {
-      await verifyOtpRequest(phone, code);
-
-      const token = getToken();
+      const result = await authService.loginWithOtp(phone, code);
+      const token = result.token ?? getToken();
 
       if (token && token.trim().length > 0) {
+        setToken(token);
         setStoredAccessToken(token);
         setAccessToken(token);
       }
@@ -379,7 +378,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       void refreshUser(token);
 
-      return { success: true, token: token ?? undefined, user: null, nextPath: "/dashboard" };
+      return {
+        success: true,
+        token: token ?? undefined,
+        user: result.user ?? null,
+        nextPath: result.nextPath ?? "/portal"
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : "OTP login failed";
       console.error("OTP login failed", err);
