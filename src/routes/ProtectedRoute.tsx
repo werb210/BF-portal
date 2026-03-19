@@ -1,43 +1,16 @@
-import { useEffect, useState } from "react";
-import { getMe } from "@/api/auth";
+import type { ReactElement } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/auth/AuthContext";
 
-export default function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+export default function ProtectedRoute({ children }: { children: ReactElement }) {
+  const { authStatus, authenticated } = useAuth();
 
-  useEffect(() => {
-    let mounted = true;
-
-    const verifySession = async () => {
-      try {
-        await getMe();
-        if (mounted) {
-          setAllowed(true);
-        }
-      } catch (error: any) {
-        const status = error?.response?.status;
-        if (status === 401) {
-          window.location.href = "/login";
-          return;
-        }
-        if (mounted) {
-          setAllowed(false);
-        }
-      }
-    };
-
-    void verifySession();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (allowed === null) {
+  if (authStatus === "loading" || authStatus === "pending") {
     return null;
   }
 
-  if (!allowed) {
-    return null;
+  if (!authenticated || authStatus !== "authenticated") {
+    return <Navigate to="/login" replace />;
   }
 
   return children;

@@ -1,6 +1,7 @@
 import axios, { AxiosHeaders } from "axios";
 import { getApiBase } from "@/config/apiBase";
 import { getToken } from "@/lib/auth";
+import { redirectToLogin } from "@/auth/redirectToLogin";
 
 const sanitizePath = (url: string) => {
   return url.replace("/api/" + "api/", "/api/");
@@ -47,6 +48,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      redirectToLogin();
+    }
+
+    return Promise.reject(error);
+  }
+);
 export const apiClient = api;
 export const clientApi = api;
 export const get = <T = unknown>(url: string, config?: unknown) => api.get<T>(url, config as any);
