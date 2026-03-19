@@ -14,7 +14,7 @@ export const defaultHandlers = [
   http.get("*/auth/me", () =>
     HttpResponse.json({ ok: true, data: { user: { id: "u1", role: "Staff", email: "staff@example.com" } } })),
   http.post("*/auth/otp/start", () => new HttpResponse(null, { status: 204, headers: { "x-twilio-sid": "twilio-sid" } })),
-  http.post("*/auth/otp/verify", () =>
+  http.post("*/api/auth/otp/verify", () =>
     HttpResponse.json({ ok: true, data: { token: "access-token", user: { id: "u1", role: "Staff" }, nextPath: "/portal" } })),
   http.post("*/api/audit/activity", () => new HttpResponse(null, { status: 204 })),
   http.options("*/api/secure", () => new HttpResponse(null, { status: 204 })),

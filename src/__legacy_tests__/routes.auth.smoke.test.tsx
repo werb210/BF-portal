@@ -23,7 +23,7 @@ const server = setupServer(
       }
     })
   ),
-  http.post("*/auth/otp/verify", () =>
+  http.post("*/api/auth/otp/verify", () =>
     HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" })
   ),
   http.get("*/api/lenders", () => HttpResponse.json({ items: [] })),

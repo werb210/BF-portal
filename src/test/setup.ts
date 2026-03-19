@@ -1,114 +1,25 @@
-import "@testing-library/jest-dom/vitest";
-import { TextDecoder, TextEncoder } from "node:util";
-import { vi } from "vitest";
+import { beforeAll, afterEach, afterAll } from 'vitest';
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
 
-vi.mock("@tanstack/react-virtual", async () => {
-  const mod = await import("../test/mocks/reactVirtual");
-  return mod;
-});
+export const server = setupServer(
+  http.post('/api/auth/otp/start', async () => {
+    return HttpResponse.json({ success: true });
+  }),
 
-/**
- * JSDOM stability/polyfills for common UI deps.
- * Keep this file minimal and deterministic.
- */
+  http.post('/api/auth/otp/verify', async () => {
+    return HttpResponse.json({
+      user: { id: '1', role: 'Admin' },
+    });
+  }),
 
-// --- localStorage/sessionStorage (some libs define them as read-only in JSDOM)
-function makeStorage() {
-  let store: Record<string, string> = {};
-  return {
-    getItem: (key: string) => (key in store ? store[key] : null),
-    setItem: (key: string, value: string) => {
-      store[key] = String(value);
-    },
-    removeItem: (key: string) => {
-      delete store[key];
-    },
-    clear: () => {
-      store = {};
-    },
-    key: (i: number) => Object.keys(store)[i] ?? null,
-    get length() {
-      return Object.keys(store).length;
-    },
-  };
-}
+  http.get('/api/auth/me', async () => {
+    return HttpResponse.json({
+      user: { id: '1', role: 'Admin' },
+    });
+  })
+);
 
-Object.defineProperty(window, "localStorage", { value: makeStorage(), configurable: true, writable: true });
-Object.defineProperty(window, "sessionStorage", { value: makeStorage(), configurable: true, writable: true });
-
-// --- matchMedia (used by responsive/layout logic)
-if (!window.matchMedia) {
-  // @ts-expect-error polyfill
-  window.matchMedia = (query: string) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  });
-}
-
-// --- ResizeObserver (used by charts/layout components)
-if (!(globalThis as any).ResizeObserver) {
-  (globalThis as any).ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  };
-}
-
-// --- scrollTo (some UI libs call it)
-if (!window.scrollTo) {
-  window.scrollTo = vi.fn();
-}
-
-// --- TextEncoder/TextDecoder (occasionally needed by libs)
-if (!(globalThis as any).TextEncoder) {
-  (globalThis as any).TextEncoder = TextEncoder;
-}
-if (!(globalThis as any).TextDecoder) {
-  (globalThis as any).TextDecoder = TextDecoder;
-}
-
-const originalWarn = console.warn.bind(console);
-const originalError = console.error.bind(console);
-
-function shouldSuppressConsoleMessage(message: string) {
-  return (
-    message.includes("React Router Future Flag Warning") ||
-    message.includes("not wrapped in act(...)") ||
-    message.includes("Error: AggregateError") ||
-    message.includes("No routes matched location") ||
-    message.includes("Query data cannot be undefined.") ||
-    message.includes("OTP login failed ApiError: Verify failed") ||
-    message.includes("Route audit unavailable.")
-  );
-}
-
-console.warn = (...args: unknown[]) => {
-  const message = args.map(String).join(" ");
-  if (shouldSuppressConsoleMessage(message)) {
-    return;
-  }
-  originalWarn(...args);
-};
-
-console.error = (...args: unknown[]) => {
-  const message = args.map(String).join(" ");
-  if (shouldSuppressConsoleMessage(message)) {
-    return;
-  }
-  originalError(...args);
-};
-
-// --- fetch (ONLY if tests crash due to missing fetch; otherwise avoid mocking)
-// If your code uses fetch directly in unit tests, prefer mocking at call sites.
-// Uncomment if needed:
-// if (!(globalThis as any).fetch) {
-//   (globalThis as any).fetch = vi.fn(async () => {
-//     throw new Error("fetch called in unit test without mock");
-//   });
-// }
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
