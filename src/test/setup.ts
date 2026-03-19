@@ -79,8 +79,12 @@ const originalError = console.error.bind(console);
 function shouldSuppressConsoleMessage(message: string) {
   return (
     message.includes("React Router Future Flag Warning") ||
-    message.includes("An update to AuthProvider inside a test was not wrapped in act(...)") ||
-    message.includes("Error: AggregateError")
+    message.includes("not wrapped in act(...)") ||
+    message.includes("Error: AggregateError") ||
+    message.includes("No routes matched location") ||
+    message.includes("Query data cannot be undefined.") ||
+    message.includes("OTP login failed ApiError: Verify failed") ||
+    message.includes("Route audit unavailable.")
   );
 }
 
