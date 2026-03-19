@@ -1,17 +1,33 @@
-import { withApiBase } from "@/lib/apiBase";
-import { safeFetch } from "@/lib/safeFetch";
-import { startOtp as otpStart, verifyOtp as otpVerify, type AuthenticatedUser } from "@/services/auth";
-import apiClient from "./client";
+import axios from 'axios';
 
-export { otpStart as startOtp };
+const API = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true,
+});
 
-export async function verifyOtp(phone: string, code: string) {
-  return otpVerify(phone, code);
+function normalizePhone(phone: string): string {
+  let cleaned = phone.replace(/\D/g, '');
+
+  if (cleaned.length === 10) {
+    cleaned = '1' + cleaned;
+  }
+
+  return '+' + cleaned;
 }
 
-export const fetchCurrentUser = () =>
-  safeFetch<AuthenticatedUser>(withApiBase("/auth/me"), {
-    credentials: "include"
+export const startOtp = async (phone: string) => {
+  return API.post('/api/auth/otp/start', {
+    phone: normalizePhone(phone),
   });
+};
 
-export const logout = () => apiClient.post<void>("/auth/logout");
+export const verifyOtp = async (phone: string, code: string) => {
+  return API.post('/api/auth/otp/verify', {
+    phone: normalizePhone(phone),
+    code,
+  });
+};
+
+export const getMe = async () => {
+  return API.get('/api/auth/me');
+};
