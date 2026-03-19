@@ -1,5 +1,6 @@
 import { clearToken, getToken } from "@/lib/auth";
 import { apiClient } from "@/lib/apiClient";
+import { redirectToLogin } from "@/auth/redirectToLogin";
 
 const token = getToken();
 
@@ -31,7 +32,7 @@ apiClient.interceptors.response.use(
 
       clearToken();
       delete apiClient.defaults.headers.common.Authorization;
-      window.location.href = "/login";
+      redirectToLogin();
     }
 
     return Promise.reject(error);
