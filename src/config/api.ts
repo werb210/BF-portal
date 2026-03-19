@@ -30,8 +30,10 @@ export function normalizeApiPath(path: string): string {
   return withoutApiPrefix === "/" ? "/" : withoutApiPrefix;
 }
 
+export const DEFAULT_API_BASE = "https://api.staff.boreal.financial/api";
+
 export const API_BASE_URL = normalizeApiBaseUrl(
-  "https://api.staff.boreal.financial"
+  import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE
 );
 
 export const API_TIMEOUT = 30000;

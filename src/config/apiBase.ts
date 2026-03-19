@@ -1,4 +1,4 @@
-import { API_BASE_URL, normalizeApiBaseUrl } from "@/config/api";
+import { API_BASE_URL, DEFAULT_API_BASE, normalizeApiBaseUrl } from "@/config/api";
 
 declare global {
   interface Window {
@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-const CANONICAL_PROD_API_BASE = "https://api.staff.boreal.financial";
+const CANONICAL_PROD_API_BASE = DEFAULT_API_BASE;
 
 function readRuntimeApiBase(): string {
   const runtimeBase = (
