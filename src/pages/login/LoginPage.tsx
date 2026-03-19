@@ -1,29 +1,57 @@
 import { useState } from 'react';
-import { startOtp, verifyOtp } from '@/api/auth';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/auth/AuthContext';
+import { normalizePhone } from '@/utils/phone';
+import { ApiError } from '@/api/http';
 
 export default function Login() {
+  const navigate = useNavigate();
+  const { startOtp, loginWithOtp } = useAuth();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const handleStart = async () => {
+    if (busy) return;
     try {
+      setBusy(true);
       setError('');
-      await startOtp(phone);
+      const started = await startOtp({ phone: normalizePhone(phone) });
+      if (started === false) {
+        setError('Failed to send verification code');
+        return;
+      }
       setStep('code');
-    } catch (err: any) {
-      setError(err?.response?.data?.error?.message || 'Failed to send code');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to send verification code';
+      setError(message);
+    } finally {
+      setBusy(false);
     }
   };
 
   const handleVerify = async () => {
+    if (busy) return;
     try {
+      setBusy(true);
       setError('');
-      await verifyOtp(phone, code);
-      window.location.href = '/dashboard';
-    } catch (err: any) {
-      setError(err?.response?.data?.error?.message || 'Invalid code');
+      const normalizedPhone = normalizePhone(phone);
+      const result = await loginWithOtp(normalizedPhone, code);
+      if (result?.success === false) {
+        setError(result.error || 'Invalid code');
+        return;
+      }
+      navigate(result?.nextPath || '/portal');
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        setError(err.requestId ? `${err.message} (Request ID: ${err.requestId})` : err.message);
+      } else {
+        setError(err instanceof Error ? err.message : 'Invalid code');
+      }
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -37,7 +65,7 @@ export default function Login() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
-          <button onClick={handleStart}>Send Code</button>
+          <button onClick={handleStart} disabled={busy}>Send code</button>
         </>
       )}
 
@@ -45,14 +73,15 @@ export default function Login() {
         <>
           <input
             placeholder="Enter code"
+            aria-label="OTP digit 1"
             value={code}
             onChange={(e) => setCode(e.target.value)}
           />
-          <button onClick={handleVerify}>Verify</button>
+          <button onClick={handleVerify} disabled={busy}>Verify</button>
         </>
       )}
 
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {error && <div role="alert" style={{ color: 'red' }}>{error}</div>}
     </div>
   );
 }
