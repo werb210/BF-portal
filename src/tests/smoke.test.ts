@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 describe('portal sanity', () => {
-  it('loads', () => {
+  it('works', () => {
     expect(true).toBe(true);
   });
 });
