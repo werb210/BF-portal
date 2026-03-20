@@ -1,55 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ESNext"
-    ],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "jsx": "react-jsx",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "esModuleInterop": true,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "types": [
-      "vite/client",
-      "vitest/globals",
-      "vite-plugin-pwa/client"
-    ],
-    "baseUrl": "./",
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
-    "noImplicitAny": true,
-    "noUncheckedIndexedAccess": true,
-    "forceConsistentCasingInFileNames": true
+    "types": ["vitest/globals"],
+    "jsx": "react-jsx"
   },
-  "include": [
-    "src/**/*"
-  ],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "src/**/__tests__/**",
-    "src/**/*.test.ts",
-    "src/**/*.test.tsx",
-    "src/test/**",
-    "routes/**",
-    "middleware/**",
-    "src/modules/**/*.routes.ts",
-    "src/modules/**/*.controller.ts"
-  ]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "e2e", "playwright"]
 }
