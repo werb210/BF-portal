@@ -25,7 +25,8 @@
     "test:ci": "npm run typecheck && npm run test:unit",
     "cap:sync": "npx cap sync",
     "cap:open:ios": "npx cap open ios",
-    "cap:open:android": "npx cap open android"
+    "cap:open:android": "npx cap open android",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
@@ -79,6 +80,7 @@
     "madge": "^8.0.0",
     "msw": "^2.12.13",
     "npm-check-updates": "^19.3.2",
+    "playwright": "^1.58.2",
     "postcss": "^8.4.47",
     "sharp": "^0.34.5",
     "supertest": "^7.2.2",
