@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
-describe('portal smoke', () => {
-  it('basic sanity', () => {
+describe('portal sanity', () => {
+  it('loads', () => {
     expect(true).toBe(true);
   });
 });
