@@ -1,12 +1,17 @@
-export function forbidRawFetch() {
+let initialized = false;
+
+export function assertApiUsage() {
+  if (initialized) return;
+  initialized = true;
+
   const originalFetch = window.fetch;
 
-  window.fetch = function (...args) {
-    const url = args[0]?.toString?.() || "";
+  window.fetch = function (...args: any[]) {
+    const input = args[0];
 
-    if (url.includes("/api/")) {
+    if (typeof input === 'string' && input.startsWith('/api')) {
       throw new Error(
-        "Direct fetch to API is forbidden. Use apiFetch() instead."
+        'Direct fetch("/api/...") is forbidden. Use apiFetch() instead.'
       );
     }
 
