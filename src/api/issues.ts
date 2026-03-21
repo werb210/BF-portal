@@ -1,5 +1,5 @@
 import { apiClient } from "@/api/httpClient";
-import { buildUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export type WebsiteIssue = {
   id: string;
@@ -16,7 +16,7 @@ export async function resolveIssue(id: string) {
 }
 
 export async function deleteIssue(id: string) {
-  await fetch(buildUrl(`/api/support/issues/${id}`), {
+  await apiFetch(`/api/support/issues/${id}`, {
     method: "DELETE"
   });
 }

@@ -1,3 +1,4 @@
+import { DOCUMENT_CONTRACT } from "@/contracts";
 import { apiClient, type RequestOptions } from "./httpClient";
 import type { DocumentRequirementResponse, DocumentStatus } from "@/types/documents.types";
 
@@ -24,8 +25,10 @@ export type DocumentVersion = {
   status?: string;
 };
 
+const DOCUMENTS_BASE = DOCUMENT_CONTRACT.UPLOAD.replace(/\/upload$/, "");
+
 export const fetchDocumentPresign = (documentId: string, options?: RequestOptions) =>
-  apiClient.get<DocumentPresignResponse>(`/api/documents/${documentId}/presign`, options);
+  apiClient.get<DocumentPresignResponse>(`${DOCUMENTS_BASE}/${documentId}/presign`, options);
 
 export const fetchDocumentRequirements = (applicationId: string, options?: RequestOptions) =>
   apiClient.get<DocumentRequirementResponse>(`/api/applications/${applicationId}/documents`, options);

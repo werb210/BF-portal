@@ -1,4 +1,5 @@
-import { buildUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
+
 export interface PreApplicationRecord {
   id: string;
   companyName: string;
@@ -9,9 +10,7 @@ export interface PreApplicationRecord {
 }
 
 export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
-  const res = await fetch(buildUrl("/api/preapp/admin/list"), {
-    credentials: "include",
-  });
+  const res = await apiFetch("/api/preapp/admin/list");
 
   if (!res.ok) {
     throw new Error("Failed to load pre-applications");
@@ -21,11 +20,9 @@ export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
 }
 
 export async function convertPreApplication(id: string) {
-  const res = await fetch(buildUrl("/api/preapp/admin/convert"), {
+  const res = await apiFetch("/api/preapp/admin/convert", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ id }),
+    body: JSON.stringify({ id })
   });
 
   if (!res.ok) {

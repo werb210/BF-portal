@@ -1,3 +1,5 @@
+import { apiFetch } from "@/lib/api";
+
 export interface Voicemail {
   id: string;
   recordingUrl: string;
@@ -5,19 +7,9 @@ export interface Voicemail {
   clientId: string;
 }
 
-function resolveApiUrl(path: string): string {
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return new URL(path, window.location.origin).toString();
-  }
-
-  return path;
-}
-
 export async function fetchVoicemails(clientId: string): Promise<Voicemail[]> {
   try {
-    const res = await fetch(resolveApiUrl(`/api/calls?clientId=${encodeURIComponent(clientId)}`), {
-      credentials: "include"
-    });
+    const res = await apiFetch(`/api/calls?clientId=${encodeURIComponent(clientId)}`);
 
     if (!res.ok) return [];
 
