@@ -8,9 +8,13 @@ const RAW_BASE =
 
 export const API_BASE = RAW_BASE.replace(/\/+$/, "");
 
+if (!API_BASE) {
+  throw new Error("Missing VITE_API_URL / VITE_API_BASE_URL");
+}
+
 assertContract(API_BASE, "API_BASE");
 
-export function buildUrl(path: string) {
+export function buildUrl(path: string): string {
   return `${API_BASE}${path}`;
 }
 
