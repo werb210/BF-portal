@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { withApiBase } from "@/lib/apiBase";
+import { buildUrl } from "@/lib/api";
 
 type Message = {
   role: "user" | "ai" | "staff";
@@ -12,7 +12,7 @@ export default function AiLiveChat({ sessionId }: { sessionId: string }) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    fetch(withApiBase(`/api/ai/session/${sessionId}`))
+    fetch(buildUrl(`/api/ai/session/${sessionId}`))
       .then((res) => res.json())
       .then(setMessages)
       .catch(() => setMessages([]));
@@ -50,7 +50,7 @@ export default function AiLiveChat({ sessionId }: { sessionId: string }) {
   }
 
   async function closeSession() {
-    await fetch(withApiBase("/api/ai/close"), {
+    await fetch(buildUrl("/api/ai/close"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId })

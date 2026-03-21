@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/api/httpClient";
 import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config";
 
 export const slfPipelineAdapter: PipelineApiAdapter = {

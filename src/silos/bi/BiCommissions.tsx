@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { withApiBase } from "@/lib/apiBase";
+import { buildUrl } from "@/lib/api";
 
 interface Application {
   id: string;
@@ -17,7 +17,7 @@ export default function BiCommissions() {
   const [totalCommission, setTotalCommission] = useState(0);
 
   useEffect(() => {
-    fetch(withApiBase("/api/bi/applications"))
+    fetch(buildUrl("/api/bi/applications"))
       .then((res) => res.json())
       .then((data) => {
         const approved = data.filter((a: Application) => a.status === "approved");

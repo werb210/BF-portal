@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { biFetch } from "../../../api/biClient";
 import ActivityTimeline from "../components/ActivityTimeline";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/api/httpClient";
 
 type Application = {
   id: string;

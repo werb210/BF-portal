@@ -1,4 +1,4 @@
-import { apiFetch } from "../lib/apiClient";
+import { apiFetch } from "@/api/client";
 import { normalizePhone } from "@/utils/phone";
 
 export async function startOtp(phone: string) {
@@ -26,15 +26,16 @@ export async function verifyOtp(phone: string, code: string) {
     body: JSON.stringify({ phone: normalizedPhone, code })
   });
 
-  if (!response?.ok || !response?.data) {
+  if (!response?.ok) {
     throw new Error("Invalid API response");
   }
 
-  return response.data;
+  return response.json();
 }
 
 export async function getCurrentUser() {
-  return apiFetch("/auth/me");
+  const response = await apiFetch("/auth/me");
+  return response.json();
 }
 
 export async function logout() {
