@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { withApiBase } from "@/lib/apiBase";
+import { buildUrl } from "@/lib/api";
 
 type AnalyticsEvent = {
   event_name?: string;
@@ -23,7 +23,7 @@ export default function AnalyticsPage() {
       }
     }
 
-    fetch(withApiBase("/api/analytics"))
+    fetch(buildUrl("/api/analytics"))
       .then((res) => res.json())
       .then((data) => {
         const nextEvents = Array.isArray(data) ? data : [];

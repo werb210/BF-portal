@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { withApiBase } from "@/lib/apiBase";
+import { buildUrl } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 interface TrendData {
@@ -15,7 +15,7 @@ export default function CommissionTrendChart() {
 
     const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 
-    fetch(withApiBase("/api/analytics/commission-trend"), {
+    fetch(buildUrl("/api/analytics/commission-trend"), {
       headers,
     })
       .then((res) => res.json())

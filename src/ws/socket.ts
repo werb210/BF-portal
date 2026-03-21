@@ -1,6 +1,6 @@
 import { API_BASE } from "@/lib/api";
 
-const WS_BASE = API_BASE.replace(/^http/, "ws");
+const SOCKET_URL = API_BASE.replace(/^http/, "ws");
 
 export function connectSocket() {
   const token = localStorage.getItem("bf_token");
@@ -9,7 +9,7 @@ export function connectSocket() {
     return;
   }
 
-  const url = new URL(WS_BASE);
+  const url = new URL(SOCKET_URL);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = "/ws/chat";
   url.search = `token=${encodeURIComponent(token)}`;

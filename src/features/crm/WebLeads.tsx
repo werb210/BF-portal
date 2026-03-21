@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { withApiBase } from "@/lib/apiBase";
+import { buildUrl } from "@/lib/api";
 
 export default function WebLeads() {
   const [leads, setLeads] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(withApiBase("/api/crm/web-leads"))
+    fetch(buildUrl("/api/crm/web-leads"))
       .then((res) => res.json())
       .then((data) => setLeads(data.leads || []));
   }, []);

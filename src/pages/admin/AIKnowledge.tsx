@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { withApiBase } from "@/lib/apiBase";
+import { buildUrl } from "@/lib/api";
 
 export default function AIKnowledge() {
   const { user } = useAuth();
@@ -12,7 +12,7 @@ export default function AIKnowledge() {
     const formData = new FormData();
     formData.append("file", file);
 
-    await fetch(withApiBase("/api/ai/knowledge"), {
+    await fetch(buildUrl("/api/ai/knowledge"), {
       method: "POST",
       body: formData
     });

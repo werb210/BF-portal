@@ -4,7 +4,7 @@
    ============================================================ */
 
 import { apiClient } from "@/api/httpClient";
-import { API_BASE } from "@/services/api";
+import { API_BASE } from "@/lib/api";
 
 export { API_BASE };
 

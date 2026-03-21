@@ -1,4 +1,4 @@
-import { apiRequest } from "@/services/api";
+import { apiClient } from "@/api/httpClient";
 
 export interface CallSession {
   id: string;
@@ -10,7 +10,7 @@ export interface CallSession {
 }
 
 export async function fetchCallHistory(clientId: string): Promise<CallSession[]> {
-  const data = await apiRequest<unknown>(`/telephony/history?client_id=${clientId}`);
+  const data = await apiClient.get<unknown>(`/telephony/history?client_id=${clientId}`);
 
   if (!Array.isArray(data)) return [];
 

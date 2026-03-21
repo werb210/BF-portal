@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { withApiBase } from "@/lib/apiBase";
+import { buildUrl } from "@/lib/api";
 
 interface CampaignData {
   utm_campaign: string;
@@ -11,7 +11,7 @@ export default function CampaignRevenue() {
   const [data, setData] = useState<CampaignData[]>([]);
 
   useEffect(() => {
-    fetch(withApiBase("/api/analytics/campaign-revenue"))
+    fetch(buildUrl("/api/analytics/campaign-revenue"))
       .then((res) => res.json())
       .then(setData)
       .catch((err) => console.error(err));

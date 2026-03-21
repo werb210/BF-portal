@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAIKnowledge } from "@/api/support";
-import { withApiBase } from "@/lib/apiBase";
+import { buildUrl } from "@/lib/api";
 
 export default function KnowledgeManager() {
   const [docs, setDocs] = useState<any[]>([]);
@@ -18,7 +18,7 @@ export default function KnowledgeManager() {
     const form = new FormData();
     form.append("file", file);
 
-    await fetch(withApiBase("/api/ai/knowledge/upload"), {
+    await fetch(buildUrl("/api/ai/knowledge/upload"), {
       method: "POST",
       body: form
     });

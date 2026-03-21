@@ -1,6 +1,6 @@
-import { withApiBase } from "@/lib/apiBase";
+import { buildUrl } from "@/lib/api";
 export const fetchLeads = async () => {
-  const res = await fetch(withApiBase("/api/crm/leads"));
+  const res = await fetch(buildUrl("/api/crm/leads"));
 
   if (!res.ok) {
     throw new Error("Failed to fetch leads");
