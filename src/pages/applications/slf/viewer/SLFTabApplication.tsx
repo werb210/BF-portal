@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/api/httpClient";
+import { apiClient } from "@api/httpClient";
 
+const API_PREFIX = "/api";
 type SLFApplication = {
   businessInfo?: Record<string, unknown>;
   applicantInfo?: Record<string, unknown>;
@@ -12,7 +13,7 @@ type SLFApplication = {
 const SLFTabApplication = ({ applicationId }: { applicationId: string }) => {
   const { data: application = {}, isLoading } = useQuery<SLFApplication>({
     queryKey: ["slf", "application", applicationId],
-    queryFn: ({ signal }) => apiClient.get(`/api/slf/applications/${applicationId}`, { signal })
+    queryFn: ({ signal }) => apiClient.get(`${API_PREFIX}/slf/applications/${applicationId}`, { signal })
   });
 
   if (isLoading) {

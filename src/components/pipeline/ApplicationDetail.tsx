@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { apiFetch } from "../../lib/apiFetch"
 
+const API_PREFIX = "/api";
 type ApplicationDetailProps = {
   id: string
   onClose: () => void
@@ -16,7 +17,7 @@ export default function ApplicationDetail({ id, onClose }: ApplicationDetailProp
   const [application, setApplication] = useState<Application | null>(null)
 
   useEffect(() => {
-    apiFetch(`/api/applications/${id}`)
+    apiFetch(`${API_PREFIX}/applications/${id}`)
       .then((data) => setApplication(data))
       .catch(() => setApplication(null))
   }, [id])

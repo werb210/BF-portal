@@ -3,7 +3,7 @@ import {
   convertPreApplication,
   fetchPreApplications,
   type PreApplicationRecord,
-} from "../api/preApplications";
+} from "@api/preApplications";
 
 export default function PreApplications() {
   const [data, setData] = useState<PreApplicationRecord[]>([]);

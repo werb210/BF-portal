@@ -2,7 +2,7 @@ import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import AppLoading from "@/components/layout/AppLoading";
 import { useQuery } from "@tanstack/react-query";
-import { fetchCampaigns } from "@/api/marketing.campaigns";
+import { fetchCampaigns } from "@api/marketing.campaigns";
 
 const CampaignAnalytics = () => {
   const { data, isLoading } = useQuery({ queryKey: ["campaign-analytics"], queryFn: fetchCampaigns });

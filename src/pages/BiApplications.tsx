@@ -1,6 +1,7 @@
-import { apiClient } from "@/api/client";
+import { apiClient } from "@api/client";
 import { useEffect, useState } from "react";
 
+const API_PREFIX = "/api";
 export default function BiApplications() {
   const [apps, setApps] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
@@ -22,7 +23,7 @@ export default function BiApplications() {
   );
 
   const updateStatus = async (id: number, status: string) => {
-    await apiClient.patch(`/api/applications/${id}`, { status });
+    await apiClient.patch(`${API_PREFIX}/applications/${id}`, { status });
 
     setApps(apps.map((a) => (a.id === id ? { ...a, status } : a)));
     setSelected((current: any) =>

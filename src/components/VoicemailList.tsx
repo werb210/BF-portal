@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchVoicemails, type Voicemail } from "@/api/voicemail";
+import { fetchVoicemails, type Voicemail } from "@api/voicemail";
 
 interface VoicemailListProps {
   clientId: string;

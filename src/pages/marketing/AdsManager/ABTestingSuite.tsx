@@ -2,7 +2,7 @@ import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import AppLoading from "@/components/layout/AppLoading";
 import { useQuery } from "@tanstack/react-query";
-import { fetchABTests } from "@/api/marketing.ads";
+import { fetchABTests } from "@api/marketing.ads";
 
 const ABTestingSuite = () => {
   const { data, isLoading } = useQuery({ queryKey: ["ab-tests"], queryFn: fetchABTests });

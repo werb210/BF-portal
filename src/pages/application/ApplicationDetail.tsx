@@ -1,8 +1,9 @@
 import { type ChangeEvent, useState } from "react";
-import { apiClient } from "@/api/httpClient";
+import { apiClient } from "@api/httpClient";
 import OfferUploader from "@/components/offers/OfferUploader";
 import ChatPanel from "@/components/chat/ChatPanel";
 
+const API_PREFIX = "/api";
 const tabs = ["Application", "Banking Analysis", "Financials", "Documents", "Credit Summary", "Notes", "Lenders"] as const;
 
 type TabName = (typeof tabs)[number];
@@ -35,7 +36,7 @@ const ApplicationDetail = ({ applicationId = "app-1" }: { applicationId?: string
   const handleDocAction = async (status: "accepted" | "rejected") => {
     const reason = status === "rejected" ? window.prompt("Rejection reason") : "Accepted";
     if (!reason) return;
-    await apiClient.post(`/api/applications/${applicationId}/documents/review`, { status, reason, notifyChannels: ["sms", "portal"] });
+    await apiClient.post(`${API_PREFIX}/applications/${applicationId}/documents/review`, { status, reason, notifyChannels: ["sms", "portal"] });
   };
 
   const sendSelected = async () => {

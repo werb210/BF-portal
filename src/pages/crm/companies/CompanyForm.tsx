@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import type { Company } from "@/api/crm";
+import type { Company } from "@api/crm";
 
 interface CompanyFormProps {
   onSave: (company: Partial<Company>) => void;

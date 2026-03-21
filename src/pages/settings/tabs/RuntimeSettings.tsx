@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import apiClient from "@/api/httpClient";
+import apiClient from "@api/httpClient";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { getErrorMessage } from "@/utils/errors";

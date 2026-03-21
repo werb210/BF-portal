@@ -1,4 +1,4 @@
-import type { AudienceFilter } from "@/api/bulkMessaging";
+import type { AudienceFilter } from "@api/bulkMessaging";
 
 interface Props {
   value: AudienceFilter;

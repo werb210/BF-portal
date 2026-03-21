@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { closeChatSession, fetchChatSession, fetchOpenChats, sendStaffMessage } from "@/api/chat";
+import { closeChatSession, fetchChatSession, fetchOpenChats, sendStaffMessage } from "@api/chat";
 import type { ChatSession } from "@/types/chat";
 
 type SessionSummary = Pick<ChatSession, "id" | "leadId">;

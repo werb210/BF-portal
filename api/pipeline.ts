@@ -1,4 +1,4 @@
-import { apiFetch } from "@/api/client";
+import { apiFetch } from "@api/client";
 
 export async function updatePipelineStage(applicationId: string, stage: string) {
   return apiFetch(`/portal/applications/${applicationId}/status`, {

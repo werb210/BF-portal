@@ -1,6 +1,7 @@
-import { apiClient } from "@/api/httpClient";
+import { apiClient } from "@api/httpClient";
 import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config";
 
+const API_PREFIX = "/api";
 export const slfPipelineAdapter: PipelineApiAdapter = {
   fetchPipeline: async (filters) => {
     const response = await apiClient.post("/api" + "/slf/pipeline", filters ?? {});
@@ -8,7 +9,7 @@ export const slfPipelineAdapter: PipelineApiAdapter = {
   },
 
   updateStage: async (applicationId, stage) => {
-    const response = await apiClient.patch(`/api/slf/pipeline/${applicationId}/stage`, { stage });
+    const response = await apiClient.patch(`${API_PREFIX}/slf/pipeline/${applicationId}/stage`, { stage });
     return response.data;
   },
 

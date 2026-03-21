@@ -8,11 +8,11 @@ import {
   fetchConversationById,
   fetchCrmLeads,
   sendCommunication
-} from "@/api/communications";
+} from "@api/communications";
 import { connectAiSocket, subscribeAiSocket, subscribeAiSocketConnection } from "@/services/aiSocket";
 import { getStoredAccessToken } from "@/services/token";
 import { useAuth } from "@/hooks/useAuth";
-import type { CommunicationConversation, CommunicationMessage, CrmLead } from "@/api/communications";
+import type { CommunicationConversation, CommunicationMessage, CrmLead } from "@api/communications";
 
 type ConnectionState = "connecting" | "connected" | "disconnected";
 

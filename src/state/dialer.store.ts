@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { logCallEvent } from "@/api/crm";
-import { logApplicationCallEvent } from "@/api/communications";
+import { logCallEvent } from "@api/crm";
+import { logApplicationCallEvent } from "@api/communications";
 
 export type DialerStatus =
   | "idle"

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Button from "@/components/ui/Button";
-import type { CommunicationConversation, CommunicationType } from "@/api/communications";
+import type { CommunicationConversation, CommunicationType } from "@api/communications";
 import ChannelSelector from "./ChannelSelector";
 
 interface MessageComposerProps {

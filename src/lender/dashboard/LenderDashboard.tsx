@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { fetchLenderCompany } from "@/api/lender/company";
-import { fetchLenderProducts } from "@/api/lender/products";
+import { fetchLenderCompany } from "@api/lender/company";
+import { fetchLenderProducts } from "@api/lender/products";
 
 const LenderDashboard = () => {
   const navigate = useNavigate();

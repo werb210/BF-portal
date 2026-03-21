@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchDocumentRequirements } from "@/api/documents";
-import { fetchOcrInsights } from "@/api/ocr.routes";
+import { fetchDocumentRequirements } from "@api/documents";
+import { fetchOcrInsights } from "@api/ocr.routes";
 import { OCR_FIELD_REGISTRY, getOcrFieldDefinition } from "@/ocr/OCR_FIELD_REGISTRY";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import type { DocumentRequirement } from "@/types/documents.types";

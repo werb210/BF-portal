@@ -5,7 +5,7 @@ import {
   closeAiSession,
   fetchAiMessages,
   sendHumanReply
-} from "@/api/aiChat";
+} from "@api/aiChat";
 
 type Props = {
   session: AiSession;

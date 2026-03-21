@@ -1,4 +1,4 @@
-import type { SmsMessage } from "@/api/communications";
+import type { SmsMessage } from "@api/communications";
 
 interface SMSThreadProps {
   messages: SmsMessage[];

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchMessagesThread, sendMessage } from "@/api/messages";
+import { fetchMessagesThread, sendMessage } from "@api/messages";
 import MessageThread from "@/components/chat/MessageThread";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import type { MessageRecord } from "@/types/messages.types";

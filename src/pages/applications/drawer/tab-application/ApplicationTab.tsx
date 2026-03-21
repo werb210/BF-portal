@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ChangeEvent, ReactNode } from "react";
-import { fetchPortalApplication, updatePortalApplication } from "@/api/applications";
+import { fetchPortalApplication, updatePortalApplication } from "@api/applications";
 import type { ApplicationAuditEvent, PortalApplicationRecord } from "@/types/application.types";
 import type { CreditReadinessData } from "@/types/application";
 import Input from "@/components/ui/Input";

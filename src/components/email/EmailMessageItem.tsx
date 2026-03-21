@@ -1,4 +1,4 @@
-import type { EmailMessage } from "@/api/email";
+import type { EmailMessage } from "@api/email";
 
 interface EmailMessageItemProps {
   message: EmailMessage;

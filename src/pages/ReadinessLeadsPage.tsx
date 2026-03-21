@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { convertReadinessLeadToApplication, fetchReadinessLeads } from "@/api/readiness";
+import { convertReadinessLeadToApplication, fetchReadinessLeads } from "@api/readiness";
 
 const formatDate = (value: string) => {
   const date = new Date(value);

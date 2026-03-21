@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { buildUrl } from "@/lib/api";
+const API_PREFIX = "/api";
 
 type IssueReport = {
   id: string;
@@ -29,7 +30,7 @@ function IssueReports({ isAdmin = true }: IssueReportsProps) {
   }
 
   async function resolveIssue(id: string) {
-    await fetch(buildUrl(`/api/support/report/${id}`), { method: "DELETE" });
+    await fetch(buildUrl(`${API_PREFIX}/support/report/${id}`), { method: "DELETE" });
     setIssues((prev) => prev.filter((issue) => issue.id !== id));
   }
 

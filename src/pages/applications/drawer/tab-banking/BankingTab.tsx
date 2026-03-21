@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchBankingAnalysis, type BankingAnalysis } from "@/api/banking";
+import { fetchBankingAnalysis, type BankingAnalysis } from "@api/banking";
 import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";

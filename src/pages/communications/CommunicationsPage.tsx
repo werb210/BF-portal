@@ -5,7 +5,7 @@ import AppLoading from "@/components/layout/AppLoading";
 import ConversationList from "./ConversationList";
 import ConversationViewer from "./ConversationViewer";
 import { useCommunicationsStore } from "@/state/communications.store";
-import { fetchCommunicationThreads, type CommunicationConversation } from "@/api/communications";
+import { fetchCommunicationThreads, type CommunicationConversation } from "@api/communications";
 import { getErrorMessage } from "@/utils/errors";
 import { getRequestId } from "@/utils/requestId";
 import RequireRole from "@/components/auth/RequireRole";
@@ -14,13 +14,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { ContactSubmissions } from "@/features/support/ContactSubmissions";
 import ChatSessionsPanel from "./ChatSessionsPanel";
 import ChatPanel from "./ChatPanel";
-import { fetchIssueReports } from "@/api/support";
+import { fetchIssueReports } from "@api/support";
 import { logger } from "@/utils/logger";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";
 import { normalizeBusinessUnit } from "@/types/businessUnit";
 import { BUSINESS_UNIT_CONFIG } from "@/config/businessUnitConfig";
 import { buildUrl } from "@/lib/api";
 
+const API_PREFIX = "/api";
 type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | "contact-forms";
 
 
@@ -46,7 +47,7 @@ const WebsiteIssuesPanel = () => {
   }
 
   async function deleteIssue(id: string) {
-    await fetch(buildUrl(`/api/support/issues/${id}`), { method: "DELETE" });
+    await fetch(buildUrl(`${API_PREFIX}/support/issues/${id}`), { method: "DELETE" });
     setIssues((previous) => previous.filter((issue) => issue.id !== id));
   }
 

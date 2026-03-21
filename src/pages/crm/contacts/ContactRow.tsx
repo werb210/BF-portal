@@ -1,5 +1,5 @@
 import Button from "@/components/ui/Button";
-import type { Contact } from "@/api/crm";
+import type { Contact } from "@api/crm";
 
 interface ContactRowProps {
   contact: Contact;

@@ -1,4 +1,4 @@
-import type { CommunicationMessage } from "@/api/communications";
+import type { CommunicationMessage } from "@api/communications";
 
 interface MessageBubbleProps {
   message: CommunicationMessage;

@@ -10,8 +10,8 @@ import {
   uploadLenderApplicationForm,
   updateRequiredDocuments,
   type LenderProduct
-} from "@/api/lender/products";
-import { fetchDocumentCategories } from "@/api/lender/documents";
+} from "@api/lender/products";
+import { fetchDocumentCategories } from "@api/lender/documents";
 import ProductEditorDrawer, { type ProductEditorValues } from "./ProductEditorDrawer";
 
 const ProductsPage = () => {

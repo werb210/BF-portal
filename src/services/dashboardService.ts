@@ -1,4 +1,4 @@
-import { apiFetch } from "@/api/client";
+import { apiFetch } from "@api/client";
 
 export async function getDashboardMetrics() {
   return apiFetch("/api" + "/dashboard/metrics");
