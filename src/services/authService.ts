@@ -1,45 +1,16 @@
-import { apiFetch } from "@/api/client";
-import { normalizePhone } from "@/utils/phone";
+import { AUTH_CONTRACT } from "@/contracts";
+import { apiFetch } from "@/lib/api";
 
-export async function startOtp(phone: string) {
-  const normalizedPhone = normalizePhone(phone);
-
-  const response = await apiFetch("/api/auth/otp/start", {
+export async function sendOtp(data: any) {
+  return apiFetch(AUTH_CONTRACT.OTP_START, {
     method: "POST",
-    body: JSON.stringify({ phone: normalizedPhone })
+    body: JSON.stringify(data)
   });
-
-  if (!response?.ok) {
-    throw new Error("Invalid API response");
-  }
-
-  return true;
 }
 
-export const requestOtp = startOtp;
-
-export async function verifyOtp(phone: string, code: string) {
-  const normalizedPhone = normalizePhone(phone);
-
-  const response = await apiFetch("/api/auth/otp/verify", {
+export async function verifyOtp(data: any) {
+  return apiFetch(AUTH_CONTRACT.OTP_VERIFY, {
     method: "POST",
-    body: JSON.stringify({ phone: normalizedPhone, code })
-  });
-
-  if (!response?.ok) {
-    throw new Error("Invalid API response");
-  }
-
-  return response.json();
-}
-
-export async function getCurrentUser() {
-  const response = await apiFetch("/auth/me");
-  return response.json();
-}
-
-export async function logout() {
-  return apiFetch("/auth/logout", {
-    method: "POST"
+    body: JSON.stringify(data)
   });
 }

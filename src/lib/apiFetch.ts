@@ -1,14 +1,7 @@
-import { buildUrl } from "@/lib/api";
+import { apiFetch as request } from "@/lib/api";
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
-  const res = await fetch(buildUrl(path), {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+  const res = await request(path, options);
 
   if (!res.ok) {
     const text = await res.text();

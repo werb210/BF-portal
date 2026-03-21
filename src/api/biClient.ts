@@ -1,14 +1,7 @@
-import { buildUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export async function biFetch(path: string, options?: RequestInit) {
-  const res = await fetch(buildUrl(`/api/bi${path}`), {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers || {})
-    },
-    ...options
-  });
+  const res = await apiFetch(`/api/bi${path}`, options);
 
   if (!res.ok) {
     throw new Error(`BI API Error: ${res.status}`);
@@ -16,7 +9,6 @@ export async function biFetch(path: string, options?: RequestInit) {
 
   return res.json();
 }
-
 
 export async function biGetContacts() {
   return biFetch("/crm/contacts");
@@ -33,7 +25,6 @@ export async function biGetLenders() {
 export async function biGetCommissions() {
   return biFetch("/commissions");
 }
-
 
 export async function biGetReportSummary() {
   return biFetch("/reports/summary");
