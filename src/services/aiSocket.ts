@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "@/config/api";
+import { API_BASE } from "@/config/api";
 import { buildNotification } from "@/utils/notifications";
 import { useNotificationsStore } from "@/state/notifications.store";
 
@@ -36,13 +36,12 @@ let socket: WebSocket | null = null;
 let manuallyClosed = false;
 
 const resolveWebSocketUrl = () => {
-  const baseUrl = getApiBaseUrl();
-  if (!baseUrl || typeof baseUrl !== "string") {
+  if (!API_BASE || typeof API_BASE !== "string") {
     return "ws://server-url/ws/chat";
   }
 
-  if (baseUrl.startsWith("http://") || baseUrl.startsWith("https://")) {
-    const url = new URL(baseUrl);
+  if (API_BASE.startsWith("http://") || API_BASE.startsWith("https://")) {
+    const url = new URL(API_BASE);
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
     url.pathname = "/ws/chat";
     return url.toString();
