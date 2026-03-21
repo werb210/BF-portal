@@ -3,7 +3,7 @@ import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config
 
 export const slfPipelineAdapter: PipelineApiAdapter = {
   fetchPipeline: async (filters) => {
-    const response = await apiClient.post("/api/slf/pipeline", filters ?? {});
+    const response = await apiClient.post("/api" + "/slf/pipeline", filters ?? {});
     return response.data;
   },
 
@@ -13,7 +13,7 @@ export const slfPipelineAdapter: PipelineApiAdapter = {
   },
 
   exportApplications: async (ids) => {
-    const blobData = await apiClient.post<Blob>("/api/slf/pipeline/export", { ids }, {
+    const blobData = await apiClient.post<Blob>("/api" + "/slf/pipeline/export", { ids }, {
       responseType: "blob"
     });
     return blobData.data;

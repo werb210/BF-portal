@@ -3,14 +3,14 @@ import { http, HttpResponse } from "msw";
 export const handlers = [
 
   // LENDERS
-  http.get("/api/lenders", () => {
+  http.get("/api" + "/lenders", () => {
     return HttpResponse.json([
       { id: "1", name: "Test Lender" }
     ]);
   }),
 
   // LENDER PRODUCTS
-  http.get("/api/lender-products", () => {
+  http.get("/api" + "/lender-products", () => {
     return HttpResponse.json([
       {
         id: "1",
@@ -24,7 +24,7 @@ export const handlers = [
   }),
 
   // CALENDAR EVENTS
-  http.get("/api/local-events", () => {
+  http.get("/api" + "/local-events", () => {
     return HttpResponse.json([
       {
         id: "1",
@@ -37,7 +37,7 @@ export const handlers = [
   }),
 
   // AUTH / ROLES
-  http.get("/api/me", () => {
+  http.get("/api" + "/me", () => {
     return HttpResponse.json({
       id: "1",
       roles: ["Admin"]

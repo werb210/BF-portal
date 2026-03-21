@@ -1,12 +1,12 @@
 import api from "@/api/client";
 
 export async function getSupportQueue() {
-  const res = await api.get("/api/support/queue");
+  const res = await api.get("/api" + "/support/queue");
   return res.data;
 }
 
 export async function getIssueReports() {
-  const res = await api.get("/api/support/issues");
+  const res = await api.get("/api" + "/support/issues");
   return res.data;
 }
 
@@ -15,6 +15,6 @@ export async function fetchIssueReports() {
 }
 
 export async function getAIKnowledge() {
-  const res = await api.get("/api/ai/knowledge");
+  const res = await api.get("/api" + "/ai/knowledge");
   return res.data;
 }

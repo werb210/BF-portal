@@ -18,7 +18,7 @@ export interface AiMessage {
 }
 
 export async function fetchAiSessions(): Promise<AiSession[]> {
-  const res = await api.get("/api/chat/sessions");
+  const res = await api.get("/api" + "/chat/sessions");
   return res.data;
 }
 

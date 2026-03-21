@@ -12,7 +12,7 @@ export default function AIKnowledge() {
     const formData = new FormData();
     formData.append("file", file);
 
-    await fetch(buildUrl("/api/ai/knowledge"), {
+    await fetch(buildUrl("/api" + "/ai/knowledge"), {
       method: "POST",
       body: formData
     });

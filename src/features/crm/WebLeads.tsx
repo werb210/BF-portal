@@ -5,7 +5,7 @@ export default function WebLeads() {
   const [leads, setLeads] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(buildUrl("/api/crm/web-leads"))
+    fetch(buildUrl("/api" + "/crm/web-leads"))
       .then((res) => res.json())
       .then((data) => setLeads(data.leads || []));
   }, []);

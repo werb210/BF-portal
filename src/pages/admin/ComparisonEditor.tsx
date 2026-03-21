@@ -7,7 +7,7 @@ export default function ComparisonEditor() {
   const [data, setData] = useState<unknown>(null);
 
   async function load() {
-    const res = await fetch(buildUrl("/api/comparison"));
+    const res = await fetch(buildUrl("/api" + "/comparison"));
     const json = await res.json();
     setData(json);
   }
