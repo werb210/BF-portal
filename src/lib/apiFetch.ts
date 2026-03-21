@@ -1,7 +1,7 @@
-import { buildApiUrl } from "./apiClient";
+import { buildUrl } from "@/lib/api";
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
-  const res = await fetch(buildApiUrl(path), {
+  const res = await fetch(buildUrl(path), {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",

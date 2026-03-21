@@ -1,75 +1,61 @@
-import axios from "axios";
 import { reportError } from "@/utils/reportError";
 import { showToast } from "@/utils/toastEvents";
 import { generateRequestId } from "@/api/requestId";
-import { clearToken } from "@/lib/auth";
+import { clearToken } from "@/auth/tokenStorage";
+import { apiFetch } from "@/api/client";
 
 export type ApiSilo = "bf" | "bi" | "slf" | "admin";
 
-type RetryableRequestConfig = {
-  _retry?: boolean;
-};
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-export function createApi(silo: ApiSilo, token: string) {
-  const baseMap: Record<ApiSilo, string> = {
-    bf: import.meta.env.VITE_API_BF,
-    bi: import.meta.env.VITE_API_BI,
-    slf: import.meta.env.VITE_API_SLF,
-    admin: import.meta.env.VITE_API_ADMIN ?? import.meta.env.VITE_API_BF
+type ApiResponse<T> = { data: T; status: number };
+
+async function request<T>(method: Method, url: string, data: unknown, silo: ApiSilo, token: string): Promise<ApiResponse<T>> {
+  const headers: Record<string, string> = {
+    "x-silo": silo,
   };
 
-  const instance = axios.create({
-    baseURL: baseMap[silo]
+  const requestId = generateRequestId();
+  if (requestId && requestId.trim().length > 0) {
+    headers["x-request-id"] = requestId;
+  }
+
+  if (token && token.trim().length > 0) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await apiFetch(url, {
+    method,
+    headers,
+    body: data === undefined ? undefined : JSON.stringify(data),
   });
 
-  instance.interceptors.request.use((config) => {
-    const requestId = generateRequestId();
-
-    config.headers = config.headers ?? {};
-    if (requestId && requestId.trim().length > 0) {
-      config.headers["x-request-id"] = requestId;
-    } else {
-      delete config.headers["x-request-id"];
-    }
-
-    if (token && token.trim().length > 0) {
-      config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      delete config.headers.Authorization;
-    }
-    config.headers["x-silo"] = silo;
-    return config;
-  });
-
-  const logout = () => {
+  if (response.status === 401) {
     clearToken();
     window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+
+  if (response.status === 403) {
+    showToast("Access denied", "error");
+  }
+
+  if (response.status >= 400) {
+    const error = new Error(`Request failed with status ${response.status}`);
+    reportError(error);
+    throw error;
+  }
+
+  const json = (await response.json()) as T;
+  return { data: json, status: response.status };
+}
+
+export function createApi(silo: ApiSilo, token: string) {
+  return {
+    get: <T = unknown>(url: string) => request<T>("GET", url, undefined, silo, token),
+    post: <T = unknown>(url: string, data?: unknown) => request<T>("POST", url, data, silo, token),
+    put: <T = unknown>(url: string, data?: unknown) => request<T>("PUT", url, data, silo, token),
+    patch: <T = unknown>(url: string, data?: unknown) => request<T>("PATCH", url, data, silo, token),
+    delete: <T = unknown>(url: string) => request<T>("DELETE", url, undefined, silo, token),
   };
-
-  instance.interceptors.response.use(
-    (res) => res,
-    (err) => {
-      reportError(err);
-      const status = err.response?.status;
-      const config = (err.config ?? {}) as RetryableRequestConfig;
-
-      if (status === 401 && !config._retry) {
-        config._retry = true;
-        // future: call /refresh endpoint
-        logout();
-      }
-
-      if (status === 403) {
-        showToast("Access denied", "error");
-      }
-
-      if (status === 401) {
-        logout();
-      }
-
-      return Promise.reject(err);
-    }
-  );
-
-  return instance;
 }

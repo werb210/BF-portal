@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/apiClient";
+import { apiFetch } from "@/api/client";
 import { useCrmStore } from "@/state/crm.store";
 import type { CRMLead } from "@/types/crm";
 
@@ -6,9 +6,10 @@ type ApiLead = Record<string, unknown>;
 
 type ApiResponse<T> = { data?: T } & T;
 
-async function unwrap<T>(request: Promise<ApiResponse<T>>): Promise<T> {
-  const response = await request;
-  return (response as { data?: T }).data ?? (response as T);
+async function requestJson<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await apiFetch(path, options);
+  const payload = (await response.json()) as ApiResponse<T>;
+  return (payload as { data?: T }).data ?? (payload as T);
 }
 
 export type Contact = {
@@ -89,23 +90,21 @@ export const fetchContacts = async () => {
   if (filters.owner) params.set("owner", filters.owner);
   if (filters.hasActiveApplication) params.set("hasActiveApplication", "true");
 
-  return unwrap<Contact[]>(apiClient.get(`/api/crm/contacts?${params.toString()}`));
+  return requestJson<Contact[]>(`/crm/contacts?${params.toString()}`);
 };
 
 export const fetchCompanies = async () => {
   const { silo } = useCrmStore.getState();
   const params = new URLSearchParams({ silo });
-  return unwrap<Company[]>(apiClient.get(`/api/crm/companies?${params.toString()}`));
+  return requestJson<Company[]>(`/crm/companies?${params.toString()}`);
 };
 
 export const fetchTimeline = async (entityType: "contact" | "company", entityId: string) => {
   const params = new URLSearchParams({ entityType, entityId });
-  return unwrap<TimelineEvent[]>(apiClient.get(`/api/crm/timeline?${params.toString()}`));
+  return requestJson<TimelineEvent[]>(`/crm/timeline?${params.toString()}`);
 };
 
-export const createNote = async (entityId: string, summary: string) => {
-  return unwrap<TimelineEvent>(apiClient.post("/api/crm/timeline/notes", { entityId, summary }));
-};
+export const createNote = async (entityId: string, summary: string) => requestJson<TimelineEvent>("/crm/timeline/notes", { method: "POST", body: JSON.stringify({ entityId, summary }) });
 
 export const logCallEvent = async (payload: {
   contactId: string;
@@ -113,21 +112,13 @@ export const logCallEvent = async (payload: {
   durationSeconds: number;
   outcome: string;
   failureReason?: string | null;
-}) => {
-  return unwrap<TimelineEvent>(apiClient.post("/api/crm/timeline/calls", payload));
-};
+}) => requestJson<TimelineEvent>("/crm/timeline/calls", { method: "POST", body: JSON.stringify(payload) });
 
-export const fetchApplications = async (contactId: string) => {
-  return unwrap<{ id: string; stage: string; contactId: string }[]>(apiClient.get(`/api/crm/contacts/${contactId}/applications`));
-};
+export const fetchApplications = async (contactId: string) => requestJson<{ id: string; stage: string; contactId: string }[]>(`/crm/contacts/${contactId}/applications`);
 
-export const fetchContactCompanies = async (contact: Contact) => {
-  return unwrap<Company[]>(apiClient.get(`/api/crm/contacts/${contact.id}/companies`));
-};
+export const fetchContactCompanies = async (contact: Contact) => requestJson<Company[]>(`/crm/contacts/${contact.id}/companies`);
 
-export const fetchCompanyContacts = async (company: Company) => {
-  return unwrap<Contact[]>(apiClient.get(`/api/crm/companies/${company.id}/contacts`));
-};
+export const fetchCompanyContacts = async (company: Company) => requestJson<Contact[]>(`/crm/companies/${company.id}/contacts`);
 
 export const createContact = async (payload: {
   name: string;
@@ -138,9 +129,7 @@ export const createContact = async (payload: {
   tags?: string[];
   referrerId?: string;
   referrerName?: string;
-}) => {
-  return unwrap<Contact>(apiClient.post("/api/crm/contacts", payload));
-};
+}) => requestJson<Contact>("/crm/contacts", { method: "POST", body: JSON.stringify(payload) });
 
 export const createCompany = async (payload: {
   name: string;
@@ -151,40 +140,33 @@ export const createCompany = async (payload: {
   tags?: string[];
   referrerId?: string;
   referrerName?: string;
-}) => {
-  return unwrap<Company>(apiClient.post("/api/crm/companies", payload));
-};
+}) => requestJson<Company>("/crm/companies", { method: "POST", body: JSON.stringify(payload) });
 
-export const linkContactCompany = async (contactId: string, companyId: string) => {
-  return unwrap<{ contact: Contact; company: Company }>(
-    apiClient.post(`/api/crm/contacts/${contactId}/companies/${companyId}`)
-  );
-};
+export const linkContactCompany = async (contactId: string, companyId: string) =>
+  requestJson<{ contact: Contact; company: Company }>(`/crm/contacts/${contactId}/companies/${companyId}`, { method: "POST" });
 
-export const createContactApplication = async (payload: { contactId: string; stage: string }) => {
-  return unwrap<{ id: string; stage: string; contactId: string }>(apiClient.post("/api/crm/applications", payload));
-};
+export const createContactApplication = async (payload: { contactId: string; stage: string }) => requestJson<{ id: string; stage: string; contactId: string }>("/crm/applications", { method: "POST", body: JSON.stringify(payload) });
 
 export async function fetchLeads() {
-  return unwrap<ApiLead[] | { leads?: ApiLead[] }>(apiClient.get("/api/crm/leads"));
+  return requestJson<ApiLead[] | { leads?: ApiLead[] }>("/crm/leads");
 }
 
 export async function fetchLeadById(id: string) {
-  return unwrap(apiClient.get(`/api/crm/leads/${id}`));
+  return requestJson(`/crm/leads/${id}`);
 }
 
 export async function fetchCreditReadinessLeads(): Promise<CRMLead[]> {
-  return unwrap<CRMLead[]>(apiClient.get("/api/crm/credit-readiness"));
+  return requestJson<CRMLead[]>("/crm/credit-readiness");
 }
 
 export async function convertReadinessToApplication(id: string) {
-  return unwrap(apiClient.post(`/api/crm/credit-readiness/${id}/convert`));
+  return requestJson(`/crm/credit-readiness/${id}/convert`, { method: "POST" });
 }
 
 export async function fetchChatSessions() {
-  return unwrap(apiClient.get("/api/chat/sessions"));
+  return requestJson("/chat/sessions");
 }
 
 export async function fetchContinuationLeads() {
-  return unwrap(apiClient.get("/api/application/continuations"));
+  return requestJson("/application/continuations");
 }

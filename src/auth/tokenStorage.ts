@@ -1,13 +1,13 @@
-import { clearToken as clearAuthToken, getToken as getAuthToken, setToken as setAuthToken } from "@/lib/auth";
+const TOKEN_KEY = "bf_token";
 
 export function getToken(): string | null {
-  return getAuthToken();
+  return localStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token: string) {
-  setAuthToken(token);
+  localStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearToken() {
-  clearAuthToken();
+  localStorage.removeItem(TOKEN_KEY);
 }

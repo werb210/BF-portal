@@ -1,4 +1,8 @@
-import type { AxiosRequestConfig } from "axios";
+export type RequestTrackingConfig = {
+  baseURL?: string;
+  url?: string;
+  method?: string;
+};
 
 export type PendingRequest = {
   id: string;
@@ -11,7 +15,7 @@ const pendingRequests = new Map<string, PendingRequest>();
 
 const createPendingId = () => `pending_${Math.random().toString(36).slice(2, 10)}`;
 
-const buildRequestUrl = (config: AxiosRequestConfig) => {
+const buildRequestUrl = (config: RequestTrackingConfig) => {
   const base = config.baseURL ?? "";
   const url = config.url ?? "";
   if (!base) return url;
@@ -25,7 +29,7 @@ const buildRequestUrl = (config: AxiosRequestConfig) => {
   return `${base}${url}`;
 };
 
-export const startPendingRequest = (config: AxiosRequestConfig) => {
+export const startPendingRequest = (config: RequestTrackingConfig) => {
   const id = createPendingId();
   pendingRequests.set(id, {
     id,

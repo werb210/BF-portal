@@ -1,4 +1,4 @@
-import { clearToken, getToken } from "@/lib/auth";
+import { clearToken, getToken } from "@/auth/tokenStorage";
 
 export async function apiFetch(input: RequestInfo, init: RequestInit = {}) {
   const token = getToken();

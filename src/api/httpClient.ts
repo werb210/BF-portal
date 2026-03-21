@@ -1,11 +1,10 @@
-import { AxiosHeaders, type AxiosRequestConfig, type AxiosResponse } from "axios";
-import { apiClient as canonicalClient } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { ApiError } from "@/api/http";
 import { getRequestId } from "@/utils/requestId";
 import { getStoredAccessToken } from "@/services/token";
 
-export type RequestOptions = AxiosRequestConfig & {
+export type RequestOptions = RequestInit & {
   skipAuth?: boolean;
 };
 
@@ -28,8 +27,8 @@ const requiresAuth = (path: string) => {
 const createApiError = (status: number, message: string, code?: string) =>
   new ApiError({ status, message, code, details: { code } });
 
-const withHeaders = (path: string, method: string, options?: RequestOptions): AxiosRequestConfig => {
-  const headers = AxiosHeaders.from((options?.headers ?? {}) as any);
+const withHeaders = (method: string, options?: RequestOptions): HeadersInit => {
+  const headers = new Headers(options?.headers ?? {});
 
   headers.set("X-Request-Id", getRequestId());
 
@@ -44,10 +43,7 @@ const withHeaders = (path: string, method: string, options?: RequestOptions): Ax
     }
   }
 
-  return {
-    ...(options ?? {}),
-    headers,
-  };
+  return headers;
 };
 
 const request = async <T>(method: string, path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
@@ -58,12 +54,11 @@ const request = async <T>(method: string, path: string, data?: unknown, options?
     throw createApiError(401, "Missing authentication token", "missing-token");
   }
 
-  const response: AxiosResponse<T> = await canonicalClient.request<T>({
-    url: path,
+  const response = await apiFetch(path, {
+    ...options,
     method,
-    data,
-    validateStatus: () => true,
-    ...withHeaders(path, method, options)
+    headers: withHeaders(method, options),
+    body: data === undefined ? undefined : JSON.stringify(data),
   });
 
   if (response.status >= 400) {
@@ -78,7 +73,7 @@ const request = async <T>(method: string, path: string, data?: unknown, options?
     throw createApiError(response.status, "Request failed");
   }
 
-  return response.data;
+  return (await response.json()) as T;
 };
 
 export const apiClient = {
@@ -112,7 +107,7 @@ export const configureLenderApiClient = (config: LenderAuthConfig) => {
 };
 
 const lenderHeaders = (method: string, options?: RequestOptions) => {
-  const headers = AxiosHeaders.from((options?.headers ?? {}) as any);
+  const headers = new Headers(options?.headers ?? {});
   headers.set("X-Request-Id", getRequestId());
 
   if (isWriteMethod(method) && !headers.get("Idempotency-Key")) {
@@ -126,19 +121,15 @@ const lenderHeaders = (method: string, options?: RequestOptions) => {
     }
   }
 
-  return {
-    ...(options ?? {}),
-    headers
-  };
+  return headers;
 };
 
 const lenderRequest = async <T>(method: string, path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
-  const response = await canonicalClient.request<T>({
-    url: path,
+  const response = await apiFetch(path, {
+    ...options,
     method,
-    data,
-    validateStatus: () => true,
-    ...lenderHeaders(method, options)
+    headers: lenderHeaders(method, options),
+    body: data === undefined ? undefined : JSON.stringify(data)
   });
 
   if (response.status >= 400) {
@@ -149,7 +140,7 @@ const lenderRequest = async <T>(method: string, path: string, data?: unknown, op
     throw createApiError(response.status, "Request failed");
   }
 
-  return response.data;
+  return (await response.json()) as T;
 };
 
 export const lenderApiClient = {

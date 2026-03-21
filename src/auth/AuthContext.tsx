@@ -1,7 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import api from "@/lib/api";
-import { getMe } from "@/api/auth";
-import * as authService from "@/services/auth";
+import { startOtp as startOtpRequest, verifyOtp as verifyOtpRequest } from "@/api/auth";
+import { apiFetch } from "@/api/client";
 import { destroyVoice } from "@/services/voiceService";
 import { setCallStatus } from "@/dialer/callStore";
 import {
@@ -14,7 +13,7 @@ import type { AuthenticatedUser } from "@/services/auth";
 import { normalizeRole, roleIn, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import { clearSession, writeSession } from "@/utils/sessionStore";
-import { clearToken, getToken, setToken } from "@/lib/auth";
+import { clearToken, getToken, setToken } from "@/auth/tokenStorage";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";
@@ -140,7 +139,6 @@ const getTestAuthOverride = (): TestAuthOverride | null => {
 const clearInvalidTokenArtifacts = () => {
   clearStoredAuth();
   clearToken();
-  delete api.defaults.headers.common["Authorization"];
 };
 
 const getErrorStatus = (error: unknown): number | undefined => {
@@ -259,8 +257,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        const response = await getMe();
-        const nextUser = resolveAuthUserFromResponse(response.data);
+        const response = await apiFetch("/auth/me");
+        const payload = await response.json();
+        const nextUser = resolveAuthUserFromResponse(payload);
 
         if (!nextUser) {
           clearInvalidTokenArtifacts();
@@ -317,8 +316,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     void (async () => {
       try {
-        const res = await getMe();
-        const normalizedUser = resolveAuthUserFromResponse(res.data);
+        const res = await apiFetch("/auth/me");
+        const payload = await res.json();
+        const normalizedUser = resolveAuthUserFromResponse(payload);
 
         if (!normalizedUser) {
           clearToken();
@@ -352,8 +352,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setPendingPhoneNumber(phone);
     setAuthStatus("pending");
     setRolesStatus("pending");
-    const started = await authService.startOtp({ phone });
-    return started !== false;
+    const started = await startOtpRequest({ phone });
+    return started.ok;
   }, []);
 
   const verifyOtp = useCallback(async (phone: string, code: string): Promise<OtpVerifyResult> => {
@@ -362,8 +362,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setRolesStatus("loading");
 
     try {
-      const result = await authService.loginWithOtp(phone, code);
-      const token = result.token ?? getToken();
+      const response = await verifyOtpRequest({ phone, code });
+      const result = await response.json();
+      const token = result?.token ?? getToken();
 
       if (token && token.trim().length > 0) {
         setToken(token);
@@ -381,8 +382,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return {
         success: true,
         token: token ?? undefined,
-        user: result.user ?? null,
-        nextPath: result.nextPath ?? "/portal"
+        user: result?.user ?? null,
+        nextPath: result?.nextPath ?? "/portal"
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : "OTP login failed";
@@ -402,7 +403,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await authService.logout();
+      await apiFetch("/auth/logout", { method: "POST" });
     } finally {
       clearAuth();
       destroyDevice();
