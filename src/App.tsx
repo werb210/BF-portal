@@ -16,7 +16,6 @@ import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
 import PipelinePage from "@/pages/pipeline/PipelinePage";
 import ApplicationDetail from "@/pages/application/ApplicationDetail";
-import AuthProbe from "@/__tests__/support/AuthProbe";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import DialerButton from "@/components/DialerButton";
@@ -89,7 +88,6 @@ function AuthenticatedShell() {
 
 const AppRoutes = () => (
   <>
-    {process.env.NODE_ENV === "test" ? <AuthProbe /> : null}
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/otp" element={<AuthOtpPage />} />

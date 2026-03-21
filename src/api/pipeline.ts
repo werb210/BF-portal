@@ -1,6 +1,8 @@
-import { apiClient } from "@/lib/apiClient";
+import { apiFetch } from "@/api/client";
 
 export async function updatePipelineStage(applicationId: string, stage: string) {
-  const response = await apiClient.patch(`/api/portal/applications/${applicationId}/status`, { stage });
-  return response;
+  return apiFetch(`/portal/applications/${applicationId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ stage }),
+  });
 }

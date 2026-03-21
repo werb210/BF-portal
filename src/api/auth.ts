@@ -1,19 +1,15 @@
-import api from '@/lib/api';
-import { normalizePhone } from '@/utils/phone';
+import { apiFetch } from "./client";
 
-export const startOtp = async (phone: string) => {
-  return api.post('/auth/otp/start', {
-    phone: normalizePhone(phone),
+export async function startOtp(payload: any) {
+  return apiFetch("/auth/otp/start", {
+    method: "POST",
+    body: JSON.stringify(payload)
   });
-};
+}
 
-export const verifyOtp = async (phone: string, code: string) => {
-  return api.post('/auth/otp/verify', {
-    phone: normalizePhone(phone),
-    code,
+export async function verifyOtp(payload: any) {
+  return apiFetch("/auth/otp/verify", {
+    method: "POST",
+    body: JSON.stringify(payload)
   });
-};
-
-export const getMe = async () => {
-  return api.get('/auth/me');
-};
+}

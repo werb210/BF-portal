@@ -1,30 +1,39 @@
-import { AxiosHeaders } from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { getRequestId } from "@/utils/requestId";
 import { setLastApiRequest } from "@/state/apiRequestTrace";
-import { endPendingRequest, startPendingRequest } from "@/utils/requestTracking";
+import { endPendingRequest, startPendingRequest, type RequestTrackingConfig } from "@/utils/requestTracking";
 import { logger as appLogger } from "@/utils/logger";
 
-type Redactable = Record<string, unknown> | unknown[] | string | number | boolean | null | undefined;
+type GenericHeaders = {
+  set: (key: string, value: string) => void;
+  get: (key: string) => string | null;
+  toJSON?: () => Record<string, unknown>;
+};
 
-const SENSITIVE_KEYS = [
-  "authorization",
-  "password",
-  "token",
-  "refresh",
-  "access",
-  "secret",
-  "apikey",
-  "api_key"
-];
+type GenericRequestConfig = RequestTrackingConfig & {
+  headers?: Record<string, unknown> | GenericHeaders;
+  data?: unknown;
+  skipRequestId?: boolean;
+  __pendingId?: string;
+};
 
-const isSensitiveKey = (key: string) =>
-  SENSITIVE_KEYS.some((sensitive) => key.toLowerCase().includes(sensitive));
+type GenericResponse = {
+  status: number;
+  data: unknown;
+  config: GenericRequestConfig;
+};
+
+type GenericError = {
+  code?: string;
+  message: string;
+  response?: { status?: number };
+  config?: GenericRequestConfig;
+};
+
+const SENSITIVE_KEYS = ["authorization", "password", "token", "refresh", "access", "secret", "apikey", "api_key"];
+const isSensitiveKey = (key: string) => SENSITIVE_KEYS.some((sensitive) => key.toLowerCase().includes(sensitive));
 
 const redactSensitive = (value: unknown): unknown => {
-  if (Array.isArray(value)) {
-    return value.map((entry) => redactSensitive(entry));
-  }
+  if (Array.isArray(value)) return value.map((entry) => redactSensitive(entry));
   if (value && typeof value === "object") {
     const result: Record<string, unknown> = {};
     Object.entries(value as Record<string, unknown>).forEach(([key, val]) => {
@@ -38,79 +47,46 @@ const redactSensitive = (value: unknown): unknown => {
 const serialize = (value: unknown) => {
   if (value === undefined) return "undefined";
   if (typeof value === "string") return value;
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
+  try { return JSON.stringify(value); } catch { return String(value); }
 };
 
 const truncate = (value: string, max = 1024) => (value.length > max ? `${value.slice(0, max)}…` : value);
 
-export const buildRequestUrl = (config: AxiosRequestConfig) => {
+export const buildRequestUrl = (config: RequestTrackingConfig) => {
   const base = config.baseURL ?? "";
   const url = config.url ?? "";
   if (!base) return url;
   if (!url) return base;
-  if (base.endsWith("/") && url.startsWith("/")) {
-    return `${base}${url.slice(1)}`;
-  }
-  if (!base.endsWith("/") && !url.startsWith("/")) {
-    return `${base}/${url}`;
-  }
+  if (base.endsWith("/") && url.startsWith("/")) return `${base}${url.slice(1)}`;
+  if (!base.endsWith("/") && !url.startsWith("/")) return `${base}/${url}`;
   return `${base}${url}`;
 };
 
-type RequestIdConfig = InternalAxiosRequestConfig & { skipRequestId?: boolean };
-
-const shouldAttachRequestId = (config: RequestIdConfig) => {
-  if (config.skipRequestId) return false;
-  return true;
-};
-
-export const attachRequestIdAndLog = (config: InternalAxiosRequestConfig) => {
+export const attachRequestIdAndLog = (config: GenericRequestConfig) => {
   const requestId = getRequestId();
-  const requestConfig = config as RequestIdConfig;
-  const headers = AxiosHeaders.from(requestConfig.headers ?? {});
-  const attachRequestId = shouldAttachRequestId(requestConfig);
-  if (attachRequestId) {
-    headers.set("X-Request-Id", requestId);
-  }
-  requestConfig.headers = headers;
+  const headers = new Headers((config.headers as HeadersInit) ?? {});
+  if (!config.skipRequestId) headers.set("X-Request-Id", requestId);
+  config.headers = Object.fromEntries(headers.entries());
 
-  if (attachRequestId && !headers.get("X-Request-Id")) {
-    throw new Error("Missing X-Request-Id header on request");
-  }
-
-  const pendingId = startPendingRequest(requestConfig);
-  (requestConfig as AxiosRequestConfig & { __pendingId?: string }).__pendingId = pendingId;
-
-  const sanitizedHeaders = redactSensitive(headers.toJSON());
-  const payload = requestConfig.data ? redactSensitive(requestConfig.data) : undefined;
+  const pendingId = startPendingRequest(config);
+  config.__pendingId = pendingId;
 
   console.info("API request", {
     requestId,
-    method: requestConfig.method?.toUpperCase(),
-    url: buildRequestUrl(requestConfig),
-    headers: sanitizedHeaders,
-    payload
+    method: config.method?.toUpperCase(),
+    url: buildRequestUrl(config),
+    headers: redactSensitive(Object.fromEntries(headers.entries())),
+    payload: config.data ? redactSensitive(config.data) : undefined
   });
 
-  return requestConfig;
+  return config;
 };
 
-export const logResponse = (response: AxiosResponse) => {
+export const logResponse = (response: GenericResponse) => {
   const requestId = getRequestId();
-  const pendingId = (response.config as AxiosRequestConfig & { __pendingId?: string }).__pendingId;
-  endPendingRequest(pendingId);
+  endPendingRequest(response.config.__pendingId);
 
-  const responseData = truncate(serialize(response.data));
-
-  console.info("API response", {
-    requestId,
-    status: response.status,
-    data: responseData
-  });
+  console.info("API response", { requestId, status: response.status, data: truncate(serialize(response.data)) });
 
   setLastApiRequest({
     path: buildRequestUrl(response.config),
@@ -123,11 +99,10 @@ export const logResponse = (response: AxiosResponse) => {
   return response;
 };
 
-export const logError = (error: AxiosError) => {
+export const logError = (error: GenericError) => {
   const requestId = getRequestId();
-  const config: AxiosRequestConfig = error.config ?? {};
-  const pendingId = (config as AxiosRequestConfig & { __pendingId?: string }).__pendingId;
-  endPendingRequest(pendingId);
+  const config = error.config ?? {};
+  endPendingRequest(config.__pendingId);
 
   const isCanceled = error.code === "ERR_CANCELED";
   const isTransientBodyRead = error.message.includes("Body is unusable: Body has already been read");

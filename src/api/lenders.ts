@@ -1,5 +1,5 @@
 import { apiClient, type RequestOptions } from "./httpClient";
-import { clientApi } from "./client";
+import { apiFetch } from "./client";
 import type {
   Lender,
   LenderPayload,
@@ -523,8 +523,9 @@ export const retryLenderTransmission = (transmissionId: string) =>
   apiClient.post(`/admin/transmissions/${transmissionId}/retry`);
 
 export async function fetchClientLenders(): Promise<ClientLender[]> {
-  const res = await clientApi.get("/api/client/lenders");
-  const payload = res.data?.data ?? res.data;
+  const res = await apiFetch("/client/lenders");
+  const json = await res.json();
+  const payload = json?.data ?? json;
   if (Array.isArray(payload)) {
     return payload as ClientLender[];
   }
@@ -535,8 +536,9 @@ export async function fetchClientLenders(): Promise<ClientLender[]> {
 }
 
 export async function fetchClientLenderProducts(): Promise<ClientLenderProduct[]> {
-  const res = await clientApi.get("/api/client/lender-products");
-  const payload = res.data?.data ?? res.data;
+  const res = await apiFetch("/client/lender-products");
+  const json = await res.json();
+  const payload = json?.data ?? json;
   if (Array.isArray(payload)) {
     return payload as ClientLenderProduct[];
   }
@@ -573,8 +575,9 @@ const parseRequirementResponse = (data: unknown) => {
 };
 
 export async function fetchClientLenderProductRequirements(productId: string) {
-  const res = await clientApi.get(`/api/client/lender-products/${productId}/requirements`);
-  const payload = res.data?.data ?? res.data;
+  const res = await apiFetch(`/client/lender-products/${productId}/requirements`);
+  const json = await res.json();
+  const payload = json?.data ?? json;
   const parsed = parseRequirementResponse(payload);
   return {
     requirements: parsed.requirements.map(normalizeRequirement),

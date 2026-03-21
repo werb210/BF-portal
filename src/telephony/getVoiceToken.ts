@@ -1,6 +1,7 @@
-import { apiClient } from "@/api/client";
+import { apiFetch } from "@/api/client";
 
 export async function getVoiceToken() {
-  const res = await apiClient.get("/api/telephony/token");
-  return res.data.token;
+  const res = await apiFetch("/telephony/token");
+  const payload = await res.json();
+  return payload.token;
 }

@@ -1,4 +1,4 @@
-import { API_BASE } from "@/config/api";
+import { API_BASE } from "@/lib/api";
 
 export const ENV = {
   API_BASE_URL: API_BASE,

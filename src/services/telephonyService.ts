@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/client";
+import { apiFetch } from "@/api/client";
 
 type CallStatus = {
   status: string;
@@ -8,9 +8,9 @@ type CallStatus = {
 
 export async function getCallStatus(): Promise<CallStatus> {
   try {
-    const response = await apiClient.get("/api/telephony/call-status");
+    const response = await apiFetch("/telephony/call-status");
 
-    const data = response.data || {};
+    const data = (await response.json()) || {};
 
     return {
       status: data.status ?? "unknown",
