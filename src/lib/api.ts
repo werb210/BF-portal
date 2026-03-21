@@ -1,35 +1,26 @@
-import { API_CONTRACT } from "@/contracts";
-import { assertContract } from "@/contracts/assert";
+import { API_CONTRACT } from '@/contracts';
 
-const RAW_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "";
-
-export const API_BASE = RAW_BASE.replace(/\/+$/, "");
+const API_BASE = import.meta.env.VITE_API_URL;
 
 if (!API_BASE) {
-  throw new Error("Missing VITE_API_URL / VITE_API_BASE_URL");
+  throw new Error('Missing VITE_API_URL');
 }
 
-assertContract(API_BASE, "API_BASE");
-
 export function buildUrl(path: string): string {
+  if (!path.startsWith('/')) {
+    throw new Error(`Invalid API path: ${path}`);
+  }
   return `${API_BASE}${path}`;
 }
 
-export async function apiFetch(path: string, options: RequestInit = {}) {
-  const headers = new Headers(options.headers || {});
+export async function apiFetch(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const url = buildUrl(path);
 
-  if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  return fetch(buildUrl(path), {
+  return fetch(url, {
+    credentials: 'include',
     ...options,
-    credentials: "include",
-    headers
   });
 }
-
-export const API_PATHS = API_CONTRACT;
