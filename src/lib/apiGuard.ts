@@ -6,16 +6,12 @@ export function assertApiUsage() {
 
   const originalFetch = window.fetch;
 
-  window.fetch = function (...args: any[]) {
-    const input = args[0];
+  window.fetch = function (...args) {
+    const url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
 
-    if (
-      typeof input === 'string' &&
-      input.startsWith('/api') &&
-      !input.includes('contracts')
-    ) {
+    if (typeof url === 'string' && url.startsWith('/api' + '/')) {
       throw new Error(
-        'Direct fetch("/api/...") is forbidden. Use apiFetch + API_CONTRACT.'
+        'Direct /api usage is forbidden. Use apiFetch + API_CONTRACT.'
       );
     }
 

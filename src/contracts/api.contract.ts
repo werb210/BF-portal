@@ -1,12 +1,7 @@
-export const API_CONTRACT = {
-  BASE: "/api",
+const API_ROOT = '/api';
 
-  AUTH: {
-    OTP_START: "/api/auth/otp/start",
-    OTP_VERIFY: "/api/auth/otp/verify"
-  },
-
-  DOCUMENTS: {
-    UPLOAD: "/api/documents/upload"
-  }
+export const API_CONTRACT: Record<string, string> = {
+  AUTH_OTP_START: `${API_ROOT}/auth/otp/start`,
+  AUTH_OTP_VERIFY: `${API_ROOT}/auth/otp/verify`,
+  DOCUMENT_UPLOAD: `${API_ROOT}/documents/upload`,
 } as const;

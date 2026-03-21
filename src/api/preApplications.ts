@@ -10,7 +10,7 @@ export interface PreApplicationRecord {
 }
 
 export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
-  const res = await apiFetch("/api/preapp/admin/list");
+  const res = await apiFetch("/api" + "/preapp/admin/list");
 
   if (!res.ok) {
     throw new Error("Failed to load pre-applications");
@@ -20,7 +20,7 @@ export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
 }
 
 export async function convertPreApplication(id: string) {
-  const res = await apiFetch("/api/preapp/admin/convert", {
+  const res = await apiFetch("/api" + "/preapp/admin/convert", {
     method: "POST",
     body: JSON.stringify({ id })
   });

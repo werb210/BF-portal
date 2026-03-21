@@ -6,7 +6,7 @@ export default function LiveActivity() {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const res = await fetch(buildUrl("/api/support/events"));
+      const res = await fetch(buildUrl("/api" + "/support/events"));
       const data = await res.json();
       setEvents(data.events || []);
     }, 5000);

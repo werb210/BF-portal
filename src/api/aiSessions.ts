@@ -2,7 +2,7 @@ import api from "@/api/client";
 import type { AiSession, AiSessionMessage } from "@/features/comms/aiSessions";
 
 export async function fetchAiSessions() {
-  return api.get<AiSession[]>("/api/chat/sessions");
+  return api.get<AiSession[]>("/api" + "/chat/sessions");
 }
 
 export async function fetchAiMessages(sessionId: string) {

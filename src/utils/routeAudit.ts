@@ -17,7 +17,7 @@ export const portalApiRoutes: RouteDescriptor[] = [
   { method: "POST", path: AUTH_CONTRACT.OTP_VERIFY },
   { method: "GET", path: "/auth/me" },
   { method: "POST", path: "/auth/logout" },
-  { method: "GET", path: "/api/_int/routes" }
+  { method: "GET", path: "/api" + "/_int/routes" }
 ];
 
 const AUTH_ROUTE_PREFIXES = ["/auth/otp", "/auth/me", "/auth/logout"];

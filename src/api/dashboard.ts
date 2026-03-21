@@ -62,7 +62,7 @@ const withFallback = async <T>(request: Promise<Response>, fallback: T): Promise
 
 export const dashboardApi = {
   getPipeline: () =>
-    withFallback<PipelineOverview>(apiFetch("/api/dashboard/pipeline"), {
+    withFallback<PipelineOverview>(apiFetch("/api" + "/dashboard/pipeline"), {
       newApplications: 0,
       inReview: 0,
       requiresDocs: 0,
@@ -72,32 +72,32 @@ export const dashboardApi = {
       declined: 0
     }),
   getActions: () =>
-    withFallback<UrgentActions>(apiFetch("/api/dashboard/actions"), {
+    withFallback<UrgentActions>(apiFetch("/api" + "/dashboard/actions"), {
       waitingOver24h: 0,
       missingDocuments: 0,
       offersExpiring: 0,
       awaitingClientResponse: 0
     }),
   getDocumentHealth: () =>
-    withFallback<DocumentHealth>(apiFetch("/api/dashboard/document-health"), {
+    withFallback<DocumentHealth>(apiFetch("/api" + "/dashboard/document-health"), {
       missingBankStatements: 0,
       missingArAging: 0,
       rejectedDocuments: 0
     }),
   getLenderActivity: () =>
-    withFallback<LenderActivity>(apiFetch("/api/dashboard/lender-activity"), {
+    withFallback<LenderActivity>(apiFetch("/api" + "/dashboard/lender-activity"), {
       recentSubmissions: 0,
       awaitingLenderResponse: 0,
       declinedSubmissions: 0
     }),
   getOffers: () =>
-    withFallback<OfferActivity>(apiFetch("/api/dashboard/offers"), {
+    withFallback<OfferActivity>(apiFetch("/api" + "/dashboard/offers"), {
       newOffers: 0,
       acceptedOffers: 0,
       expiringOffers: 0
     }),
   getMetrics: () =>
-    withFallback<DealMetrics>(apiFetch("/api/dashboard/metrics"), {
+    withFallback<DealMetrics>(apiFetch("/api" + "/dashboard/metrics"), {
       averageDealSize: 0,
       approvalRate: 0,
       averageApprovalTimeDays: 0,

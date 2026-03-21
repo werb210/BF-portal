@@ -1,11 +1,8 @@
-import { apiFetch } from "@/lib/api";
+import api, { apiFetch } from '@/lib/api';
 
-export const apiClient = (
-  url: string,
-  options: RequestInit = {}
-) => {
-  return apiFetch(url, options);
-};
+export const apiClient = api;
 
-export default apiClient;
+export const { get, post, patch, delete: remove } = api;
+
+export default api;
 export { apiFetch };

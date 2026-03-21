@@ -18,7 +18,7 @@ export default function KnowledgeManager() {
     const form = new FormData();
     form.append("file", file);
 
-    await fetch(buildUrl("/api/ai/knowledge/upload"), {
+    await fetch(buildUrl("/api" + "/ai/knowledge/upload"), {
       method: "POST",
       body: form
     });

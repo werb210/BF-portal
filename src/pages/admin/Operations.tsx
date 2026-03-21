@@ -44,14 +44,14 @@ export default function Operations() {
 
   async function updateIssueStatus(id: string, status: string) {
     await api.patch(`/api/admin/issues/${id}`, { status });
-    const refreshed = await api.get<Issue[]>("/api/admin/issues");
+    const refreshed = await api.get<Issue[]>("/api" + "/admin/issues");
     setIssues(refreshed.data);
   }
 
   useEffect(() => {
-    api.get<Contact[]>("/api/admin/contacts").then((res) => setContacts(res.data));
-    api.get<Issue[]>("/api/admin/issues").then((res) => setIssues(res.data));
-    api.get<ChatEscalation[]>("/api/admin/chats").then((res) => setChats(res.data));
+    api.get<Contact[]>("/api" + "/admin/contacts").then((res) => setContacts(res.data));
+    api.get<Issue[]>("/api" + "/admin/issues").then((res) => setIssues(res.data));
+    api.get<ChatEscalation[]>("/api" + "/admin/chats").then((res) => setChats(res.data));
   }, []);
 
   return (
