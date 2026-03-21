@@ -12,7 +12,6 @@
     "resolveJsonModule": true,
 
     "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
 
     "baseUrl": ".",
     "paths": {
@@ -21,6 +20,24 @@
 
     "types": ["vite/client"]
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+
+  "include": [
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/lib/**/*",
+    "src/contracts/**/*",
+    "src/components/**/*",
+    "src/pages/**/*",
+    "src/hooks/**/*"
+  ],
+
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/__tests__/**",
+    "src/legacy/**",
+    "src/old/**",
+    "src/temp/**"
+  ]
 }

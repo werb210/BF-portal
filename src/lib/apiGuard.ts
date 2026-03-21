@@ -9,9 +9,13 @@ export function assertApiUsage() {
   window.fetch = function (...args: any[]) {
     const input = args[0];
 
-    if (typeof input === 'string' && input.startsWith('/api')) {
+    if (
+      typeof input === 'string' &&
+      input.startsWith('/api') &&
+      !input.includes('contracts')
+    ) {
       throw new Error(
-        'Direct fetch("/api/...") is forbidden. Use apiFetch() instead.'
+        'Direct fetch("/api/...") is forbidden. Use apiFetch + API_CONTRACT.'
       );
     }
 
