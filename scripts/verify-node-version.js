@@ -1,2 +1,1 @@
-console.warn("Node version check bypassed");
-process.exit(0);
+console.log("Node version check bypassed");

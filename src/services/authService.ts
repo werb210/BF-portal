@@ -4,7 +4,7 @@ import { normalizePhone } from "@/utils/phone";
 export async function startOtp(phone: string) {
   const normalizedPhone = normalizePhone(phone);
 
-  const response = await apiFetch("/auth/otp/start", {
+  const response = await apiFetch("/api/auth/otp/start", {
     method: "POST",
     body: JSON.stringify({ phone: normalizedPhone })
   });
@@ -21,7 +21,7 @@ export const requestOtp = startOtp;
 export async function verifyOtp(phone: string, code: string) {
   const normalizedPhone = normalizePhone(phone);
 
-  const response = await apiFetch("/auth/otp/verify", {
+  const response = await apiFetch("/api/auth/otp/verify", {
     method: "POST",
     body: JSON.stringify({ phone: normalizedPhone, code })
   });
