@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createLenderSubmission, fetchLenderMatches, type LenderMatch } from "@/api/lenders";
+import { createLenderSubmission, fetchLenderMatches, type LenderMatch } from "@api/lenders";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
 import { useAuth } from "@/hooks/useAuth";

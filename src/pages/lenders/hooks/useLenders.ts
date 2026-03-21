@@ -3,7 +3,7 @@
    ========================================================= */
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchLenders } from "@/api/lenders";
+import { fetchLenders } from "@api/lenders";
 
 export function useLenders() {
   return useQuery({

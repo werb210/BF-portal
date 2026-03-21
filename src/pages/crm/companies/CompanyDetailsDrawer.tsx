@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import type { Company, Contact, TimelineEvent } from "@/api/crm";
-import { fetchCompanyContacts, fetchTimeline } from "@/api/crm";
+import type { Company, Contact, TimelineEvent } from "@api/crm";
+import { fetchCompanyContacts, fetchTimeline } from "@api/crm";
 import TimelineFeed from "@/pages/crm/timeline/TimelineFeed";
 
 interface CompanyDetailsDrawerProps {

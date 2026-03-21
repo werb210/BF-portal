@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchClientLenderProducts } from "../api/lenders";
+import { fetchClientLenderProducts } from "@api/lenders";
 
 export default function LenderProducts() {
   const [rows, setRows] = useState<any[]>([]);

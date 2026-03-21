@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSupportQueue } from "@/api/support";
+import { getSupportQueue } from "@api/support";
 
 export default function SupportQueue() {
   const [sessions, setSessions] = useState<any[]>([]);

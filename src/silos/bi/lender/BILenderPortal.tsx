@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { biFetch } from "../../../api/biClient";
+import { biFetch } from "@api/biClient";
 import ActivityTimeline from "../components/ActivityTimeline";
-import { apiClient } from "@/api/httpClient";
+import { apiClient } from "@api/httpClient";
 
+const API_PREFIX = "/api";
 type Application = {
   id: string;
   primary_contact_name?: string;
@@ -54,7 +55,7 @@ export default function BILenderPortal() {
       formData.append("files", file);
     }
 
-    await apiClient.post(`/api/bi/application/${appId}/documents`, formData, {
+    await apiClient.post(`${API_PREFIX}/bi/application/${appId}/documents`, formData, {
       headers: {
         "Content-Type": "multipart/form-data"
       }

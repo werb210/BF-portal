@@ -1,9 +1,10 @@
-import { apiClient } from "@/api/httpClient";
+import { apiClient } from "@api/httpClient";
 import api from "@/lib/api";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
 import type { BusinessUnit } from "@/types/businessUnit";
 import { PIPELINE_STAGE_LABELS, PIPELINE_STAGE_ORDER, normalizeStageId } from "./pipeline.types";
 
+const API_PREFIX = "/api";
 const toTitleCase = (value: string) =>
   value
     .toLowerCase()
@@ -307,7 +308,7 @@ const buildPipelineQuery = (filters?: PipelineFilters) => {
 
 export const pipelineApi = {
   fetchPipeline: async (filters?: PipelineFilters, options?: { signal?: AbortSignal }) => {
-    const res = await apiClient.get<unknown>(`/api/pipeline${buildPipelineQuery(filters)}`, options);
+    const res = await apiClient.get<unknown>(`${API_PREFIX}/pipeline${buildPipelineQuery(filters)}`, options);
     const parsed = parsePipelineResponse(res);
     return {
       stages: parsed.stages.length ? parsed.stages : buildLockedStages(),
@@ -324,7 +325,7 @@ export const pipelineApi = {
     return applications.filter((application) => normalizeStageId(application.stage) === normalizedStage);
   },
   exportApplications: async (applicationIds: string[]) => {
-    const response = await api.post(`/api/portal/applications/export`, { applicationIds }, { responseType: "blob" });
+    const response = await api.post(`${API_PREFIX}/portal/applications/export`, { applicationIds }, { responseType: "blob" });
     return response.data as Blob;
   }
 };

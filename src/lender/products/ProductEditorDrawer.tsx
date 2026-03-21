@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import type { LenderProduct } from "@/api/lender/products";
+import type { LenderProduct } from "@api/lender/products";
 import RequiredDocsEditor from "./RequiredDocsEditor";
 
 export type ProductEditorValues = Partial<LenderProduct> & {

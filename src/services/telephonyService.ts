@@ -1,4 +1,4 @@
-import { apiFetch } from "@/api/client";
+import { apiFetch } from "@api/client";
 
 type CallStatus = {
   status: string;

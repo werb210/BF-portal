@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
 import { normalizePhone } from '@/utils/phone';
-import { ApiError } from '@/api/http';
+import { ApiError } from '@api/http';
 
 const OTP_EXPIRY_MS = 4 * 60 * 1000;
 

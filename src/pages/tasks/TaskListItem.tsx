@@ -1,4 +1,4 @@
-import type { TaskItem } from "@/api/tasks";
+import type { TaskItem } from "@api/tasks";
 
 interface TaskListItemProps {
   task: TaskItem;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { biFetch } from "../../../api/biClient";
+import { biFetch } from "@api/biClient";
 
 type ActivityEvent = {
   id: string;

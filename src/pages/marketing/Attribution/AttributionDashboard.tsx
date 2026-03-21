@@ -1,7 +1,7 @@
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import AppLoading from "@/components/layout/AppLoading";
-import type { AttributionDashboard as AttributionData } from "@/api/marketing.attribution";
+import type { AttributionDashboard as AttributionData } from "@api/marketing.attribution";
 import { useMarketingStore } from "@/state/marketing.store";
 
 interface Props {

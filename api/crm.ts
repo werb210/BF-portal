@@ -1,4 +1,4 @@
-import { apiFetch } from "@/api/client";
+import { apiFetch } from "@api/client";
 import { useCrmStore } from "@/state/crm.store";
 import type { CRMLead } from "@/types/crm";
 

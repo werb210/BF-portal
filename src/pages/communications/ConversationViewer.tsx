@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import Button from "@/components/ui/Button";
-import type { CommunicationConversation, CommunicationMessage } from "@/api/communications";
+import type { CommunicationConversation, CommunicationMessage } from "@api/communications";
 import MessageBubble from "./MessageBubble";
 import MessageComposer from "./MessageComposer";
 

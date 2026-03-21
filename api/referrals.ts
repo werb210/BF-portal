@@ -5,7 +5,7 @@ import {
   linkContactCompany,
   type Company,
   type Contact
-} from "@/api/crm";
+} from "@api/crm";
 
 export type ReferralPayload = {
   businessName: string;

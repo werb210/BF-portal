@@ -5,7 +5,7 @@ import {
   fetchCommunicationThreads,
   sendCommunication,
   type CommunicationConversation
-} from "@/api/communications";
+} from "@api/communications";
 import {
   reconnectAiSocket,
   subscribeAiSocket,

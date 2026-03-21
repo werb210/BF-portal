@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { TimelineEvent, TimelineEventType } from "@/api/crm";
-import { fetchTimeline } from "@/api/crm";
+import type { TimelineEvent, TimelineEventType } from "@api/crm";
+import { fetchTimeline } from "@api/crm";
 import { useAuth } from "@/hooks/useAuth";
 import { fullStaffRoles, hasRequiredRole, resolveUserRole } from "@/utils/roles";
 import TimelineItem from "./TimelineItem";

@@ -22,7 +22,7 @@ export class ApiError extends Error {
   }
 }
 
-import { apiFetch } from "@/api/client";
+import { apiFetch } from "@api/client";
 
 export { apiFetch as api, apiFetch as default };
 

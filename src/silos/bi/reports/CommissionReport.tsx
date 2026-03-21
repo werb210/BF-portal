@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { biGetCommissions } from "../../../api/biClient";
+import { biGetCommissions } from "@api/biClient";
 
 export default function CommissionReport() {
   const [rows, setRows] = useState<any[]>([]);

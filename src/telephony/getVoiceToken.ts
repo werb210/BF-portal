@@ -1,4 +1,4 @@
-import { apiFetch } from "@/api/client";
+import { apiFetch } from "@api/client";
 
 export async function getVoiceToken() {
   const res = await apiFetch("/telephony/token");

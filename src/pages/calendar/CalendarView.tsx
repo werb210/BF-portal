@@ -1,4 +1,4 @@
-import type { CalendarEvent } from "@/api/calendar";
+import type { CalendarEvent } from "@api/calendar";
 import type { CalendarView as CalendarViewType } from "@/state/calendar.store";
 import DayView from "./DayView";
 import MonthView from "./MonthView";

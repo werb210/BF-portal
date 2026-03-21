@@ -5,7 +5,7 @@ import {
   fetchAiMessages,
   sendSessionStaffMessage,
   takeOverSession
-} from "@/api/ai";
+} from "@api/ai";
 import { useAiSocket } from "@/hooks/useAiSocket";
 import { useAuth } from "@/hooks/useAuth";
 import RequireRole from "@/components/auth/RequireRole";

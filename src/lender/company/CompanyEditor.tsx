@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import { fetchLenderCompany, updateLenderCompany, uploadLenderLogo, type LenderCompany } from "@/api/lender/company";
+import { fetchLenderCompany, updateLenderCompany, uploadLenderLogo, type LenderCompany } from "@api/lender/company";
 
 const requiredFields: (keyof LenderCompany)[] = ["companyName", "supportEmail", "supportPhone"];
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAIKnowledge } from "@/api/support";
+import { getAIKnowledge } from "@api/support";
 import { buildUrl } from "@/lib/api";
 
 export default function KnowledgeManager() {

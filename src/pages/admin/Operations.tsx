@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/auth/useAuth";
-import api from "@/api/client";
+import api from "@api/client";
 import { Navigate } from "react-router-dom";
 import CapitalScorePreview from "@/components/CapitalScorePreview";
 
+const API_PREFIX = "/api";
 type Contact = {
   id: string;
   company: string;
@@ -43,7 +44,7 @@ export default function Operations() {
   }
 
   async function updateIssueStatus(id: string, status: string) {
-    await api.patch(`/api/admin/issues/${id}`, { status });
+    await api.patch(`${API_PREFIX}/admin/issues/${id}`, { status });
     const refreshed = await api.get<Issue[]>("/api" + "/admin/issues");
     setIssues(refreshed.data);
   }

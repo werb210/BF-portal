@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchPortalApplication } from "@/api/applications";
-import { archiveOffer, fetchOffers, uploadOffer, type OfferRecord } from "@/api/offers";
+import { fetchPortalApplication } from "@api/applications";
+import { archiveOffer, fetchOffers, uploadOffer, type OfferRecord } from "@api/offers";
 import OfferComparisonTable from "./OfferComparisonTable";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";

@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import type { EmailMessage } from "@/api/email";
-import { fetchEmailMessage, fetchEmailMessages } from "@/api/email";
+import type { EmailMessage } from "@api/email";
+import { fetchEmailMessage, fetchEmailMessages } from "@api/email";
 import EmailMessageItem from "./EmailMessageItem";
 
 interface EmailViewerProps {

@@ -1,4 +1,4 @@
-import api from "@/api/client";
+import api from "@api/client";
 
 export async function getSupportQueue() {
   const res = await api.get("/api" + "/support/queue");

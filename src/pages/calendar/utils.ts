@@ -1,4 +1,4 @@
-import type { CalendarEvent } from "@/api/calendar";
+import type { CalendarEvent } from "@api/calendar";
 
 export const groupEventsByDay = (events: CalendarEvent[]) => {
   return events.reduce<Record<string, CalendarEvent[]>>((acc, event) => {

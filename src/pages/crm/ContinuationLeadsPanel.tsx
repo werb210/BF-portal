@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchContinuationLeads } from "@/api/crm";
+import { fetchContinuationLeads } from "@api/crm";
 
 type ContinuationLead = {
   id: string;

@@ -1,4 +1,4 @@
-import type { CalendarEvent } from "@/api/calendar";
+import type { CalendarEvent } from "@api/calendar";
 import { groupEventsByDay, sortEvents } from "./utils";
 
 const EventBlock = ({ title, time, subtitle, color }: { title: string; time: string; subtitle?: string; color?: string }) => (

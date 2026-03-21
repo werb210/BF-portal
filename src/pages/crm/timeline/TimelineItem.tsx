@@ -1,4 +1,4 @@
-import type { TimelineEvent } from "@/api/crm";
+import type { TimelineEvent } from "@api/crm";
 
 const iconForType: Record<TimelineEvent["type"], string> = {
   call: "📞",

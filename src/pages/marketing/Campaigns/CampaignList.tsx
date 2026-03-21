@@ -4,7 +4,7 @@ import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import AppLoading from "@/components/layout/AppLoading";
 import { useQuery } from "@tanstack/react-query";
-import { fetchCampaigns, type Campaign } from "@/api/marketing.campaigns";
+import { fetchCampaigns, type Campaign } from "@api/marketing.campaigns";
 import CampaignEditor from "./CampaignEditor";
 
 const CampaignList = () => {

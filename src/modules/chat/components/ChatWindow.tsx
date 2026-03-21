@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { closeSession, getMessages, sendStaffMessage } from "../api";
-import { attachTranscriptToLead } from "@/api/communications";
+import { attachTranscriptToLead } from "@api/communications";
 import type { ChatMessage as ChatMessageType, ChatSession } from "../types";
 import ChatMessage from "./ChatMessage";
 import ChatQueue from "./ChatQueue";

@@ -1,4 +1,4 @@
-import type { OfferRecord } from "@/api/offers";
+import type { OfferRecord } from "@api/offers";
 
 type OfferComparisonTableProps = {
   offers: OfferRecord[];

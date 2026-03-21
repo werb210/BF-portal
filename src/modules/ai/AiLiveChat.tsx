@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { buildUrl } from "@/lib/api";
+const API_PREFIX = "/api";
 
 type Message = {
   role: "user" | "ai" | "staff";
@@ -12,13 +13,13 @@ export default function AiLiveChat({ sessionId }: { sessionId: string }) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    fetch(buildUrl(`/api/ai/session/${sessionId}`))
+    fetch(buildUrl(`${API_PREFIX}/ai/session/${sessionId}`))
       .then((res) => res.json())
       .then(setMessages)
       .catch(() => setMessages([]));
 
     const ws = new WebSocket(
-      `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/api/ai/ws`
+      `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}${API_PREFIX}/ai/ws`
     );
 
     ws.onopen = () => {

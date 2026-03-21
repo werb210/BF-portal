@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import type { Contact, Company, TimelineEvent } from "@/api/crm";
-import { createNote, fetchApplications, fetchContactCompanies, fetchTimeline } from "@/api/crm";
+import type { Contact, Company, TimelineEvent } from "@api/crm";
+import { createNote, fetchApplications, fetchContactCompanies, fetchTimeline } from "@api/crm";
 import IncomingCallToast from "@/components/dialer/IncomingCallToast";
 import SMSComposer from "@/components/sms/SMSComposer";
 import EmailViewer from "@/components/email/EmailViewer";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { closeChat, fetchActiveChats, sendStaffMessage } from "@/api/ai";
+import { closeChat, fetchActiveChats, sendStaffMessage } from "@api/ai";
 
 type ChatMessage = {
   role: string;

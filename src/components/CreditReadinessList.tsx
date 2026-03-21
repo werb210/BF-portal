@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { convertReadinessToApplication, fetchCreditReadinessLeads } from "@/api/crm";
+import { convertReadinessToApplication, fetchCreditReadinessLeads } from "@api/crm";
 import type { CRMLead } from "@/types/crm";
 
 const tierOptions = [

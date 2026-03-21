@@ -21,7 +21,7 @@ export async function apiFetch<T = Response>(
   endpoint: keyof typeof API_CONTRACT,
   options: RequestInit = {}
 ): Promise<T> {
-  const path = API_CONTRACT[endpoint] ?? String(endpoint);
+  const path = API_CONTRACT[endpoint];
   const url = buildUrl(path);
 
   const response = await fetch(url, {
