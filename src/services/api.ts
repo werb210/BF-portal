@@ -1,17 +1,16 @@
 import { getRequestId } from "@/api/requestId";
-import { getApiBaseUrl, normalizeApiPath } from "@/config/api";
+import { buildUrl, API_BASE } from "@/config/api";
 import { apiClient } from "@/lib/apiClient";
 
 function normalizePath(path: string) {
   if (!path.startsWith("/")) path = `/${path}`;
   if (path === "/health") return path;
-  return normalizeApiPath(path);
+  return path.replace(/^\/api(?=\/|$)/, "");
 }
 
 function buildApiUrl(path: string) {
-  const baseUrl = getApiBaseUrl();
   const normalizedPath = normalizePath(path);
-  return `${baseUrl}${normalizedPath}`;
+  return buildUrl(normalizedPath);
 }
 
 const navigateTo = (path: string) => {
@@ -68,6 +67,4 @@ export const redirectToDashboard = () => {
   navigateTo("/portal");
 };
 
-const getApiBaseUrlValue = () => getApiBaseUrl();
-
-export { buildApiUrl, getApiBaseUrlValue as API_BASE };
+export { buildApiUrl, API_BASE };

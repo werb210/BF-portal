@@ -1,10 +1,11 @@
 import { apiClient } from "@/api/client";
-import { apiUrl } from "@/config/api";
+import { buildUrl } from "@/config/api";
 
 export { apiClient, apiClient as default, get, post, put, patch, del } from "@/api/client";
 
 export function buildApiUrl(path: string) {
-  return apiUrl(path);
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return buildUrl(normalized.replace(/^\/api(?=\/|$)/, ""));
 }
 
 export async function apiFetch(path: string, options: RequestInit = {}) {

@@ -1,14 +1,16 @@
 import axios, { AxiosHeaders } from "axios";
-import { getApiBase } from "@/config/apiBase";
+import { API_BASE } from "@/config/api";
 import { getToken } from "@/lib/auth";
 import { redirectToLogin } from "@/auth/redirectToLogin";
 
 const sanitizePath = (url: string) => {
-  return url.replace("/api/" + "api/", "/api/");
+  const normalized = url.startsWith("/") ? url : `/${url}`;
+  const withoutApiPrefix = normalized.replace(/^\/api(?=\/|$)/, "");
+  return withoutApiPrefix || "/";
 };
 
 const api = axios.create({
-  baseURL: process.env.NODE_ENV === "test" ? "http://localhost" : getApiBase(),
+  baseURL: process.env.NODE_ENV === "test" ? "http://localhost/api" : API_BASE,
   timeout: 20000,
   withCredentials: true
 });
@@ -61,11 +63,11 @@ api.interceptors.response.use(
 );
 export const apiClient = api;
 export const clientApi = api;
-export const get = <T = unknown>(url: string, config?: unknown) => api.get<T>(url, config as any);
-export const post = <T = unknown>(url: string, data?: unknown, config?: unknown) => api.post<T>(url, data, config as any);
-export const put = <T = unknown>(url: string, data?: unknown, config?: unknown) => api.put<T>(url, data, config as any);
-export const patch = <T = unknown>(url: string, data?: unknown, config?: unknown) => api.patch<T>(url, data, config as any);
-export const del = <T = unknown>(url: string, config?: unknown) => api.delete<T>(url, config as any);
-export const otpStart = (payload: { phone: string }) => api.post("/auth/otp/start", payload);
+export const get = <T = unknown>(url: string, config?: unknown) => api.get<T>(sanitizePath(url), config as any);
+export const post = <T = unknown>(url: string, data?: unknown, config?: unknown) => api.post<T>(sanitizePath(url), data, config as any);
+export const put = <T = unknown>(url: string, data?: unknown, config?: unknown) => api.put<T>(sanitizePath(url), data, config as any);
+export const patch = <T = unknown>(url: string, data?: unknown, config?: unknown) => api.patch<T>(sanitizePath(url), data, config as any);
+export const del = <T = unknown>(url: string, config?: unknown) => api.delete<T>(sanitizePath(url), config as any);
+export const otpStart = (payload: { phone: string }) => api.post(sanitizePath("/auth/otp/start"), payload);
 
 export default api;
