@@ -41,7 +41,8 @@ export async function apiRequest(
   }
 
   const normalizedPath = resolveApiPath(path);
-  const res = await fetch(`/api${normalizedPath}`, {
+  const requestUrl = buildUrl(`/api${normalizedPath}`);
+  const res = await fetch(requestUrl, {
     ...options,
     headers,
     credentials: "include",

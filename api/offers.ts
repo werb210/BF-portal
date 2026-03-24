@@ -1,6 +1,5 @@
-import api from "@/lib/api";
-import { apiClient, type RequestOptions } from "./httpClient";
-import { safeApiFetch } from "./client";
+import { apiRequest, safeApiFetch } from "@/lib/api";
+import { type RequestOptions } from "./httpClient";
 
 export type OfferRecord = {
   id: string;
@@ -98,9 +97,9 @@ const parseOffers = (data: unknown): OfferRecord[] => {
 
 export const fetchOffers = async (applicationId: string, options?: RequestOptions): Promise<OfferRecord[]> => {
   const query = new URLSearchParams({ applicationId });
-  const offers = await safeApiFetch<unknown>(`/api/offers?${query.toString()}`, options);
+  const offers = await safeApiFetch<unknown>(`/offers?${query.toString()}`, options);
 
-  if (!offers || !Array.isArray(offers)) {
+  if (!offers) {
     return [];
   }
 
@@ -111,11 +110,9 @@ export const uploadOffer = async (applicationId: string, file: File) => {
   const formData = new FormData();
   formData.append("applicationId", applicationId);
   formData.append("file", file);
-  const response = await api.post(`/api/offers`, formData);
-  return response.data;
+  return apiRequest(`/offers`, { method: "POST", body: formData });
 };
 
 export const archiveOffer = async (offerId: string) => {
-  const response = await api.post(`/api/offers/${offerId}/archive`);
-  return response.data;
+  return apiRequest(`/offers/${offerId}/archive`, { method: "POST" });
 };
