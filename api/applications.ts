@@ -22,15 +22,15 @@ export type ApplicationDocumentsResponse = {
 }[];
 
 export const fetchApplications = async (businessUnit: BusinessUnit) => {
-  const res = await apiClient.getList<ApplicationSummary>(withBusinessUnitQuery("/api/applications", businessUnit));
+  const res = await apiClient.getList<ApplicationSummary>(withBusinessUnitQuery("/applications", businessUnit));
   return res.items;
 };
 
 export const fetchApplicationDetails = (id: string, options?: RequestOptions) =>
-  apiClient.get<ApplicationDetails>(`/api/applications/${id}`, options);
+  apiClient.get<ApplicationDetails>(`/applications/${id}`, options);
 
 export const fetchPortalApplication = async (id: string, options?: RequestOptions) => {
-  const app = await safeApiFetch<PortalApplicationRecord>(`/api/applications/${id}`, options);
+  const app = await safeApiFetch<PortalApplicationRecord>(`/applications/${id}`, options);
 
   if (!app || !app.id) {
     return null;
@@ -40,20 +40,20 @@ export const fetchPortalApplication = async (id: string, options?: RequestOption
 };
 
 export const updatePortalApplication = (id: string, updates: Partial<PortalApplicationRecord>) =>
-  apiClient.patch<PortalApplicationRecord>(`/api/applications/${id}`, updates);
+  apiClient.patch<PortalApplicationRecord>(`/applications/${id}`, updates);
 
 export const openPortalApplication = (id: string) =>
-  apiClient.post(`/api/applications/${id}/open`, {});
+  apiClient.post(`/applications/${id}/open`, {});
 
 export const fetchApplicationDocuments = async (id: string, options?: RequestOptions) => {
   const res: ListResponse<ApplicationDocumentsResponse[number]> = await apiClient.getList(
-    `/api/applications/${id}/documents`,
+    `/applications/${id}/documents`,
     options
   );
   return res.items;
 };
 
 export const fetchApplicationAudit = async (id: string, options?: RequestOptions) => {
-  const res = await apiClient.getList<ApplicationAuditEvent>(`/api/applications/${id}/audit`, options);
+  const res = await apiClient.getList<ApplicationAuditEvent>(`/applications/${id}/audit`, options);
   return res.items;
 };

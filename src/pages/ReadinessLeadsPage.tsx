@@ -33,7 +33,7 @@ const ReadinessLeadsPage = () => {
   const convertMutation = useMutation({
     mutationFn: (leadId: string) => convertReadinessLeadToApplication(leadId),
     onSuccess: ({ applicationId }) => {
-      navigate(`/portal/applications/${applicationId}`);
+      navigate(`/applications/${applicationId}`);
     }
   });
 
