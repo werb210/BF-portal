@@ -519,11 +519,10 @@ export const fetchLenderSubmissions = (applicationId: string, options?: RequestO
 export const retryLenderSubmission = (applicationId: string, lenderProductId?: string) =>
   apiClient.post(`/lender-submissions/${applicationId}/submit`, lenderProductId ? { lenderProductId } : undefined);
 
-export const retryLenderTransmission = (transmissionId: string) =>
-  apiClient.post(`/admin/transmissions/${transmissionId}/retry`);
+export const retryLenderTransmission = async (_transmissionId: string) => null;
 
 export async function fetchClientLenders(): Promise<ClientLender[]> {
-  const payload = await safeApiFetch<unknown>("/client/lenders");
+  const payload = await safeApiFetch<unknown>("/lenders");
   if (!payload) return [];
   const normalized = (payload as { data?: unknown }).data ?? payload;
   if (Array.isArray(normalized)) {
@@ -536,7 +535,7 @@ export async function fetchClientLenders(): Promise<ClientLender[]> {
 }
 
 export async function fetchClientLenderProducts(): Promise<ClientLenderProduct[]> {
-  const payload = await safeApiFetch<unknown>("/client/lender-products");
+  const payload = await safeApiFetch<unknown>("/lender-products");
   if (!payload) return [];
   const normalized = (payload as { data?: unknown }).data ?? payload;
   if (Array.isArray(normalized)) {
@@ -575,7 +574,7 @@ const parseRequirementResponse = (data: unknown) => {
 };
 
 export async function fetchClientLenderProductRequirements(productId: string) {
-  const payload = await safeApiFetch<unknown>(`/client/lender-products/${productId}/requirements`);
+  const payload = await safeApiFetch<unknown>(`/lender-products/${productId}/requirements`);
   if (!payload) {
     return { requirements: [], documentTypes: undefined };
   }

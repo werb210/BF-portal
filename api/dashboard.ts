@@ -1,5 +1,3 @@
-import { apiFetch } from "./apiFetch";
-
 export type PipelineOverview = {
   newApplications: number;
   inReview: number;
@@ -42,65 +40,53 @@ export type DealMetrics = {
   lenderResponseTimeDays: number;
 };
 
-const withFallback = async <T>(request: Promise<Response>, fallback: T): Promise<T> => {
-  try {
-    const response = await request;
-    if (!response.ok) {
-      return fallback;
-    }
+const pipelineFallback: PipelineOverview = {
+  newApplications: 0,
+  inReview: 0,
+  requiresDocs: 0,
+  sentToLender: 0,
+  offersReceived: 0,
+  closed: 0,
+  declined: 0,
+};
 
-    const result = (await response.json()) as unknown;
-    if (result && typeof result === "object") {
-      return { ...fallback, ...(result as Record<string, unknown>) } as T;
-    }
+const actionsFallback: UrgentActions = {
+  waitingOver24h: 0,
+  missingDocuments: 0,
+  offersExpiring: 0,
+  awaitingClientResponse: 0,
+};
 
-    return fallback;
-  } catch {
-    return fallback;
-  }
+const documentHealthFallback: DocumentHealth = {
+  missingBankStatements: 0,
+  missingArAging: 0,
+  rejectedDocuments: 0,
+};
+
+const lenderActivityFallback: LenderActivity = {
+  recentSubmissions: 0,
+  awaitingLenderResponse: 0,
+  declinedSubmissions: 0,
+};
+
+const offersFallback: OfferActivity = {
+  newOffers: 0,
+  acceptedOffers: 0,
+  expiringOffers: 0,
+};
+
+const metricsFallback: DealMetrics = {
+  averageDealSize: 0,
+  approvalRate: 0,
+  averageApprovalTimeDays: 0,
+  lenderResponseTimeDays: 0,
 };
 
 export const dashboardApi = {
-  getPipeline: () =>
-    withFallback<PipelineOverview>(apiFetch("/api" + "/dashboard/pipeline"), {
-      newApplications: 0,
-      inReview: 0,
-      requiresDocs: 0,
-      sentToLender: 0,
-      offersReceived: 0,
-      closed: 0,
-      declined: 0
-    }),
-  getActions: () =>
-    withFallback<UrgentActions>(apiFetch("/api" + "/dashboard/actions"), {
-      waitingOver24h: 0,
-      missingDocuments: 0,
-      offersExpiring: 0,
-      awaitingClientResponse: 0
-    }),
-  getDocumentHealth: () =>
-    withFallback<DocumentHealth>(apiFetch("/api" + "/dashboard/document-health"), {
-      missingBankStatements: 0,
-      missingArAging: 0,
-      rejectedDocuments: 0
-    }),
-  getLenderActivity: () =>
-    withFallback<LenderActivity>(apiFetch("/api" + "/dashboard/lender-activity"), {
-      recentSubmissions: 0,
-      awaitingLenderResponse: 0,
-      declinedSubmissions: 0
-    }),
-  getOffers: () =>
-    withFallback<OfferActivity>(apiFetch("/api" + "/dashboard/offers"), {
-      newOffers: 0,
-      acceptedOffers: 0,
-      expiringOffers: 0
-    }),
-  getMetrics: () =>
-    withFallback<DealMetrics>(apiFetch("/api" + "/dashboard/metrics"), {
-      averageDealSize: 0,
-      approvalRate: 0,
-      averageApprovalTimeDays: 0,
-      lenderResponseTimeDays: 0
-    })
+  getPipeline: async () => pipelineFallback,
+  getActions: async () => actionsFallback,
+  getDocumentHealth: async () => documentHealthFallback,
+  getLenderActivity: async () => lenderActivityFallback,
+  getOffers: async () => offersFallback,
+  getMetrics: async () => metricsFallback,
 };
