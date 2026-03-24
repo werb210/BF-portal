@@ -1,3 +1,7 @@
+export async function disabledFeature() {
+  return null;
+}
+
 export type WebsiteIssue = {
   id: string;
   message: string;
@@ -8,15 +12,6 @@ export type WebsiteIssue = {
   sessionId?: string;
 };
 
-export async function resolveIssue(id: string) {
-  void id;
-  return null;
-}
-
-export async function deleteIssue(id: string) {
-  void id;
-}
-
-export async function fetchWebsiteIssues() {
-  return [];
-}
+export const resolveIssue = disabledFeature;
+export const deleteIssue = disabledFeature;
+export const fetchWebsiteIssues = disabledFeature;
