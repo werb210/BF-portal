@@ -18,6 +18,7 @@ export async function verifyOtp(phone: string, otp: string) {
   }
 
   localStorage.setItem("token", res.token);
+  window.location.reload();
 
   return res;
 }

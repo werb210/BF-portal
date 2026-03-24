@@ -118,6 +118,13 @@ export default function App() {
   const inRouterContext = useInRouterContext();
   const queryClient = useMemo(() => new QueryClient(), []);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.warn("No auth token found");
+    }
+  }, []);
+
   const withOptionalRouter = (children: React.ReactNode) => {
     if (inRouterContext) return children;
     const path = typeof window !== "undefined" ? window.location.pathname || "/" : "/";
