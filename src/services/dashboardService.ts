@@ -1,19 +1,17 @@
-export async function getDashboardMetrics() {
-  // Dashboard APIs are not in MVP contract.
+export async function disabledFeature() {
   return null;
 }
 
+export const getDashboardMetrics = disabledFeature;
 export const loadDashboard = getDashboardMetrics;
 
 export async function getPipeline() {
-  // Dashboard APIs are not in MVP contract.
   return [];
 }
 
 export const loadPipeline = getPipeline;
 
 export async function getOffers() {
-  // Dashboard APIs are not in MVP contract.
   return [];
 }
 

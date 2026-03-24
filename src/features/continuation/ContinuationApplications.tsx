@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { buildUrl } from "@/lib/api";
 
 interface ContinuationApp {
   id: string;
@@ -24,17 +23,7 @@ export default function ContinuationApplications() {
   const [apps, setApps] = useState<ContinuationApp[]>([]);
 
   useEffect(() => {
-    fetch(buildUrl("/continuation"))
-      .then((res) => res.json())
-      .then((data: ContinuationApp[]) => {
-        setApps(
-          (Array.isArray(data) ? data : []).map((app) => ({
-            ...app,
-            status: app.status ?? "readiness",
-            linkedLeadId: app.linkedLeadId ?? buildLeadId(app)
-          }))
-        );
-      });
+    setApps([]);
   }, []);
 
   function convertToApplication(id: string) {

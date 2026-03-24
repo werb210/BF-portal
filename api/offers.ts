@@ -97,8 +97,13 @@ const parseOffers = (data: unknown): OfferRecord[] => {
 
 export const fetchOffers = async (applicationId: string, options?: RequestOptions): Promise<OfferRecord[]> => {
   const query = new URLSearchParams({ applicationId });
-  const data = await apiClient.get<unknown>(`/api/offers?${query.toString()}`, options);
-  return parseOffers(data);
+  const offers = await apiClient.get<unknown>(`/api/offers?${query.toString()}`, options);
+
+  if (!Array.isArray(offers)) {
+    throw new Error("Invalid offers response");
+  }
+
+  return parseOffers(offers);
 };
 
 export const uploadOffer = async (applicationId: string, file: File) => {

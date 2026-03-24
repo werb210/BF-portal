@@ -29,7 +29,13 @@ export const fetchApplicationDetails = (id: string, options?: RequestOptions) =>
   apiClient.get<ApplicationDetails>(`/api/applications/${id}`, options);
 
 export const fetchPortalApplication = (id: string, options?: RequestOptions) =>
-  apiClient.get<PortalApplicationRecord>(`/api/applications/${id}`, options);
+  apiClient.get<PortalApplicationRecord>(`/api/applications/${id}`, options).then((app) => {
+    if (!app?.id) {
+      throw new Error("Invalid application response");
+    }
+
+    return app;
+  });
 
 export const updatePortalApplication = (id: string, updates: Partial<PortalApplicationRecord>) =>
   apiClient.patch<PortalApplicationRecord>(`/api/applications/${id}`, updates);

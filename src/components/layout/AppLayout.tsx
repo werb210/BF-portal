@@ -11,16 +11,14 @@ import DialerErrorBoundary from "@/components/dialer/DialerErrorBoundary";
 import MayaPanel from "@/components/maya/MayaPanel";
 import ErrorBoundary from "@/core/ErrorBoundary";
 import { usePresence } from "@/hooks/usePresence";
-import { useAuth } from "@/hooks/useAuth";
 import "@/styles/globals.css";
 
 const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mayaOpen, setMayaOpen] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
   useNotificationPermissionPrompt();
-  usePresence(user?.id ?? "");
+  usePresence();
 
   useEffect(() => {
     setSidebarOpen(false);

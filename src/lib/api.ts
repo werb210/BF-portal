@@ -25,7 +25,7 @@ function resolveApiPath(path: string): string {
 }
 
 function readAuthToken(): string | null {
-  return localStorage.getItem('token') || localStorage.getItem('bf_token');
+  return localStorage.getItem('token');
 }
 
 type EndpointKey = keyof typeof API_CONTRACT;
@@ -54,6 +54,10 @@ export async function apiFetch<T = any>(
   const headers = new Headers(options?.headers || {});
   const isFormData = options?.body instanceof FormData;
 
+  if (!token && path.startsWith('/api/') && !path.includes('/auth/')) {
+    throw new Error('Missing auth token');
+  }
+
   if (!isFormData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
@@ -74,27 +78,14 @@ export async function apiFetch<T = any>(
   const json = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(json?.error || json?.message || `API error: ${res.status}`);
+    throw new Error(json?.error || 'Request failed');
   }
 
-  if (json && typeof json === 'object' && 'data' in (json as Record<string, unknown>)) {
-    return (json as { data: T }).data;
-  }
-  return json as T;
-}
-
-async function parseResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const error = new ApiError(`HTTP ${response.status}`);
-    error.status = response.status;
-    throw error;
+  if (!json || json.ok !== true || !('data' in json)) {
+    throw new Error('Invalid API response');
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
+  return json.data as T;
 }
 
 export const api = {
