@@ -1,5 +1,5 @@
 import { apiClient, type RequestOptions } from "./httpClient";
-import { apiFetch } from "./client";
+import { safeApiFetch } from "./client";
 import type {
   Lender,
   LenderPayload,
@@ -523,27 +523,27 @@ export const retryLenderTransmission = (transmissionId: string) =>
   apiClient.post(`/admin/transmissions/${transmissionId}/retry`);
 
 export async function fetchClientLenders(): Promise<ClientLender[]> {
-  const res = await apiFetch("/client/lenders");
-  const json = await res.json();
-  const payload = json?.data ?? json;
-  if (Array.isArray(payload)) {
-    return payload as ClientLender[];
+  const payload = await safeApiFetch<unknown>("/client/lenders");
+  if (!payload) return [];
+  const normalized = (payload as { data?: unknown }).data ?? payload;
+  if (Array.isArray(normalized)) {
+    return normalized as ClientLender[];
   }
-  if (payload && typeof payload === "object" && Array.isArray((payload as { items?: unknown }).items)) {
-    return (payload as { items: ClientLender[] }).items;
+  if (normalized && typeof normalized === "object" && Array.isArray((normalized as { items?: unknown }).items)) {
+    return (normalized as { items: ClientLender[] }).items;
   }
   return [];
 }
 
 export async function fetchClientLenderProducts(): Promise<ClientLenderProduct[]> {
-  const res = await apiFetch("/client/lender-products");
-  const json = await res.json();
-  const payload = json?.data ?? json;
-  if (Array.isArray(payload)) {
-    return payload as ClientLenderProduct[];
+  const payload = await safeApiFetch<unknown>("/client/lender-products");
+  if (!payload) return [];
+  const normalized = (payload as { data?: unknown }).data ?? payload;
+  if (Array.isArray(normalized)) {
+    return normalized as ClientLenderProduct[];
   }
-  if (payload && typeof payload === "object" && Array.isArray((payload as { items?: unknown }).items)) {
-    return (payload as { items: ClientLenderProduct[] }).items;
+  if (normalized && typeof normalized === "object" && Array.isArray((normalized as { items?: unknown }).items)) {
+    return (normalized as { items: ClientLenderProduct[] }).items;
   }
   return [];
 }
@@ -575,10 +575,12 @@ const parseRequirementResponse = (data: unknown) => {
 };
 
 export async function fetchClientLenderProductRequirements(productId: string) {
-  const res = await apiFetch(`/client/lender-products/${productId}/requirements`);
-  const json = await res.json();
-  const payload = json?.data ?? json;
-  const parsed = parseRequirementResponse(payload);
+  const payload = await safeApiFetch<unknown>(`/client/lender-products/${productId}/requirements`);
+  if (!payload) {
+    return { requirements: [], documentTypes: undefined };
+  }
+  const normalized = (payload as { data?: unknown }).data ?? payload;
+  const parsed = parseRequirementResponse(normalized);
   return {
     requirements: parsed.requirements.map(normalizeRequirement),
     documentTypes: parsed.documentTypes

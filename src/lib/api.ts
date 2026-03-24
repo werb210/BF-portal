@@ -88,6 +88,18 @@ export async function apiFetch<T = any>(
   return json.data as T;
 }
 
+export async function safeApiFetch<T = any>(
+  endpoint: EndpointKey | string,
+  options?: RequestInit
+): Promise<T | null> {
+  try {
+    return await apiFetch<T>(endpoint, options);
+  } catch (err) {
+    console.error("API Error:", err);
+    return null;
+  }
+}
+
 export const api = {
   async get<T = any>(path: string, options: RequestInit = {}): Promise<{ data: T }> {
     const data = await apiFetch<T>(path, { ...options, method: 'GET' });

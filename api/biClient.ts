@@ -1,13 +1,11 @@
-import { apiFetch } from "@/lib/api";
+import { safeApiFetch } from "@/lib/api";
 
 export async function biFetch(path: string, options?: RequestInit) {
-  const res = await apiFetch(`/api/bi${path}`, options);
-
-  if (!res.ok) {
-    throw new Error(`BI API Error: ${res.status}`);
+  const res = await safeApiFetch(`/api/bi${path}`, options);
+  if (res == null) {
+    throw new Error("BI API Error");
   }
-
-  return res.json();
+  return res;
 }
 
 export async function biGetContacts() {

@@ -311,6 +311,7 @@ const ApplicationTab = () => {
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view details.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading application data…</div>;
   if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load application data.")}</div>;
+  if (!application) return <div className="drawer-placeholder">No application data</div>;
 
   const handleFieldChange = (key: keyof ApplicationFormState) => (event: ChangeEvent<HTMLInputElement>) => {
     setFormState((prev) => ({ ...prev, [key]: event.target.value }));
