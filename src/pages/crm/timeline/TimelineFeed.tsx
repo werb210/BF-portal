@@ -84,7 +84,7 @@ const TimelineFeed = ({ entityType, entityId, initialEvents = [] }: TimelineFeed
 
   useEffect(() => {
     const interval = setInterval(() => {
-      refetch();
+      refetch ();
     }, 30000);
     return () => clearInterval(interval);
   }, [refetch]);

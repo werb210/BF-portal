@@ -1,27 +1,3 @@
-export class ApiError extends Error {
-  status?: number;
-}
-
-export const API_BASE = import.meta.env.VITE_API_URL || "";
-
-if (!API_BASE) {
-  throw new Error("Missing VITE_API_URL");
-}
-
-export function buildUrl(path: string): string {
-  if (!path.startsWith("/")) {
-    throw new Error(`Invalid API path: ${path}`);
-  }
-  return `${API_BASE}${path}`;
-}
-
-function resolveApiPath(path: string): string {
-  if (!path.startsWith("/")) {
-    throw new Error(`Invalid API path: ${path}`);
-  }
-  return path.startsWith("/api") ? path.slice(4) || "/" : path;
-}
-
 export async function apiRequest(
   path: string,
   options: RequestInit = {}
@@ -33,16 +9,14 @@ export async function apiRequest(
   };
 
   if (!(options.body instanceof FormData)) {
-    headers["Content-Type"] = headers["Content-Type"] ?? "application/json";
+    headers["Content-Type"] = "application/json";
   }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const normalizedPath = resolveApiPath(path);
-  const requestUrl = buildUrl(`/api${normalizedPath}`);
-  const res = await fetch(requestUrl, {
+  const res = await window.fetch (`/api${path}`, {
     ...options,
     headers,
     credentials: "include",
@@ -52,14 +26,9 @@ export async function apiRequest(
     throw new Error(`API error: ${res.status}`);
   }
 
-  if (res.status === 204) {
-    return undefined;
-  }
+  const json = await res.json();
 
-  const json = await res.json().catch(() => null);
-
-  // normalize inconsistent server responses
-  return (json as { data?: unknown } | null)?.data ?? json;
+  return json?.data ?? json;
 }
 
 export async function apiFetch<T = any>(

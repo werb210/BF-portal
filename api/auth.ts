@@ -1,26 +1,24 @@
-import { AUTH_CONTRACT } from "@/contracts";
 import { apiRequest } from "@/lib/api";
 
 export async function startOtp(payload: { phone: string }) {
-  return apiRequest(AUTH_CONTRACT.OTP_START, {
+  return apiRequest("/auth/otp/start", {
     method: "POST",
-    body: JSON.stringify({ phone: payload.phone })
+    body: JSON.stringify({ phone: payload.phone }),
   });
 }
 
 export async function verifyOtp(payload: { phone: string; code?: string; otp?: string }) {
   const otp = payload.otp ?? payload.code ?? "";
-  const result = await apiRequest(AUTH_CONTRACT.OTP_VERIFY, {
+  const res = await apiRequest("/auth/otp/verify", {
     method: "POST",
-    body: JSON.stringify({ phone: payload.phone, otp })
+    body: JSON.stringify({ phone: payload.phone, otp }),
   });
 
-  if (result && typeof result === "object" && "token" in result) {
-    const token = (result as { token?: string }).token;
-    if (typeof token === "string" && token.length > 0) {
-      localStorage.setItem("token", token);
-    }
+  if (!res?.token) {
+    throw new Error("Missing token");
   }
 
-  return result;
+  localStorage.setItem("token", res.token);
+
+  return res;
 }

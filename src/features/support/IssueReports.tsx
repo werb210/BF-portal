@@ -24,13 +24,13 @@ function IssueReports({ isAdmin = true }: IssueReportsProps) {
   }, [isAdmin]);
 
   async function load() {
-    const res = await fetch(buildUrl("/api" + "/support/report"));
+    const res = await fetch (buildUrl("/api" + "/support/report"));
     const data = (await res.json()) as { issues?: IssueReport[] } | IssueReport[];
     setIssues(Array.isArray(data) ? data : (data.issues ?? []));
   }
 
   async function resolveIssue(id: string) {
-    await fetch(buildUrl(`${API_PREFIX}/support/report/${id}`), { method: "DELETE" });
+    await fetch (buildUrl(`${API_PREFIX}/support/report/${id}`), { method: "DELETE" });
     setIssues((prev) => prev.filter((issue) => issue.id !== id));
   }
 

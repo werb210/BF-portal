@@ -10,7 +10,7 @@ export default function CapitalScorePreview() {
   const [score, setScore] = useState<ScoringResponse | null>(null);
 
   async function testScore() {
-    const res = await fetch(buildUrl("/api" + "/scoring"), {
+    const res = await fetch (buildUrl("/api" + "/scoring"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -5,7 +5,7 @@ export default function LenderCountWidget() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    fetch(buildUrl("/api" + "/public/lender-count"))
+    fetch (buildUrl("/api" + "/public/lender-count"))
       .then((res) => res.json())
       .then((data) => setCount(data.count ?? 0))
       .catch(() => setCount(0));

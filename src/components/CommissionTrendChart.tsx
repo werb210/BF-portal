@@ -15,7 +15,7 @@ export default function CommissionTrendChart() {
 
     const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 
-    fetch(buildUrl("/api" + "/analytics/commission-trend"), {
+    fetch (buildUrl("/api" + "/analytics/commission-trend"), {
       headers,
     })
       .then((res) => res.json())

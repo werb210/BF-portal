@@ -6,5 +6,5 @@ export async function fetchPipeline() {
 }
 
 export async function fetchApplications() {
-  return apiFetch("/api/applications")
+  return apiFetch("/applications")
 }

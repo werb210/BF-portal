@@ -13,12 +13,11 @@ export async function verifyOtp(phone: string, otp: string) {
     body: JSON.stringify({ phone, otp }),
   });
 
-  if (res && typeof res === "object" && "token" in res) {
-    const token = (res as { token?: string }).token;
-    if (token) {
-      localStorage.setItem("token", token);
-    }
+  if (!res?.token) {
+    throw new Error("Missing token");
   }
+
+  localStorage.setItem("token", res.token);
 
   return res;
 }
