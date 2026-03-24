@@ -1,9 +1,11 @@
-import { safeApiFetch } from "@api/client";
+import { apiRequest } from "@/lib/api";
+
+export async function getTelephonyToken() {
+  const res = await apiRequest("/telephony/token");
+  if (!res) return "";
+  return (res as { token?: string }).token ?? String(res);
+}
 
 export async function getVoiceToken() {
-  const payload = await safeApiFetch<{ token?: string }>("/api/telephony/token");
-  if (!payload) {
-    return "";
-  }
-  return payload?.token ?? "";
+  return getTelephonyToken();
 }

@@ -19,9 +19,7 @@ import { logger } from "@/utils/logger";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";
 import { normalizeBusinessUnit } from "@/types/businessUnit";
 import { BUSINESS_UNIT_CONFIG } from "@/config/businessUnitConfig";
-import { buildUrl } from "@/lib/api";
 
-const API_PREFIX = "/api";
 type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | "contact-forms";
 
 
@@ -42,12 +40,11 @@ const WebsiteIssuesPanel = () => {
 
   async function loadIssues() {
     const response = await fetchIssueReports();
-    const data = response.data;
-    setIssues(Array.isArray(data) ? data : []);
+    setIssues(Array.isArray(response) ? response : []);
   }
 
   async function deleteIssue(id: string) {
-    await fetch(buildUrl(`${API_PREFIX}/support/issues/${id}`), { method: "DELETE" });
+    // Endpoint intentionally disabled until server contract supports issue deletion.
     setIssues((previous) => previous.filter((issue) => issue.id !== id));
   }
 
