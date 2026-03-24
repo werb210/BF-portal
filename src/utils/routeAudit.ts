@@ -66,7 +66,7 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
   const token = getAccessToken();
   if (!token) return false;
   try {
-    const response = await fetch(buildUrl("/auth/me"), {
+    const response = await fetch (buildUrl("/auth/me"), {
       headers: {
         "X-Request-Id": requestId,
         Authorization: `Bearer ${token}`
@@ -93,7 +93,7 @@ export const runRouteAudit = async (): Promise<void> => {
   });
 
   try {
-    const response = await fetch(buildUrl("/_int/routes"), {
+    const response = await fetch (buildUrl("/_int/routes"), {
       headers: { "X-Request-Id": requestId }
     });
 

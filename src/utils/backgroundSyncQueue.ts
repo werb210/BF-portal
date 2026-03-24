@@ -102,7 +102,7 @@ export const flushQueuedMutations = async () => {
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
-      const response = await fetch(resolveApiUrl(mutation.path), {
+      const response = await fetch (resolveApiUrl(mutation.path), {
         method: mutation.method,
         headers,
         body: mutation.body ? JSON.stringify(mutation.body) : undefined

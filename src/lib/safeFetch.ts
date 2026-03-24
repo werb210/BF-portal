@@ -1,6 +1,6 @@
 export async function safeFetch<T = unknown>(url: string, options?: RequestInit): Promise<T | null> {
   try {
-    const res = await fetch(url, options);
+    const res = await fetch (url, options);
     if (!res.ok) {
       return null;
     }

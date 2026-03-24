@@ -257,7 +257,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        const payload = await safeApiFetch("/api/auth/me");
+        const payload = await safeApiFetch("/auth/me");
         if (!payload) {
           clearInvalidTokenArtifacts();
           settleUnauthenticated();
@@ -320,7 +320,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     void (async () => {
       try {
-        const payload = await safeApiFetch("/api/auth/me");
+        const payload = await safeApiFetch("/auth/me");
         if (!payload) {
           clearToken();
           settleUnauthenticated();
@@ -410,7 +410,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await safeApiFetch("/api/auth/logout", { method: "POST" });
+      await safeApiFetch("/auth/logout", { method: "POST" });
     } finally {
       clearAuth();
       destroyDevice();

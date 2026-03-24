@@ -49,16 +49,16 @@ const AiChatDashboardContent = () => {
   useEffect(() => {
     const unsubscribeEscalated = subscribeAiSocket("escalated_chat", () => {
       audioRef.current?.play().catch(() => undefined);
-      void chatsQuery.refetch();
+      void chatsQuery.refetch ();
       if (selectedChatId) {
-        void selectedChatQuery.refetch();
+        void selectedChatQuery.refetch ();
       }
     });
 
     const unsubscribeNewMessage = subscribeAiSocket("new_chat_message", () => {
-      void chatsQuery.refetch();
+      void chatsQuery.refetch ();
       if (selectedChatId) {
-        void selectedChatQuery.refetch();
+        void selectedChatQuery.refetch ();
       }
     });
 

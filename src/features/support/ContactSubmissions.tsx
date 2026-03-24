@@ -23,7 +23,7 @@ export function ContactSubmissions({ isAdmin }: ContactSubmissionsProps) {
 
   async function load() {
     const query = leadFilter === "startup_interest" ? "?tag=startup_interest" : "";
-    const res = await fetch(buildUrl(`${API_PREFIX}/support/contact${query}`));
+    const res = await fetch (buildUrl(`${API_PREFIX}/support/contact${query}`));
     const data = (await res.json()) as ContactSubmission[];
     setContacts(Array.isArray(data) ? data : []);
   }

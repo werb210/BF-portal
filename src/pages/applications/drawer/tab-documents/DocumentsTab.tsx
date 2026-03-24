@@ -101,7 +101,7 @@ const DocumentsTab = () => {
         await rejectDocument(activeAction.document.id, rejectionReason.trim());
         setFeedback({ type: "success", message: "Document rejected." });
       }
-      await refetch();
+      await refetch ();
       setActiveAction(null);
       setRejectionReason("");
       queryClient.invalidateQueries({ queryKey: ["applications", applicationId, "details"] });

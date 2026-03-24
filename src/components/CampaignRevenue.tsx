@@ -11,7 +11,7 @@ export default function CampaignRevenue() {
   const [data, setData] = useState<CampaignData[]>([]);
 
   useEffect(() => {
-    fetch(buildUrl("/api" + "/analytics/campaign-revenue"))
+    fetch (buildUrl("/api" + "/analytics/campaign-revenue"))
       .then((res) => res.json())
       .then(setData)
       .catch((err) => console.error(err));

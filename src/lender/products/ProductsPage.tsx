@@ -32,17 +32,17 @@ const ProductsPage = () => {
         }
       }
     },
-    onSuccess: () => refetch()
+    onSuccess: () => refetch ()
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteLenderProduct(id),
-    onSuccess: () => refetch()
+    onSuccess: () => refetch ()
   });
 
   const toggleMutation = useMutation({
     mutationFn: (product: LenderProduct) => updateLenderProduct(product.id, { active: !product.active }),
-    onSuccess: () => refetch()
+    onSuccess: () => refetch ()
   });
 
   const handleSubmit = async (productValues: ProductEditorValues, docs: { categories: string[]; custom: string[] }) => {

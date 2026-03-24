@@ -30,14 +30,14 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   const [productionStatus, setProductionStatus] = useState("checking");
 
   useEffect(() => {
-    fetch(buildUrl("/api" + "/crm/leads/count"))
+    fetch (buildUrl("/api" + "/crm/leads/count"))
       .then((res) => res.json())
       .then((data) => setLeadCount(data.count ?? 0))
       .catch(() => setLeadCount(0));
   }, []);
 
   useEffect(() => {
-    fetch(buildUrl("/api" + "/_int/production-readiness"))
+    fetch (buildUrl("/api" + "/_int/production-readiness"))
       .then((res) => res.json())
       .then((data) => {
         logger.info("Production readiness payload", { data });
@@ -49,7 +49,7 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(buildUrl("/api" + "/support/live/count"));
+        const res = await fetch (buildUrl("/api" + "/support/live/count"));
         const data = (await res.json()) as { count?: number };
         setLiveCount(data.count ?? 0);
       } catch {
