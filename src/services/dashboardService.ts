@@ -1,19 +1,20 @@
-import { apiFetch } from "@api/client";
-
 export async function getDashboardMetrics() {
-  return apiFetch("/api" + "/dashboard/metrics");
+  // Dashboard APIs are not in MVP contract.
+  return null;
 }
 
 export const loadDashboard = getDashboardMetrics;
 
 export async function getPipeline() {
-  return apiFetch("/api" + "/dashboard/pipeline");
+  // Dashboard APIs are not in MVP contract.
+  return [];
 }
 
 export const loadPipeline = getPipeline;
 
 export async function getOffers() {
-  return apiFetch("/api" + "/dashboard/offers");
+  // Dashboard APIs are not in MVP contract.
+  return [];
 }
 
 export const loadOffers = getOffers;

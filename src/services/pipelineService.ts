@@ -1,9 +1,10 @@
 import { apiFetch } from "../lib/apiFetch"
 
 export async function fetchPipeline() {
-  return apiFetch("/api" + "/dashboard/pipeline")
+  // Dashboard APIs are not in MVP contract.
+  return []
 }
 
 export async function fetchApplications() {
-  return apiFetch("/api" + "/applications")
+  return apiFetch("/api/applications")
 }

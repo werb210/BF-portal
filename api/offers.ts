@@ -97,7 +97,7 @@ const parseOffers = (data: unknown): OfferRecord[] => {
 
 export const fetchOffers = async (applicationId: string, options?: RequestOptions): Promise<OfferRecord[]> => {
   const query = new URLSearchParams({ applicationId });
-  const data = await apiClient.get<unknown>(`/api/portal/offers?${query.toString()}`, options);
+  const data = await apiClient.get<unknown>(`/api/offers?${query.toString()}`, options);
   return parseOffers(data);
 };
 
@@ -105,11 +105,11 @@ export const uploadOffer = async (applicationId: string, file: File) => {
   const formData = new FormData();
   formData.append("applicationId", applicationId);
   formData.append("file", file);
-  const response = await api.post(`/api/portal/offers`, formData);
+  const response = await api.post(`/api/offers`, formData);
   return response.data;
 };
 
 export const archiveOffer = async (offerId: string) => {
-  const response = await api.post(`/api/portal/offers/${offerId}/archive`);
+  const response = await api.post(`/api/offers/${offerId}/archive`);
   return response.data;
 };

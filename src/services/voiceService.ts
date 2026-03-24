@@ -1,6 +1,5 @@
 import { Call, Device } from "@twilio/voice-sdk";
 import { setCallStatus } from "@/dialer/callStore";
-import { apiFetch } from "@api/client";
 import { getVoiceToken } from "@/telephony/getVoiceToken";
 
 let device: Device | null = null;
@@ -95,17 +94,8 @@ function startPresenceHeartbeat() {
     window.clearInterval(heartbeatInterval);
   }
 
-  heartbeatInterval = window.setInterval(() => {
-    if (!device) return;
-
-    void apiFetch("/telephony/presence", {
-      method: "POST",
-      body: JSON.stringify({
-        status: activeCall ? "busy" : "online",
-        source: "portal"
-      })
-    });
-  }, 15000);
+  // Presence endpoint is intentionally disabled for MVP.
+  heartbeatInterval = window.setInterval(() => undefined, 15000);
 }
 
 export async function startOutboundCall(clientId: string) {
@@ -130,15 +120,7 @@ export async function acceptIncoming(call: Call): Promise<boolean> {
   const callSid = call.parameters?.CallSid ?? call.parameters?.call_sid;
 
   if (callSid) {
-    try {
-      const lockResponse = await apiFetch(`/calls/${encodeURIComponent(String(callSid))}/status`);
-      const lock = (await lockResponse.json()) as { locked?: boolean; lockedByAnotherStaff?: boolean };
-      if (lock.lockedByAnotherStaff || lock.locked === true) {
-        return false;
-      }
-    } catch {
-      return false;
-    }
+    // /calls/:callSid/status is not part of MVP; skip lock check.
   }
 
   activeCall = call;

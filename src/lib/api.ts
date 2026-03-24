@@ -17,6 +17,17 @@ export function buildUrl(path: string): string {
   return `${API_BASE}${path}`;
 }
 
+function resolveApiPath(path: string): string {
+  if (!path.startsWith('/')) {
+    throw new Error(`Invalid API path: ${path}`);
+  }
+  return path.startsWith('/api/') ? path : `/api${path}`;
+}
+
+function readAuthToken(): string | null {
+  return localStorage.getItem('token') || localStorage.getItem('bf_token');
+}
+
 type EndpointKey = keyof typeof API_CONTRACT;
 
 export async function apiFetch<
@@ -34,29 +45,42 @@ export async function apiFetch<T = any>(
   endpoint: EndpointKey | string,
   options?: RequestInit
 ): Promise<T> {
-  const path = endpoint in API_CONTRACT
+  const rawPath = endpoint in API_CONTRACT
     ? API_CONTRACT[endpoint as EndpointKey]
     : endpoint;
+  const path = resolveApiPath(rawPath);
   const url = buildUrl(path);
+  const token = readAuthToken();
+  const headers = new Headers(options?.headers || {});
+  const isFormData = options?.body instanceof FormData;
+
+  if (!isFormData && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
 
   const res = await fetch(url, {
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers || {}),
-    },
+    headers,
     ...options,
   });
-
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
-  }
 
   if (res.status === 204) {
     return undefined as T;
   }
 
-  return res.json() as Promise<T>;
+  const json = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(json?.error || json?.message || `API error: ${res.status}`);
+  }
+
+  if (json && typeof json === 'object' && 'data' in (json as Record<string, unknown>)) {
+    return (json as { data: T }).data;
+  }
+  return json as T;
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -74,51 +98,30 @@ async function parseResponse<T>(response: Response): Promise<T> {
 }
 
 export const api = {
-  async get<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-    const res = await fetch(buildUrl(path), {
-      method: 'GET',
-      credentials: 'include',
-      ...options,
-    });
-    return parseResponse<T>(res);
+  async get<T = any>(path: string, options: RequestInit = {}): Promise<{ data: T }> {
+    const data = await apiFetch<T>(path, { ...options, method: 'GET' });
+    return { data };
   },
-  async post<T = any>(path: string, body?: unknown, options: RequestInit = {}): Promise<T> {
-    const headers = new Headers(options.headers || {});
+  async post<T = any>(path: string, body?: unknown, options: RequestInit = {}): Promise<{ data: T }> {
     const isFormData = body instanceof FormData;
-    if (!isFormData && !headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
-    }
-
-    const res = await fetch(buildUrl(path), {
+    const data = await apiFetch<T>(path, {
+      ...options,
       method: 'POST',
-      credentials: 'include',
       body: isFormData ? (body as FormData) : body == null ? undefined : JSON.stringify(body),
-      ...options,
-      headers,
     });
-    return parseResponse<T>(res);
+    return { data };
   },
-  async patch<T = any>(path: string, body?: unknown, options: RequestInit = {}): Promise<T> {
-    const headers = new Headers(options.headers || {});
-    if (!headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
-    }
-    const res = await fetch(buildUrl(path), {
+  async patch<T = any>(path: string, body?: unknown, options: RequestInit = {}): Promise<{ data: T }> {
+    const data = await apiFetch<T>(path, {
+      ...options,
       method: 'PATCH',
-      credentials: 'include',
       body: body == null ? undefined : JSON.stringify(body),
-      ...options,
-      headers,
     });
-    return parseResponse<T>(res);
+    return { data };
   },
-  async delete<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-    const res = await fetch(buildUrl(path), {
-      method: 'DELETE',
-      credentials: 'include',
-      ...options,
-    });
-    return parseResponse<T>(res);
+  async delete<T = any>(path: string, options: RequestInit = {}): Promise<{ data: T }> {
+    const data = await apiFetch<T>(path, { ...options, method: 'DELETE' });
+    return { data };
   },
 };
 

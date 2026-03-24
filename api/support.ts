@@ -1,17 +1,15 @@
 import api from "@api/client";
 
 export async function getSupportQueue() {
-  const res = await api.get("/api" + "/support/queue");
-  return res.data;
+  return [];
 }
 
 export async function getIssueReports() {
-  const res = await api.get("/api" + "/support/issues");
-  return res.data;
+  return [];
 }
 
 export async function fetchIssueReports() {
-  return api.get("/support/issues");
+  return [];
 }
 
 export async function getAIKnowledge() {

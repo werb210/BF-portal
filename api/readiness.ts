@@ -91,7 +91,7 @@ export async function fetchApplicationReadiness(
   applicationId: string,
   options: { signal?: AbortSignal } = {}
 ): Promise<ApplicationReadinessPayload> {
-  const res = await api.get(`/api/portal/applications/${applicationId}/readiness`, options);
+  const res = await api.get(`/api/applications/${applicationId}/readiness`, options);
   const payload = asRecord(res.data);
   if (!payload) {
     return { lead: null, transcriptHistory: [] };

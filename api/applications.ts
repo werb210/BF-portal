@@ -21,12 +21,12 @@ export type ApplicationDocumentsResponse = {
 }[];
 
 export const fetchApplications = async (businessUnit: BusinessUnit) => {
-  const res = await apiClient.getList<ApplicationSummary>(withBusinessUnitQuery("/applications", businessUnit));
+  const res = await apiClient.getList<ApplicationSummary>(withBusinessUnitQuery("/api/applications", businessUnit));
   return res.items;
 };
 
 export const fetchApplicationDetails = (id: string, options?: RequestOptions) =>
-  apiClient.get<ApplicationDetails>(`/applications/${id}`, options);
+  apiClient.get<ApplicationDetails>(`/api/applications/${id}`, options);
 
 export const fetchPortalApplication = (id: string, options?: RequestOptions) =>
   apiClient.get<PortalApplicationRecord>(`/api/applications/${id}`, options);
@@ -39,13 +39,13 @@ export const openPortalApplication = (id: string) =>
 
 export const fetchApplicationDocuments = async (id: string, options?: RequestOptions) => {
   const res: ListResponse<ApplicationDocumentsResponse[number]> = await apiClient.getList(
-    `/applications/${id}/documents`,
+    `/api/applications/${id}/documents`,
     options
   );
   return res.items;
 };
 
 export const fetchApplicationAudit = async (id: string, options?: RequestOptions) => {
-  const res = await apiClient.getList<ApplicationAuditEvent>(`/applications/${id}/audit`, options);
+  const res = await apiClient.getList<ApplicationAuditEvent>(`/api/applications/${id}/audit`, options);
   return res.items;
 };

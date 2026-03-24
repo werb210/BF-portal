@@ -5,7 +5,7 @@ export async function fetchContinuation(token: string) {
     throw new Error("Missing continuation token");
   }
 
-  return apiFetch(`/continuation/${token}`, {
-    method: "GET",
-  });
+  // Continuation endpoint is not part of MVP contract.
+  void apiFetch;
+  return null;
 }
