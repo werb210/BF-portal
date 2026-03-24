@@ -257,8 +257,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        const response = await apiFetch("/auth/me");
-        const payload = await response.json();
+        const payload = await apiFetch("/api/auth/me");
         const nextUser = resolveAuthUserFromResponse(payload);
 
         if (!nextUser) {
@@ -316,8 +315,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     void (async () => {
       try {
-        const res = await apiFetch("/auth/me");
-        const payload = await res.json();
+        const payload = await apiFetch("/api/auth/me");
         const normalizedUser = resolveAuthUserFromResponse(payload);
 
         if (!normalizedUser) {
@@ -353,7 +351,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setAuthStatus("pending");
     setRolesStatus("pending");
     const started = await startOtpRequest({ phone });
-    return started.ok;
+    return Boolean(started);
   }, []);
 
   const verifyOtp = useCallback(async (phone: string, code: string): Promise<OtpVerifyResult> => {
@@ -362,8 +360,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setRolesStatus("loading");
 
     try {
-      const response = await verifyOtpRequest({ phone, code });
-      const result = await response.json();
+      const result = await verifyOtpRequest({ phone, code });
       const token = result?.token ?? getToken();
 
       if (token && token.trim().length > 0) {
@@ -403,7 +400,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await apiFetch("/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
     } finally {
       clearAuth();
       destroyDevice();

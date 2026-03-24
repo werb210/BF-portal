@@ -325,7 +325,7 @@ export const pipelineApi = {
     return applications.filter((application) => normalizeStageId(application.stage) === normalizedStage);
   },
   exportApplications: async (applicationIds: string[]) => {
-    const response = await api.post(`${API_PREFIX}/portal/applications/export`, { applicationIds }, { responseType: "blob" });
+    const response = await api.post(`${API_PREFIX}/applications/export`, { applicationIds }, { responseType: "blob" });
     return response.data as Blob;
   }
 };

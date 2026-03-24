@@ -54,26 +54,31 @@ const request = async <T>(method: string, path: string, data?: unknown, options?
     throw createApiError(401, "Missing authentication token", "missing-token");
   }
 
-  const response = await apiFetch(path, {
-    ...options,
-    method,
-    headers: withHeaders(method, options),
-    body: data === undefined ? undefined : JSON.stringify(data),
-  });
-
-  if (response.status >= 400) {
-    if (response.status === 401) {
+  try {
+    const isFormData = data instanceof FormData;
+    return await apiFetch<T>(path, {
+      ...options,
+      method,
+      headers: withHeaders(method, options),
+      body: data === undefined
+        ? undefined
+        : isFormData
+          ? (data as FormData)
+          : JSON.stringify(data),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Request failed";
+    const normalized = message.toLowerCase();
+    if (normalized.includes("401") || normalized.includes("unauthorized")) {
       reportAuthFailure("unauthorized");
       throw createApiError(401, "Unauthorized", "unauthorized");
     }
-    if (response.status === 403) {
+    if (normalized.includes("403") || normalized.includes("forbidden")) {
       reportAuthFailure("forbidden");
       throw createApiError(403, "Forbidden", "forbidden");
     }
-    throw createApiError(response.status, "Request failed");
+    throw createApiError(500, message);
   }
-
-  return (await response.json()) as T;
 };
 
 export const apiClient = {
@@ -125,22 +130,26 @@ const lenderHeaders = (method: string, options?: RequestOptions) => {
 };
 
 const lenderRequest = async <T>(method: string, path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
-  const response = await apiFetch(path, {
-    ...options,
-    method,
-    headers: lenderHeaders(method, options),
-    body: data === undefined ? undefined : JSON.stringify(data)
-  });
-
-  if (response.status >= 400) {
-    if (response.status === 401) {
+  try {
+    const isFormData = data instanceof FormData;
+    return await apiFetch<T>(path, {
+      ...options,
+      method,
+      headers: lenderHeaders(method, options),
+      body: data === undefined
+        ? undefined
+        : isFormData
+          ? (data as FormData)
+          : JSON.stringify(data)
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Request failed";
+    if (message.toLowerCase().includes("401") || message.toLowerCase().includes("unauthorized")) {
       lenderAuthConfig.onUnauthorized?.();
       throw createApiError(401, "Unauthorized", "unauthorized");
     }
-    throw createApiError(response.status, "Request failed");
+    throw createApiError(500, message);
   }
-
-  return (await response.json()) as T;
 };
 
 export const lenderApiClient = {

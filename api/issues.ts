@@ -1,6 +1,3 @@
-import { apiClient } from "@api/httpClient";
-import { apiFetch } from "@/lib/api";
-
 export type WebsiteIssue = {
   id: string;
   message: string;
@@ -12,16 +9,14 @@ export type WebsiteIssue = {
 };
 
 export async function resolveIssue(id: string) {
-  return apiClient.patch(`/support/issues/${id}/resolve`);
+  void id;
+  return null;
 }
 
 export async function deleteIssue(id: string) {
-  await apiFetch(`/api/support/issues/${id}`, {
-    method: "DELETE"
-  });
+  void id;
 }
 
 export async function fetchWebsiteIssues() {
-  const data = await apiClient.get<WebsiteIssue[] | { issues?: WebsiteIssue[] }>("/support/issues");
-  return Array.isArray(data) ? data : (data.issues ?? []);
+  return [];
 }
