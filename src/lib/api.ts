@@ -3,6 +3,7 @@ export async function apiRequest(
   options: RequestInit = {}
 ) {
   const token = localStorage.getItem("token");
+  const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
 
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -16,19 +17,36 @@ export async function apiRequest(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await window.fetch (`/api${path}`, {
+  const res = await window["fetch"](`/api/${normalizedPath}`, {
     ...options,
     headers,
     credentials: "include",
   });
 
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+  let json: any = null;
+
+  try {
+    json = await res.json();
+  } catch (_error) {
+    console.error("API JSON parse failed:", path);
   }
 
-  const json = await res.json();
+  if (!res.ok) {
+    console.error("API ERROR:", {
+      path,
+      status: res.status,
+      response: json,
+    });
+    throw new Error(`API ${res.status}`);
+  }
 
-  return json?.data ?? json;
+  const result = json?.data ?? json;
+
+  if (result === undefined || result === null) {
+    console.warn("EMPTY API RESPONSE:", path);
+  }
+
+  return result;
 }
 
 export async function apiFetch<T = any>(

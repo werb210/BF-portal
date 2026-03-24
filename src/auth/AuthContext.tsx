@@ -50,6 +50,7 @@ export type AuthContextValue = {
   user: AuthUser;
   accessToken: string | null;
   token: string | null;
+  saveToken: (newToken: string) => void;
   allowedSilos: string[];
   canAccessSilo: (silo: string) => boolean;
   canAccessRole: (roles: Role[]) => boolean;
@@ -166,6 +167,7 @@ const TEST_AUTH_STUB: AuthContextValue = {
   user: null,
   accessToken: null,
   token: null,
+  saveToken: () => undefined,
   allowedSilos: [],
   canAccessSilo: () => true,
   canAccessRole: () => false,
@@ -199,7 +201,7 @@ export const AuthContext = createContext<AuthContextValue | undefined>(undefined
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUserState] = useState<AuthUser>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem("token"));
   const [authState, setAuthStateState] = useState<AuthState>("loading");
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const [rolesStatus, setRolesStatus] = useState<RolesStatus>("loading");
@@ -307,6 +309,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
+    const stored = localStorage.getItem("token");
+    if (stored && stored !== accessToken) {
+      setAccessToken(stored);
+    }
+  }, []);
+
+  const saveToken = useCallback((newToken: string) => {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+    setStoredAccessToken(newToken);
+    setAccessToken(newToken);
+  }, []);
+
+  useEffect(() => {
     const token = getToken();
 
     if (!token) {
@@ -374,9 +390,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const token = result?.token ?? getToken();
 
       if (token && token.trim().length > 0) {
-        setToken(token);
-        setStoredAccessToken(token);
-        setAccessToken(token);
+        saveToken(token);
       }
       setPendingPhoneNumber(null);
       setAuthStateState("authenticated");
@@ -403,7 +417,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setError(message);
       return { success: false, error: message };
     }
-  }, [refreshUser]);
+  }, [refreshUser, saveToken]);
 
   const login = useCallback(async () => false, []);
   const loginWithOtp = verifyOtp;
@@ -435,6 +449,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const registrations = await navigator.serviceWorker.getRegistrations();
         await Promise.all(registrations.map((registration) => registration.unregister()));
       }
+
+      localStorage.removeItem("token");
+      window.location.href = "/";
     }
   }, [clearAuth]);
 
@@ -459,6 +476,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       user: testUser,
       accessToken,
       token: accessToken,
+      saveToken,
       role: testRole ?? normalizeRole(testUser?.role ?? null),
       roles: normalizeUserRoles(testUser),
       allowedSilos: [],
@@ -490,6 +508,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       rolesStatus,
       testUser,
       accessToken,
+      saveToken,
       error,
       pendingPhoneNumber,
       isAuthenticated,
