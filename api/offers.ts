@@ -1,5 +1,6 @@
 import api from "@/lib/api";
 import { apiClient, type RequestOptions } from "./httpClient";
+import { safeApiFetch } from "./client";
 
 export type OfferRecord = {
   id: string;
@@ -97,10 +98,10 @@ const parseOffers = (data: unknown): OfferRecord[] => {
 
 export const fetchOffers = async (applicationId: string, options?: RequestOptions): Promise<OfferRecord[]> => {
   const query = new URLSearchParams({ applicationId });
-  const offers = await apiClient.get<unknown>(`/api/offers?${query.toString()}`, options);
+  const offers = await safeApiFetch<unknown>(`/api/offers?${query.toString()}`, options);
 
-  if (!Array.isArray(offers)) {
-    throw new Error("Invalid offers response");
+  if (!offers || !Array.isArray(offers)) {
+    return [];
   }
 
   return parseOffers(offers);

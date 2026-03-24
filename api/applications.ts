@@ -1,4 +1,5 @@
 import { apiClient, type ListResponse, type RequestOptions } from "./httpClient";
+import { safeApiFetch } from "./client";
 import type { ApplicationDetails, ApplicationAuditEvent, PortalApplicationRecord } from "@/types/application.types";
 import { withBusinessUnitQuery } from "@/lib/businessUnit";
 import type { BusinessUnit } from "@/types/businessUnit";
@@ -28,14 +29,15 @@ export const fetchApplications = async (businessUnit: BusinessUnit) => {
 export const fetchApplicationDetails = (id: string, options?: RequestOptions) =>
   apiClient.get<ApplicationDetails>(`/api/applications/${id}`, options);
 
-export const fetchPortalApplication = (id: string, options?: RequestOptions) =>
-  apiClient.get<PortalApplicationRecord>(`/api/applications/${id}`, options).then((app) => {
-    if (!app?.id) {
-      throw new Error("Invalid application response");
-    }
+export const fetchPortalApplication = async (id: string, options?: RequestOptions) => {
+  const app = await safeApiFetch<PortalApplicationRecord>(`/api/applications/${id}`, options);
 
-    return app;
-  });
+  if (!app || !app.id) {
+    return null;
+  }
+
+  return app;
+};
 
 export const updatePortalApplication = (id: string, updates: Partial<PortalApplicationRecord>) =>
   apiClient.patch<PortalApplicationRecord>(`/api/applications/${id}`, updates);

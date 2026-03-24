@@ -22,16 +22,20 @@ export class ApiError extends Error {
   }
 }
 
-import { apiFetch } from "@api/client";
+import { apiFetch, safeApiFetch } from "@api/client";
 
 export { apiFetch as api, apiFetch as default };
 
 export async function apiRequest<T>(config: { url?: string; method?: string; data?: unknown; headers?: Record<string, string> }) {
-  const response = await apiFetch(config.url ?? "/", {
+  const response = await safeApiFetch<T>(config.url ?? "/", {
     method: config.method,
     headers: config.headers,
     body: config.data !== undefined ? JSON.stringify(config.data) : undefined,
   });
 
-  return (await response.json()) as T;
+  if (response == null) {
+    throw new Error("Request failed");
+  }
+
+  return response as T;
 }
