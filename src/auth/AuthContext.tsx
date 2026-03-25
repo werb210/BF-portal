@@ -40,7 +40,7 @@ declare global {
 
 export type OtpStartPayload = { phone: string };
 export type OtpVerifyPayload = { phone: string; code: string };
-export type OtpVerifyResult = { success: boolean; nextPath?: string; error?: string; token?: string; user?: AuthUser };
+export type OtpVerifyResult = { ok: boolean; nextPath?: string; error?: string; token?: string; user?: AuthUser };
 
 export type AuthContextValue = {
   authState: AuthState;
@@ -183,8 +183,8 @@ const TEST_AUTH_STUB: AuthContextValue = {
   isHydratingSession: false,
   login: async () => false,
   startOtp: async () => true,
-  verifyOtp: async () => ({ success: true }),
-  loginWithOtp: async () => ({ success: true }),
+  verifyOtp: async () => ({ ok: true }),
+  loginWithOtp: async () => ({ ok: true }),
   refreshUser: async () => true,
   clearAuth: () => undefined,
   logout: async () => {
@@ -380,8 +380,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setPendingPhoneNumber(phone);
     setAuthStatus("pending");
     setRolesStatus("pending");
-    const started = await startOtpRequest({ phone });
-    return Boolean(started);
+    const result = await startOtpRequest({ phone });
+    return result?.ok === true;
   }, []);
 
   const verifyOtp = useCallback(async (phone: string, code: string): Promise<OtpVerifyResult> => {
@@ -405,7 +405,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       void refreshUser(token);
 
       return {
-        success: true,
+        ok: true,
         token: token ?? undefined,
         user: result?.user ?? null,
         nextPath: result?.nextPath ?? "/portal"
@@ -419,7 +419,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUserState(null);
       setAccessToken(null);
       setError(message);
-      return { success: false, error: message };
+      return { ok: false, error: message };
     }
   }, [refreshUser, saveTokenForAuth]);
 
