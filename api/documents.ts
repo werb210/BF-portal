@@ -1,4 +1,4 @@
-import { DOCUMENT_CONTRACT } from "@/contracts";
+import { DOCUMENT_CONTRACT } from "@/lib/contracts";
 import { apiClient, type RequestOptions } from "./httpClient";
 import type { DocumentRequirementResponse, DocumentStatus } from "@/types/documents.types";
 
