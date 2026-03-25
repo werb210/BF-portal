@@ -1,4 +1,4 @@
-import { OtpVerify, Contracts } from "@/lib/contracts";
+import { Contracts } from "@/lib/contracts";
 import { apiRequest } from "@/lib/api";
 import { requestWithContract } from "@/lib/contractsApi";
 
@@ -10,14 +10,14 @@ export async function startOtp(phone: string) {
 }
 
 export async function verifyOtp(phone: string, otp: string) {
-  const res = await apiRequest("/auth/otp/verify", {
+  const res = await apiRequest(Contracts.authOtpVerify.path, {
     method: "POST",
     body: JSON.stringify({ phone, otp }),
   });
 
-  const parsed = OtpVerify.response.parse(res);
+  const parsed = Contracts.authOtpVerify.response.parse(res);
 
-  localStorage.setItem("token", parsed.data.token);
+  localStorage.setItem("token", parsed.token);
 
-  return parsed.data;
+  return parsed;
 }
