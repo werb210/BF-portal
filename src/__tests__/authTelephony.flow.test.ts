@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 
 import { startOtp, verifyOtp } from "@/services/auth";
 import { getTelephonyToken } from "@/telephony/getVoiceToken";
+import { assertAuthTelephonyFlow } from "./helpers/authTelephonyFlowAssertions";
 
 type FlowState = {
   otpRequestId: string;
@@ -104,15 +105,16 @@ afterAll(async () => {
 
 describe("real auth/telephony flow contract checks", () => {
   it("runs OTP -> verify -> telephony token against a real HTTP server", async () => {
-    const otpStart = await startOtp("15551234567");
-    expect(otpStart.success).toBe(true);
-    expect(otpStart.otpRequestId).toBe(state.otpRequestId);
-
-    const verified = await verifyOtp("15551234567", state.otpCode);
-    expect(verified.token).toBe(state.token);
-
-    const voiceToken = await getTelephonyToken();
-    expect(voiceToken).toBe("voice-token-1");
+    await assertAuthTelephonyFlow(
+      { startOtp, verifyOtp, getTelephonyToken },
+      {
+        phone: "15551234567",
+        otp: state.otpCode,
+        expectedOtpRequestId: state.otpRequestId,
+        expectedSessionToken: state.token,
+        expectedVoiceToken: "voice-token-1"
+      }
+    );
   });
 
   it("fails when response shape is invalid", async () => {
