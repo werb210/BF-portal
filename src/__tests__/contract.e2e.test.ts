@@ -4,6 +4,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { apiRequest } from "@/lib/api";
 
 let server: ReturnType<typeof createServer>;
+let baseUrl = "";
+let originalFetch: typeof fetch;
 
 type State = { verified: boolean; token: string };
 const state: State = { verified: false, token: "session-token-1" };
@@ -31,10 +33,9 @@ beforeAll(async () => {
 
     if (req.url === "/auth/otp/verify" && req.method === "POST") {
       const body = await readBody(req);
-      const otp = body.otp ?? body.code;
-      if (!body.phone || otp !== "000000") return sendJson(res, 401, { error: "invalid otp" });
+      if (!body.phone || body.code !== "000000") return sendJson(res, 401, { error: "invalid otp" });
       state.verified = true;
-      return sendJson(res, 200, { token: state.token, refreshToken: "refresh-1" });
+      return sendJson(res, 200, { ok: true, token: state.token });
     }
 
     if (req.url === "/telephony/token" && req.method === "GET") {
@@ -51,12 +52,29 @@ beforeAll(async () => {
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
   const addr = server.address();
   if (!addr || typeof addr === "string") throw new Error("Failed to resolve test server address");
-  (window as any).__BF_API_BASE_URL__ = `http://127.0.0.1:${addr.port}`;
+
+  baseUrl = `http://127.0.0.1:${addr.port}`;
+  originalFetch = globalThis.fetch;
+  const proxiedFetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const raw = typeof input === "string" ? input : input.toString();
+    const rewritten = raw.startsWith("https://server.boreal.financial")
+      ? raw.replace("https://server.boreal.financial", baseUrl)
+      : raw;
+    return originalFetch(rewritten, init);
+  }) as typeof fetch;
+
+  (globalThis as any).fetch = proxiedFetch;
+  if (typeof window !== "undefined") {
+    window.fetch = proxiedFetch;
+  }
 });
 
 afterAll(async () => {
   await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
-  delete (window as any).__BF_API_BASE_URL__;
+  (globalThis as any).fetch = originalFetch;
+  if (typeof window !== "undefined") {
+    window.fetch = originalFetch;
+  }
 });
 
 describe("contract:e2e", () => {
