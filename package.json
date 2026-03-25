@@ -22,11 +22,12 @@
     "prestart": "node ./scripts/verify-node-version.js",
     "smoke": "node ./scripts/smoke-test.js",
     "test:unit": "vitest run",
-    "test:ci": "npm run typecheck && npm run test:unit",
+    "test:ci": "npm run typecheck && npm run test:unit && npm run test:contracts",
     "cap:sync": "npx cap sync",
     "cap:open:ios": "npx cap open ios",
     "cap:open:android": "npx cap open android",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "test:contracts": "vitest run src/__tests__/authTelephony.flow.test.ts"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
@@ -36,6 +37,7 @@
     "@tanstack/react-virtual": "^3.13.21",
     "@twilio/voice-sdk": "latest",
     "axios": "^1.13.6",
+    "bf-contracts": "file:bf-contracts",
     "clsx": "^2.1.1",
     "jwt-decode": "^4.0.0",
     "openai": "^6.22.0",

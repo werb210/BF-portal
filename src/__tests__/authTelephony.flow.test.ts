@@ -1,0 +1,130 @@
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+
+import { startOtp, verifyOtp } from "@/services/auth";
+import { getTelephonyToken } from "@/telephony/getVoiceToken";
+
+type FlowState = {
+  otpRequestId: string;
+  otpCode: string;
+  verified: boolean;
+  token: string;
+};
+
+const state: FlowState = {
+  otpRequestId: "otp-req-1",
+  otpCode: "123456",
+  verified: false,
+  token: "session-token-1"
+};
+
+let server: ReturnType<typeof createServer>;
+let baseUrl = "";
+
+async function readBody(req: IncomingMessage): Promise<any> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) chunks.push(Buffer.from(chunk));
+  const raw = Buffer.concat(chunks).toString("utf8");
+  if (!raw) return {};
+  return JSON.parse(raw);
+}
+
+function sendJson(res: ServerResponse, status: number, payload: unknown) {
+  res.statusCode = status;
+  res.setHeader("content-type", "application/json");
+  res.end(JSON.stringify(payload));
+}
+
+beforeAll(async () => {
+  server = createServer(async (req, res) => {
+    if (req.url === "/api/auth/otp/start" && req.method === "POST") {
+      const body = await readBody(req);
+      if (!body.phone) {
+        sendJson(res, 400, { error: "missing phone" });
+        return;
+      }
+
+      sendJson(res, 200, {
+        success: true,
+        otpRequestId: state.otpRequestId,
+        message: "OTP sent"
+      });
+      return;
+    }
+
+    if (req.url === "/api/auth/otp/verify" && req.method === "POST") {
+      const body = await readBody(req);
+      if (body.otp !== state.otpCode) {
+        sendJson(res, 401, { error: "invalid otp" });
+        return;
+      }
+
+      state.verified = true;
+      sendJson(res, 200, { token: state.token, refreshToken: "refresh-1" });
+      return;
+    }
+
+    if (req.url === "/api/telephony/token" && req.method === "GET") {
+      if (!state.verified) {
+        sendJson(res, 403, { error: "verify otp first" });
+        return;
+      }
+
+      sendJson(res, 200, { token: "voice-token-1" });
+      return;
+    }
+
+    if (req.url === "/api/telephony/token-missing-field" && req.method === "GET") {
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    sendJson(res, 404, { error: "not found" });
+  });
+
+  await new Promise<void>((resolve) => {
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+
+  const addr = server.address();
+  if (!addr || typeof addr === "string") {
+    throw new Error("failed to resolve address");
+  }
+
+  baseUrl = `http://127.0.0.1:${addr.port}`;
+  (window as any).__BF_API_BASE_URL__ = baseUrl;
+});
+
+afterAll(async () => {
+  await new Promise<void>((resolve, reject) => {
+    server.close((err) => (err ? reject(err) : resolve()));
+  });
+  delete (window as any).__BF_API_BASE_URL__;
+});
+
+describe("real auth/telephony flow contract checks", () => {
+  it("runs OTP -> verify -> telephony token against a real HTTP server", async () => {
+    const otpStart = await startOtp("15551234567");
+    expect(otpStart.success).toBe(true);
+    expect(otpStart.otpRequestId).toBe(state.otpRequestId);
+
+    const verified = await verifyOtp("15551234567", state.otpCode);
+    expect(verified.token).toBe(state.token);
+
+    const voiceToken = await getTelephonyToken();
+    expect(voiceToken).toBe("voice-token-1");
+  });
+
+  it("fails when response shape is invalid", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString();
+      const rewritten = url.replace("/api/telephony/token", "/api/telephony/token-missing-field");
+      return originalFetch(rewritten, init);
+    }) as typeof fetch;
+
+    await expect(getTelephonyToken()).rejects.toThrow();
+
+    global.fetch = originalFetch;
+  });
+});

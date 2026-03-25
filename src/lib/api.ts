@@ -1,3 +1,10 @@
+function resolveApiUrl(path: string): string {
+  const injectedBase = typeof window !== "undefined" ? (window as any).__BF_API_BASE_URL__ : undefined;
+  const envBase = (import.meta as any)?.env?.VITE_API_BASE_URL as string | undefined;
+  const baseUrl = injectedBase ?? envBase ?? "";
+  return `${baseUrl}/api${path}`;
+}
+
 export async function apiRequest<T = any>(
   path: string,
   options: RequestInit = {}
@@ -16,7 +23,7 @@ export async function apiRequest<T = any>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(resolveApiUrl(path), {
     ...options,
     headers,
     credentials: "include",
