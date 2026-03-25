@@ -1,24 +1,20 @@
-import { apiRequest } from "@/lib/api";
+import { Contracts } from "bf-contracts";
+import { requestWithContract } from "@/lib/contractsApi";
 
 export async function startOtp(phone: string) {
-  return apiRequest("/auth/otp/start", {
+  return requestWithContract(Contracts.authOtpStart, {
     method: "POST",
-    body: JSON.stringify({ phone }),
+    body: { phone }
   });
 }
 
 export async function verifyOtp(phone: string, otp: string) {
-  const res = await apiRequest("/auth/otp/verify", {
+  const res = await requestWithContract(Contracts.authOtpVerify, {
     method: "POST",
-    body: JSON.stringify({ phone, otp }),
+    body: { phone, otp }
   });
 
-  if (!res?.token) {
-    throw new Error("Missing token");
-  }
-
   localStorage.setItem("token", res.token);
-  window.location.reload();
 
   return res;
 }
