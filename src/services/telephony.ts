@@ -1,5 +1,10 @@
-import { Contracts } from "bf-contracts";
-import { requestWithContract } from "@/lib/contractsApi";
+import { TelephonyToken } from "@/lib/contracts";
+import { apiRequest } from "@/lib/api";
 
-export const getTelephonyToken = async () =>
-  requestWithContract(Contracts.telephonyToken, { method: "GET" });
+export async function getTelephonyToken() {
+  const res = await apiRequest("/telephony/token");
+
+  const parsed = TelephonyToken.response.parse(res);
+
+  return parsed.data.token;
+}
