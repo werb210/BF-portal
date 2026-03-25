@@ -1,7 +1,7 @@
 import { apiClient } from "@api/httpClient";
 import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config";
 
-const API_PREFIX = "/api";
+const API_PREFIX = "";
 export const biPipelineAdapter: PipelineApiAdapter = {
   fetchPipeline: async (filters) => {
     const response = await apiClient.post("/bi/pipeline", filters ?? {});

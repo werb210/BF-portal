@@ -8,7 +8,7 @@ import voiceRoutes from "./voice.routes";
 export function registerAiRoutes(app: Express) {
   app.use(injectSiloContext);
   app.use(setSiloSession);
-  app.use("/api", ruleRoutes);
-  app.use("/api", confidenceRoutes);
-  app.use("/api", voiceRoutes);
+  app.use("/", ruleRoutes);
+  app.use("/", confidenceRoutes);
+  app.use("/", voiceRoutes);
 }

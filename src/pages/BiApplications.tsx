@@ -1,7 +1,7 @@
 import { apiClient } from "@api/client";
 import { useEffect, useState } from "react";
 
-const API_PREFIX = "/api";
+const API_PREFIX = "";
 export default function BiApplications() {
   const [apps, setApps] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);

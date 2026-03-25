@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { apiFetch } from "../../lib/apiFetch"
 
-const API_PREFIX = "/api";
+const API_PREFIX = "";
 type ApplicationDetailProps = {
   id: string
   onClose: () => void

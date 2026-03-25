@@ -3,7 +3,7 @@ import { apiClient } from "@api/httpClient";
 import OfferUploader from "@/components/offers/OfferUploader";
 import ChatPanel from "@/components/chat/ChatPanel";
 
-const API_PREFIX = "/api";
+const API_PREFIX = "";
 const tabs = ["Application", "Banking Analysis", "Financials", "Documents", "Credit Summary", "Notes", "Lenders"] as const;
 
 type TabName = (typeof tabs)[number];

@@ -1,7 +1,7 @@
 import { apiClient } from "@api/httpClient";
 import type { SLFPipelineApplication, SLFStageId } from "./slf.pipeline.types";
 
-const API_PREFIX = "/api";
+const API_PREFIX = "";
 export const slfPipelineApi = {
   fetchColumn: async (stage: SLFStageId, options?: { signal?: AbortSignal }) => {
     const res = await apiClient.getList<SLFPipelineApplication>(`${API_PREFIX}/slf/applications?stage=${stage}`, options);

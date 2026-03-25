@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@api/httpClient";
 
-const API_PREFIX = "/api";
+const API_PREFIX = "";
 type SLFApplication = {
   businessInfo?: Record<string, unknown>;
   applicantInfo?: Record<string, unknown>;

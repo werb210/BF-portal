@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { API_BASE } from "@/lib/api";
 import { getAccessToken } from "@/lib/authToken";
 
 export type QueuedMutation = {
@@ -34,8 +34,8 @@ const persistQueue = () => {
   localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
 };
 
-const resolveApiUrl = (path: string) => {
-  const base = api.defaults.baseURL ?? "";
+const buildMutationUrl = (path: string) => {
+  const base = API_BASE;
   const trimmedBase = base.endsWith("/") ? base.slice(0, -1) : base;
   const trimmedPath = path.startsWith("/") ? path.slice(1) : path;
   return `${trimmedBase}/${trimmedPath}`;
@@ -102,7 +102,7 @@ export const flushQueuedMutations = async () => {
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
-      const response = await fetch (resolveApiUrl(mutation.path), {
+      const response = await fetch (buildMutationUrl(mutation.path), {
         method: mutation.method,
         headers,
         body: mutation.body ? JSON.stringify(mutation.body) : undefined

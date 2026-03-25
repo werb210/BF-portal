@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { buildUrl } from "@/lib/api";
-const API_PREFIX = "/api";
+const API_PREFIX = "";
 
 type Message = {
   role: "user" | "ai" | "staff";
