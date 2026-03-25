@@ -199,6 +199,11 @@ const TEST_AUTH_STUB: AuthContextValue = {
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+export const saveToken = (t: string) => {
+  localStorage.setItem("token", t);
+  setToken(t);
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUserState] = useState<AuthUser>(null);
   const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem("token"));
@@ -315,9 +320,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const saveToken = useCallback((newToken: string) => {
-    localStorage.setItem("token", newToken);
-    setToken(newToken);
+  const saveTokenForAuth = useCallback((newToken: string) => {
+    saveToken(newToken);
     setStoredAccessToken(newToken);
     setAccessToken(newToken);
   }, []);
@@ -390,7 +394,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const token = result?.token ?? getToken();
 
       if (token && token.trim().length > 0) {
-        saveToken(token);
+        saveTokenForAuth(token);
       }
       setPendingPhoneNumber(null);
       setAuthStateState("authenticated");
@@ -417,7 +421,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setError(message);
       return { success: false, error: message };
     }
-  }, [refreshUser, saveToken]);
+  }, [refreshUser, saveTokenForAuth]);
 
   const login = useCallback(async () => false, []);
   const loginWithOtp = verifyOtp;
@@ -476,7 +480,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       user: testUser,
       accessToken,
       token: accessToken,
-      saveToken,
+      saveToken: saveTokenForAuth,
       role: testRole ?? normalizeRole(testUser?.role ?? null),
       roles: normalizeUserRoles(testUser),
       allowedSilos: [],
@@ -508,7 +512,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       rolesStatus,
       testUser,
       accessToken,
-      saveToken,
+      saveTokenForAuth,
       error,
       pendingPhoneNumber,
       isAuthenticated,
