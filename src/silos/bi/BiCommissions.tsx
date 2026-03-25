@@ -17,7 +17,7 @@ export default function BiCommissions() {
   const [totalCommission, setTotalCommission] = useState(0);
 
   useEffect(() => {
-    fetch (buildUrl("/api" + "/bi/applications"))
+    fetch (buildUrl("/bi/applications"))
       .then((res) => res.json())
       .then((data) => {
         const approved = data.filter((a: Application) => a.status === "approved");

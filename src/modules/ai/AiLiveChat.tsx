@@ -51,7 +51,7 @@ export default function AiLiveChat({ sessionId }: { sessionId: string }) {
   }
 
   async function closeSession() {
-    await fetch (buildUrl("/api" + "/ai/close"), {
+    await fetch (buildUrl("/ai/close"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId })

@@ -8,7 +8,7 @@ export default function BiApplications() {
 
   useEffect(() => {
     apiClient
-      .get("/api" + "/applications")
+      .get("/applications")
       .then((response) => setApps(response.data));
   }, []);
 

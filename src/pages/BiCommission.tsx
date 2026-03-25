@@ -6,7 +6,7 @@ export default function BiCommission() {
 
   useEffect(() => {
     apiClient
-      .get("/api" + "/ledger")
+      .get("/ledger")
       .then((response) => setLedger(response.data));
   }, []);
 
