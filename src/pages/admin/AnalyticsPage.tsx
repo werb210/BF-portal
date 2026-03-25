@@ -23,7 +23,7 @@ export default function AnalyticsPage() {
       }
     }
 
-    fetch (buildUrl("/api" + "/analytics"))
+    fetch (buildUrl("/analytics"))
       .then((res) => res.json())
       .then((data) => {
         const nextEvents = Array.isArray(data) ? data : [];

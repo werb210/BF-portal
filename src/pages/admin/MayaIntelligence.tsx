@@ -26,18 +26,18 @@ export default function MayaIntelligence() {
   const [roiProjection, setRoiProjection] = useState<number | null>(null);
 
   useEffect(() => {
-    apiClient.get("/api" + "/maya/overview")
+    apiClient.get("/maya/overview")
       .then((res) => setData(res.data))
       .catch(() => setData(null));
   }, []);
 
   async function simulateROI() {
-    const res = await apiClient.post("/api" + "/maya/roi-simulate", { budget: roiInput });
+    const res = await apiClient.post("/maya/roi-simulate", { budget: roiInput });
     setRoiProjection(res.data.projectedRevenue);
   }
 
   async function rollbackModel(version: string) {
-    await apiClient.post("/api" + "/maya/model-rollback", { version });
+    await apiClient.post("/maya/model-rollback", { version });
     alert("Model rolled back.");
   }
 

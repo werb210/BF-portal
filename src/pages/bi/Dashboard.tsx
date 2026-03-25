@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
-    apiFetch("/api" + "/bi/dashboard")
+    apiFetch("/bi/dashboard")
       .then((res) => setData(res as DashboardData));
   }, []);
 
