@@ -1,4 +1,4 @@
-export const API_BASE = "https://boreal-staff-server-e4hmaqbkb2g5hgfv.canadacentral-01.azurewebsites.net";
+export const API_BASE = "https://server.boreal.financial";
 
 export class ApiError extends Error {
   status?: number;
@@ -10,9 +10,7 @@ export class ApiError extends Error {
 }
 
 export function buildUrl(path: string): string {
-  const runtimeBase =
-    typeof window !== "undefined" ? ((window as any).__BF_API_BASE_URL__ as string | undefined) : undefined;
-  return `${runtimeBase ?? API_BASE}${path}`;
+  return `${API_BASE}${path}`;
 }
 
 export async function apiFetch(path: string, options: any = {}) {

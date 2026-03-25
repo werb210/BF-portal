@@ -22,8 +22,7 @@ export const portalApiRoutes: RouteDescriptor[] = [
 const AUTH_ROUTE_PREFIXES = ["/auth/otp", "/auth/me", "/auth/logout"];
 const normalizePath = (path: string) =>
   path
-    .replace(/\/+$/, "")
-    .replace(/^\/api(?=\/|$)/, "");
+    .replace(/\/+$/, "");
 
 const extractServerRoutes = (payload: unknown): RouteDescriptor[] => {
   if (Array.isArray(payload)) {

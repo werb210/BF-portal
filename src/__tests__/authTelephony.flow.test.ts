@@ -19,6 +19,7 @@ const state: FlowState = {
 
 let server: ReturnType<typeof createServer>;
 let baseUrl = "";
+let originalFetch: typeof fetch;
 
 async function readBody(req: IncomingMessage): Promise<any> {
   const chunks: Buffer[] = [];
@@ -52,13 +53,13 @@ beforeAll(async () => {
 
     if (req.url === "/auth/otp/verify" && req.method === "POST") {
       const body = await readBody(req);
-      if ((body.code ?? body.otp) !== state.otpCode) {
+      if (body.code !== state.otpCode) {
         sendJson(res, 401, { error: "invalid otp" });
         return;
       }
 
       state.verified = true;
-      sendJson(res, 200, { token: state.token, refreshToken: "refresh-1" });
+      sendJson(res, 200, { ok: true, token: state.token });
       return;
     }
 
@@ -90,14 +91,29 @@ beforeAll(async () => {
   }
 
   baseUrl = `http://127.0.0.1:${addr.port}`;
-  (window as any).__BF_API_BASE_URL__ = baseUrl;
+  originalFetch = globalThis.fetch;
+  const proxiedFetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const raw = typeof input === "string" ? input : input.toString();
+    const rewritten = raw.startsWith("https://server.boreal.financial")
+      ? raw.replace("https://server.boreal.financial", baseUrl)
+      : raw;
+    return originalFetch(rewritten, init);
+  }) as typeof fetch;
+
+  (globalThis as any).fetch = proxiedFetch;
+  if (typeof window !== "undefined") {
+    window.fetch = proxiedFetch;
+  }
 });
 
 afterAll(async () => {
   await new Promise<void>((resolve, reject) => {
     server.close((err) => (err ? reject(err) : resolve()));
   });
-  delete (window as any).__BF_API_BASE_URL__;
+  (globalThis as any).fetch = originalFetch;
+  if (typeof window !== "undefined") {
+    window.fetch = originalFetch;
+  }
 });
 
 describe("real auth/telephony flow contract checks", () => {
@@ -114,15 +130,23 @@ describe("real auth/telephony flow contract checks", () => {
   });
 
   it("fails when response shape is invalid", async () => {
-    const originalFetch = global.fetch;
-    global.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const currentFetch = globalThis.fetch;
+    const interceptingFetch = ((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input.toString();
       const rewritten = url.replace("/telephony/token", "/telephony/token-missing-field");
-      return originalFetch(rewritten, init);
+      return currentFetch(rewritten, init);
     }) as typeof fetch;
+
+    (globalThis as any).fetch = interceptingFetch;
+    if (typeof window !== "undefined") {
+      window.fetch = interceptingFetch;
+    }
 
     await expect(getTelephonyToken()).rejects.toThrow();
 
-    global.fetch = originalFetch;
+    (globalThis as any).fetch = currentFetch;
+    if (typeof window !== "undefined") {
+      window.fetch = currentFetch;
+    }
   });
 });
