@@ -5,7 +5,7 @@ import { getAccessToken } from "@/lib/authToken";
 import { buildUrl } from "@/lib/api";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { logger } from "@/utils/logger";
-import { AUTH_CONTRACT } from "@/contracts";
+import { AUTH_CONTRACT } from "@/lib/contracts";
 
 type RouteDescriptor = {
   path: string;
