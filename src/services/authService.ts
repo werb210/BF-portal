@@ -7,9 +7,9 @@ export async function sendOtp(data: { phone: string }) {
   });
 }
 
-export async function verifyOtp(data: { phone: string; otp: string }) {
+export async function verifyOtp(data: { phone: string; code: string }) {
   return apiFetch("/auth/otp/verify", {
     method: "POST",
-    body: { phone: data.phone, code: data.otp }
+    body: { phone: data.phone, code: data.code }
   });
 }
