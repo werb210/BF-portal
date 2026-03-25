@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 
 import { apiRequest } from "@/lib/api";
-import { Contracts } from "bf-contracts";
 
 let server: ReturnType<typeof createServer>;
 
@@ -24,13 +23,13 @@ function sendJson(res: ServerResponse, status: number, payload: unknown) {
 
 beforeAll(async () => {
   server = createServer(async (req, res) => {
-    if (req.url === "/api/auth/otp/start" && req.method === "POST") {
+    if (req.url === "/auth/otp/start" && req.method === "POST") {
       const body = await readBody(req);
       if (!body.phone) return sendJson(res, 400, { error: "missing phone" });
-      return sendJson(res, 200, { success: true, otpRequestId: "otp-1", message: "OTP sent" });
+      return sendJson(res, 200, { ok: true, message: "OTP sent" });
     }
 
-    if (req.url === "/api/auth/otp/verify" && req.method === "POST") {
+    if (req.url === "/auth/otp/verify" && req.method === "POST") {
       const body = await readBody(req);
       const otp = body.otp ?? body.code;
       if (!body.phone || otp !== "000000") return sendJson(res, 401, { error: "invalid otp" });
@@ -38,7 +37,7 @@ beforeAll(async () => {
       return sendJson(res, 200, { token: state.token, refreshToken: "refresh-1" });
     }
 
-    if (req.url === "/api/telephony/token" && req.method === "GET") {
+    if (req.url === "/telephony/token" && req.method === "GET") {
       const auth = req.headers.authorization;
       if (!state.verified || auth !== `Bearer ${state.token}`) {
         return sendJson(res, 403, { error: "forbidden" });
@@ -62,26 +61,22 @@ afterAll(async () => {
 
 describe("contract:e2e", () => {
   it("otp -> verify -> telephony", async () => {
-    await apiRequest(Contracts.authOtpStart.path, {
+    await apiRequest("/auth/otp/start", {
       method: "POST",
-      body: JSON.stringify({ phone: "+61400000000" })
+      body: { phone: "+61400000000" }
     });
 
-    const verify = await apiRequest(Contracts.authOtpVerify.path, {
+    const v = await apiRequest<{ token: string }>("/auth/otp/verify", {
       method: "POST",
-      body: JSON.stringify({ phone: "+61400000000", code: "000000" })
+      body: { phone: "+61400000000", code: "000000" }
     });
 
-    const v = Contracts.authOtpVerify.response.parse(verify);
-
-    const tel = await apiRequest(Contracts.telephonyToken.path, {
+    const t = await apiRequest<{ token: string }>("/telephony/token", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${v.token}`
       }
     });
-
-    const t = Contracts.telephonyToken.response.parse(tel);
 
     expect(v.token).toBeTruthy();
     expect(t.token).toBeTruthy();

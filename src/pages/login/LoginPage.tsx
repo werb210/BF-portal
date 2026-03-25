@@ -57,7 +57,7 @@ export default function Login() {
       setError('');
       const normalizedPhone = normalizePhone(phone);
       const result = await loginWithOtp(normalizedPhone, code);
-      if (result?.success === false) {
+      if (result?.ok === false) {
         setError(result.error || 'Invalid code');
         return;
       }

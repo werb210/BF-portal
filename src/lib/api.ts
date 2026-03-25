@@ -1,88 +1,71 @@
-function resolveApiUrl(path: string): string {
-  const injectedBase = typeof window !== "undefined" ? (window as any).__BF_API_BASE_URL__ : undefined;
-  const envBase = (import.meta as any)?.env?.VITE_API_BASE_URL as string | undefined;
-  const baseUrl = injectedBase ?? envBase ?? "";
-  return `${baseUrl}/api${path}`;
+export const API_BASE = "https://boreal-staff-server-e4hmaqbkb2g5hgfv.canadacentral-01.azurewebsites.net";
+
+export class ApiError extends Error {
+  status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
 }
 
-export async function apiRequest<T = any>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+export function buildUrl(path: string): string {
+  const runtimeBase =
+    typeof window !== "undefined" ? ((window as any).__BF_API_BASE_URL__ as string | undefined) : undefined;
+  return `${runtimeBase ?? API_BASE}${path}`;
+}
+
+export async function apiFetch(path: string, options: any = {}) {
   const token = localStorage.getItem("token");
 
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string>),
-  };
-
-  if (!(options.body instanceof FormData)) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(resolveApiUrl(path), {
+  const res = await fetch(buildUrl(path), {
     ...options,
-    headers,
-    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...(options.headers || {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
-  const json = await res.json().catch(() => ({}));
+  const json = await res.json();
 
   if (!res.ok) {
-    throw new Error(`API ${res.status}`);
+    throw new ApiError(json?.error || "API request failed", res.status);
   }
 
-  return (json?.data ?? json) as T;
+  return json;
 }
 
-export async function apiFetch<T = any>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> {
-  return (await apiRequest(endpoint, options)) as T;
+export async function apiRequest<T = any>(path: string, options: any = {}): Promise<T> {
+  return (await apiFetch(path, options)) as T;
 }
 
-export async function safeApiFetch<T = any>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T | null> {
+export async function safeApiFetch<T = any>(path: string, options: any = {}): Promise<T | null> {
   try {
-    return await apiFetch<T>(endpoint, options);
-  } catch (err) {
-    console.error("API Error:", err);
+    return (await apiFetch(path, options)) as T;
+  } catch (error) {
+    console.error("API Error:", error);
     return null;
   }
 }
 
 export const api = {
-  async get<T = any>(path: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const data = await apiFetch<T>(path, { ...options, method: "GET" });
-    return { data };
+  async get<T = any>(path: string, options: any = {}) {
+    const data = await apiFetch(path, { ...options, method: "GET" });
+    return { data: data as T };
   },
-  async post<T = any>(path: string, body?: unknown, options: RequestInit = {}): Promise<{ data: T }> {
-    const isFormData = body instanceof FormData;
-    const data = await apiFetch<T>(path, {
-      ...options,
-      method: "POST",
-      body: isFormData ? (body as FormData) : body == null ? undefined : JSON.stringify(body),
-    });
-    return { data };
+  async post<T = any>(path: string, body?: unknown, options: any = {}) {
+    const data = await apiFetch(path, { ...options, method: "POST", body });
+    return { data: data as T };
   },
-  async patch<T = any>(path: string, body?: unknown, options: RequestInit = {}): Promise<{ data: T }> {
-    const isFormData = body instanceof FormData;
-    const data = await apiFetch<T>(path, {
-      ...options,
-      method: "PATCH",
-      body: isFormData ? (body as FormData) : body == null ? undefined : JSON.stringify(body),
-    });
-    return { data };
+  async patch<T = any>(path: string, body?: unknown, options: any = {}) {
+    const data = await apiFetch(path, { ...options, method: "PATCH", body });
+    return { data: data as T };
   },
-  async delete<T = any>(path: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const data = await apiFetch<T>(path, { ...options, method: "DELETE" });
-    return { data };
+  async delete<T = any>(path: string, options: any = {}) {
+    const data = await apiFetch(path, { ...options, method: "DELETE" });
+    return { data: data as T };
   },
 };
 

@@ -6,14 +6,12 @@ import { getTelephonyToken } from "@/telephony/getVoiceToken";
 import { assertAuthTelephonyFlow } from "./helpers/authTelephonyFlowAssertions";
 
 type FlowState = {
-  otpRequestId: string;
   otpCode: string;
   verified: boolean;
   token: string;
 };
 
 const state: FlowState = {
-  otpRequestId: "otp-req-1",
   otpCode: "123456",
   verified: false,
   token: "session-token-1"
@@ -38,7 +36,7 @@ function sendJson(res: ServerResponse, status: number, payload: unknown) {
 
 beforeAll(async () => {
   server = createServer(async (req, res) => {
-    if (req.url === "/api/auth/otp/start" && req.method === "POST") {
+    if (req.url === "/auth/otp/start" && req.method === "POST") {
       const body = await readBody(req);
       if (!body.phone) {
         sendJson(res, 400, { error: "missing phone" });
@@ -46,16 +44,15 @@ beforeAll(async () => {
       }
 
       sendJson(res, 200, {
-        success: true,
-        otpRequestId: state.otpRequestId,
+        ok: true,
         message: "OTP sent"
       });
       return;
     }
 
-    if (req.url === "/api/auth/otp/verify" && req.method === "POST") {
+    if (req.url === "/auth/otp/verify" && req.method === "POST") {
       const body = await readBody(req);
-      if (body.otp !== state.otpCode) {
+      if ((body.code ?? body.otp) !== state.otpCode) {
         sendJson(res, 401, { error: "invalid otp" });
         return;
       }
@@ -65,7 +62,7 @@ beforeAll(async () => {
       return;
     }
 
-    if (req.url === "/api/telephony/token" && req.method === "GET") {
+    if (req.url === "/telephony/token" && req.method === "GET") {
       if (!state.verified) {
         sendJson(res, 403, { error: "verify otp first" });
         return;
@@ -75,7 +72,7 @@ beforeAll(async () => {
       return;
     }
 
-    if (req.url === "/api/telephony/token-missing-field" && req.method === "GET") {
+    if (req.url === "/telephony/token-missing-field" && req.method === "GET") {
       sendJson(res, 200, { ok: true });
       return;
     }
@@ -110,7 +107,6 @@ describe("real auth/telephony flow contract checks", () => {
       {
         phone: "15551234567",
         otp: state.otpCode,
-        expectedOtpRequestId: state.otpRequestId,
         expectedSessionToken: state.token,
         expectedVoiceToken: "voice-token-1"
       }
@@ -121,7 +117,7 @@ describe("real auth/telephony flow contract checks", () => {
     const originalFetch = global.fetch;
     global.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input.toString();
-      const rewritten = url.replace("/api/telephony/token", "/api/telephony/token-missing-field");
+      const rewritten = url.replace("/telephony/token", "/telephony/token-missing-field");
       return originalFetch(rewritten, init);
     }) as typeof fetch;
 

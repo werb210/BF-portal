@@ -1,17 +1,16 @@
-import { Contracts } from "@/lib/contracts";
-import { requestWithContract } from "@/lib/contractsApi";
+import { apiFetch } from "@/lib/api";
 
 export async function startOtp(phone: string) {
-  return requestWithContract(Contracts.authOtpStart, {
+  return apiFetch("/auth/otp/start", {
     method: "POST",
     body: { phone },
   });
 }
 
-export async function verifyOtp(phone: string, otp: string) {
-  const result = await requestWithContract(Contracts.authOtpVerify, {
+export async function verifyOtp(phone: string, code: string) {
+  const result = await apiFetch("/auth/otp/verify", {
     method: "POST",
-    body: { phone, otp },
+    body: { phone, code },
   });
 
   localStorage.setItem("token", result.token);

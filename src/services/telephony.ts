@@ -1,10 +1,13 @@
-import { Contracts } from "@/lib/contracts";
-import { requestWithContract } from "@/lib/contractsApi";
+import { apiFetch } from "@/lib/api";
 
 export async function getTelephonyToken() {
-  const result = await requestWithContract(Contracts.telephonyToken, {
+  const result = await apiFetch("/telephony/token", {
     method: "GET",
   });
+
+  if (!result?.token) {
+    throw new Error("Telephony token missing");
+  }
 
   return result.token;
 }

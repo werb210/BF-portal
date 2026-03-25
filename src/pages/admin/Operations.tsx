@@ -4,7 +4,7 @@ import api from "@api/client";
 import { Navigate } from "react-router-dom";
 import CapitalScorePreview from "@/components/CapitalScorePreview";
 
-const API_PREFIX = "/api";
+const API_PREFIX = "";
 type Contact = {
   id: string;
   company: string;

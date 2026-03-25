@@ -5,7 +5,6 @@ import { getAccessToken } from "@/lib/authToken";
 import { buildUrl } from "@/lib/api";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { logger } from "@/utils/logger";
-import { AUTH_CONTRACT } from "@/lib/contracts";
 
 type RouteDescriptor = {
   path: string;
@@ -13,8 +12,8 @@ type RouteDescriptor = {
 };
 
 export const portalApiRoutes: RouteDescriptor[] = [
-  { method: "POST", path: AUTH_CONTRACT.OTP_START },
-  { method: "POST", path: AUTH_CONTRACT.OTP_VERIFY },
+  { method: "POST", path: "/auth/otp/start" },
+  { method: "POST", path: "/auth/otp/verify" },
   { method: "GET", path: "/auth/me" },
   { method: "POST", path: "/auth/logout" },
   { method: "GET", path: "/_int/routes" }

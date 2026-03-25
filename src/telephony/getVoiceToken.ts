@@ -1,10 +1,13 @@
-import { Contracts } from "bf-contracts";
-import { requestWithContract } from "@/lib/contractsApi";
+import { apiFetch } from "@/lib/api";
 
 export async function getTelephonyToken() {
-  const res = await requestWithContract(Contracts.telephonyToken, {
+  const res = await apiFetch("/telephony/token", {
     method: "GET"
   });
+
+  if (!res?.token) {
+    throw new Error("Telephony token missing");
+  }
 
   return res.token;
 }

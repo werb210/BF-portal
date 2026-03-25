@@ -1,16 +1,15 @@
-import { Contracts } from "bf-contracts";
-import { requestWithContract } from "@/lib/contractsApi";
+import { apiFetch } from "@/lib/api";
 
 export async function sendOtp(data: { phone: string }) {
-  return requestWithContract(Contracts.authOtpStart, {
+  return apiFetch("/auth/otp/start", {
     method: "POST",
     body: data
   });
 }
 
 export async function verifyOtp(data: { phone: string; otp: string }) {
-  return requestWithContract(Contracts.authOtpVerify, {
+  return apiFetch("/auth/otp/verify", {
     method: "POST",
-    body: data
+    body: { phone: data.phone, code: data.otp }
   });
 }
