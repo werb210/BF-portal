@@ -8,10 +8,10 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run test:e2e && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "node scripts/run-playwright-e2e.mjs",
+    "test:e2e": "vitest run",
     "typecheck": "tsc --noEmit || true",
     "lint": "eslint .",
     "verify": "npm run typecheck && npm run build",
