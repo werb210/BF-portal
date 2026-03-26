@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/mocks/server";
 
-export type TestRole = "Admin" | "Staff" | "Broker" | "Lender" | "Referrer";
+export type TestRole = "Admin" | "Staff" | "Lender" | "Referrer" | "Marketing";
 
 export const mockAuthedUser = (role: TestRole = "Staff") => {
   const user = {
