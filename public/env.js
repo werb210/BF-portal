@@ -1,3 +1,3 @@
 window.__ENV__ = {
-  VITE_API_URL: "https://api.staff.boreal.financial"
+  VITE_API_URL: "https://server.boreal.financial"
 };
