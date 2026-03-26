@@ -1,25 +1,29 @@
-import { API_BASE_URL } from "@/config/api";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
-export async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-  if (path.startsWith("/api")) {
-    throw new Error("INVALID_API_PATH: Do not use /api prefix");
+if (!BASE_URL) {
+  throw new Error('Missing VITE_API_URL');
+}
+
+export async function apiFetch(path: string, options: RequestInit = {}) {
+  if (path.startsWith('/api')) {
+    throw new Error('Remove /api prefix');
   }
 
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
+  const res = await fetch(`${BASE_URL}${path}`, {
+    credentials: 'include',
     headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
     },
+    ...options
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`API_ERROR ${res.status}: ${text}`);
+    throw new Error(`HTTP ${res.status}`);
   }
 
-  return (await res.json()) as T;
+  return res.json();
 }
+
+
+export default apiFetch;
