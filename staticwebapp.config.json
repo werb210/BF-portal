@@ -2,17 +2,14 @@
   "navigationFallback": {
     "rewrite": "/index.html"
   },
-  "networking": {
-    "allowedOrigins": [
-      "https://server.boreal.financial"
-    ]
-  },
   "routes": [
     {
-      "route": "/*",
-      "headers": {
-        "Content-Security-Policy": "default-src 'self'; connect-src 'self' https://server.boreal.financial https://voice-js.twilio.com https://eventgw.twilio.com https://media.twiliocdn.com https://sdk.twilio.com wss://voice-js.twilio.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
-      }
+      "route": "/api/*",
+      "statusCode": 404
     }
-  ]
+  ],
+  "globalHeaders": {
+    "Access-Control-Allow-Origin": "https://server.boreal.financial",
+    "Access-Control-Allow-Credentials": "true"
+  }
 }

@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { startOtp as startOtpRequest, verifyOtp as verifyOtpRequest } from "@api/auth";
-import { safeApiFetch } from "@api/client";
+import api from "@api/client";
 import { destroyVoice } from "@/services/voiceService";
 import { setCallStatus } from "@/dialer/callStore";
 import {
@@ -264,7 +264,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        const payload = await safeApiFetch("/auth/me");
+        const payload = await api.get("/auth/me");
         if (!payload) {
           clearInvalidTokenArtifacts();
           settleUnauthenticated();
@@ -340,7 +340,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     void (async () => {
       try {
-        const payload = await safeApiFetch("/auth/me");
+        const payload = await api.get("/auth/me");
         if (!payload) {
           clearToken();
           settleUnauthenticated();
@@ -428,7 +428,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await safeApiFetch("/auth/logout", { method: "POST" });
+      await api.post("/auth/logout");
     } finally {
       clearAuth();
       destroyDevice();

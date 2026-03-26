@@ -1,4 +1,4 @@
-import { apiFetch } from "@api/client";
+import api from "@api/client";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { ApiError } from "@api/http";
 import { getRequestId } from "@/utils/requestId";
@@ -55,17 +55,11 @@ const request = async <T>(method: string, path: string, data?: unknown, options?
   }
 
   try {
-    const isFormData = data instanceof FormData;
-    return await apiFetch<T>(path, {
-      ...options,
-      method,
-      headers: withHeaders(method, options),
-      body: data === undefined
-        ? undefined
-        : isFormData
-          ? (data as FormData)
-          : JSON.stringify(data),
-    });
+    const requestOptions = { ...options, headers: withHeaders(method, options) };
+    if (method === "GET") return await api.get<T>(path, requestOptions);
+    if (method === "DELETE") return await api.delete<T>(path, requestOptions);
+    if (method === "PATCH") return await api.patch<T>(path, data, requestOptions);
+    return await api.post<T>(path, data, { ...requestOptions, method });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Request failed";
     const normalized = message.toLowerCase();
@@ -131,17 +125,11 @@ const lenderHeaders = (method: string, options?: RequestOptions) => {
 
 const lenderRequest = async <T>(method: string, path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
   try {
-    const isFormData = data instanceof FormData;
-    return await apiFetch<T>(path, {
-      ...options,
-      method,
-      headers: lenderHeaders(method, options),
-      body: data === undefined
-        ? undefined
-        : isFormData
-          ? (data as FormData)
-          : JSON.stringify(data)
-    });
+    const requestOptions = { ...options, headers: lenderHeaders(method, options) };
+    if (method === "GET") return await api.get<T>(path, requestOptions);
+    if (method === "DELETE") return await api.delete<T>(path, requestOptions);
+    if (method === "PATCH") return await api.patch<T>(path, data, requestOptions);
+    return await api.post<T>(path, data, { ...requestOptions, method });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Request failed";
     if (message.toLowerCase().includes("401") || message.toLowerCase().includes("unauthorized")) {
