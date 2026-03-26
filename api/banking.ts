@@ -41,4 +41,4 @@ export type BankingAnalysis = {
 };
 
 export const fetchBankingAnalysis = (applicationId: string, options?: RequestOptions) =>
-  apiClient.get<BankingAnalysis>(`/api/applications/${applicationId}/banking-analysis`, options);
+  apiClient.get<BankingAnalysis>(`/applications/${applicationId}/banking-analysis`, options);
