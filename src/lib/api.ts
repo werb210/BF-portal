@@ -1,4 +1,6 @@
-export const API_BASE = "https://server.boreal.financial";
+import { API_BASE_URL } from "@/config/api";
+
+export const API_BASE = API_BASE_URL;
 
 export class ApiError extends Error {
   status?: number;
