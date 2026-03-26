@@ -1,8 +1,8 @@
 import { expect } from "vitest";
 
 export type AuthTelephonyFlowApi = {
-  startOtp: (phone: string) => Promise<{ ok: boolean }>;
-  verifyOtp: (phone: string, otp: string) => Promise<{ token: string }>;
+  startOtp: (payload: { phone: string }) => Promise<{ ok: boolean }>;
+  verifyOtp: (payload: { phone: string; code: string }) => Promise<{ token: string }>;
   getTelephonyToken: () => Promise<string>;
 };
 
@@ -17,10 +17,10 @@ export async function assertAuthTelephonyFlow(
   api: AuthTelephonyFlowApi,
   fixture: AuthTelephonyFlowFixture
 ) {
-  const otpStart = await api.startOtp(fixture.phone);
+  const otpStart = await api.startOtp({ phone: fixture.phone });
   expect(otpStart.ok).toBe(true);
 
-  const verified = await api.verifyOtp(fixture.phone, fixture.otp);
+  const verified = await api.verifyOtp({ phone: fixture.phone, code: fixture.otp });
   expect(verified.token).toBe(fixture.expectedSessionToken);
 
   const voiceToken = await api.getTelephonyToken();

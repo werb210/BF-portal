@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 
-import { startOtp, verifyOtp } from "@/services/auth";
+import { startOtp, verifyOtp } from "../../api/auth";
 import { getTelephonyToken } from "@/telephony/getVoiceToken";
 import { assertAuthTelephonyFlow } from "./helpers/authTelephonyFlowAssertions";
 
@@ -94,9 +94,11 @@ beforeAll(async () => {
   originalFetch = globalThis.fetch;
   const proxiedFetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const raw = typeof input === "string" ? input : input.toString();
-    const rewritten = raw.startsWith("https://server.boreal.financial")
-      ? raw.replace("https://server.boreal.financial", baseUrl)
-      : raw;
+    const rewritten = raw.startsWith("https://api.staff.boreal.financial")
+      ? raw.replace("https://api.staff.boreal.financial", baseUrl)
+      : raw.startsWith("http://localhost:3000")
+        ? raw.replace("http://localhost:3000", baseUrl)
+        : raw;
     return originalFetch(rewritten, init);
   }) as typeof fetch;
 

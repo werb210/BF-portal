@@ -1,4 +1,4 @@
-import type { AuthenticatedUser } from "@/services/auth";
+import type { AuthenticatedUser } from "@/types/auth";
 
 type SessionPayload = {
   accessToken: string | null;
