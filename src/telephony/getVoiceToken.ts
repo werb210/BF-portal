@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/apiFetch";
 
 export async function getTelephonyToken() {
-  const res = await apiFetch<{ token: string }>("/telephony/token");
+  const res = await apiFetch("/telephony/token");
 
   if (!res?.token) {
     throw new Error("Telephony token missing");

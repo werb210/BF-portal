@@ -3,6 +3,7 @@ import { type ReactElement } from "react";
 import { MemoryRouter, RouterProvider } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthContext, type AuthContextValue } from "@/auth/AuthContext";
+import type { Role } from "@/auth/roles";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
 import { DEFAULT_BUSINESS_UNIT } from "@/types/businessUnit";
 import { LenderAuthProvider } from "@/lender/auth/LenderAuthContext";
@@ -33,6 +34,11 @@ const createAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue
     rolesStatus: "resolved",
     user,
     accessToken: "test-token",
+    token: "test-token",
+    saveToken: () => undefined,
+    allowedSilos: [],
+    canAccessSilo: () => true,
+    canAccessRole: () => false,
     role: (overrides.role ?? (typeof user?.role === "string" ? (user.role as any) : "Staff")) as any,
     roles: overrides.roles ?? [((typeof user?.role === "string" ? user.role : "Staff") as any)],
     capabilities: [],
@@ -45,8 +51,8 @@ const createAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue
     isHydratingSession: false,
     login: async () => false,
     startOtp: async () => true,
-    verifyOtp: async () => true,
-    loginWithOtp: async () => true,
+    verifyOtp: async () => ({ ok: true }),
+    loginWithOtp: async () => ({ ok: true }),
     refreshUser: async () => true,
     clearAuth: () => undefined,
     logout: async () => {
@@ -64,6 +70,7 @@ const createAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue
 export const renderWithProviders = (ui: ReactElement, options: ExtendedRenderOptions = {}) => {
   const { route = "/", role = "Staff", auth = {}, ...rest } = options;
   const effectiveRole = (auth.role as TestRole | undefined) ?? ((auth.user as { role?: TestRole } | undefined)?.role ?? role);
+  const effectiveAuthRole = effectiveRole as Role;
   const authedUser = mockAuthedUser(effectiveRole);
   const queryClient = createQueryClient();
   const shouldWrapRouter = ui.type !== MemoryRouter && ui.type !== RouterProvider;
@@ -73,12 +80,12 @@ export const renderWithProviders = (ui: ReactElement, options: ExtendedRenderOpt
       <QueryClientProvider client={queryClient}>
         {shouldWrapRouter ? (
           <MemoryRouter initialEntries={[route]}>
-            <AuthContext.Provider value={createAuthValue({ user: authedUser, role: effectiveRole, roles: [effectiveRole], ...auth })}>
+            <AuthContext.Provider value={createAuthValue({ user: authedUser, role: effectiveAuthRole, roles: [effectiveAuthRole], ...auth })}>
               <BusinessUnitProvider>{children}</BusinessUnitProvider>
             </AuthContext.Provider>
           </MemoryRouter>
         ) : (
-          <AuthContext.Provider value={createAuthValue({ user: authedUser, role: effectiveRole, roles: [effectiveRole], ...auth })}>
+          <AuthContext.Provider value={createAuthValue({ user: authedUser, role: effectiveAuthRole, roles: [effectiveAuthRole], ...auth })}>
             <BusinessUnitProvider>{children}</BusinessUnitProvider>
           </AuthContext.Provider>
         )}

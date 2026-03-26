@@ -1,14 +1,14 @@
 import { apiFetch } from "@/lib/apiFetch";
 
 export async function startOtp(payload: { phone: string }) {
-  return apiFetch<{ ok: boolean }>("/auth/otp/start", {
+  return apiFetch("/auth/otp/start", {
     method: "POST",
     body: JSON.stringify({ phone: payload.phone }),
   });
 }
 
 export async function verifyOtp(payload: { phone: string; code: string }) {
-  const res = await apiFetch<{ ok: boolean; token: string }>("/auth/otp/verify", {
+  const res = await apiFetch("/auth/otp/verify", {
     method: "POST",
     body: JSON.stringify({ phone: payload.phone, code: payload.code }),
   });
