@@ -1,5 +1,5 @@
 import { apiClient, type RequestOptions } from "./httpClient";
-import { safeApiFetch } from "./client";
+import api from "./client";
 import type {
   Lender,
   LenderPayload,
@@ -522,8 +522,7 @@ export const retryLenderSubmission = (applicationId: string, lenderProductId?: s
 export const retryLenderTransmission = async (_transmissionId: string) => null;
 
 export async function fetchClientLenders(): Promise<ClientLender[]> {
-  const payload = await safeApiFetch<unknown>("/lenders");
-  if (!payload) return [];
+  const payload = await api.get<unknown>("/lenders");
   const normalized = (payload as { data?: unknown }).data ?? payload;
   if (Array.isArray(normalized)) {
     return normalized as ClientLender[];
@@ -535,8 +534,7 @@ export async function fetchClientLenders(): Promise<ClientLender[]> {
 }
 
 export async function fetchClientLenderProducts(): Promise<ClientLenderProduct[]> {
-  const payload = await safeApiFetch<unknown>("/lender-products");
-  if (!payload) return [];
+  const payload = await api.get<unknown>("/lender-products");
   const normalized = (payload as { data?: unknown }).data ?? payload;
   if (Array.isArray(normalized)) {
     return normalized as ClientLenderProduct[];
@@ -574,10 +572,7 @@ const parseRequirementResponse = (data: unknown) => {
 };
 
 export async function fetchClientLenderProductRequirements(productId: string) {
-  const payload = await safeApiFetch<unknown>(`/lender-products/${productId}/requirements`);
-  if (!payload) {
-    return { requirements: [], documentTypes: undefined };
-  }
+  const payload = await api.get<unknown>(`/lender-products/${productId}/requirements`);
   const normalized = (payload as { data?: unknown }).data ?? payload;
   const parsed = parseRequirementResponse(normalized);
   return {

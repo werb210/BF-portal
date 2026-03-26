@@ -1,69 +1,83 @@
-import { API_BASE_URL } from "@/config/api";
-import { apiFetch } from "@/lib/apiFetch";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
-export const API_BASE = API_BASE_URL;
+if (!BASE_URL) {
+  throw new Error('Missing VITE_API_URL');
+}
+
+export const API_BASE = BASE_URL;
 
 export class ApiError extends Error {
   status?: number;
+
   constructor(message: string, status?: number) {
     super(message);
-    this.name = "ApiError";
+    this.name = 'ApiError';
     this.status = status;
   }
 }
 
 export function buildUrl(path: string): string {
-  return `${API_BASE}${path}`;
+  return `${BASE_URL}${path}`;
 }
 
-export async function apiRequest<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-  const normalizedOptions =
-    options.body !== undefined && typeof options.body !== "string" && !(options.body instanceof FormData)
-      ? { ...options, body: JSON.stringify(options.body) }
-      : options;
+const request = async <T = any>(path: string, options: RequestInit = {}): Promise<T> => {
+  const token = localStorage.getItem('token');
+  const body =
+    options.body !== undefined && typeof options.body !== 'string' && !(options.body instanceof FormData)
+      ? JSON.stringify(options.body)
+      : options.body;
+  const isFormData = body instanceof FormData;
 
-  try {
-    return await apiFetch<T>(path, normalizedOptions);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "API request failed";
-    throw new ApiError(message);
+  const res = await fetch(`${BASE_URL}${path}`, {
+    credentials: 'include',
+    ...options,
+    body,
+    headers: {
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    }
+  });
+
+  if (!res.ok) {
+    throw new ApiError(`API error ${res.status}`, res.status);
   }
+
+  return (await res.json()) as T;
+};
+
+export async function apiRequest<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  return request<T>(path, options);
 }
 
 export async function safeApiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T | null> {
   try {
-    return await apiFetch<T>(path, options);
+    return await request<T>(path, options);
   } catch (error) {
-    console.error("API Error:", error);
+    console.error('API Error:', error);
     return null;
   }
 }
 
-export const api = {
-  async get<T = any>(path: string, options: RequestInit = {}) {
-    const data = await apiFetch<T>(path, { ...options, method: "GET" });
-    return { data };
-  },
-  async post<T = any>(path: string, body?: unknown, options: RequestInit = {}) {
-    const data = await apiFetch<T>(path, {
+const api = {
+  get: <T = any>(path: string, options: RequestInit = {}) => request<T>(path, options),
+  post: <T = any>(path: string, body?: any, options: RequestInit = {}) =>
+    request<T>(path, {
       ...options,
-      method: "POST",
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-    return { data };
-  },
-  async patch<T = any>(path: string, body?: unknown, options: RequestInit = {}) {
-    const data = await apiFetch<T>(path, {
+      method: 'POST',
+      body: body instanceof FormData ? body : JSON.stringify(body)
+    }),
+  patch: <T = any>(path: string, body?: any, options: RequestInit = {}) =>
+    request<T>(path, {
       ...options,
-      method: "PATCH",
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-    return { data };
-  },
-  async delete<T = any>(path: string, options: RequestInit = {}) {
-    const data = await apiFetch<T>(path, { ...options, method: "DELETE" });
-    return { data };
-  },
+      method: 'PATCH',
+      body: body instanceof FormData ? body : JSON.stringify(body)
+    }),
+  delete: <T = any>(path: string, options: RequestInit = {}) =>
+    request<T>(path, {
+      ...options,
+      method: 'DELETE'
+    })
 };
 
 export default api;

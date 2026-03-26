@@ -1,4 +1,4 @@
-import { safeApiFetch } from "@api/client";
+import api from "@api/client";
 import { useCrmStore } from "@/state/crm.store";
 import type { CRMLead } from "@/types/crm";
 
@@ -7,10 +7,7 @@ type ApiLead = Record<string, unknown>;
 type ApiResponse<T> = { data?: T } & T;
 
 async function requestJson<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const payload = await safeApiFetch<ApiResponse<T>>(path, options);
-  if (!payload) {
-    throw new Error("Request failed");
-  }
+  const payload = await api.get<ApiResponse<T>>(path, options);
   return (payload as { data?: T }).data ?? (payload as T);
 }
 

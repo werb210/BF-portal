@@ -10,12 +10,12 @@ export interface PreApplicationRecord {
 }
 
 export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
-  const res = await safeApiFetch<PreApplicationRecord[]>("/api" + "/preapp/admin/list");
+  const res = await safeApiFetch<PreApplicationRecord[]>("/preapp/admin/list");
   return Array.isArray(res) ? res : [];
 }
 
 export async function convertPreApplication(id: string) {
-  const res = await safeApiFetch<Record<string, unknown>>("/api" + "/preapp/admin/convert", {
+  const res = await safeApiFetch<Record<string, unknown>>("/preapp/admin/convert", {
     method: "POST",
     body: JSON.stringify({ id })
   });
