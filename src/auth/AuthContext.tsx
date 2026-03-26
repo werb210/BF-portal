@@ -9,7 +9,7 @@ import {
   setStoredAccessToken,
   setStoredUser,
 } from "@/services/token";
-import type { AuthenticatedUser } from "@/services/auth";
+import type { AuthenticatedUser } from "@/types/auth";
 import { normalizeRole, roleIn, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import { clearSession, writeSession } from "@/utils/sessionStore";
