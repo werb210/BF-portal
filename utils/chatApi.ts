@@ -1,24 +1,21 @@
-import { withApiBase } from "../src/lib/apiBase";
+import { apiRequest } from "@/lib/api";
 
 export async function apiCreateConversation(clientId: string, staffUserId: string) {
-  const r = await fetch(withApiBase("/api/chat/conversation"), {
+  return apiRequest("/chat/conversation", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ clientId, staffUserId }),
+    body: { clientId, staffUserId }
   });
-  return r.json();
 }
 
 export async function apiFetchMessages(conversationId: string) {
-  const r = await fetch(withApiBase(`/api/chat/messages/${conversationId}`));
-  return r.json();
+  return apiRequest(`/chat/messages/${conversationId}`, {
+    method: "GET"
+  });
 }
 
 export async function apiSendMessage(conversationId: string, senderRole: string, text: string) {
-  const r = await fetch(withApiBase(`/api/chat/messages/${conversationId}`), {
+  return apiRequest(`/chat/messages/${conversationId}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ senderRole, text }),
+    body: { senderRole, text }
   });
-  return r.json();
 }
