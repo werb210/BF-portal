@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/config/api";
+import { apiFetch } from "@/lib/apiFetch";
 
 export const API_BASE = API_BASE_URL;
 
@@ -15,35 +16,23 @@ export function buildUrl(path: string): string {
   return `${API_BASE}${path}`;
 }
 
-export async function apiFetch(path: string, options: any = {}) {
-  const token = localStorage.getItem("token");
+export async function apiRequest<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  const normalizedOptions =
+    options.body !== undefined && typeof options.body !== "string" && !(options.body instanceof FormData)
+      ? { ...options, body: JSON.stringify(options.body) }
+      : options;
 
-  const res = await fetch(buildUrl(path), {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...(options.headers || {}),
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new ApiError(json?.error || "API request failed", res.status);
-  }
-
-  return json;
-}
-
-export async function apiRequest<T = any>(path: string, options: any = {}): Promise<T> {
-  return (await apiFetch(path, options)) as T;
-}
-
-export async function safeApiFetch<T = any>(path: string, options: any = {}): Promise<T | null> {
   try {
-    return (await apiFetch(path, options)) as T;
+    return await apiFetch<T>(path, normalizedOptions);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "API request failed";
+    throw new ApiError(message);
+  }
+}
+
+export async function safeApiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T | null> {
+  try {
+    return await apiFetch<T>(path, options);
   } catch (error) {
     console.error("API Error:", error);
     return null;
@@ -51,21 +40,29 @@ export async function safeApiFetch<T = any>(path: string, options: any = {}): Pr
 }
 
 export const api = {
-  async get<T = any>(path: string, options: any = {}) {
-    const data = await apiFetch(path, { ...options, method: "GET" });
-    return { data: data as T };
+  async get<T = any>(path: string, options: RequestInit = {}) {
+    const data = await apiFetch<T>(path, { ...options, method: "GET" });
+    return { data };
   },
-  async post<T = any>(path: string, body?: unknown, options: any = {}) {
-    const data = await apiFetch(path, { ...options, method: "POST", body });
-    return { data: data as T };
+  async post<T = any>(path: string, body?: unknown, options: RequestInit = {}) {
+    const data = await apiFetch<T>(path, {
+      ...options,
+      method: "POST",
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    return { data };
   },
-  async patch<T = any>(path: string, body?: unknown, options: any = {}) {
-    const data = await apiFetch(path, { ...options, method: "PATCH", body });
-    return { data: data as T };
+  async patch<T = any>(path: string, body?: unknown, options: RequestInit = {}) {
+    const data = await apiFetch<T>(path, {
+      ...options,
+      method: "PATCH",
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    return { data };
   },
-  async delete<T = any>(path: string, options: any = {}) {
-    const data = await apiFetch(path, { ...options, method: "DELETE" });
-    return { data: data as T };
+  async delete<T = any>(path: string, options: RequestInit = {}) {
+    const data = await apiFetch<T>(path, { ...options, method: "DELETE" });
+    return { data };
   },
 };
 

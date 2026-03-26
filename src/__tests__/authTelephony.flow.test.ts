@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 
-import { startOtp, verifyOtp } from "../../api/auth";
+import { apiRequest } from "@/lib/api";
 import { getTelephonyToken } from "@/telephony/getVoiceToken";
 import { assertAuthTelephonyFlow } from "./helpers/authTelephonyFlowAssertions";
 
@@ -16,6 +16,25 @@ const state: FlowState = {
   verified: false,
   token: "session-token-1"
 };
+
+
+async function startOtp(payload: { phone: string }) {
+  return apiRequest<{ ok: boolean }>("/auth/otp/start", {
+    method: "POST",
+    body: { phone: payload.phone },
+  });
+}
+
+async function verifyOtp(payload: { phone: string; code: string }) {
+  const res = await apiRequest<{ ok: boolean; token: string }>("/auth/otp/verify", {
+    method: "POST",
+    body: { phone: payload.phone, code: payload.code },
+  });
+
+  if (!res?.token) throw new Error("Missing token");
+  localStorage.setItem("token", res.token);
+  return res;
+}
 
 let server: ReturnType<typeof createServer>;
 let baseUrl = "";
@@ -94,8 +113,8 @@ beforeAll(async () => {
   originalFetch = globalThis.fetch;
   const proxiedFetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const raw = typeof input === "string" ? input : input.toString();
-    const rewritten = raw.startsWith("https://api.staff.boreal.financial")
-      ? raw.replace("https://api.staff.boreal.financial", baseUrl)
+    const rewritten = raw.startsWith("https://server.boreal.financial")
+      ? raw.replace("https://server.boreal.financial", baseUrl)
       : raw.startsWith("http://localhost:3000")
         ? raw.replace("http://localhost:3000", baseUrl)
         : raw;
