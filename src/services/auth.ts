@@ -1,12 +1,13 @@
-import { API_BASE } from "@/lib/api";
+import { API_BASE_URL } from "@/config/api";
 
-export async function startOtp(phone: string) {
-  const res = await fetch(`${API_BASE}/auth/otp/start`, {
+export async function startOtp(email: string) {
+  const res = await fetch(`${API_BASE_URL}/auth/otp/start`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ phone }),
+    body: JSON.stringify({ email, phone: email }),
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -19,12 +20,13 @@ export async function startOtp(phone: string) {
 }
 
 export async function verifyOtp(phone: string, code: string) {
-  const res = await fetch(`${API_BASE}/auth/otp/verify`, {
+  const res = await fetch(`${API_BASE_URL}/auth/otp/verify`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ phone, code }),
+    credentials: "include",
   });
 
   if (!res.ok) {
