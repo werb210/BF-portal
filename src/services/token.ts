@@ -12,9 +12,9 @@ export function getStoredAccessToken(): string | null {
 
 export function clearStoredAuth() {
   clearToken();
-  localStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(USER_KEY);
 }
 
 export function setStoredUser(user: unknown) {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  sessionStorage.setItem(USER_KEY, JSON.stringify(user));
 }

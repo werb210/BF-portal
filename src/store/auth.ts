@@ -5,12 +5,12 @@ const REFRESH_TOKEN_KEY = "staff_refresh_token";
 let inMemoryRefreshToken: string | null = null;
 
 const canUseLocalStorage = () =>
-  typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
 
 const readStoredRefreshToken = (): string | null => {
   if (!canUseLocalStorage()) return null;
   try {
-    return window.localStorage.getItem(REFRESH_TOKEN_KEY);
+    return window.sessionStorage.getItem(REFRESH_TOKEN_KEY);
   } catch {
     return null;
   }
@@ -20,10 +20,10 @@ const writeStoredRefreshToken = (token: string | null) => {
   if (!canUseLocalStorage()) return;
   try {
     if (!token) {
-      window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+      window.sessionStorage.removeItem(REFRESH_TOKEN_KEY);
       return;
     }
-    window.localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    window.sessionStorage.setItem(REFRESH_TOKEN_KEY, token);
   } catch {
     // ignore storage errors
   }

@@ -17,7 +17,7 @@ export default function Dashboard() {
     const loadDashboard = async () => {
       try {
         const res = await api.get("/api/bi/dashboard");
-        setData((res.data?.data ?? res.data) as DashboardData);
+        setData((res?.data ?? res) as DashboardData);
       } catch (e) {
         console.error(e);
         throw new Error("Something failed. Check console.");

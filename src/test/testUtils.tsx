@@ -56,7 +56,7 @@ const createAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue
     refreshUser: async () => true,
     clearAuth: () => undefined,
     logout: async () => {
-      localStorage.removeItem("persist");
+      sessionStorage.removeItem("persist");
       sessionStorage.removeItem("persist");
     },
     setAuth: () => undefined,

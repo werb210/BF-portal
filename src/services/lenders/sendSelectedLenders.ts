@@ -19,5 +19,5 @@ export async function sendSelectedLenders(payload: SendPayload) {
     { lenders: payload.lenders }
   )
 
-  return res.data
+  return res
 }

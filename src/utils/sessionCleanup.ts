@@ -1,7 +1,7 @@
 export const clearClientStorage = () => {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.clear();
+    window.sessionStorage.clear();
   } catch {
     // ignore storage errors
   }

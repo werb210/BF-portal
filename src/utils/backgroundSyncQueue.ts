@@ -19,8 +19,8 @@ const trackedPathPattern = /\/(lenders|products|users)\b/i;
 let queue: QueuedMutation[] = [];
 
 const loadQueue = () => {
-  if (typeof localStorage === "undefined") return;
-  const raw = localStorage.getItem(QUEUE_KEY);
+  if (typeof sessionStorage === "undefined") return;
+  const raw = sessionStorage.getItem(QUEUE_KEY);
   if (!raw) return;
   try {
     queue = JSON.parse(raw) as QueuedMutation[];
@@ -30,8 +30,8 @@ const loadQueue = () => {
 };
 
 const persistQueue = () => {
-  if (typeof localStorage === "undefined") return;
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  if (typeof sessionStorage === "undefined") return;
+  sessionStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
 };
 
 const buildMutationUrl = (path: string) => {

@@ -15,10 +15,10 @@ export type User = {
 
 export async function getUsers(params?: { role?: string; status?: string }) {
   const res = await api.get<{ users?: User[] } | User[]>("/users", { params });
-  if (Array.isArray(res.data)) {
-    return res.data;
+  if (Array.isArray(res)) {
+    return res;
   }
-  return res.data?.users ?? [];
+  return res?.users ?? [];
 }
 
 export async function updateUser(
@@ -26,12 +26,12 @@ export async function updateUser(
   data: Partial<Pick<User, "role" | "status">>
 ) {
   const res = await api.patch<{ user?: User } | User>(`/users/${id}`, data);
-  return "user" in res.data ? res.data.user ?? null : res.data ?? null;
+  return "user" in res ? res.user ?? null : res ?? null;
 }
 
 export async function getMe() {
   const res = await api.get<{ user?: User } | User>("/users/me");
-  return "user" in res.data ? res.data.user ?? null : res.data ?? null;
+  return "user" in res ? res.user ?? null : res ?? null;
 }
 
 export async function updateMe(data: {
@@ -40,5 +40,5 @@ export async function updateMe(data: {
   last_name?: string;
 }) {
   const res = await api.patch<{ user?: User } | User>("/users/me", data);
-  return "user" in res.data ? res.data.user ?? null : res.data ?? null;
+  return "user" in res ? res.user ?? null : res ?? null;
 }

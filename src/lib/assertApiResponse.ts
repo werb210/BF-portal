@@ -1,15 +1,19 @@
 import type { ApiResponse } from "@/types/api";
 
 export function assertApiResponse<T>(data: unknown): T {
-  if (!data || typeof data !== "object" || typeof (data as { success?: unknown }).success !== "boolean") {
+  const res = data as ApiResponse<T> | null;
+
+  if (!res || typeof res !== "object") {
     throw new Error("Invalid API response");
   }
 
-  const payload = data as ApiResponse<T>;
-
-  if (!payload.success) {
-    throw new Error(payload.error || "Request failed");
+  if (!("success" in res)) {
+    throw new Error("Missing success field");
   }
 
-  return payload.data;
+  if (res.success === false) {
+    throw new Error(res.error || "API failure");
+  }
+
+  return res.data;
 }

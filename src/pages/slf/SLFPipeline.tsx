@@ -26,7 +26,7 @@ export default function SLFPipeline() {
 
   const loadDeals = useCallback(async () => {
     const res = await api.get<SLFDeal[]>("/deals");
-    setDeals(res.data);
+    setDeals(res);
     setIsLoading(false);
   }, [api]);
 

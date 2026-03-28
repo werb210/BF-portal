@@ -17,7 +17,7 @@ export default function AIKnowledgeBasePage() {
     api
       .get("/admin/ai-documents")
       .then((res) => {
-        setFiles(Array.isArray(res.data) ? res.data : []);
+        setFiles(Array.isArray(res) ? res : []);
       })
       .catch((error) => {
         logger.error("Failed to load AI documents", { error });

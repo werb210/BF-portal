@@ -22,7 +22,7 @@ async function verifyOtp(payload: { phone: string; code: string }) {
   });
 
   if (!result.token) throw new Error("Missing token");
-  localStorage.setItem("token", result.token);
+  sessionStorage.setItem("token", result.token);
   return result;
 }
 

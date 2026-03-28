@@ -11,7 +11,7 @@ type PipelinePersistedState = {
 
 const readPipelineState = (): PipelinePersistedState => {
   if (typeof window === "undefined") return {};
-  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const raw = window.sessionStorage.getItem(STORAGE_KEY);
   if (!raw) return {};
   try {
     return JSON.parse(raw) as PipelinePersistedState;
@@ -22,7 +22,7 @@ const readPipelineState = (): PipelinePersistedState => {
 
 const writePipelineState = (draft: PipelinePersistedState) => {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+  window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
 };
 
 const persistPipelineState = (state: PipelineStoreState) => {
@@ -36,7 +36,7 @@ const persistPipelineState = (state: PipelineStoreState) => {
 
 const clearPipelineState = () => {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(STORAGE_KEY);
+  window.sessionStorage.removeItem(STORAGE_KEY);
 };
 
 export type PipelineStoreState = {

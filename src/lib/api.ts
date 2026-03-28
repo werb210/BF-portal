@@ -1,13 +1,6 @@
-import axios from "axios";
+import { request as axiosRequest } from "axios";
 import { assertApiResponse } from "@/lib/assertApiResponse";
 import { requireAuth } from "@/utils/requireAuth";
-
-const API_BASE_URL = "https://server.boreal.financial";
-
-const singletonClient = axios.create({
-  baseURL: API_BASE_URL,
-});
-void singletonClient;
 
 const ensureApiPath = (url?: string) => {
   if (!url) return url;
@@ -34,8 +27,9 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
   const payload = options.body ?? options.data;
 
   try {
-    const response = await axios.request({
+    const response = await axiosRequest({
       ...options,
+      baseURL: "https://server.boreal.financial",
       method,
       url: ensureApiPath(path),
       data: payload,

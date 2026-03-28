@@ -14,7 +14,7 @@ export default function SLFDashboard() {
   useEffect(() => {
     async function load() {
       const res = await api.get<SLFDeal[]>("/deals");
-      setDeals(res.data);
+      setDeals(res);
     }
     void load();
   }, [api]);

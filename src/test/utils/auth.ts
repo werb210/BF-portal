@@ -10,7 +10,7 @@ export const mockAuthedUser = (role: TestRole = "Staff") => {
     role
   };
 
-  localStorage.setItem("bf_token", "test-token");
+  sessionStorage.setItem("bf_token", "test-token");
   
 
   server.use(

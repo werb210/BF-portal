@@ -9,7 +9,7 @@ describe("api smoke", () => {
 
   beforeEach(() => {
     mock.reset();
-    localStorage.setItem("auth_token", "smoke-token");
+    sessionStorage.setItem("auth_token", "smoke-token");
   });
 
   it("calls auth + applications endpoints and validates API response structure", async () => {

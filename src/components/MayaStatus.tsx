@@ -8,7 +8,7 @@ export default function MayaStatus() {
     void api
       .get("/health")
       .then((res) => {
-        setStatus((res.data as { maya?: string })?.maya ?? "degraded");
+        setStatus((res as { maya?: string })?.maya ?? "degraded");
       })
       .catch(() => {
         // swallow health-check failures (non-blocking)

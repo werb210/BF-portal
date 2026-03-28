@@ -86,7 +86,7 @@ export const logResponse = (response: GenericResponse) => {
   const requestId = getRequestId();
   endPendingRequest(response.config.__pendingId);
 
-  console.info("API response", { requestId, status: response.status, data: truncate(serialize(response.data)) });
+  console.info("API response", { requestId, status: response.status, data: truncate(serialize(response)) });
 
   setLastApiRequest({
     path: buildRequestUrl(response.config),
