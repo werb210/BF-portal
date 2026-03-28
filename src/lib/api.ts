@@ -2,11 +2,16 @@ import axios from "axios";
 import { assertApiResponse } from "@/lib/assertApiResponse";
 import { requireAuth } from "@/utils/requireAuth";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const API_TIMEOUT_MS = 5000;
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 5000,
+});
+
+// ✅ RESTORE DEFAULT EXPORT
+export default api;
 
 export async function apiRequest<T = unknown>(
-  method: "get" | "post" | "put" | "delete" | "patch",
+  method: "get" | "post" | "put" | "delete",
   url: string,
   data?: unknown,
   auth = true
@@ -20,9 +25,7 @@ export async function apiRequest<T = unknown>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await axios({
-    baseURL: API_BASE_URL,
-    timeout: API_TIMEOUT_MS,
+  const response = await api.request({
     method,
     url,
     data,
