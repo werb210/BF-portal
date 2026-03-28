@@ -1,4 +1,4 @@
-import type { CalendarEvent } from "@api/calendar";
+import type { CalendarEvent } from "@/api/calendar";
 import { getWeekDays, groupEventsByDay, sortEvents } from "./utils";
 
 const WeekView = ({ date, localEvents }: { date: Date; localEvents: CalendarEvent[] }) => {

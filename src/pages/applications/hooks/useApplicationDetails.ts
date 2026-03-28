@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchApplicationDetails } from "@api/applications";
+import { fetchApplicationDetails } from "@/api/applications";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import type { ApplicationDetails } from "@/types/application.types";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";

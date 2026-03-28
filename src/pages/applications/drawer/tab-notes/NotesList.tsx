@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { NoteMessage } from "@api/notes";
+import type { NoteMessage } from "@/api/notes";
 
 type NotesListProps = {
   notes: NoteMessage[];

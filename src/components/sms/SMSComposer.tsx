@@ -4,8 +4,8 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
-import type { Contact } from "@api/crm";
-import { fetchSmsThread, sendSms } from "@api/communications";
+import type { Contact } from "@/api/crm";
+import { fetchSmsThread, sendSms } from "@/api/communications";
 import SMSThread from "./SMSThread";
 import { useCrmStore } from "@/state/crm.store";
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import { submitReferral } from "@api/referrals";
+import { submitReferral } from "@/api/referrals";
 import { useAuth } from "@/hooks/useAuth";
 import { useSilo } from "@/hooks/useSilo";
 import { getErrorMessage } from "@/utils/errors";

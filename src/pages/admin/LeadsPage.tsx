@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchLeads } from "@api/crm";
+import { fetchLeads } from "@/api/crm";
 import type { Lead, LeadMetadata, LeadSource, LeadStatus } from "@/types/crm";
 
 type ApiLead = {

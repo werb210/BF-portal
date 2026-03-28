@@ -1,5 +1,5 @@
 import Button from "@/components/ui/Button";
-import type { TimelineEventType } from "@api/crm";
+import type { TimelineEventType } from "@/api/crm";
 
 interface TimelineFiltersProps {
   activeTypes: TimelineEventType[];

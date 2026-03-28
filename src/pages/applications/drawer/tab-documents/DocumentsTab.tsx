@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { acceptDocument, fetchDocumentRequirements, rejectDocument } from "@api/documents";
-import { retryUnlessClientError } from "@api/retryPolicy";
+import { acceptDocument, fetchDocumentRequirements, rejectDocument } from "@/api/documents";
+import { retryUnlessClientError } from "@/api/retryPolicy";
 import Modal from "@/components/ui/Modal";
 import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 import { useAuth } from "@/hooks/useAuth";

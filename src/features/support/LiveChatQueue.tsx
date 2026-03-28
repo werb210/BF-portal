@@ -37,7 +37,7 @@ export function LiveChatQueue({ isAdmin }: LiveChatQueueProps) {
         {requests.map((request) => (
           <div key={request.id} className="chat-request flex items-center justify-between rounded border border-slate-200 p-3">
             <strong>{request.source}</strong>
-            <button className="rounded border border-slate-300 px-3 py-1" onClick={() => alert("Open chat window")}>
+            <button className="rounded border border-slate-300 px-3 py-1" onClick={() => (() => { throw new Error("Open chat window"); })()}>
               Join Chat
             </button>
           </div>

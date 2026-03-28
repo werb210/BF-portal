@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { apiClient } from "@api/httpClient";
+import { apiClient } from "@/api/httpClient";
 
 const API_PREFIX = "";
 type SLFNote = {

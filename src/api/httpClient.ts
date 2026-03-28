@@ -1,6 +1,6 @@
-import api from "@api/client";
+import api from "@/api/client";
 import { reportAuthFailure } from "@/auth/authEvents";
-import { ApiError } from "@api/http";
+import { ApiError } from "@/api/http";
 import { getRequestId } from "@/utils/requestId";
 import { getStoredAccessToken } from "@/services/token";
 

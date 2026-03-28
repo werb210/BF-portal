@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { biGetReportSummary } from "@api/biClient";
+import { biGetReportSummary } from "@/api/biClient";
 
 interface ReportSummary {
   totalApplications: number;

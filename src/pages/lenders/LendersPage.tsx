@@ -30,7 +30,7 @@ import {
   type LenderPayload,
   type LenderProduct,
   type LenderProductPayload
-} from "@api/lenders";
+} from "@/api/lenders";
 import { ApiError } from "@/lib/api";
 import { getErrorMessage } from "@/utils/errors";
 import { getRequestId } from "@/utils/requestId";

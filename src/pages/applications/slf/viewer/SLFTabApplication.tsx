@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@api/httpClient";
+import { apiClient } from "@/api/httpClient";
 
 const API_PREFIX = "";
 type SLFApplication = {

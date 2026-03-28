@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Card from "@/components/ui/Card";
-import { fetchStaffCallStats } from "@api/dialer";
+import { fetchStaffCallStats } from "@/api/dialer";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveUserRole } from "@/utils/roles";
 

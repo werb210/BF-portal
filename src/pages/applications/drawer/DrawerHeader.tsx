@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchApplicationDetails } from "@api/applications";
+import { fetchApplicationDetails } from "@/api/applications";
 import type { ApplicationDetails } from "@/types/application.types";
 import { getProcessingStatus } from "@/pages/applications/utils/processingStatus";
 

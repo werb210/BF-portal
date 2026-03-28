@@ -2,7 +2,7 @@ import { useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchSmsCampaigns, sendBulkSms, type BulkSMS } from "@api/bulkMessaging";
+import { fetchSmsCampaigns, sendBulkSms, type BulkSMS } from "@/api/bulkMessaging";
 import AudienceSelector from "./AudienceSelector";
 
 const BulkSMSComposer = () => {

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
-import { dashboardApi } from "@api/dashboard";
+import { dashboardApi } from "@/api/dashboard";
 
 const DealMetrics = () => {
   const enableDashboardQueries = process.env.NODE_ENV !== "test";

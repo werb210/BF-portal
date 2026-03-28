@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchCreditSummary, type CreditSummary } from "@api/credit";
+import { fetchCreditSummary, type CreditSummary } from "@/api/credit";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
 import { trackPortalEvent } from "@/lib/portalTracking";

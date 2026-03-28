@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSupportQueue } from "@api/support";
+import { getSupportQueue } from "@/api/support";
 
 export default function SupportQueue() {
   const [sessions, setSessions] = useState<any[]>([]);
@@ -28,7 +28,7 @@ export default function SupportQueue() {
           <div>
             <strong>Time:</strong> {new Date(s.createdAt).toLocaleString()}
           </div>
-          <button onClick={() => alert("Chat window to open here")}>Join Chat</button>
+          <button onClick={() => (() => { throw new Error("Chat window to open here"); })()}>Join Chat</button>
         </div>
       ))}
     </div>

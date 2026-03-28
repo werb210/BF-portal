@@ -4,7 +4,7 @@ import {
   fetchAdminAiRules,
   type AdminAiRule,
   updateAdminAiRule
-} from "@api/adminAiRules";
+} from "@/api/adminAiRules";
 
 export default function AiControlPage() {
   const [rules, setRules] = useState<AdminAiRule[]>([]);

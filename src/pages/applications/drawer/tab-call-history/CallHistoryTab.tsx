@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchCallHistory } from "@api/dialer";
+import { fetchCallHistory } from "@/api/dialer";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveUserRole } from "@/utils/roles";

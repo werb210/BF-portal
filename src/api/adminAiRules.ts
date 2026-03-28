@@ -1,4 +1,4 @@
-import apiClient from "@api/httpClient";
+import apiClient from "@/api/httpClient";
 
 export type AdminAiRule = {
   id: string;

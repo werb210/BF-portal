@@ -1,4 +1,4 @@
-import type { CommunicationConversation } from "@api/communications";
+import type { CommunicationConversation } from "@/api/communications";
 
 const channelIcons: Record<string, string> = {
   chat: "💬",

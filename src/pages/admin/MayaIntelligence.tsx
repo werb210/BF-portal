@@ -5,7 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar
 } from "recharts";
-import apiClient from "@api/client";
+import apiClient from "@/api/client";
 
 interface OverviewData {
   autonomy: any;
@@ -38,7 +38,7 @@ export default function MayaIntelligence() {
 
   async function rollbackModel(version: string) {
     await apiClient.post("/maya/model-rollback", { version });
-    alert("Model rolled back.");
+    throw new Error("Model rolled back.");
   }
 
   if (!data) return <div>Loading Maya Intelligence...</div>;

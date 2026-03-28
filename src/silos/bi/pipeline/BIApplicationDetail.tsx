@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { biFetch } from "@api/biClient";
+import { biFetch } from "@/api/biClient";
 import ActivityTimeline from "../components/ActivityTimeline";
 
 type BIApplicationDetailData = {

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { biFetch } from "@api/biClient";
+import { biFetch } from "@/api/biClient";
 import ActivityTimeline from "../components/ActivityTimeline";
-import { apiClient } from "@api/httpClient";
+import { apiClient } from "@/api/httpClient";
 
 const API_PREFIX = "";
 type Application = {

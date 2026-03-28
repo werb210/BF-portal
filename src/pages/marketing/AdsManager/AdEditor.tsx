@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import type { AdRecord, AdPlatform } from "@api/marketing.ads";
-import { createAd, updateAd } from "@api/marketing.ads";
+import type { AdRecord, AdPlatform } from "@/api/marketing.ads";
+import { createAd, updateAd } from "@/api/marketing.ads";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Props {

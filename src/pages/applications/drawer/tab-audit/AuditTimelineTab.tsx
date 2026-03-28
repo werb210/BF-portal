@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchApplicationAudit } from "@api/applications";
+import { fetchApplicationAudit } from "@/api/applications";
 import renderValue from "@/pages/applications/ApplicationDetails";
 import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 import type { ApplicationAuditEvent } from "@/types/application.types";

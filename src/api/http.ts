@@ -22,7 +22,7 @@ export class ApiError extends Error {
   }
 }
 
-import api from "@api/client";
+import api from "@/api/client";
 
 export { api as default };
 export { api };
