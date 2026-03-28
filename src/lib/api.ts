@@ -1,32 +1,37 @@
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { AxiosRequestConfig } from 'axios'
+
+const API_BASE = import.meta.env.VITE_API_URL
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "",
-  withCredentials: true,
-});
+  baseURL: API_BASE,
+})
 
-/**
- * Standard request wrapper
- */
-export async function apiRequest<T = unknown>(
-  config: AxiosRequestConfig
+export async function apiRequest<T = any>(
+  url: string,
+  config: AxiosRequestConfig & { data?: any } = {}
 ): Promise<T> {
-  const response = await api.request<T>(config);
-  return response.data;
+  const token = localStorage.getItem('token')
+
+  const res = await api({
+    url,
+    method: config.method || 'GET',
+    data: config.data,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...config.headers,
+    },
+  })
+
+  return res.data
 }
 
-/**
- * REQUIRED BY APP + SESSION GUARD
- */
-export function requireAuth(): string {
-  const token = localStorage.getItem("token");
+export function requireAuth() {
+  const token = localStorage.getItem('token')
 
   if (!token) {
-    window.location.href = "/login";
-    throw new Error("Not authenticated");
+    window.location.href = '/login'
   }
-
-  return token;
 }
 
-export default api;
+export default api

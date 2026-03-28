@@ -2,7 +2,7 @@ import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
 import { getAccessToken } from "@/lib/authToken";
-import { buildUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { logger } from "@/utils/logger";
 
@@ -64,17 +64,17 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
   const token = getAccessToken();
   if (!token) return false;
   try {
-    const response = await fetch (buildUrl("/auth/me"), {
+    await apiRequest("/auth/me", {
       headers: {
         "X-Request-Id": requestId,
         Authorization: `Bearer ${token}`
       }
     });
-    if (response.status === 401) {
+    return true;
+  } catch (error: any) {
+    if (error?.response?.status === 401) {
       reportAuthFailure("unauthorized");
     }
-    return response.ok;
-  } catch {
     return false;
   }
 };
@@ -91,19 +91,9 @@ export const runRouteAudit = async (): Promise<void> => {
   });
 
   try {
-    const response = await fetch (buildUrl("/_int/routes"), {
+    const payload = await apiRequest("/_int/routes", {
       headers: { "X-Request-Id": requestId }
     });
-
-    if (!response.ok) {
-      logger.warn("Route audit fetch failed", {
-        requestId,
-        status: response.status
-      });
-      return;
-    }
-
-    const payload = await response.json().catch(() => null);
     const serverRoutes = extractServerRoutes(payload);
     if (serverRoutes.length === 0) {
       logger.warn("Route audit unavailable: no routes payload.", { requestId });

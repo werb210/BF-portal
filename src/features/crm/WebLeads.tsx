@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { buildUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 export default function WebLeads() {
   const [leads, setLeads] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch (buildUrl("/crm/web-leads"))
-      .then((res) => res.json())
+    apiRequest<{ leads?: any[] }>("/crm/web-leads")
       .then((data) => setLeads(data.leads || []));
   }, []);
 

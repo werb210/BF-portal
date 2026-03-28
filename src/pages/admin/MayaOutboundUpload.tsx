@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { buildUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 export default function MayaOutboundUpload() {
 
@@ -12,21 +12,19 @@ export default function MayaOutboundUpload() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch (buildUrl("/admin/upload-leads"), {
+    const json = await apiRequest<{ inserted: number }>("/admin/upload-leads", {
       method: "POST",
-      body: formData
+      data: formData,
+      headers: { "Content-Type": "multipart/form-data" },
     });
-
-    const json = await res.json();
     setMessage(`Inserted ${json.inserted} leads.`);
   }
 
   async function runOutbound() {
-    const res = await fetch (buildUrl("/admin/run-outbound"), {
+    const json = await apiRequest<{ callsTriggered: number }>("/admin/run-outbound", {
       method: "POST"
     });
 
-    const json = await res.json();
     setMessage(`Triggered ${json.callsTriggered} outbound calls.`);
   }
 

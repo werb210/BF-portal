@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { buildUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 export default function ComparisonEditor() {
   const { user } = useAuth();
   const [data, setData] = useState<unknown>(null);
 
   async function load() {
-    const res = await fetch (buildUrl("/comparison"));
-    const json = await res.json();
+    const json = await apiRequest<unknown>("/comparison");
     setData(json);
   }
 

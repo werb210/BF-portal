@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { buildUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 type KnowledgeEntry = {
   id: string;
@@ -15,18 +15,16 @@ export function KnowledgeBaseAdmin({ isAdmin }: KnowledgeBaseAdminProps) {
   const [content, setContent] = useState("");
 
   async function load() {
-    const res = await fetch (buildUrl("/ai/knowledge"));
-    const data = (await res.json()) as KnowledgeEntry[];
+    const data = await apiRequest<KnowledgeEntry[]>("/api/ai/admin");
     setEntries(data);
   }
 
   async function addEntry() {
     if (!content.trim()) return;
 
-    await fetch (buildUrl("/ai/knowledge"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content })
+    await apiRequest('/api/ai/admin', {
+      method: 'POST',
+      data: { content },
     });
     setContent("");
     await load();

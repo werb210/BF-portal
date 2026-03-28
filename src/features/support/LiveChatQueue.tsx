@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { buildUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 type LiveRequest = {
   id: string;
@@ -14,8 +14,7 @@ export function LiveChatQueue({ isAdmin }: LiveChatQueueProps) {
   const [requests, setRequests] = useState<LiveRequest[]>([]);
 
   async function load() {
-    const res = await fetch (buildUrl("/support/live"));
-    const data = (await res.json()) as LiveRequest[];
+    const data = await apiRequest<LiveRequest[]>("/support/live");
     setRequests(data);
   }
 

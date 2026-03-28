@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/config/api";
+import { apiRequest } from "@/lib/api";
 import { getAccessToken } from "@/lib/authToken";
 
 export type QueuedMutation = {
@@ -34,12 +34,6 @@ const persistQueue = () => {
   sessionStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
 };
 
-const buildMutationUrl = (path: string) => {
-  const base = API_BASE_URL;
-  const trimmedBase = base.endsWith("/") ? base.slice(0, -1) : base;
-  const trimmedPath = path.startsWith("/") ? path.slice(1) : path;
-  return `${trimmedBase}/${trimmedPath}`;
-};
 
 const safeSerializeBody = (body: unknown) => {
   if (body === undefined || body === null) return undefined;
@@ -102,14 +96,11 @@ export const flushQueuedMutations = async () => {
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
-      const response = await fetch (buildMutationUrl(mutation.path), {
+      await apiRequest(mutation.path, {
         method: mutation.method,
-        headers,
-        body: mutation.body ? JSON.stringify(mutation.body) : undefined
+        headers: Object.fromEntries(headers.entries()),
+        data: mutation.body
       });
-      if (!response.ok) {
-        throw new Error(`Replay failed with status ${response.status}`);
-      }
     } catch {
       queue.push(mutation);
     }

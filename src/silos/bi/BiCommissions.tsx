@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { buildUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 interface Application {
   id: string;
@@ -17,8 +17,7 @@ export default function BiCommissions() {
   const [totalCommission, setTotalCommission] = useState(0);
 
   useEffect(() => {
-    fetch (buildUrl("/bi/applications"))
-      .then((res) => res.json())
+    apiRequest<Application[]>("/bi/applications")
       .then((data) => {
         const approved = data.filter((a: Application) => a.status === "approved");
 
@@ -30,7 +29,7 @@ export default function BiCommissions() {
         });
 
         setTotalAnnualPremium(premiumTotal);
-        setTotalCommission(premiumTotal * 0.1); // 10% recurring
+        setTotalCommission(premiumTotal * 0.1);
         setApps(approved);
       });
   }, []);

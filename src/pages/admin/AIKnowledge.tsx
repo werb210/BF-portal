@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { buildUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 export default function AIKnowledge() {
   const { user } = useAuth();
@@ -12,9 +12,10 @@ export default function AIKnowledge() {
     const formData = new FormData();
     formData.append("file", file);
 
-    await fetch (buildUrl("/ai/knowledge"), {
+    await apiRequest("/ai/knowledge", {
       method: "POST",
-      body: formData
+      data: formData,
+      headers: { "Content-Type": "multipart/form-data" },
     });
 
     throw new Error("Uploaded");
@@ -38,4 +39,3 @@ export default function AIKnowledge() {
     </div>
   );
 }
-
