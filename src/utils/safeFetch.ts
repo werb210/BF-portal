@@ -1,19 +1,12 @@
+import { apiRequest } from "@/lib/api";
+
 export async function safeFetch(url: string, options?: RequestInit) {
   try {
-    const res = await fetch (url, options);
-
-    if (!res.ok) {
-      console.warn("API returned non-200", url);
-      return {};
-    }
-
-    const text = await res.text();
-
-    if (!text || text.length === 0) {
-      return {};
-    }
-
-    return JSON.parse(text);
+    return await apiRequest(url, {
+      method: options?.method,
+      data: options?.body,
+      headers: options?.headers as Record<string, string> | undefined,
+    });
   } catch {
     console.warn("API unavailable:", url);
     return {};

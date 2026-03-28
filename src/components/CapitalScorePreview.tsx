@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { buildUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 type ScoringResponse = {
   score?: number;
@@ -10,17 +10,15 @@ export default function CapitalScorePreview() {
   const [score, setScore] = useState<ScoringResponse | null>(null);
 
   async function testScore() {
-    const res = await fetch (buildUrl("/scoring"), {
+    const data = await apiRequest<ScoringResponse>("/scoring", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      data: {
         revenue: 200000,
         timeInBusiness: 36,
-        creditScore: 700
-      })
+        creditScore: 700,
+      },
     });
 
-    const data = (await res.json()) as ScoringResponse;
     setScore(data);
   }
 
@@ -42,4 +40,3 @@ export default function CapitalScorePreview() {
     </div>
   );
 }
-

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { buildUrl } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { apiRequest } from "@/lib/api";
 
 interface TrendData {
   date: string;
@@ -11,14 +10,7 @@ export default function CommissionTrendChart() {
   const [data, setData] = useState<TrendData[]>([]);
 
   useEffect(() => {
-    const token = getToken();
-
-    const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-
-    fetch (buildUrl("/analytics/commission-trend"), {
-      headers,
-    })
-      .then((res) => res.json())
+    apiRequest<TrendData[]>("/analytics/commission-trend")
       .then(setData)
       .catch(console.error);
   }, []);

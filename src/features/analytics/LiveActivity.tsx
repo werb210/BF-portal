@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import { buildUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 export default function LiveActivity() {
   const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const res = await fetch (buildUrl("/support/events"));
-      const data = await res.json();
+      const data = await apiRequest<{ events?: any[] }>("/support/events");
       setEvents(data.events || []);
     }, 5000);
 

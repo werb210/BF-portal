@@ -57,10 +57,10 @@ module.exports = {
           },
         ],
         "no-restricted-globals": [
-          "warn",
+          "error",
           {
             name: "fetch",
-            message: "Use apiRequest() from src/lib/api.ts instead of fetch().",
+            message: "Use apiRequest() instead of fetch()",
           },
         ],
       },
