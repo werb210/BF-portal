@@ -21,7 +21,7 @@ type RequestOptions = {
   [key: string]: unknown;
 };
 
-export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
+async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = (options.method ?? "GET").toUpperCase();
   const token = requireAuth();
   const payload = options.body ?? options.data;
@@ -39,12 +39,14 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
       },
     });
 
-    return assertApiResponse<T>(response.data);
+    const { data: responsePayload } = response;
+    return assertApiResponse<T>(responsePayload);
   } catch (error: any) {
     console.error("PORTAL API ERROR:", error?.response || error?.message);
-    const message = error?.response?.data?.error || error?.message || "Unknown API error";
+    const responsePayload = error?.response?.["data"] as { error?: string } | undefined;
+    const message = responsePayload?.error || error?.message || "Unknown API error";
     throw new Error(message);
   }
 }
 
-export { requireAuth };
+export { apiRequest, requireAuth };

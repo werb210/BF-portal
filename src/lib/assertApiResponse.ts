@@ -7,13 +7,13 @@ export function assertApiResponse<T>(data: unknown): T {
     throw new Error("Invalid API response");
   }
 
-  if (!("success" in res)) {
-    throw new Error("Missing success field");
-  }
-
-  if (res.success === false) {
+  if (res.success !== true) {
     throw new Error(res.error || "API failure");
   }
 
-  return res.data;
+  if (!("data" in res)) {
+    throw new Error("Missing data field");
+  }
+
+  return res["data"] as T;
 }

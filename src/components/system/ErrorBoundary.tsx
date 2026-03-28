@@ -5,8 +5,12 @@ interface State {
   hasError: boolean;
 }
 
-export default class ErrorBoundary extends React.Component<React.PropsWithChildren, State> {
-  constructor(props: React.PropsWithChildren) {
+type ErrorBoundaryProps = React.PropsWithChildren<{
+  fallback?: React.ReactNode;
+}>;
+
+export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, State> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
@@ -21,6 +25,10 @@ export default class ErrorBoundary extends React.Component<React.PropsWithChildr
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
       return (
         <div style={{ padding: "2rem" }}>
           <div role="alert">Unexpected error</div>

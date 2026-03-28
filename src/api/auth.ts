@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api";
-import { setToken } from "@/auth/tokenStorage";
+import { setToken } from "@/lib/auth";
 
 export async function startOtp(payload: { phone: string }) {
   return apiRequest<{ sessionId: string }>("/auth/otp/start", {

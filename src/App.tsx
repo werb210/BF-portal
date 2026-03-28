@@ -23,6 +23,7 @@ import MobileShell from "@/mobile/MobileShell";
 import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
 import PortalDialer from "./telephony/components/PortalDialer";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
+import FatalErrorScreen from "@/components/system/FatalErrorScreen";
 import { requireAuth } from "@/lib/api";
 
 function SessionGuard() {
@@ -139,7 +140,7 @@ export default function App() {
     return withOptionalRouter(
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
-          <ErrorBoundary>
+          <ErrorBoundary fallback={<FatalErrorScreen />}>
             <AppRoutes />
           </ErrorBoundary>
         </ToastProvider>
@@ -151,7 +152,7 @@ export default function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
-          <ErrorBoundary>
+          <ErrorBoundary fallback={<FatalErrorScreen />}>
             <AppRoutes />
           </ErrorBoundary>
         </ToastProvider>
