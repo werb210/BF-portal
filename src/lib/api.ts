@@ -1,22 +1,8 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
-import { API_BASE_URL } from "@/config/api";
+import axios from "axios";
 
-const AUTH_TOKEN_KEY = "auth_token";
-const LEGACY_TOKEN_KEYS = ["bf_token", "token"] as const;
+const API_BASE_URL = "https://server.boreal.financial";
 
-const readAuthToken = () => {
-  const primary = localStorage.getItem(AUTH_TOKEN_KEY);
-  if (primary) return primary;
-
-  for (const key of LEGACY_TOKEN_KEYS) {
-    const token = localStorage.getItem(key);
-    if (token) return token;
-  }
-
-  return null;
-};
-
-const ensureApiPrefix = (url?: string) => {
+const ensureApiPath = (url?: string) => {
   if (!url) return url;
   if (/^https?:\/\//i.test(url)) return url;
   if (url.startsWith("/api/")) return url;
@@ -25,48 +11,37 @@ const ensureApiPrefix = (url?: string) => {
   return `/api/${url}`;
 };
 
-const normalizeOptions = (options: any = {}) => {
-  const normalized = { ...options };
-  if (normalized.body !== undefined && normalized.data === undefined) {
-    normalized.data = normalized.body;
-  }
-  delete normalized.body;
-  return normalized;
-};
-
-export const api = axios.create({
+const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true
 });
 
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = readAuthToken();
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (!token) {
+    throw new Error("Missing auth token");
   }
 
-  config.url = ensureApiPrefix(config.url);
+  config.url = ensureApiPath(config.url);
+  if (config.headers && typeof (config.headers as any).set === "function") {
+    (config.headers as any).set("Authorization", `Bearer ${token}`);
+  } else {
+    config.headers = ({
+      ...(config.headers as Record<string, string> | undefined),
+      Authorization: `Bearer ${token}`,
+    } as any);
+  }
 
   return config;
 });
 
 api.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      for (const key of LEGACY_TOKEN_KEYS) {
-        localStorage.removeItem(key);
-      }
-      window.location.href = "/login";
-    }
-
-    return Promise.reject(error);
+  (res) => res,
+  (err) => {
+    console.error("PORTAL API ERROR:", err?.response || err.message);
+    return Promise.reject(err);
   }
 );
-
-export const API_BASE = API_BASE_URL;
 
 export class ApiError extends Error {
   status?: number;
@@ -78,26 +53,38 @@ export class ApiError extends Error {
   }
 }
 
-export function buildUrl(path: string): string {
-  return `${API_BASE_URL}${ensureApiPrefix(path)}`;
-}
+export const buildUrl = (path: string) => `${API_BASE_URL}${ensureApiPath(path)}`;
 
 export async function apiRequest<T = unknown>(path: string, options: any = {}): Promise<T> {
-  try {
-    const response = await api.request<T>({ url: path, ...normalizeOptions(options) });
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      const message =
-        error.response?.data?.error ||
-        error.message ||
-        "Unknown API error";
+  const method = (options.method ?? "GET").toUpperCase();
 
-      throw new ApiError(message, status);
+  try {
+    if (method === "GET") {
+      const { data } = await api.get<T>(path, options);
+      return data;
     }
 
-    throw new ApiError("Unexpected error", undefined);
+    if (method === "DELETE") {
+      const { data } = await api.delete<T>(path, options);
+      return data;
+    }
+
+    if (method === "PATCH") {
+      const { data } = await api.patch<T>(path, options.body ?? options.data, options);
+      return data;
+    }
+
+    if (method === "PUT") {
+      const { data } = await api.put<T>(path, options.body ?? options.data, options);
+      return data;
+    }
+
+    const { data } = await api.post<T>(path, options.body ?? options.data, options);
+    return data;
+  } catch (error: any) {
+    const status = error?.response?.status;
+    const message = error?.response?.data?.error || error?.message || "Unknown API error";
+    throw new ApiError(message, status);
   }
 }
 
@@ -105,36 +92,10 @@ export async function safeApiFetch<T = unknown>(path: string, options: any = {})
   try {
     return await apiRequest<T>(path, options);
   } catch (error) {
-    console.error("API Error:", error);
+    console.error("PORTAL API ERROR:", error);
     return null;
   }
 }
 
-const client = {
-  get: async <T = unknown>(path: string, options: any = {}) => {
-    const res = await api.get<T>(path, normalizeOptions(options));
-    return res.data;
-  },
-  post: async <T = unknown>(path: string, body?: unknown, options: any = {}) => {
-    const res = await api.post<T>(path, body, normalizeOptions(options));
-    return res.data;
-  },
-  put: async <T = unknown>(path: string, body?: unknown, options: any = {}) => {
-    const res = await api.put<T>(path, body, normalizeOptions(options));
-    return res.data;
-  },
-  patch: async <T = unknown>(path: string, body?: unknown, options: any = {}) => {
-    const res = await api.patch<T>(path, body, normalizeOptions(options));
-    return res.data;
-  },
-  delete: async <T = unknown>(path: string, options: any = {}) => {
-    const res = await api.delete<T>(path, normalizeOptions(options));
-    return res.data;
-  },
-  request: async <T = unknown>(options: any = {}) => {
-    const res = await api.request<T>(normalizeOptions(options));
-    return res.data;
-  }
-};
-
-export default client;
+export { api };
+export default api;

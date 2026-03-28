@@ -1,29 +1,37 @@
-import { useEffect, useState } from "react"
-import { apiFetch } from "../../lib/apiFetch"
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
 
-const API_PREFIX = "";
 type ApplicationDetailProps = {
-  id: string
-  onClose: () => void
-}
+  id: string;
+  onClose: () => void;
+};
 
 type Application = {
-  id: string
-  company: string
-  amount: string
-}
+  id: string;
+  company: string;
+  amount: string;
+};
 
 export default function ApplicationDetail({ id, onClose }: ApplicationDetailProps) {
-  const [application, setApplication] = useState<Application | null>(null)
+  const [application, setApplication] = useState<Application | null>(null);
 
   useEffect(() => {
-    apiFetch(`${API_PREFIX}/applications/${id}`)
-      .then((data) => setApplication(data))
-      .catch(() => setApplication(null))
-  }, [id])
+    const loadApplication = async () => {
+      try {
+        const { data } = await api.get(`/api/applications/${id}`);
+        setApplication(data?.data ?? data);
+      } catch (e) {
+        console.error(e);
+        alert("Something failed. Check console.");
+        setApplication(null);
+      }
+    };
+
+    loadApplication();
+  }, [id]);
 
   if (!application) {
-    return <div style={{ padding: "20px" }}>Loading...</div>
+    return <div style={{ padding: "20px" }}>Loading...</div>;
   }
 
   return (
@@ -51,5 +59,5 @@ export default function ApplicationDetail({ id, onClose }: ApplicationDetailProp
         <strong>ID:</strong> {application.id}
       </p>
     </div>
-  )
+  );
 }
