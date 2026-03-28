@@ -1,25 +1,24 @@
-import axios from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 
-/**
- * Shared axios instance
- */
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "",
   withCredentials: true,
 });
 
 /**
- * Generic request wrapper (used across app)
+ * Standard request wrapper
  */
-export async function apiRequest(config: any) {
-  const response = await api.request(config);
+export async function apiRequest<T = unknown>(
+  config: AxiosRequestConfig
+): Promise<T> {
+  const response = await api.request<T>(config);
   return response.data;
 }
 
 /**
- * 🔥 THIS WAS MISSING — REQUIRED BY APP.TSX
+ * REQUIRED BY APP + SESSION GUARD
  */
-export function requireAuth() {
+export function requireAuth(): string {
   const token = localStorage.getItem("token");
 
   if (!token) {
@@ -30,7 +29,4 @@ export function requireAuth() {
   return token;
 }
 
-/**
- * Keep default export (your earlier fix depends on it)
- */
 export default api;
