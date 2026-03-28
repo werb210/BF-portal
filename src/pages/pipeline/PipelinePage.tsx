@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getApplications } from "@api/applications";
+import { getApplications } from "@/api/applications";
 import ApplicationCard from "../../components/pipeline/ApplicationCard";
 
 export default function PipelinePage() {
@@ -13,7 +13,7 @@ export default function PipelinePage() {
         setPipeline(data || []);
       } catch (e) {
         console.error(e);
-        alert("Something failed. Check console.");
+        throw new Error("Something failed. Check console.");
       } finally {
         setLoading(false);
       }

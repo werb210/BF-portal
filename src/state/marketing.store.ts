@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AdPlatform } from "@api/marketing.ads";
+import type { AdPlatform } from "@/api/marketing.ads";
 
 export type MarketingTodo = {
   id: string;

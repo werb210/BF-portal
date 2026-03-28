@@ -18,7 +18,7 @@ import {
   fetchLenders,
   updateLenderProductRequirement,
   type LenderProductRequirement
-} from "@api/lenders";
+} from "@/api/lenders";
 import { LENDER_PRODUCT_CATEGORY_LABELS } from "@/types/lenderManagement.types";
 
 type RequirementRow = {

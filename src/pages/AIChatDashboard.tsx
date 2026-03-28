@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AiSession, fetchAiSessions } from "@api/aiChat";
+import { AiSession, fetchAiSessions } from "@/api/aiChat";
 import AIChatSessionView from "@/components/AIChatSessionView";
 
 export default function AIChatDashboard() {

@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { startOtp as startOtpRequest, verifyOtp as verifyOtpRequest } from "@api/auth";
-import api from "@api/client";
+import { startOtp as startOtpRequest, verifyOtp as verifyOtpRequest } from "@/api/auth";
+import api from "@/api/client";
 import { destroyVoice } from "@/services/voiceService";
 import { setCallStatus } from "@/dialer/callStore";
 import {

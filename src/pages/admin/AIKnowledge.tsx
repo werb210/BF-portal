@@ -17,7 +17,7 @@ export default function AIKnowledge() {
       body: formData
     });
 
-    alert("Uploaded");
+    throw new Error("Uploaded");
   }
 
   if (user?.role !== "Admin") {

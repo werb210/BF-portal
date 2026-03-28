@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { TaskItem } from "@api/tasks";
+import type { TaskItem } from "@/api/tasks";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useTasksStore } from "@/state/tasks.store";

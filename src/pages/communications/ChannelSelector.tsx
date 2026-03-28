@@ -1,5 +1,5 @@
 import Select from "@/components/ui/Select";
-import type { CommunicationType } from "@api/communications";
+import type { CommunicationType } from "@/api/communications";
 
 interface ChannelSelectorProps {
   value: CommunicationType;

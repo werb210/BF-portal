@@ -1,4 +1,4 @@
-import { apiClient } from "@api/httpClient";
+import { apiClient } from "@/api/httpClient";
 import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config";
 
 const API_PREFIX = "";

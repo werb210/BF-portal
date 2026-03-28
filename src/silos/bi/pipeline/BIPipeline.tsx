@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { biFetch } from "@api/biClient";
+import { biFetch } from "@/api/biClient";
 
 type BIApplication = {
   id: string;

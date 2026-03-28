@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { biGetContacts, biGetReferrers, biGetLenders } from "@api/biClient";
+import { biGetContacts, biGetReferrers, biGetLenders } from "@/api/biClient";
 
 export default function BICRM() {
   const [contacts, setContacts] = useState<any[]>([]);

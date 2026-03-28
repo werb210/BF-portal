@@ -1,6 +1,6 @@
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import type { AdRecord } from "@api/marketing.ads";
+import type { AdRecord } from "@/api/marketing.ads";
 
 interface Props {
   ad: AdRecord;

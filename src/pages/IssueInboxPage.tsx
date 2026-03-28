@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { deleteIssue, fetchWebsiteIssues, resolveIssue } from "@api/issues";
+import { deleteIssue, fetchWebsiteIssues, resolveIssue } from "@/api/issues";
 
 type Issue = {
   id: string;

@@ -1,5 +1,5 @@
 import { type ChangeEvent, useState } from "react";
-import { apiClient } from "@api/httpClient";
+import { apiClient } from "@/api/httpClient";
 import OfferUploader from "@/components/offers/OfferUploader";
 import ChatPanel from "@/components/chat/ChatPanel";
 

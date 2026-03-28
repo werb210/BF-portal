@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/auth/useAuth";
-import api from "@api/client";
+import api from "@/api/client";
 import { Navigate } from "react-router-dom";
 import CapitalScorePreview from "@/components/CapitalScorePreview";
 

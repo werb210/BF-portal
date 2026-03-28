@@ -20,7 +20,7 @@ export default function Dashboard() {
         setData((res.data?.data ?? res.data) as DashboardData);
       } catch (e) {
         console.error(e);
-        alert("Something failed. Check console.");
+        throw new Error("Something failed. Check console.");
       }
     };
 

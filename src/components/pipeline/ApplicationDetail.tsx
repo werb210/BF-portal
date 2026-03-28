@@ -22,7 +22,7 @@ export default function ApplicationDetail({ id, onClose }: ApplicationDetailProp
         setApplication(data?.data ?? data);
       } catch (e) {
         console.error(e);
-        alert("Something failed. Check console.");
+        throw new Error("Something failed. Check console.");
         setApplication(null);
       }
     };

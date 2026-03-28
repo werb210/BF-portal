@@ -1,5 +1,5 @@
 import Button from "@/components/ui/Button";
-import type { Company } from "@api/crm";
+import type { Company } from "@/api/crm";
 
 interface CompanyRowProps {
   company: Company;

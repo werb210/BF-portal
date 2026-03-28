@@ -2,7 +2,7 @@ import { useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { uploadAsset, deleteAsset } from "@api/marketing.assets";
+import { uploadAsset, deleteAsset } from "@/api/marketing.assets";
 
 interface Props {
   onClose: () => void;

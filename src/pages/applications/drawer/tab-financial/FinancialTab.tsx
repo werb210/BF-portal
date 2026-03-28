@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchOcrResults, type OcrSection, type OcrResults } from "@api/ocr";
+import { fetchOcrResults, type OcrSection, type OcrResults } from "@/api/ocr";
 import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";

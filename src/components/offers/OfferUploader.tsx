@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { apiClient } from "@api/httpClient";
+import { apiClient } from "@/api/httpClient";
 
 type OfferUploaderProps = {
   applicationId: string;

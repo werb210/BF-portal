@@ -1,4 +1,5 @@
-import axios from "axios";
+import axios, { type AxiosResponse } from "axios";
+import { requireAuth } from "@/utils/requireAuth";
 
 const API_BASE_URL = "https://server.boreal.financial";
 
@@ -11,16 +12,19 @@ const ensureApiPath = (url?: string) => {
   return `/api/${url}`;
 };
 
+const validateResponse = <T>(response: AxiosResponse<T>) => {
+  if (!response || typeof response.data === "undefined") {
+    throw new Error("Invalid API response");
+  }
+  return response.data;
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("auth_token");
-
-  if (!token) {
-    throw new Error("Missing auth token");
-  }
+  const token = requireAuth();
 
   config.url = ensureApiPath(config.url);
   if (config.headers && typeof (config.headers as any).set === "function") {
@@ -36,10 +40,13 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    console.error("PORTAL API ERROR:", err?.response || err.message);
-    return Promise.reject(err);
+  (response) => {
+    validateResponse(response);
+    return response;
+  },
+  (error) => {
+    console.error("PORTAL API ERROR:", error?.response || error.message);
+    return Promise.reject(error);
   }
 );
 
@@ -57,30 +64,24 @@ export const buildUrl = (path: string) => `${API_BASE_URL}${ensureApiPath(path)}
 
 export async function apiRequest<T = unknown>(path: string, options: any = {}): Promise<T> {
   const method = (options.method ?? "GET").toUpperCase();
+  const payload = options.body ?? options.data;
 
   try {
+    let response: AxiosResponse<T>;
+
     if (method === "GET") {
-      const { data } = await api.get<T>(path, options);
-      return data;
+      response = await api.get<T>(path, options);
+    } else if (method === "DELETE") {
+      response = await api.delete<T>(path, options);
+    } else if (method === "PATCH") {
+      response = await api.patch<T>(path, payload, options);
+    } else if (method === "PUT") {
+      response = await api.put<T>(path, payload, options);
+    } else {
+      response = await api.post<T>(path, payload, options);
     }
 
-    if (method === "DELETE") {
-      const { data } = await api.delete<T>(path, options);
-      return data;
-    }
-
-    if (method === "PATCH") {
-      const { data } = await api.patch<T>(path, options.body ?? options.data, options);
-      return data;
-    }
-
-    if (method === "PUT") {
-      const { data } = await api.put<T>(path, options.body ?? options.data, options);
-      return data;
-    }
-
-    const { data } = await api.post<T>(path, options.body ?? options.data, options);
-    return data;
+    return validateResponse(response);
   } catch (error: any) {
     const status = error?.response?.status;
     const message = error?.response?.data?.error || error?.message || "Unknown API error";
@@ -88,13 +89,8 @@ export async function apiRequest<T = unknown>(path: string, options: any = {}): 
   }
 }
 
-export async function safeApiFetch<T = unknown>(path: string, options: any = {}): Promise<T | null> {
-  try {
-    return await apiRequest<T>(path, options);
-  } catch (error) {
-    console.error("PORTAL API ERROR:", error);
-    return null;
-  }
+export async function safeApiFetch<T = unknown>(path: string, options: any = {}): Promise<T> {
+  return apiRequest<T>(path, options);
 }
 
 export { api };

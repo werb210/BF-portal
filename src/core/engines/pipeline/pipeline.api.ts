@@ -1,4 +1,4 @@
-import { apiClient } from "@api/httpClient";
+import { apiClient } from "@/api/httpClient";
 import api from "@/lib/api";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
 import type { BusinessUnit } from "@/types/businessUnit";

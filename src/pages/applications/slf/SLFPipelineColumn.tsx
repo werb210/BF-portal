@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import SLFPipelineCard from "./SLFPipelineCard";
 import { slfPipelineApi } from "./slf.pipeline.api";
 import type { SLFPipelineApplication, SLFStageId, SLFPipelineStage } from "./slf.pipeline.types";
-import { retryUnlessClientError } from "@api/retryPolicy";
+import { retryUnlessClientError } from "@/api/retryPolicy";
 import { getErrorMessage } from "@/utils/errors";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 

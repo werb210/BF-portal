@@ -21,7 +21,7 @@ import {
   type Lender,
   type LenderProduct,
   type LenderProductPayload
-} from "@api/lenders";
+} from "@/api/lenders";
 import {
   LENDER_PRODUCT_CATEGORIES,
   LENDER_PRODUCT_CATEGORY_LABELS,

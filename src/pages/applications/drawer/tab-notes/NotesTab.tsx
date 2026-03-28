@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchNotesThread, sendNoteMessage, updateNoteMessage, type NoteMessage } from "@api/notes";
+import { fetchNotesThread, sendNoteMessage, updateNoteMessage, type NoteMessage } from "@/api/notes";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import NotesComposer from "./NotesComposer";
 import NotesList from "./NotesList";

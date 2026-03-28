@@ -2,7 +2,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import AppLoading from "@/components/layout/AppLoading";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAudiences, createAudienceFromRule } from "@api/marketing.retargeting";
+import { fetchAudiences, createAudienceFromRule } from "@/api/marketing.retargeting";
 
 const RetargetingAudienceList = () => {
   const queryClient = useQueryClient();

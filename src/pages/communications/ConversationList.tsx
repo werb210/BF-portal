@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
-import type { CommunicationConversation } from "@api/communications";
+import type { CommunicationConversation } from "@/api/communications";
 import ConversationItem from "./ConversationItem";
 import type { ConversationFilters } from "@/state/communications.store";
 

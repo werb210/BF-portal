@@ -3,7 +3,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Table from "@/components/ui/Table";
 import AppLoading from "@/components/layout/AppLoading";
-import type { BrandAsset } from "@api/marketing.assets";
+import type { BrandAsset } from "@/api/marketing.assets";
 import UploadAssetModal from "./UploadAssetModal";
 
 interface Props {

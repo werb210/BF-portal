@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Campaign } from "@api/marketing.campaigns";
-import { upsertCampaign } from "@api/marketing.campaigns";
+import type { Campaign } from "@/api/marketing.campaigns";
+import { upsertCampaign } from "@/api/marketing.campaigns";
 
 interface Props {
   campaign?: Campaign;

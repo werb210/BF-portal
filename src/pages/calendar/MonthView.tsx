@@ -1,4 +1,4 @@
-import type { CalendarEvent } from "@api/calendar";
+import type { CalendarEvent } from "@/api/calendar";
 import { getMonthGrid, groupEventsByDay } from "./utils";
 
 const MonthView = ({ date, localEvents }: { date: Date; localEvents: CalendarEvent[] }) => {

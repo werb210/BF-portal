@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchDocumentVersions, restoreDocumentVersion, type DocumentVersion } from "@api/documents";
+import { fetchDocumentVersions, restoreDocumentVersion, type DocumentVersion } from "@/api/documents";
 import { getErrorMessage } from "@/utils/errors";
 
 const DocumentVersionHistory = ({ documentId }: { documentId: string }) => {

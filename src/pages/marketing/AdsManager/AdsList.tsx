@@ -4,7 +4,7 @@ import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import AppLoading from "@/components/layout/AppLoading";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAds, toggleAdStatus, type AdRecord } from "@api/marketing.ads";
+import { fetchAds, toggleAdStatus, type AdRecord } from "@/api/marketing.ads";
 import { useMarketingStore } from "@/state/marketing.store";
 import AdDetailsDrawer from "./AdDetailsDrawer";
 import AdEditor from "./AdEditor";

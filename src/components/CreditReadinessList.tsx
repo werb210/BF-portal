@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { convertReadinessToApplication, fetchCreditReadinessLeads } from "@api/crm";
+import { convertReadinessToApplication, fetchCreditReadinessLeads } from "@/api/crm";
 import type { CRMLead } from "@/types/crm";
 
 const tierOptions = [
@@ -22,7 +22,7 @@ export default function CreditReadinessList() {
     setConvertingId(id);
     try {
       await convertReadinessToApplication(id);
-      alert("Converted to application");
+      throw new Error("Converted to application");
       setLeads((previous) => previous.filter((lead) => lead.id !== id));
     } finally {
       setConvertingId(null);

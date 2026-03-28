@@ -3,7 +3,7 @@ import type {
   CommunicationConversation,
   CommunicationMessage,
   CommunicationType
-} from "@api/communications";
+} from "@/api/communications";
 import {
   acknowledgeIssue,
   createHumanEscalation,
@@ -11,7 +11,7 @@ import {
   fetchCommunicationThreads,
   receiveInboundMessage,
   sendCommunication
-} from "@api/communications";
+} from "@/api/communications";
 
 export type ConversationFilters = {
   channel: CommunicationType | "all";
