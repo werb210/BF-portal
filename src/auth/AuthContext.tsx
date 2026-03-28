@@ -330,10 +330,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const token = getToken();
 
     if (!token) {
-      settleUnauthenticated();
-      setBootstrapped(true);
-      endHydration();
-      return;
+      throw new Error("AUTH_REQUIRED");
     }
 
     setIsHydratingSession(true);
