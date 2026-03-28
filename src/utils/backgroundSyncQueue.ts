@@ -1,4 +1,4 @@
-import { API_BASE } from "@/lib/api";
+import { API_BASE_URL } from "@/config/api";
 import { getAccessToken } from "@/lib/authToken";
 
 export type QueuedMutation = {
@@ -35,7 +35,7 @@ const persistQueue = () => {
 };
 
 const buildMutationUrl = (path: string) => {
-  const base = API_BASE;
+  const base = API_BASE_URL;
   const trimmedBase = base.endsWith("/") ? base.slice(0, -1) : base;
   const trimmedPath = path.startsWith("/") ? path.slice(1) : path;
   return `${trimmedBase}/${trimmedPath}`;

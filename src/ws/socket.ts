@@ -1,6 +1,6 @@
-import { API_BASE } from "@/lib/api";
+import { API_BASE_URL } from "@/config/api";
 
-const SOCKET_URL = API_BASE.replace(/^http/, "ws");
+const SOCKET_URL = API_BASE_URL.replace(/^http/, "ws");
 
 export function connectSocket() {
   const token = localStorage.getItem("bf_token");

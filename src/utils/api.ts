@@ -4,9 +4,9 @@
    ============================================================ */
 
 import { apiClient } from "@api/httpClient";
-import { API_BASE } from "@/lib/api";
+import { API_BASE_URL } from "@/config/api";
 
-export { API_BASE };
+export { API_BASE_URL };
 
 /* ============================================================
    REQUIRED LEGACY EXPORT — DO NOT REMOVE

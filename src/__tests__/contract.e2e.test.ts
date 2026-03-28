@@ -59,9 +59,7 @@ beforeAll(async () => {
     const raw = typeof input === "string" ? input : input.toString();
     const rewritten = raw.startsWith("https://server.boreal.financial")
       ? raw.replace("https://server.boreal.financial", baseUrl)
-      : raw.startsWith("http://localhost:3000")
-        ? raw.replace("http://localhost:3000", baseUrl)
-        : raw;
+      : raw;
     return originalFetch(rewritten, init);
   }) as typeof fetch;
 

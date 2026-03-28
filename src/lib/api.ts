@@ -1,10 +1,6 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
+import { API_BASE_URL } from "@/config/api";
 
-if (!BASE_URL) {
-  throw new Error('Missing VITE_API_URL');
-}
-
-export const API_BASE = BASE_URL;
+export const API_BASE = API_BASE_URL;
 
 export class ApiError extends Error {
   status?: number;
@@ -17,7 +13,7 @@ export class ApiError extends Error {
 }
 
 export function buildUrl(path: string): string {
-  return `${BASE_URL}${path}`;
+  return `${API_BASE_URL}${path}`;
 }
 
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
@@ -32,7 +28,7 @@ const request = async <T = any>(path: string, options: ApiRequestOptions = {}): 
       : options.body;
   const isFormData = body instanceof FormData;
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     ...options,
     body,
