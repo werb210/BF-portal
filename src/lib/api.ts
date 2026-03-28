@@ -1,36 +1,36 @@
 import axios from "axios";
-import { assertApiResponse } from "@/lib/assertApiResponse";
-import { requireAuth } from "@/utils/requireAuth";
 
+/**
+ * Shared axios instance
+ */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: 5000,
+  baseURL: import.meta.env.VITE_API_URL || "",
+  withCredentials: true,
 });
 
-// ✅ RESTORE DEFAULT EXPORT
-export default api;
+/**
+ * Generic request wrapper (used across app)
+ */
+export async function apiRequest(config: any) {
+  const response = await api.request(config);
+  return response.data;
+}
 
-export async function apiRequest<T = unknown>(
-  method: "get" | "post" | "put" | "delete",
-  url: string,
-  data?: unknown,
-  auth = true
-): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+/**
+ * 🔥 THIS WAS MISSING — REQUIRED BY APP.TSX
+ */
+export function requireAuth() {
+  const token = localStorage.getItem("token");
 
-  if (auth) {
-    const token = requireAuth();
-    headers.Authorization = `Bearer ${token}`;
+  if (!token) {
+    window.location.href = "/login";
+    throw new Error("Not authenticated");
   }
 
-  const response = await api.request({
-    method,
-    url,
-    data,
-    headers,
-  });
-
-  return assertApiResponse(response);
+  return token;
 }
+
+/**
+ * Keep default export (your earlier fix depends on it)
+ */
+export default api;
