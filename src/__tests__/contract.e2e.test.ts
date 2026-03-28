@@ -29,12 +29,12 @@ describe("contract:e2e", () => {
     const t = await apiRequest<{ token: string }>("/telephony/token", {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${v.data.token}`
+        Authorization: `Bearer ${v.token}`
       }
     });
 
-    expect(v.data.token).toBeTruthy();
-    expect(t.data.token).toBeTruthy();
+    expect(v.token).toBeTruthy();
+    expect(t.token).toBeTruthy();
   });
 
   it("returns meaningful api errors", async () => {

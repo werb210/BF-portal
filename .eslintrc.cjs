@@ -6,7 +6,7 @@ module.exports = {
     node: true,
   },
   parser: "@typescript-eslint/parser",
-  plugins: ["@typescript-eslint", "react", "react-hooks"],
+  plugins: ["@typescript-eslint", "react", "react-hooks", "import"],
   extends: [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
@@ -29,23 +29,47 @@ module.exports = {
     "react-hooks/preserve-manual-memoization": "off",
     "react-hooks/exhaustive-deps": "off",
     "react-hooks/rules-of-hooks": "off",
-    "no-restricted-imports": [
-      "warn",
-      {
-        paths: [
+  },
+  overrides: [
+    {
+      files: ["src/**/*.{ts,tsx}"],
+      rules: {
+        "import/no-restricted-paths": [
+          "warn",
           {
-            name: "axios",
-            message: "Use the shared API client surface in src/lib/api.ts.",
+            zones: [
+              {
+                target: "./src",
+                from: "./api",
+              },
+            ],
+          },
+        ],
+        "no-restricted-imports": [
+          "warn",
+          {
+            paths: [
+              {
+                name: "axios",
+                message: "Use shared API client only",
+              },
+            ],
+          },
+        ],
+        "no-restricted-globals": [
+          "warn",
+          {
+            name: "fetch",
+            message: "Use apiRequest() from src/lib/api.ts instead of fetch().",
           },
         ],
       },
-    ],
-    "no-restricted-globals": [
-      "warn",
-      {
-        name: "fetch",
-        message: "Use apiRequest() from src/lib/api.ts instead of fetch().",
+    },
+    {
+      files: ["src/lib/api.ts"],
+      rules: {
+        "no-restricted-imports": "off",
       },
-    ],
-  },
+    },
+  ],
 };

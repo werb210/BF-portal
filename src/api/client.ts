@@ -1,13 +1,15 @@
-import axiosApi from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 type Options = {
   headers?: HeadersInit;
   method?: string;
   signal?: AbortSignal;
+  params?: Record<string, unknown>;
+  responseType?: "blob" | "json" | "text" | "arraybuffer";
   [key: string]: unknown;
 };
 
-const normalizeHeaders = (headers?: HeadersInit) => {
+const normalizeHeaders = (headers?: HeadersInit): Record<string, string> | undefined => {
   if (!headers) return undefined;
   if (headers instanceof Headers) {
     const out: Record<string, string> = {};
@@ -19,7 +21,7 @@ const normalizeHeaders = (headers?: HeadersInit) => {
   if (Array.isArray(headers)) {
     return Object.fromEntries(headers);
   }
-  return headers;
+  return headers as Record<string, string>;
 };
 
 const toConfig = (options: Options = {}) => ({
@@ -28,26 +30,14 @@ const toConfig = (options: Options = {}) => ({
 });
 
 export const apiClient = {
-  get: async <T = unknown>(path: string, options: Options = {}) => {
-    const res = await axiosApi.get<T>(path, toConfig(options));
-    return res.data;
-  },
-  post: async <T = unknown>(path: string, body?: unknown, options: Options = {}) => {
-    const res = await axiosApi.post<T>(path, body, toConfig(options));
-    return res.data;
-  },
-  put: async <T = unknown>(path: string, body?: unknown, options: Options = {}) => {
-    const res = await axiosApi.put<T>(path, body, toConfig(options));
-    return res.data;
-  },
-  patch: async <T = unknown>(path: string, body?: unknown, options: Options = {}) => {
-    const res = await axiosApi.patch<T>(path, body, toConfig(options));
-    return res.data;
-  },
-  delete: async <T = unknown>(path: string, options: Options = {}) => {
-    const res = await axiosApi.delete<T>(path, toConfig(options));
-    return res.data;
-  },
+  get: async <T = unknown>(path: string, options: Options = {}) => apiRequest<T>(path, { ...toConfig(options), method: "GET" }),
+  post: async <T = unknown>(path: string, body?: unknown, options: Options = {}) =>
+    apiRequest<T>(path, { ...toConfig(options), method: "POST", body }),
+  put: async <T = unknown>(path: string, body?: unknown, options: Options = {}) =>
+    apiRequest<T>(path, { ...toConfig(options), method: "PUT", body }),
+  patch: async <T = unknown>(path: string, body?: unknown, options: Options = {}) =>
+    apiRequest<T>(path, { ...toConfig(options), method: "PATCH", body }),
+  delete: async <T = unknown>(path: string, options: Options = {}) => apiRequest<T>(path, { ...toConfig(options), method: "DELETE" }),
 };
 
 export const { get, post, patch, delete: remove } = apiClient;

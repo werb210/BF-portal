@@ -9,22 +9,21 @@ import { assertAuthTelephonyFlow } from "./helpers/authTelephonyFlowAssertions";
 const mock = new MockAdapter(axios, { onNoMatch: "throwException" });
 
 async function startOtp(payload: { phone: string }) {
-  const res = await apiRequest<{ ok: boolean }>("/auth/otp/start", {
+  return apiRequest<{ ok: boolean }>("/auth/otp/start", {
     method: "POST",
     body: { phone: payload.phone },
   });
-  return res.data;
 }
 
 async function verifyOtp(payload: { phone: string; code: string }) {
-  const res = await apiRequest<{ ok: boolean; token: string }>("/auth/otp/verify", {
+  const result = await apiRequest<{ ok: boolean; token: string }>("/auth/otp/verify", {
     method: "POST",
     body: { phone: payload.phone, code: payload.code },
   });
 
-  if (!res.data?.token) throw new Error("Missing token");
-  localStorage.setItem("token", res.data.token);
-  return res.data;
+  if (!result.token) throw new Error("Missing token");
+  localStorage.setItem("token", result.token);
+  return result;
 }
 
 beforeEach(() => {

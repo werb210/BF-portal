@@ -9,13 +9,18 @@ if rg "fetch\(" src > /dev/null; then
 fi
 
 AXIOS_CREATE_COUNT=$( (rg "axios\.create" src || true) | wc -l | tr -d ' ' )
-if [ "$AXIOS_CREATE_COUNT" -gt 1 ]; then
-  echo "❌ Found more than one axios.create usage in src/ (count=$AXIOS_CREATE_COUNT)."
+if [ "$AXIOS_CREATE_COUNT" -ne 1 ]; then
+  echo "❌ Expected exactly one axios.create usage in src/ (count=$AXIOS_CREATE_COUNT)."
   exit 1
 fi
 
-if rg "from 'api/" src > /dev/null; then
-  echo "❌ Found disallowed non-aliased api imports (from 'api/...)."
+if rg "from ['\"]api/" src > /dev/null; then
+  echo "❌ Found disallowed non-aliased api imports (from 'api/... or from \"api/...)."
+  exit 1
+fi
+
+if rg "alert\(" src > /dev/null; then
+  echo "❌ Disallowed alert() usage found in src/."
   exit 1
 fi
 

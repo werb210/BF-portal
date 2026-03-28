@@ -326,7 +326,7 @@ export const pipelineApi = {
   },
   exportApplications: async (applicationIds: string[]) => {
     const response = await api.post(`${API_PREFIX}/applications/export`, { applicationIds }, { responseType: "blob" });
-    return response.data as Blob;
+    return response as Blob;
   }
 };
 

@@ -30,8 +30,8 @@ export default function ChatInterface() {
     setMessages((prev) => [...prev, { role: "user", content: message }]);
 
     try {
-      const response = await sendMayaMessage(message);
-      const reply = (response.data as { reply?: string }).reply ?? "";
+      const result = await sendMayaMessage(message);
+      const reply = (result as { reply?: string }).reply ?? "";
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch {
       setMessages((prev) => [

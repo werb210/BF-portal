@@ -44,8 +44,8 @@ export default function SLFPipeline() {
   }
 
   async function openDeal(id: string) {
-    const response = await api.get<SLFDealDetail>(`/slf/deals/${id}`);
-    setSelectedDeal(response.data);
+    const result = await api.get<SLFDealDetail>(`/slf/deals/${id}`);
+    setSelectedDeal(result);
   }
 
   const columns: SLFDeal["status"][] = ["received", "processing", "completed"];

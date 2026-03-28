@@ -22,6 +22,8 @@ import DialerButton from "@/components/DialerButton";
 import MobileShell from "@/mobile/MobileShell";
 import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
 import PortalDialer from "./telephony/components/PortalDialer";
+import AppErrorBoundary from "@/components/layout/AppErrorBoundary";
+import { requireAuth } from "@/lib/api";
 
 function SessionGuard() {
   usePortalSessionGuard();
@@ -120,8 +122,9 @@ export default function App() {
   const queryClient = useMemo(() => new QueryClient(), []);
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token") || localStorage.getItem("bf_token") || localStorage.getItem("token");
-    if (!token) {
+    try {
+      requireAuth();
+    } catch {
       console.warn("No auth token found");
     }
   }, []);
@@ -136,7 +139,9 @@ export default function App() {
     return withOptionalRouter(
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
-          <AppRoutes />
+          <AppErrorBoundary>
+            <AppRoutes />
+          </AppErrorBoundary>
         </ToastProvider>
       </QueryClientProvider>
     );
@@ -146,7 +151,9 @@ export default function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
-          <AppRoutes />
+          <AppErrorBoundary>
+            <AppRoutes />
+          </AppErrorBoundary>
         </ToastProvider>
       </QueryClientProvider>
     </AuthProvider>
