@@ -87,8 +87,17 @@ export async function apiRequest<T = unknown>(path: string, options: any = {}): 
     const response = await api.request<T>({ url: path, ...normalizeOptions(options) });
     return response.data;
   } catch (error) {
-    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-    throw new ApiError(`API error ${status ?? "unknown"}`, status);
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const message =
+        error.response?.data?.error ||
+        error.message ||
+        "Unknown API error";
+
+      throw new ApiError(message, status);
+    }
+
+    throw new ApiError("Unexpected error", undefined);
   }
 }
 
