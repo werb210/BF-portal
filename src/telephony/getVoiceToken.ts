@@ -1,7 +1,7 @@
-import api from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 export async function getTelephonyToken() {
-  const res = await api.get<{ data?: { token?: string }; token?: string }>("/api/telephony/token");
+  const res = await apiRequest<{ token?: string; data?: { token?: string } }>("/telephony/token");
   const token = res.data?.data?.token ?? res.data?.token;
 
   if (!token) {

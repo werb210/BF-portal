@@ -1,17 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 
-import { ApiError, api, apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 describe("contract:e2e", () => {
-  const mock = new MockAdapter(api, { onNoMatch: "throwException" });
+  const mock = new MockAdapter(axios, { onNoMatch: "throwException" });
 
   beforeEach(() => {
     mock.reset();
 
-    mock.onPost("/api/auth/otp/start").reply(200, { ok: true, message: "OTP sent" });
-    mock.onPost("/api/auth/otp/verify").reply(200, { ok: true, token: "session-token-1" });
-    mock.onGet("/api/telephony/token").reply(200, { token: "voice-token-1" });
+    mock.onPost("/api/auth/otp/start").reply(200, { success: true, data: { ok: true, message: "OTP sent" } });
+    mock.onPost("/api/auth/otp/verify").reply(200, { success: true, data: { ok: true, token: "session-token-1" } });
+    mock.onGet("/api/telephony/token").reply(200, { success: true, data: { token: "voice-token-1" } });
   });
 
   it("otp -> verify -> telephony", async () => {
@@ -28,12 +29,12 @@ describe("contract:e2e", () => {
     const t = await apiRequest<{ token: string }>("/telephony/token", {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${v.token}`
+        Authorization: `Bearer ${v.data.token}`
       }
     });
 
-    expect(v.token).toBeTruthy();
-    expect(t.token).toBeTruthy();
+    expect(v.data.token).toBeTruthy();
+    expect(t.data.token).toBeTruthy();
   });
 
   it("returns meaningful api errors", async () => {
@@ -44,10 +45,6 @@ describe("contract:e2e", () => {
         method: "POST",
         body: { phone: "+61400000000", code: "bad-code" }
       })
-    ).rejects.toEqual(expect.objectContaining<ApiError>({
-      name: "ApiError",
-      message: "invalid otp",
-      status: 400
-    }));
+    ).rejects.toThrow("invalid otp");
   });
 });

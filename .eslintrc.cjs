@@ -29,5 +29,23 @@ module.exports = {
     "react-hooks/preserve-manual-memoization": "off",
     "react-hooks/exhaustive-deps": "off",
     "react-hooks/rules-of-hooks": "off",
+    "no-restricted-imports": [
+      "warn",
+      {
+        paths: [
+          {
+            name: "axios",
+            message: "Use the shared API client surface in src/lib/api.ts.",
+          },
+        ],
+      },
+    ],
+    "no-restricted-globals": [
+      "warn",
+      {
+        name: "fetch",
+        message: "Use apiRequest() from src/lib/api.ts instead of fetch().",
+      },
+    ],
   },
 };
