@@ -1,17 +1,19 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 
-import { apiRequest, api } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 import { getTelephonyToken } from "@/telephony/getVoiceToken";
 import { assertAuthTelephonyFlow } from "./helpers/authTelephonyFlowAssertions";
 
-const mock = new MockAdapter(api, { onNoMatch: "throwException" });
+const mock = new MockAdapter(axios, { onNoMatch: "throwException" });
 
 async function startOtp(payload: { phone: string }) {
-  return apiRequest<{ ok: boolean }>("/auth/otp/start", {
+  const res = await apiRequest<{ ok: boolean }>("/auth/otp/start", {
     method: "POST",
     body: { phone: payload.phone },
   });
+  return res.data;
 }
 
 async function verifyOtp(payload: { phone: string; code: string }) {
@@ -20,17 +22,17 @@ async function verifyOtp(payload: { phone: string; code: string }) {
     body: { phone: payload.phone, code: payload.code },
   });
 
-  if (!res?.token) throw new Error("Missing token");
-  localStorage.setItem("token", res.token);
-  return res;
+  if (!res.data?.token) throw new Error("Missing token");
+  localStorage.setItem("token", res.data.token);
+  return res.data;
 }
 
 beforeEach(() => {
   mock.reset();
 
-  mock.onPost("/api/auth/otp/start").reply(200, { ok: true });
-  mock.onPost("/api/auth/otp/verify").reply(200, { ok: true, token: "test-token" });
-  mock.onGet("/api/telephony/token").reply(200, { token: "voice-token" });
+  mock.onPost("/api/auth/otp/start").reply(200, { success: true, data: { ok: true } });
+  mock.onPost("/api/auth/otp/verify").reply(200, { success: true, data: { ok: true, token: "test-token" } });
+  mock.onGet("/api/telephony/token").reply(200, { success: true, data: { token: "voice-token" } });
 });
 
 describe("auth/telephony flow contract checks", () => {
@@ -47,7 +49,7 @@ describe("auth/telephony flow contract checks", () => {
   });
 
   it("fails when telephony response shape is invalid", async () => {
-    mock.onGet("/api/telephony/token").reply(200, { ok: true });
+    mock.onGet("/api/telephony/token").reply(200, { success: true, data: { ok: true } });
 
     await expect(getTelephonyToken()).rejects.toThrow("Telephony token missing");
   });
