@@ -1,52 +1,33 @@
-import { request as axiosRequest } from "axios";
+import axios from "axios";
 import { assertApiResponse } from "@/lib/assertApiResponse";
 import { requireAuth } from "@/utils/requireAuth";
 
-const ensureApiPath = (url?: string) => {
-  if (!url) return url;
-  if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith("/api/")) return url;
-  if (url === "/api") return url;
-  if (url.startsWith("/")) return `/api${url}`;
-  return `/api/${url}`;
-};
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_TIMEOUT_MS = 5000;
 
-type RequestOptions = {
-  method?: string;
-  body?: unknown;
-  data?: unknown;
-  headers?: Record<string, string>;
-  params?: Record<string, unknown>;
-  signal?: AbortSignal;
-  [key: string]: unknown;
-};
+export async function apiRequest<T = unknown>(
+  method: "get" | "post" | "put" | "delete" | "patch",
+  url: string,
+  data?: unknown,
+  auth = true
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
 
-async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
-  const method = (options.method ?? "GET").toUpperCase();
-  const token = requireAuth();
-  const payload = options.body ?? options.data;
-
-  try {
-    const response = await axiosRequest({
-      ...options,
-      baseURL: "https://server.boreal.financial",
-      method,
-      url: ensureApiPath(path),
-      data: payload,
-      headers: {
-        ...(options.headers ?? {}),
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const { data: responsePayload } = response;
-    return assertApiResponse<T>(responsePayload);
-  } catch (error: any) {
-    console.error("PORTAL API ERROR:", error?.response || error?.message);
-    const responsePayload = error?.response?.["data"] as { error?: string } | undefined;
-    const message = responsePayload?.error || error?.message || "Unknown API error";
-    throw new Error(message);
+  if (auth) {
+    const token = requireAuth();
+    headers.Authorization = `Bearer ${token}`;
   }
-}
 
-export { apiRequest, requireAuth };
+  const response = await axios({
+    baseURL: API_BASE_URL,
+    timeout: API_TIMEOUT_MS,
+    method,
+    url,
+    data,
+    headers,
+  });
+
+  return assertApiResponse(response);
+}

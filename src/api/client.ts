@@ -1,43 +1,20 @@
 import { apiRequest } from "@/lib/api";
 
 type Options = {
-  headers?: HeadersInit;
-  method?: string;
-  signal?: AbortSignal;
-  params?: Record<string, unknown>;
-  responseType?: "blob" | "json" | "text" | "arraybuffer";
-  [key: string]: unknown;
+  auth?: boolean;
 };
-
-const normalizeHeaders = (headers?: HeadersInit): Record<string, string> | undefined => {
-  if (!headers) return undefined;
-  if (headers instanceof Headers) {
-    const out: Record<string, string> = {};
-    headers.forEach((value, key) => {
-      out[key] = value;
-    });
-    return out;
-  }
-  if (Array.isArray(headers)) {
-    return Object.fromEntries(headers);
-  }
-  return headers as Record<string, string>;
-};
-
-const toConfig = (options: Options = {}) => ({
-  ...options,
-  headers: normalizeHeaders(options.headers),
-});
 
 export const apiClient = {
-  get: async <T = unknown>(path: string, options: Options = {}) => apiRequest<T>(path, { ...toConfig(options), method: "GET" }),
+  get: async <T = unknown>(path: string, options: Options = {}) =>
+    apiRequest<T>("get", path, undefined, options.auth ?? true),
   post: async <T = unknown>(path: string, body?: unknown, options: Options = {}) =>
-    apiRequest<T>(path, { ...toConfig(options), method: "POST", body }),
+    apiRequest<T>("post", path, body, options.auth ?? true),
   put: async <T = unknown>(path: string, body?: unknown, options: Options = {}) =>
-    apiRequest<T>(path, { ...toConfig(options), method: "PUT", body }),
+    apiRequest<T>("put", path, body, options.auth ?? true),
   patch: async <T = unknown>(path: string, body?: unknown, options: Options = {}) =>
-    apiRequest<T>(path, { ...toConfig(options), method: "PATCH", body }),
-  delete: async <T = unknown>(path: string, options: Options = {}) => apiRequest<T>(path, { ...toConfig(options), method: "DELETE" }),
+    apiRequest<T>("patch", path, body, options.auth ?? true),
+  delete: async <T = unknown>(path: string, options: Options = {}) =>
+    apiRequest<T>("delete", path, undefined, options.auth ?? true),
 };
 
 export const { get, post, patch, delete: remove } = apiClient;
