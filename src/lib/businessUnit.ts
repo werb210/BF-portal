@@ -10,7 +10,7 @@ export const resolveBusinessUnit = (value: unknown): BusinessUnit =>
 
 export const getStoredBusinessUnit = (): BusinessUnit => {
   if (typeof window === "undefined") return DEFAULT_BUSINESS_UNIT;
-  const stored = window.localStorage.getItem(STORAGE_KEY);
+  const stored = window.sessionStorage.getItem(STORAGE_KEY);
   return resolveBusinessUnit(stored);
 };
 

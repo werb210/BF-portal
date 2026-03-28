@@ -1,5 +1,5 @@
 export const requireAuth = () => {
-  const token = localStorage.getItem("auth_token");
+  const token = sessionStorage.getItem("auth_token");
 
   if (!token) {
     throw new Error("User not authenticated");

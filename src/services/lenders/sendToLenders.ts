@@ -6,5 +6,5 @@ export async function sendToLenders(applicationId: string, lenders: string[]) {
     lenders
   })
 
-  return res.data
+  return res
 }

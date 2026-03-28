@@ -10,7 +10,7 @@ type PortalApplicationDraft = {
 
 export const readPortalDraft = (): PortalApplicationDraft => {
   if (typeof window === "undefined") return {};
-  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const raw = window.sessionStorage.getItem(STORAGE_KEY);
   if (!raw) return {};
   try {
     return JSON.parse(raw) as PortalApplicationDraft;
@@ -21,7 +21,7 @@ export const readPortalDraft = (): PortalApplicationDraft => {
 
 const writePortalDraft = (draft: PortalApplicationDraft) => {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+  window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
 };
 
 export const updatePortalDraft = (updates: PortalApplicationDraft): PortalApplicationDraft => {
@@ -32,5 +32,5 @@ export const updatePortalDraft = (updates: PortalApplicationDraft): PortalApplic
 
 export const clearPortalDraft = () => {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(STORAGE_KEY);
+  window.sessionStorage.removeItem(STORAGE_KEY);
 };

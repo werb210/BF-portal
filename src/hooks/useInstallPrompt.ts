@@ -10,8 +10,8 @@ const DISMISS_KEY = "bf-install-dismissed";
 export const useInstallPrompt = () => {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isDismissed, setIsDismissed] = useState(() => {
-    if (typeof localStorage === "undefined") return false;
-    return localStorage.getItem(DISMISS_KEY) === "true";
+    if (typeof sessionStorage === "undefined") return false;
+    return sessionStorage.getItem(DISMISS_KEY) === "true";
   });
 
   useEffect(() => {
@@ -31,8 +31,8 @@ export const useInstallPrompt = () => {
   const dismiss = useCallback(() => {
     setIsDismissed(true);
     setPromptEvent(null);
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(DISMISS_KEY, "true");
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(DISMISS_KEY, "true");
     }
   }, []);
 

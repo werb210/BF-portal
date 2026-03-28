@@ -7,7 +7,7 @@ import { DEFAULT_BUSINESS_UNIT } from "@/types/businessUnit";
 const STORAGE_KEY = "staff-portal.business-unit";
 
 const canUseLocalStorage = () =>
-  typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
 
 const isBusinessUnit = (value: unknown): value is BusinessUnit =>
   value === "BF" || value === "BI" || value === "SLF";
@@ -15,7 +15,7 @@ const isBusinessUnit = (value: unknown): value is BusinessUnit =>
 const readStoredBusinessUnit = (): BusinessUnit | null => {
   if (!canUseLocalStorage()) return null;
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
+    const stored = window.sessionStorage.getItem(STORAGE_KEY);
     return isBusinessUnit(stored) ? stored : null;
   } catch {
     return null;
@@ -51,8 +51,8 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (!canUseLocalStorage()) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, activeBusinessUnit);
-      window.localStorage.setItem("staff-portal.silo", activeBusinessUnit);
+      window.sessionStorage.setItem(STORAGE_KEY, activeBusinessUnit);
+      window.sessionStorage.setItem("staff-portal.silo", activeBusinessUnit);
     } catch {
       // ignore storage errors
     }

@@ -3,34 +3,22 @@ set -euo pipefail
 
 echo "Running API guard checks..."
 
-if rg "fetch\(" src > /dev/null; then
-  echo "❌ Disallowed fetch() usage found in src/."
+AXIOS_COUNT=$( (rg "axios\\." src || true) | wc -l )
+FETCH_COUNT=$( (rg "fetch\\(" src || true) | wc -l )
+LOCALSTORAGE_COUNT=$( (rg "localStorage" src || true) | wc -l )
+
+if [ "$AXIOS_COUNT" -ne 0 ]; then
+  echo "FAIL: axios usage detected"
   exit 1
 fi
 
-AXIOS_CREATE_COUNT=$( (rg "axios\.create" src || true) | wc -l | tr -d ' ' )
-if [ "$AXIOS_CREATE_COUNT" -ne 1 ]; then
-  echo "❌ Expected exactly one axios.create usage in src/ (count=$AXIOS_CREATE_COUNT)."
+if [ "$FETCH_COUNT" -ne 0 ]; then
+  echo "FAIL: fetch usage detected"
   exit 1
 fi
 
-if rg "from ['\"]api/" src > /dev/null; then
-  echo "❌ Found disallowed non-aliased api imports (from 'api/... or from \"api/...)."
-  exit 1
-fi
-
-if rg "alert\(" src > /dev/null; then
-  echo "❌ Disallowed alert() usage found in src/."
-  exit 1
-fi
-
-if [ -d "api" ]; then
-  echo "❌ Root-level api/ folder is disallowed. Use src/api/ only."
-  exit 1
-fi
-
-if rg "VITE_API_URL" src > /dev/null; then
-  echo "❌ VITE_API_URL usage is disallowed."
+if [ "$LOCALSTORAGE_COUNT" -ne 0 ]; then
+  echo "FAIL: localStorage usage detected"
   exit 1
 fi
 

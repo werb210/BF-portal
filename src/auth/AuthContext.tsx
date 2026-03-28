@@ -188,7 +188,7 @@ const TEST_AUTH_STUB: AuthContextValue = {
   refreshUser: async () => true,
   clearAuth: () => undefined,
   logout: async () => {
-    localStorage.removeItem("persist");
+    sessionStorage.removeItem("persist");
     sessionStorage.removeItem("persist");
   },
   setAuth: () => undefined,
@@ -200,13 +200,13 @@ const TEST_AUTH_STUB: AuthContextValue = {
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const saveToken = (t: string) => {
-  localStorage.setItem("auth_token", t);
+  sessionStorage.setItem("auth_token", t);
   setToken(t);
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUserState] = useState<AuthUser>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem("auth_token"));
+  const [accessToken, setAccessToken] = useState<string | null>(sessionStorage.getItem("auth_token"));
   const [authState, setAuthStateState] = useState<AuthState>("loading");
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const [rolesStatus, setRolesStatus] = useState<RolesStatus>("loading");
@@ -235,7 +235,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearAuth = useCallback(() => {
     clearStoredAuth();
-    localStorage.clear();
+    sessionStorage.clear();
     sessionStorage.clear();
     void clearSession();
 
@@ -314,7 +314,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    const stored = localStorage.getItem("auth_token");
+    const stored = sessionStorage.getItem("auth_token");
     if (stored && stored !== accessToken) {
       setAccessToken(stored);
     }
@@ -454,7 +454,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await Promise.all(registrations.map((registration) => registration.unregister()));
       }
 
-      localStorage.removeItem("auth_token");
+      sessionStorage.removeItem("auth_token");
       window.location.href = "/";
     }
   }, [clearAuth]);

@@ -58,7 +58,7 @@ const ProfileSettings = () => {
         redirectUri: microsoftAuthConfig.redirectUri
       },
       cache: {
-        cacheLocation: "localStorage",
+        cacheLocation: "sessionStorage",
         storeAuthStateInCookie: isIos
       }
     });

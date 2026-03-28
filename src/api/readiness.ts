@@ -74,13 +74,13 @@ const parseLead = (value: unknown): ReadinessLead | null => {
 
 export async function fetchReadinessLeads(): Promise<ReadinessLead[]> {
   const res = await api.get("/portal/readiness-leads");
-  if (!Array.isArray(res.data)) return [];
-  return res.data.map(parseLead).filter((lead): lead is ReadinessLead => lead !== null);
+  if (!Array.isArray(res)) return [];
+  return res.map(parseLead).filter((lead): lead is ReadinessLead => lead !== null);
 }
 
 export async function convertReadinessLeadToApplication(leadId: string): Promise<ReadinessConvertResponse> {
   const res = await api.post(`/portal/readiness-leads/${leadId}/convert`);
-  const applicationId = asRecord(res.data)?.applicationId;
+  const applicationId = asRecord(res)?.applicationId;
   if (typeof applicationId !== "string" || applicationId.length === 0) {
     throw new Error("Convert response missing applicationId");
   }
@@ -92,7 +92,7 @@ export async function fetchApplicationReadiness(
   options: { signal?: AbortSignal } = {}
 ): Promise<ApplicationReadinessPayload> {
   const res = await api.get(`/applications/${applicationId}/readiness`, options);
-  const payload = asRecord(res.data);
+  const payload = asRecord(res);
   if (!payload) {
     return { lead: null, transcriptHistory: [] };
   }

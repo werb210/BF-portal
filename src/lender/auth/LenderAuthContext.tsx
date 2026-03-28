@@ -29,7 +29,7 @@ const PENDING_KEY = "lender-portal.pending";
 
 const readStoredAuth = (): { tokens: LenderAuthTokens | null; user: LenderProfile | null } => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return { tokens: null, user: null };
     return JSON.parse(raw) as { tokens: LenderAuthTokens | null; user: LenderProfile | null };
   } catch (error) {
@@ -39,7 +39,7 @@ const readStoredAuth = (): { tokens: LenderAuthTokens | null; user: LenderProfil
 
 const readPendingState = (): { email: string | null; otpRequestId: string | null } => {
   try {
-    const raw = localStorage.getItem(PENDING_KEY);
+    const raw = sessionStorage.getItem(PENDING_KEY);
     if (!raw) return { email: null, otpRequestId: null };
     return JSON.parse(raw) as { email: string | null; otpRequestId: string | null };
   } catch (error) {
@@ -49,18 +49,18 @@ const readPendingState = (): { email: string | null; otpRequestId: string | null
 
 const persistAuth = (tokens: LenderAuthTokens | null, user: LenderProfile | null) => {
   if (!tokens) {
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
     return;
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ tokens, user }));
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ tokens, user }));
 };
 
 const persistPending = (email: string | null, otpRequestId: string | null) => {
   if (!email && !otpRequestId) {
-    localStorage.removeItem(PENDING_KEY);
+    sessionStorage.removeItem(PENDING_KEY);
     return;
   }
-  localStorage.setItem(PENDING_KEY, JSON.stringify({ email, otpRequestId }));
+  sessionStorage.setItem(PENDING_KEY, JSON.stringify({ email, otpRequestId }));
 };
 
 const LenderAuthContext = createContext<LenderAuthContextValue | undefined>(undefined);

@@ -20,7 +20,7 @@ export default function AiConversations() {
 
   useEffect(() => {
     apiClient.get("/chat/sessions").then((res) => {
-      setConvos(Array.isArray(res.data) ? res.data : []);
+      setConvos(Array.isArray(res) ? res : []);
     });
   }, []);
 

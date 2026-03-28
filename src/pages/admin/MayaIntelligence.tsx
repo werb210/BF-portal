@@ -27,13 +27,13 @@ export default function MayaIntelligence() {
 
   useEffect(() => {
     apiClient.get("/maya/overview")
-      .then((res) => setData(res.data))
+      .then((res) => setData(res))
       .catch(() => setData(null));
   }, []);
 
   async function simulateROI() {
     const res = await apiClient.post("/maya/roi-simulate", { budget: roiInput });
-    setRoiProjection(res.data.projectedRevenue);
+    setRoiProjection(res.projectedRevenue);
   }
 
   async function rollbackModel(version: string) {

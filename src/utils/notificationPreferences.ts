@@ -15,7 +15,7 @@ const defaultPreference = (): PushPermissionPreference => ({
 export const readPushPreference = (userId?: string | null): PushPermissionPreference => {
   if (typeof window === "undefined") return defaultPreference();
   const key = buildKey(userId);
-  const raw = window.localStorage.getItem(key);
+  const raw = window.sessionStorage.getItem(key);
   if (!raw) return defaultPreference();
   try {
     const parsed = JSON.parse(raw) as PushPermissionPreference;
@@ -33,5 +33,5 @@ export const readPushPreference = (userId?: string | null): PushPermissionPrefer
 export const writePushPreference = (userId: string | null | undefined, preference: PushPermissionPreference) => {
   if (typeof window === "undefined") return;
   const key = buildKey(userId);
-  window.localStorage.setItem(key, JSON.stringify(preference));
+  window.sessionStorage.setItem(key, JSON.stringify(preference));
 };

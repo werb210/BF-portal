@@ -3,7 +3,7 @@ import { API_BASE_URL } from "@/config/api";
 const SOCKET_URL = API_BASE_URL.replace(/^http/, "ws");
 
 export function connectSocket() {
-  const token = localStorage.getItem("bf_token");
+  const token = sessionStorage.getItem("bf_token");
 
   if (!token) {
     return;

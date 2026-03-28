@@ -12,7 +12,7 @@ export default function AISessionList() {
 
   useEffect(() => {
     apiClient.get("/portal/ai/sessions").then((res) => {
-      setSessions(Array.isArray(res.data) ? res.data : []);
+      setSessions(Array.isArray(res) ? res : []);
     });
   }, []);
 

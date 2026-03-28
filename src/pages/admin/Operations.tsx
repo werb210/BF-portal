@@ -50,9 +50,9 @@ export default function Operations() {
   }
 
   useEffect(() => {
-    api.get<Contact[]>("/admin/contacts").then((res) => setContacts(res.data));
-    api.get<Issue[]>("/admin/issues").then((res) => setIssues(res.data));
-    api.get<ChatEscalation[]>("/admin/chats").then((res) => setChats(res.data));
+    api.get<Contact[]>("/admin/contacts").then((res) => setContacts(res));
+    api.get<Issue[]>("/admin/issues").then((res) => setIssues(res));
+    api.get<ChatEscalation[]>("/admin/chats").then((res) => setChats(res));
   }, []);
 
   return (

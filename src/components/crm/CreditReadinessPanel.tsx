@@ -17,7 +17,7 @@ export default function CreditReadinessPanel({ contactId }: { contactId: string 
   useEffect(() => {
     apiClient
       .get(`/portal/contacts/${contactId}/credit-readiness`)
-      .then((res) => setData(res.data))
+      .then((res) => setData(res))
       .catch(() => {});
   }, [contactId]);
 

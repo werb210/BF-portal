@@ -110,9 +110,9 @@ const readSessionState = (): Partial<DialerState> => {
 };
 
 const readLogs = (): DialerCallLog[] => {
-  if (typeof localStorage === "undefined") return [];
+  if (typeof sessionStorage === "undefined") return [];
   try {
-    const stored = localStorage.getItem(LOG_STORAGE_KEY);
+    const stored = sessionStorage.getItem(LOG_STORAGE_KEY);
     if (!stored) return [];
     const parsed = JSON.parse(stored) as DialerCallLog[];
     if (!Array.isArray(parsed)) return [];
@@ -149,9 +149,9 @@ const saveSessionState = (state: DialerState) => {
 };
 
 const saveLogs = (logs: DialerCallLog[]) => {
-  if (typeof localStorage === "undefined") return;
+  if (typeof sessionStorage === "undefined") return;
   try {
-    localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+    sessionStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
   } catch {
     // ignore storage failures
   }
