@@ -13,7 +13,7 @@ import type { AuthenticatedUser } from "@/types/auth";
 import { normalizeRole, roleIn, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import { clearSession, writeSession } from "@/utils/sessionStore";
-import { clearToken, getToken, setToken } from "@/auth/tokenStorage";
+import { clearToken, getToken, setToken } from "@/lib/auth";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";

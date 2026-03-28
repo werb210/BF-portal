@@ -1,4 +1,4 @@
-import { clearToken, getToken, setToken } from "@/auth/tokenStorage";
+import { clearToken, getToken, setToken } from "@/lib/auth";
 
 const USER_KEY = "boreal_staff_user";
 
