@@ -1,3 +1,5 @@
+import api from "@/lib/api";
+import { requireAuth } from "@/utils/requireAuth";
 import { DOCUMENT_CONTRACT } from "@/lib/contracts";
 import { apiClient, type RequestOptions } from "./httpClient";
 import type { DocumentRequirementResponse, DocumentStatus } from "@/types/documents.types";
@@ -46,3 +48,11 @@ export const restoreDocumentVersion = (documentId: string, version: number) =>
 
 export const fetchDocumentVersions = (documentId: string, options?: RequestOptions) =>
   apiClient.get<DocumentVersion[]>(`/documents/${documentId}/versions`, options);
+
+
+export const getDocuments = async (applicationId: string) => {
+  requireAuth();
+
+  const { data } = await api.get(`/api/documents/${applicationId}`);
+  return data.data;
+};

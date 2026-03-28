@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/apiFetch";
+import api from "@/lib/api";
 
 type DashboardData = {
   totalApplications: number;
@@ -14,8 +14,17 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
-    apiFetch("/bi/dashboard")
-      .then((res) => setData(res as DashboardData));
+    const loadDashboard = async () => {
+      try {
+        const res = await api.get("/api/bi/dashboard");
+        setData((res.data?.data ?? res.data) as DashboardData);
+      } catch (e) {
+        console.error(e);
+        alert("Something failed. Check console.");
+      }
+    };
+
+    loadDashboard();
   }, []);
 
   if (!data) return <div>Loading...</div>;

@@ -1,4 +1,5 @@
-import api from "@api/client";
+import api from "@/lib/api";
+import { requireAuth } from "@/utils/requireAuth";
 import { useCrmStore } from "@/state/crm.store";
 import type { CRMLead } from "@/types/crm";
 
@@ -7,8 +8,22 @@ type ApiLead = Record<string, unknown>;
 type ApiResponse<T> = { data?: T } & T;
 
 async function requestJson<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const payload = await api.get<ApiResponse<T>>(path, options);
-  return (payload as { data?: T }).data ?? (payload as T);
+  requireAuth();
+  const method = (options.method ?? "GET").toUpperCase();
+  const payload = options.body ? JSON.parse(String(options.body)) : undefined;
+
+  if (method === "POST") {
+    const { data } = await api.post<ApiResponse<T>>(`/api${path}`, payload);
+    return (data as { data?: T }).data ?? (data as T);
+  }
+
+  if (method === "PATCH") {
+    const { data } = await api.patch<ApiResponse<T>>(`/api${path}`, payload);
+    return (data as { data?: T }).data ?? (data as T);
+  }
+
+  const { data } = await api.get<ApiResponse<T>>(`/api${path}`);
+  return (data as { data?: T }).data ?? (data as T);
 }
 
 export type Contact = {
@@ -169,3 +184,17 @@ export async function fetchChatSessions() {
 export async function fetchContinuationLeads() {
   return requestJson("/application/continuations");
 }
+
+export const getDeals = async () => {
+  requireAuth();
+
+  const { data } = await api.get("/api/crm/deals");
+  return data.data;
+};
+
+export const updateDealStage = async (id: string, stage: string) => {
+  requireAuth();
+
+  const { data } = await api.patch(`/api/crm/deals/${id}`, { stage });
+  return data.data;
+};

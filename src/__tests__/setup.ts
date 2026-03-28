@@ -1,3 +1,4 @@
+import { beforeEach } from "vitest";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 
@@ -7,6 +8,8 @@ const globalMock = new MockAdapter(axios, { onNoMatch: "throwException" });
 const apiMock = new MockAdapter(api, { onNoMatch: "throwException" });
 
 beforeEach(() => {
+  localStorage.setItem("auth_token", "test-token");
+
   globalMock.reset();
   apiMock.reset();
 

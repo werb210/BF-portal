@@ -1,10 +1,25 @@
-import { apiRequest } from "@/lib/api";
+import api from "@/lib/api";
+import { requireAuth } from "@/utils/requireAuth";
 
-export const getApplications = () =>
-  apiRequest("/applications");
+export const getApplications = async () => {
+  requireAuth();
 
-export const createApplication = (data: any) =>
-  apiRequest("/applications", {
-    method: "POST",
-    body: JSON.stringify(data),
+  const { data } = await api.get("/api/applications");
+  return data.data;
+};
+
+export const sendToLender = async (id: string, lenders: string[]) => {
+  requireAuth();
+
+  const { data } = await api.post(`/api/applications/${id}/send`, {
+    lenders,
   });
+
+  return data.data;
+};
+
+export const createApplication = async (payload: unknown) => {
+  requireAuth();
+  const { data } = await api.post("/api/applications", payload);
+  return data.data;
+};
