@@ -120,7 +120,7 @@ export default function App() {
   const queryClient = useMemo(() => new QueryClient(), []);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("auth_token") || localStorage.getItem("bf_token") || localStorage.getItem("token");
     if (!token) {
       console.warn("No auth token found");
     }

@@ -1,25 +1,16 @@
-import { API_BASE_URL } from "@/config/api";
+import api from "@/lib/api";
 
-export async function apiFetch(path: string, options: RequestInit = {}) {
-  if (path.startsWith('/api')) {
-    throw new Error('Remove /api prefix');
-  }
+export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = options.headers as Record<string, string> | undefined;
+  const method = options.method ?? "GET";
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    },
-    ...options
+  return api.request<T>({
+    url: path,
+    method,
+    headers,
+    data: options.body,
+    signal: options.signal
   });
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-
-  return res.json();
 }
-
 
 export default apiFetch;

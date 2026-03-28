@@ -1,23 +1,20 @@
-import { apiFetch } from "@/lib/apiFetch";
+import { api } from "@/lib/api";
 
 export async function startOtp(payload: { phone: string }) {
-  return apiFetch("/auth/otp/start", {
-    method: "POST",
-    body: JSON.stringify({ phone: payload.phone }),
-  });
+  const res = await api.post("/api/auth/otp/start", payload);
+  return res.data;
 }
 
 export async function verifyOtp(payload: { phone: string; code: string }) {
-  const res = await apiFetch("/auth/otp/verify", {
-    method: "POST",
-    body: JSON.stringify({ phone: payload.phone, code: payload.code }),
-  });
+  const res = await api.post("/api/auth/otp/verify", payload);
 
-  if (!res?.token) {
+  if (!res?.data?.token) {
     throw new Error("Missing token");
   }
 
-  localStorage.setItem("token", res.token);
+  localStorage.setItem("auth_token", res.data.token);
+  localStorage.setItem("token", res.data.token);
+  localStorage.setItem("bf_token", res.data.token);
 
-  return res;
+  return res.data;
 }
