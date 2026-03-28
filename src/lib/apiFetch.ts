@@ -1,15 +1,11 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
-
-if (!BASE_URL) {
-  throw new Error('Missing VITE_API_URL');
-}
+import { API_BASE_URL } from "@/config/api";
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   if (path.startsWith('/api')) {
     throw new Error('Remove /api prefix');
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',

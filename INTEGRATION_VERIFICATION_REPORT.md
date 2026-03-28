@@ -19,7 +19,7 @@
 3. `cd /workspace/BF-portal && npm run build`
    - **Result:** passed (production build generated in `dist/`).
 4. `cd /workspace/BF-portal && npm run preview -- --host 0.0.0.0 --port 4173`
-   - **Result:** passed (portal served at `http://localhost:4173`).
+   - **Result:** passed (portal served at `http://127.0.0.1:4173`).
 
 ## Portal runtime behavior
 - Login page loads at `/login`.
