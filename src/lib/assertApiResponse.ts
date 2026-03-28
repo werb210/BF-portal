@@ -1,17 +1,15 @@
 import type { ApiResponse } from "@/types/api";
 
-export function assertApiResponse<T>(data: unknown): asserts data is ApiResponse<T> {
-  if (!data || typeof data !== "object") {
-    throw new Error("Invalid API response: expected object payload");
+export function assertApiResponse<T>(data: unknown): T {
+  if (!data || typeof data !== "object" || typeof (data as { success?: unknown }).success !== "boolean") {
+    throw new Error("Invalid API response");
   }
 
-  const payload = data as Partial<ApiResponse<T>>;
-  if (typeof payload.success !== "boolean" || !("data" in payload)) {
-    throw new Error("Invalid API response: expected { success, data, error? }");
+  const payload = data as ApiResponse<T>;
+
+  if (!payload.success) {
+    throw new Error(payload.error || "Request failed");
   }
 
-  if ("error" in payload && typeof payload.error !== "undefined" && typeof payload.error !== "string") {
-    throw new Error("Invalid API response: error must be a string when provided");
-  }
+  return payload.data;
 }
-

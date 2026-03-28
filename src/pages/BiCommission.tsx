@@ -7,7 +7,7 @@ export default function BiCommission() {
   useEffect(() => {
     apiClient
       .get("/ledger")
-      .then((response) => setLedger(response.data));
+      .then((result) => setLedger(result));
   }, []);
 
   const totalCommission = ledger.reduce(

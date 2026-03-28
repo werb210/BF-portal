@@ -27,9 +27,9 @@ export default function BICommissionDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const response = await api.get<CommissionResponse[]>("/admin/commissions");
+    const result = await api.get<CommissionResponse[]>("/admin/commissions");
 
-    const grouped = response.data.map((c) => ({
+    const grouped = result.map((c) => ({
       name: c.application_id.slice(0, 6),
       commission: Number(c.commission_amount || 0),
       policyId: c.application_id

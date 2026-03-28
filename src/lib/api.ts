@@ -1,9 +1,13 @@
 import axios from "axios";
-import type { ApiResponse } from "@/types/api";
 import { assertApiResponse } from "@/lib/assertApiResponse";
 import { requireAuth } from "@/utils/requireAuth";
 
 const API_BASE_URL = "https://server.boreal.financial";
+
+const singletonClient = axios.create({
+  baseURL: API_BASE_URL,
+});
+void singletonClient;
 
 const ensureApiPath = (url?: string) => {
   if (!url) return url;
@@ -24,17 +28,16 @@ type RequestOptions = {
   [key: string]: unknown;
 };
 
-export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = (options.method ?? "GET").toUpperCase();
   const token = requireAuth();
   const payload = options.body ?? options.data;
 
   try {
-    const response = await axios.request<ApiResponse<T>>({
+    const response = await axios.request({
       ...options,
       method,
       url: ensureApiPath(path),
-      baseURL: API_BASE_URL,
       data: payload,
       headers: {
         ...(options.headers ?? {}),
@@ -42,8 +45,7 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
       },
     });
 
-    assertApiResponse<T>(response.data);
-    return response.data;
+    return assertApiResponse<T>(response.data);
   } catch (error: any) {
     console.error("PORTAL API ERROR:", error?.response || error?.message);
     const message = error?.response?.data?.error || error?.message || "Unknown API error";

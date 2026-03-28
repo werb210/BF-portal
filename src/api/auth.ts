@@ -1,28 +1,24 @@
-import { api } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 import { setToken } from "@/auth/tokenStorage";
 
 export async function startOtp(payload: { phone: string }) {
-  const res = await api.post("/api/auth/otp/start", payload);
-
-  if (!res || typeof res.data === "undefined") {
-    throw new Error("Invalid API response");
-  }
-
-  return res.data;
+  return apiRequest<{ sessionId: string }>("/auth/otp/start", {
+    method: "POST",
+    body: payload,
+  });
 }
 
 export async function verifyOtp(payload: { phone: string; code: string }) {
-  const res = await api.post("/api/auth/otp/verify", payload);
+  const result = await apiRequest<{ token?: string }>("/auth/otp/verify", {
+    method: "POST",
+    body: payload,
+  });
 
-  if (!res || typeof res.data === "undefined") {
-    throw new Error("Invalid API response");
-  }
-
-  if (!res.data.token) {
+  if (!result.token) {
     throw new Error("Missing token");
   }
 
-  setToken(res.data.token);
+  setToken(result.token);
 
-  return res.data;
+  return result;
 }

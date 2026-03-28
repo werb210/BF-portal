@@ -9,7 +9,7 @@ export default function BiApplications() {
   useEffect(() => {
     apiClient
       .get("/applications")
-      .then((response) => setApps(response.data));
+      .then((result) => setApps(result));
   }, []);
 
   const totalPremium = apps.reduce(
