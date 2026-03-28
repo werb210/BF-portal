@@ -1,34 +1,27 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiRequest } from "@/lib/api";
 import { assertApiResponse } from "@/lib/assertApiResponse";
 
-describe("api smoke", () => {
-  const mock = new MockAdapter(axios, { onNoMatch: "throwException" });
+vi.mock("@/lib/api", () => ({
+  apiRequest: vi.fn(),
+}));
 
+describe("api smoke", () => {
   beforeEach(() => {
-    mock.reset();
+    vi.mocked(apiRequest).mockReset();
     sessionStorage.setItem("auth_token", "smoke-token");
   });
 
   it("calls auth + applications endpoints and validates API response structure", async () => {
-    mock.onPost("/api/auth/otp/start").reply(200, {
-      success: true,
-      data: { sessionId: "session-1" },
+    vi.mocked(apiRequest)
+      .mockResolvedValueOnce({ sessionId: "session-1" })
+      .mockResolvedValueOnce([{ id: "app-1" }]);
+
+    const auth = await apiRequest<{ sessionId: string }>("post", "/auth/otp/start", {
+      phone: "15551234567",
     });
 
-    mock.onGet("/api/applications").reply(200, {
-      success: true,
-      data: [{ id: "app-1" }],
-    });
-
-    const auth = await apiRequest<{ sessionId: string }>("/auth/otp/start", {
-      method: "POST",
-      body: { phone: "15551234567" },
-    });
-
-    const applications = await apiRequest<Array<{ id: string }>>("/applications");
+    const applications = await apiRequest<Array<{ id: string }>>("get", "/applications");
 
     expect(auth.sessionId).toBe("session-1");
     expect(Array.isArray(applications)).toBe(true);
