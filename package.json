@@ -28,7 +28,8 @@
     "cap:open:ios": "npx cap open ios",
     "cap:open:android": "npx cap open android",
     "e2e": "playwright test --pass-with-no-tests",
-    "test:contracts": "vitest run src/__tests__/authTelephony.flow.test.ts"
+    "test:contracts": "vitest run src/__tests__/authTelephony.flow.test.ts",
+    "system:boot": "bash ./scripts/full-system-boot.sh"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
