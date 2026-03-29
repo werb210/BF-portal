@@ -1,4 +1,4 @@
-name: build-and-test
+name: e2e
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  e2e:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,8 +16,7 @@ jobs:
         with:
           node-version: 20
 
-      - run: npm ci
-
-      - run: npm run build
-
-      - run: npm test || true
+      - name: Run full system boot
+        run: |
+          chmod +x scripts/full-system-boot.sh
+          ./scripts/full-system-boot.sh
