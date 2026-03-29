@@ -8,7 +8,7 @@ echo "=============================="
 
 ROOT_DIR="$(pwd)"
 
-SERVER_DIR="../BF-Server"
+SERVER_URL=${SERVER_URL:-https://api.boreal.financial}
 CLIENT_DIR="../BF-client"
 PORTAL_DIR="."
 AGENT_DIR="../agent"
@@ -18,7 +18,7 @@ AGENT_DIR="../agent"
 # =========================
 echo "Installing dependencies..."
 
-for dir in "$SERVER_DIR" "$CLIENT_DIR" "$PORTAL_DIR" "$AGENT_DIR"; do
+for dir in "$CLIENT_DIR" "$PORTAL_DIR" "$AGENT_DIR"; do
   echo "Installing in $dir"
   (cd "$dir" && npm ci)
 done
@@ -28,7 +28,6 @@ done
 # =========================
 echo "Building services..."
 
-(cd "$SERVER_DIR" && npm run build)
 (cd "$CLIENT_DIR" && npm run build)
 (cd "$PORTAL_DIR" && npm run build)
 (cd "$AGENT_DIR" && npm run build)
@@ -38,8 +37,8 @@ echo "Building services..."
 # =========================
 echo "Starting services..."
 
-(cd "$SERVER_DIR" && node dist/index.js &) 
-SERVER_PID=$!
+echo "Using remote server: $SERVER_URL"
+export VITE_API_BASE_URL="$SERVER_URL"
 
 (cd "$AGENT_DIR" && node dist/index.js &) 
 AGENT_PID=$!
@@ -54,7 +53,7 @@ sleep 5
 # =========================
 echo "Running health checks..."
 
-curl -f http://localhost:8080/health
+curl -f "${SERVER_URL%/}/health"
 curl -f http://localhost:4000/health
 
 # =========================
@@ -69,7 +68,7 @@ echo "=============================="
 # =========================
 cleanup() {
   echo "Shutting down services..."
-  kill $SERVER_PID $AGENT_PID $CLIENT_PID || true
+  kill $AGENT_PID $CLIENT_PID || true
 }
 trap cleanup EXIT
 
