@@ -1,12 +1,34 @@
+/** @type {import('eslint').Linter.Config} */
 module.exports = {
   root: true,
+
   env: {
     node: true,
-    browser: true,
-    es2021: true,
+    es2022: true
   },
-  rules: {
-    "no-undef": "error",
-    "no-restricted-globals": "off"
-  }
+
+  parserOptions: {
+    ecmaVersion: "latest",
+    sourceType: "module"
+  },
+
+  overrides: [
+    {
+      files: [
+        "deploy/**/*.js",
+        "scripts/**/*.js",
+        "postcss.config.js"
+      ],
+      parserOptions: {
+        sourceType: "module"
+      }
+    },
+
+    {
+      files: ["*.cjs"],
+      parserOptions: {
+        sourceType: "script"
+      }
+    }
+  ]
 };
