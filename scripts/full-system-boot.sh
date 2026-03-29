@@ -22,7 +22,7 @@ for dir in BF-Server BF-client BF-portal agent; do
   if [[ -d "${WORKSPACE_ROOT}/${dir}" ]]; then
     (
       cd "${WORKSPACE_ROOT}/${dir}"
-      npm ci --prefer-offline --no-audit --no-fund || true
+      npm ci --prefer-offline --no-audit --no-fund
     )
   else
     echo "WARNING: ${dir} not found under ${WORKSPACE_ROOT}; skipping install"
@@ -62,16 +62,20 @@ sleep 3
 sleep 5
 
 echo "Checking server..."
-curl -f http://localhost:8080/health || echo "SERVER FAILED"
+curl -f http://localhost:8080/health
 
 echo "Checking agent..."
-grep -i "error" "${WORKSPACE_ROOT}/agent.log" || echo "AGENT OK"
+curl -f http://localhost:4000/health
 
 echo "Checking client..."
-grep -i "error" "${WORKSPACE_ROOT}/client.log" || echo "CLIENT OK"
+curl -f http://localhost:3000/health
 
 echo "Checking portal..."
-grep -i "error" "${WORKSPACE_ROOT}/portal.log" || echo "PORTAL OK"
+if grep -qi "error" "${WORKSPACE_ROOT}/portal.log"; then
+  echo "PORTAL FAILED"
+  exit 1
+fi
+echo "PORTAL OK"
 
 echo ""
 echo "SYSTEM RUNNING:"
@@ -93,3 +97,8 @@ chmod +x "${WORKSPACE_ROOT}/stop-all.sh"
 
 echo ""
 echo "Created ${WORKSPACE_ROOT}/stop-all.sh"
+
+echo "Running health checks..."
+curl -f http://localhost:3000/health
+curl -f http://localhost:4000/health
+echo "System boot verified"
