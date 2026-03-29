@@ -1,4 +1,4 @@
-name: e2e
+name: portal-e2e
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Run full system boot
+      - name: Run Full System Boot
         run: |
           chmod +x scripts/full-system-boot.sh
           ./scripts/full-system-boot.sh
