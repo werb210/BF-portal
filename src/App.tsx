@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useMemo } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React, { useContext, useEffect } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Navigate, Outlet, Route, Routes, useInRouterContext } from "react-router-dom";
 import { AuthContext, AuthProvider } from "@/auth/AuthContext";
 import { roleIn } from "@/auth/roles";
@@ -23,7 +23,8 @@ import MobileShell from "@/mobile/MobileShell";
 import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
 import PortalDialer from "./telephony/components/PortalDialer";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
-import { requireAuth } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
+import { bootstrap } from "@/bootstrap";
 
 function SessionGuard() {
   usePortalSessionGuard();
@@ -119,14 +120,9 @@ const AppRoutes = () => (
 export default function App() {
   const existingAuthContext = useContext(AuthContext);
   const inRouterContext = useInRouterContext();
-  const queryClient = useMemo(() => new QueryClient(), []);
 
   useEffect(() => {
-    try {
-      requireAuth();
-    } catch {
-      console.warn("No auth token found");
-    }
+    void bootstrap();
   }, []);
 
   const withOptionalRouter = (children: React.ReactNode) => {
