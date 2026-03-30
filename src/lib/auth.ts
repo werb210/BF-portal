@@ -1,6 +1,17 @@
-import { apiFetch, setToken, clearToken } from "./api";
+import { apiFetch, clearToken, getToken, setToken } from "./api";
 
 let currentUser: any = null;
+
+export async function initAuth() {
+  try {
+    currentUser = await apiFetch("/api/auth/me");
+  } catch {
+    clearToken();
+    currentUser = null;
+  }
+
+  return currentUser;
+}
 
 export async function startOtp(phone: string) {
   return apiFetch("/api/auth/otp/start", {
@@ -15,19 +26,15 @@ export async function verifyOtp(phone: string, code: string) {
     body: JSON.stringify({ phone, code }),
   });
 
-  setToken((res as any).token);
-  currentUser = (res as any).user;
+  if ((res as any)?.token) setToken((res as any).token);
+  currentUser = (res as any)?.user ?? null;
 
   return res;
 }
 
 export async function getMe() {
   if (!currentUser) {
-    try {
-      currentUser = await apiFetch("/api/auth/me");
-    } catch {
-      currentUser = null;
-    }
+    await initAuth();
   }
   return currentUser;
 }
@@ -37,4 +44,15 @@ export function logout() {
   currentUser = null;
 }
 
-export { setToken, clearToken, getToken } from "./api";
+export async function ensureValidSession() {
+  try {
+    await apiFetch("/api/auth/me");
+  } catch {
+    clearToken();
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  }
+}
+
+export { setToken, clearToken, getToken };
