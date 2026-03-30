@@ -1,10 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosRequestHeaders, Method } from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_URL
-
-if (!API_BASE) {
-  throw new Error('VITE_API_URL is not defined')
-}
+// Force API base without /api prefix.
+const API_BASE = import.meta.env.VITE_API_URL || 'https://server.boreal.financial'
 
 type LegacyMethod = 'get' | 'post' | 'put' | 'patch' | 'delete'
 
