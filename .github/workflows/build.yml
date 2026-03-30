@@ -17,6 +17,7 @@ jobs:
           node-version: 20
 
       - name: Run Full System Boot
+        working-directory: .
         run: |
           chmod +x scripts/full-system-boot.sh
           ./scripts/full-system-boot.sh

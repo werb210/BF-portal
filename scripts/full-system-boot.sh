@@ -9,7 +9,14 @@ echo "=============================="
 ROOT_DIR="$(pwd)"
 
 SERVER_URL=${SERVER_URL:-https://api.boreal.financial}
-CLIENT_DIR="../BF-client"
+if [ -d "./BF-client" ]; then
+  CLIENT_DIR="./BF-client"
+elif [ -d "../BF-client" ]; then
+  CLIENT_DIR="../BF-client"
+else
+  echo "BF-client not found"
+  exit 1
+fi
 PORTAL_DIR="."
 AGENT_DIR="../agent"
 
