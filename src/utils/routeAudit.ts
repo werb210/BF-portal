@@ -12,14 +12,14 @@ type RouteDescriptor = {
 };
 
 export const portalApiRoutes: RouteDescriptor[] = [
-  { method: "POST", path: "/auth/otp/start" },
-  { method: "POST", path: "/auth/otp/verify" },
-  { method: "GET", path: "/auth/me" },
-  { method: "POST", path: "/auth/logout" },
+  { method: "POST", path: "/api/auth/otp/start" },
+  { method: "POST", path: "/api/auth/otp/verify" },
+  { method: "GET", path: "/api/auth/me" },
+  { method: "POST", path: "/api/auth/logout" },
   { method: "GET", path: "/_int/routes" }
 ];
 
-const AUTH_ROUTE_PREFIXES = ["/auth/otp", "/auth/me", "/auth/logout"];
+const AUTH_ROUTE_PREFIXES = ["/api/auth/otp", "/api/auth/me", "/api/auth/logout"];
 const normalizePath = (path: string) =>
   path
     .replace(/\/+$/, "");
@@ -64,7 +64,7 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
   const token = getAccessToken();
   if (!token) return false;
   try {
-    await apiRequest("/auth/me", {
+    await apiRequest("/api/auth/me", {
       headers: {
         "X-Request-Id": requestId,
         Authorization: `Bearer ${token}`
