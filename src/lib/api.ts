@@ -1,37 +1,38 @@
-const API_BASE =
-  import.meta.env.VITE_API_URL || "https://server.boreal.financial";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-let authToken: string | null = null;
+let token: string | null = localStorage.getItem("auth_token");
 
-export function setToken(token: string) {
-  authToken = token;
+export function setToken(t: string) {
+  token = t;
+  localStorage.setItem("auth_token", t);
 }
 
 export function clearToken() {
-  authToken = null;
+  token = null;
+  localStorage.removeItem("auth_token");
 }
 
 export function getToken() {
-  return authToken;
+  return token;
 }
 
 type ApiOptions = RequestInit & { raw?: boolean };
 
-function toUrl(path: string) {
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  if (path.startsWith("/api/")) return `${API_BASE}${path}`;
-  if (path.startsWith("/")) return `${API_BASE}/api${path}`;
-  return `${API_BASE}/api/${path}`;
+function buildHeaders(options: ApiOptions) {
+  const isFormData = options.body instanceof FormData;
+  const defaultHeaders = isFormData ? {} : { "Content-Type": "application/json" };
+
+  return {
+    ...defaultHeaders,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
 }
 
 export async function apiFetch(path: string, options: ApiOptions = {}) {
-  const res = await fetch(toUrl(path), {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...(options.headers || {}),
-    },
+    headers: buildHeaders(options),
   });
 
   if (options.raw) return res;
@@ -42,9 +43,7 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
   if (!res.ok) {
     const body = isJson ? await res.json().catch(() => null) : await res.text();
     throw new Error(
-      `API ${res.status}: ${
-        typeof body === "string" ? body : JSON.stringify(body)
-      }`
+      `API ${res.status}: ${typeof body === "string" ? body : JSON.stringify(body)}`,
     );
   }
 
