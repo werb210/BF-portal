@@ -1,18 +1,9 @@
-import { apiRequest } from "@/lib/api";
-import { setToken } from "@/lib/auth";
+import { startOtp as startOtpFlow, verifyOtp as verifyOtpFlow } from "@/lib/auth";
 
 export async function startOtp(payload: { phone: string }) {
-  return apiRequest<{ sessionId: string }>("post", "/api/auth/otp/start", payload);
+  return startOtpFlow(payload.phone);
 }
 
 export async function verifyOtp(payload: { phone: string; code: string }) {
-  const result = await apiRequest<{ token?: string }>("post", "/api/auth/otp/verify", payload);
-
-  if (!result.token) {
-    throw new Error("Missing token");
-  }
-
-  setToken(result.token);
-
-  return result;
+  return verifyOtpFlow(payload.phone, payload.code);
 }

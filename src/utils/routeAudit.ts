@@ -15,11 +15,10 @@ export const portalApiRoutes: RouteDescriptor[] = [
   { method: "POST", path: "/api/auth/otp/start" },
   { method: "POST", path: "/api/auth/otp/verify" },
   { method: "GET", path: "/api/auth/me" },
-  { method: "POST", path: "/api/auth/logout" },
   { method: "GET", path: "/_int/routes" }
 ];
 
-const AUTH_ROUTE_PREFIXES = ["/api/auth/otp", "/api/auth/me", "/api/auth/logout"];
+const AUTH_ROUTE_PREFIXES = ["/api/auth/otp", "/api/auth/me"];
 const normalizePath = (path: string) =>
   path
     .replace(/\/+$/, "");
