@@ -17,11 +17,11 @@ describe("contract:e2e", () => {
       .mockResolvedValueOnce({ ok: true, token: "session-token-1" })
       .mockResolvedValueOnce({ token: "voice-token-1" });
 
-    await apiRequest("post", "/auth/otp/start", {
+    await apiRequest("post", "/api/auth/otp/start", {
       phone: "+61400000000",
     });
 
-    const v = await apiRequest<{ token: string }>("post", "/auth/otp/verify", {
+    const v = await apiRequest<{ token: string }>("post", "/api/auth/otp/verify", {
       phone: "+61400000000",
       code: "000000",
     });
@@ -36,7 +36,7 @@ describe("contract:e2e", () => {
     vi.mocked(apiRequest).mockRejectedValueOnce(new Error("invalid otp"));
 
     await expect(
-      apiRequest("post", "/auth/otp/verify", {
+      apiRequest("post", "/api/auth/otp/verify", {
         phone: "+61400000000",
         code: "bad-code",
       })
