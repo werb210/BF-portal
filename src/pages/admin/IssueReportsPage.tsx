@@ -13,7 +13,7 @@ export default function IssueReportsPage() {
 
   useEffect(() => {
     api.get("/admin/issue-reports").then((res) => {
-      setReports(res || []);
+      setReports(res.data || []);
     });
   }, []);
 
