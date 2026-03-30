@@ -421,7 +421,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await api.post("/api/auth/logout");
     } finally {
       clearAuth();
       destroyDevice();

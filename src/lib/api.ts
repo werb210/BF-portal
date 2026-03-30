@@ -1,117 +1,97 @@
-import { ApiError } from "@/api/http";
+const API_BASE =
+  import.meta.env.VITE_API_URL || "https://server.boreal.financial";
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://server.boreal.financial";
+let authToken: string | null = null;
 
-type LegacyMethod = "get" | "post" | "put" | "patch" | "delete";
-
-type ApiOptions = RequestInit & {
-  raw?: boolean;
-  responseType?: "json" | "text" | "blob";
-  skipAuth?: boolean;
-};
-
-export type ApiResult<T = unknown> = {
-  data: T;
-  status: number;
-  headers: Headers;
-};
-
-const normalizePath = (path: string) => {
-  if (!path.startsWith("/")) return `/api/${path}`;
-  if (path.startsWith("/api/")) return path;
-  return `/api${path}`;
-};
-
-const normalizeMethod = (method?: string): string => (method ?? "GET").toUpperCase();
-
-const shouldSetJsonContentType = (body: BodyInit | null | undefined) => {
-  if (!body) return true;
-  return !(body instanceof FormData);
-};
-
-export async function apiFetch(path: string, options: ApiOptions = {}): Promise<unknown> {
-  const normalizedPath = normalizePath(path);
-  const method = normalizeMethod(options.method);
-
-  const headers = new Headers(options.headers ?? {});
-  if (!headers.has("Content-Type") && shouldSetJsonContentType(options.body ?? null)) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  const response = await fetch(`${API_BASE}${normalizedPath}`, {
-    credentials: "include",
-    ...options,
-    method,
-    headers,
-  });
-
-  if (options.raw) return response;
-
-  const contentType = response.headers.get("content-type") || "";
-  const isJson = contentType.includes("application/json");
-
-  if (!response.ok) {
-    const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => null);
-    const message = typeof body === "string" ? body : JSON.stringify(body);
-    throw new ApiError({
-      status: response.status,
-      message: `API ${response.status}: ${message || response.statusText || "Request failed"}`,
-      details: body,
-    });
-  }
-
-  if (options.responseType === "blob") return response.blob();
-  if (options.responseType === "text") return response.text();
-
-  if (options.responseType === "json") return response.json();
-  if (isJson) return response.json();
-
-  return response.text();
+export function setToken(token: string) {
+  authToken = token;
 }
 
-const request = async <T = unknown>(method: string, path: string, data?: unknown, options: ApiOptions = {}): Promise<ApiResult<T>> => {
-  const body = data === undefined ? options.body : data instanceof FormData ? data : JSON.stringify(data);
-  const parsed = (await apiFetch(path, { ...options, method, body })) as T;
-  return { data: parsed, status: 200, headers: new Headers() };
-};
+export function clearToken() {
+  authToken = null;
+}
 
-const api = {
-  defaults: { baseURL: API_BASE },
-  get: async <T = unknown>(path: string, options: ApiOptions = {}): Promise<ApiResult<T>> => request<T>("GET", path, undefined, options),
-  post: async <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}): Promise<ApiResult<T>> => request<T>("POST", path, data, options),
-  put: async <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}): Promise<ApiResult<T>> => request<T>("PUT", path, data, options),
-  patch: async <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}): Promise<ApiResult<T>> => request<T>("PATCH", path, data, options),
-  delete: async <T = unknown>(path: string, options: ApiOptions = {}): Promise<ApiResult<T>> => request<T>("DELETE", path, undefined, options),
-};
+export function getToken() {
+  return authToken;
+}
 
-export async function apiRequest<T = unknown>(url: string, config?: ApiOptions & { data?: unknown }): Promise<T>;
-export async function apiRequest<T = unknown>(method: LegacyMethod, url: string, data?: unknown, _auth?: boolean): Promise<T>;
+type ApiOptions = RequestInit & { raw?: boolean };
+
+function toUrl(path: string) {
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (path.startsWith("/api/")) return `${API_BASE}${path}`;
+  if (path.startsWith("/")) return `${API_BASE}/api${path}`;
+  return `${API_BASE}/api/${path}`;
+}
+
+export async function apiFetch(path: string, options: ApiOptions = {}) {
+  const res = await fetch(toUrl(path), {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+
+  if (options.raw) return res;
+
+  const ct = res.headers.get("content-type") || "";
+  const isJson = ct.includes("application/json");
+
+  if (!res.ok) {
+    const body = isJson ? await res.json().catch(() => null) : await res.text();
+    throw new Error(
+      `API ${res.status}: ${
+        typeof body === "string" ? body : JSON.stringify(body)
+      }`
+    );
+  }
+
+  return isJson ? res.json() : res.text();
+}
+
+export async function apiRequest<T = unknown>(url: string, config: (ApiOptions & { data?: unknown }) = {}): Promise<T>;
+export async function apiRequest<T = unknown>(method: "get" | "post" | "put" | "patch" | "delete", url: string, data?: unknown): Promise<T>;
 export async function apiRequest<T = unknown>(
   methodOrUrl: string,
   urlOrConfig: string | (ApiOptions & { data?: unknown }) = {},
   data?: unknown,
 ): Promise<T> {
-  const isLegacyMethod = ["get", "post", "put", "patch", "delete"].includes(methodOrUrl);
-
-  if (isLegacyMethod) {
-    const response = await request<T>(methodOrUrl.toUpperCase(), urlOrConfig as string, data);
-    return response.data;
+  const legacyMethods = ["get", "post", "put", "patch", "delete"];
+  if (legacyMethods.includes(methodOrUrl)) {
+    return apiFetch(urlOrConfig as string, {
+      method: methodOrUrl.toUpperCase(),
+      body: data === undefined ? undefined : data instanceof FormData ? data : JSON.stringify(data),
+    }) as Promise<T>;
   }
 
-  const url = methodOrUrl;
   const config = (urlOrConfig ?? {}) as ApiOptions & { data?: unknown };
-  const response = await request<T>(config.method ?? "GET", url, config.data, config);
-  return response.data;
+  return apiFetch(methodOrUrl, {
+    ...config,
+    method: config.method ?? "GET",
+    body: config.data === undefined ? config.body : config.data instanceof FormData ? config.data : JSON.stringify(config.data),
+  }) as Promise<T>;
 }
+
+const api = {
+  get: <T = unknown>(path: string, options: ApiOptions = {}) => apiFetch(path, { ...options, method: "GET" }) as Promise<T>,
+  post: <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}) =>
+    apiFetch(path, { ...options, method: "POST", body: data instanceof FormData ? data : JSON.stringify(data) }) as Promise<T>,
+  put: <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}) =>
+    apiFetch(path, { ...options, method: "PUT", body: data instanceof FormData ? data : JSON.stringify(data) }) as Promise<T>,
+  patch: <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}) =>
+    apiFetch(path, { ...options, method: "PATCH", body: data instanceof FormData ? data : JSON.stringify(data) }) as Promise<T>,
+  delete: <T = unknown>(path: string, options: ApiOptions = {}) => apiFetch(path, { ...options, method: "DELETE" }) as Promise<T>,
+};
 
 export async function safeApiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T | null> {
   try {
-    const response = await request<T>(options.method ?? "GET", path, undefined, options);
-    return response.data;
+    return (await apiFetch(path, options)) as T;
   } catch {
     return null;
   }
 }
 
-export { ApiError };
+export { API_BASE };
 export default api;

@@ -1,34 +1,40 @@
-import { apiFetch } from "./api";
+import { apiFetch, setToken, clearToken } from "./api";
 
-const TOKEN_KEY = "auth_token";
-const LEGACY_TOKEN_KEY = "bf_token";
-const LEGACY_TOKEN_KEY_2 = "token";
+let currentUser: any = null;
 
-export function getToken(): string | null {
-  return (
-    sessionStorage.getItem(TOKEN_KEY) ||
-    sessionStorage.getItem(LEGACY_TOKEN_KEY) ||
-    sessionStorage.getItem(LEGACY_TOKEN_KEY_2)
-  );
+export async function startOtp(phone: string) {
+  return apiFetch("/api/auth/otp/start", {
+    method: "POST",
+    body: JSON.stringify({ phone }),
+  });
 }
 
-export function setToken(token: string) {
-  sessionStorage.setItem(TOKEN_KEY, token);
-  sessionStorage.setItem(LEGACY_TOKEN_KEY, token);
-  sessionStorage.setItem(LEGACY_TOKEN_KEY_2, token);
-}
+export async function verifyOtp(phone: string, code: string) {
+  const res = await apiFetch("/api/auth/otp/verify", {
+    method: "POST",
+    body: JSON.stringify({ phone, code }),
+  });
 
-export function clearToken() {
-  sessionStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(LEGACY_TOKEN_KEY);
-  sessionStorage.removeItem(LEGACY_TOKEN_KEY_2);
-}
+  setToken((res as any).token);
+  currentUser = (res as any).user;
 
+  return res;
+}
 
 export async function getMe() {
-  try {
-    return await apiFetch("/api/auth/me");
-  } catch {
-    return null;
+  if (!currentUser) {
+    try {
+      currentUser = await apiFetch("/api/auth/me");
+    } catch {
+      currentUser = null;
+    }
   }
+  return currentUser;
 }
+
+export function logout() {
+  clearToken();
+  currentUser = null;
+}
+
+export { setToken, clearToken, getToken } from "./api";

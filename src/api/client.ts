@@ -1,20 +1,16 @@
-import { apiRequest } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
-type Options = {
-  auth?: boolean;
-};
+type Options = RequestInit;
 
 export const apiClient = {
-  get: async <T = unknown>(path: string, options: Options = {}) =>
-    apiRequest<T>("get", path, undefined, options.auth ?? true),
+  get: async <T = unknown>(path: string, options: Options = {}) => apiFetch(path, { ...options, method: "GET" }) as Promise<T>,
   post: async <T = unknown>(path: string, body?: unknown, options: Options = {}) =>
-    apiRequest<T>("post", path, body, options.auth ?? true),
+    apiFetch(path, { ...options, method: "POST", body: body instanceof FormData ? body : JSON.stringify(body) }) as Promise<T>,
   put: async <T = unknown>(path: string, body?: unknown, options: Options = {}) =>
-    apiRequest<T>("put", path, body, options.auth ?? true),
+    apiFetch(path, { ...options, method: "PUT", body: body instanceof FormData ? body : JSON.stringify(body) }) as Promise<T>,
   patch: async <T = unknown>(path: string, body?: unknown, options: Options = {}) =>
-    apiRequest<T>("patch", path, body, options.auth ?? true),
-  delete: async <T = unknown>(path: string, options: Options = {}) =>
-    apiRequest<T>("delete", path, undefined, options.auth ?? true),
+    apiFetch(path, { ...options, method: "PATCH", body: body instanceof FormData ? body : JSON.stringify(body) }) as Promise<T>,
+  delete: async <T = unknown>(path: string, options: Options = {}) => apiFetch(path, { ...options, method: "DELETE" }) as Promise<T>,
 };
 
 export const { get, post, patch, delete: remove } = apiClient;
