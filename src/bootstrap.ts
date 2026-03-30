@@ -1,10 +1,5 @@
-import { apiRequest } from "@/lib/api";
+import { getMe } from "@/lib/auth";
 
 export async function bootstrap() {
-  try {
-    await apiRequest("/api/auth/me", { method: "GET" });
-  } catch (err: any) {
-    if (err?.message === "AUTH_REQUIRED") return;
-    throw err;
-  }
+  await getMe();
 }

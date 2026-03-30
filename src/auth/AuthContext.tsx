@@ -13,7 +13,7 @@ import type { AuthenticatedUser } from "@/types/auth";
 import { normalizeRole, roleIn, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import { clearSession, writeSession } from "@/utils/sessionStore";
-import { clearToken, getToken, setToken } from "@/lib/auth";
+import { clearToken, getMe, getToken, setToken } from "@/lib/auth";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";
@@ -264,7 +264,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       try {
-        const payload = await api.get("/api/auth/me");
+        const payload = await getMe();
         if (!payload) {
           clearInvalidTokenArtifacts();
           settleUnauthenticated();
@@ -329,15 +329,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const token = getToken();
 
-    if (!token) {
-      throw new Error("AUTH_REQUIRED");
-    }
-
     setIsHydratingSession(true);
 
     void (async () => {
       try {
-        const payload = await api.get("/api/auth/me");
+        const payload = await getMe();
         if (!payload) {
           clearToken();
           settleUnauthenticated();
@@ -351,7 +347,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        setStoredAccessToken(token);
+        if (token) setStoredAccessToken(token);
         setStoredUser(normalizedUser);
         setAccessToken(token);
         setUserState(normalizedUser);
