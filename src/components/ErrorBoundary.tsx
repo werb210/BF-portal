@@ -2,16 +2,16 @@ import React from "react";
 import { getRequestId } from "@/utils/requestId";
 
 type Props = { children: React.ReactNode };
-type State = { hasError: boolean };
+type State = { hasError: boolean; error: Error | null };
 
 class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
@@ -24,6 +24,10 @@ class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      if (this.state.error?.message === "AUTH_REQUIRED") {
+        return null;
+      }
+
       return (
         <div style={{ padding: 40 }} role="alert">
           <h2>Portal Error</h2>

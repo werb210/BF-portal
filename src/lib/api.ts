@@ -17,6 +17,17 @@ const api = axios.create({
   withCredentials: true,
 })
 
+let redirectedToLogin = false
+
+const handleAuthRequired = (): never => {
+  if (!redirectedToLogin && typeof window !== 'undefined') {
+    redirectedToLogin = true
+    window.location.replace('/login')
+  }
+
+  throw new Error('AUTH_REQUIRED')
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   const headers: AxiosRequestHeaders = {
@@ -62,15 +73,23 @@ export async function apiRequest<T = any>(
       ...(auth && token ? { Authorization: `Bearer ${token}` } : {}),
     }
 
-    const res = await axios({
-      url: `${API_BASE}${url}`,
-      method,
-      data,
-      withCredentials: true,
-      headers,
-    })
+    try {
+      const res = await axios({
+        url: `${API_BASE}${url}`,
+        method,
+        data,
+        withCredentials: true,
+        headers,
+      })
 
-    return res.data
+      return res.data
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        handleAuthRequired()
+      }
+
+      throw error
+    }
   }
 
   const url = methodOrUrl
@@ -78,26 +97,34 @@ export async function apiRequest<T = any>(
   const token = localStorage.getItem('token')
   const authConfig = config as AxiosRequestConfig & LegacyAuthConfig
 
-  const res = await axios({
-    url: `${API_BASE}${url}`,
-    method: config.method || 'GET',
-    data: config.data,
-    withCredentials: true,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(authConfig.skipAuth ? {} : token ? { Authorization: `Bearer ${token}` } : {}),
-      ...config.headers,
-    },
-  })
+  try {
+    const res = await axios({
+      url: `${API_BASE}${url}`,
+      method: config.method || 'GET',
+      data: config.data,
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authConfig.skipAuth ? {} : token ? { Authorization: `Bearer ${token}` } : {}),
+        ...config.headers,
+      },
+    })
 
-  return res.data
+    return res.data
+  } catch (error: any) {
+    if (error?.response?.status === 401) {
+      handleAuthRequired()
+    }
+
+    throw error
+  }
 }
 
 export function requireAuth() {
   const token = localStorage.getItem('token')
 
   if (!token) {
-    window.location.href = '/login'
+    handleAuthRequired()
   }
 }
 
