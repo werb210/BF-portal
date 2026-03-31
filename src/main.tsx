@@ -1,5 +1,4 @@
 import "@/lib/networkGuard"
-import { getToken, clearToken } from "@/auth/token"
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -7,8 +6,10 @@ import App from "./App";
 import "./index.css";
 import ErrorBoundary from "./components/ErrorBoundary";
 
-const token = getToken()
-if (!token) clearToken()
+const t = localStorage.getItem("token")
+if (t === "null" || t === "undefined") {
+  localStorage.removeItem("token")
+}
 
 window.addEventListener("unhandledrejection", (e) => {
   console.error("[UNHANDLED PROMISE]", e.reason);

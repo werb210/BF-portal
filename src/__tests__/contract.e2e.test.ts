@@ -17,12 +17,12 @@ describe("contract:e2e", () => {
       .mockResolvedValueOnce({ ok: true, token: "session-token-1" })
       .mockResolvedValueOnce({ token: "voice-token-1" });
 
-    await apiRequest("/api/auth/otp/start", {
+    await apiRequest("/api/auth/start-otp", {
       method: "POST",
       body: JSON.stringify({ phone: "+61400000000" }),
     });
 
-    const v = await apiRequest<{ token: string }>("/api/auth/otp/verify", {
+    const v = await apiRequest<{ token: string }>("/api/auth/verify-otp", {
       method: "POST",
       body: JSON.stringify({
         phone: "+61400000000",
@@ -40,7 +40,7 @@ describe("contract:e2e", () => {
     vi.mocked(apiRequest).mockRejectedValueOnce(new Error("invalid otp"));
 
     await expect(
-      apiRequest("/api/auth/otp/verify", {
+      apiRequest("/api/auth/verify-otp", {
         method: "POST",
         body: JSON.stringify({
           phone: "+61400000000",

@@ -10,7 +10,7 @@ vi.mock("@/lib/api", () => ({
 }));
 
 async function startOtp(payload: { phone: string }) {
-  return apiRequest<{ ok: boolean }>("/api/auth/otp/start", {
+  return apiRequest<{ ok: boolean }>("/api/auth/start-otp", {
     method: "POST",
     body: JSON.stringify({ phone: payload.phone }),
   });
@@ -33,7 +33,7 @@ async function verifyOtp(payload: { phone: string; code: string }) {
 beforeEach(() => {
   vi.mocked(apiRequest).mockReset();
   vi.mocked(apiRequest).mockImplementation(async (path) => {
-    if (path === "/api/auth/otp/start") return { ok: true };
+    if (path === "/api/auth/start-otp") return { ok: true };
     if (path === "/api/auth/verify-otp") return { ok: true, token: "test-token" };
     if (path === "/api/telephony/token") return { token: "voice-token" };
     return {};
@@ -55,7 +55,7 @@ describe("auth/telephony flow contract checks", () => {
 
   it("fails when telephony response shape is invalid", async () => {
     vi.mocked(apiRequest).mockImplementation(async (path) => {
-      if (path === "/api/auth/otp/start") return { ok: true };
+      if (path === "/api/auth/start-otp") return { ok: true };
       if (path === "/api/auth/verify-otp") return { ok: true, token: "test-token" };
       if (path === "/api/telephony/token") return { ok: true };
       return {};

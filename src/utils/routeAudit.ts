@@ -12,13 +12,13 @@ type RouteDescriptor = {
 };
 
 export const portalApiRoutes: RouteDescriptor[] = [
-  { method: "POST", path: "/api/auth/otp/start" },
-  { method: "POST", path: "/api/auth/otp/verify" },
+  { method: "POST", path: "/api/auth/start-otp" },
+  { method: "POST", path: "/api/auth/verify-otp" },
   { method: "GET", path: "/api/auth/me" },
   { method: "GET", path: "/api/_int/routes" }
 ];
 
-const AUTH_ROUTE_PREFIXES = ["/api/auth/otp", "/api/auth/me"];
+const AUTH_ROUTE_PREFIXES = ["/api/auth", "/api/auth/me"];
 const normalizePath = (path: string) =>
   path
     .replace(/\/+$/, "");

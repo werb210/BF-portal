@@ -17,7 +17,7 @@ describe("api smoke", () => {
       .mockResolvedValueOnce({ sessionId: "session-1" })
       .mockResolvedValueOnce([{ id: "app-1" }]);
 
-    const auth = await apiRequest<{ sessionId: string }>("/api/auth/otp/start", {
+    const auth = await apiRequest<{ sessionId: string }>("/api/auth/start-otp", {
       method: "POST",
       body: JSON.stringify({
         phone: "15551234567",
