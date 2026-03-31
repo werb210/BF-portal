@@ -1,37 +1,22 @@
-const API_BASE = "";
+import api from "@/api/client";
 
-async function request(path: string, body: any) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Auth API failure: ${res.status} ${text}`);
-  }
-
-  return res.json();
-}
-
-// Twilio Verify ONLY — no fallback, no alias
 export async function sendOtp(phone: string) {
   if (!phone) throw new Error("phone required");
 
-  return request("/auth/send-otp", { phone });
+  const res = await api.post("/auth/send-otp", { phone });
+  return res.data;
 }
 
 export async function verifyOtp(phone: string, code: string) {
-  if (!phone || !code) throw new Error("phone + code required");
-
-  const result = await request("/auth/verify-otp", { phone, code });
-
-  if (!result.success) {
-    throw new Error("OTP rejected by Twilio");
+  if (!phone || !code) {
+    throw new Error("phone + code required");
   }
 
-  return result;
+  const res = await api.post("/auth/verify-otp", { phone, code });
+
+  if (!res.data.success) {
+    throw new Error("OTP rejected");
+  }
+
+  return res.data;
 }
