@@ -10,7 +10,7 @@ import {
   sendCommunication
 } from "@/api/communications";
 import { connectAiSocket, subscribeAiSocket, subscribeAiSocketConnection } from "@/services/aiSocket";
-import { getToken } from "@/services/token";
+import { getToken } from "@/auth/token";
 import { useAuth } from "@/hooks/useAuth";
 import type { CommunicationConversation, CommunicationMessage, CrmLead } from "@/api/communications";
 

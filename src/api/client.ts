@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/apiClient";
+import { apiFetch } from "@/lib/api";
 
 type Options = RequestInit;
 

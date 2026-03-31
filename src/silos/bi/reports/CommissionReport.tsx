@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/lib/apiClient";
+import { apiRequest } from "@/lib/api";
 
 export default function CommissionReport() {
   const [rows, setRows] = useState<any[]>([]);
