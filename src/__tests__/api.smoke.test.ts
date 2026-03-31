@@ -17,11 +17,16 @@ describe("api smoke", () => {
       .mockResolvedValueOnce({ sessionId: "session-1" })
       .mockResolvedValueOnce([{ id: "app-1" }]);
 
-    const auth = await apiRequest<{ sessionId: string }>("post", "/api/auth/otp/start", {
-      phone: "15551234567",
+    const auth = await apiRequest<{ sessionId: string }>("/api/auth/otp/start", {
+      method: "POST",
+      body: JSON.stringify({
+        phone: "15551234567",
+      }),
     });
 
-    const applications = await apiRequest<Array<{ id: string }>>("get", "/applications");
+    const applications = await apiRequest<Array<{ id: string }>>("/api/applications", {
+      method: "GET",
+    });
 
     expect(auth.sessionId).toBe("session-1");
     expect(Array.isArray(applications)).toBe(true);

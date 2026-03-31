@@ -26,43 +26,32 @@ type ExtendedRenderOptions = Omit<RenderOptions, "wrapper"> & {
 const createAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue => {
   const fallbackUser = { id: "test-user", email: "staff@example.com", role: "Staff" };
   const user = overrides.user ?? fallbackUser;
+  const resolvedRole = overrides.role ?? (typeof user?.role === "string" ? user.role : "Staff");
+  const resolvedRoles = overrides.roles ?? [resolvedRole];
+  const resolvedToken = overrides.token ?? "test-token";
+  const resolvedAuthStatus = overrides.authStatus ?? "authenticated";
+  const resolvedRolesStatus = overrides.rolesStatus ?? "resolved";
+  const isAuthenticated = overrides.isAuthenticated ?? overrides.authenticated ?? true;
 
   return {
-    authState: "authenticated",
-    status: "authenticated",
-    authStatus: "authenticated",
-    rolesStatus: "resolved",
+    authStatus: resolvedAuthStatus,
+    rolesStatus: resolvedRolesStatus,
+    authReady: overrides.authReady ?? true,
+    authenticated: isAuthenticated,
+    isAuthenticated,
+    isLoading: overrides.isLoading ?? false,
+    token: resolvedToken,
     user,
-    accessToken: "test-token",
-    token: "test-token",
-    saveToken: () => undefined,
-    allowedSilos: [],
+    role: resolvedRole,
+    roles: resolvedRoles,
+    hasRole: (role) => resolvedRoles.includes(role),
     canAccessSilo: () => true,
-    canAccessRole: () => false,
-    role: (overrides.role ?? (typeof user?.role === "string" ? (user.role as any) : "Staff")) as any,
-    roles: overrides.roles ?? [((typeof user?.role === "string" ? user.role : "Staff") as any)],
-    capabilities: [],
-    error: null,
-    pendingPhoneNumber: null,
-    authenticated: overrides.authenticated ?? true,
-    isAuthenticated: overrides.isAuthenticated ?? overrides.authenticated ?? true,
-    isLoading: false,
-    authReady: true,
-    isHydratingSession: false,
-    login: async () => false,
+    logout: overrides.logout ?? (() => undefined),
+    clearAuth: overrides.clearAuth ?? (() => undefined),
+    setAuth: overrides.setAuth ?? (() => undefined),
+    setToken: overrides.setToken ?? (() => undefined),
     startOtp: async () => true,
-    verifyOtp: async () => ({ ok: true }),
     loginWithOtp: async () => ({ ok: true }),
-    refreshUser: async () => true,
-    clearAuth: () => undefined,
-    logout: async () => {
-      sessionStorage.removeItem("persist");
-      sessionStorage.removeItem("persist");
-    },
-    setAuth: () => undefined,
-    setUser: () => undefined,
-    setAuthenticated: () => undefined,
-    setAuthState: () => undefined,
     ...overrides
   };
 };
