@@ -11,21 +11,16 @@ function isPublic(url: string) {
   }
 }
 
-export async function apiRequest<T = any>(url: string, options: RequestInit = {}): Promise<T> {
+export async function apiRequest(url: string, options: RequestInit = {}) {
   const token = getToken()
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-  }
-
-  if (options.headers) {
-    Object.assign(headers, options.headers)
+    ...(options.headers || {}),
   }
 
   if (!isPublic(url)) {
-    if (!token) {
-      throw new Error("AUTH_REQUIRED")
-    }
+    if (!token) throw new Error("AUTH_REQUIRED")
     headers.Authorization = `Bearer ${token}`
   }
 
@@ -37,7 +32,7 @@ export async function apiRequest<T = any>(url: string, options: RequestInit = {}
   }
 
   if (res.status === 204) {
-    return null as T
+    return null
   }
 
   let data: any = {}
@@ -46,9 +41,7 @@ export async function apiRequest<T = any>(url: string, options: RequestInit = {}
   } catch {}
 
   if (!res.ok) {
-    if (data?.error) {
-      throw new Error(data.error)
-    }
+    if (data?.error) throw new Error(data.error)
     throw new Error("REQUEST_FAILED")
   }
 
