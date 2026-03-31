@@ -1,12 +1,11 @@
-import { setToken } from "@/services/token";
+import { setToken } from "@/services/token"
 
-export function hydrateSession(): void {
-  const t = sessionStorage.getItem("token");
-  if (t && typeof t === "string") {
-    setToken(t);
+export function hydrateSession() {
+  const t = sessionStorage.getItem("token")
+
+  if (typeof t === "string" && t.length > 0) {
+    setToken(t)
+  } else {
+    setToken(null)
   }
-}
-
-export function persistToken(t: string): void {
-  sessionStorage.setItem("token", t);
 }

@@ -3,6 +3,15 @@ import { clearToken, getToken } from "@/services/token";
 
 const DEFAULT_TIMEOUT = 10000;
 
+const PUBLIC_PATHS = [
+  "/api/public/",
+  "/api/auth/",
+]
+
+function isPublicPath(path: string): boolean {
+  return PUBLIC_PATHS.some((p) => path.startsWith(p))
+}
+
 export class ApiError extends Error {
   status?: number;
   details?: unknown;
@@ -67,7 +76,7 @@ export async function apiRequest<T = unknown>(path: string, options: ApiRequestO
   const requestId = createRequestId();
   const { timeout = DEFAULT_TIMEOUT, signal: inputSignal, ...requestOptions } = options;
   const requestHeaders = new Headers(requestOptions.headers);
-  const isPublic = path.startsWith("/api/public/") || path.startsWith("/api/auth/");
+  const isPublic = isPublicPath(path);
 
   requestHeaders.set("X-Request-Id", requestId);
 
@@ -99,6 +108,7 @@ export async function apiRequest<T = unknown>(path: string, options: ApiRequestO
 
     if (res.status === 401) {
       clearToken();
+      sessionStorage.removeItem("token");
       window.location.replace("/login");
       throw new Error("UNAUTHORIZED");
     }

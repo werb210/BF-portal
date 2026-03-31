@@ -1,13 +1,13 @@
-let inMemoryToken: string | null = null
+let token: string | null = null
 
 export function setToken(t: string | null) {
-  inMemoryToken = t
+  token = t
 }
 
 export function getToken(): string | null {
-  return inMemoryToken
+  return token
 }
 
 export function clearToken() {
-  inMemoryToken = null
+  token = null
 }
