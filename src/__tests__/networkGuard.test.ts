@@ -1,18 +1,26 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest"
+import { isOnline, requireOnline } from "@/lib/networkGuard"
 
 describe("network guard", () => {
-  it("blocks direct fetch outside api client", async () => {
-    const originalFetch = window.fetch;
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+  it("returns true when navigator is unavailable", () => {
+    const navigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator")
 
-    window.fetch = fetchMock as typeof window.fetch;
-    await import("@/lib/networkGuard");
+    vi.stubGlobal("navigator", undefined)
+    expect(isOnline()).toBe(true)
 
-    const guardedFetch = window.fetch;
+    if (navigatorDescriptor) {
+      Object.defineProperty(globalThis, "navigator", navigatorDescriptor)
+    }
+  })
 
-    expect(() => guardedFetch("https://evil.com")).toThrow("DIRECT_FETCH_BLOCKED");
-    await expect(guardedFetch("/api/health")).resolves.toBeInstanceOf(Response);
+  it("throws OFFLINE when navigator reports offline", () => {
+    const navigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator")
 
-    window.fetch = originalFetch;
-  });
-});
+    vi.stubGlobal("navigator", { onLine: false })
+    expect(() => requireOnline()).toThrow("OFFLINE")
+
+    if (navigatorDescriptor) {
+      Object.defineProperty(globalThis, "navigator", navigatorDescriptor)
+    }
+  })
+})

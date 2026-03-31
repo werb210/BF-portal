@@ -1,16 +1,10 @@
-const originalFetch = window.fetch.bind(window)
+export function isOnline(): boolean {
+  if (typeof navigator === "undefined") return true
+  return navigator.onLine
+}
 
-window.fetch = ((input, init) => {
-  const url =
-    typeof input === "string"
-      ? input
-      : input instanceof Request
-      ? input.url
-      : input.toString()
-
-  if (!url.includes("/api/")) {
-    throw new Error("DIRECT_FETCH_BLOCKED")
+export function requireOnline(): void {
+  if (!isOnline()) {
+    throw new Error("OFFLINE")
   }
-
-  return originalFetch(input, init)
-}) as typeof window.fetch
+}
