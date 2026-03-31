@@ -60,7 +60,7 @@
   },
   "overrides": {
     "@remix-run/router": "^1.17.0",
-    "axios": "^1.13.6"
+    "axios": "^1.14.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.5.0",

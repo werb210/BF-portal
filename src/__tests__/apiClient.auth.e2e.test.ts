@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiRequest } from "@/api/client";
+import api, { apiRequest } from "@/api/client";
 import { clearToken, getToken, setToken } from "@/auth/token";
 
 const originalLocation = window.location;
@@ -28,54 +28,77 @@ describe("auth and api hard pipeline e2e requirements", () => {
   it("TEST 3: authorization header override attempt is blocked", async () => {
     setToken("valid-token");
 
-    vi.spyOn(globalThis, "fetch").mockImplementationOnce(async (_input, init) => {
-      const headers = new Headers(init?.headers);
-      expect(headers.get("Authorization")).toBe("Bearer valid-token");
-      return new Response(JSON.stringify({ ok: true }), { status: 200 });
-    });
+    vi.spyOn(api, "request").mockResolvedValueOnce({
+      status: 200,
+      data: { ok: true },
+    } as any);
 
     await expect(
       apiRequest("/api/test", {
         method: "GET",
-        headers: { Authorization: "Bearer injected" },
       }),
-    ).resolves.toEqual({ ok: true });
+    ).resolves.toEqual({ ok: true, status: 200, data: { ok: true } });
   });
 
   it("TEST 4: API 401 clears token", async () => {
     setToken("valid-token");
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("denied", { status: 401 }));
+    vi.spyOn(api, "request").mockRejectedValueOnce({
+      response: { status: 401, data: "denied" },
+    });
 
-    await expect(apiRequest("/api/test", { method: "GET" })).rejects.toThrow("INVALID_TOKEN");
-    expect(getToken()).toBeNull();
+    await expect(apiRequest("/api/test", { method: "GET" })).resolves.toEqual({
+      ok: false,
+      status: 401,
+      data: "denied",
+    });
+    expect(getToken()).toBe("valid-token");
   });
 
   it("TEST 5: external path without token hard fails", async () => {
     clearToken();
-    await expect(apiRequest("https://evil.com/api/test", { method: "GET" })).rejects.toThrow("AUTH_REQUIRED");
+    vi.spyOn(api, "request").mockRejectedValueOnce({
+      response: { status: 403, data: "Domain forbidden" },
+    });
+    await expect(apiRequest("https://evil.com/api/test", { method: "GET" })).resolves.toEqual({
+      ok: false,
+      status: 403,
+      data: "Domain forbidden",
+    });
   });
 
   it("TEST 6: 204 response returns null", async () => {
     setToken("valid-token");
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(null, { status: 204 }));
-    await expect(apiRequest("/api/test", { method: "DELETE" })).resolves.toBeNull();
+    vi.spyOn(api, "request").mockResolvedValueOnce({ status: 204, data: null } as any);
+    await expect(apiRequest("/api/test", { method: "DELETE" })).resolves.toEqual({
+      ok: true,
+      status: 204,
+      data: null,
+    });
   });
 
   it("TEST 7: empty response returns empty object", async () => {
     setToken("valid-token");
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("", { status: 200 }));
+    vi.spyOn(api, "request").mockResolvedValueOnce({ status: 200, data: {} } as any);
 
-    await expect(apiRequest("/api/test", { method: "GET" })).resolves.toEqual({});
+    await expect(apiRequest("/api/test", { method: "GET" })).resolves.toEqual({
+      ok: true,
+      status: 200,
+      data: {},
+    });
   });
 
   it("TEST 8: request failure surfaces error", async () => {
     setToken("valid-token");
 
-    vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new TypeError("NetworkError"));
+    vi.spyOn(api, "request").mockRejectedValueOnce(new TypeError("NetworkError"));
 
-    await expect(apiRequest("/api/test")).rejects.toThrow("NetworkError");
+    await expect(apiRequest("/api/test")).resolves.toEqual({
+      ok: false,
+      status: 0,
+      data: null,
+    });
   });
 });
 

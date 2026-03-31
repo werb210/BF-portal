@@ -5,5 +5,9 @@ export async function sendMayaMessage(message: string) {
     method: "POST",
     body: { message },
   });
-  return res?.data || res;
+  if (!res.ok) {
+    throw new Error("maya_error");
+  }
+
+  return res.data;
 }
