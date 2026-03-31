@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useMemo } from "react";
 import { clearToken, getToken, setToken } from "@/services/token";
-import { decodeJwt } from "./token";
+import { decodeJwt } from "./jwt";
 
 export type AuthStatus = "loading" | "pending" | "authenticated" | "unauthenticated";
 export type RolesStatus = "loading" | "ready" | "resolved";

@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/apiClient";
+import { apiRequest } from "@/lib/api";
 import { setToken } from "@/auth/token";
 
 let currentUser: unknown = null;

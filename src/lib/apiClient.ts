@@ -2,7 +2,7 @@ import { clearToken, getToken } from "@/auth/token";
 
 const PUBLIC_PREFIXES = ["/api/auth", "/api/public", "/health"];
 
-function isPublic(url: string) {
+function isPublicPath(url: string) {
   try {
     const u = new URL(url, window.location.origin);
     return PUBLIC_PREFIXES.some((p) => u.pathname.startsWith(p));
@@ -28,7 +28,7 @@ export async function apiRequest<T = unknown>(url: string, options: ApiRequestOp
     ...(options.headers as Record<string, string> | undefined),
   };
 
-  if (!isPublic(url)) {
+  if (!isPublicPath(url)) {
     if (!token) throw new Error("AUTH_REQUIRED");
     headers.Authorization = `Bearer ${token}`;
   }
@@ -50,7 +50,10 @@ export async function apiRequest<T = unknown>(url: string, options: ApiRequestOp
   } catch {}
 
   if (!res.ok) {
-    throw new Error(data.error || "REQUEST_FAILED");
+    if (data?.error) {
+      throw new Error(data.error);
+    }
+    throw new Error("REQUEST_FAILED");
   }
 
   return data as T;

@@ -1,5 +1,3 @@
-import { decodeJwt as decodeJwtPayload } from "./jwt";
-
 export function getToken(): string | null {
   const t = localStorage.getItem("token")
   if (!t || t === "null" || t === "undefined") return null
@@ -12,9 +10,4 @@ export function setToken(t: string) {
 
 export function clearToken() {
   localStorage.removeItem("token")
-}
-
-export function decodeJwt(token?: string | null) {
-  if (!token) return null;
-  return decodeJwtPayload(token);
 }

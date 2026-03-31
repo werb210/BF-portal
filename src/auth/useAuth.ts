@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { JwtPayload } from "./jwt";
-import { decodeJwt, getAuthToken } from "./token";
+import { getToken } from "./token";
+import { decodeJwt } from "./jwt";
 
 type AuthState =
   | { status: "loading" }
@@ -11,8 +12,8 @@ export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>({ status: "loading" });
 
   useEffect(() => {
-    const token = getAuthToken();
-    const decoded = decodeJwt(token ?? undefined) as JwtPayload | null;
+    const token = getToken();
+    const decoded = decodeJwt(token) as JwtPayload | null;
 
     if (!decoded) {
       setState({ status: "unauthenticated" });
