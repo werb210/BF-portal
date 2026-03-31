@@ -1,6 +1,6 @@
 import { getToken, clearToken } from "@/auth/token"
 
-const PUBLIC_PREFIXES = ["/api/auth", "/api/public", "/health"]
+const PUBLIC_PREFIXES = ["/api/auth", "/health"]
 
 function isPublic(url: string) {
   try {
@@ -11,17 +11,17 @@ function isPublic(url: string) {
   }
 }
 
-export async function apiRequest(url: string, options: RequestInit = {}) {
+export async function apiRequest<T = any>(url: string, options: RequestInit = {}): Promise<T> {
   const token = getToken()
 
-  const headers: Record<string, string> = {
+  const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
   }
 
   if (!isPublic(url)) {
     if (!token) throw new Error("AUTH_REQUIRED")
-    headers.Authorization = `Bearer ${token}`
+;(headers as Record<string, string>).Authorization = `Bearer ${token}`
   }
 
   const res = await fetch(url, { ...options, headers })
@@ -31,9 +31,7 @@ export async function apiRequest(url: string, options: RequestInit = {}) {
     throw new Error("INVALID_TOKEN")
   }
 
-  if (res.status === 204) {
-    return null
-  }
+  if (res.status === 204) return null as T
 
   let data: any = {}
   try {
@@ -45,12 +43,11 @@ export async function apiRequest(url: string, options: RequestInit = {}) {
     throw new Error("REQUEST_FAILED")
   }
 
-  return data
+  return data as T
 }
 
 export const apiFetch = apiRequest
 
-// compatibility helpers
 export class ApiError extends Error {}
 
 type ApiOptions = RequestInit & { data?: unknown }

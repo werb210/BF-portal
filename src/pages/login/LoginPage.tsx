@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/auth/AuthContext';
 import { normalizePhone } from '@/utils/phone';
-import { ApiError } from '@/api/http';
+import { startOtp, verifyOtp } from '@/api/auth';
 
 const OTP_EXPIRY_MS = 4 * 60 * 1000;
 
 export default function Login() {
   const navigate = useNavigate();
-  const { startOtp, loginWithOtp } = useAuth();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'code'>('phone');
@@ -26,11 +24,7 @@ export default function Login() {
     try {
       setBusy(true);
       setError('');
-      const started = await startOtp({ phone: normalizePhone(phone) });
-      if (started === false) {
-        setError('Failed to send verification code');
-        return;
-      }
+      await startOtp(normalizePhone(phone));
       setOtpSentAt(Date.now());
       setCode('');
       setStep('code');
@@ -56,18 +50,10 @@ export default function Login() {
       setBusy(true);
       setError('');
       const normalizedPhone = normalizePhone(phone);
-      const result = await loginWithOtp(normalizedPhone, code);
-      if (result?.ok === false) {
-        setError(result.error || 'Invalid code');
-        return;
-      }
-      navigate(result?.nextPath || '/portal');
+      await verifyOtp(normalizedPhone, code);
+      navigate('/dashboard');
     } catch (err: unknown) {
-      if (err instanceof ApiError) {
-        setError(err.requestId ? `${err.message} (Request ID: ${err.requestId})` : err.message);
-      } else {
-        setError(err instanceof Error ? err.message : 'Invalid code');
-      }
+      setError(err instanceof Error ? err.message : 'Invalid code');
     } finally {
       setBusy(false);
     }
