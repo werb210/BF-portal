@@ -79,7 +79,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("denied", { status: 401 }));
 
-    await expect(apiRequest("/api/test", { method: "GET" })).rejects.toThrow("[401]");
+    await expect(apiRequest("/api/test", { method: "GET" })).rejects.toThrow("UNAUTHORIZED");
     expect(localStorage.getItem("token")).toBeNull();
     expect(window.location.href).toBe("/login");
   });
@@ -105,7 +105,34 @@ describe("auth and api hard pipeline e2e requirements", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("", { status: 200 }));
 
-    await expect(apiRequest("/api/test", { method: "GET" })).rejects.toThrow("[EMPTY]");
+    await expect(apiRequest("/api/test", { method: "GET" })).rejects.toThrow("INVALID_RESPONSE");
+  });
+
+
+  it("TEST 12: fails after timeout", async () => {
+    localStorage.setItem("token", "valid-token");
+
+    vi.spyOn(globalThis, "fetch").mockImplementationOnce((_input, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+      }),
+    );
+
+    await expect(apiRequest("/api/slow-endpoint", { timeout: 1 })).rejects.toThrow();
+  });
+
+  it("TEST 13: retries transient failures", async () => {
+    localStorage.setItem("token", "valid-token");
+
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(new TypeError("NetworkError"))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+    const res = await apiRequest("/api/test");
+
+    expect(res).toBeDefined();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 

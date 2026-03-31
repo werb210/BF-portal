@@ -1,8 +1,10 @@
 import { API_BASE } from "@/config/env";
+import { assertObject } from "@/lib/validators";
 
 let token: string | null = null;
 
 const TOKEN_KEY = "token";
+const DEFAULT_TIMEOUT = 10000;
 
 const isBrowser = typeof window !== "undefined";
 
@@ -63,48 +65,112 @@ function validatePath(path: string) {
   }
 }
 
-export type ApiRequestOptions = RequestInit;
+function withTimeout(signal: AbortSignal | undefined, timeout: number) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      signal.addEventListener("abort", () => controller.abort(), { once: true });
+    }
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup: () => clearTimeout(id),
+  };
+}
+
+async function retryRequest(fn: () => Promise<Response>, retries = 2) {
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === retries) throw err;
+      await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+      attempt++;
+    }
+  }
+
+  throw new Error("UNREACHABLE");
+}
+
+function generateRequestId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export type ApiRequestOptions = RequestInit & { timeout?: number };
 
 export async function apiRequest<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   validatePath(path);
 
-  const currentToken = getTokenOrFail();
-  const requestHeaders = new Headers(options.headers);
-  requestHeaders.set("Authorization", `Bearer ${currentToken}`);
+  const requestId = generateRequestId();
+  const { timeout = DEFAULT_TIMEOUT, signal: inputSignal, ...requestOptions } = options;
 
-  if (!(options.body instanceof FormData) && !requestHeaders.has("Content-Type")) {
+  const requestHeaders = new Headers(requestOptions.headers);
+  requestHeaders.set("X-Request-Id", requestId);
+
+  if (!(requestOptions.body instanceof FormData) && !requestHeaders.has("Content-Type")) {
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  const res = await fetch(path, {
-    ...options,
-    credentials: undefined,
-    headers: requestHeaders,
-  });
+  if (!path.startsWith("/api/public/")) {
+    const currentToken = getToken();
 
-  if (res.status === 401) {
-    setToken(null);
-    if (isBrowser) {
-      window.location.href = "/login";
+    if (!currentToken) {
+      throw new Error("AUTH_REQUIRED");
     }
-    throw new Error("[401]");
+
+    requestHeaders.set("Authorization", `Bearer ${currentToken}`);
   }
 
-  if (res.status === 204) {
-    return null as T;
+  const { signal, cleanup } = withTimeout(inputSignal, timeout);
+
+  try {
+    const res = await retryRequest(() =>
+      fetch(path, {
+        ...requestOptions,
+        credentials: undefined,
+        headers: requestHeaders,
+        signal,
+      }),
+    );
+
+    if (res.status === 401) {
+      setToken(null);
+      if (isBrowser) {
+        window.location.href = "/login";
+      }
+      throw new Error("UNAUTHORIZED");
+    }
+
+    if (res.status === 204) {
+      return null as T;
+    }
+
+    if (!res.ok) {
+      throw new Error(`API_ERROR_${res.status}`);
+    }
+
+    const raw = await res.text();
+
+    let data: T;
+    try {
+      data = JSON.parse(raw) as T;
+    } catch {
+      throw new Error("INVALID_RESPONSE");
+    }
+
+    assertObject(data);
+
+    return data;
+  } finally {
+    cleanup();
   }
-
-  if (!res.ok) {
-    throw new Error(`[${res.status}]`);
-  }
-
-  const text = await res.text();
-
-  if (!text) {
-    throw new Error("[EMPTY]");
-  }
-
-  return JSON.parse(text) as T;
 }
 
 export const apiFetch = apiRequest;
