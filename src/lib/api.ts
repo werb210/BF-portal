@@ -1,96 +1,83 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/config/api";
+import { apiRequest as coreApiRequest, type ApiRequestOptions } from "@/lib/apiClient";
 
-let token: string | null = localStorage.getItem("auth_token");
+let token: string | null = typeof window === "undefined" ? null : localStorage.getItem("auth_token");
+
+export class ApiError extends Error {
+  status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
 
 export function setToken(t: string) {
   token = t;
-  localStorage.setItem("auth_token", t);
+  if (typeof window !== "undefined") localStorage.setItem("auth_token", t);
 }
 
 export function clearToken() {
   token = null;
-  localStorage.removeItem("auth_token");
+  if (typeof window !== "undefined") localStorage.removeItem("auth_token");
 }
 
 export function getToken() {
   return token;
 }
 
-type ApiOptions = RequestInit & { raw?: boolean };
+type ApiOptions = ApiRequestOptions & { data?: unknown };
 
-function buildHeaders(options: ApiOptions) {
-  const isFormData = options.body instanceof FormData;
-  const defaultHeaders = isFormData ? {} : { "Content-Type": "application/json" };
+function isAuthBootstrapPath(path: string) {
+  return path.startsWith("/api/auth/otp/start") || path.startsWith("/api/auth/otp/verify");
+}
 
-  return {
-    ...defaultHeaders,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers || {}),
-  };
+function normalizeBody(data: unknown, body: BodyInit | null | undefined) {
+  if (data !== undefined) return data instanceof FormData ? data : JSON.stringify(data);
+  return body;
 }
 
 export async function apiFetch(path: string, options: ApiOptions = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  return coreApiRequest(path, {
     ...options,
-    headers: buildHeaders(options),
+    body: normalizeBody(options.data, options.body),
+    skipAuth: options.skipAuth ?? isAuthBootstrapPath(path),
   });
-
-  if (options.raw) return res;
-
-  const ct = res.headers.get("content-type") || "";
-  const isJson = ct.includes("application/json");
-
-  if (!res.ok) {
-    const body = isJson ? await res.json().catch(() => null) : await res.text();
-    throw new Error(
-      `API ${res.status}: ${typeof body === "string" ? body : JSON.stringify(body)}`,
-    );
-  }
-
-  return isJson ? res.json() : res.text();
 }
 
-export async function apiRequest<T = unknown>(url: string, config: (ApiOptions & { data?: unknown }) = {}): Promise<T>;
+export async function apiRequest<T = unknown>(url: string, config?: ApiOptions): Promise<T>;
 export async function apiRequest<T = unknown>(method: "get" | "post" | "put" | "patch" | "delete", url: string, data?: unknown): Promise<T>;
 export async function apiRequest<T = unknown>(
   methodOrUrl: string,
-  urlOrConfig: string | (ApiOptions & { data?: unknown }) = {},
+  urlOrConfig: string | ApiOptions = {},
   data?: unknown,
 ): Promise<T> {
   const legacyMethods = ["get", "post", "put", "patch", "delete"];
   if (legacyMethods.includes(methodOrUrl)) {
     return apiFetch(urlOrConfig as string, {
       method: methodOrUrl.toUpperCase(),
-      body: data === undefined ? undefined : data instanceof FormData ? data : JSON.stringify(data),
+      data,
     }) as Promise<T>;
   }
 
-  const config = (urlOrConfig ?? {}) as ApiOptions & { data?: unknown };
   return apiFetch(methodOrUrl, {
-    ...config,
-    method: config.method ?? "GET",
-    body: config.data === undefined ? config.body : config.data instanceof FormData ? config.data : JSON.stringify(config.data),
+    method: ((urlOrConfig as ApiOptions)?.method ?? "GET") as ApiOptions["method"],
+    ...(urlOrConfig as ApiOptions),
   }) as Promise<T>;
 }
 
 const api = {
   get: <T = unknown>(path: string, options: ApiOptions = {}) => apiFetch(path, { ...options, method: "GET" }) as Promise<T>,
-  post: <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}) =>
-    apiFetch(path, { ...options, method: "POST", body: data instanceof FormData ? data : JSON.stringify(data) }) as Promise<T>,
-  put: <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}) =>
-    apiFetch(path, { ...options, method: "PUT", body: data instanceof FormData ? data : JSON.stringify(data) }) as Promise<T>,
-  patch: <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}) =>
-    apiFetch(path, { ...options, method: "PATCH", body: data instanceof FormData ? data : JSON.stringify(data) }) as Promise<T>,
+  post: <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}) => apiFetch(path, { ...options, method: "POST", data }) as Promise<T>,
+  put: <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}) => apiFetch(path, { ...options, method: "PUT", data }) as Promise<T>,
+  patch: <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}) => apiFetch(path, { ...options, method: "PATCH", data }) as Promise<T>,
   delete: <T = unknown>(path: string, options: ApiOptions = {}) => apiFetch(path, { ...options, method: "DELETE" }) as Promise<T>,
 };
 
-export async function safeApiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T | null> {
-  try {
-    return (await apiFetch(path, options)) as T;
-  } catch {
-    return null;
-  }
+export async function safeApiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
+  return (await apiFetch(path, options)) as T;
 }
 
-export { API_BASE };
+export const API_BASE = API_BASE_URL;
 export default api;
