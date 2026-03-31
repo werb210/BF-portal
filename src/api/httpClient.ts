@@ -1,4 +1,5 @@
 import { apiClient as baseClient } from "@/api/client";
+import type { ApiResult } from "@/api/client";
 
 export type RequestOptions = RequestInit & {
   skipAuth?: boolean;
@@ -8,7 +9,7 @@ export type ListResponse<T> = {
   items: T[];
 } & Record<string, unknown>;
 
-const request = async <T>(method: string, path: string, data?: unknown, options?: RequestOptions): Promise<T> => {
+const request = async <T>(method: string, path: string, data?: unknown, options?: RequestOptions): Promise<ApiResult<T>> => {
   if (method === "GET") return baseClient.get<T>(path, options);
   if (method === "DELETE") return baseClient.delete<T>(path, options);
   if (method === "PATCH") return baseClient.patch<T>(path, data, options);

@@ -6,6 +6,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar
 } from "recharts";
 import apiClient from "@/api/client";
+import { handleApiResult } from "@/utils/handleApiResult";
 
 interface OverviewData {
   autonomy: any;
@@ -27,17 +28,24 @@ export default function MayaIntelligence() {
 
   useEffect(() => {
     apiClient.get("/maya/overview")
-      .then((res) => setData(res))
+      .then((res) => {
+        const payload = handleApiResult<OverviewData>(res);
+        setData(payload);
+      })
       .catch(() => setData(null));
   }, []);
 
   async function simulateROI() {
     const res = await apiClient.post("/maya/roi-simulate", { budget: roiInput });
-    setRoiProjection(res.projectedRevenue);
+    const payload = handleApiResult<{ projectedRevenue: number }>(res);
+    if (!payload) return;
+    setRoiProjection(payload.projectedRevenue);
   }
 
   async function rollbackModel(version: string) {
-    await apiClient.post("/maya/model-rollback", { version });
+    const res = await apiClient.post("/maya/model-rollback", { version });
+    const payload = handleApiResult<{ message: string }>(res);
+    if (!payload) return;
     throw new Error("Model rolled back.");
   }
 
