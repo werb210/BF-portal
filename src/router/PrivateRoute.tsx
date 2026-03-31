@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { getToken } from "@/lib/auth";
+import { getToken } from "@/services/token";
 
 export default function PrivateRoute({
   children,

@@ -1,8 +1,4 @@
-export const API_BASE = "/api";
-
-if (!API_BASE) {
-  throw new Error("[CONFIG ERROR]");
-}
+export const API_BASE = "/api" as const;
 
 export const ENV = {
   API_BASE,

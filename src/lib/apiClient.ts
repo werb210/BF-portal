@@ -1,19 +1,26 @@
-import { getTokenOrFail } from "@/lib/auth";
+import { API_BASE } from "@/config/env";
+import { getTokenOrFail } from "@/services/token";
 
 export type ApiRequestOptions = RequestInit;
 
-function normalizeHeaders(existing?: HeadersInit) {
+function normalizeHeaders(existing?: HeadersInit): Record<string, string> {
   const normalized: Record<string, string> = {};
 
   if (existing instanceof Headers) {
     existing.forEach((value, key) => {
       normalized[key] = value;
     });
-  } else if (Array.isArray(existing)) {
+    return normalized;
+  }
+
+  if (Array.isArray(existing)) {
     for (const [key, value] of existing) {
       normalized[key] = String(value);
     }
-  } else if (existing) {
+    return normalized;
+  }
+
+  if (existing) {
     Object.entries(existing).forEach(([key, value]) => {
       if (value != null) normalized[key] = String(value);
     });
@@ -22,48 +29,46 @@ function normalizeHeaders(existing?: HeadersInit) {
   return normalized;
 }
 
-export async function apiRequest<T = unknown>(
-  path: string,
-  options: ApiRequestOptions = {},
-): Promise<T> {
+export async function apiRequest<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   if (!path.startsWith("/api/")) {
-    throw new Error("[INVALID API FORMAT]");
+    throw new Error("[INVALID PATH]");
+  }
+
+  if (!path.startsWith(API_BASE)) {
+    throw new Error("[API BASE VIOLATION]");
   }
 
   const token = getTokenOrFail();
   const headers = normalizeHeaders(options.headers);
 
-  delete headers.Authorization;
-  delete headers.authorization;
-
+  headers["Content-Type"] = "application/json";
   headers.Authorization = `Bearer ${token}`;
 
-  if (!(options.body instanceof FormData)) {
-    headers["Content-Type"] = "application/json";
-  }
+  delete options.credentials;
 
   const res = await fetch(path, {
     ...options,
     headers,
   });
 
-  console.log("[REQ]", options.method || "GET", path);
-  console.log("[STATUS]", res.status);
-
   if (res.status === 401) {
     localStorage.removeItem("token");
     window.location.href = "/login";
-    throw new Error("[AUTH FAIL]");
+    throw new Error("[401]");
+  }
+
+  if (res.status === 204) {
+    return null as T;
   }
 
   if (!res.ok) {
-    throw new Error(`[API ERROR] ${res.status}`);
+    throw new Error(`[${res.status}]`);
   }
 
   const text = await res.text();
 
   if (!text) {
-    throw new Error("[EMPTY RESPONSE]");
+    throw new Error("[EMPTY]");
   }
 
   return JSON.parse(text) as T;

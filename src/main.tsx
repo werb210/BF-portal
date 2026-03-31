@@ -4,22 +4,15 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { getTokenOrFail } from "@/lib/auth";
+import { getTokenOrFail } from "@/services/token";
 
-export function enforceStartupAuth() {
-  if (window.location.pathname === "/login") {
-    return;
-  }
-
+if (process.env.NODE_ENV !== "test") {
   try {
     getTokenOrFail();
   } catch {
     window.location.href = "/login";
-    throw new Error("[BOOT BLOCKED]");
   }
 }
-
-enforceStartupAuth();
 
 window.addEventListener("unhandledrejection", (e) => {
   console.error("[UNHANDLED PROMISE]", e.reason);
@@ -36,5 +29,5 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         <App />
       </ErrorBoundary>
     </BrowserRouter>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
