@@ -1,18 +1,13 @@
-const TOKEN_KEY = "token";
+import { getToken as getApiToken, getTokenOrFail as getApiTokenOrFail, setToken as setApiToken } from "@/lib/apiClient";
+
 const USER_KEY = "boreal_staff_user";
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return getApiToken();
 }
 
 export function getTokenOrFail(): string {
-  const token = getToken();
-
-  if (!token || token.trim() === "" || token === "undefined" || token === "null") {
-    throw new Error("[AUTH BLOCK] INVALID TOKEN");
-  }
-
-  return token;
+  return getApiTokenOrFail();
 }
 
 export function saveToken(token: string) {
@@ -20,13 +15,7 @@ export function saveToken(token: string) {
     throw new Error("[INVALID TOKEN]");
   }
 
-  localStorage.setItem(TOKEN_KEY, token);
-
-  const verify = localStorage.getItem(TOKEN_KEY);
-
-  if (verify !== token) {
-    throw new Error("[TOKEN WRITE FAILED]");
-  }
+  setApiToken(token);
 }
 
 export function setToken(token: string) {
@@ -34,7 +23,7 @@ export function setToken(token: string) {
 }
 
 export function clearToken() {
-  localStorage.removeItem(TOKEN_KEY);
+  setApiToken(null);
 }
 
 export function setStoredAccessToken(token: string) {
