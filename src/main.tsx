@@ -6,14 +6,28 @@ import "./index.css";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { getTokenOrFail } from "@/lib/auth";
 
-
-try {
-  if (window.location.pathname !== "/login") {
-    getTokenOrFail();
+export function enforceStartupAuth() {
+  if (window.location.pathname === "/login") {
+    return;
   }
-} catch {
-  window.location.href = "/login";
+
+  try {
+    getTokenOrFail();
+  } catch {
+    window.location.href = "/login";
+    throw new Error("[BOOT BLOCKED]");
+  }
 }
+
+enforceStartupAuth();
+
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("[UNHANDLED PROMISE]", e.reason);
+});
+
+window.addEventListener("error", (e) => {
+  console.error("[RUNTIME ERROR]", e.error);
+});
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
