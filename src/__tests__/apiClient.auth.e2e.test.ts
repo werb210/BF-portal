@@ -41,9 +41,9 @@ describe("auth and api hard pipeline e2e requirements", () => {
   });
 
   it("TEST 6: saveToken blocks invalid writes", () => {
-    expect(() => saveToken("undefined")).toThrow("[INVALID TOKEN WRITE]");
-    expect(() => saveToken("")).toThrow("[INVALID TOKEN WRITE]");
-    expect(() => saveToken("null")).toThrow("[INVALID TOKEN WRITE]");
+    expect(() => saveToken("undefined")).toThrow("[INVALID TOKEN]");
+    expect(() => saveToken("")).toThrow("[INVALID TOKEN]");
+    expect(() => saveToken("null")).toThrow("[INVALID TOKEN]");
   });
 
   it("TEST 7: authorization header override attempt is blocked", async () => {
@@ -87,6 +87,17 @@ describe("auth and api hard pipeline e2e requirements", () => {
   it("TEST 10: non-/api path hard fails", async () => {
     localStorage.setItem("token", "valid-token");
     await expect(apiRequest("https://evil.com/api/test", { method: "GET" })).rejects.toThrow("[INVALID PATH]");
+  });
+
+  it("TEST 10B: malformed /api path hard fails", async () => {
+    localStorage.setItem("token", "valid-token");
+    await expect(apiRequest("/api/test?inject=true", { method: "GET" })).rejects.toThrow("[INVALID PATH]");
+  });
+
+  it("TEST 10C: 204 response returns null", async () => {
+    localStorage.setItem("token", "valid-token");
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await expect(apiRequest("/api/test", { method: "DELETE" })).resolves.toBeNull();
   });
 
   it("TEST 11: empty response throws", async () => {

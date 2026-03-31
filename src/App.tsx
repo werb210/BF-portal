@@ -1,7 +1,6 @@
-import React, { useContext, useEffect } from "react";
+import React, { useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Navigate, Outlet, Route, Routes, useInRouterContext } from "react-router-dom";
-import { AuthContext, AuthProvider } from "@/auth/AuthContext";
 import { roleIn } from "@/auth/roles";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import IncomingCallModal from "@/components/IncomingCallModal";
@@ -75,16 +74,6 @@ function AppShell() {
 }
 
 function AuthenticatedShell() {
-  const { authStatus, authenticated } = useAuth();
-
-  if (authStatus === "loading") {
-    return null;
-  }
-
-  if (!authenticated || authStatus !== "authenticated") {
-    return <Navigate to="/login" replace />;
-  }
-
   return <AppShell />;
 }
 
@@ -117,7 +106,6 @@ const AppRoutes = () => (
 );
 
 export default function App() {
-  const existingAuthContext = useContext(AuthContext);
   const inRouterContext = useInRouterContext();
 
 
@@ -127,27 +115,13 @@ export default function App() {
     return <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>;
   };
 
-  if (existingAuthContext) {
-    return withOptionalRouter(
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <ErrorBoundary>
-            <AppRoutes />
-          </ErrorBoundary>
-        </ToastProvider>
-      </QueryClientProvider>
-    );
-  }
-
   return withOptionalRouter(
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <ErrorBoundary>
-            <AppRoutes />
-          </ErrorBoundary>
-        </ToastProvider>
-      </QueryClientProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <ErrorBoundary>
+          <AppRoutes />
+        </ErrorBoundary>
+      </ToastProvider>
+    </QueryClientProvider>
   );
 }

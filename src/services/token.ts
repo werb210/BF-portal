@@ -17,7 +17,7 @@ export function getTokenOrFail(): string {
 
 export function saveToken(token: string) {
   if (!token || token.trim() === "" || token === "undefined" || token === "null") {
-    throw new Error("[INVALID TOKEN WRITE]");
+    throw new Error("[INVALID TOKEN]");
   }
 
   localStorage.setItem(TOKEN_KEY, token);
