@@ -24,7 +24,6 @@ import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
 import PortalDialer from "./telephony/components/PortalDialer";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import { queryClient } from "@/lib/queryClient";
-import { initAuth } from "@/lib/auth";
 
 function SessionGuard() {
   usePortalSessionGuard();
@@ -121,9 +120,6 @@ export default function App() {
   const existingAuthContext = useContext(AuthContext);
   const inRouterContext = useInRouterContext();
 
-  useEffect(() => {
-    void initAuth();
-  }, []);
 
   const withOptionalRouter = (children: React.ReactNode) => {
     if (inRouterContext) return children;

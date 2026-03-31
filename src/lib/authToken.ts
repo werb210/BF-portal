@@ -1,6 +1,6 @@
 import { ENV } from "@/config/env";
 import { decodeJwt } from "@/auth/jwt";
-import { clearToken as clearCanonicalToken, getToken as getCanonicalToken, setToken as setCanonicalToken } from "@/lib/auth";
+import { clearToken as clearCanonicalToken, getToken as getCanonicalToken, setToken as setCanonicalToken } from "@/services/token";
 
 const ACCESS_TOKEN_KEY = ENV.JWT_STORAGE_KEY;
 

@@ -1,4 +1,4 @@
-import { getMe } from "@/lib/auth";
+import { getMe } from "@/api/auth";
 
 export async function bootstrap() {
   await getMe();

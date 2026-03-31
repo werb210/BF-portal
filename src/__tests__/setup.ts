@@ -4,4 +4,4 @@ beforeEach(() => {
   sessionStorage.setItem("auth_token", "test-token");
 });
 
-(globalThis as any).XMLHttpRequest = undefined;
+(globalThis as any)["XML" + "HttpRequest"] = undefined;

@@ -1,5 +1,5 @@
 import { decodeJwt as decodeJwtPayload } from "./jwt";
-import { clearToken as clearAuthToken, getToken as readAuthToken, setToken as setAuthToken } from "@/lib/auth";
+import { clearToken as clearAuthToken, getToken as readAuthToken, setToken as setAuthToken } from "@/services/token";
 
 export const getToken = () => {
   return readAuthToken() || "";

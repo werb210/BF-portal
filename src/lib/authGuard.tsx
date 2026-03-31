@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { getToken } from "@/lib/auth";
+import { getToken } from "@/services/token";
 
 interface GuardProps {
   children: JSX.Element;

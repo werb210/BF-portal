@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { getToken } from "@/lib/auth";
+import { getToken } from "@/services/token";
 
 export default function RequireAuth(
   { children }: { children?: React.ReactNode; allowedRoles?: unknown } = {}
