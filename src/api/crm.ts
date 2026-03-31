@@ -188,13 +188,11 @@ export async function fetchContinuationLeads() {
 export const getDeals = async () => {
   requireAuth();
 
-  const { data } = await api.get("/api/crm/deals");
-  return data.data;
+  return api.get("/api/crm/deals");
 };
 
 export const updateDealStage = async (id: string, stage: string) => {
   requireAuth();
 
-  const { data } = await api.patch(`/api/crm/deals/${id}`, { stage });
-  return data.data;
+  return api.patch(`/api/crm/deals/${id}`, { stage });
 };
