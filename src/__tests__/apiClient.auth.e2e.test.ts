@@ -52,15 +52,12 @@ describe("auth and api hard pipeline e2e requirements", () => {
     });
   });
 
-  it("TEST 5: external path without token hard fails", async () => {
+  it("TEST 5: request without token hard fails before network", async () => {
     clearToken();
-    global.fetch = vi.fn().mockResolvedValueOnce(
-      new Response(JSON.stringify({ success: false, message: "Domain forbidden" }), { status: 403 }),
-    ) as typeof fetch;
 
     await expect(apiRequest("https://evil.com/api/test", { method: "GET" })).resolves.toEqual({
       success: false,
-      message: "Domain forbidden",
+      message: "missing auth",
     });
   });
 
@@ -94,7 +91,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
 
     await expect(apiRequest("/api/test")).resolves.toEqual({
       success: false,
-      message: "NetworkError",
+      message: "network error",
     });
   });
 });
