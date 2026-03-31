@@ -51,7 +51,7 @@ export function getTokenOrFail(): string {
   return currentToken;
 }
 
-function validatePath(path: string) {
+function validatePath(path: string): void {
   if (!path.startsWith("/api/")) {
     throw new Error("[INVALID PATH]");
   }
@@ -65,7 +65,7 @@ function validatePath(path: string) {
   }
 }
 
-function withTimeout(signal: AbortSignal | undefined, timeout: number) {
+function fetchWithTimeout(signal: AbortSignal | undefined, timeout: number): { signal: AbortSignal; cleanup: () => void } {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
 
@@ -83,7 +83,7 @@ function withTimeout(signal: AbortSignal | undefined, timeout: number) {
   };
 }
 
-async function retryRequest(fn: () => Promise<Response>, retries = 2) {
+async function retry(fn: () => Promise<Response>, retries = 2): Promise<Response> {
   let attempt = 0;
 
   while (attempt <= retries) {
@@ -99,16 +99,16 @@ async function retryRequest(fn: () => Promise<Response>, retries = 2) {
   throw new Error("UNREACHABLE");
 }
 
-function generateRequestId() {
+function createRequestId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export type ApiRequestOptions = RequestInit & { timeout?: number };
+type ApiRequestOptions = RequestInit & { timeout?: number };
 
 export async function apiRequest<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   validatePath(path);
 
-  const requestId = generateRequestId();
+  const requestId = createRequestId();
   const { timeout = DEFAULT_TIMEOUT, signal: inputSignal, ...requestOptions } = options;
 
   const requestHeaders = new Headers(requestOptions.headers);
@@ -128,10 +128,10 @@ export async function apiRequest<T = unknown>(path: string, options: ApiRequestO
     requestHeaders.set("Authorization", `Bearer ${currentToken}`);
   }
 
-  const { signal, cleanup } = withTimeout(inputSignal, timeout);
+  const { signal, cleanup } = fetchWithTimeout(inputSignal, timeout);
 
   try {
-    const res = await retryRequest(() =>
+    const res = await retry(() =>
       fetch(path, {
         ...requestOptions,
         credentials: undefined,
@@ -156,18 +156,16 @@ export async function apiRequest<T = unknown>(path: string, options: ApiRequestO
       throw new Error(`API_ERROR_${res.status}`);
     }
 
-    const raw = await res.text();
-
-    let data: T;
+    let data: unknown;
     try {
-      data = JSON.parse(raw) as T;
+      data = await res.json();
     } catch {
       throw new Error("INVALID_RESPONSE");
     }
 
     assertObject(data);
 
-    return data;
+    return data as T;
   } finally {
     cleanup();
   }
