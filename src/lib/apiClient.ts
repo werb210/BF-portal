@@ -1,67 +1,23 @@
-import { API_BASE } from "@/config/env";
 import { assertObject } from "@/lib/validators";
+import { clearToken, getToken } from "@/services/token";
 
-let token: string | null = null;
-
-const TOKEN_KEY = "token";
 const DEFAULT_TIMEOUT = 10000;
 
-const isBrowser = typeof window !== "undefined";
+export class ApiError extends Error {
+  status?: number;
+  details?: unknown;
 
-if (isBrowser && token === null) {
-  const stored = window.localStorage.getItem(TOKEN_KEY);
-  if (stored && stored.trim() !== "" && stored !== "undefined" && stored !== "null") {
-    token = stored;
+  constructor(message: string, status?: number, details?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.details = details;
   }
-}
-
-export function setToken(nextToken: string | null) {
-  token = nextToken && nextToken.trim() !== "" && nextToken !== "undefined" && nextToken !== "null" ? nextToken : null;
-
-  if (!isBrowser) return;
-
-  if (token) {
-    window.localStorage.setItem(TOKEN_KEY, token);
-    return;
-  }
-
-  window.localStorage.removeItem(TOKEN_KEY);
-}
-
-export function getToken(): string | null {
-  if (isBrowser) {
-    const stored = window.localStorage.getItem(TOKEN_KEY);
-    if (stored && stored.trim() !== "" && stored !== "undefined" && stored !== "null") {
-      token = stored;
-    } else {
-      token = null;
-    }
-  }
-
-  return token;
-}
-
-export function getTokenOrFail(): string {
-  const currentToken = getToken();
-
-  if (!currentToken) {
-    throw new Error("[AUTH BLOCK] INVALID TOKEN");
-  }
-
-  return currentToken;
 }
 
 function validatePath(path: string): void {
   if (!path.startsWith("/api/")) {
-    throw new Error("[INVALID PATH]");
-  }
-
-  if (!path.startsWith(API_BASE)) {
-    throw new Error("[API BASE VIOLATION]");
-  }
-
-  if (path.includes("..") || path.includes("//") || path.includes("?")) {
-    throw new Error("[MALFORMED PATH]");
+    throw new Error("INVALID_API_PATH");
   }
 }
 
@@ -110,22 +66,23 @@ export async function apiRequest<T = unknown>(path: string, options: ApiRequestO
 
   const requestId = createRequestId();
   const { timeout = DEFAULT_TIMEOUT, signal: inputSignal, ...requestOptions } = options;
-
   const requestHeaders = new Headers(requestOptions.headers);
+  const isPublic = path.startsWith("/api/public/") || path.startsWith("/api/auth/");
+
   requestHeaders.set("X-Request-Id", requestId);
 
   if (!(requestOptions.body instanceof FormData) && !requestHeaders.has("Content-Type")) {
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  if (!path.startsWith("/api/public/")) {
-    const currentToken = getToken();
+  const token = getToken();
 
-    if (!currentToken) {
-      throw new Error("AUTH_REQUIRED");
-    }
+  if (!isPublic && !token) {
+    throw new Error("AUTH_REQUIRED");
+  }
 
-    requestHeaders.set("Authorization", `Bearer ${currentToken}`);
+  if (token) {
+    requestHeaders.set("Authorization", `Bearer ${token}`);
   }
 
   const { signal, cleanup } = fetchWithTimeout(inputSignal, timeout);
@@ -141,10 +98,8 @@ export async function apiRequest<T = unknown>(path: string, options: ApiRequestO
     );
 
     if (res.status === 401) {
-      setToken(null);
-      if (isBrowser) {
-        window.location.href = "/login";
-      }
+      clearToken();
+      window.location.replace("/login");
       throw new Error("UNAUTHORIZED");
     }
 
@@ -153,7 +108,16 @@ export async function apiRequest<T = unknown>(path: string, options: ApiRequestO
     }
 
     if (!res.ok) {
-      throw new Error(`API_ERROR_${res.status}`);
+      let err = "API_ERROR";
+
+      try {
+        const json = await res.json();
+        if (typeof json === "object" && json && "error" in json && typeof json.error === "string") {
+          err = json.error;
+        }
+      } catch {}
+
+      throw new Error(err);
     }
 
     let data: unknown;

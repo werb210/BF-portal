@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/apiClient";
-import { saveToken } from "@/services/token";
+import { setToken } from "@/services/token";
 
 let currentUser: unknown = null;
 
@@ -34,7 +34,7 @@ export async function verifyOtp(payload: { phone: string; code: string }) {
   );
 
   if (response?.token) {
-    saveToken(response.token);
+    setToken(response.token);
   }
 
   currentUser = response?.user ?? null;
