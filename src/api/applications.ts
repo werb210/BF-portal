@@ -1,4 +1,4 @@
-import api from "@/lib/apiClient";
+import api from "@/lib/api";
 import { requireAuth } from "@/utils/requireAuth";
 
 export const getApplications = async () => {

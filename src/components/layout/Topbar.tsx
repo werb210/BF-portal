@@ -10,7 +10,7 @@ import PushNotificationCta from "@/components/PushNotificationCta";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { logger } from "@/utils/logger";
 import MayaStatus from "@/components/MayaStatus";
-import { apiRequest } from "@/lib/apiClient";
+import { apiRequest } from "@/lib/api";
 
 type TopbarProps = {
   onToggleSidebar: () => void;

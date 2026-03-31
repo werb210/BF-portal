@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiRequest } from "@/lib/apiClient";
-import { clearToken, getToken, setToken } from "@/services/token";
+import { apiRequest } from "@/lib/api";
+import { clearToken, getToken, setToken } from "@/auth/token";
 
 const originalLocation = window.location;
 

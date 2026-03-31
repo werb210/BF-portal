@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo } from "react";
-import { clearToken, getToken, setToken } from "@/services/token";
+import { clearToken, getToken, setToken } from "@/auth/token";
 import { decodeJwt } from "./jwt";
 
 export type AuthStatus = "loading" | "pending" | "authenticated" | "unauthenticated";

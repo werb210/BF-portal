@@ -1,10 +1,12 @@
-import type { ReactElement } from "react";
-import { getToken } from "@/auth/token";
+import type { ReactElement } from "react"
+import { getToken } from "@/auth/token"
+import { Navigate } from "react-router-dom"
 
-export default function ProtectedRoute({ children }: { children: ReactElement }) {
+export function ProtectedRoute({ children }: { children: ReactElement }) {
   if (!getToken()) {
-    throw new Error("AUTH_REQUIRED");
+    return <Navigate to="/login" replace />
   }
-
-  return children;
+  return children
 }
+
+export default ProtectedRoute

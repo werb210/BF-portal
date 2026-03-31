@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { getToken } from "@/services/token";
+import { getToken } from "@/auth/token";
 
 type AiSocketStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
