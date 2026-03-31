@@ -18,11 +18,10 @@ export default function ApplicationDetail({ id, onClose }: ApplicationDetailProp
   useEffect(() => {
     const loadApplication = async () => {
       try {
-        const { data } = await api.get(`/api/applications/${id}`);
-        setApplication(data?.data ?? data);
+        const response = await api.get<{ data?: Application }>(`/api/applications/${id}`);
+        setApplication(response?.data ?? (response as Application | null));
       } catch (e) {
         console.error(e);
-        throw new Error("Something failed. Check console.");
         setApplication(null);
       }
     };

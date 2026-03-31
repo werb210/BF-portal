@@ -53,6 +53,6 @@ export const fetchDocumentVersions = (documentId: string, options?: RequestOptio
 export const getDocuments = async (applicationId: string) => {
   requireAuth();
 
-  const { data } = await api.get(`/api/documents/${applicationId}`);
-  return data.data;
+  const response = await api.get<{ data?: unknown }>(`/api/documents/${applicationId}`);
+  return response?.data ?? null;
 };

@@ -13,7 +13,7 @@ export default function LiveChatQueuePage() {
 
   useEffect(() => {
     api.get("/admin/live-chat-queue").then((res) => {
-      setChats(res.data || []);
+      setChats(Array.isArray(res) ? res : []);
     });
   }, []);
 

@@ -39,7 +39,7 @@ export async function updateAdminAiRule(ruleId: string, payload: Partial<Omit<Ad
   } catch {
     const current = fallbackRules.find((rule) => rule.id === ruleId);
     if (!current) {
-      throw new Error("Rule not found");
+      return withDelay({ id: ruleId, name: "", content: "", active: false, priority: 0, ...payload } as AdminAiRule);
     }
     const updated = { ...current, ...payload };
     fallbackRules = fallbackRules.map((rule) => (rule.id === ruleId ? updated : rule));

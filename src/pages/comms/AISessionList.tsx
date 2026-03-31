@@ -11,7 +11,7 @@ export default function AISessionList() {
   const [sessions, setSessions] = useState<AiSession[]>([]);
 
   useEffect(() => {
-    apiClient.get("/portal/ai/sessions").then((res) => {
+    apiClient.get<AiSession[]>("/portal/ai/sessions").then((res) => {
       setSessions(Array.isArray(res) ? res : []);
     });
   }, []);

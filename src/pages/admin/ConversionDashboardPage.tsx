@@ -13,7 +13,7 @@ export default function ConversionDashboardPage() {
 
   useEffect(() => {
     api.get("/admin/conversion-stats").then((res) => {
-      setStats(res.data);
+      setStats((res as ConversionStats | null) ?? null);
     });
   }, []);
 

@@ -26,11 +26,13 @@ export async function updateUser(
   data: Partial<Pick<User, "role" | "status">>
 ) {
   const res = await api.patch<{ user?: User } | User>(`/users/${id}`, data);
+  if (!res) return null;
   return "user" in res ? res.user ?? null : res ?? null;
 }
 
 export async function getMe() {
   const res = await api.get<{ user?: User } | User>("/users/me");
+  if (!res) return null;
   return "user" in res ? res.user ?? null : res ?? null;
 }
 
@@ -40,5 +42,6 @@ export async function updateMe(data: {
   last_name?: string;
 }) {
   const res = await api.patch<{ user?: User } | User>("/users/me", data);
+  if (!res) return null;
   return "user" in res ? res.user ?? null : res ?? null;
 }

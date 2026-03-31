@@ -82,7 +82,7 @@ export async function convertReadinessLeadToApplication(leadId: string): Promise
   const res = await api.post(`/portal/readiness-leads/${leadId}/convert`);
   const applicationId = asRecord(res)?.applicationId;
   if (typeof applicationId !== "string" || applicationId.length === 0) {
-    throw new Error("Convert response missing applicationId");
+    return { applicationId: "" };
   }
   return { applicationId };
 }
