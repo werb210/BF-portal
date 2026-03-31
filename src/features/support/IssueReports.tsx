@@ -23,12 +23,12 @@ function IssueReports({ isAdmin = true }: IssueReportsProps) {
   }, [isAdmin]);
 
   async function load() {
-    const data = await apiRequest<{ issues?: IssueReport[] } | IssueReport[]>("/support/report");
+    const data = await apiRequest<{ issues?: IssueReport[] } | IssueReport[]>("/api/support/report");
     setIssues(Array.isArray(data) ? data : (data.issues ?? []));
   }
 
   async function resolveIssue(id: string) {
-    await apiRequest(`/support/report/${id}`, { method: "DELETE" });
+    await apiRequest(`/api/support/report/${id}`, { method: "DELETE" });
     setIssues((prev) => prev.filter((issue) => issue.id !== id));
   }
 

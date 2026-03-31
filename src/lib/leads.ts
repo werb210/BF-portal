@@ -1,6 +1,6 @@
-import { safeApiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export const fetchLeads = async () => {
-  const res = await safeApiFetch("/crm/leads");
+  const res = await apiFetch("/api/crm/leads");
   return Array.isArray(res) ? res : [];
 };

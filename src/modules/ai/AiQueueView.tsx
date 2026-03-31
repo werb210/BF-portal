@@ -11,13 +11,13 @@ export default function AiQueueView() {
   const [sessions, setSessions] = useState<Session[]>([]);
 
   useEffect(() => {
-    apiRequest<Session[]>("/chat/sessions")
+    apiRequest<Session[]>("/api/chat/sessions")
       .then(setSessions)
       .catch(() => setSessions([]));
   }, []);
 
   async function takeSession(id: string) {
-    await apiRequest("/ai/take", {
+    await apiRequest("/api/ai/take", {
       method: "POST",
       data: { sessionId: id }
     });

@@ -1,5 +1,5 @@
-import { safeFetch } from "@/utils/devApiGuard";
+import { apiFetch } from "@/lib/api";
 
 export async function checkServerHealth() {
-  return safeFetch("/health");
+  return apiFetch("/api/health");
 }

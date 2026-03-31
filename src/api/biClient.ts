@@ -1,7 +1,7 @@
-import { safeApiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export async function biFetch(path: string, options?: RequestInit) {
-  const res = await safeApiFetch(`/bi${path}`, options);
+  const res = await apiFetch(`/api/bi${path}`, options);
   if (res == null) {
     throw new Error("BI API Error");
   }
