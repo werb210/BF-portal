@@ -11,12 +11,15 @@ function isPublic(url: string) {
   }
 }
 
-export async function apiRequest(url: string, options: RequestInit = {}) {
+export async function apiRequest<T = any>(url: string, options: RequestInit = {}): Promise<T> {
   const token = getToken()
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(options.headers as Record<string, string> || {}),
+  }
+
+  if (options.headers) {
+    Object.assign(headers, options.headers)
   }
 
   if (!isPublic(url)) {
@@ -32,20 +35,26 @@ export async function apiRequest(url: string, options: RequestInit = {}) {
   }
 
   if (res.status === 204) {
-    return null
+    return null as T
   }
 
   let data: any = {}
-  try { data = await res.json() } catch {}
+  try {
+    data = await res.json()
+  } catch {}
 
   if (!res.ok) {
-    throw new Error(data?.error || "REQUEST_FAILED")
+    if (data?.error) throw new Error(data.error)
+    throw new Error("REQUEST_FAILED")
   }
 
   return data
 }
 
 export const apiFetch = apiRequest
+
+// compatibility helpers
+export class ApiError extends Error {}
 
 type ApiOptions = RequestInit & { data?: unknown }
 

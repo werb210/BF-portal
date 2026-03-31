@@ -25,7 +25,7 @@ export async function startOtp(payload: { phone: string }) {
 }
 
 export async function verifyOtp(payload: { phone: string; code: string }) {
-  const res = await apiRequest<{ token?: string; user?: unknown; [key: string]: unknown }>("/api/auth/verify-otp", {
+  const res = await apiRequest("/api/auth/verify-otp", {
     method: "POST",
     body: JSON.stringify(payload),
   });
