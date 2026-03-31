@@ -23,7 +23,9 @@ export async function apiRequest<T = any>(url: string, options: RequestInit = {}
   }
 
   if (!isPublic(url)) {
-    if (!token) throw new Error("AUTH_REQUIRED")
+    if (!token) {
+      throw new Error("AUTH_REQUIRED")
+    }
     headers.Authorization = `Bearer ${token}`
   }
 
@@ -44,7 +46,9 @@ export async function apiRequest<T = any>(url: string, options: RequestInit = {}
   } catch {}
 
   if (!res.ok) {
-    if (data?.error) throw new Error(data.error)
+    if (data?.error) {
+      throw new Error(data.error)
+    }
     throw new Error("REQUEST_FAILED")
   }
 
