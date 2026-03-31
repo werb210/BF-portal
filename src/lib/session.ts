@@ -1,11 +1,9 @@
-import { setToken } from "@/services/token"
+import { clearToken, getToken } from "@/auth/token"
 
 export function hydrateSession() {
-  const t = sessionStorage.getItem("token")
+  const t = getToken()
 
-  if (typeof t === "string" && t.length > 0) {
-    setToken(t)
-  } else {
-    setToken(null)
+  if (!t) {
+    clearToken()
   }
 }

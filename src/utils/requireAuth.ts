@@ -1,8 +1,10 @@
+import { getToken } from "@/auth/token";
+
 export const requireAuth = () => {
-  const token = sessionStorage.getItem("auth_token");
+  const token = getToken();
 
   if (!token) {
-    throw new Error("User not authenticated");
+    throw new Error("AUTH_REQUIRED");
   }
 
   return token;

@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/apiClient";
-import { setToken } from "@/services/token";
+import { setToken } from "@/auth/token";
 
 let currentUser: unknown = null;
 
@@ -18,28 +18,23 @@ export async function getMe() {
 }
 
 export async function startOtp(payload: { phone: string }) {
-  return apiRequest<{ ok?: boolean; [key: string]: unknown }>("/api/auth/otp/start", {
+  return apiRequest("/api/auth/start-otp", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export async function verifyOtp(payload: { phone: string; code: string }) {
-  const response = await apiRequest<{ ok?: boolean; token?: string; user?: unknown; [key: string]: unknown }>(
-    "/api/auth/verify-otp",
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
-  );
+  const res = await apiRequest<{ token?: string; user?: unknown; [key: string]: unknown }>("/api/auth/verify-otp", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 
-  if (response?.token) {
-    setToken(response.token);
-    sessionStorage.setItem("token", response.token);
-  }
+  if (!res?.token) throw new Error("INVALID_LOGIN");
 
-  currentUser = response?.user ?? null;
-  return response;
+  setToken(res.token);
+  currentUser = res?.user ?? null;
+  return res;
 }
 
 export function clearAuthUser() {
