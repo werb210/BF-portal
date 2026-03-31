@@ -1,21 +1,16 @@
-let installed = false;
+const originalFetch = window.fetch.bind(window)
 
-export function installNetworkGuard() {
-  if (installed || typeof window === "undefined") return;
+window.fetch = ((input, init) => {
+  const url =
+    typeof input === "string"
+      ? input
+      : input instanceof Request
+      ? input.url
+      : input.toString()
 
-  const originalFetch = window.fetch.bind(window);
+  if (!url.includes("/api/")) {
+    throw new Error("DIRECT_FETCH_BLOCKED")
+  }
 
-  window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-
-    if (!url.startsWith("/api/")) {
-      throw new Error("DIRECT_FETCH_BLOCKED");
-    }
-
-    return originalFetch(input, init);
-  }) as typeof window.fetch;
-
-  installed = true;
-}
-
-installNetworkGuard();
+  return originalFetch(input, init)
+}) as typeof window.fetch

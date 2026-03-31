@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo } from "react";
-import { clearToken, getToken, saveToken } from "@/services/token";
+import { clearToken, getToken, setToken } from "@/services/token";
 import { decodeJwt } from "./token";
 
 export type AuthStatus = "loading" | "pending" | "authenticated" | "unauthenticated";
@@ -54,10 +54,10 @@ const baseValue: AuthContextValue = {
     clearToken();
   },
   setAuth: (token: string) => {
-    saveToken(token);
+    setToken(token);
   },
   setToken: (token: string) => {
-    saveToken(token);
+    setToken(token);
   },
   startOtp: async () => {
     throw new Error("[OTP FLOW NOT AVAILABLE]");

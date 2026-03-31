@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { getStoredAccessToken } from "@/services/token";
+import { getToken } from "@/services/token";
 
 type AiSocketStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
@@ -30,7 +30,7 @@ export function connectToAiSession(sessionId: string, options: ConnectOptions) {
     return () => undefined;
   }
 
-  const token = getStoredAccessToken();
+  const token = getToken();
   let ws: WebSocket | null = null;
   let reconnectAttempts = 0;
   let reconnectTimer: number | null = null;

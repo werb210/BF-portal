@@ -1,4 +1,4 @@
-import { setToken } from "./apiClient";
+import { setToken } from "@/services/token";
 
 export function hydrateSession(): void {
   const t = sessionStorage.getItem("token");

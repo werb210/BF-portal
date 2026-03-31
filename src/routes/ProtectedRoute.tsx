@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { Navigate } from "react-router-dom";
-import { getToken } from "@/lib/apiClient";
+import { getToken } from "@/services/token";
 
 export default function ProtectedRoute({ children }: { children: ReactElement }) {
   if (!getToken()) {

@@ -10,7 +10,7 @@ import {
   sendCommunication
 } from "@/api/communications";
 import { connectAiSocket, subscribeAiSocket, subscribeAiSocketConnection } from "@/services/aiSocket";
-import { getStoredAccessToken } from "@/services/token";
+import { getToken } from "@/services/token";
 import { useAuth } from "@/hooks/useAuth";
 import type { CommunicationConversation, CommunicationMessage, CrmLead } from "@/api/communications";
 
@@ -151,7 +151,7 @@ export default function ChatSessionsPanel() {
     }
     cleanupSessionSocket();
     setSessionSocketState("connecting");
-    const token = getStoredAccessToken();
+    const token = getToken();
 
     const openSocket = () => {
       const url = new URL(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/chat`);
