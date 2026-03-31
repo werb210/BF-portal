@@ -15,6 +15,7 @@ import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
 import PipelinePage from "@/pages/pipeline/PipelinePage";
 import ApplicationDetail from "@/pages/application/ApplicationDetail";
+import MayaPage from "@/pages/MayaPage";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import DialerButton from "@/components/DialerButton";
@@ -100,6 +101,7 @@ const AppRoutes = () => (
         <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
+        <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
       </Route>
     </Routes>
   </>
