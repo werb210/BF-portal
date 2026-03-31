@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchCallHistory, type CallSession } from "../services/callService";
+import { logError } from "@/lib/logger";
 
 export default function CallHistoryTab({ clientId }: { clientId: string }) {
   const [calls, setCalls] = useState<CallSession[]>([]);
@@ -17,7 +18,8 @@ export default function CallHistoryTab({ clientId }: { clientId: string }) {
         setError(null);
         const data = await fetchCallHistory(clientId);
         if (mounted) setCalls(data);
-      } catch {
+      } catch (err) {
+        logError(err, { path: "/api/call-history", clientId });
         if (mounted) setError("Unable to load call history");
       } finally {
         if (mounted) setLoading(false);
