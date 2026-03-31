@@ -10,14 +10,15 @@ export interface PreApplicationRecord {
 }
 
 export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
-  const res = await apiFetch("/api/preapp/admin/list");
-  return Array.isArray(res) ? res : [];
+  const res = await apiFetch<PreApplicationRecord[]>("/api/preapp/admin/list");
+  return res.success && Array.isArray(res.data) ? res.data : [];
 }
 
 export async function convertPreApplication(id: string) {
-  const res = await apiFetch("/api/preapp/admin/convert", {
+  const res = await apiFetch<Record<string, unknown>>("/api/preapp/admin/convert", {
     method: "POST",
-    body: JSON.stringify({ id })
+    body: { id }
   });
-  return res as Record<string, unknown>;
+  if (!res.success) return { success: false, message: res.message };
+  return { success: true, data: res.data };
 }

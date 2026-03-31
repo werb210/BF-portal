@@ -8,6 +8,6 @@ export interface Voicemail {
 }
 
 export async function fetchVoicemails(clientId: string): Promise<Voicemail[]> {
-  const res = (await apiFetch(`/api/calls?clientId=${encodeURIComponent(clientId)}`)) as Voicemail[];
-  return Array.isArray(res) ? res : [];
+  const res = await apiFetch<Voicemail[]>(`/api/calls?clientId=${encodeURIComponent(clientId)}`);
+  return res.success && Array.isArray(res.data) ? res.data : [];
 }

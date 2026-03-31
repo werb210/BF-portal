@@ -16,7 +16,7 @@ export default function WebsiteLeadsPage() {
 
   useEffect(() => {
     api.get("/admin/website-leads").then((res) => {
-      setLeads(res.data || []);
+      setLeads(Array.isArray(res) ? res : []);
     });
   }, []);
 

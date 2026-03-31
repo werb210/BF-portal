@@ -9,14 +9,14 @@ const ApplicationEnvelopeSchema = ApiEnvelopeSchema(ApplicationSchema);
 export const getApplications = async () => {
   requireAuth();
 
-  const { data } = await api.get("/api/applications", { schema: ApplicationListEnvelopeSchema });
-  return data.data;
+  const response = await api.get<{ data?: { data?: unknown[] } }>("/api/applications", { schema: ApplicationListEnvelopeSchema });
+  return response?.data?.data ?? [];
 };
 
 export const sendToLender = async (id: string, lenders: string[]) => {
   requireAuth();
 
-  const { data } = await api.post(
+  const response = await api.post<{ data?: unknown }>(
     `/api/applications/${id}/send`,
     {
       lenders,
@@ -24,11 +24,11 @@ export const sendToLender = async (id: string, lenders: string[]) => {
     { schema: ApplicationEnvelopeSchema },
   );
 
-  return data.data;
+  return response?.data ?? null;
 };
 
 export const createApplication = async (payload: unknown) => {
   requireAuth();
-  const { data } = await api.post("/api/applications", payload, { schema: ApplicationEnvelopeSchema });
-  return data.data;
+  const response = await api.post<{ data?: unknown }>("/api/applications", payload, { schema: ApplicationEnvelopeSchema });
+  return response?.data ?? null;
 };

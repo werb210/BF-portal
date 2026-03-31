@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { checkBackend } from "@/bootstrap";
-import api, { apiFetch } from "@/api/client";
+import { apiFetch } from "@/api/client";
 
 describe("portal resilience", () => {
   beforeEach(() => {
@@ -9,29 +9,27 @@ describe("portal resilience", () => {
   });
 
   it("simulate API down -> UI health check fails fast", async () => {
-    vi.spyOn(api, "request").mockRejectedValueOnce(new TypeError("Network down"));
+    global.fetch = vi.fn().mockRejectedValueOnce(new TypeError("Network down")) as typeof fetch;
 
     await expect(checkBackend()).resolves.toBe(false);
   });
 
   it("simulate 500 -> error is surfaced", async () => {
-    vi.spyOn(api, "request").mockRejectedValueOnce({
-      response: { status: 500, data: { message: "boom" } },
-    });
+    global.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: false, message: "boom" }), { status: 500 }),
+    ) as typeof fetch;
 
     await expect(apiFetch("/api/health", { method: "GET" })).resolves.toEqual({
-      ok: false,
-      status: 500,
-      data: { message: "boom" },
+      success: false,
+      message: "boom",
     });
   });
 
   it("simulate timeout -> no infinite loading", async () => {
-    vi.spyOn(api, "request").mockRejectedValueOnce(new DOMException("Aborted", "AbortError"));
+    global.fetch = vi.fn().mockRejectedValueOnce(new DOMException("Aborted", "AbortError")) as typeof fetch;
     await expect(apiFetch("/api/health", { method: "GET" })).resolves.toEqual({
-      ok: false,
-      status: 0,
-      data: null,
+      success: false,
+      message: "Network error",
     });
   });
 });

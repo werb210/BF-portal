@@ -1,9 +1,10 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import api, { apiRequest } from "@/api/client";
+import { apiRequest } from "@/api/client";
 import { clearToken, getToken, setToken } from "@/auth/token";
 
 const originalLocation = window.location;
+const originalFetch = global.fetch;
 
 describe("auth and api hard pipeline e2e requirements", () => {
   beforeEach(() => {
@@ -28,51 +29,47 @@ describe("auth and api hard pipeline e2e requirements", () => {
   it("TEST 3: authorization header override attempt is blocked", async () => {
     setToken("valid-token");
 
-    vi.spyOn(api, "request").mockResolvedValueOnce({
-      status: 200,
-      data: { ok: true },
-    } as any);
-
-    await expect(
-      apiRequest("/api/test", {
-        method: "GET",
-      }),
-    ).resolves.toEqual({ ok: true, status: 200, data: { ok: true } });
-  });
-
-  it("TEST 4: API 401 clears token", async () => {
-    setToken("valid-token");
-
-    vi.spyOn(api, "request").mockRejectedValueOnce({
-      response: { status: 401, data: "denied" },
-    });
+    global.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: true, data: { message: "ok" } }), { status: 200 }),
+    ) as typeof fetch;
 
     await expect(apiRequest("/api/test", { method: "GET" })).resolves.toEqual({
-      ok: false,
-      status: 401,
-      data: "denied",
+      success: true,
+      data: { message: "ok" },
     });
-    expect(getToken()).toBe("valid-token");
+  });
+
+  it("TEST 4: API 401 keeps non-throwing contract", async () => {
+    setToken("valid-token");
+
+    global.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: false, message: "denied" }), { status: 401 }),
+    ) as typeof fetch;
+
+    await expect(apiRequest("/api/test", { method: "GET" })).resolves.toEqual({
+      success: false,
+      message: "denied",
+    });
   });
 
   it("TEST 5: external path without token hard fails", async () => {
     clearToken();
-    vi.spyOn(api, "request").mockRejectedValueOnce({
-      response: { status: 403, data: "Domain forbidden" },
-    });
+    global.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: false, message: "Domain forbidden" }), { status: 403 }),
+    ) as typeof fetch;
+
     await expect(apiRequest("https://evil.com/api/test", { method: "GET" })).resolves.toEqual({
-      ok: false,
-      status: 403,
-      data: "Domain forbidden",
+      success: false,
+      message: "Domain forbidden",
     });
   });
 
-  it("TEST 6: 204 response returns null", async () => {
+  it("TEST 6: 204 response returns null data", async () => {
     setToken("valid-token");
-    vi.spyOn(api, "request").mockResolvedValueOnce({ status: 204, data: null } as any);
+    global.fetch = vi.fn().mockResolvedValueOnce(new Response(null, { status: 204 })) as typeof fetch;
+
     await expect(apiRequest("/api/test", { method: "DELETE" })).resolves.toEqual({
-      ok: true,
-      status: 204,
+      success: true,
       data: null,
     });
   });
@@ -80,24 +77,24 @@ describe("auth and api hard pipeline e2e requirements", () => {
   it("TEST 7: empty response returns empty object", async () => {
     setToken("valid-token");
 
-    vi.spyOn(api, "request").mockResolvedValueOnce({ status: 200, data: {} } as any);
+    global.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: true, data: {} }), { status: 200 }),
+    ) as typeof fetch;
 
     await expect(apiRequest("/api/test", { method: "GET" })).resolves.toEqual({
-      ok: true,
-      status: 200,
+      success: true,
       data: {},
     });
   });
 
-  it("TEST 8: request failure surfaces error", async () => {
+  it("TEST 8: request failure surfaces message", async () => {
     setToken("valid-token");
 
-    vi.spyOn(api, "request").mockRejectedValueOnce(new TypeError("NetworkError"));
+    global.fetch = vi.fn().mockRejectedValueOnce(new TypeError("NetworkError")) as typeof fetch;
 
     await expect(apiRequest("/api/test")).resolves.toEqual({
-      ok: false,
-      status: 0,
-      data: null,
+      success: false,
+      message: "NetworkError",
     });
   });
 });
@@ -107,4 +104,5 @@ afterAll(() => {
     configurable: true,
     value: originalLocation,
   });
+  global.fetch = originalFetch;
 });

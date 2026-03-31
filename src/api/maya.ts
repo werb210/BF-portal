@@ -5,9 +5,10 @@ export async function sendMayaMessage(message: string) {
     method: "POST",
     body: { message },
   });
-  if (!res.ok) {
-    throw new Error("maya_error");
+
+  if (!res.success) {
+    return { success: false, message: res.message };
   }
 
-  return res.data;
+  return { success: true, data: res.data };
 }

@@ -13,11 +13,11 @@ export default function BIDashboard() {
 
   useEffect(() => {
     async function load() {
-      const apps = await api.get("/admin/applications");
-      const { data } = await api.get("/admin/commissions");
+      const apps = await api.get<any[]>("/admin/applications");
+      const commissionsData = await api.get<any[]>("/admin/commissions");
 
-      setApplications(apps.data);
-      setCommissions(data);
+      setApplications(Array.isArray(apps) ? apps : []);
+      setCommissions(Array.isArray(commissionsData) ? commissionsData : []);
     }
     void load();
   }, [api]);

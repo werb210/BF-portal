@@ -13,17 +13,17 @@ async function requestJson<T>(path: string, options: RequestInit = {}): Promise<
   const payload = options.body ? JSON.parse(String(options.body)) : undefined;
 
   if (method === "POST") {
-    const { data } = await api.post<ApiResponse<T>>(`/api${path}`, payload);
-    return (data as { data?: T }).data ?? (data as T);
+    const data = await api.post<ApiResponse<T>>(`/api${path}`, payload);
+    return ((data as { data?: T } | null)?.data ?? data) as T;
   }
 
   if (method === "PATCH") {
-    const { data } = await api.patch<ApiResponse<T>>(`/api${path}`, payload);
-    return (data as { data?: T }).data ?? (data as T);
+    const data = await api.patch<ApiResponse<T>>(`/api${path}`, payload);
+    return ((data as { data?: T } | null)?.data ?? data) as T;
   }
 
-  const { data } = await api.get<ApiResponse<T>>(`/api${path}`);
-  return (data as { data?: T }).data ?? (data as T);
+  const data = await api.get<ApiResponse<T>>(`/api${path}`);
+  return ((data as { data?: T } | null)?.data ?? data) as T;
 }
 
 export type Contact = {

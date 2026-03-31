@@ -9,7 +9,7 @@ export default function CreditReadinessLeads() {
   }, []);
 
   async function load() {
-    const res = await api.get("/credit-readiness/leads");
+    const res = await api.get<any[]>("/credit-readiness/leads");
     setLeads(Array.isArray(res) ? res : []);
   }
 
