@@ -11,13 +11,13 @@ export default function AiPolicyEditor() {
   const [rules, setRules] = useState<PolicyRule[]>([]);
 
   useEffect(() => {
-    apiRequest<PolicyRule[]>("/ai/policy")
+    apiRequest<PolicyRule[]>("/api/ai/policy")
       .then(setRules)
       .catch(() => setRules([]));
   }, []);
 
   async function save(rule: PolicyRule) {
-    await apiRequest("/ai/policy", {
+    await apiRequest("/api/ai/policy", {
       method: "POST",
       data: rule
     });

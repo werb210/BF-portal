@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "@/config/api";
 import { apiRequest as coreApiRequest, type ApiRequestOptions } from "@/lib/apiClient";
 
-let token: string | null = typeof window === "undefined" ? null : localStorage.getItem("auth_token");
+let token: string | null = typeof window === "undefined" ? null : localStorage.getItem("token");
 
 export class ApiError extends Error {
   status?: number;
@@ -15,12 +15,12 @@ export class ApiError extends Error {
 
 export function setToken(t: string) {
   token = t;
-  if (typeof window !== "undefined") localStorage.setItem("auth_token", t);
+  if (typeof window !== "undefined") localStorage.setItem("token", t);
 }
 
 export function clearToken() {
   token = null;
-  if (typeof window !== "undefined") localStorage.removeItem("auth_token");
+  if (typeof window !== "undefined") localStorage.removeItem("token");
 }
 
 export function getToken() {
@@ -28,10 +28,6 @@ export function getToken() {
 }
 
 type ApiOptions = ApiRequestOptions & { data?: unknown };
-
-function isAuthBootstrapPath(path: string) {
-  return path.startsWith("/api/auth/otp/start") || path.startsWith("/api/auth/otp/verify");
-}
 
 function normalizeBody(data: unknown, body: BodyInit | null | undefined) {
   if (data !== undefined) return data instanceof FormData ? data : JSON.stringify(data);
@@ -42,7 +38,6 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
   return coreApiRequest(path, {
     ...options,
     body: normalizeBody(options.data, options.body),
-    skipAuth: options.skipAuth ?? isAuthBootstrapPath(path),
   });
 }
 
@@ -74,10 +69,6 @@ const api = {
   patch: <T = unknown>(path: string, data?: unknown, options: ApiOptions = {}) => apiFetch(path, { ...options, method: "PATCH", data }) as Promise<T>,
   delete: <T = unknown>(path: string, options: ApiOptions = {}) => apiFetch(path, { ...options, method: "DELETE" }) as Promise<T>,
 };
-
-export async function safeApiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
-  return (await apiFetch(path, options)) as T;
-}
 
 export const API_BASE = API_BASE_URL;
 export default api;

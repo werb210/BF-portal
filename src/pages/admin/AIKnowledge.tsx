@@ -12,7 +12,7 @@ export default function AIKnowledge() {
     const formData = new FormData();
     formData.append("file", file);
 
-    await apiRequest("/ai/knowledge", {
+    await apiRequest("/api/ai/knowledge", {
       method: "POST",
       data: formData,
       headers: { "Content-Type": "multipart/form-data" },

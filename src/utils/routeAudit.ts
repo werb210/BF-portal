@@ -15,7 +15,7 @@ export const portalApiRoutes: RouteDescriptor[] = [
   { method: "POST", path: "/api/auth/otp/start" },
   { method: "POST", path: "/api/auth/otp/verify" },
   { method: "GET", path: "/api/auth/me" },
-  { method: "GET", path: "/_int/routes" }
+  { method: "GET", path: "/api/_int/routes" }
 ];
 
 const AUTH_ROUTE_PREFIXES = ["/api/auth/otp", "/api/auth/me"];
@@ -90,7 +90,7 @@ export const runRouteAudit = async (): Promise<void> => {
   });
 
   try {
-    const payload = await apiRequest("/_int/routes", {
+    const payload = await apiRequest("/api/_int/routes", {
       headers: { "X-Request-Id": requestId }
     });
     const serverRoutes = extractServerRoutes(payload);

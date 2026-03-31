@@ -26,7 +26,13 @@ export async function verifyOtp(phone: string, code: string) {
     body: JSON.stringify({ phone, code }),
   });
 
-  if ((res as any)?.token) setToken((res as any).token);
+  if ((res as any)?.token) {
+    localStorage.setItem("token", (res as any).token);
+    if (!localStorage.getItem("token")) {
+      throw new Error("TOKEN SAVE FAILED");
+    }
+    setToken((res as any).token);
+  }
   currentUser = (res as any)?.user ?? null;
 
   return res;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "@/lib/api";
-const API_PREFIX = "";
+const API_PREFIX = "/api";
 
 type Message = {
   role: "user" | "ai" | "staff";
@@ -50,7 +50,7 @@ export default function AiLiveChat({ sessionId }: { sessionId: string }) {
   }
 
   async function closeSession() {
-    await apiRequest("/ai/close", {
+    await apiRequest("/api/ai/close", {
       method: "POST",
       data: { sessionId }
     });

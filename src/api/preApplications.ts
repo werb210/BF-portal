@@ -1,4 +1,4 @@
-import { safeApiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export interface PreApplicationRecord {
   id: string;
@@ -10,14 +10,14 @@ export interface PreApplicationRecord {
 }
 
 export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
-  const res = await safeApiFetch<PreApplicationRecord[]>("/preapp/admin/list");
+  const res = await apiFetch("/api/preapp/admin/list");
   return Array.isArray(res) ? res : [];
 }
 
 export async function convertPreApplication(id: string) {
-  const res = await safeApiFetch<Record<string, unknown>>("/preapp/admin/convert", {
+  const res = await apiFetch("/api/preapp/admin/convert", {
     method: "POST",
     body: JSON.stringify({ id })
   });
-  return res;
+  return res as Record<string, unknown>;
 }
