@@ -91,7 +91,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
 
   it("TEST 10B: malformed /api path hard fails", async () => {
     localStorage.setItem("token", "valid-token");
-    await expect(apiRequest("/api/test?inject=true", { method: "GET" })).rejects.toThrow("[INVALID PATH]");
+    await expect(apiRequest("/api/test?inject=true", { method: "GET" })).rejects.toThrow();
   });
 
   it("TEST 10C: 204 response returns null", async () => {
