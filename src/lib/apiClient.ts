@@ -1,27 +1,6 @@
-export type ApiRequestOptions = RequestInit & {
-  raw?: boolean;
-};
+import { getTokenOrFail } from "@/lib/auth";
 
-export class ApiError extends Error {
-  status?: number;
-
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-  }
-}
-
-function getTokenOrFail(): string {
-  const token = localStorage.getItem("token");
-
-  if (!token || token.trim() === "") {
-    console.error("[AUTH] Missing token at request time");
-    throw new Error("NOT_AUTHENTICATED");
-  }
-
-  return token;
-}
+export type ApiRequestOptions = RequestInit;
 
 function normalizeHeaders(existing?: HeadersInit) {
   const normalized: Record<string, string> = {};
@@ -43,60 +22,51 @@ function normalizeHeaders(existing?: HeadersInit) {
   return normalized;
 }
 
-export async function apiRequest<T = unknown>(path: string, options?: ApiRequestOptions): Promise<T>;
-export async function apiRequest<T = unknown>(method: "get" | "post" | "put" | "patch" | "delete", path: string, data?: unknown): Promise<T>;
 export async function apiRequest<T = unknown>(
-  pathOrMethod: string,
-  optionsOrPath: ApiRequestOptions | string = {},
-  data?: unknown,
+  path: string,
+  options: ApiRequestOptions = {},
 ): Promise<T> {
-  const isLegacyMethod = ["get", "post", "put", "patch", "delete"].includes(pathOrMethod.toLowerCase());
-  const path = isLegacyMethod ? (optionsOrPath as string) : pathOrMethod;
-  const options: ApiRequestOptions = isLegacyMethod
-    ? {
-        method: pathOrMethod.toUpperCase(),
-        body: data instanceof FormData ? data : data === undefined ? undefined : JSON.stringify(data),
-      }
-    : (optionsOrPath as ApiRequestOptions);
-
-  const token = getTokenOrFail();
-
   if (!path.startsWith("/api/")) {
-    throw new Error(`[API] INVALID PATH: ${path}`);
+    throw new Error("[INVALID API FORMAT]");
   }
 
+  const token = getTokenOrFail();
   const headers = normalizeHeaders(options.headers);
+
+  delete headers.Authorization;
+  delete headers.authorization;
+
+  headers.Authorization = `Bearer ${token}`;
+
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const res = await fetch(path, {
     ...options,
-    headers: {
-      ...headers,
-      Authorization: `Bearer ${token}`,
-      ...(options.body instanceof FormData ? {} : { "Content-Type": headers["Content-Type"] ?? "application/json" }),
-    },
+    headers,
   });
 
   console.log("[REQ]", options.method || "GET", path);
   console.log("[STATUS]", res.status);
 
   if (res.status === 401) {
-    console.error("[AUTH FAIL] TOKEN REJECTED");
     localStorage.removeItem("token");
     window.location.href = "/login";
-    throw new Error("UNAUTHORIZED");
+    throw new Error("[AUTH FAIL]");
   }
-
-  if (options.raw) return res as T;
 
   if (!res.ok) {
-    throw new ApiError(`[API ERROR] ${res.status}`, res.status);
+    throw new Error(`[API ERROR] ${res.status}`);
   }
 
-  if (res.status === 204) {
-    return null as T;
+  const text = await res.text();
+
+  if (!text) {
+    throw new Error("[EMPTY RESPONSE]");
   }
 
-  return (await res.json()) as T;
+  return JSON.parse(text) as T;
 }
 
 export const apiFetch = apiRequest;
@@ -120,4 +90,3 @@ const api = {
 };
 
 export default api;
-export { getTokenOrFail };

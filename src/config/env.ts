@@ -1,6 +1,10 @@
-import { API_BASE_URL } from "@/config/api";
+export const API_BASE = "/api";
+
+if (!API_BASE) {
+  throw new Error("[CONFIG ERROR]");
+}
 
 export const ENV = {
-  API_BASE_URL,
-  JWT_STORAGE_KEY: "bf_token"
+  API_BASE,
+  JWT_STORAGE_KEY: "token",
 };

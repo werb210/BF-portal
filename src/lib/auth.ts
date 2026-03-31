@@ -9,9 +9,13 @@ export function getToken(): string | null {
 export function getTokenOrFail(): string {
   const token = localStorage.getItem("token");
 
-  if (!token || token.trim() === "") {
-    console.error("[AUTH] Missing token at request time");
-    throw new Error("NOT_AUTHENTICATED");
+  if (
+    !token ||
+    token === "undefined" ||
+    token === "null" ||
+    token.trim() === ""
+  ) {
+    throw new Error("[AUTH BLOCK] INVALID TOKEN");
   }
 
   return token;
@@ -19,7 +23,7 @@ export function getTokenOrFail(): string {
 
 export function saveToken(token: string) {
   if (!token || token.trim() === "") {
-    throw new Error("[TOKEN SAVE FAILED] EMPTY TOKEN");
+    throw new Error("[TOKEN SAVE FAILED]");
   }
 
   localStorage.setItem("token", token);
@@ -27,10 +31,8 @@ export function saveToken(token: string) {
   const verify = localStorage.getItem("token");
 
   if (!verify) {
-    throw new Error("[TOKEN SAVE FAILED] WRITE FAILED");
+    throw new Error("[TOKEN WRITE FAILURE]");
   }
-
-  console.log("[TOKEN SAVED]", token.slice(0, 12));
 }
 
 export function setToken(token: string) {
