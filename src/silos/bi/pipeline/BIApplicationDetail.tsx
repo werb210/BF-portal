@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/api/client";
 import ActivityTimeline from "../components/ActivityTimeline";
 
 type BIApplicationDetailData = {

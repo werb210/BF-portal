@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/api/client";
 
 export interface Voicemail {
   id: string;

@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api"
+import { apiRequest } from "@/api/client"
 import { setToken } from "@/auth/token"
 
 export async function startOtp(phone: string) {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/api/client";
 
 type ScoringResponse = {
   score?: number;

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/api/client";
 import { getTelephonyToken } from "@/telephony/getVoiceToken";
 import { assertAuthTelephonyFlow } from "./helpers/authTelephonyFlowAssertions";
 import { setToken } from "@/auth/token";
 
-vi.mock("@/lib/api", () => ({
+vi.mock("@/api/client", () => ({
   apiRequest: vi.fn(),
 }));
 

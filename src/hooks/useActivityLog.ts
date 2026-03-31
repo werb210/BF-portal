@@ -1,4 +1,4 @@
-import api from "@/lib/api";
+import api from "@/api/client";
 
 export function logActivity(action: string, metadata?: unknown) {
   return api.post("/audit/activity", {
