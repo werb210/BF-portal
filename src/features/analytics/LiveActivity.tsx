@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/apiClient";
 
 export default function LiveActivity() {
   const [events, setEvents] = useState<any[]>([]);

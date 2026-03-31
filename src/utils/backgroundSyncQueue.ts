@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authToken";
 
 export type QueuedMutation = {

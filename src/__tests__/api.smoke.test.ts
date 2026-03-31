@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/apiClient";
 import { assertApiResponse } from "@/lib/assertApiResponse";
 
-vi.mock("@/lib/api", () => ({
+vi.mock("@/lib/apiClient", () => ({
   apiRequest: vi.fn(),
 }));
 

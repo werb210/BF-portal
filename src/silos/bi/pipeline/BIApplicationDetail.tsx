@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { biFetch } from "@/api/biClient";
+import { apiRequest } from "@/lib/apiClient";
 import ActivityTimeline from "../components/ActivityTimeline";
 
 type BIApplicationDetailData = {
@@ -39,7 +39,7 @@ export default function BIApplicationDetail() {
       return;
     }
 
-    const data = await biFetch(`/applications/${id}`);
+    const data = await apiRequest(`/api/bi/applications/${id}`);
     setApp(data);
   }
 
@@ -48,7 +48,7 @@ export default function BIApplicationDetail() {
       return;
     }
 
-    await biFetch(`/applications/${id}/stage`, {
+    await apiRequest(`/api/bi/applications/${id}/stage`, {
       method: "POST",
       body: JSON.stringify({
         stage,
@@ -111,7 +111,7 @@ function DocumentList({ applicationId }: { applicationId: string }) {
   }, [applicationId]);
 
   async function load() {
-    const data = await biFetch(`/applications/${applicationId}/documents`);
+    const data = await apiRequest(`/api/bi/applications/${applicationId}/documents`);
     setDocs(data);
   }
 
@@ -136,7 +136,7 @@ function CommissionTab({ applicationId }: { applicationId: string }) {
   }, [applicationId]);
 
   async function load() {
-    const data = await biFetch(`/commissions/by-application/${applicationId}`);
+    const data = await apiRequest(`/api/bi/commissions/by-application/${applicationId}`);
     setRow(data);
   }
 

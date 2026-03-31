@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { biFetch } from "@/api/biClient";
+import { apiRequest } from "@/lib/apiClient";
 
 type BIApplication = {
   id: string;
@@ -30,7 +30,7 @@ export default function BIPipeline() {
   }, []);
 
   async function load() {
-    const data = await biFetch("/applications");
+    const data = await apiRequest("/api/bi/applications");
     setApps(data);
   }
 

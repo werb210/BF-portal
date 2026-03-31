@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { biFetch } from "@/api/biClient";
+import { apiRequest } from "@/lib/apiClient";
 import ActivityTimeline from "../components/ActivityTimeline";
-import { apiClient } from "@/api/httpClient";
 
-const API_PREFIX = "";
 type Application = {
   id: string;
   primary_contact_name?: string;
@@ -32,7 +30,7 @@ export default function BILenderPortal() {
   }, []);
 
   async function load() {
-    const data = await biFetch("/lender/applications");
+    const data = await apiRequest("/api/bi/lender/applications");
     setApps(data);
   }
 
@@ -55,10 +53,9 @@ export default function BILenderPortal() {
       formData.append("files", file);
     }
 
-    await apiClient.post(`${API_PREFIX}/bi/application/${appId}/documents`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
+    await apiRequest(`/api/bi/application/${appId}/documents`, {
+      method: "POST",
+      body: formData
     });
 
     toast.success("Documents uploaded");
