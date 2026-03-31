@@ -1,23 +1,30 @@
-import { apiRequest } from "@/api/client"
-import { setToken } from "@/auth/token"
-
-export async function startOtp(phone: string) {
-  return apiRequest("/api/auth/start-otp", {
-    method: "POST",
+export async function sendOtp(phone: string) {
+  const res = await fetch('/auth/send-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone }),
-  })
-}
+  });
 
-export async function verifyOtp(phone: string, code: string) {
-  const res = await apiRequest("/api/auth/verify-otp", {
-    method: "POST",
-    body: JSON.stringify({ phone, code }),
-  })
-
-  if (!res || !res.token) {
-    throw new Error("INVALID_LOGIN")
+  if (!res.ok) {
+    throw new Error('Failed to send OTP');
   }
 
-  setToken(res.token)
-  return res
+  return res.json();
+}
+
+// Backwards-compatible alias for existing callers.
+export const startOtp = sendOtp;
+
+export async function verifyOtp(phone: string, code: string) {
+  const res = await fetch('/auth/verify-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, code }),
+  });
+
+  if (!res.ok) {
+    throw new Error('Invalid OTP');
+  }
+
+  return res.json();
 }
