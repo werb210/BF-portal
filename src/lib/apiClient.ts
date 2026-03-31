@@ -3,34 +3,8 @@ import { getTokenOrFail } from "@/services/token";
 
 export type ApiRequestOptions = RequestInit;
 
-function normalizeHeaders(existing?: HeadersInit): Record<string, string> {
-  const normalized: Record<string, string> = {};
-
-  if (existing instanceof Headers) {
-    existing.forEach((value, key) => {
-      normalized[key] = value;
-    });
-    return normalized;
-  }
-
-  if (Array.isArray(existing)) {
-    for (const [key, value] of existing) {
-      normalized[key] = String(value);
-    }
-    return normalized;
-  }
-
-  if (existing) {
-    Object.entries(existing).forEach(([key, value]) => {
-      if (value != null) normalized[key] = String(value);
-    });
-  }
-
-  return normalized;
-}
-
 export async function apiRequest<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
-  if (!path.startsWith("/api/")) {
+  if (!/^\/api\/[a-zA-Z0-9/_-]+$/.test(path)) {
     throw new Error("[INVALID PATH]");
   }
 
@@ -39,10 +13,10 @@ export async function apiRequest<T = unknown>(path: string, options: ApiRequestO
   }
 
   const token = getTokenOrFail();
-  const headers = normalizeHeaders(options.headers);
-
-  headers["Content-Type"] = "application/json";
-  headers.Authorization = `Bearer ${token}`;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
 
   delete options.credentials;
 
