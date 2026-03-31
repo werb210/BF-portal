@@ -30,7 +30,9 @@ export async function verifyOtp(payload: { phone: string; code: string }) {
     body: JSON.stringify(payload),
   });
 
-  if (!res?.token) throw new Error("INVALID_LOGIN");
+  if (!res || !res.token) {
+    throw new Error("INVALID_LOGIN");
+  }
 
   setToken(res.token);
   currentUser = res?.user ?? null;
