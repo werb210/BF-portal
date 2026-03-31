@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/apiClient";
 
-vi.mock("@/lib/api", () => ({
+vi.mock("@/lib/apiClient", () => ({
   apiRequest: vi.fn(),
 }));
 
@@ -26,7 +26,7 @@ describe("contract:e2e", () => {
       code: "000000",
     });
 
-    const t = await apiRequest<{ token: string }>("get", "/telephony/token");
+    const t = await apiRequest<{ token: string }>("get", "/api/telephony/token");
 
     expect(v.token).toBeTruthy();
     expect(t.token).toBeTruthy();

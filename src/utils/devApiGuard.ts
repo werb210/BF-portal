@@ -1,1 +1,1 @@
-export { safeFetch } from "./safeFetch";
+export { apiRequest } from "@/lib/apiClient";

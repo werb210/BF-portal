@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/apiClient";
 
 export interface Voicemail {
   id: string;
@@ -8,10 +8,6 @@ export interface Voicemail {
 }
 
 export async function fetchVoicemails(clientId: string): Promise<Voicemail[]> {
-  try {
-    const res = (await apiFetch(`/api/calls?clientId=${encodeURIComponent(clientId)}`)) as Voicemail[];
-    return Array.isArray(res) ? res : [];
-  } catch {
-    return [];
-  }
+  const res = (await apiFetch(`/api/calls?clientId=${encodeURIComponent(clientId)}`)) as Voicemail[];
+  return Array.isArray(res) ? res : [];
 }

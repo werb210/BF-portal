@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { biFetch } from "@/api/biClient";
+import { apiRequest } from "@/lib/apiClient";
 
 type ActivityEvent = {
   id: string;
@@ -20,7 +20,7 @@ export default function ActivityTimeline({
   }, []);
 
   async function load() {
-    const data = await biFetch(`/applications/${applicationId}/activity`);
+    const data = await apiRequest(`/api/bi/applications/${applicationId}/activity`);
     setEvents([...data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
   }
 

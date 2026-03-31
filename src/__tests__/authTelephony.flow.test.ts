@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/apiClient";
 import { getTelephonyToken } from "@/telephony/getVoiceToken";
 import { assertAuthTelephonyFlow } from "./helpers/authTelephonyFlowAssertions";
 
-vi.mock("@/lib/api", () => ({
+vi.mock("@/lib/apiClient", () => ({
   apiRequest: vi.fn(),
 }));
 
@@ -28,7 +28,7 @@ beforeEach(() => {
   vi.mocked(apiRequest).mockImplementation(async (method, url) => {
     if (method === "post" && url === "/api/auth/otp/start") return { ok: true };
     if (method === "post" && url === "/api/auth/otp/verify") return { ok: true, token: "test-token" };
-    if (method === "get" && url === "/telephony/token") return { token: "voice-token" };
+    if (method === "get" && url === "/api/telephony/token") return { token: "voice-token" };
     return {};
   });
 });
@@ -50,7 +50,7 @@ describe("auth/telephony flow contract checks", () => {
     vi.mocked(apiRequest).mockImplementation(async (method, url) => {
       if (method === "post" && url === "/api/auth/otp/start") return { ok: true };
       if (method === "post" && url === "/api/auth/otp/verify") return { ok: true, token: "test-token" };
-      if (method === "get" && url === "/telephony/token") return { ok: true };
+      if (method === "get" && url === "/api/telephony/token") return { ok: true };
       return {};
     });
 
