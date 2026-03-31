@@ -26,8 +26,8 @@ export function validateStartupToken() {
 
 export async function checkBackend() {
   try {
-    await apiFetch("/api/health", { method: "GET" });
-    return true;
+    const res = await apiFetch("/api/health", { method: "GET" });
+    return !!res?.ok;
   } catch {
     return false;
   }
