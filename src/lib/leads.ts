@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/api/client";
 
 export const fetchLeads = async () => {
   const res = await apiFetch("/api/crm/leads");

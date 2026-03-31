@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/api/client";
 
 type BIApplication = {
   id: string;

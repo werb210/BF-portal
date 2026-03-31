@@ -1,4 +1,4 @@
-import api from "@/lib/api";
+import api from "@/api/client";
 import { requireAuth } from "@/utils/requireAuth";
 import { DOCUMENT_CONTRACT } from "@/lib/contracts";
 import { apiClient, type RequestOptions } from "./httpClient";

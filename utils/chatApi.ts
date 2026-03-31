@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/api/client";
 
 export async function apiCreateConversation(clientId: string, staffUserId: string) {
   return apiRequest("/chat/conversation", {

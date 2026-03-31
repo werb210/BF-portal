@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/api/client";
 
 export default function AIKnowledge() {
   const { user } = useAuth();

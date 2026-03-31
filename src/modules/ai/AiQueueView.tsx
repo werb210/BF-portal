@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/api/client";
 
 type Session = {
   id: string;
