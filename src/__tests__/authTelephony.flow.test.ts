@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiRequest } from "@/lib/apiClient";
 import { getTelephonyToken } from "@/telephony/getVoiceToken";
 import { assertAuthTelephonyFlow } from "./helpers/authTelephonyFlowAssertions";
+import { setToken } from "@/services/token";
 
 vi.mock("@/lib/apiClient", () => ({
   apiRequest: vi.fn(),
@@ -16,7 +17,7 @@ async function startOtp(payload: { phone: string }) {
 }
 
 async function verifyOtp(payload: { phone: string; code: string }) {
-  const result = await apiRequest<{ ok: boolean; token: string }>("/api/auth/otp/verify", {
+  const result = await apiRequest<{ ok: boolean; token: string }>("/api/auth/verify-otp", {
     method: "POST",
     body: JSON.stringify({
       phone: payload.phone,
@@ -25,7 +26,7 @@ async function verifyOtp(payload: { phone: string; code: string }) {
   });
 
   if (!result.token) throw new Error("Missing token");
-  sessionStorage.setItem("token", result.token);
+  setToken(result.token);
   return result;
 }
 
@@ -33,7 +34,7 @@ beforeEach(() => {
   vi.mocked(apiRequest).mockReset();
   vi.mocked(apiRequest).mockImplementation(async (path) => {
     if (path === "/api/auth/otp/start") return { ok: true };
-    if (path === "/api/auth/otp/verify") return { ok: true, token: "test-token" };
+    if (path === "/api/auth/verify-otp") return { ok: true, token: "test-token" };
     if (path === "/api/telephony/token") return { token: "voice-token" };
     return {};
   });
@@ -55,7 +56,7 @@ describe("auth/telephony flow contract checks", () => {
   it("fails when telephony response shape is invalid", async () => {
     vi.mocked(apiRequest).mockImplementation(async (path) => {
       if (path === "/api/auth/otp/start") return { ok: true };
-      if (path === "/api/auth/otp/verify") return { ok: true, token: "test-token" };
+      if (path === "/api/auth/verify-otp") return { ok: true, token: "test-token" };
       if (path === "/api/telephony/token") return { ok: true };
       return {};
     });
