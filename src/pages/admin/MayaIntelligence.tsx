@@ -27,7 +27,7 @@ export default function MayaIntelligence() {
   const [roiProjection, setRoiProjection] = useState<number | null>(null);
 
   useEffect(() => {
-    apiClient.get("/maya/overview")
+    apiClient.get("/api/maya/overview")
       .then((res) => {
         const payload = handleApiResult<OverviewData>(res);
         setData(payload);
@@ -36,14 +36,14 @@ export default function MayaIntelligence() {
   }, []);
 
   async function simulateROI() {
-    const res = await apiClient.post("/maya/roi-simulate", { budget: roiInput });
+    const res = await apiClient.post("/api/maya/roi-simulate", { budget: roiInput });
     const payload = handleApiResult<{ projectedRevenue: number }>(res);
     if (!payload) return;
     setRoiProjection(payload.projectedRevenue);
   }
 
   async function rollbackModel(version: string) {
-    const res = await apiClient.post("/maya/model-rollback", { version });
+    const res = await apiClient.post("/api/maya/model-rollback", { version });
     const payload = handleApiResult<{ message: string }>(res);
     if (!payload) return;
     throw new Error("Model rolled back.");

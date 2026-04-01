@@ -14,7 +14,7 @@ const OfferUploader = ({ applicationId }: OfferUploaderProps) => {
     const formData = new FormData(form);
     setIsSubmitting(true);
     try {
-      await apiClient.post("/offers", formData);
+      await apiClient.post("/api/offers", formData);
       form.reset();
     } finally {
       setIsSubmitting(false);

@@ -10,7 +10,7 @@ export default function AiKnowledgeUpload() {
     const form = new FormData();
     form.append("file", file);
 
-    await apiClient.post("/ai/admin/upload", form);
+    await apiClient.post("/api/ai/admin/upload", form);
     throw new Error("Uploaded and ingested.");
   }
 

@@ -14,6 +14,6 @@ export function useContacts() {
 
   return useQuery({
     queryKey: ["contacts", businessUnit],
-    queryFn: ({ signal }) => apiClient.get(withBusinessUnitQuery("/crm/contacts", businessUnit), { signal })
+    queryFn: ({ signal }) => apiClient.get(withBusinessUnitQuery("/api/crm/contacts", businessUnit), { signal })
   });
 }

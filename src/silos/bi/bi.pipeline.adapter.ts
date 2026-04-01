@@ -4,7 +4,7 @@ import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config
 const API_PREFIX = "";
 export const biPipelineAdapter: PipelineApiAdapter = {
   fetchPipeline: async (filters) => {
-    const result = await apiClient.post("/bi/pipeline", filters ?? {});
+    const result = await apiClient.post("/api/bi/pipeline", filters ?? {});
     return result;
   },
 
@@ -14,7 +14,7 @@ export const biPipelineAdapter: PipelineApiAdapter = {
   },
 
   exportApplications: async (ids) => {
-    const blobData = await apiClient.post<Blob>("/bi/pipeline/export", { ids }, {
+    const blobData = await apiClient.post<Blob>("/api/bi/pipeline/export", { ids }, {
       responseType: "blob"
     });
     return blobData;

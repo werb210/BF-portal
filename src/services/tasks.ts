@@ -1,5 +1,5 @@
 import { apiClient } from "@/api/httpClient";
 
 export async function getTasks() {
-  return apiClient.get("/tasks");
+  return apiClient.get("/api/tasks");
 }

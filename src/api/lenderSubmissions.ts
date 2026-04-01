@@ -6,5 +6,5 @@ export type LenderSubmissionPayload = {
 };
 
 export const lenderSubmissionsApi = {
-  send: (payload: LenderSubmissionPayload) => apiClient.post("/lender-submissions", payload)
+  send: (payload: LenderSubmissionPayload) => apiClient.post("/api/lender-submissions", payload)
 };

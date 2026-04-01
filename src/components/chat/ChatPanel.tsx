@@ -25,7 +25,7 @@ const ChatPanel = ({ applicationId }: ChatPanelProps) => {
   });
 
   const sendMessage = useMutation({
-    mutationFn: (body: string) => apiClient.post("/messages", { applicationId, body }),
+    mutationFn: (body: string) => apiClient.post("/api/messages", { applicationId, body }),
     onSuccess: () => {
       setDraft("");
       setTyping(false);

@@ -12,7 +12,7 @@ export default function ConversionDashboardPage() {
   const [stats, setStats] = useState<ConversionStats | null>(null);
 
   useEffect(() => {
-    api.get("/admin/conversion-stats").then((res) => {
+    api.get("/api/admin/conversion-stats").then((res) => {
       setStats((res as ConversionStats | null) ?? null);
     });
   }, []);

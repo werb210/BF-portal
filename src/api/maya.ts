@@ -1,14 +1,7 @@
-import { apiRequest } from "./client";
+import { apiPost } from "@/lib/apiClient";
 
 export async function sendMayaMessage(message: string) {
-  const res = await apiRequest("/maya/chat", {
-    method: "POST",
-    body: { message },
+  return apiPost("/api/maya/message", {
+    message,
   });
-
-  if (!res.success) {
-    return { success: false, message: res.message };
-  }
-
-  return { success: true, data: res.data };
 }

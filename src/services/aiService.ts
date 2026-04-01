@@ -66,7 +66,7 @@ const toArray = <T>(input: unknown): T[] => {
 };
 
 export const getKnowledgeDocuments = async (): Promise<AiKnowledgeDocument[]> => {
-  const response = await apiClient.get<AiKnowledgeDocument[] | { items: AiKnowledgeDocument[] }>("/admin/ai/documents");
+  const response = await apiClient.get<AiKnowledgeDocument[] | { items: AiKnowledgeDocument[] }>("/api/admin/ai/documents");
   return toArray<AiKnowledgeDocument>(response);
 };
 
@@ -77,7 +77,7 @@ export const uploadKnowledgeDocument = async (
   formData.append("file", payload.file);
   formData.append("category", payload.category);
   formData.append("isActive", String(payload.isActive));
-  return apiClient.post<AiKnowledgeDocument>("/admin/ai/upload", formData, {
+  return apiClient.post<AiKnowledgeDocument>("/api/admin/ai/upload", formData, {
     headers: {
       "Content-Type": "multipart/form-data"
     }
@@ -89,7 +89,7 @@ export const deleteKnowledgeDocument = async (documentId: string): Promise<void>
 };
 
 export const getChats = async (): Promise<AiChatSession[]> => {
-  const response = await apiClient.get<AiChatSession[] | { items: AiChatSession[] }>("/admin/ai/chats");
+  const response = await apiClient.get<AiChatSession[] | { items: AiChatSession[] }>("/api/admin/ai/chats");
   return toArray<AiChatSession>(response);
 };
 
@@ -113,7 +113,7 @@ export const closeChat = async (chatId: string): Promise<void> => {
 };
 
 export const getIssues = async (): Promise<AiIssueReport[]> => {
-  const response = await apiClient.get<AiIssueReport[] | { items: AiIssueReport[] }>("/admin/ai/issues");
+  const response = await apiClient.get<AiIssueReport[] | { items: AiIssueReport[] }>("/api/admin/ai/issues");
   return toArray<AiIssueReport>(response);
 };
 
@@ -195,7 +195,7 @@ export const useDeleteIssueMutation = () => {
 };
 
 export const AIService = {
-  listKnowledge: () => apiClient.get("/ai/knowledge"),
-  createKnowledge: (data: unknown) => apiClient.post("/ai/knowledge", data),
+  listKnowledge: () => apiClient.get("/api/ai/knowledge"),
+  createKnowledge: (data: unknown) => apiClient.post("/api/ai/knowledge", data),
   deleteKnowledge: (id: string) => apiClient.delete(`/ai/knowledge/${id}`)
 };

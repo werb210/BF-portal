@@ -4,7 +4,7 @@ import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config
 const API_PREFIX = "";
 export const slfPipelineAdapter: PipelineApiAdapter = {
   fetchPipeline: async (filters) => {
-    const result = await apiClient.post("/slf/pipeline", filters ?? {});
+    const result = await apiClient.post("/api/slf/pipeline", filters ?? {});
     return result;
   },
 
@@ -14,7 +14,7 @@ export const slfPipelineAdapter: PipelineApiAdapter = {
   },
 
   exportApplications: async (ids) => {
-    const blobData = await apiClient.post<Blob>("/slf/pipeline/export", { ids }, {
+    const blobData = await apiClient.post<Blob>("/api/slf/pipeline/export", { ids }, {
       responseType: "blob"
     });
     return blobData;
