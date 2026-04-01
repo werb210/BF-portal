@@ -1,43 +1,25 @@
 import { beforeEach, vi } from "vitest";
 
+const blocked = () => {
+  throw new Error("NETWORK_BLOCKED");
+};
+
 vi.mock("axios", () => ({
-  default: new Proxy(
-    function blockedAxios() {
-      throw new Error("axios is blocked in tests");
-    },
-    {
-      get() {
-        throw new Error("axios is blocked in tests");
-      },
-      apply() {
-        throw new Error("axios is blocked in tests");
-      },
-    },
-  ),
+  default: blocked,
 }));
 
+global.fetch = blocked as typeof fetch;
+global.XMLHttpRequest = blocked as unknown as typeof XMLHttpRequest;
+global.WebSocket = blocked as unknown as typeof WebSocket;
+
 beforeEach(() => {
-  vi.clearAllMocks();
   vi.resetModules();
-  sessionStorage.setItem("auth_token", "test-token");
-
-  globalThis.fetch = vi.fn(() => {
-    throw new Error("Unmocked fetch");
-  }) as typeof fetch;
+  vi.clearAllMocks();
 });
 
-(globalThis as any).axios = vi.fn(() => {
-  throw new Error("axios is blocked in tests");
+
+Object.defineProperty(window, "__API_BASE__", {
+  configurable: true,
+  writable: true,
+  value: "/",
 });
-
-(globalThis as any)["XML" + "HttpRequest"] = vi.fn(() => {
-  throw new Error("XMLHttpRequest is blocked in tests");
-});
-
-class BlockedWebSocket {
-  constructor() {
-    throw new Error("WebSocket is blocked in tests");
-  }
-}
-
-vi.stubGlobal("WebSocket", BlockedWebSocket);

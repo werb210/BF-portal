@@ -36,7 +36,8 @@
     "verify:no-node-fetch": "npm ls node-fetch || exit 0",
     "guard:test-env-regressions": "bash ./scripts/guard-test-env-regressions.sh",
     "verify:test-env-empty": "test ! -s .env.test",
-    "verify:no-node-only": "rg -n \"(from|require\\()\\s*[\\\"\\'](node-fetch|fs|path|net|tls)[\\\"\\']\" src && exit 1 || exit 0"
+    "verify:no-node-only": "rg -n \"(from|require\\()\\s*[\\\"\\'](node-fetch|fs|path|net|tls)[\\\"\\']\" src && exit 1 || exit 0",
+    "verify:no-alt-api": "rg -n \"fetch\\(|axios\\(\" src | rg -v \"apiClient.ts\" && exit 1 || exit 0"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
