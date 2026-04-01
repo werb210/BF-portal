@@ -23,19 +23,15 @@ window.addEventListener("error", (e) => {
 });
 
 async function assertBackend() {
-  if (import.meta.env.MODE === "test") return;
+  const mode = import.meta.env.MODE;
 
-  const apiBase = import.meta.env.VITE_API_URL;
+  if (mode === "test" || mode === "production") return;
 
-  if (!apiBase) {
-    throw new Error("VITE_API_URL is not set");
-  }
+  const base = import.meta.env.VITE_API_URL;
+  const res = await fetch(`${base}/health`);
 
-  try {
-    const res = await fetch(`${apiBase}/health`);
-    if (!res.ok) throw new Error();
-  } catch {
-    throw new Error("Backend is not running on VITE_API_URL");
+  if (!res.ok) {
+    throw new Error("Backend not reachable");
   }
 }
 
