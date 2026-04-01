@@ -14,7 +14,7 @@ export function useAuth(): { role: Role | null; authenticated: boolean; authStat
     }
 
     const payload = decodeJwt(token);
-    const role = normalizeRole(payload?.role ?? payload?.user_role ?? null);
+    const role = normalizeRole(payload?.role ?? null);
     return { role, authenticated: true, authStatus: "authenticated" as const };
   }, []);
 }

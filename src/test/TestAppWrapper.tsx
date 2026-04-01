@@ -1,6 +1,5 @@
-import { ReactNode } from "react";
+import { type ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
-import { AuthProvider } from "../auth/AuthContext";
 
 interface Props {
   children: ReactNode;
@@ -8,9 +7,5 @@ interface Props {
 }
 
 export function TestAppWrapper({ children, initialEntries = ["/"] }: Props) {
-  return (
-    <MemoryRouter initialEntries={initialEntries}>
-      <AuthProvider>{children}</AuthProvider>
-    </MemoryRouter>
-  );
+  return <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>;
 }
