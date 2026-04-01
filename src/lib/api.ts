@@ -1,23 +1,38 @@
-const API_BASE = import.meta.env.VITE_API_URL;
+import { apiRequest as clientApiRequest, type ApiResult, type RequestOptions } from "@/api/client";
 
-if (!API_BASE) {
-  throw new Error("VITE_API_URL is not set");
+function normalizePath(path: string): string {
+  return path.startsWith("/") ? path : `/${path}`;
 }
 
-export async function apiRequest(path: string, options: RequestInit = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-    },
+function unwrapResult<T>(path: string, result: ApiResult<T>): T {
+  if (result.success) return result.data;
+
+  const reason = result.error ?? result.message ?? "unknown error";
+  throw new Error(`API request failed for ${path}: ${reason}`);
+}
+
+function toRequestOptions(options: RequestInit = {}): RequestOptions {
+  const method = (options.method?.toUpperCase() as RequestOptions["method"] | undefined) ?? "GET";
+  const body =
+    typeof options.body === "string"
+      ? (() => {
+          try {
+            return JSON.parse(options.body);
+          } catch {
+            return options.body;
+          }
+        })()
+      : options.body;
+
+  return {
     ...options,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `API error ${res.status}`);
-  }
-
-  return res.json();
+    method,
+    body,
+  };
 }
 
-export { API_BASE };
+export async function apiRequest<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+  const normalizedPath = normalizePath(path);
+  const result = await clientApiRequest<T>(normalizedPath, toRequestOptions(options));
+  return unwrapResult(normalizedPath, result);
+}
