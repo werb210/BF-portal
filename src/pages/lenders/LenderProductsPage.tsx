@@ -11,7 +11,7 @@ import LenderProductModal, { type ProductFormValues } from "@/components/LenderP
 import Select from "@/components/ui/Select";
 import { getErrorMessage } from "@/utils/errors";
 import { getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
-import { ApiError } from "@/api/client";
+import { ApiError } from "@/lib/apiClient";
 import { useAuthorization } from "@/hooks/useAuthorization";
 import {
   createLenderProduct,

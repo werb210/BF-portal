@@ -31,7 +31,7 @@ import {
   type LenderProduct,
   type LenderProductPayload
 } from "@/api/lenders";
-import { ApiError } from "@/api/client";
+import { ApiError } from "@/lib/apiClient";
 import { getErrorMessage } from "@/utils/errors";
 import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";

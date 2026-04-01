@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 import { clearToken, getToken, setToken } from "@/auth/token";
 
 const originalLocation = window.location;
@@ -33,7 +33,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
       new Response(JSON.stringify({ status: "ok", data: { message: "ok" } }), { status: 200 }),
     ) as typeof fetch;
 
-    await expect(apiRequest("/api/test", { method: "GET" })).resolves.toEqual({
+    await expect(apiClient("/api/test", { method: "GET" })).resolves.toEqual({
       success: true,
       data: { message: "ok" },
     });
@@ -46,7 +46,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
       new Response(JSON.stringify({ status: "error", error: { message: "denied" } }), { status: 401 }),
     ) as typeof fetch;
 
-    await expect(apiRequest("/api/test", { method: "GET" })).resolves.toEqual({
+    await expect(apiClient("/api/test", { method: "GET" })).resolves.toEqual({
       success: false,
       error: "HTTP_ERROR_401",
     });
@@ -55,7 +55,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
   it("TEST 5: request without token hard fails before network", async () => {
     clearToken();
 
-    await expect(apiRequest("https://evil.com/api/test", { method: "GET" })).resolves.toEqual({
+    await expect(apiClient("https://evil.com/api/test", { method: "GET" })).resolves.toEqual({
       success: false,
       error: "MISSING_AUTH",
     });
@@ -65,7 +65,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
     setToken("valid-token");
     global.fetch = vi.fn().mockResolvedValueOnce(new Response(null, { status: 204 })) as typeof fetch;
 
-    await expect(apiRequest("/api/test", { method: "DELETE" })).resolves.toEqual({
+    await expect(apiClient("/api/test", { method: "DELETE" })).resolves.toEqual({
       success: false,
       error: "INVALID_JSON",
     });
@@ -78,7 +78,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
       new Response(JSON.stringify({ status: "ok", data: {} }), { status: 200 }),
     ) as typeof fetch;
 
-    await expect(apiRequest("/api/test", { method: "GET" })).resolves.toEqual({
+    await expect(apiClient("/api/test", { method: "GET" })).resolves.toEqual({
       success: true,
       data: {},
     });
@@ -89,7 +89,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
 
     global.fetch = vi.fn().mockRejectedValueOnce(new TypeError("NetworkError")) as typeof fetch;
 
-    await expect(apiRequest("/api/test")).resolves.toEqual({
+    await expect(apiClient("/api/test")).resolves.toEqual({
       success: false,
       error: "NetworkError",
     });

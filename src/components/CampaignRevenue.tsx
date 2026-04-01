@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 interface CampaignData {
   utm_campaign: string;
@@ -11,7 +11,7 @@ export default function CampaignRevenue() {
   const [data, setData] = useState<CampaignData[]>([]);
 
   useEffect(() => {
-    apiRequest<CampaignData[]>("/analytics/campaign-revenue")
+    apiClient<CampaignData[]>("/analytics/campaign-revenue")
       .then(setData)
       .catch((err) => console.error(err));
   }, []);

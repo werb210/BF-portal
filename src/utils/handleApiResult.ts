@@ -1,4 +1,4 @@
-import type { ApiResult } from "@/api/client";
+import type { ApiResult } from "@/lib/apiClient";
 import { showToast } from "@/utils/toastEvents";
 
 type HandleApiResultOptions = {

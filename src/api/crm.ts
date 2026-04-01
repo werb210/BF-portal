@@ -1,4 +1,4 @@
-import api from "@/api/client";
+import api from "@/lib/apiClient";
 import { requireAuth } from "@/utils/requireAuth";
 import { useCrmStore } from "@/state/crm.store";
 import type { CRMLead } from "@/types/crm";

@@ -1,4 +1,4 @@
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 export const getOffers = (applicationId: string) =>
-  apiRequest(`/api/offers?applicationId=${applicationId}`);
+  apiClient(`/api/offers?applicationId=${applicationId}`);

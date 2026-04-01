@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "@/api/client";
+import api from "@/lib/apiClient";
 import { logger } from "@/utils/logger";
 
 type KnowledgeFile = {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAIKnowledge } from "@/api/support";
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 export default function KnowledgeManager() {
   const [docs, setDocs] = useState<any[]>([]);
@@ -18,7 +18,7 @@ export default function KnowledgeManager() {
     const payload = new FormData();
     payload.append("file", file);
 
-    await apiRequest('/api/ai/knowledge', {
+    await apiClient('/api/ai/knowledge', {
       method: 'POST',
       data: payload,
       headers: { "Content-Type": "multipart/form-data" },

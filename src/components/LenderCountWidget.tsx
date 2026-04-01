@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 export default function LenderCountWidget() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    apiRequest<{ count?: number }>("/public/lender-count")
+    apiClient<{ count?: number }>("/public/lender-count")
       .then((data) => setCount(data.count ?? 0))
       .catch(() => setCount(0));
   }, []);

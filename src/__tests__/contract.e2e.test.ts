@@ -1,28 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
-vi.mock("@/api/client", () => ({
-  apiRequest: vi.fn(),
+vi.mock("@/lib/apiClient", () => ({
+  apiClient: vi.fn(),
 }));
 
 describe("contract:e2e", () => {
   beforeEach(() => {
-    vi.mocked(apiRequest).mockReset();
+    vi.mocked(apiClient).mockReset();
   });
 
   it("otp -> verify -> telephony", async () => {
-    vi.mocked(apiRequest)
+    vi.mocked(apiClient)
       .mockResolvedValueOnce({ success: true, data: { message: "OTP sent" } })
       .mockResolvedValueOnce({ success: true, data: { token: "session-token-1" } })
       .mockResolvedValueOnce({ success: true, data: { token: "voice-token-1" } });
 
-    await apiRequest("/api/auth/start-otp", {
+    await apiClient("/api/auth/start-otp", {
       method: "POST",
       body: { phone: "+61400000000" },
     });
 
-    const v = await apiRequest<{ token: string }>("/api/auth/verify-otp", {
+    const v = await apiClient<{ token: string }>("/api/auth/verify-otp", {
       method: "POST",
       body: {
         phone: "+61400000000",
@@ -30,17 +30,17 @@ describe("contract:e2e", () => {
       },
     });
 
-    const t = await apiRequest<{ token: string }>("/api/telephony/token");
+    const t = await apiClient<{ token: string }>("/api/telephony/token");
 
     expect(v.success && v.data.token).toBeTruthy();
     expect(t.success && t.data.token).toBeTruthy();
   });
 
   it("returns meaningful api errors", async () => {
-    vi.mocked(apiRequest).mockResolvedValueOnce({ success: false, error: "invalid otp" });
+    vi.mocked(apiClient).mockResolvedValueOnce({ success: false, error: "invalid otp" });
 
     await expect(
-      apiRequest("/api/auth/verify-otp", {
+      apiClient("/api/auth/verify-otp", {
         method: "POST",
         body: {
           phone: "+61400000000",

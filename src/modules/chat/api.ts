@@ -1,4 +1,4 @@
-import api from "@/api/client";
+import api from "@/lib/apiClient";
 import type { ChatMessage, ChatSession } from "./types";
 
 export const getHumanSessions = async () => {

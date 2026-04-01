@@ -1,14 +1,14 @@
-import { apiRequest } from "./client";
+import { apiClient } from "@/lib/apiClient";
 
 export function sendOtp(phone: string) {
-  return apiRequest("/auth/send-otp", {
+  return apiClient("/auth/send-otp", {
     method: "POST",
     body: { phone },
   });
 }
 
 export function verifyOtp(phone: string, code: string) {
-  return apiRequest("/auth/verify-otp", {
+  return apiClient("/auth/verify-otp", {
     method: "POST",
     body: { phone, code },
   });

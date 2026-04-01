@@ -7,7 +7,7 @@ import { useCrmStore } from "@/state/crm.store";
 import { useMarketingStore } from "@/state/marketing.store";
 import { useSettingsStore } from "@/state/settings.store";
 import { useTasksStore } from "@/state/tasks.store";
-import { clearLastApiRequest } from "@/state/apiRequestTrace";
+import { clearLastApiRequest } from "@/state/apiClientTrace";
 import { clearPortalDraft } from "@/utils/portalDraft";
 import { resetRedirectTracking } from "@/utils/redirectGuard";
 import { useDialerStore } from "@/state/dialer.store";

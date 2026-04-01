@@ -1,11 +1,11 @@
 import { Device } from "twilio-client";
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 let device: Device | null = null;
 
 export async function initTelephony() {
   // expects server endpoint to return { success, data: { token } }
-  const res = await apiRequest("/telephony/token", { method: "GET" });
+  const res = await apiClient("/telephony/token", { method: "GET" });
   if (!res.success) {
     throw new Error(res.error);
   }

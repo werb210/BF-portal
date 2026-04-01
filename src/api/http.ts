@@ -22,12 +22,12 @@ export class ApiError extends Error {
   }
 }
 
-import api from "@/api/client";
+import api from "@/lib/apiClient";
 
 export { api as default };
 export { api };
 
-export async function apiRequest<T>(config: { url?: string; method?: string; data?: unknown; headers?: Record<string, string> }) {
+export async function apiClient<T>(config: { url?: string; method?: string; data?: unknown; headers?: Record<string, string> }) {
   if ((config.method ?? "GET").toUpperCase() === "POST") {
     return api.post<T>(config.url ?? "/", config.data, { headers: config.headers });
   }

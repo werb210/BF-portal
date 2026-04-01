@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { checkBackend } from "@/bootstrap";
-import { apiFetch, apiFetchWithRetry } from "@/api/client";
+import { apiFetch, apiFetchWithRetry } from "@/lib/apiClient";
 import { clearToken, setToken } from "@/auth/token";
 
 describe("portal resilience", () => {
