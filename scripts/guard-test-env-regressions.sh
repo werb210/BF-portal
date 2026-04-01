@@ -36,4 +36,9 @@ if rg -n "https?://" "${TARGETS[@]}"; then
   exit 1
 fi
 
+if rg -n "axios|XMLHttpRequest|WebSocket" src/__tests__ src/test; then
+  echo "❌ Forbidden network primitive found in test sources"
+  exit 1
+fi
+
 echo "✅ Regression guard passed."
