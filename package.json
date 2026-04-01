@@ -30,7 +30,8 @@
     "e2e": "playwright test --pass-with-no-tests",
     "test:contracts": "vitest run src/__tests__/authTelephony.flow.test.ts",
     "system:boot": "bash ./scripts/full-system-boot.sh",
-    "guard:single-api": "bash ./scripts/enforce-api-pipeline.sh"
+    "guard:single-api": "bash ./scripts/enforce-api-pipeline.sh",
+    "verify:server": "curl -f http://localhost:8080/health"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",

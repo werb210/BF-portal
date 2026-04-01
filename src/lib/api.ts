@@ -1,4 +1,8 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_URL;
+
+if (!API_BASE) {
+  throw new Error("VITE_API_URL is not set");
+}
 
 export async function apiRequest(path: string, options: RequestInit = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -9,7 +13,8 @@ export async function apiRequest(path: string, options: RequestInit = {}) {
   });
 
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    const text = await res.text();
+    throw new Error(text || `API error ${res.status}`);
   }
 
   return res.json();

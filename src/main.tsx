@@ -1,17 +1,17 @@
-import "@/lib/networkGuard"
+import "@/lib/networkGuard";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
-import { checkBackend, validateStartupToken } from "@/bootstrap";
+import { validateStartupToken } from "@/bootstrap";
 
 import App from "./App";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "./index.css";
 
-const t = localStorage.getItem("token")
+const t = localStorage.getItem("token");
 if (t === "null" || t === "undefined") {
-  localStorage.removeItem("token")
+  localStorage.removeItem("token");
 }
 
 window.addEventListener("unhandledrejection", (e) => {
@@ -22,15 +22,25 @@ window.addEventListener("error", (e) => {
   console.error("[RUNTIME ERROR]", e.error);
 });
 
+async function assertBackend() {
+  const apiBase = import.meta.env.VITE_API_URL;
+
+  if (!apiBase) {
+    throw new Error("VITE_API_URL is not set");
+  }
+
+  try {
+    const res = await fetch(`${apiBase}/health`);
+    if (!res.ok) throw new Error();
+  } catch {
+    throw new Error("Backend is not running on VITE_API_URL");
+  }
+}
+
 async function bootstrap() {
   if (!validateStartupToken()) return;
 
-  const ok = await checkBackend();
-
-  if (!ok) {
-    document.body.innerHTML = "<h1>Backend unavailable</h1>";
-    throw new Error("Backend unreachable");
-  }
+  await assertBackend();
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
