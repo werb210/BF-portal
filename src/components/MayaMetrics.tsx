@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "@/core/apiClient";
+import { apiClient as api } from "@/lib/apiClient";
 
 type MayaMetricsData = {
   confidenceAverage?: number;

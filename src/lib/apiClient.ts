@@ -1,5 +1,9 @@
 import { getToken } from "@/auth/token";
 
+export type ApiClientOptions = RequestInit & {
+  skipAuth?: boolean;
+};
+
 const getBase = (): string => {
   const base = (window as any).__API_BASE__ || import.meta.env.VITE_API_URL;
   if (!base) {
@@ -11,10 +15,10 @@ const getBase = (): string => {
 const normalize = (base: string, path: string): string =>
   `${base.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
 
-const toHeaders = (options: RequestInit = {}, skipAuth = false): HeadersInit => {
+const toHeaders = (options: ApiClientOptions = {}): HeadersInit => {
   const headers = new Headers(options.headers || {});
 
-  if (!skipAuth) {
+  if (!options.skipAuth) {
     const token = getToken();
     if (!token) {
       throw new Error("MISSING_AUTH");
@@ -29,10 +33,11 @@ const toHeaders = (options: RequestInit = {}, skipAuth = false): HeadersInit => 
   return headers;
 };
 
-export async function apiClient(path: string, options: RequestInit = {}): Promise<unknown> {
+export async function apiClient(path: string, options: ApiClientOptions = {}): Promise<unknown> {
+  const { skipAuth: _skipAuth, ...requestOptions } = options;
   const res = await fetch(normalize(getBase(), path), {
-    ...options,
-    headers: toHeaders(options, options.headers instanceof Headers && options.headers.get("X-Skip-Auth") === "1"),
+    ...requestOptions,
+    headers: toHeaders(options),
   });
 
   if (!res.ok) {
@@ -46,16 +51,27 @@ export async function apiClient(path: string, options: RequestInit = {}): Promis
     throw new Error("INVALID_JSON");
   }
 
-  if (!json || typeof json !== "object" || !json.status) {
+  if (!json || typeof json !== "object") {
     throw new Error("INVALID_API_SHAPE");
   }
 
+  if (!Object.prototype.hasOwnProperty.call(json, "status")) {
+    throw new Error("MISSING_STATUS_FIELD");
+  }
+
   if (json.status === "error") {
-    throw new Error(json?.error?.message || "API_ERROR");
+    if (!json.error || !json.error.message) {
+      throw new Error("MALFORMED_ERROR");
+    }
+    throw new Error(json.error.message);
   }
 
   if (json.status !== "ok") {
     throw new Error("UNKNOWN_STATUS");
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(json, "data")) {
+    throw new Error("MISSING_DATA_FIELD");
   }
 
   return json.data;
@@ -67,17 +83,12 @@ const withBody = (body: unknown): BodyInit | undefined => {
   return JSON.stringify(body);
 };
 
-export async function apiRequest<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+export async function apiRequest<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<T> {
   return (await apiClient(path, options)) as T;
 }
 
-export const safeApiRequest = async <T = unknown>(path: string, options?: RequestInit): Promise<T> => {
-  try {
-    return await apiRequest<T>(path, options);
-  } catch (err) {
-    throw err;
-  }
-};
+export const safeApiRequest = async <T = unknown>(path: string, options?: ApiClientOptions): Promise<T> =>
+  apiRequest<T>(path, options);
 
 export const apiGet = <T = unknown>(path: string) => apiRequest<T>(path, { method: "GET" });
 export const apiPost = <T = unknown>(path: string, body?: unknown) =>

@@ -1,22 +1,25 @@
 import { beforeEach, vi } from "vitest";
 
-const blocked = () => {
-  throw new Error("NETWORK_BLOCKED");
-};
-
 vi.mock("axios", () => ({
-  default: blocked,
+  default: vi.fn(() => {
+    throw new Error("NETWORK_BLOCKED");
+  }),
 }));
 
-global.fetch = blocked as typeof fetch;
-global.XMLHttpRequest = blocked as unknown as typeof XMLHttpRequest;
-global.WebSocket = blocked as unknown as typeof WebSocket;
+global.fetch = vi.fn(() => {
+  throw new Error("UNMOCKED_FETCH");
+}) as unknown as typeof fetch;
+global.XMLHttpRequest = vi.fn(() => {
+  throw new Error("NETWORK_BLOCKED");
+}) as unknown as typeof XMLHttpRequest;
+global.WebSocket = vi.fn(() => {
+  throw new Error("NETWORK_BLOCKED");
+}) as unknown as typeof WebSocket;
 
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
 });
-
 
 Object.defineProperty(window, "__API_BASE__", {
   configurable: true,
