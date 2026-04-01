@@ -10,7 +10,7 @@ export interface Voicemail {
 export async function fetchVoicemails(clientId: string): Promise<Voicemail[]> {
   const res = await apiFetch<Voicemail[]>(`/api/calls?clientId=${encodeURIComponent(clientId)}`);
   if (!res.success) {
-    throw new Error(res.message);
+    throw new Error(res.error);
   }
   if (!Array.isArray(res.data)) {
     return [];

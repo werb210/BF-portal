@@ -20,7 +20,7 @@ export default function ApplicationDetail({ id, onClose }: ApplicationDetailProp
       try {
         const response = await api.get<Application>(`/api/applications/${id}`);
         if (!response.success) {
-          throw new Error(response.message);
+          throw new Error(response.error);
         }
         setApplication(response.data);
       } catch (e) {

@@ -14,7 +14,7 @@ export const handleApiResult = <T>(
     return result.data;
   }
 
-  const message = result.message || options.fallbackMessage || "Request failed";
+  const message = result.error || options.fallbackMessage || "Request failed";
   if (options.onError) {
     options.onError(message);
   } else {
@@ -22,4 +22,3 @@ export const handleApiResult = <T>(
   }
   return null;
 };
-

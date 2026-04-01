@@ -49,7 +49,7 @@ const CallHistoryTab = () => {
       .then((response) => {
         if (!mounted) return;
         if (!response.success) {
-          throw new Error(response.message);
+          throw new Error(response.error);
         }
         setData(Array.isArray(response.data) ? (response.data as CallHistoryRecord[]) : []);
       })

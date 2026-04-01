@@ -35,7 +35,7 @@ export default function Operations() {
   async function updateIssueStatus(id: string, status: string) {
     const updateRes = await api.patch(`${API_PREFIX}/admin/issues/${id}`, { status });
     if (!updateRes.success) {
-      throw new Error(updateRes.message);
+      throw new Error(updateRes.error);
     }
 
     await refreshData();
