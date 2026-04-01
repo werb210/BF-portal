@@ -3,11 +3,13 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { checkBackend } from "@/bootstrap";
 import { apiClient, apiFetch, apiFetchWithRetry } from "@/lib/apiClient";
 import { clearToken, setToken } from "@/auth/token";
+import { useApiStatusStore } from "@/state/apiStatus";
 
 describe("portal resilience", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     clearToken();
+    useApiStatusStore.setState({ status: "starting" });
   });
 
   it("network failure retries and then succeeds", async () => {
@@ -57,5 +59,15 @@ describe("portal resilience", () => {
       success: true,
       data: { id: "a1", status: "ok" },
     });
+  });
+
+  it("db not ready -> degraded mode result without crash", async () => {
+    setToken("valid-token");
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ status: "error", error: "DB_NOT_READY" }), { status: 200 }),
+    ) as typeof fetch;
+
+    await expect(apiClient<{ degraded: true }>("/api/health", { method: "GET" })).resolves.toEqual({ degraded: true });
+    expect(useApiStatusStore.getState().status).toBe("degraded");
   });
 });

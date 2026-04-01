@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ApiStatus = "starting" | "available" | "unavailable" | "unauthorized" | "forbidden";
+export type ApiStatus = "starting" | "available" | "unavailable" | "unauthorized" | "forbidden" | "degraded";
 
 type ApiStatusState = {
   status: ApiStatus;

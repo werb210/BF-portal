@@ -1,4 +1,5 @@
 import { getToken } from "@/auth/token";
+import { setApiStatus } from "@/state/apiStatus";
 
 export type ApiClientOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -11,6 +12,7 @@ export type ApiResult<T = unknown> =
   | { success: false; error: string };
 
 export class ApiError extends Error {}
+export type DegradedApiResponse = { degraded: true };
 
 const getBase = (): string => {
   const base = (window as any).__API_BASE__ || import.meta.env.VITE_API_URL;
@@ -64,13 +66,24 @@ export async function apiClient<T = unknown>(path: string, options: ApiClientOpt
     const validated = await res.json();
 
     if (validated?.status === "ok") {
+      setApiStatus("available");
       return validated.data as T;
     }
 
-    const err = new Error(validated?.error?.code || "API_ERROR");
+    const errorCode =
+      typeof validated?.error === "string" ? validated.error : validated?.error?.code;
+    if (errorCode === "DB_NOT_READY") {
+      setApiStatus("degraded");
+      return { degraded: true } as T;
+    }
+
+    const err = new Error(errorCode || "API_ERROR");
     (err as any).code = validated?.error?.code;
     throw err;
   } catch (e) {
+    if (!(e instanceof Error && e.message === "MISSING_AUTH")) {
+      setApiStatus("unavailable");
+    }
     throw e;
   }
 }
