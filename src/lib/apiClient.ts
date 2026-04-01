@@ -1,11 +1,5 @@
 import { apiRequest as coreApiRequest, type ApiResult, type RequestOptions } from "@/api/client";
 
-const API_BASE = import.meta.env.VITE_API_URL;
-
-if (!API_BASE) {
-  throw new Error("Missing VITE_API_URL");
-}
-
 function toRequestOptions(options: RequestInit = {}): RequestOptions {
   return {
     ...options,

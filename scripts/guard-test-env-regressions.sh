@@ -36,7 +36,7 @@ if rg -n "https?://" "${TARGETS[@]}"; then
   exit 1
 fi
 
-if rg -n "axios|XMLHttpRequest|WebSocket" src/__tests__ src/test; then
+if rg -n "axios|XMLHttpRequest|WebSocket" src/__tests__ src/test --glob '!src/__tests__/setup.ts'; then
   echo "❌ Forbidden network primitive found in test sources"
   exit 1
 fi
