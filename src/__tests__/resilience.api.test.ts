@@ -16,7 +16,7 @@ describe("portal resilience", () => {
       .fn()
       .mockRejectedValueOnce(new TypeError("Network down"))
       .mockResolvedValueOnce(new Response(null, { status: 502 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, data: { ok: true } }), { status: 200 })) as typeof fetch;
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok", data: { ok: true } }), { status: 200 })) as typeof fetch;
 
     await expect(apiFetchWithRetry<{ ok: boolean }>("/api/health", { method: "GET" }, 2)).resolves.toEqual({
       success: true,
@@ -36,14 +36,14 @@ describe("portal resilience", () => {
 
     await expect(apiFetch("/api/health", { method: "GET" })).resolves.toEqual({
       success: false,
-      message: "timeout",
+      error: "API_ERROR",
     });
   });
 
   it("missing auth -> rejected", async () => {
     await expect(apiFetch("/api/protected", { method: "GET" })).resolves.toEqual({
       success: false,
-      message: "missing auth",
+      error: "MISSING_AUTH",
     });
   });
 
@@ -52,14 +52,14 @@ describe("portal resilience", () => {
     global.fetch = vi.fn().mockResolvedValue(new Response("{not-json", { status: 200 })) as typeof fetch;
     await expect(apiFetch("/api/health", { method: "GET" })).resolves.toEqual({
       success: false,
-      message: "invalid response",
+      error: "INVALID_JSON",
     });
   });
 
   it("success path -> clean data", async () => {
     setToken("valid-token");
     global.fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ id: "a1", status: "ok" }), { status: 200 }),
+      new Response(JSON.stringify({ status: "ok", data: { id: "a1", status: "ok" } }), { status: 200 }),
     ) as typeof fetch;
 
     await expect(apiFetch<{ id: string; status: string }>("/api/health", { method: "GET" })).resolves.toEqual({
