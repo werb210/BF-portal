@@ -2,15 +2,24 @@ import { useEffect, useState } from "react";
 import { getApplications } from "@/api/applications";
 import ApplicationCard from "../../components/pipeline/ApplicationCard";
 
+type PipelineCard = {
+  id: string | number;
+} & Record<string, unknown>;
+
+type PipelineStage = {
+  name: string;
+  cards?: PipelineCard[];
+};
+
 export default function PipelinePage() {
-  const [pipeline, setPipeline] = useState<any[]>([]);
+  const [pipeline, setPipeline] = useState<PipelineStage[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadPipeline = async () => {
       try {
         const data = await getApplications();
-        setPipeline(data || []);
+        setPipeline((data as PipelineStage[]) || []);
       } catch (e) {
         console.error(e);
         throw new Error("Something failed. Check console.");
@@ -19,7 +28,7 @@ export default function PipelinePage() {
       }
     };
 
-    loadPipeline();
+    void loadPipeline();
   }, []);
 
   if (loading) {
@@ -31,7 +40,7 @@ export default function PipelinePage() {
       <h1>Sales Pipeline</h1>
 
       <div style={{ display: "flex", gap: "20px", overflowX: "auto" }}>
-        {pipeline.map((stage: any) => (
+        {pipeline.map((stage) => (
           <div
             key={stage.name}
             style={{
@@ -43,7 +52,7 @@ export default function PipelinePage() {
           >
             <h3>{stage.name}</h3>
 
-            {(stage.cards || []).map((card: any) => (
+            {(stage.cards || []).map((card) => (
               <ApplicationCard key={card.id} card={card} />
             ))}
           </div>

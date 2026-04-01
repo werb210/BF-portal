@@ -70,7 +70,7 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
       }
     });
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error?.response?.status === 401) {
       reportAuthFailure("unauthorized");
     }

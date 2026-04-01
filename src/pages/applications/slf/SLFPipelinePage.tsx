@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { DndContext, DragOverlay, closestCenter, type DragStartEvent } from "@dnd-kit/core";
+import { DndContext, DragOverlay, closestCenter, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { useQueryClient } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import { useSilo } from "@/hooks/useSilo";
@@ -33,7 +33,7 @@ const SLFPipelinePage = () => {
 
   const handleDragEnd = useMemo(
     () =>
-      async (event: any) => {
+      async (event: DragEndEvent) => {
         const overStage = event.over?.id as SLFStageId | undefined;
         const card = event.active.data.current?.card as SLFPipelineApplication | undefined;
         if (card && overStage && overStage !== card.status) {

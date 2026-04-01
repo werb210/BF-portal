@@ -5,7 +5,7 @@ export function guardConsole() {
 
   const originalError = console.error;
 
-  console.error = function (...args: any[]) {
+  console.error = function (...args: unknown[]) {
     originalError.apply(console, args);
   };
 }

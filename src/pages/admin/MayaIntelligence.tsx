@@ -8,15 +8,17 @@ import {
 import apiClient from "@/api/client";
 import { handleApiResult } from "@/utils/handleApiResult";
 
+type DataPoint = Record<string, string | number>;
+
 interface OverviewData {
-  autonomy: any;
-  recentActions: any[];
-  clusterDistribution: any[];
-  confidenceTrend?: any[];
-  lenderAccuracy?: any[];
-  fundingHeatmap?: any[];
-  staffPerformance?: any[];
-  modelVersions?: any[];
+  autonomy: Record<string, unknown>;
+  recentActions: DataPoint[];
+  clusterDistribution: DataPoint[];
+  confidenceTrend?: DataPoint[];
+  lenderAccuracy?: DataPoint[];
+  fundingHeatmap?: DataPoint[];
+  staffPerformance?: DataPoint[];
+  modelVersions?: DataPoint[];
 }
 
 const COLORS = ["#4f46e5", "#16a34a", "#dc2626", "#f59e0b"];

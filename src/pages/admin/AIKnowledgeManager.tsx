@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
 import { AIService } from "@/services/aiService";
 
+type KnowledgeItem = { id: string; title?: string; source_type?: string };
+
 export default function AIKnowledgeManager() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<KnowledgeItem[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
   async function load() {
     const res = await AIService.listKnowledge();
-    const nextItems = Array.isArray(res) ? res : (res as { data?: any[] })?.data ?? [];
-    setItems(nextItems);
+    if (Array.isArray(res)) {
+      setItems(res as KnowledgeItem[]);
+      return;
+    }
+
+    setItems((res as { data?: KnowledgeItem[] })?.data ?? []);
   }
 
   async function save() {
@@ -29,22 +35,9 @@ export default function AIKnowledgeManager() {
       <h1 className="text-2xl font-bold">AI Knowledge Manager</h1>
 
       <div className="space-y-2">
-        <input
-          className="border p-2 w-full"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <textarea
-          className="border p-2 w-full h-40"
-          placeholder="Content"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-        />
-        <button
-          onClick={() => void save()}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
+        <input className="border p-2 w-full" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <textarea className="border p-2 w-full h-40" placeholder="Content" value={content} onChange={(e) => setContent(e.target.value)} />
+        <button onClick={() => void save()} className="bg-blue-600 text-white px-4 py-2 rounded">
           Save Knowledge
         </button>
       </div>
