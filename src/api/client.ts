@@ -13,6 +13,8 @@ export type ApiFailure = {
 
 export type ApiResult<T = unknown> = ApiSuccess<T> | ApiFailure;
 
+const isApiFailure = <T>(result: ApiResult<T>): result is ApiFailure => result.success === false;
+
 export type RequestOptions = Omit<RequestInit, "body"> & {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
@@ -20,7 +22,13 @@ export type RequestOptions = Omit<RequestInit, "body"> & {
   skipAuth?: boolean;
 };
 
-const buildPath = (path: string, params?: RequestOptions["params"]) => {
+
+const ALLOWED_NON_API_PATHS = new Set(["/dialer/token", "/call/start", "/voice/status"]);
+
+const isAllowedPath = (path: string): boolean =>
+  path.startsWith("/api/") || ALLOWED_NON_API_PATHS.has(path);
+
+const buildPath = (path: string, params?: RequestOptions["params"]): string => {
   if (!params) return path;
 
   const url = new URL(path, "http://localhost");
@@ -32,12 +40,35 @@ const buildPath = (path: string, params?: RequestOptions["params"]) => {
   return `${url.pathname}${url.search}`;
 };
 
+const parseJsonResponse = async (res: Response): Promise<unknown | null> => {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+};
+
+const toApiFailure = (json: unknown, fallback: string): ApiFailure => {
+  if (json && typeof json === "object") {
+    const maybeMessage = "message" in json ? json.message : undefined;
+    const maybeError = "error" in json ? json.error : undefined;
+
+    return {
+      success: false,
+      message: typeof maybeMessage === "string" ? maybeMessage : undefined,
+      error: typeof maybeError === "string" ? maybeError : fallback,
+    };
+  }
+
+  return { success: false, error: fallback };
+};
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
-): Promise<{ success: true; data: T } | { success: false; message?: string; error?: string }> {
+): Promise<ApiResult<T>> {
   try {
-    if (!path.startsWith("/api/")) {
+    if (!isAllowedPath(path)) {
       return { success: false, error: "invalid api path" };
     }
 
@@ -59,27 +90,31 @@ export async function apiFetch<T>(
       return { success: true, data: null as T };
     }
 
-    let json: any = null;
-
-    try {
-      json = await res.json();
-    } catch {
+    const json = await parseJsonResponse(res);
+    if (json === null) {
       return { success: false, message: "invalid response" };
     }
 
-    if (!res.ok || json?.success === false) {
-      return {
-        success: false,
-        message: json?.message || json?.error || "request failed",
-      };
+    if (!res.ok) {
+      return toApiFailure(json, "request failed");
     }
+
+    if (json && typeof json === "object" && "success" in json && json.success === false) {
+      return toApiFailure(json, "request failed");
+    }
+
+    const responseData =
+      json && typeof json === "object" && "data" in json ? (json.data as T) : (json as T);
 
     return {
       success: true,
-      data: json?.data ?? json,
+      data: responseData,
     };
-  } catch (err: any) {
-    if (err?.name === "AbortError") {
+  } catch (err: unknown) {
+    if (
+      (err instanceof Error && err.name === "AbortError") ||
+      (err instanceof DOMException && (err.name === "AbortError" || err.message.toLowerCase().includes("abort")))
+    ) {
       return { success: false, message: "timeout" };
     }
 
@@ -87,16 +122,22 @@ export async function apiFetch<T>(
   }
 }
 
-export async function apiFetchWithRetry<T>(path: string, options: RequestInit = {}, retries = 1): Promise<ApiResult<T>> {
+export async function apiFetchWithRetry<T>(
+  path: string,
+  options: RequestInit = {},
+  retries = 1,
+): Promise<ApiResult<T>> {
   const result = await apiFetch<T>(path, options);
 
   if (result.success) {
     return result;
   }
 
-  if (retries > 0 && !result.success) {
+  if (retries > 0 && isApiFailure(result)) {
     const retriable =
-      result.error === "network error" || result.message === "invalid response" || result.message === "request failed";
+      result.error === "network error" ||
+      result.message === "invalid response" ||
+      result.message === "request failed";
 
     if (retriable) {
       return apiFetchWithRetry<T>(path, options, retries - 1);
@@ -117,32 +158,48 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
 
   if (skipAuth) {
     try {
-      if (!fullPath.startsWith("/api/")) {
+      if (!isAllowedPath(fullPath)) {
         return { success: false, error: "invalid api path" };
       }
 
       const payload = body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body);
-      const headers: HeadersInit = payload instanceof FormData ? { ...(rest.headers || {}) } : { ...(rest.headers || {}), "Content-Type": "application/json" };
-      const response = await fetch(fullPath, { ...rest, method, body: payload as BodyInit | null | undefined, headers });
+      const headers: HeadersInit =
+        payload instanceof FormData
+          ? { ...(rest.headers || {}) }
+          : { ...(rest.headers || {}), "Content-Type": "application/json" };
+      const response = await fetch(fullPath, {
+        ...rest,
+        method,
+        body: payload as BodyInit | null | undefined,
+        headers,
+      });
 
       if (response.status === 204) {
         return { success: true, data: null as T };
       }
 
-      let json: any = null;
-      try {
-        json = await response.json();
-      } catch {
+      const json = await parseJsonResponse(response);
+      if (json === null) {
         return { success: false, message: "invalid response" };
       }
 
-      if (!response.ok || json?.success === false) {
-        return { success: false, message: json?.message || json?.error || "request failed" };
+      if (!response.ok) {
+        return toApiFailure(json, "request failed");
       }
 
-      return { success: true, data: (json?.data ?? json) as T };
-    } catch (err: any) {
-      if (err?.name === "AbortError") {
+      if (json && typeof json === "object" && "success" in json && json.success === false) {
+        return toApiFailure(json, "request failed");
+      }
+
+      const responseData =
+        json && typeof json === "object" && "data" in json ? (json.data as T) : (json as T);
+
+      return { success: true, data: responseData };
+    } catch (err: unknown) {
+      if (
+        (err instanceof Error && err.name === "AbortError") ||
+        (err instanceof DOMException && (err.name === "AbortError" || err.message.toLowerCase().includes("abort")))
+      ) {
         return { success: false, message: "timeout" };
       }
       return { success: false, error: "network error" };
@@ -150,7 +207,10 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
   }
 
   const payload = body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body);
-  const headers: HeadersInit = payload instanceof FormData ? { ...(rest.headers || {}) } : { ...(rest.headers || {}), "Content-Type": "application/json" };
+  const headers: HeadersInit =
+    payload instanceof FormData
+      ? { ...(rest.headers || {}) }
+      : { ...(rest.headers || {}), "Content-Type": "application/json" };
 
   const result = await apiFetchWithRetry<T>(fullPath, {
     ...rest,
@@ -159,7 +219,7 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
     headers,
   });
 
-  if (!result.success && result.message && !result.error) {
+  if (isApiFailure(result) && result.message && !result.error) {
     return { success: false, error: result.message };
   }
 
