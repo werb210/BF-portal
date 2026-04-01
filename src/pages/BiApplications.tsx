@@ -1,33 +1,45 @@
 import { apiClient } from "@/api/client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+type BiApplication = {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  annual_premium?: number | string;
+  commission?: number | string;
+  status?: string;
+};
 
 export default function BiApplications() {
-  const [apps, setApps] = useState<any[]>([]);
-  const [selected, setSelected] = useState<any>(null);
+  const [apps, setApps] = useState<BiApplication[]>([]);
+  const [selected, setSelected] = useState<BiApplication | null>(null);
 
-  useEffect(() => {
-    apiClient
-      .get("/api/applications")
-      .then((result) => setApps(result));
+  const loadApps = useCallback(async () => {
+    const result = await apiClient.get<BiApplication[]>("/api/applications");
+    if (!result.success) {
+      throw new Error(result.message);
+    }
+
+    setApps(result.data);
   }, []);
 
-  const totalPremium = apps.reduce(
-    (sum, a) => sum + Number(a.annual_premium || 0),
-    0
-  );
+  useEffect(() => {
+    void loadApps();
+  }, [loadApps]);
 
-  const totalCommission = apps.reduce(
-    (sum, a) => sum + Number(a.commission || 0),
-    0
-  );
+  const totalPremium = useMemo(() => apps.reduce((sum, a) => sum + Number(a.annual_premium || 0), 0), [apps]);
+
+  const totalCommission = useMemo(() => apps.reduce((sum, a) => sum + Number(a.commission || 0), 0), [apps]);
 
   const updateStatus = async (id: number, status: string) => {
-    await apiClient.patch(`${API_PREFIX}/api/applications/${id}`, { status });
+    const response = await apiClient.patch(`/api/applications/${id}`, { status });
+    if (!response.success) {
+      throw new Error(response.message);
+    }
 
-    setApps(apps.map((a) => (a.id === id ? { ...a, status } : a)));
-    setSelected((current: any) =>
-      current && current.id === id ? { ...current, status } : current
-    );
+    await loadApps();
+    setSelected((current) => (current && current.id === id ? { ...current, status } : current));
   };
 
   return (
@@ -76,19 +88,9 @@ export default function BiApplications() {
           <pre>{JSON.stringify(selected, null, 2)}</pre>
 
           <div className="btn-row">
-            <button onClick={() => updateStatus(selected.id, "approved")}>
-              Approve
-            </button>
-            <button onClick={() => updateStatus(selected.id, "declined")}>
-              Decline
-            </button>
-            <button
-              onClick={() =>
-                updateStatus(selected.id, "underwriting_review")
-              }
-            >
-              Underwriting Review
-            </button>
+            <button onClick={() => void updateStatus(selected.id, "approved")}>Approve</button>
+            <button onClick={() => void updateStatus(selected.id, "declined")}>Decline</button>
+            <button onClick={() => void updateStatus(selected.id, "underwriting_review")}>Underwriting Review</button>
           </div>
         </div>
       )}

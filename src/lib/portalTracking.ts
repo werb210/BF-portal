@@ -1,13 +1,13 @@
 // ---- Portal Performance Intelligence ----
 declare global {
   interface Window {
-    dataLayer: any[];
+    dataLayer: Array<Record<string, unknown>>;
   }
 }
 
 export const trackPortalEvent = (
   eventName: string,
-  payload: Record<string, any> = {}
+  payload: Record<string, unknown> = {}
 ) => {
   if (typeof window !== "undefined" && window.dataLayer) {
     window.dataLayer.push({

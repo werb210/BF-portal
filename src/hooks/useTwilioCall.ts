@@ -7,8 +7,8 @@ import { logger } from "@/utils/logger";
 type VoiceCallEvent = "ringing" | "accept" | "disconnect" | "cancel" | "reject" | "error";
 
 type VoiceCall = {
-  on: (event: VoiceCallEvent, handler: (...args: any[]) => void) => void;
-  off?: (event: VoiceCallEvent, handler: (...args: any[]) => void) => void;
+  on: (event: VoiceCallEvent, handler: (...args: unknown[]) => void) => void;
+  off?: (event: VoiceCallEvent, handler: (...args: unknown[]) => void) => void;
   accept?: () => void;
   disconnect?: () => void;
   mute?: (muted: boolean) => void;
@@ -20,8 +20,8 @@ type VoiceDevice = {
   register?: () => void;
   destroy?: () => void;
   state?: string;
-  on?: (event: string, handler: (...args: any[]) => void) => void;
-  off?: (event: string, handler: (...args: any[]) => void) => void;
+  on?: (event: string, handler: (...args: unknown[]) => void) => void;
+  off?: (event: string, handler: (...args: unknown[]) => void) => void;
 };
 
 const CALL_IN_PROGRESS_STATUSES = ["dialing", "ringing", "connected"] as const;

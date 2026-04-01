@@ -1,7 +1,13 @@
 import { applicationNeedsDocs } from "./documentStatus"
 
-export function resolveStage(application: any) {
+type PipelineApplication = {
+  documents?: unknown;
+  lenderSent?: boolean;
+  approved?: boolean;
+  declined?: boolean;
+};
 
+export function resolveStage(application: PipelineApplication) {
   if (applicationNeedsDocs(application.documents)) {
     return "REQUIRES_DOCS"
   }

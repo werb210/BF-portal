@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { v4 as uuid } from "uuid";
 
 export type QueryableDb = {
-  query: (sql: string, params?: unknown[]) => Promise<{ rows: any[] }>;
+  query: (sql: string, params?: unknown[]) => Promise<{ rows: unknown[] }>;
 };
 
 const openai = new OpenAI({

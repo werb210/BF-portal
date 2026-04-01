@@ -4,7 +4,7 @@ import { safeNormalizeToE164 } from "@/utils/phone";
 import { createTwilioDevice, fetchTwilioToken } from "@/services/twilioVoice";
 
 type VoiceCall = {
-  on: (event: "ringing" | "accept" | "disconnect" | "cancel" | "reject" | "error", handler: (...args: any[]) => void) => void;
+  on: (event: "ringing" | "accept" | "disconnect" | "cancel" | "reject" | "error", handler: (...args: unknown[]) => void) => void;
   disconnect?: () => void;
 };
 

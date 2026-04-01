@@ -49,9 +49,8 @@ const CallPerformanceCard = () => {
     fetchStaffCallStats()
       .then((response) => {
         if (!mounted) return;
-        const payload = response?.data;
-        if (payload && typeof payload === "object") {
-          setStats(payload as Partial<Record<string, CallStats>>);
+        if (response.success && response.data && typeof response.data === "object") {
+          setStats(response.data as Partial<Record<string, CallStats>>);
           return;
         }
         setStats({ default: fallbackStats });

@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/api/client";
 
+type ActivityEvent = { event?: string; source?: string };
+
 export default function LiveActivity() {
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<ActivityEvent[]>([]);
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const data = await apiRequest<{ events?: any[] }>("/support/events");
-      setEvents(data.events || []);
+      const result = await apiRequest<{ events?: ActivityEvent[] }>("/api/support/events");
+      if (!result.success) return;
+      setEvents(result.data.events || []);
     }, 5000);
 
     return () => clearInterval(interval);
