@@ -14,18 +14,22 @@ export default function MayaChat() {
   const [messages, setMessages] = useState<MayaMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  async function send() {
-    if (!input.trim()) return;
+async function send() {
+    if (!input.trim()) {
+      setError("Message cannot be empty.");
+      return;
+    }
     const userMsg = input.trim();
     setMessages((m) => [...m, { role: "user", text: userMsg }]);
     setInput("");
     setError(null);
 
     try {
-      const res = (await sendMayaMessage(userMsg)) as MayaResponse;
+      const mayaResponse = await sendMayaMessage(userMsg);
+      const res = (mayaResponse ?? {}) as MayaResponse;
       const reply = res.reply ?? res.data?.reply;
       if (!reply) {
-        throw new Error("Empty Maya response");
+        throw new Error("Invalid Maya response.");
       }
       setMessages((m) => [...m, { role: "maya", text: reply }]);
     } catch (e) {

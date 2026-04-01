@@ -49,7 +49,10 @@ const CallPerformanceCard = () => {
     fetchStaffCallStats()
       .then((response) => {
         if (!mounted) return;
-        if (response.success && response.data && typeof response.data === "object") {
+        if (!response.success) {
+          throw new Error(response.message);
+        }
+        if (response.data && typeof response.data === "object") {
           setStats(response.data as Partial<Record<string, CallStats>>);
           return;
         }

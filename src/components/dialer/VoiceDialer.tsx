@@ -73,7 +73,6 @@ export default function VoiceDialer() {
     setDialedNumber(normalized);
     setError(null);
     setFailureReason(null);
-    startCall();
 
     try {
       if (!deviceRef.current) {
@@ -81,6 +80,7 @@ export default function VoiceDialer() {
         deviceRef.current = createTwilioDevice(token);
       }
       const call = await deviceRef.current.connect({ params: { To: normalized } });
+      startCall();
       call.on("ringing", () => setStatus("ringing"));
       call.on("accept", () => setStatus("connected"));
       call.on("disconnect", () => endCall("completed", "completed"));

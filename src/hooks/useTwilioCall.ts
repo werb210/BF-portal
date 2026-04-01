@@ -156,10 +156,10 @@ export const useTwilioCall = () => {
     setDialedNumber(normalized);
     setError(null);
     setFailureReason(null);
-    startCall();
     endingRef.current = false;
 
     if (isMock) {
+      startCall();
       finalizeCall("completed", "completed");
       return;
     }
@@ -173,6 +173,7 @@ export const useTwilioCall = () => {
         return;
       }
       const connection = await device.connect({ params: { To: normalized } });
+      startCall();
       callRef.current = connection;
       attachCallHandlers(connection);
     } catch (error) {
