@@ -13,9 +13,9 @@ describe("contract:e2e", () => {
 
   it("otp -> verify -> telephony", async () => {
     vi.mocked(apiClient)
-      .mockResolvedValueOnce({ success: true, data: { message: "OTP sent" } })
-      .mockResolvedValueOnce({ success: true, data: { token: "session-token-1" } })
-      .mockResolvedValueOnce({ success: true, data: { token: "voice-token-1" } });
+      .mockResolvedValueOnce({ message: "OTP sent" })
+      .mockResolvedValueOnce({ token: "session-token-1" })
+      .mockResolvedValueOnce({ token: "voice-token-1" });
 
     await apiClient("/api/auth/start-otp", {
       method: "POST",
@@ -32,12 +32,12 @@ describe("contract:e2e", () => {
 
     const t = await apiClient<{ token: string }>("/api/telephony/token");
 
-    expect(v.success && v.data.token).toBeTruthy();
-    expect(t.success && t.data.token).toBeTruthy();
+    expect(v.token).toBeTruthy();
+    expect(t.token).toBeTruthy();
   });
 
   it("returns meaningful api errors", async () => {
-    vi.mocked(apiClient).mockResolvedValueOnce({ success: false, error: "invalid otp" });
+    vi.mocked(apiClient).mockRejectedValueOnce(new Error("invalid otp"));
 
     await expect(
       apiClient("/api/auth/verify-otp", {
@@ -47,6 +47,6 @@ describe("contract:e2e", () => {
           code: "bad-code",
         },
       }),
-    ).resolves.toEqual({ success: false, error: "invalid otp" });
+    ).rejects.toThrow("invalid otp");
   });
 });

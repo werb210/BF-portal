@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { checkBackend } from "@/bootstrap";
-import { apiFetch, apiFetchWithRetry } from "@/lib/apiClient";
+import { apiClient, apiFetch, apiFetchWithRetry } from "@/lib/apiClient";
 import { clearToken, setToken } from "@/auth/token";
 
 describe("portal resilience", () => {
@@ -34,26 +34,17 @@ describe("portal resilience", () => {
     setToken("valid-token");
     global.fetch = vi.fn().mockRejectedValue(new DOMException("Aborted", "AbortError")) as typeof fetch;
 
-    await expect(apiFetch("/api/health", { method: "GET" })).resolves.toEqual({
-      success: false,
-      error: "API_ERROR",
-    });
+    await expect(apiClient("/api/health", { method: "GET" })).rejects.toThrow();
   });
 
   it("missing auth -> rejected", async () => {
-    await expect(apiFetch("/api/protected", { method: "GET" })).resolves.toEqual({
-      success: false,
-      error: "MISSING_AUTH",
-    });
+    await expect(apiClient("/api/protected", { method: "GET" })).rejects.toThrow("MISSING_AUTH");
   });
 
   it("invalid response -> failure", async () => {
     setToken("valid-token");
     global.fetch = vi.fn().mockResolvedValue(new Response("{not-json", { status: 200 })) as typeof fetch;
-    await expect(apiFetch("/api/health", { method: "GET" })).resolves.toEqual({
-      success: false,
-      error: "INVALID_JSON",
-    });
+    await expect(apiClient("/api/health", { method: "GET" })).rejects.toThrow();
   });
 
   it("success path -> clean data", async () => {

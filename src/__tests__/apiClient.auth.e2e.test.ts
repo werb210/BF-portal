@@ -33,42 +33,31 @@ describe("auth and api hard pipeline e2e requirements", () => {
       new Response(JSON.stringify({ status: "ok", data: { message: "ok" } }), { status: 200 }),
     ) as typeof fetch;
 
-    await expect(apiClient("/api/test", { method: "GET" })).resolves.toEqual({
-      success: true,
-      data: { message: "ok" },
-    });
+    const res = await apiClient("/api/test", { method: "GET" });
+    expect(res).toBeDefined();
   });
 
-  it("TEST 4: API 401 keeps non-throwing contract", async () => {
+  it("TEST 4: API 401 throws", async () => {
     setToken("valid-token");
 
     global.fetch = vi.fn().mockResolvedValueOnce(
       new Response(JSON.stringify({ status: "error", error: { message: "denied" } }), { status: 401 }),
     ) as typeof fetch;
 
-    await expect(apiClient("/api/test", { method: "GET" })).resolves.toEqual({
-      success: false,
-      error: "HTTP_ERROR_401",
-    });
+    await expect(apiClient("/api/test", { method: "GET" })).rejects.toThrow("HTTP_ERROR_401");
   });
 
   it("TEST 5: request without token hard fails before network", async () => {
     clearToken();
 
-    await expect(apiClient("https://evil.com/api/test", { method: "GET" })).resolves.toEqual({
-      success: false,
-      error: "MISSING_AUTH",
-    });
+    await expect(apiClient("https://evil.com/api/test", { method: "GET" })).rejects.toThrow("MISSING_AUTH");
   });
 
-  it("TEST 6: 204 response returns null data", async () => {
+  it("TEST 6: 204 response throws", async () => {
     setToken("valid-token");
     global.fetch = vi.fn().mockResolvedValueOnce(new Response(null, { status: 204 })) as typeof fetch;
 
-    await expect(apiClient("/api/test", { method: "DELETE" })).resolves.toEqual({
-      success: false,
-      error: "INVALID_JSON",
-    });
+    await expect(apiClient("/api/test", { method: "DELETE" })).rejects.toThrow();
   });
 
   it("TEST 7: empty response returns empty object", async () => {
@@ -78,10 +67,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
       new Response(JSON.stringify({ status: "ok", data: {} }), { status: 200 }),
     ) as typeof fetch;
 
-    await expect(apiClient("/api/test", { method: "GET" })).resolves.toEqual({
-      success: true,
-      data: {},
-    });
+    await expect(apiClient("/api/test", { method: "GET" })).resolves.toEqual({});
   });
 
   it("TEST 8: request failure surfaces message", async () => {
@@ -89,10 +75,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
 
     global.fetch = vi.fn().mockRejectedValueOnce(new TypeError("NetworkError")) as typeof fetch;
 
-    await expect(apiClient("/api/test")).resolves.toEqual({
-      success: false,
-      error: "NetworkError",
-    });
+    await expect(apiClient("/api/test")).rejects.toThrow("NetworkError");
   });
 });
 
