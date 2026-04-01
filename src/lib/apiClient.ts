@@ -49,7 +49,7 @@ const toHeaders = (options: ApiClientOptions = {}): HeadersInit => {
   return headers;
 };
 
-export async function apiClient<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<T> {
+export async function api<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<T> {
   const { body, params, ...rest } = options;
   const base = getBase().replace(/\/$/, "");
   const normalizedPath = buildPath(path, params).replace(/^\//, "");
@@ -88,9 +88,11 @@ export async function apiClient<T = unknown>(path: string, options: ApiClientOpt
   }
 }
 
+export const apiClient = api;
+
 export async function apiFetch<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<ApiResult<T>> {
   try {
-    return { success: true, data: await apiClient<T>(path, options) };
+    return { success: true, data: await api<T>(path, options) };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "API_ERROR" };
   }
@@ -107,6 +109,6 @@ export const post = <T = unknown>(path: string, body?: unknown, options: ApiClie
   apiClient<T>(path, { ...options, method: "POST", body });
 export const apiPost = post;
 
-const api = { get, post, patch: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "PATCH", body }), put: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "PUT", body }), delete: <T = unknown>(path: string, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "DELETE" }) };
+const apiMethods = { get, post, patch: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "PATCH", body }), put: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "PUT", body }), delete: <T = unknown>(path: string, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "DELETE" }) };
 
-export default api;
+export default apiMethods;
