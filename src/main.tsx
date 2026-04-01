@@ -23,6 +23,8 @@ window.addEventListener("error", (e) => {
 });
 
 async function assertBackend() {
+  if (import.meta.env.MODE === "test") return;
+
   const apiBase = import.meta.env.VITE_API_URL;
 
   if (!apiBase) {
