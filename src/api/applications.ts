@@ -11,7 +11,7 @@ export const getApplications = async () => {
 
   const response = await api.get<unknown[]>("/api/applications", { schema: ApplicationListEnvelopeSchema });
   if (!response.success) {
-    throw new Error(response.message);
+    throw new Error(response.error);
   }
 
   return response.data;
@@ -29,7 +29,7 @@ export const sendToLender = async (id: string, lenders: string[]) => {
   );
 
   if (!response.success) {
-    throw new Error(response.message);
+    throw new Error(response.error);
   }
 
   return response.data;
@@ -39,7 +39,7 @@ export const createApplication = async (payload: unknown) => {
   requireAuth();
   const response = await api.post<unknown>("/api/applications", payload, { schema: ApplicationEnvelopeSchema });
   if (!response.success) {
-    throw new Error(response.message);
+    throw new Error(response.error);
   }
 
   return response.data;

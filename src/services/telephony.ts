@@ -7,7 +7,7 @@ export async function initTelephony() {
   // expects server endpoint to return { success, data: { token } }
   const res = await apiRequest("/telephony/token", { method: "GET" });
   if (!res.success) {
-    throw new Error(res.message);
+    throw new Error(res.error);
   }
   const token = (typeof res.data === "object" && res.data !== null && "token" in res.data)
     ? String((res.data as { token?: string }).token ?? "")

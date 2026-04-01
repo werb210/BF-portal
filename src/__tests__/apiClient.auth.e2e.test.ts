@@ -43,12 +43,12 @@ describe("auth and api hard pipeline e2e requirements", () => {
     setToken("valid-token");
 
     global.fetch = vi.fn().mockResolvedValueOnce(
-      new Response(JSON.stringify({ success: false, message: "denied" }), { status: 401 }),
+      new Response(JSON.stringify({ success: false, error: "denied" }), { status: 401 }),
     ) as typeof fetch;
 
     await expect(apiRequest("/api/test", { method: "GET" })).resolves.toEqual({
       success: false,
-      message: "denied",
+      error: "denied",
     });
   });
 
@@ -57,7 +57,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
 
     await expect(apiRequest("https://evil.com/api/test", { method: "GET" })).resolves.toEqual({
       success: false,
-      message: "missing auth",
+      error: "missing auth",
     });
   });
 
@@ -91,7 +91,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
 
     await expect(apiRequest("/api/test")).resolves.toEqual({
       success: false,
-      message: "network error",
+      error: "network error",
     });
   });
 });

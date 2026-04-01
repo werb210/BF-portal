@@ -7,7 +7,7 @@ export type ApiSuccess<T = unknown> = {
 
 export type ApiFailure = {
   success: false;
-  message: string;
+  error: string;
 };
 
 export type ApiResult<T = unknown> = ApiSuccess<T> | ApiFailure;
@@ -51,7 +51,7 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
 
     return { success: true, data };
   } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : "Request failed" };
+    return { success: false, error: error instanceof Error ? error.message : "Request failed" };
   }
 }
 

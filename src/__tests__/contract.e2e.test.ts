@@ -37,7 +37,7 @@ describe("contract:e2e", () => {
   });
 
   it("returns meaningful api errors", async () => {
-    vi.mocked(apiRequest).mockResolvedValueOnce({ success: false, message: "invalid otp" });
+    vi.mocked(apiRequest).mockResolvedValueOnce({ success: false, error: "invalid otp" });
 
     await expect(
       apiRequest("/api/auth/verify-otp", {
@@ -47,6 +47,6 @@ describe("contract:e2e", () => {
           code: "bad-code",
         },
       }),
-    ).resolves.toEqual({ success: false, message: "invalid otp" });
+    ).resolves.toEqual({ success: false, error: "invalid otp" });
   });
 });

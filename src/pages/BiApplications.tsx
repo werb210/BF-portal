@@ -18,7 +18,7 @@ export default function BiApplications() {
   const loadApps = useCallback(async (): Promise<BiApplication[]> => {
     const result = await apiClient.get<BiApplication[]>("/api/applications");
     if (!result.success) {
-      throw new Error(result.message);
+      throw new Error(result.error);
     }
     const nextApps = Array.isArray(result.data) ? result.data : [];
     setApps(nextApps);
@@ -36,7 +36,7 @@ export default function BiApplications() {
   const updateStatus = async (id: number, status: string) => {
     const response = await apiClient.patch(`/api/applications/${id}`, { status });
     if (!response.success) {
-      throw new Error(response.message);
+      throw new Error(response.error);
     }
 
     const nextApps = await loadApps();

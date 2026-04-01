@@ -50,7 +50,7 @@ const CallPerformanceCard = () => {
       .then((response) => {
         if (!mounted) return;
         if (!response.success) {
-          throw new Error(response.message);
+          throw new Error(response.error);
         }
         if (response.data && typeof response.data === "object") {
           setStats(response.data as Partial<Record<string, CallStats>>);

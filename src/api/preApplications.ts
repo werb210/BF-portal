@@ -12,7 +12,7 @@ export interface PreApplicationRecord {
 export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
   const res = await apiFetch<PreApplicationRecord[]>("/api/preapp/admin/list");
   if (!res.success) {
-    throw new Error(res.message);
+    throw new Error(res.error);
   }
   if (!Array.isArray(res.data)) {
     return [];
@@ -25,6 +25,6 @@ export async function convertPreApplication(id: string) {
     method: "POST",
     body: { id }
   });
-  if (!res.success) return { success: false, message: res.message };
+  if (!res.success) return { success: false, error: res.error };
   return { success: true, data: res.data };
 }

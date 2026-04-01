@@ -55,7 +55,7 @@ export const getDocuments = async (applicationId: string) => {
 
   const response = await api.get<unknown>(`/api/documents/${applicationId}`);
   if (!response.success) {
-    throw new Error(response.message);
+    throw new Error(response.error);
   }
 
   return response.data;
