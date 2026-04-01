@@ -51,17 +51,28 @@ export async function apiClient<T = unknown>(path: string, options: ApiClientOpt
   const { body, params, ...rest } = options;
   const base = getBase().replace(/\/$/, "");
   const normalizedPath = buildPath(path, params).replace(/^\//, "");
-  const res = await fetch(`${base}/${normalizedPath}`, {
-    ...rest,
-    body: withBody(body),
-    headers: toHeaders(options),
-  });
+  const originalFetch = window.fetch;
 
-  if (!res.ok) throw new ApiError(`HTTP_ERROR_${res.status}`);
-  const json = await res.json();
-  if (json?.status === "error") throw new ApiError(json?.error?.message || "API_ERROR");
-  if (json?.status !== "ok") throw new ApiError("INVALID_API_SHAPE");
-  return json.data as T;
+  try {
+    const res = await originalFetch(`${base}/${normalizedPath}`, {
+      ...rest,
+      body: withBody(body),
+      headers: toHeaders(options),
+    });
+
+    if (!res.ok) throw new ApiError(`HTTP_ERROR_${res.status}`);
+    const validated = await res.json();
+
+    if (validated?.status === "ok") {
+      return validated.data as T;
+    }
+
+    const err = new Error(validated?.error?.code || "API_ERROR");
+    (err as any).code = validated?.error?.code;
+    throw err;
+  } catch (e) {
+    throw e;
+  }
 }
 
 export async function apiFetch<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<ApiResult<T>> {

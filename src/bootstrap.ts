@@ -3,8 +3,6 @@ import { clearToken, getToken } from "@/auth/token";
 
 import { apiClient } from "@/lib/apiClient";
 
-type ApiResponse<T> = T;
-
 type HealthResponse = {
   ok?: boolean;
   status?: string;
@@ -32,10 +30,13 @@ export function validateStartupToken(): boolean {
 }
 
 export async function checkBackend(): Promise<boolean> {
-  const res = (await apiClient<HealthResponse>("/api/health", {
-    method: "GET",
-    skipAuth: true,
-  })) as ApiResponse<Awaited<ReturnType<typeof apiClient<HealthResponse>>>>;
-
-  return res.success;
+  try {
+    await apiClient<HealthResponse>("/api/health", {
+      method: "GET",
+      skipAuth: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }

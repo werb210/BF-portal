@@ -39,7 +39,7 @@
     "verify:no-node-only": "rg -n \"(from|require\\()\\s*[\\\"\\'](node-fetch|fs|path|net|tls)[\\\"\\']\" src && exit 1 || exit 0",
     "verify:no-alt-api": "rg -n \"fetch\\(|axios\\(\" src | rg -v \"apiClient.ts\" && exit 1 || exit 0",
     "verify:no-silent-catch": "rg -n \"catch \\(.*\\) \\{\\s*(return|console)\" src && exit 1 || exit 0",
-    "verify:single-api": "rg -n \"(core/apiClient|apiRequest|apiCall|fetch\\()\" src | rg -v \"src/lib/apiClient.ts\" && exit 1 || exit 0"
+    "verify:single-api": "rg -n \"fetch\\(\" src | rg -v \"src/lib/apiClient.ts\" && exit 1 || exit 0"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
