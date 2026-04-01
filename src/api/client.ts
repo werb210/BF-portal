@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPatch, apiPost, apiPublicGet, apiPublicPost, apiPut } from "@/lib/apiClient";
+import { getToken } from "@/auth/token";
 
 export type ApiSuccess<T = unknown> = {
   success: true;
@@ -7,7 +7,8 @@ export type ApiSuccess<T = unknown> = {
 
 export type ApiFailure = {
   success: false;
-  error: string;
+  message?: string;
+  error?: string;
 };
 
 export type ApiResult<T = unknown> = ApiSuccess<T> | ApiFailure;
@@ -20,10 +21,6 @@ export type RequestOptions = Omit<RequestInit, "body"> & {
 };
 
 const buildPath = (path: string, params?: RequestOptions["params"]) => {
-  if (!path.startsWith("/api/")) {
-    throw new Error(`Invalid API path (must start with /api/): ${path}`);
-  }
-
   if (!params) return path;
 
   const url = new URL(path, "http://localhost");
@@ -35,32 +32,149 @@ const buildPath = (path: string, params?: RequestOptions["params"]) => {
   return `${url.pathname}${url.search}`;
 };
 
-export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
+export async function apiFetch<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<{ success: true; data: T } | { success: false; message?: string; error?: string }> {
   try {
-    const { method = "GET", body, params, skipAuth } = options;
-    const fullPath = buildPath(path, params);
+    if (!path.startsWith("/api/")) {
+      return { success: false, error: "invalid api path" };
+    }
 
-    const data = await (async () => {
-      if (method === "GET") return skipAuth ? apiPublicGet<T>(fullPath) : apiGet<T>(fullPath);
-      if (method === "POST") return skipAuth ? apiPublicPost<T>(fullPath, body) : apiPost<T>(fullPath, body);
-      if (method === "PUT") return apiPut<T>(fullPath, body);
-      if (method === "PATCH") return apiPatch<T>(fullPath, body);
-      if (method === "DELETE") return apiDelete<T>(fullPath);
-      throw new Error(`Unsupported method: ${method}`);
-    })();
+    const token = getToken();
+    if (!token) {
+      return { success: false, message: "missing auth" };
+    }
 
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : "Request failed" };
+    const res = await fetch(path, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (res.status === 204) {
+      return { success: true, data: null as T };
+    }
+
+    let json: any = null;
+
+    try {
+      json = await res.json();
+    } catch {
+      return { success: false, message: "invalid response" };
+    }
+
+    if (!res.ok || json?.success === false) {
+      return {
+        success: false,
+        message: json?.message || json?.error || "request failed",
+      };
+    }
+
+    return {
+      success: true,
+      data: json?.data ?? json,
+    };
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      return { success: false, message: "timeout" };
+    }
+
+    return { success: false, error: "network error" };
   }
+}
+
+export async function apiFetchWithRetry<T>(path: string, options: RequestInit = {}, retries = 1): Promise<ApiResult<T>> {
+  const result = await apiFetch<T>(path, options);
+
+  if (result.success) {
+    return result;
+  }
+
+  if (retries > 0 && !result.success) {
+    const retriable =
+      result.error === "network error" || result.message === "invalid response" || result.message === "request failed";
+
+    if (retriable) {
+      return apiFetchWithRetry<T>(path, options, retries - 1);
+    }
+  }
+
+  return result;
+}
+
+export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
+  const { method = "GET", body, params, skipAuth, ...rest } = options;
+
+  if (!skipAuth && !getToken()) {
+    return { success: false, error: "missing auth" };
+  }
+
+  const fullPath = buildPath(path, params);
+
+  if (skipAuth) {
+    try {
+      if (!fullPath.startsWith("/api/")) {
+        return { success: false, error: "invalid api path" };
+      }
+
+      const payload = body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body);
+      const headers: HeadersInit = payload instanceof FormData ? { ...(rest.headers || {}) } : { ...(rest.headers || {}), "Content-Type": "application/json" };
+      const response = await fetch(fullPath, { ...rest, method, body: payload as BodyInit | null | undefined, headers });
+
+      if (response.status === 204) {
+        return { success: true, data: null as T };
+      }
+
+      let json: any = null;
+      try {
+        json = await response.json();
+      } catch {
+        return { success: false, message: "invalid response" };
+      }
+
+      if (!response.ok || json?.success === false) {
+        return { success: false, message: json?.message || json?.error || "request failed" };
+      }
+
+      return { success: true, data: (json?.data ?? json) as T };
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        return { success: false, message: "timeout" };
+      }
+      return { success: false, error: "network error" };
+    }
+  }
+
+  const payload = body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body);
+  const headers: HeadersInit = payload instanceof FormData ? { ...(rest.headers || {}) } : { ...(rest.headers || {}), "Content-Type": "application/json" };
+
+  const result = await apiFetchWithRetry<T>(fullPath, {
+    ...rest,
+    method,
+    body: payload as BodyInit | null | undefined,
+    headers,
+  });
+
+  if (!result.success && result.message && !result.error) {
+    return { success: false, error: result.message };
+  }
+
+  return result;
 }
 
 export const apiClient = {
   request: apiRequest,
   get: <T = unknown>(path: string, options?: RequestOptions) => apiRequest<T>(path, { ...options, method: "GET" }),
-  post: <T = unknown>(path: string, body?: unknown, options?: RequestOptions) => apiRequest<T>(path, { ...options, method: "POST", body }),
-  put: <T = unknown>(path: string, body?: unknown, options?: RequestOptions) => apiRequest<T>(path, { ...options, method: "PUT", body }),
-  patch: <T = unknown>(path: string, body?: unknown, options?: RequestOptions) => apiRequest<T>(path, { ...options, method: "PATCH", body }),
+  post: <T = unknown>(path: string, body?: unknown, options?: RequestOptions) =>
+    apiRequest<T>(path, { ...options, method: "POST", body }),
+  put: <T = unknown>(path: string, body?: unknown, options?: RequestOptions) =>
+    apiRequest<T>(path, { ...options, method: "PUT", body }),
+  patch: <T = unknown>(path: string, body?: unknown, options?: RequestOptions) =>
+    apiRequest<T>(path, { ...options, method: "PATCH", body }),
   delete: <T = unknown>(path: string, options?: RequestOptions) => apiRequest<T>(path, { ...options, method: "DELETE" }),
 };
 
@@ -69,7 +183,5 @@ export const post = apiClient.post;
 export const put = apiClient.put;
 export const patch = apiClient.patch;
 export const remove = apiClient.delete;
-
-export const apiFetch = apiRequest;
 
 export default apiClient;

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { checkBackend } from "@/bootstrap";
-import { apiFetch } from "@/api/client";
+import { apiFetch, apiFetchWithRetry } from "@/api/client";
 import { clearToken, setToken } from "@/auth/token";
 
 describe("portal resilience", () => {
@@ -18,7 +18,7 @@ describe("portal resilience", () => {
       .mockResolvedValueOnce(new Response(null, { status: 502 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, data: { ok: true } }), { status: 200 })) as typeof fetch;
 
-    await expect(apiFetch<{ ok: boolean }>("/api/health", { method: "GET" })).resolves.toEqual({
+    await expect(apiFetchWithRetry<{ ok: boolean }>("/api/health", { method: "GET" }, 2)).resolves.toEqual({
       success: true,
       data: { ok: true },
     });
