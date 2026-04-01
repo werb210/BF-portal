@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "@/api/client";
 
 export default function WebLeads() {
-  const [leads, setLeads] = useState<any[]>([]);
+  const [leads, setLeads] = useState<Array<{ id: string; companyName?: string; firstName?: string; lastName?: string; email?: string; phone?: string }>>([]);
 
   useEffect(() => {
-    apiRequest<{ leads?: any[] }>("/crm/web-leads")
-      .then((data) => setLeads(data.leads || []));
+    apiRequest<{ leads?: Array<{ id: string; companyName?: string; firstName?: string; lastName?: string; email?: string; phone?: string }> }>("/api/crm/web-leads")
+      .then((result) => setLeads(result.success ? result.data.leads || [] : []));
   }, []);
 
   return (

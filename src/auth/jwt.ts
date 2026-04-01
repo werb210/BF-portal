@@ -1,8 +1,9 @@
 export type JwtPayload = {
   sub: string;
-  role?: string;
+  email: string;
+  role: string;
   capabilities?: string[];
-  exp?: number;
+  exp: number;
 };
 
 export function decodeJwt(token: string | null): JwtPayload | null {

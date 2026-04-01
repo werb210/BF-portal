@@ -18,7 +18,7 @@ function getAuthHeader() {
   const token = typeof window === "undefined" ? null : window.localStorage.getItem("token");
 
   if (!token) {
-    throw new Error("Missing auth token");
+    throw new Error("NOT_AUTHENTICATED");
   }
 
   return { Authorization: `Bearer ${token}` };
@@ -42,13 +42,23 @@ export async function apiRequest<T>(method: HttpMethod, path: string, body?: unk
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(buildUrl(path), {
-    method,
-    headers,
-    body: payload,
-  });
+  try {
+    const response = await fetch(buildUrl(path), {
+      method,
+      headers,
+      body: payload,
+    });
 
-  return parseJson<T>(response);
+    return parseJson<T>(response);
+  } catch (err) {
+    if (err instanceof Error && err.message === "NOT_AUTHENTICATED") {
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
+
+    throw err;
+  }
 }
 
 export const apiGet = <T>(path: string) => apiRequest<T>("GET", path);
