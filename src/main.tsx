@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import { validateStartupToken } from "@/bootstrap";
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 import App from "./App";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -28,11 +28,7 @@ async function assertBackend() {
 
   if (mode === "test" || mode === "production") return;
 
-  const res = await apiRequest("/api/health", { skipAuth: true });
-
-  if (!res.success) {
-    throw new Error("Backend not reachable");
-  }
+  await apiClient("/health", { skipAuth: true });
 }
 
 async function bootstrap() {
