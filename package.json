@@ -11,7 +11,7 @@
     "dev:full": "npm run verify:server && vite",
     "build": "npm run guard:single-api && npm run test:e2e && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "CI=1 vitest run --passWithNoTests=false --reporter=verbose",
     "test:e2e": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.tests.json",
     "lint": "eslint .",
@@ -34,7 +34,9 @@
     "guard:single-api": "bash ./scripts/enforce-api-pipeline.sh",
     "verify:server": "node -e \"process.exit(0)\"",
     "verify:no-node-fetch": "npm ls node-fetch || exit 0",
-    "guard:test-env-regressions": "bash ./scripts/guard-test-env-regressions.sh"
+    "guard:test-env-regressions": "bash ./scripts/guard-test-env-regressions.sh",
+    "verify:test-env-empty": "test ! -s .env.test",
+    "verify:no-node-only": "rg -n \"(from|require\\()\\s*[\\\"\\'](node-fetch|fs|path|net|tls)[\\\"\\']\" src && exit 1 || exit 0"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",

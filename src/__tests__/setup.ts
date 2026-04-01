@@ -2,17 +2,12 @@ import { beforeEach, vi } from "vitest";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.resetModules();
   sessionStorage.setItem("auth_token", "test-token");
+
+  globalThis.fetch = vi.fn(() => {
+    throw new Error("Unmocked fetch call detected");
+  }) as typeof fetch;
 });
 
 (globalThis as any)["XML" + "HttpRequest"] = undefined;
-
-if (typeof globalThis.fetch === "undefined") {
-  globalThis.fetch = async () =>
-    ({
-      ok: true,
-      status: 200,
-      json: async () => ({}),
-      text: async () => "",
-    }) as Response;
-}
