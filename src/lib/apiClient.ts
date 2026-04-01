@@ -1,33 +1,35 @@
+import { apiRequest as coreApiRequest, type ApiResult, type RequestOptions } from "@/api/client";
+
 const API_BASE = import.meta.env.VITE_API_URL;
 
 if (!API_BASE) {
   throw new Error("Missing VITE_API_URL");
 }
 
-export async function apiRequest<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
+function toRequestOptions(options: RequestInit = {}): RequestOptions {
+  return {
     ...options,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    console.error("API_ERROR", {
-      path,
-      status: res.status,
-      body: text,
-    });
-
-    throw new Error(`API request failed: ${res.status}`);
-  }
-
-  return res.json() as Promise<T>;
+    skipAuth: true,
+  };
 }
 
-export async function safeApiRequest<T = unknown>(path: string, options?: RequestInit): Promise<T> {
+function unwrapApiResult<T>(path: string, result: ApiResult<T>): T {
+  if (result.success) {
+    return result.data;
+  }
+
+  const reason = result.error ?? result.message ?? "unknown error";
+  console.error("API_ERROR", { path, reason });
+  throw new Error(`API request failed: ${reason}`);
+}
+
+export async function apiRequest<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const result = await coreApiRequest<T>(normalizedPath, toRequestOptions(options));
+  return unwrapApiResult(normalizedPath, result);
+}
+
+export async function safeApiRequest<T = any>(path: string, options?: RequestInit): Promise<T> {
   try {
     return await apiRequest<T>(path, options);
   } catch (err) {
@@ -36,23 +38,23 @@ export async function safeApiRequest<T = unknown>(path: string, options?: Reques
   }
 }
 
-export const apiGet = <T = unknown>(path: string) => apiRequest<T>(path, { method: "GET" });
-export const apiPost = <T = unknown>(path: string, body?: unknown) =>
+export const apiGet = <T = any>(path: string) => apiRequest<T>(path, { method: "GET" });
+export const apiPost = <T = any>(path: string, body?: unknown) =>
   apiRequest<T>(path, {
     method: "POST",
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-export const apiPut = <T = unknown>(path: string, body?: unknown) =>
+export const apiPut = <T = any>(path: string, body?: unknown) =>
   apiRequest<T>(path, {
     method: "PUT",
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-export const apiPatch = <T = unknown>(path: string, body?: unknown) =>
+export const apiPatch = <T = any>(path: string, body?: unknown) =>
   apiRequest<T>(path, {
     method: "PATCH",
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-export const apiDelete = <T = unknown>(path: string) => apiRequest<T>(path, { method: "DELETE" });
+export const apiDelete = <T = any>(path: string) => apiRequest<T>(path, { method: "DELETE" });
 
 export const apiPublicGet = apiGet;
 export const apiPublicPost = apiPost;

@@ -1,9 +1,16 @@
 import { decodeJwt } from "@/auth/jwt";
 import { clearToken, getToken } from "@/auth/token";
 
-import { apiFetch } from "@/api/client";
+import { apiRequest } from "@/api/client";
 
-function hasValidToken() {
+type ApiResponse<T> = T;
+
+type HealthResponse = {
+  ok?: boolean;
+  status?: string;
+};
+
+function hasValidToken(): boolean {
   const token = getToken();
   if (!token) return true;
 
@@ -17,14 +24,18 @@ function hasValidToken() {
   return payload.exp > nowInSeconds;
 }
 
-export function validateStartupToken() {
+export function validateStartupToken(): boolean {
   if (hasValidToken()) return true;
   clearToken();
   window.location.assign("/login");
   return false;
 }
 
-export async function checkBackend() {
-  const res = await apiFetch("/api/health", { method: "GET", skipAuth: true });
+export async function checkBackend(): Promise<boolean> {
+  const res = (await apiRequest<HealthResponse>("/api/health", {
+    method: "GET",
+    skipAuth: true,
+  })) as ApiResponse<Awaited<ReturnType<typeof apiRequest<HealthResponse>>>>;
+
   return res.success;
 }
