@@ -1,12 +1,19 @@
-import { apiPost } from "@/lib/apiClient";
+import { apiRequest } from "@/lib/apiClient";
+import { ENDPOINTS } from "@/lib/endpoints";
 
 export async function startCall(to: string) {
-  return apiPost("/api/call/start", { to });
+  return apiRequest(ENDPOINTS.callStart, {
+    method: "POST",
+    body: JSON.stringify({ to }),
+  });
 }
 
 export async function sendStatus(callId: string, status: string) {
-  return apiPost("/api/voice/status", {
-    callId,
-    status,
+  return apiRequest(ENDPOINTS.voiceStatus, {
+    method: "POST",
+    body: JSON.stringify({
+      callId,
+      status,
+    }),
   });
 }
