@@ -1,4 +1,4 @@
-import { get, post } from "@/api/client";
+import { get, post } from "@/lib/apiClient";
 
 type AiSession = { id: string; source?: string; status: string };
 type AiMessage = { role: string; content: string };

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import api from "@/api/client";
+import api from "@/lib/apiClient";
 import { ApiEnvelopeSchema, ApplicationSchema } from "@/api/schemas";
 import { requireAuth } from "@/utils/requireAuth";
 

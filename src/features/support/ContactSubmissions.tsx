@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 type ContactSubmission = {
   id: string;
@@ -22,7 +22,7 @@ export function ContactSubmissions({ isAdmin }: ContactSubmissionsProps) {
 
   async function load() {
     const query = leadFilter === "startup_interest" ? "?tag=startup_interest" : "";
-    const data = await apiRequest<ContactSubmission[]>(`/support/contact${query}`);
+    const data = await apiClient<ContactSubmission[]>(`/support/contact${query}`);
     setContacts(Array.isArray(data) ? data : []);
   }
 

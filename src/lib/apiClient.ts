@@ -1,103 +1,88 @@
 import { getToken } from "@/auth/token";
 
-export type ApiClientOptions = RequestInit & {
+export type ApiClientOptions = Omit<RequestInit, "body"> & {
+  body?: unknown;
   skipAuth?: boolean;
+  params?: Record<string, string | number | boolean | null | undefined>;
 };
+
+export type ApiResult<T = unknown> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
+export class ApiError extends Error {}
 
 const getBase = (): string => {
   const base = (window as any).__API_BASE__ || import.meta.env.VITE_API_URL;
-  if (!base) {
-    throw new Error("API_BASE_NOT_DEFINED");
-  }
+  if (!base) throw new Error("API_BASE_NOT_DEFINED");
   return base;
 };
-
-const normalize = (base: string, path: string): string =>
-  `${base.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
-
-const toHeaders = (options: ApiClientOptions = {}): HeadersInit => {
-  const headers = new Headers(options.headers || {});
-
-  if (!options.skipAuth) {
-    const token = getToken();
-    if (!token) {
-      throw new Error("MISSING_AUTH");
-    }
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  return headers;
-};
-
-export async function apiClient(path: string, options: ApiClientOptions = {}): Promise<unknown> {
-  const { skipAuth: _skipAuth, ...requestOptions } = options;
-  const res = await fetch(normalize(getBase(), path), {
-    ...requestOptions,
-    headers: toHeaders(options),
-  });
-
-  if (!res.ok) {
-    throw new Error(`HTTP_ERROR_${res.status}`);
-  }
-
-  let json: any;
-  try {
-    json = await res.json();
-  } catch {
-    throw new Error("INVALID_JSON");
-  }
-
-  if (!json || typeof json !== "object") {
-    throw new Error("INVALID_API_SHAPE");
-  }
-
-  if (!Object.prototype.hasOwnProperty.call(json, "status")) {
-    throw new Error("MISSING_STATUS_FIELD");
-  }
-
-  if (json.status === "error") {
-    if (!json.error || !json.error.message) {
-      throw new Error("MALFORMED_ERROR");
-    }
-    throw new Error(json.error.message);
-  }
-
-  if (json.status !== "ok") {
-    throw new Error("UNKNOWN_STATUS");
-  }
-
-  if (!Object.prototype.hasOwnProperty.call(json, "data")) {
-    throw new Error("MISSING_DATA_FIELD");
-  }
-
-  return json.data;
-}
 
 const withBody = (body: unknown): BodyInit | undefined => {
   if (body === undefined) return undefined;
   if (body instanceof FormData) return body;
+  if (typeof body === "string") return body;
   return JSON.stringify(body);
 };
 
-export async function apiRequest<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<T> {
-  return (await apiClient(path, options)) as T;
+const buildPath = (path: string, params?: ApiClientOptions["params"]): string => {
+  if (!params) return path;
+  const url = new URL(path, "http://localhost");
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+  });
+  return `${url.pathname}${url.search}`;
+};
+
+const toHeaders = (options: ApiClientOptions = {}): HeadersInit => {
+  const headers = new Headers(options.headers || {});
+  if (!options.skipAuth) {
+    const token = getToken();
+    if (!token) throw new Error("MISSING_AUTH");
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  return headers;
+};
+
+export async function apiClient<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<T> {
+  const { body, params, ...rest } = options;
+  const base = getBase().replace(/\/$/, "");
+  const normalizedPath = buildPath(path, params).replace(/^\//, "");
+  const res = await fetch(`${base}/${normalizedPath}`, {
+    ...rest,
+    body: withBody(body),
+    headers: toHeaders(options),
+  });
+
+  if (!res.ok) throw new ApiError(`HTTP_ERROR_${res.status}`);
+  const json = await res.json();
+  if (json?.status === "error") throw new ApiError(json?.error?.message || "API_ERROR");
+  if (json?.status !== "ok") throw new ApiError("INVALID_API_SHAPE");
+  return json.data as T;
 }
 
-export const safeApiRequest = async <T = unknown>(path: string, options?: ApiClientOptions): Promise<T> =>
-  apiRequest<T>(path, options);
+export async function apiFetch<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<ApiResult<T>> {
+  try {
+    return { success: true, data: await apiClient<T>(path, options) };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "API_ERROR" };
+  }
+}
 
-export const apiGet = <T = unknown>(path: string) => apiRequest<T>(path, { method: "GET" });
-export const apiPost = <T = unknown>(path: string, body?: unknown) =>
-  apiRequest<T>(path, { method: "POST", body: withBody(body) });
-export const apiPut = <T = unknown>(path: string, body?: unknown) =>
-  apiRequest<T>(path, { method: "PUT", body: withBody(body) });
-export const apiPatch = <T = unknown>(path: string, body?: unknown) =>
-  apiRequest<T>(path, { method: "PATCH", body: withBody(body) });
-export const apiDelete = <T = unknown>(path: string) => apiRequest<T>(path, { method: "DELETE" });
+export async function apiFetchWithRetry<T = unknown>(path: string, options: ApiClientOptions = {}, retries = 1): Promise<ApiResult<T>> {
+  const result = await apiFetch<T>(path, options);
+  if (result.success || retries <= 0) return result;
+  return apiFetchWithRetry<T>(path, options, retries - 1);
+}
 
-export const apiPublicGet = apiGet;
-export const apiPublicPost = apiPost;
+export const get = <T = unknown>(path: string, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "GET" });
+export const post = <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) =>
+  apiClient<T>(path, { ...options, method: "POST", body });
+export const apiPost = post;
+
+const api = { get, post, patch: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "PATCH", body }), put: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "PUT", body }), delete: <T = unknown>(path: string, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "DELETE" }) };
+
+export default api;

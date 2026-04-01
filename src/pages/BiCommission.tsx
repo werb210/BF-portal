@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 import { useEffect, useState } from "react";
 
 export default function BiCommission() {

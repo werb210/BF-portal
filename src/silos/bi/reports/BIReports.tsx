@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 interface ReportSummary {
   totalApplications: number;
@@ -20,7 +20,7 @@ export default function BIReports() {
   }, []);
 
   async function load() {
-    const data = await apiRequest("/api/bi/reports/summary");
+    const data = await apiClient("/api/bi/reports/summary");
     setMetrics(data as ReportSummary);
   }
 

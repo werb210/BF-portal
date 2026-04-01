@@ -1,4 +1,4 @@
-import api from "@/api/client";
+import api from "@/lib/apiClient";
 
 export interface AiSession {
   id: string;

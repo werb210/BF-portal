@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 export default function WebLeads() {
   const [leads, setLeads] = useState<Array<{ id: string; companyName?: string; firstName?: string; lastName?: string; email?: string; phone?: string }>>([]);
 
   useEffect(() => {
-    apiRequest<{ leads?: Array<{ id: string; companyName?: string; firstName?: string; lastName?: string; email?: string; phone?: string }> }>("/api/crm/web-leads")
+    apiClient<{ leads?: Array<{ id: string; companyName?: string; firstName?: string; lastName?: string; email?: string; phone?: string }> }>("/api/crm/web-leads")
       .then((result) => setLeads(result.success ? result.data.leads || [] : []));
   }, []);
 

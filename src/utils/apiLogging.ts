@@ -1,5 +1,5 @@
 import { getRequestId } from "@/utils/requestId";
-import { setLastApiRequest } from "@/state/apiRequestTrace";
+import { setLastApiRequest } from "@/state/apiClientTrace";
 import { endPendingRequest, startPendingRequest, type RequestTrackingConfig } from "@/utils/requestTracking";
 import { logger as appLogger } from "@/utils/logger";
 

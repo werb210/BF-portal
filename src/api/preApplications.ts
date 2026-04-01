@@ -1,4 +1,4 @@
-import { apiFetch } from "@/api/client";
+import { apiFetch } from "@/lib/apiClient";
 
 export interface PreApplicationRecord {
   id: string;

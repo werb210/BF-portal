@@ -1,5 +1,5 @@
-import { apiClient as baseClient } from "@/api/client";
-import type { ApiResult } from "@/api/client";
+import { apiClient as baseClient } from "@/lib/apiClient";
+import type { ApiResult } from "@/lib/apiClient";
 
 export type RequestOptions = RequestInit & {
   skipAuth?: boolean;

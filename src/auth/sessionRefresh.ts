@@ -1,4 +1,4 @@
-import { apiRequest } from "@/api/client"
+import { apiClient } from "@/lib/apiClient"
 import { setToken, clearToken } from "@/auth/token"
 
 let refreshing = false
@@ -8,7 +8,7 @@ export async function refreshSession(): Promise<boolean> {
   refreshing = true
 
   try {
-    const res = await apiRequest("/api/auth/refresh", {
+    const res = await apiClient("/api/auth/refresh", {
       method: "POST",
     })
 

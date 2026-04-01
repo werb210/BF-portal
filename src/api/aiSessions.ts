@@ -1,4 +1,4 @@
-import api from "@/api/client";
+import api from "@/lib/apiClient";
 import type { AiSession, AiSessionMessage } from "@/features/comms/aiSessions";
 
 export async function fetchAiSessions() {

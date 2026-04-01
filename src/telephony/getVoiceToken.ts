@@ -1,7 +1,7 @@
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 export async function getTelephonyToken() {
-  const result = await apiRequest<{ token?: string }>("/api/telephony/token", { method: "GET" });
+  const result = await apiClient<{ token?: string }>("/api/telephony/token", { method: "GET" });
   const token = result.token;
 
   if (!token) {

@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 export const AnalyticsService = {
   getEvents: () => apiClient.get("/api/analytics/events"),

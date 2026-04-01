@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 type Session = {
   id: string;
@@ -11,13 +11,13 @@ export default function AiQueueView() {
   const [sessions, setSessions] = useState<Session[]>([]);
 
   useEffect(() => {
-    apiRequest<Session[]>("/api/chat/sessions")
+    apiClient<Session[]>("/api/chat/sessions")
       .then(setSessions)
       .catch(() => setSessions([]));
   }, []);
 
   async function takeSession(id: string) {
-    await apiRequest("/api/ai/take", {
+    await apiClient("/api/ai/take", {
       method: "POST",
       data: { sessionId: id }
     });

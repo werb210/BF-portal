@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import Card from "@/components/ui/Card";
-import { getLastApiRequest } from "@/state/apiRequestTrace";
+import { getLastApiRequest } from "@/state/apiClientTrace";
 import { getRequestId } from "@/utils/requestId";
 import { logger } from "@/utils/logger";
 

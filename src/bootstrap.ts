@@ -1,7 +1,7 @@
 import { decodeJwt } from "@/auth/jwt";
 import { clearToken, getToken } from "@/auth/token";
 
-import { apiRequest } from "@/api/client";
+import { apiClient } from "@/lib/apiClient";
 
 type ApiResponse<T> = T;
 
@@ -32,10 +32,10 @@ export function validateStartupToken(): boolean {
 }
 
 export async function checkBackend(): Promise<boolean> {
-  const res = (await apiRequest<HealthResponse>("/api/health", {
+  const res = (await apiClient<HealthResponse>("/api/health", {
     method: "GET",
     skipAuth: true,
-  })) as ApiResponse<Awaited<ReturnType<typeof apiRequest<HealthResponse>>>>;
+  })) as ApiResponse<Awaited<ReturnType<typeof apiClient<HealthResponse>>>>;
 
   return res.success;
 }

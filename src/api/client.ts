@@ -61,7 +61,7 @@ export async function apiFetchWithRetry<T>(
   return apiFetchWithRetry<T>(path, options, retries - 1);
 }
 
-export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
+export async function apiClient<T = unknown>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
   const { method = "GET", body, params, skipAuth, ...rest } = options;
   const fullPath = buildPath(path, params);
 
@@ -85,15 +85,15 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
 }
 
 export const apiClient = {
-  request: apiRequest,
-  get: <T = unknown>(path: string, options?: RequestOptions) => apiRequest<T>(path, { ...options, method: "GET" }),
+  request: apiClient,
+  get: <T = unknown>(path: string, options?: RequestOptions) => apiClient<T>(path, { ...options, method: "GET" }),
   post: <T = unknown>(path: string, body?: unknown, options?: RequestOptions) =>
-    apiRequest<T>(path, { ...options, method: "POST", body }),
+    apiClient<T>(path, { ...options, method: "POST", body }),
   put: <T = unknown>(path: string, body?: unknown, options?: RequestOptions) =>
-    apiRequest<T>(path, { ...options, method: "PUT", body }),
+    apiClient<T>(path, { ...options, method: "PUT", body }),
   patch: <T = unknown>(path: string, body?: unknown, options?: RequestOptions) =>
-    apiRequest<T>(path, { ...options, method: "PATCH", body }),
-  delete: <T = unknown>(path: string, options?: RequestOptions) => apiRequest<T>(path, { ...options, method: "DELETE" }),
+    apiClient<T>(path, { ...options, method: "PATCH", body }),
+  delete: <T = unknown>(path: string, options?: RequestOptions) => apiClient<T>(path, { ...options, method: "DELETE" }),
 };
 
 export const get = apiClient.get;

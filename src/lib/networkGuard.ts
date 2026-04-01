@@ -1,6 +1,6 @@
-const originalFetch = window.fetch.bind(window);
+const originalFetch = window.fetch;
 
-window.fetch = (...args) => {
+window.fetch = async (...args) => {
   const stack = new Error().stack || "";
 
   if (!stack.includes("apiClient.ts")) {
@@ -13,12 +13,12 @@ window.fetch = (...args) => {
 Object.freeze(window.fetch);
 
 export function isOnline(): boolean {
-  if (typeof navigator === "undefined") return true
-  return navigator.onLine
+  if (typeof navigator === "undefined") return true;
+  return navigator.onLine;
 }
 
 export function requireOnline(): void {
   if (!isOnline()) {
-    throw new Error("OFFLINE")
+    throw new Error("OFFLINE");
   }
 }
