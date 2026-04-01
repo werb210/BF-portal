@@ -11,6 +11,14 @@ const SystemBanner = () => {
     );
   }
 
+  if (status === "degraded") {
+    return (
+      <div className="api-status-banner" role="status">
+        <strong>System temporarily unavailable.</strong> Some features are operating in degraded mode.
+      </div>
+    );
+  }
+
   if (status === "forbidden") {
     return (
       <div className="api-status-banner" role="status">
