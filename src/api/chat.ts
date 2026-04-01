@@ -1,7 +1,7 @@
 import api from "@/api/client";
 
 export async function fetchOpenChats() {
-  return api.get("/chat/sessions?status=open");
+  return api.get("/api/chat/sessions?status=open");
 }
 
 export async function fetchChatSession(id: string) {

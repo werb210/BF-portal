@@ -13,6 +13,6 @@ export { API_BASE_URL };
    Used by src/App.tsx
    ============================================================ */
 export async function checkStaffServerHealth(): Promise<boolean> {
-  const result = await apiClient.get("/health", { skipAuth: true });
+  const result = await apiClient.get("/api/health", { skipAuth: true });
   return result.success;
 }

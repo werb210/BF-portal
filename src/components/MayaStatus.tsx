@@ -6,7 +6,7 @@ export default function MayaStatus() {
 
   useEffect(() => {
     void api
-      .get("/health")
+      .get("/api/health")
       .then((res) => {
         setStatus((res as { maya?: string })?.maya ?? "degraded");
       })

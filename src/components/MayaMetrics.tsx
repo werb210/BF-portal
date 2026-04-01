@@ -12,7 +12,7 @@ export default function MayaMetrics() {
   const [metrics, setMetrics] = useState<MayaMetricsData>({});
 
   useEffect(() => {
-    api.get("/maya/metrics").then((result) => {
+    api.get("/api/maya/metrics").then((result) => {
       setMetrics((result as MayaMetricsData) ?? {});
     });
   }, []);

@@ -11,7 +11,7 @@ export const useApiHealthCheck = () => {
 
     const checkHealth = async () => {
       try {
-        await apiClient.get("/health", { skipAuth: true });
+        await apiClient.get("/api/health", { skipAuth: true });
         if (isActive) {
           setStatus("available");
         }

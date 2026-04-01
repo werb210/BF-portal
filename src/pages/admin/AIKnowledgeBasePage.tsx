@@ -15,7 +15,7 @@ export default function AIKnowledgeBasePage() {
 
   useEffect(() => {
     api
-      .get("/admin/ai-documents")
+      .get("/api/admin/ai-documents")
       .then((res) => {
         setFiles(Array.isArray(res) ? res : []);
       })
@@ -30,7 +30,7 @@ export default function AIKnowledgeBasePage() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      await api.post("/admin/ai-documents", formData);
+      await api.post("/api/admin/ai-documents", formData);
       window.location.reload();
     } catch (error) {
       logger.error("Failed to upload AI document", { error });

@@ -73,7 +73,7 @@ const parseLead = (value: unknown): ReadinessLead | null => {
 };
 
 export async function fetchReadinessLeads(): Promise<ReadinessLead[]> {
-  const res = await api.get("/portal/readiness-leads");
+  const res = await api.get("/api/portal/readiness-leads");
   if (!Array.isArray(res)) return [];
   return res.map(parseLead).filter((lead): lead is ReadinessLead => lead !== null);
 }

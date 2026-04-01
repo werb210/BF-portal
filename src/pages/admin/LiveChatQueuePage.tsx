@@ -12,7 +12,7 @@ export default function LiveChatQueuePage() {
   const [chats, setChats] = useState<LiveChat[]>([]);
 
   useEffect(() => {
-    api.get("/admin/live-chat-queue").then((res) => {
+    api.get("/api/admin/live-chat-queue").then((res) => {
       setChats(Array.isArray(res) ? res : []);
     });
   }, []);

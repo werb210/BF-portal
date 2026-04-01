@@ -15,7 +15,7 @@ export default function WebsiteLeadsPage() {
   const [leads, setLeads] = useState<WebsiteLead[]>([]);
 
   useEffect(() => {
-    api.get("/admin/website-leads").then((res) => {
+    api.get("/api/admin/website-leads").then((res) => {
       setLeads(Array.isArray(res) ? res : []);
     });
   }, []);

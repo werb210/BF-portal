@@ -43,8 +43,8 @@ const RuntimeSettings = () => {
     setRuntimeError(null);
     try {
       const [apiHealthResult, internalHealthResult] = await Promise.allSettled([
-        apiClient.get<Record<string, unknown>>("/health", { skipAuth: true }),
-        apiClient.get<Record<string, unknown>>("/_int/health")
+        apiClient.get<Record<string, unknown>>("/api/health", { skipAuth: true }),
+        apiClient.get<Record<string, unknown>>("/api/_int/health")
       ]);
 
       const apiDetail =

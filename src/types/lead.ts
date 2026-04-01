@@ -1,3 +1,12 @@
+export interface LeadPayload {
+  name: string;
+  email: string;
+  phone: string;
+  businessName?: string;
+  productType?: string;
+  message?: string;
+}
+
 export interface Lead {
   id: string;
   companyName: string;

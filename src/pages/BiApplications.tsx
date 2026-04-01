@@ -1,14 +1,13 @@
 import { apiClient } from "@/api/client";
 import { useEffect, useState } from "react";
 
-const API_PREFIX = "";
 export default function BiApplications() {
   const [apps, setApps] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
 
   useEffect(() => {
     apiClient
-      .get("/applications")
+      .get("/api/applications")
       .then((result) => setApps(result));
   }, []);
 
@@ -23,7 +22,7 @@ export default function BiApplications() {
   );
 
   const updateStatus = async (id: number, status: string) => {
-    await apiClient.patch(`${API_PREFIX}/applications/${id}`, { status });
+    await apiClient.patch(`${API_PREFIX}/api/applications/${id}`, { status });
 
     setApps(apps.map((a) => (a.id === id ? { ...a, status } : a)));
     setSelected((current: any) =>

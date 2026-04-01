@@ -12,7 +12,7 @@ export default function IssueReportsPage() {
   const [reports, setReports] = useState<IssueReport[]>([]);
 
   useEffect(() => {
-    api.get("/admin/issue-reports").then((res) => {
+    api.get("/api/admin/issue-reports").then((res) => {
       setReports(Array.isArray(res) ? res : []);
     });
   }, []);

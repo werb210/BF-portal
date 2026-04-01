@@ -43,7 +43,7 @@ const ApplicationDetail = ({ applicationId = "app-1" }: { applicationId?: string
     const lenders = Object.entries(selectedLenders)
       .filter(([, selected]) => selected)
       .map(([lender]) => lender);
-    await apiClient.post("/lender-submissions", { applicationId, lenders });
+    await apiClient.post("/api/lender-submissions", { applicationId, lenders });
   };
 
   const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
