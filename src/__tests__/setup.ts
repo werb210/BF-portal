@@ -1,6 +1,7 @@
-import { beforeEach } from "vitest";
+import { beforeEach, vi } from "vitest";
 
 beforeEach(() => {
+  vi.clearAllMocks();
   sessionStorage.setItem("auth_token", "test-token");
 });
 
@@ -11,7 +12,7 @@ if (typeof globalThis.fetch === "undefined") {
     ({
       ok: true,
       status: 200,
-      json: async () => ({ status: "ok" }),
-      text: async () => "ok",
+      json: async () => ({}),
+      text: async () => "",
     }) as Response;
 }
