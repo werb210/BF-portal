@@ -15,13 +15,14 @@ export default function BiApplications() {
   const [apps, setApps] = useState<BiApplication[]>([]);
   const [selected, setSelected] = useState<BiApplication | null>(null);
 
-  const loadApps = useCallback(async () => {
+  const loadApps = useCallback(async (): Promise<BiApplication[]> => {
     const result = await apiClient.get<BiApplication[]>("/api/applications");
     if (!result.success) {
       throw new Error(result.message);
     }
-
-    setApps(result.data);
+    const nextApps = Array.isArray(result.data) ? result.data : [];
+    setApps(nextApps);
+    return nextApps;
   }, []);
 
   useEffect(() => {
@@ -38,8 +39,8 @@ export default function BiApplications() {
       throw new Error(response.message);
     }
 
-    await loadApps();
-    setSelected((current) => (current && current.id === id ? { ...current, status } : current));
+    const nextApps = await loadApps();
+    setSelected(nextApps.find((app) => app.id === id) ?? null);
   };
 
   return (

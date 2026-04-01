@@ -9,7 +9,9 @@ export async function initTelephony() {
   if (!res.success) {
     throw new Error(res.message);
   }
-  const token = res.data.token;
+  const token = (typeof res.data === "object" && res.data !== null && "token" in res.data)
+    ? String((res.data as { token?: string }).token ?? "")
+    : "";
 
   if (!token) {
     throw new Error("Missing telephony token");
