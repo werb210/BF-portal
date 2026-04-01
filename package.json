@@ -86,7 +86,6 @@
     "jsdom": "^24.0.0",
     "madge": "^8.0.0",
     "msw": "^2.12.13",
-    "node-fetch": "^3.3.2",
     "npm-check-updates": "^19.3.2",
     "playwright": "^1.58.2",
     "postcss": "^8.4.47",

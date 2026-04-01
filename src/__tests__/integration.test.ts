@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 if (!process.env.VITE_API_URL) {
   test.skip("integration disabled (no backend)", () => {});
 } else {
