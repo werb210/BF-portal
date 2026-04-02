@@ -1,11 +1,11 @@
-import { apiClient } from "@/lib/api"
+import { api } from "@/lib/api"
 
 export async function acceptDocument(documentId: string) {
-  await apiClient.post(`/documents/${encodeURIComponent(documentId)}/accept`, {})
+  await api.post(`/documents/${encodeURIComponent(documentId)}/accept`, {})
 }
 
 export async function rejectDocument(documentId: string, category: string) {
-  await apiClient.post(`/documents/${encodeURIComponent(documentId)}/reject`, {
+  await api.post(`/documents/${encodeURIComponent(documentId)}/reject`, {
     category
   })
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import apiClient from "@/lib/api";
+import api from "@/lib/api";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { getErrorMessage } from "@/utils/errors";
@@ -43,8 +43,8 @@ const RuntimeSettings = () => {
     setRuntimeError(null);
     try {
       const [apiHealthResult, internalHealthResult] = await Promise.allSettled([
-        apiClient.get<Record<string, unknown>>("/api/health"),
-        apiClient.get<Record<string, unknown>>("/api/_int/health")
+        api.get<Record<string, unknown>>("/api/health"),
+        api.get<Record<string, unknown>>("/api/_int/health")
       ]);
 
       const apiDetail =

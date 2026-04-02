@@ -1,4 +1,4 @@
-import { apiClient, type RequestOptions } from "@/lib/api";
+import { api, type RequestOptions } from "@/lib/api";
 import { withBusinessUnitQuery } from "@/lib/businessUnit";
 import type { BusinessUnit } from "@/types/businessUnit";
 
@@ -12,7 +12,7 @@ export type NoteMessage = {
 };
 
 export const fetchNotesThread = (applicationId: string, businessUnit: BusinessUnit, options?: RequestOptions) =>
-  apiClient.get<NoteMessage[]>(
+  api.get<NoteMessage[]>(
     withBusinessUnitQuery(`/applications/${applicationId}/notes`, businessUnit),
     options
   );
@@ -23,10 +23,10 @@ export const sendNoteMessage = (
   businessUnit: BusinessUnit,
   mentions: string[] = []
 ) =>
-  apiClient.post(withBusinessUnitQuery(`/applications/${applicationId}/notes`, businessUnit), { body, mentions });
+  api.post(withBusinessUnitQuery(`/applications/${applicationId}/notes`, businessUnit), { body, mentions });
 
 export const updateNoteMessage = (applicationId: string, noteId: string, body: string, businessUnit: BusinessUnit) =>
-  apiClient.patch(
+  api.patch(
     withBusinessUnitQuery(`/applications/${applicationId}/notes/${noteId}`, businessUnit),
     { body }
   );

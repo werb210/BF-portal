@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export default function AiKnowledgeUpload() {
   const [file, setFile] = useState<File | null>(null);
@@ -10,7 +10,7 @@ export default function AiKnowledgeUpload() {
     const form = new FormData();
     form.append("file", file);
 
-    await apiClient.post("/api/ai/admin/upload", form);
+    await api.post("/api/ai/admin/upload", form);
     throw new Error("Uploaded and ingested.");
   }
 

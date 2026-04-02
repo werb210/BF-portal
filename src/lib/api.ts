@@ -1,12 +1,13 @@
 import { getEnv } from "../config/env";
-import { getToken } from "../lib/authToken";
+import { getToken } from "./authToken";
 import { setApiStatus } from "../state/apiStatus";
 
 export type RequestOptions = {
   method?: string;
-  body?: any;
+  body?: unknown;
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  params?: Record<string, string | number | boolean | null | undefined>;
 };
 
 export class ApiError extends Error {
@@ -14,60 +15,113 @@ export class ApiError extends Error {
   details?: unknown;
 }
 
-const requiresAuth = (path: string) => !path.includes("/auth/") && !path.includes("/health");
-const buildUrl = (path: string) => (/^https?:\/\//.test(path) ? path : `${getEnv().VITE_API_URL}${path}`);
+export type LenderAuthTokens = {
+  accessToken: string;
+  refreshToken?: string;
+};
 
-export async function api<T = unknown>(path: string, options?: RequestOptions): Promise<T> {
+type ApiEnvelope<T> = {
+  status: "ok" | string;
+  data?: T;
+  error?: string;
+};
+
+const { VITE_API_URL } = getEnv();
+const requiresAuth = (path: string) => !path.includes("/auth/") && !path.includes("/health");
+
+const appendParams = (url: string, params?: RequestOptions["params"]) => {
+  if (!params) return url;
+  const parsed = new URL(url, url.startsWith("http") ? undefined : VITE_API_URL);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    parsed.searchParams.set(key, String(value));
+  });
+  return /^https?:\/\//.test(url) ? parsed.toString() : `${parsed.pathname}${parsed.search}`;
+};
+
+const buildUrl = (path: string, params?: RequestOptions["params"]) => {
+  const full = /^https?:\/\//.test(path) ? path : `${VITE_API_URL}${path}`;
+  return appendParams(full, params);
+};
+
+async function baseApi<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = getToken();
 
   if (requiresAuth(path) && !token) {
     throw new Error("MISSING_AUTH");
   }
 
-  const res = await fetch(buildUrl(path), {
-    method: options?.method || "GET",
+  const res = await fetch(buildUrl(path, options.params), {
+    method: options.method || "GET",
     headers: {
-      ...(options?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+      ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options?.headers ?? {}),
+      ...(options.headers ?? {}),
     },
-    body:
-      options?.body === undefined
-        ? undefined
-        : options.body instanceof FormData
-          ? options.body
-          : JSON.stringify(options.body),
-    signal: options?.signal,
+    ...(options.body === undefined
+      ? {}
+      : {
+          body: options.body instanceof FormData ? options.body : JSON.stringify(options.body),
+        }),
+    signal: options.signal,
   });
-
-  if (!res.ok) {
-    const error = new ApiError(`HTTP_ERROR_${res.status}`);
-    error.status = res.status;
-    setApiStatus("unavailable");
-    throw error;
-  }
 
   const json: unknown = await res.json();
 
-  if (!json || typeof json !== "object") {
+  if (!json || typeof json !== "object" || !('status' in json)) {
+    setApiStatus("unavailable");
     throw new Error("Invalid API response");
   }
 
-  if (!("status" in json)) {
-    console.error("MISSING STATUS FIELD:", json);
-    throw new Error("Invalid API contract");
+  const payload = json as ApiEnvelope<T>;
+
+  if (payload.status === "error" && payload.error === "DB_NOT_READY") {
+    setApiStatus("degraded");
+    return { degraded: true } as T;
   }
 
-  const typed = json as { status: string; data?: T; error?: string };
-
-  if (typed.status !== "ok") {
-    console.error("API ERROR RESPONSE:", json);
-    throw new Error(typed.error || "API error");
+  if (!res.ok || payload.status !== "ok") {
+    const errorMessage = typeof payload.error === "string" && payload.error.length > 0 ? payload.error : `HTTP_ERROR_${res.status}`;
+    const err = new ApiError(errorMessage);
+    err.status = res.status;
+    err.details = payload;
+    setApiStatus("unavailable");
+    throw err;
   }
 
   setApiStatus("available");
-  return typed.data as T;
+  return payload.data as T;
 }
+
+type NoMethodBody = Omit<RequestOptions, "method" | "body">;
+
+export type ApiFn = (<T = unknown>(path: string, options?: RequestOptions) => Promise<T>) & {
+  get: <T = unknown>(path: string, options?: NoMethodBody) => Promise<T>;
+  post: <T = unknown>(path: string, body?: unknown, options?: NoMethodBody) => Promise<T>;
+  patch: <T = unknown>(path: string, body?: unknown, options?: NoMethodBody) => Promise<T>;
+  put: <T = unknown>(path: string, body?: unknown, options?: NoMethodBody) => Promise<T>;
+  delete: <T = unknown>(path: string, options?: NoMethodBody) => Promise<T>;
+  getList: <T = unknown>(path: string, options?: NoMethodBody) => Promise<T[]>;
+};
+
+export const api = Object.assign(baseApi, {
+  get: <T = unknown>(path: string, options?: NoMethodBody) => baseApi<T>(path, { ...options, method: "GET" }),
+  post: <T = unknown>(path: string, body?: unknown, options?: NoMethodBody) =>
+    baseApi<T>(path, { ...options, method: "POST", body }),
+  patch: <T = unknown>(path: string, body?: unknown, options?: NoMethodBody) =>
+    baseApi<T>(path, { ...options, method: "PATCH", body }),
+  put: <T = unknown>(path: string, body?: unknown, options?: NoMethodBody) =>
+    baseApi<T>(path, { ...options, method: "PUT", body }),
+  delete: <T = unknown>(path: string, options?: NoMethodBody) => baseApi<T>(path, { ...options, method: "DELETE" }),
+  getList: <T = unknown>(path: string, options?: NoMethodBody) => baseApi<T[]>(path, { ...options, method: "GET" }),
+}) as ApiFn;
+
+export const get = api.get;
+export const post = api.post;
+export const patch = api.patch;
+export const put = api.put;
+export const del = api.delete;
+export const apiPost = api.post;
 
 export async function apiFetch<T = unknown>(path: string, options?: RequestOptions) {
   try {
@@ -80,3 +134,33 @@ export async function apiFetch<T = unknown>(path: string, options?: RequestOptio
 export async function apiFetchWithRetry<T = unknown>(path: string, options?: RequestOptions, _retries = 0) {
   return apiFetch<T>(path, options);
 }
+
+let lenderTokenProvider: (() => LenderAuthTokens | null) | null = null;
+let lenderOnUnauthorized: (() => void) | null = null;
+let lenderOnTokensUpdated: ((tokens: LenderAuthTokens | null) => void) | null = null;
+
+export function configureLenderApiClient(config: {
+  tokenProvider: () => LenderAuthTokens | null;
+  onUnauthorized?: () => void;
+  onTokensUpdated?: (tokens: LenderAuthTokens | null) => void;
+}) {
+  lenderTokenProvider = config.tokenProvider;
+  lenderOnUnauthorized = config.onUnauthorized ?? null;
+  lenderOnTokensUpdated = config.onTokensUpdated ?? null;
+}
+
+export const lenderApiClient = {
+  get: api.get,
+  post: api.post,
+  patch: api.patch,
+  put: api.put,
+  delete: api.delete,
+  getList: api.getList,
+};
+
+void lenderTokenProvider;
+void lenderOnUnauthorized;
+void lenderOnTokensUpdated;
+
+export const http = api;
+export default api;

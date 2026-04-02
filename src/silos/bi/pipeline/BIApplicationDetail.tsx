@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import ActivityTimeline from "../components/ActivityTimeline";
 
 type BIApplicationDetailData = {
@@ -39,7 +39,7 @@ export default function BIApplicationDetail() {
       return;
     }
 
-    const data = await apiClient<BIApplicationDetailData>(`/api/bi/applications/${id}`);
+    const data = await api<BIApplicationDetailData>(`/api/bi/applications/${id}`);
     setApp(data);
   }
 
@@ -48,7 +48,7 @@ export default function BIApplicationDetail() {
       return;
     }
 
-    await apiClient(`/api/bi/applications/${id}/stage`, {
+    await api(`/api/bi/applications/${id}/stage`, {
       method: "POST",
       body: JSON.stringify({
         stage,
@@ -111,7 +111,7 @@ function DocumentList({ applicationId }: { applicationId: string }) {
   }, [applicationId]);
 
   async function load() {
-    const data = await apiClient<DocumentRow[]>(`/api/bi/applications/${applicationId}/documents`);
+    const data = await api<DocumentRow[]>(`/api/bi/applications/${applicationId}/documents`);
     setDocs(data);
   }
 
@@ -136,7 +136,7 @@ function CommissionTab({ applicationId }: { applicationId: string }) {
   }, [applicationId]);
 
   async function load() {
-    const data = await apiClient<CommissionRow>(`/api/bi/commissions/by-application/${applicationId}`);
+    const data = await api<CommissionRow>(`/api/bi/commissions/by-application/${applicationId}`);
     setRow(data);
   }
 

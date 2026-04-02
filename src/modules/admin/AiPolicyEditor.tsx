@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type PolicyRule = {
   id: string;
@@ -11,13 +11,13 @@ export default function AiPolicyEditor() {
   const [rules, setRules] = useState<PolicyRule[]>([]);
 
   useEffect(() => {
-    apiClient<PolicyRule[]>("/api/ai/policy")
+    api<PolicyRule[]>("/api/ai/policy")
       .then(setRules)
       .catch(() => setRules([]));
   }, []);
 
   async function save(rule: PolicyRule) {
-    await apiClient("/api/ai/policy", {
+    await api("/api/ai/policy", {
       method: "POST",
       body: rule
     });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type ActivityEvent = { event?: string; source?: string };
 
@@ -8,7 +8,7 @@ export default function LiveActivity() {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const result = await apiClient<{ events?: ActivityEvent[] }>("/api/support/events");
+      const result = await api<{ events?: ActivityEvent[] }>("/api/support/events");
       setEvents(result.events || []);
     }, 5000);
 

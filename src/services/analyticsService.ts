@@ -1,6 +1,6 @@
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export const AnalyticsService = {
-  getEvents: () => apiClient.get("/api/analytics/events"),
-  getReadiness: () => apiClient.get("/api/analytics/readiness")
+  getEvents: () => api.get("/api/analytics/events"),
+  getReadiness: () => api.get("/api/analytics/readiness")
 };

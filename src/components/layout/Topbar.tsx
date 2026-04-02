@@ -10,7 +10,7 @@ import PushNotificationCta from "@/components/PushNotificationCta";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { logger } from "@/utils/logger";
 import MayaStatus from "@/components/MayaStatus";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type TopbarProps = {
   onToggleSidebar: () => void;
@@ -30,13 +30,13 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   const [productionStatus, setProductionStatus] = useState("checking");
 
   useEffect(() => {
-    apiClient<{ count?: number }>("/api/crm/leads/count")
+    api<{ count?: number }>("/api/crm/leads/count")
       .then((result) => setLeadCount(result.count ?? 0))
       .catch(() => setLeadCount(0));
   }, []);
 
   useEffect(() => {
-    apiClient<{ status?: string }>("/api/_int/production-readiness")
+    api<{ status?: string }>("/api/_int/production-readiness")
       .then((result) => {
         logger.info("Production readiness payload", { data: result });
         setProductionStatus(result.status ?? "ok");
@@ -47,7 +47,7 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const result = await apiClient<{ count?: number }>("/api/support/live/count");
+        const result = await api<{ count?: number }>("/api/support/live/count");
         setLiveCount(result.count ?? 0);
       } catch {
         setLiveCount(0);

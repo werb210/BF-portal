@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import AISessionList from "./AISessionList";
 
 type Conversation = {
@@ -19,7 +19,7 @@ export default function AiConversations() {
 
 
   useEffect(() => {
-    apiClient.get<Conversation[]>("/chat/sessions").then((res) => {
+    api.get<Conversation[]>("/chat/sessions").then((res) => {
       setConvos(Array.isArray(res) ? res : []);
     });
   }, []);

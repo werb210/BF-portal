@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type AiSession = {
   id: string;
@@ -11,7 +11,7 @@ export default function AISessionList() {
   const [sessions, setSessions] = useState<AiSession[]>([]);
 
   useEffect(() => {
-    apiClient.get<AiSession[]>("/portal/ai/sessions").then((res) => {
+    api.get<AiSession[]>("/portal/ai/sessions").then((res) => {
       setSessions(Array.isArray(res) ? res : []);
     });
   }, []);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type CreditReadiness = {
   industry?: string;
@@ -15,7 +15,7 @@ export default function CreditReadinessPanel({ contactId }: { contactId: string 
   const [data, setData] = useState<CreditReadiness | null>(null);
 
   useEffect(() => {
-    apiClient
+    api
       .get(`/portal/contacts/${contactId}/credit-readiness`)
       .then((res) => setData(res))
       .catch(() => {});

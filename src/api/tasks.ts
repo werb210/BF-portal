@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export type TaskStatus = "todo" | "in-progress" | "done";
 export type TaskPriority = "low" | "medium" | "high";
@@ -18,12 +18,12 @@ export type TaskItem = {
 };
 
 export const fetchTasks = async () => {
-  const res = await apiClient.getList<TaskItem>("/calendar/tasks");
-  return res.items;
+  const res = await api.getList<TaskItem>("/calendar/tasks");
+  return res;
 };
 
-export const createTask = (task: Partial<TaskItem>) => apiClient.post<TaskItem>("/calendar/tasks", task);
+export const createTask = (task: Partial<TaskItem>) => api.post<TaskItem>("/calendar/tasks", task);
 
-export const updateTask = (id: string, task: Partial<TaskItem>) => apiClient.patch<TaskItem>(`/calendar/tasks/${id}`, task);
+export const updateTask = (id: string, task: Partial<TaskItem>) => api.patch<TaskItem>(`/calendar/tasks/${id}`, task);
 
-export const deleteTask = (id: string) => apiClient.delete<void>(`/calendar/tasks/${id}`);
+export const deleteTask = (id: string) => api.delete<void>(`/calendar/tasks/${id}`);

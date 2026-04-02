@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 interface Application {
   id: string;
@@ -17,7 +17,7 @@ export default function BiCommissions() {
   const [totalCommission, setTotalCommission] = useState(0);
 
   useEffect(() => {
-    apiClient<Application[]>("/bi/applications")
+    api<Application[]>("/bi/applications")
       .then((data) => {
         const approved = data.filter((a: Application) => a.status === "approved");
 

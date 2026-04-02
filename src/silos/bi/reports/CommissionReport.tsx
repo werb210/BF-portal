@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export default function CommissionReport() {
   const [rows, setRows] = useState<any[]>([]);
@@ -9,7 +9,7 @@ export default function CommissionReport() {
   }, []);
 
   async function load() {
-    setRows(await apiClient("/api/bi/commissions"));
+    setRows(await api("/api/bi/commissions"));
   }
 
   return (

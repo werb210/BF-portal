@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import apiClient from "@/lib/api";
+import api from "@/lib/api";
 import type { UserRole } from "@/utils/roles";
 
 export type ProfileSettings = {
@@ -98,7 +98,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   fetchProfile: async () => {
     set({ isLoadingProfile: true });
     try {
-      const data = await apiClient.get<ProfileResponse>("/users/me");
+      const data = await api.get<ProfileResponse>("/users/me");
       if (data) {
         set((state) => ({
           profile: (() => {
@@ -121,7 +121,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   saveProfile: async (updates) => {
     set({ isLoadingProfile: true });
     try {
-      const data = await apiClient.patch<ProfileResponse>("/users/me", updates);
+      const data = await api.patch<ProfileResponse>("/users/me", updates);
       const nextProfile = data ? { ...get().profile, ...data } : { ...get().profile, ...updates };
       set({
         profile: nextProfile,
@@ -134,7 +134,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   fetchBranding: async () => {
     set({ isLoadingBranding: true });
     try {
-      const data = await apiClient.get<BrandingResponse>("/settings/branding");
+      const data = await api.get<BrandingResponse>("/settings/branding");
       if (data) {
         set((state) => ({
           branding: { ...state.branding, ...data },
@@ -148,7 +148,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   saveBranding: async (branding) => {
     set({ isLoadingBranding: true });
     try {
-      const data = await apiClient.post<BrandingResponse>("/settings/branding", branding);
+      const data = await api.post<BrandingResponse>("/settings/branding", branding);
       const nextBranding = data ? { ...branding, ...data } : branding;
       set({
         branding: nextBranding,
@@ -161,7 +161,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   fetchUsers: async () => {
     set({ isLoadingUsers: true });
     try {
-      const data = await apiClient.get<UsersResponse | { users?: UsersResponse }>("/users");
+      const data = await api.get<UsersResponse | { users?: UsersResponse }>("/users");
       const nextUsers = Array.isArray(data)
         ? data
         : Array.isArray(data?.users)
@@ -179,7 +179,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   addUser: async (user) => {
     set({ isLoadingUsers: true });
     try {
-      const data = await apiClient.post<AdminUser>("/users", user);
+      const data = await api.post<AdminUser>("/users", user);
       const created = data ?? {
         id: `u-${Date.now()}`,
         firstName: user.firstName,
@@ -198,7 +198,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   updateUser: async (id, updates) => {
     set({ isLoadingUsers: true });
     try {
-      const data = await apiClient.patch<AdminUser>(`/users/${id}`, updates);
+      const data = await api.patch<AdminUser>(`/users/${id}`, updates);
       set((state) => ({
         users: state.users.map((user) => (user.id === id ? { ...user, ...updates, ...data } : user)),
         statusMessage: "User updated"
@@ -210,7 +210,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   updateUserRole: async (id, role) => {
     set({ isLoadingUsers: true });
     try {
-      const data = await apiClient.post<AdminUser>(`/users/${id}/role`, { role });
+      const data = await api.post<AdminUser>(`/users/${id}/role`, { role });
       set((state) => ({
         users: state.users.map((user) => (user.id === id ? { ...user, ...data, role } : user)),
         statusMessage: "Role updated"
@@ -223,7 +223,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ isLoadingUsers: true });
     try {
       const endpoint = disabled ? `/users/${id}/disable` : `/users/${id}/enable`;
-      const data = await apiClient.post<AdminUser>(endpoint);
+      const data = await api.post<AdminUser>(endpoint);
       set((state) => ({
         users: state.users.map((user) => (user.id === id ? { ...user, ...data, disabled } : user)),
         statusMessage: disabled ? "User disabled" : "User enabled"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 interface TrendData {
   date: string;
@@ -10,7 +10,7 @@ export default function CommissionTrendChart() {
   const [data, setData] = useState<TrendData[]>([]);
 
   useEffect(() => {
-    apiClient<TrendData[]>("/analytics/commission-trend")
+    api<TrendData[]>("/analytics/commission-trend")
       .then(setData)
       .catch(console.error);
   }, []);

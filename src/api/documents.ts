@@ -1,6 +1,5 @@
-import api from "@/lib/api";
 import { requireAuth } from "@/utils/requireAuth";
-import { apiClient, type RequestOptions } from "@/lib/api";
+import { api, type RequestOptions } from "@/lib/api";
 import type { DocumentRequirementResponse, DocumentStatus } from "@/types/documents.types";
 
 export type DocumentRecord = {
@@ -29,24 +28,24 @@ export type DocumentVersion = {
 const DOCUMENTS_BASE = "/documents";
 
 export const fetchDocumentPresign = (documentId: string, options?: RequestOptions) =>
-  apiClient.get<DocumentPresignResponse>(`${DOCUMENTS_BASE}/${documentId}/presign`, options);
+  api.get<DocumentPresignResponse>(`${DOCUMENTS_BASE}/${documentId}/presign`, options);
 
 export const fetchDocumentRequirements = (applicationId: string, options?: RequestOptions) =>
-  apiClient.get<DocumentRequirementResponse>(`/applications/${applicationId}/documents`, options);
+  api.get<DocumentRequirementResponse>(`/applications/${applicationId}/documents`, options);
 
 export const updateDocumentStatus = (documentId: string, status: DocumentStatus, reason?: string) =>
-  apiClient.patch(`/documents/${documentId}/status`, { status, reason });
+  api.patch(`/documents/${documentId}/status`, { status, reason });
 
-export const acceptDocument = (documentId: string) => apiClient.post(`/documents/${documentId}/accept`);
+export const acceptDocument = (documentId: string) => api.post(`/documents/${documentId}/accept`);
 
 export const rejectDocument = (documentId: string, reason?: string) =>
-  apiClient.post(`/documents/${documentId}/reject`, { reason });
+  api.post(`/documents/${documentId}/reject`, { reason });
 
 export const restoreDocumentVersion = (documentId: string, version: number) =>
-  apiClient.post(`/documents/${documentId}/version/restore`, { version });
+  api.post(`/documents/${documentId}/version/restore`, { version });
 
 export const fetchDocumentVersions = (documentId: string, options?: RequestOptions) =>
-  apiClient.get<DocumentVersion[]>(`/documents/${documentId}/versions`, options);
+  api.get<DocumentVersion[]>(`/documents/${documentId}/versions`, options);
 
 
 export const getDocuments = async (applicationId: string) => {

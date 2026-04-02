@@ -1,5 +1,5 @@
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export async function serverHealth() {
-  return apiClient.get("/api/health");
+  return api.get("/api/health");
 }

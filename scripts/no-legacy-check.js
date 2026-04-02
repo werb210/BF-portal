@@ -6,12 +6,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const banned = [
-  "apiClient",
-  "httpClient",
-  "response.success",
-  "result.success",
-  "params:",
-  "data:",
+  /\bapiClient\b/,
+  /\bhttpClient\b/,
+  /\bresponse\.success\b/,
+  /\bresult\.success\b/,
 ];
 
 function scan(dir) {
@@ -25,9 +23,9 @@ function scan(dir) {
     } else {
       const content = fs.readFileSync(full, "utf8");
 
-      banned.forEach((term) => {
-        if (content.includes(term)) {
-          console.error(`BANNED PATTERN FOUND: ${term} in ${full}`);
+      banned.forEach((pattern) => {
+        if (pattern.test(content)) {
+          console.error(`BANNED PATTERN: ${pattern} in ${full}`);
           process.exit(1);
         }
       });

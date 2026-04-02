@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import apiClient from "@/lib/api";
+import api from "@/lib/api";
 
 export type AiKnowledgeCategory = "Product" | "Lender" | "Underwriting" | "Process";
 
@@ -66,7 +66,7 @@ const toArray = <T>(input: unknown): T[] => {
 };
 
 export const getKnowledgeDocuments = async (): Promise<AiKnowledgeDocument[]> => {
-  const response = await apiClient.get<AiKnowledgeDocument[] | { items: AiKnowledgeDocument[] }>("/api/admin/ai/documents");
+  const response = await api.get<AiKnowledgeDocument[] | { items: AiKnowledgeDocument[] }>("/api/admin/ai/documents");
   return toArray<AiKnowledgeDocument>(response);
 };
 
@@ -77,7 +77,7 @@ export const uploadKnowledgeDocument = async (
   formData.append("file", payload.file);
   formData.append("category", payload.category);
   formData.append("isActive", String(payload.isActive));
-  return apiClient.post<AiKnowledgeDocument>("/api/admin/ai/upload", formData, {
+  return api.post<AiKnowledgeDocument>("/api/admin/ai/upload", formData, {
     headers: {
       "Content-Type": "multipart/form-data"
     }
@@ -85,23 +85,23 @@ export const uploadKnowledgeDocument = async (
 };
 
 export const deleteKnowledgeDocument = async (documentId: string): Promise<void> => {
-  await apiClient.delete<void>(`/admin/ai/documents/${documentId}`);
+  await api.delete<void>(`/admin/ai/documents/${documentId}`);
 };
 
 export const getChats = async (): Promise<AiChatSession[]> => {
-  const response = await apiClient.get<AiChatSession[] | { items: AiChatSession[] }>("/api/admin/ai/chats");
+  const response = await api.get<AiChatSession[] | { items: AiChatSession[] }>("/api/admin/ai/chats");
   return toArray<AiChatSession>(response);
 };
 
 export const getChatById = async (chatId: string): Promise<AiChatSession> => {
-  return apiClient.get<AiChatSession>(`/admin/ai/chats/${chatId}`);
+  return api.get<AiChatSession>(`/admin/ai/chats/${chatId}`);
 };
 
 export const sendStaffMessage = async (
   chatId: string,
   payload: { content: string; staffName: string }
 ): Promise<AiChatMessage> => {
-  return apiClient.post<AiChatMessage>(`/admin/ai/chats/${chatId}/messages`, {
+  return api.post<AiChatMessage>(`/admin/ai/chats/${chatId}/messages`, {
     role: "staff",
     senderName: payload.staffName,
     content: payload.content
@@ -109,20 +109,20 @@ export const sendStaffMessage = async (
 };
 
 export const closeChat = async (chatId: string): Promise<void> => {
-  await apiClient.post<void>(`/admin/ai/chats/${chatId}/close`);
+  await api.post<void>(`/admin/ai/chats/${chatId}/close`);
 };
 
 export const getIssues = async (): Promise<AiIssueReport[]> => {
-  const response = await apiClient.get<AiIssueReport[] | { items: AiIssueReport[] }>("/api/admin/ai/issues");
+  const response = await api.get<AiIssueReport[] | { items: AiIssueReport[] }>("/api/admin/ai/issues");
   return toArray<AiIssueReport>(response);
 };
 
 export const resolveIssue = async (issueId: string): Promise<void> => {
-  await apiClient.post<void>(`/admin/ai/issues/${issueId}/resolve`);
+  await api.post<void>(`/admin/ai/issues/${issueId}/resolve`);
 };
 
 export const deleteIssue = async (issueId: string): Promise<void> => {
-  await apiClient.delete<void>(`/admin/ai/issues/${issueId}`);
+  await api.delete<void>(`/admin/ai/issues/${issueId}`);
 };
 
 export const aiQueryKeys = {
@@ -195,7 +195,7 @@ export const useDeleteIssueMutation = () => {
 };
 
 export const AIService = {
-  listKnowledge: () => apiClient.get("/api/ai/knowledge"),
-  createKnowledge: (data: unknown) => apiClient.post("/api/ai/knowledge", data),
-  deleteKnowledge: (id: string) => apiClient.delete(`/ai/knowledge/${id}`)
+  listKnowledge: () => api.get("/api/ai/knowledge"),
+  createKnowledge: (data: unknown) => api.post("/api/ai/knowledge", data),
+  deleteKnowledge: (id: string) => api.delete(`/ai/knowledge/${id}`)
 };

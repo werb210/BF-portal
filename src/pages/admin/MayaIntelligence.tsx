@@ -5,7 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar
 } from "recharts";
-import apiClient from "@/lib/api";
+import api from "@/lib/api";
 
 type DataPoint = Record<string, string | number>;
 
@@ -28,7 +28,7 @@ export default function MayaIntelligence() {
   const [roiProjection, setRoiProjection] = useState<number | null>(null);
 
   useEffect(() => {
-    apiClient.get("/api/maya/overview")
+    api.get("/api/maya/overview")
       .then((res) => {
         setData((res ?? null) as OverviewData | null);
       })
@@ -36,14 +36,14 @@ export default function MayaIntelligence() {
   }, []);
 
   async function simulateROI() {
-    const res = await apiClient.post("/api/maya/roi-simulate", { budget: roiInput });
+    const res = await api.post("/api/maya/roi-simulate", { budget: roiInput });
     if (res && typeof res === "object" && "projectedRevenue" in res) {
       setRoiProjection(Number((res as { projectedRevenue?: number }).projectedRevenue ?? 0));
     }
   }
 
   async function rollbackModel(version: string) {
-    await apiClient.post("/api/maya/model-rollback", { version });
+    await api.post("/api/maya/model-rollback", { version });
     throw new Error("Model rolled back.");
   }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrowserAuthError, PublicClientApplication } from "@azure/msal-browser";
-import apiClient from "@/lib/api";
+import api from "@/lib/api";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/hooks/useAuth";
@@ -162,7 +162,7 @@ const ProfileSettings = () => {
         accessToken,
         accountEmail: accountEmail ?? undefined
       };
-      const exchange = await apiClient.post<{ email?: string; connected?: boolean }>("/api/auth/microsoft", payload);
+      const exchange = await api.post<{ email?: string; connected?: boolean }>("/api/auth/microsoft", payload);
       const connectedEmail = exchange?.email ?? accountEmail ?? "";
       setMicrosoftConnection({ connected: true, email: connectedEmail });
     },

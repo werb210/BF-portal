@@ -1,13 +1,15 @@
-const KEY = "bf_access_token";
+import { getEnv } from "../config/env";
 
-export function getToken(): string | null {
-  return localStorage.getItem(KEY);
+const { VITE_JWT_STORAGE_KEY } = getEnv();
+
+export function getToken() {
+  return localStorage.getItem(VITE_JWT_STORAGE_KEY);
 }
 
 export function setToken(token: string) {
-  localStorage.setItem(KEY, token);
+  localStorage.setItem(VITE_JWT_STORAGE_KEY, token);
 }
 
 export function clearToken() {
-  localStorage.removeItem(KEY);
+  localStorage.removeItem(VITE_JWT_STORAGE_KEY);
 }

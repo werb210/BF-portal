@@ -3,7 +3,7 @@
    ========================================================= */
 
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";
 import { withBusinessUnitQuery } from "@/lib/businessUnit";
 import { normalizeBusinessUnit } from "@/types/businessUnit";
@@ -14,6 +14,6 @@ export function useContacts() {
 
   return useQuery({
     queryKey: ["contacts", businessUnit],
-    queryFn: ({ signal }) => apiClient.get(withBusinessUnitQuery("/api/crm/contacts", businessUnit), { signal })
+    queryFn: ({ signal }) => api.get(withBusinessUnitQuery("/api/crm/contacts", businessUnit), { signal })
   });
 }

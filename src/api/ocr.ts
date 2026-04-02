@@ -1,4 +1,4 @@
-import { apiClient, type RequestOptions } from "@/lib/api";
+import { api, type RequestOptions } from "@/lib/api";
 
 export type OcrConflict = { field: string; values: string[] };
 export type OcrSection = {
@@ -18,4 +18,4 @@ export type OcrResults = {
 };
 
 export const fetchOcrResults = (applicationId: string, options?: RequestOptions) =>
-  apiClient.get<OcrResults>(`/ocr/${applicationId}/results`, options);
+  api.get<OcrResults>(`/ocr/${applicationId}/results`, options);

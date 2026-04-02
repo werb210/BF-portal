@@ -1,11 +1,11 @@
-import { apiClient, type RequestOptions } from "@/lib/api";
+import { api, type RequestOptions } from "@/lib/api";
 import type { MessageRecord } from "@/types/messages.types";
 
 export const fetchMessagesThread = (applicationId: string, options?: RequestOptions) =>
-  apiClient.get<MessageRecord[]>(`/communications/messages/thread/${applicationId}`, options);
+  api.get<MessageRecord[]>(`/communications/messages/thread/${applicationId}`, options);
 
 export const sendMessage = (applicationId: string, body: string) =>
-  apiClient.post(`/communications/messages/send`, { applicationId, body });
+  api.post(`/communications/messages/send`, { applicationId, body });
 
 export const markMessageRead = (messageId: string) =>
-  apiClient.patch(`/communications/messages/${messageId}/read`);
+  api.patch(`/communications/messages/${messageId}/read`);

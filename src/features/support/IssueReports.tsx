@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type IssueReport = {
   id: string;
@@ -23,12 +23,12 @@ function IssueReports({ isAdmin = true }: IssueReportsProps) {
   }, [isAdmin]);
 
   async function load() {
-    const data = await apiClient<{ issues?: IssueReport[] } | IssueReport[]>("/api/support/report");
+    const data = await api<{ issues?: IssueReport[] } | IssueReport[]>("/api/support/report");
     setIssues(Array.isArray(data) ? data : (data.issues ?? []));
   }
 
   async function resolveIssue(id: string) {
-    await apiClient(`/api/support/report/${id}`, { method: "DELETE" });
+    await api(`/api/support/report/${id}`, { method: "DELETE" });
     setIssues((prev) => prev.filter((issue) => issue.id !== id));
   }
 

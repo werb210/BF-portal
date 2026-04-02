@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type BiApplication = {
@@ -16,7 +16,7 @@ export default function BiApplications() {
   const [selected, setSelected] = useState<BiApplication | null>(null);
 
   const loadApps = useCallback(async (): Promise<BiApplication[]> => {
-    const result = await apiClient.get<BiApplication[]>("/api/applications");
+    const result = await api.get<BiApplication[]>("/api/applications");
     const nextApps = Array.isArray(result) ? result : [];
     setApps(nextApps);
     return nextApps;
@@ -31,7 +31,7 @@ export default function BiApplications() {
   const totalCommission = useMemo(() => apps.reduce((sum, a) => sum + Number(a.commission || 0), 0), [apps]);
 
   const updateStatus = async (id: number, status: string) => {
-    const response = await apiClient.patch(`/api/applications/${id}`, { status });
+    const response = await api.patch(`/api/applications/${id}`, { status });
     if (!response) throw new Error("Update failed");
 
     const nextApps = await loadApps();

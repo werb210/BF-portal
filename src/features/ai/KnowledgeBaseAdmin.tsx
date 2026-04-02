@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type KnowledgeEntry = {
   id: string;
@@ -15,14 +15,14 @@ export function KnowledgeBaseAdmin({ isAdmin }: KnowledgeBaseAdminProps) {
   const [content, setContent] = useState("");
 
   async function load() {
-    const data = await apiClient<KnowledgeEntry[]>("/api/ai/admin");
+    const data = await api<KnowledgeEntry[]>("/api/ai/admin");
     setEntries(data);
   }
 
   async function addEntry() {
     if (!content.trim()) return;
 
-    await apiClient('/api/ai/admin', {
+    await api('/api/ai/admin', {
       method: 'POST',
       body: { content },
     });

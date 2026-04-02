@@ -1,5 +1,5 @@
-import { apiFetch } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export async function checkServerHealth() {
-  return apiFetch("/api/health");
+  return api("/api/health");
 }
