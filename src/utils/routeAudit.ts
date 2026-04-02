@@ -2,7 +2,7 @@ import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
 import { getToken } from "@/lib/authToken";
-import { api } from "@/lib/api";
+import { api } from "@/api";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { logger } from "@/utils/logger";
 

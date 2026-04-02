@@ -1,5 +1,5 @@
 import { env } from "@/config/env";
-import { http } from "@/lib/api";
+import { http } from "@/api";
 
 const resolveBaseURL = (silo: string) => `${env.VITE_API_URL}/${silo.toLowerCase()}`;
 

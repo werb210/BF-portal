@@ -1,4 +1,4 @@
-import { api, apiFetch } from "@/lib/api";
+import { api, rawApiFetch } from "@/api";
 import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config";
 import type { PipelineApplication, PipelineStage } from "@/core/engines/pipeline/pipeline.types";
 
@@ -17,7 +17,7 @@ export const biPipelineAdapter: PipelineApiAdapter = {
   },
 
   exportApplications: async (ids) => {
-    const response = await apiFetch("/api/bi/pipeline/export", {
+    const response = await rawApiFetch("/api/bi/pipeline/export", {
       method: "POST",
       credentials: "include",
       body: JSON.stringify({ ids })

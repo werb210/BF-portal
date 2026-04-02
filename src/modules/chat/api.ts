@@ -1,4 +1,4 @@
-import api from "@/lib/api";
+import api from "@/api";
 import type { ChatMessage, ChatSession } from "./types";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { api } from "@/api";
 
 export default function AiKnowledgeUpload() {
   const [file, setFile] = useState<File | null>(null);

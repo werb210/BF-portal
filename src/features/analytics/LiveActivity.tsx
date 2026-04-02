@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { api } from "@/api";
 
 type ActivityEvent = { event?: string; source?: string };
 

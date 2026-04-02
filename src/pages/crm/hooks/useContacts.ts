@@ -3,7 +3,7 @@
    ========================================================= */
 
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api } from "@/api";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";
 import { withBusinessUnitQuery } from "@/lib/businessUnit";
 import { normalizeBusinessUnit } from "@/types/businessUnit";

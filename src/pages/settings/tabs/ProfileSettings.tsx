@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrowserAuthError, PublicClientApplication } from "@azure/msal-browser";
-import api from "@/lib/api";
+import api from "@/api";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/hooks/useAuth";

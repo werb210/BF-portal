@@ -5,7 +5,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import { validateStartupToken } from "@/bootstrap";
-import { api } from "@/lib/api";
+import { api } from "@/api";
 
 import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
 

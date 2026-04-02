@@ -1,4 +1,4 @@
-import api from "@/lib/api";
+import api from "@/api";
 
 export type ReadinessLeadStatus = "new" | "qualified" | "converted" | "archived" | string;
 

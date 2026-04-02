@@ -1,4 +1,4 @@
-import { http } from "@/lib/api";
+import { http } from "@/api";
 import type { Contact } from "@/api/crm";
 
 export type CommunicationType = "chat" | "sms" | "human" | "issue" | "system" | "credit_readiness" | "contact_form";

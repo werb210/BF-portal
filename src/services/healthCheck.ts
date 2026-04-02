@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api";
 
 export async function serverHealth() {
   return api.get("/api/health");

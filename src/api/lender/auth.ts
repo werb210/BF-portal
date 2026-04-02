@@ -1,4 +1,4 @@
-import { lenderApiClient, type LenderAuthTokens } from "@/lib/api";
+import { lenderApiClient, type LenderAuthTokens } from "@/api";
 import type { UserRole } from "@/utils/roles";
 
 export type LenderProfile = {

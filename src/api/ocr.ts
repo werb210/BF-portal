@@ -1,4 +1,4 @@
-import { api, type RequestOptions } from "@/lib/api";
+import { api, type RequestOptions } from "@/api";
 
 export type OcrConflict = { field: string; values: string[] };
 export type OcrSection = {

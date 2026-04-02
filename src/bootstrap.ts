@@ -1,7 +1,7 @@
 import { decodeJwt } from "@/auth/jwt";
 import { clearToken, getToken } from "@/auth/token";
 
-import { api } from "@/lib/api";
+import { api } from "@/api";
 
 type HealthResponse = {
   ok?: boolean;

@@ -1,4 +1,4 @@
-import { api } from "../lib/api";
+import { api } from "../api";
 
 describe("API contract enforcement", () => {
   it("rejects invalid shapes", async () => {

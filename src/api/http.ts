@@ -22,7 +22,7 @@ export class ApiError extends Error {
   }
 }
 
-import { api as requestApi } from "@/lib/api";
+import { api as requestApi } from "@/api";
 
 export { requestApi as default };
 export { requestApi as api };

@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api";
 import type { SLFPipelineApplication, SLFStageId } from "./slf.pipeline.types";
 
 const API_PREFIX = "";

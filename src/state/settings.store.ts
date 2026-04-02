@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import api from "@/lib/api";
+import api from "@/api";
 import type { UserRole } from "@/utils/roles";
 
 export type ProfileSettings = {

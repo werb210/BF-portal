@@ -5,7 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar
 } from "recharts";
-import api from "@/lib/api";
+import api from "@/api";
 
 type DataPoint = Record<string, string | number>;
 

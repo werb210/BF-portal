@@ -1,4 +1,4 @@
-import api from "@/lib/api";
+import api from "@/api";
 import type { AdminUser, BrandingSettingsState, ProfileSettings } from "@/state/settings.store";
 
 export const fetchProfile = () => api.get<ProfileSettings>("/users/me");
