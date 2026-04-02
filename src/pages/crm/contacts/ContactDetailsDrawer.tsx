@@ -57,27 +57,9 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
     const outcome = latestLog.outcome;
     if (latestLog.isPending || !outcome || !endedAt) return;
     lastLogId.current = latestLog.id;
-    setTimeline((current) => [
-      {
-        id: latestLog.id,
-        entityId: contact.id,
-        entityType: "contact",
-        type: "call",
-        direction: "outbound",
-        occurredAt: endedAt,
-        summary: `Outbound call to ${latestLog.number || "unknown number"}`,
-        details: `Duration ${latestLog.durationSeconds}s · Outcome ${latestLog.outcome}${
-          latestLog.failureReason ? ` · Reason ${latestLog.failureReason}` : ""
-        }`,
-        call: {
-          outcome,
-          durationSeconds: latestLog.durationSeconds,
-          failureReason: latestLog.failureReason ?? null,
-          recordingUrl: latestLog.recordingUrl ?? null
-        }
-      },
-      ...current
-    ]);
+    fetchTimeline("contact", contact.id).then((result) => {
+      setTimeline(result);
+    });
   }, [contact, latestLog]);
 
   if (!contact) return null;
