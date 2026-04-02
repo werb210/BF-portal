@@ -1,6 +1,6 @@
 import { ApiResponseSchema } from "@boreal/shared-contract";
-import { env } from "../config/env";
-import { clearToken, getToken } from "@/lib/authToken";
+import { env } from "@/config/env";
+import { authToken } from "./authToken";
 import { setApiStatus } from "../state/apiStatus";
 
 export type RequestOptions = {
@@ -48,7 +48,7 @@ async function safeJson(res: Response): Promise<unknown> {
 }
 
 async function baseApi<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
-  const token = getToken();
+  const token = authToken.get();
 
   if (!token && requiresAuth(path)) {
     throw new Error("Auth token missing");
@@ -70,7 +70,7 @@ async function baseApi<T = unknown>(path: string, options: RequestOptions = {}):
   });
 
   if (res.status === 401) {
-    clearToken();
+    authToken.clear();
     window.location.href = "/login";
     throw new Error("Unauthorized");
   }
@@ -132,18 +132,31 @@ export const del = api.delete;
 export const apiPost = api.post;
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
-  const token = getToken();
+  const token = authToken.get();
 
-  const headers = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers || {}),
-  };
-
-  return fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${env.API_URL}${path}`, {
     ...options,
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
   });
+
+  if (res.status === 503) {
+    throw new Error("SERVICE_NOT_READY");
+  }
+
+  if (res.status === 401) {
+    authToken.clear();
+    throw new Error("UNAUTHORIZED");
+  }
+
+  if (res.status === 410) {
+    throw new Error("ENDPOINT_DEPRECATED");
+  }
+
+  return res;
 }
 
 export async function apiFetchWithRetry<T = unknown>(path: string, options?: RequestInit, _retries = 0) {

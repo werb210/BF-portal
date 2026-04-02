@@ -1,13 +1,19 @@
 import { env } from "@/config/env";
 
-export function getToken(): string | null {
-  return localStorage.getItem(env.JWT_STORAGE_KEY);
-}
+export const authToken = {
+  get(): string | null {
+    return localStorage.getItem(env.JWT_STORAGE_KEY);
+  },
 
-export function setToken(token: string) {
-  localStorage.setItem(env.JWT_STORAGE_KEY, token);
-}
+  set(token: string) {
+    localStorage.setItem(env.JWT_STORAGE_KEY, token);
+  },
 
-export function clearToken() {
-  localStorage.removeItem(env.JWT_STORAGE_KEY);
-}
+  clear() {
+    localStorage.removeItem(env.JWT_STORAGE_KEY);
+  },
+};
+
+export const getToken = () => authToken.get();
+export const setToken = (token: string) => authToken.set(token);
+export const clearToken = () => authToken.clear();
