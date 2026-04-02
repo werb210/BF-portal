@@ -1,35 +1,13 @@
 export async function apiFetch(
-  url: string,
+  path: string,
   options: RequestInit = {}
-) {
-  // normalize URL (prevent //api)
-  url = url.replace(/([^:]\/)\/+/g, "$1");
+): Promise<any> {
+  const res = await fetch(path, options);
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...((options.headers as Record<string, string>) || {}),
-  };
-
-  // ensure request id always present
-  if (!headers["x-request-id"]) {
-    headers["x-request-id"] = `rid-${Math.random().toString(36).slice(2, 10)}`;
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ERROR ${res.status}: ${text}`);
   }
 
-  // ensure auth header always present
-  if (!headers["Authorization"]) {
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("auth_token") ||
-          localStorage.getItem(import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token")
-        : null;
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-  }
-
-  return fetch(url, {
-    ...options,
-    headers,
-  });
+  return res.json();
 }
