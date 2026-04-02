@@ -39,6 +39,10 @@ export type CommunicationConversation = {
 
 export type CrmLead = {
   id: string;
+  company?: string;
+  fullName?: string;
+  industry?: string;
+  revenue?: number;
   email?: string;
   phone?: string;
   tags?: string[];

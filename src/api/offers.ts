@@ -1,7 +1,4 @@
-import { apiClient } from "@/lib/apiClient";
-
-export const getOffers = (applicationId: string) =>
-  apiClient(`/api/offers?applicationId=${applicationId}`);
+import { api } from "@/utils/api";
 
 export type OfferRecord = {
   id: string;
@@ -20,15 +17,30 @@ export type OfferRecord = {
   createdAt?: string;
 };
 
-export const fetchOffers = (applicationId: string, options?: { signal?: AbortSignal }) =>
-  apiClient.get<OfferRecord[]>(`/api/offers`, { params: { applicationId }, signal: options?.signal });
+export async function getOffers(id: string) {
+  return api<OfferRecord[]>(`/api/offers/${id}`);
+}
 
-export const archiveOffer = (offerId: string) =>
-  apiClient.post(`/api/offers/${offerId}/archive`, {});
+export async function fetchOffers(applicationId: string, options?: { signal?: AbortSignal }) {
+  const res = await api<OfferRecord[]>(`/api/offers/${applicationId}`, { signal: options?.signal });
+  if ("error" in res) throw new Error(res.error.message);
+  return res.data;
+}
 
-export const uploadOffer = async (applicationId: string, file: File) => {
-  const body = new FormData();
-  body.append("file", file);
-  body.append("applicationId", applicationId);
-  return apiClient.post<OfferRecord>("/api/offers/upload", body);
-};
+export async function uploadOffer(applicationIdOrBody: string | any, file?: File) {
+  const body =
+    typeof applicationIdOrBody === "string" && file
+      ? { applicationId: applicationIdOrBody, fileName: file.name }
+      : applicationIdOrBody;
+
+  return api("/api/offers", {
+    method: "POST",
+    body,
+  });
+}
+
+export async function archiveOffer(id: string) {
+  return api(`/api/offers/${id}`, {
+    method: "DELETE",
+  });
+}

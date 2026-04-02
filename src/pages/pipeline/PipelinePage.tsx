@@ -21,7 +21,7 @@ export default function PipelinePage() {
     const loadPipeline = async () => {
       try {
         const data = await getApplications();
-        setPipeline((data as PipelineStage[]) || []);
+        setPipeline((data as unknown as PipelineStage[]) || []);
       } catch (e) {
         console.error(e);
         throw new Error("Something failed. Check console.");

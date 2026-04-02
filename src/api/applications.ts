@@ -1,49 +1,84 @@
-import api from "@/lib/apiClient";
-import { requireAuth } from "@/utils/requireAuth";
-import type { ApiClientOptions } from "@/lib/apiClient";
+import { api } from "@/utils/api";
+import type { ApplicationAuditEvent, ApplicationDetails, PortalApplicationRecord } from "@/types/application.types";
 
-export const getApplications = async () => {
-  requireAuth();
-  return api.get<unknown[]>("/api/applications");
+type Application = PortalApplicationRecord;
+type ApplicationDetail = ApplicationDetails;
+type AuditEntry = ApplicationAuditEvent;
+type ApplicationRequestOptions = {
+  signal?: AbortSignal;
+  params?: Record<string, string | number | boolean | null | undefined>;
 };
 
-export const sendToLender = async (id: string, lenders: string[]) => {
-  requireAuth();
-
-  return api.post<unknown>(
-    `/api/applications/${id}/send`,
-    {
-      lenders,
-    },
-  );
+const withParams = (url: string, params?: ApplicationRequestOptions["params"]) => {
+  if (!params) return url;
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.set(key, String(value));
+    }
+  });
+  const query = searchParams.toString();
+  return query ? `${url}?${query}` : url;
 };
 
-export const createApplication = async (payload: unknown) => {
-  requireAuth();
-  return api.post<unknown>("/api/applications", payload);
-};
+export async function getApplications() {
+  const res = await api<Application[]>("/api/applications");
+  if ("error" in res) throw new Error(res.error.message);
+  return res.data;
+}
 
-export const fetchPortalApplication = async <T = unknown>(id: string, options: ApiClientOptions = {}) => {
-  requireAuth();
-  return api.get<T>(`/api/applications/${id}`, options);
-};
+export async function sendToLender(id: string, lenders: string[]) {
+  const res = await api<unknown>(`/api/applications/${id}/send`, {
+    method: "POST",
+    body: { lenders },
+  });
+  if ("error" in res) throw new Error(res.error.message);
+  return res.data;
+}
 
-export const openPortalApplication = async <T = unknown>(id: string) => {
-  requireAuth();
-  return api.post<T>(`/api/applications/${id}/open`, {});
-};
+export async function createApplication(payload: unknown) {
+  const res = await api<Application>("/api/applications", {
+    method: "POST",
+    body: payload,
+  });
+  if ("error" in res) throw new Error(res.error.message);
+  return res.data;
+}
 
-export const fetchApplicationDetails = async <T = unknown>(id: string, options: ApiClientOptions = {}) => {
-  requireAuth();
-  return api.get<T>(`/api/applications/${id}/details`, options);
-};
+export async function fetchPortalApplication<T = Application>(id: string, options?: ApplicationRequestOptions) {
+  const requestUrl = withParams(`/api/applications/${id}`, options?.params);
+  const res = await api<T>(requestUrl, { signal: options?.signal });
+  if ("error" in res) throw new Error(res.error.message);
+  return res.data;
+}
 
-export const updatePortalApplication = async <T = unknown>(id: string, payload: Record<string, unknown>) => {
-  requireAuth();
-  return api.patch<T>(`/api/applications/${id}`, payload);
-};
+export async function updatePortalApplication(id: string, body: any) {
+  const res = await api<Application>(`/api/applications/${id}`, {
+    method: "PUT",
+    body,
+  });
+  if ("error" in res) throw new Error(res.error.message);
+  return res.data;
+}
 
-export const fetchApplicationAudit = async <T = unknown[]>(id: string, options: ApiClientOptions = {}) => {
-  requireAuth();
-  return api.get<T>(`/api/applications/${id}/audit`, options);
-};
+export async function fetchApplicationDetails<T = ApplicationDetail>(id: string, options?: ApplicationRequestOptions) {
+  const requestUrl = withParams(`/api/applications/${id}/details`, options?.params);
+  const res = await api<T>(requestUrl, { signal: options?.signal });
+  if ("error" in res) throw new Error(res.error.message);
+  return res.data;
+}
+
+export async function fetchApplicationAudit<T = AuditEntry[]>(id: string, options?: ApplicationRequestOptions) {
+  const requestUrl = withParams(`/api/applications/${id}/audit`, options?.params);
+  const res = await api<T>(requestUrl, { signal: options?.signal });
+  if ("error" in res) throw new Error(res.error.message);
+  return res.data;
+}
+
+export async function openPortalApplication(id: string) {
+  const res = await api<Application>(`/api/applications/${id}/open`, {
+    method: "POST",
+  });
+  if ("error" in res) throw new Error(res.error.message);
+  return res.data;
+}
