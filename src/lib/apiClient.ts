@@ -15,12 +15,17 @@ export class ApiError extends Error {}
 export type DegradedApiResponse = { degraded: true };
 
 const getBase = (): string => {
-  const base = import.meta.env.VITE_API_URL;
+  const envBase = import.meta.env.VITE_API_URL;
 
-  if (!base) throw new Error("MISSING_API_URL");
-  if (!base.includes("/api/v1")) throw new Error("INVALID_API_VERSION");
+  if (!envBase) {
+    if (import.meta.env.MODE === "test") {
+      return "http://test.local/api/v1";
+    }
+    throw new Error("MISSING_API_URL");
+  }
+  if (!envBase.includes("/api/v1")) throw new Error("INVALID_API_VERSION");
 
-  return base;
+  return envBase;
 };
 
 const withBody = (body: unknown): BodyInit | undefined => {
