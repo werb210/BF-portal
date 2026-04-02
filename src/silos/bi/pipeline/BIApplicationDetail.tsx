@@ -39,7 +39,7 @@ export default function BIApplicationDetail() {
       return;
     }
 
-    const data = await apiClient(`/api/bi/applications/${id}`);
+    const data = await apiClient<BIApplicationDetailData>(`/api/bi/applications/${id}`);
     setApp(data);
   }
 
@@ -111,7 +111,7 @@ function DocumentList({ applicationId }: { applicationId: string }) {
   }, [applicationId]);
 
   async function load() {
-    const data = await apiClient(`/api/bi/applications/${applicationId}/documents`);
+    const data = await apiClient<DocumentRow[]>(`/api/bi/applications/${applicationId}/documents`);
     setDocs(data);
   }
 
@@ -136,7 +136,7 @@ function CommissionTab({ applicationId }: { applicationId: string }) {
   }, [applicationId]);
 
   async function load() {
-    const data = await apiClient(`/api/bi/commissions/by-application/${applicationId}`);
+    const data = await apiClient<CommissionRow>(`/api/bi/commissions/by-application/${applicationId}`);
     setRow(data);
   }
 

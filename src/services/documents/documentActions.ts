@@ -11,7 +11,8 @@ export async function rejectDocument(documentId: string, category: string) {
 }
 
 export async function downloadDocument(documentId: string) {
-  return apiClient.get(`/documents/${documentId}/download`, {
-    responseType: "blob"
-  })
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/documents/${documentId}/download`, {
+    credentials: "include"
+  });
+  return response.blob();
 }

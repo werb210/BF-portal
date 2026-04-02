@@ -12,7 +12,10 @@ export type ApiResult<T = unknown> =
   | { success: true; data: T }
   | { success: false; error: string };
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  status?: number;
+  details?: unknown;
+}
 export type DegradedApiResponse = { degraded: true };
 
 const toBody = (body: unknown): BodyInit | undefined => {
@@ -70,7 +73,9 @@ export async function api<T = unknown>(path: string, options: ApiClientOptions =
     });
 
     if (!res.ok) {
-      throw new ApiError(`HTTP_ERROR_${res.status}`);
+      const error = new ApiError(`HTTP_ERROR_${res.status}`);
+      error.status = res.status;
+      throw error;
     }
 
     const payload = await res.json();

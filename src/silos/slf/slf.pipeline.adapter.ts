@@ -1,11 +1,11 @@
 import { apiClient } from "@/api/httpClient";
 import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config";
+import type { PipelineApplication, PipelineStage } from "@/core/engines/pipeline/pipeline.types";
 
 const API_PREFIX = "";
 export const slfPipelineAdapter: PipelineApiAdapter = {
   fetchPipeline: async (filters) => {
-    const result = await apiClient.post("/api/slf/pipeline", filters ?? {});
-    return result;
+    return apiClient.post<{ stages: PipelineStage[]; applications: PipelineApplication[] }>("/api/slf/pipeline", filters ?? {});
   },
 
   updateStage: async (applicationId, stage) => {
@@ -14,9 +14,14 @@ export const slfPipelineAdapter: PipelineApiAdapter = {
   },
 
   exportApplications: async (ids) => {
-    const blobData = await apiClient.post<Blob>("/api/slf/pipeline/export", { ids }, {
-      responseType: "blob"
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/slf/pipeline/export`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ ids })
     });
-    return blobData;
+    return response.blob();
   },
 };

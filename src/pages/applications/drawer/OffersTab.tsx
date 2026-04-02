@@ -56,7 +56,7 @@ const OffersTab = () => {
 
   const { data: application } = useQuery({
     queryKey: ["portal-application-stage", applicationId],
-    queryFn: ({ signal }) => fetchPortalApplication(applicationId ?? "", { signal }),
+    queryFn: ({ signal }) => fetchPortalApplication<{ current_stage?: string; stage?: string }>(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId) && canEdit
   });
 

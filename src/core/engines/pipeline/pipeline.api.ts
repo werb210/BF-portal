@@ -1,5 +1,6 @@
 import { apiClient } from "@/api/httpClient";
 import api from "@/lib/apiClient";
+import { getToken } from "@/auth/token";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
 import type { BusinessUnit } from "@/types/businessUnit";
 import { PIPELINE_STAGE_LABELS, PIPELINE_STAGE_ORDER, normalizeStageId } from "./pipeline.types";
@@ -325,8 +326,17 @@ export const pipelineApi = {
     return applications.filter((application) => normalizeStageId(application.stage) === normalizedStage);
   },
   exportApplications: async (applicationIds: string[]) => {
-    const response = await api.post(`${API_PREFIX}/applications/export`, { applicationIds }, { responseType: "blob" });
-    return response as Blob;
+    const token = getToken();
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/export`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ applicationIds })
+    });
+    return response.blob();
   }
 };
 

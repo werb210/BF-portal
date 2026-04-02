@@ -6,7 +6,7 @@ export default function WebLeads() {
 
   useEffect(() => {
     apiClient<{ leads?: Array<{ id: string; companyName?: string; firstName?: string; lastName?: string; email?: string; phone?: string }> }>("/api/crm/web-leads")
-      .then((result) => setLeads(result.success ? result.data.leads || [] : []));
+      .then((result) => setLeads(result.leads || []));
   }, []);
 
   return (

@@ -6,7 +6,6 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar
 } from "recharts";
 import apiClient from "@/lib/apiClient";
-import { handleApiResult } from "@/utils/handleApiResult";
 
 type DataPoint = Record<string, string | number>;
 
@@ -31,23 +30,20 @@ export default function MayaIntelligence() {
   useEffect(() => {
     apiClient.get("/api/maya/overview")
       .then((res) => {
-        const payload = handleApiResult<OverviewData>(res);
-        setData(payload);
+        setData((res ?? null) as OverviewData | null);
       })
       .catch(() => setData(null));
   }, []);
 
   async function simulateROI() {
     const res = await apiClient.post("/api/maya/roi-simulate", { budget: roiInput });
-    const payload = handleApiResult<{ projectedRevenue: number }>(res);
-    if (!payload) return;
-    setRoiProjection(payload.projectedRevenue);
+    if (res && typeof res === "object" && "projectedRevenue" in res) {
+      setRoiProjection(Number((res as { projectedRevenue?: number }).projectedRevenue ?? 0));
+    }
   }
 
   async function rollbackModel(version: string) {
-    const res = await apiClient.post("/api/maya/model-rollback", { version });
-    const payload = handleApiResult<{ message: string }>(res);
-    if (!payload) return;
+    await apiClient.post("/api/maya/model-rollback", { version });
     throw new Error("Model rolled back.");
   }
 
@@ -155,7 +151,7 @@ export default function MayaIntelligence() {
                   <td>{v.accuracy}%</td>
                   <td>{new Date(v.created_at).toLocaleDateString()}</td>
                   <td>
-                    <Button variant="secondary" onClick={() => rollbackModel(v.version)}>
+                    <Button variant="secondary" onClick={() => rollbackModel(String(v.version ?? ""))}>
                       Rollback
                     </Button>
                   </td>

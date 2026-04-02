@@ -52,7 +52,7 @@ export default function AiLiveChat({ sessionId }: { sessionId: string }) {
   async function closeSession() {
     await apiClient("/api/ai/close", {
       method: "POST",
-      data: { sessionId }
+      body: { sessionId }
     });
 
     window.location.href = "/portal/ai";

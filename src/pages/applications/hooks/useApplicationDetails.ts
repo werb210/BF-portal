@@ -9,7 +9,8 @@ export const useApplicationDetails = () => {
   const { activeBusinessUnit } = useBusinessUnit();
   const query = useQuery<ApplicationDetails>({
     queryKey: ["applications", activeBusinessUnit, applicationId, "details"],
-    queryFn: ({ signal }) => fetchApplicationDetails(applicationId ?? "", { signal, params: { business_unit: activeBusinessUnit } }),
+    queryFn: ({ signal }) =>
+      fetchApplicationDetails<ApplicationDetails>(applicationId ?? "", { signal, params: { business_unit: activeBusinessUnit } }),
     enabled: Boolean(applicationId)
   });
 

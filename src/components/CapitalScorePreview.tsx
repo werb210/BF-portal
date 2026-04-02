@@ -12,7 +12,7 @@ export default function CapitalScorePreview() {
   async function testScore() {
     const data = await apiClient<ScoringResponse>("/scoring", {
       method: "POST",
-      data: {
+      body: {
         revenue: 200000,
         timeInBusiness: 36,
         creditScore: 700,

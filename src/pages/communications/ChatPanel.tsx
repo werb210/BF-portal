@@ -20,14 +20,18 @@ export default function ChatPanel() {
 
   async function openSession(id: string) {
     const res = await fetchChatSession(id);
-    setActive(res);
+    if (res && typeof res === "object" && "id" in res) {
+      setActive(res as ChatSession);
+    }
   }
 
   async function send() {
     if (!input.trim() || !active) return;
     await sendStaffMessage(active.id, input.trim());
     const res = await fetchChatSession(active.id);
-    setActive(res);
+    if (res && typeof res === "object" && "id" in res) {
+      setActive(res as ChatSession);
+    }
     setInput("");
   }
 

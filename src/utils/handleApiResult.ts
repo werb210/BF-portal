@@ -10,15 +10,15 @@ export const handleApiResult = <T>(
   result: ApiResult<T>,
   options: HandleApiResultOptions = {},
 ): T | null => {
-  if (result.success) {
-    return result.data;
+  if ("error" in result) {
+    const message = result.error || options.fallbackMessage || "Request failed";
+    if (options.onError) {
+      options.onError(message);
+    } else {
+      showToast(message, "error");
+    }
+    return null;
   }
 
-  const message = result.error || options.fallbackMessage || "Request failed";
-  if (options.onError) {
-    options.onError(message);
-  } else {
-    showToast(message, "error");
-  }
-  return null;
+  return result.data;
 };

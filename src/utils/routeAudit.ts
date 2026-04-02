@@ -71,7 +71,12 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
     });
     return true;
   } catch (error: unknown) {
-    if (error?.response?.status === 401) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "response" in error &&
+      (error as { response?: { status?: number } }).response?.status === 401
+    ) {
       reportAuthFailure("unauthorized");
     }
     return false;

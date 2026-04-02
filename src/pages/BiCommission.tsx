@@ -1,13 +1,23 @@
 import { apiClient } from "@/lib/apiClient";
 import { useEffect, useState } from "react";
 
+type LedgerRow = {
+  id: string;
+  application_id?: string;
+  policy_year?: string | number;
+  annual_premium?: string | number;
+  commission?: string | number;
+  renewal_date: string;
+  paid?: boolean;
+};
+
 export default function BiCommission() {
-  const [ledger, setLedger] = useState<any[]>([]);
+  const [ledger, setLedger] = useState<LedgerRow[]>([]);
 
   useEffect(() => {
     apiClient
-      .get("/api/ledger")
-      .then((result) => setLedger(result));
+      .get<LedgerRow[]>("/api/ledger")
+      .then((result) => setLedger(Array.isArray(result) ? result : []));
   }, []);
 
   const totalCommission = ledger.reduce(

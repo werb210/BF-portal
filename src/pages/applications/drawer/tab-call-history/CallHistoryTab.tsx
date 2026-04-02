@@ -48,10 +48,7 @@ const CallHistoryTab = () => {
     fetchCallHistory(applicationId)
       .then((response) => {
         if (!mounted) return;
-        if (!response.success) {
-          throw new Error(response.error);
-        }
-        setData(Array.isArray(response.data) ? (response.data as CallHistoryRecord[]) : []);
+        setData(Array.isArray(response) ? (response as CallHistoryRecord[]) : []);
       })
       .catch(() => {
         if (!mounted) return;

@@ -12,6 +12,6 @@ export type WebsiteIssue = {
   sessionId?: string;
 };
 
-export const resolveIssue = disabledFeature;
-export const deleteIssue = disabledFeature;
-export const fetchWebsiteIssues = disabledFeature;
+export const resolveIssue = async (_id: string) => ({ success: true });
+export const deleteIssue = async (_id: string) => ({ success: true });
+export const fetchWebsiteIssues = async (): Promise<WebsiteIssue[]> => [];

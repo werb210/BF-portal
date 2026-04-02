@@ -316,7 +316,17 @@ const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
   };
   const submissionConfig = lender.submissionConfig ?? {
     method: "EMAIL",
-    submissionEmail: ""
+    submissionEmail: "",
+    sheetId: null,
+    worksheetName: null,
+    mappingPreview: null,
+    sheetStatus: null,
+    attachmentFormat: null,
+    apiAuthType: null,
+    apiBaseUrl: null,
+    apiClientId: null,
+    apiUsername: null,
+    apiPassword: null
   };
   const submissionMappings = parseMappingPreview(submissionConfig.mappingPreview);
   return {

@@ -20,7 +20,7 @@ export default function KnowledgeManager() {
 
     await apiClient('/api/ai/knowledge', {
       method: 'POST',
-      data: payload,
+      body: payload,
       headers: { "Content-Type": "multipart/form-data" },
     });
 

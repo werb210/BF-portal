@@ -30,7 +30,7 @@ export default function BIPipeline() {
   }, []);
 
   async function load() {
-    const data = await apiClient("/api/bi/applications");
+    const data = await apiClient<BIApplication[]>("/api/bi/applications");
     setApps(data);
   }
 

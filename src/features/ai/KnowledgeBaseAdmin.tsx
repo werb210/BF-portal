@@ -24,7 +24,7 @@ export function KnowledgeBaseAdmin({ isAdmin }: KnowledgeBaseAdminProps) {
 
     await apiClient('/api/ai/admin', {
       method: 'POST',
-      data: { content },
+      body: { content },
     });
     setContent("");
     await load();

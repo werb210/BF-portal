@@ -30,7 +30,7 @@ export default function BILenderPortal() {
   }, []);
 
   async function load() {
-    const data = await apiClient("/api/bi/lender/applications");
+    const data = await apiClient<Application[]>("/api/bi/lender/applications");
     setApps(data);
   }
 

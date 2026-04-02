@@ -33,7 +33,9 @@ export default function CommissionDetail() {
     async function load() {
       if (!policyId) return;
       const result = await biApi.get<CommissionDetailResponse>(`/bi/admin/commissions/${policyId}`);
-      setDetail(result);
+      if (result.success && result.data) {
+        setDetail(result.data);
+      }
     }
 
     void load();

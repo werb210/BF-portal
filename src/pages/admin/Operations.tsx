@@ -27,15 +27,15 @@ export default function Operations() {
       api.get<ChatEscalation[]>("/admin/chats"),
     ]);
 
-    setContacts(contactsRes.success ? contactsRes.data : []);
-    setIssues(issuesRes.success ? issuesRes.data : []);
-    setChats(chatsRes.success ? chatsRes.data : []);
+    setContacts(contactsRes);
+    setIssues(issuesRes);
+    setChats(chatsRes);
   }
 
   async function updateIssueStatus(id: string, status: string) {
     const updateRes = await api.patch(`${API_PREFIX}/admin/issues/${id}`, { status });
-    if (!updateRes.success) {
-      throw new Error(updateRes.error);
+    if (!updateRes) {
+      throw new Error("Failed to update issue");
     }
 
     await refreshData();

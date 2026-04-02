@@ -47,7 +47,7 @@ const AiChatDashboardContent = () => {
   }, [selectedChat?.messages]);
 
   useEffect(() => {
-    const unsubscribeEscalated = subscribeAiSocket("escalated_chat", () => {
+    const unsubscribeEscalated = subscribeAiSocket("session_timeout", () => {
       audioRef.current?.play().catch(() => undefined);
       void chatsQuery.refetch ();
       if (selectedChatId) {
