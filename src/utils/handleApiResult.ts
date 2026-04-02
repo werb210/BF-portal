@@ -1,24 +1,9 @@
-import type { ApiResult } from "@/lib/apiClient";
-import { showToast } from "@/utils/toastEvents";
+import { ApiResponse } from "@/types/api";
 
-type HandleApiResultOptions = {
-  fallbackMessage?: string;
-  onError?: (message: string) => void;
-};
-
-export const handleApiResult = <T>(
-  result: ApiResult<T>,
-  options: HandleApiResultOptions = {},
-): T | null => {
-  if ("error" in result) {
-    const message = result.error || options.fallbackMessage || "Request failed";
-    if (options.onError) {
-      options.onError(message);
-    } else {
-      showToast(message, "error");
-    }
-    return null;
+export function handleApiResult<T>(res: ApiResponse<T>): T {
+  if ("error" in res) {
+    throw new Error(res.error.message);
   }
 
-  return result.data;
-};
+  return res.data;
+}

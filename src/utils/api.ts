@@ -1,9 +1,4 @@
-import type { ApiResponse } from "@/types/api";
-import { apiClient } from "@/api/httpClient";
-import { API_BASE } from "@/config/api";
-import { API_ROUTES } from "@/contracts/api";
-
-export { API_BASE };
+import { ApiResponse } from "@/types/api";
 
 type ApiClientOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -23,7 +18,7 @@ export async function api<T>(url: string, options: ApiClientOptions = {}): Promi
     signal: options.signal,
   });
 
-  let json: unknown;
+  let json: unknown = null;
 
   try {
     json = await res.json();
@@ -38,7 +33,7 @@ export async function api<T>(url: string, options: ApiClientOptions = {}): Promi
     return {
       success: false,
       error: {
-        message: (json as { message?: string } | null)?.message || "Request failed",
+        message: (json as any)?.message || "Request failed",
         details: json,
       },
     };
@@ -50,7 +45,12 @@ export async function api<T>(url: string, options: ApiClientOptions = {}): Promi
   };
 }
 
-export async function checkStaffServerHealth(): Promise<boolean> {
-  const result = await apiClient.get<{ success?: boolean }>(API_ROUTES.health, { skipAuth: true });
-  return result.success === true;
+export async function apiBlob(url: string): Promise<Blob> {
+  const res = await fetch(url);
+
+  if (!res.ok) {
+    throw new Error("Download failed");
+  }
+
+  return res.blob();
 }

@@ -7,7 +7,7 @@ export interface PipelineApiAdapter {
     filters: PipelineFilters | undefined,
     options?: { signal?: AbortSignal }
   ) => Promise<{ stages: PipelineStage[]; applications: PipelineApplication[] }>;
-  updateStage: (applicationId: string, stage: string) => Promise<unknown>;
+  updateStage: (applicationId: string, stage: string) => Promise<void>;
   exportApplications?: (ids: string[]) => Promise<Blob>;
 }
 

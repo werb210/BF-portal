@@ -9,8 +9,7 @@ export const slfPipelineAdapter: PipelineApiAdapter = {
   },
 
   updateStage: async (applicationId, stage) => {
-    const result = await apiClient.patch(`${API_PREFIX}/slf/pipeline/${applicationId}/stage`, { stage });
-    return result;
+    await apiClient.patch(`${API_PREFIX}/slf/pipeline/${applicationId}/stage`, { stage });
   },
 
   exportApplications: async (ids) => {
