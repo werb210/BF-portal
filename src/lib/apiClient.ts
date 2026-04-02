@@ -15,8 +15,12 @@ export class ApiError extends Error {}
 export type DegradedApiResponse = { degraded: true };
 
 const getBase = (): string => {
-  const base = (window as any).__API_BASE__ || import.meta.env.VITE_API_URL;
-  if (!base) throw new Error("API_BASE_NOT_DEFINED");
+  const mode = import.meta.env.MODE;
+  const base = mode === "test" ? "http://localhost/api/v1" : import.meta.env.VITE_API_URL;
+
+  if (!base) throw new Error("MISSING_API_URL");
+  if (!base.includes("/api/v1")) throw new Error("INVALID_API_VERSION");
+
   return base;
 };
 

@@ -1,21 +1,13 @@
-const processEnvBaseUrl =
-  typeof process !== "undefined" && process.env
-    ? process.env.API_BASE_URL
-    : undefined;
+const viteMode = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env.MODE : undefined;
+const viteApiUrl = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env.VITE_API_URL : undefined;
 
-const viteMode =
-  typeof import.meta !== "undefined" && import.meta.env
-    ? import.meta.env.MODE
-    : undefined;
-
-const viteEnvBaseUrl =
-  typeof import.meta !== "undefined" && import.meta.env
-    ? import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL
-    : undefined;
-
-if (viteMode === "test" && import.meta.env.VITE_API_URL) {
-  throw new Error("VITE_API_URL must be empty in test mode");
+function assertApiUrl(url: string | undefined): string {
+  if (!url) throw new Error("MISSING_API_URL");
+  if (!url.includes("/api/v1")) throw new Error("INVALID_API_VERSION");
+  return url;
 }
 
 export const API_BASE_URL =
-  processEnvBaseUrl || viteEnvBaseUrl || "https://boreal-staff-server.azurewebsites.net";
+  viteMode === "test"
+    ? "http://localhost/api/v1"
+    : assertApiUrl(viteApiUrl);
