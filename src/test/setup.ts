@@ -16,5 +16,8 @@ global.fetch = vi.fn(() =>
 ) as any;
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  vi.clearAllMocks();
+});
 afterAll(() => server.close());

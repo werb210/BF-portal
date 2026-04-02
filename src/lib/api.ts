@@ -1,4 +1,5 @@
 import { getEnv } from "../config/env";
+import { getToken } from "./authToken";
 
 type ApiResponse<T> = {
   status: "ok" | "error" | "not_ready";
@@ -13,17 +14,21 @@ export async function api<T = unknown>(
     method?: string;
     body?: any;
     headers?: Record<string, string>;
+    signal?: AbortSignal;
   }
 ): Promise<T> {
   const { VITE_API_URL } = getEnv();
+  const token = getToken();
 
   const res = await fetch(`${VITE_API_URL}${path}`, {
     method: options?.method || "GET",
     headers: {
       "Content-Type": "application/json",
-      ...(options?.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers ?? {}),
     },
     body: options?.body ? JSON.stringify(options.body) : undefined,
+    signal: options?.signal,
   });
 
   const json: ApiResponse<T> = await res.json();
