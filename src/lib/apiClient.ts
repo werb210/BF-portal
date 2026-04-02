@@ -1,85 +1,79 @@
-import { getToken } from "@/auth/token";
-import { API_BASE } from "@/config/api";
+import { getEnv } from "@/config/env";
+import { getToken } from "@/lib/authToken";
 import { setApiStatus } from "@/state/apiStatus";
-
-export type ApiClientOptions = Omit<RequestInit, "body"> & {
-  body?: unknown;
-  skipAuth?: boolean;
-  params?: Record<string, string | number | boolean | null | undefined>;
-};
-
-export type ApiResult<T = unknown> =
-  | { success: true; data: T }
-  | { success: false; error: string };
 
 export class ApiError extends Error {
   status?: number;
   details?: unknown;
 }
-export type DegradedApiResponse = { degraded: true };
 
-const toBody = (body: unknown): BodyInit | undefined => {
-  if (body === undefined) return undefined;
-  if (body instanceof FormData) return body;
-  if (typeof body === "string") return body;
-  return JSON.stringify(body);
+export type ApiClientOptions = {
+  method?: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+  params?: Record<string, string | number | boolean | null | undefined>;
 };
 
-const normalizePath = (path: string): string => {
-  const clean = path.trim();
-  if (clean.startsWith("/api/v1")) return clean.slice("/api/v1".length) || "/";
-  if (clean === "/api") return "/";
-  if (clean.startsWith("/api/")) return clean.slice("/api".length);
-  return clean.startsWith("/") ? clean : `/${clean}`;
+const withQuery = (path: string, params?: Record<string, string | number | boolean | null | undefined>) => {
+  if (!params) return path;
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) search.set(key, String(value));
+  });
+  const query = search.toString();
+  return query ? `${path}${path.includes("?") ? "&" : "?"}${query}` : path;
 };
 
-const withParams = (path: string, params?: ApiClientOptions["params"]): string => {
-  const url = new URL(`${API_BASE}${normalizePath(path)}`);
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        url.searchParams.set(key, String(value));
-      }
-    });
-  }
-  return url.toString();
+const buildUrl = (path: string) => {
+  if (/^https?:\/\//.test(path)) return path;
+  return `${getEnv().VITE_API_URL}${path}`;
 };
 
-const toHeaders = (options: ApiClientOptions): Headers => {
-  const headers = new Headers(options.headers ?? {});
+const requiresAuth = (path: string) => !path.includes("/auth/") && !path.includes("/health");
 
-  if (!options.skipAuth) {
-    const token = getToken();
-    if (!token) throw new Error("MISSING_AUTH");
-    headers.set("Authorization", `Bearer ${token}`);
+const parseError = (payload: unknown): string => {
+  if (typeof payload === "string") return payload;
+  if (payload && typeof payload === "object") {
+    const rec = payload as { error?: unknown; message?: unknown };
+    if (typeof rec.message === "string") return rec.message;
+    if (typeof rec.error === "string") return rec.error;
+    if (rec.error && typeof rec.error === "object" && "message" in (rec.error as Record<string, unknown>)) {
+      const m = (rec.error as { message?: unknown }).message;
+      if (typeof m === "string") return m;
+    }
   }
-
-  if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  return headers;
+  return "API_ERROR";
 };
 
 export async function api<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<T> {
-  const { body, params, ...rest } = options;
+  const token = getToken();
+  if (requiresAuth(path) && !token) {
+    throw new Error("MISSING_AUTH");
+  }
 
+  const { params, ...rest } = options;
+  const url = buildUrl(withQuery(path, params));
   try {
-    const res = await fetch(withParams(path, params), {
-      ...rest,
+    const res = await fetch(url, {
+      method: rest.method ?? "GET",
+      headers: {
+        ...(rest.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(rest.headers ?? {}),
+      },
+      body: rest.body === undefined ? undefined : rest.body instanceof FormData ? rest.body : JSON.stringify(rest.body),
+      signal: rest.signal,
       credentials: "include",
-      headers: toHeaders(options),
-      body: toBody(body),
     });
 
     if (!res.ok) {
-      const error = new ApiError(`HTTP_ERROR_${res.status}`);
-      error.status = res.status;
-      throw error;
+      const err = new ApiError(`HTTP_ERROR_${res.status}`);
+      err.status = res.status;
+      throw err;
     }
 
     const payload = await res.json();
-
     if (payload?.status === "ok") {
       setApiStatus("available");
       return payload.data as T;
@@ -90,15 +84,7 @@ export async function api<T = unknown>(path: string, options: ApiClientOptions =
       return { degraded: true } as T;
     }
 
-    if (payload && typeof payload === "object" && "success" in payload) {
-      const result = payload as ApiResult<T>;
-      if (result.success === false) {
-        throw new ApiError(result.error || "API_ERROR");
-      }
-      return result.data;
-    }
-
-    return payload as T;
+    throw new Error(parseError(payload));
   } catch (error) {
     if (!(error instanceof Error && error.message === "MISSING_AUTH")) {
       setApiStatus("unavailable");
@@ -107,33 +93,36 @@ export async function api<T = unknown>(path: string, options: ApiClientOptions =
   }
 }
 
-export async function apiFetch<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<ApiResult<T>> {
+export async function apiFetch<T = unknown>(path: string, options: ApiClientOptions = {}) {
   try {
-    return { success: true, data: await api<T>(path, options) };
+    return { success: true as const, data: await api<T>(path, options) };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : "API_ERROR" };
+    return { success: false as const, error: error instanceof Error ? error.message : "API_ERROR" };
   }
 }
 
-export async function apiFetchWithRetry<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<ApiResult<T>> {
+export async function apiFetchWithRetry<T = unknown>(path: string, options: ApiClientOptions = {}, _retries = 0) {
   return apiFetch<T>(path, options);
 }
 
 export const get = <T = unknown>(path: string, options: ApiClientOptions = {}) => api<T>(path, { ...options, method: "GET" });
 export const post = <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) =>
-  api<T>(path, { ...options, method: "POST", body });
+  api<T>(path, { ...options, method: "POST", body: body ?? options.body });
+export const patch = <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) =>
+  api<T>(path, { ...options, method: "PATCH", body: body ?? options.body });
+export const put = <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) =>
+  api<T>(path, { ...options, method: "PUT", body: body ?? options.body });
+export const del = <T = unknown>(path: string, options: ApiClientOptions = {}) => api<T>(path, { ...options, method: "DELETE" });
+
 export const apiPost = post;
 
-const apiMethods = {
+export const apiClient = Object.assign(api, {
   get,
   post,
-  patch: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) =>
-    api<T>(path, { ...options, method: "PATCH", body }),
-  put: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) =>
-    api<T>(path, { ...options, method: "PUT", body }),
-  delete: <T = unknown>(path: string, options: ApiClientOptions = {}) => api<T>(path, { ...options, method: "DELETE" }),
-};
+  patch,
+  put,
+  delete: del,
+  getList: <T = unknown>(path: string, options: ApiClientOptions = {}) => api<{ items: T[] }>(path, { ...options, method: "GET" }),
+});
 
-export const apiClient = Object.assign(api, apiMethods);
-
-export default apiMethods;
+export default apiClient;

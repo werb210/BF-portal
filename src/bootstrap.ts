@@ -32,8 +32,7 @@ export function validateStartupToken(): boolean {
 export async function checkBackend(): Promise<boolean> {
   try {
     await apiClient<HealthResponse>("/api/health", {
-      method: "GET",
-      skipAuth: true,
+      method: "GET"
     });
     return true;
   } catch {

@@ -8,7 +8,7 @@ export default defineConfig({
     },
   },
   test: {
-    setupFiles: ["./src/test/setup.ts", "./src/test/setupEnv.ts"],
+    setupFiles: ["./src/test/setupEnv.ts", "./src/test/setup.ts"],
     environment: "jsdom",
     globals: true,
   },
