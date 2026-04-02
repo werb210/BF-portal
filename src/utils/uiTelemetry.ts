@@ -8,7 +8,7 @@ export type UiTelemetryEvent =
   | "lender_create"
   | "lender_update";
 
-export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+export type AuthStatus = "pending" | "authenticated" | "unauthenticated";
 
 export type UiTelemetryPayload = {
   route?: string;

@@ -4,7 +4,7 @@ import { decodeJwt } from "@/auth/jwt";
 import { clearToken, getToken } from "@/auth/token";
 import { normalizeRole, type Role } from "@/auth/roles";
 
-export type AuthStatus = "authenticated" | "unauthenticated" | "loading";
+export type AuthStatus = "authenticated" | "unauthenticated" | "pending";
 export type RolesStatus = "ready" | "loading";
 
 export type AuthUser = { id: string; role: Role; name?: string; email?: string };
@@ -26,7 +26,7 @@ export type AuthContextValue = {
 
 export type AuthContextType = AuthContextValue;
 export type AuthState =
-  | { status: "loading" }
+  | { status: "pending" }
   | { status: "unauthenticated" }
   | { status: "authenticated"; user: AuthUser };
 

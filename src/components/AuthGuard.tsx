@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 export default function AuthGuard({ children }: { children: JSX.Element }) {
   const { authStatus, authenticated } = useAuth();
 
-  if (authStatus === "loading" || authStatus === "pending") {
+  if (authStatus === "pending") {
     return <div>Loading...</div>;
   }
 

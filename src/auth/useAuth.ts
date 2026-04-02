@@ -4,12 +4,12 @@ import { getToken } from "./token";
 import { decodeJwt } from "./jwt";
 
 type AuthState =
-  | { status: "loading" }
+  | { status: "pending" }
   | { status: "unauthenticated" }
   | { status: "authenticated"; user: JwtPayload };
 
 export function useAuth(): AuthState {
-  const [state, setState] = useState<AuthState>({ status: "loading" });
+  const [state, setState] = useState<AuthState>({ status: "pending" });
 
   useEffect(() => {
     const token = getToken();

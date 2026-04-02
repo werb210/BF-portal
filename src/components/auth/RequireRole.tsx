@@ -39,7 +39,7 @@ const RequireRole = ({
     }
   }, [authStatus, hasAccess, roles]);
 
-  if (authStatus === "loading") {
+  if (authStatus === "pending") {
     return <AppLoading />;
   }
 

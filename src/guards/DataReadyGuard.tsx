@@ -6,7 +6,7 @@ import { useAuth } from "@/auth/AuthContext";
 const DataReadyGuard = ({ children }: PropsWithChildren) => {
   const { authStatus, rolesStatus, user, authReady } = useAuth();
 
-  if (!authReady || authStatus === "loading" || rolesStatus === "loading") {
+  if (!authReady || authStatus === "pending" || rolesStatus === "loading") {
     return <RouteSkeleton label="Loading staff portal" />;
   }
 
