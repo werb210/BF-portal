@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Navigate, Outlet, Route, Routes, useInRouterContext } from "react-router-dom";
 import { roleIn } from "@/auth/roles";
@@ -16,6 +16,7 @@ import LendersPage from "@/pages/Lenders";
 import PipelinePage from "@/pages/pipeline/PipelinePage";
 import ApplicationDetail from "@/pages/application/ApplicationDetail";
 import MayaPage from "@/pages/MayaPage";
+import ApplyPage from "@/pages/ApplyPage";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import DialerButton from "@/components/DialerButton";
@@ -78,6 +79,8 @@ function AuthenticatedShell() {
   return <AppShell />;
 }
 
+const FloatingChat = lazy(() => import("./components/FloatingChat"));
+
 const AppRoutes = () => (
   <>
     <Routes>
@@ -102,6 +105,7 @@ const AppRoutes = () => (
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
+        <Route path="/apply" element={<ApplyPage />} />
       </Route>
     </Routes>
   </>
@@ -123,6 +127,9 @@ export default function App() {
         <ErrorBoundary>
           <AppRoutes />
         </ErrorBoundary>
+        <Suspense fallback={null}>
+          <FloatingChat />
+        </Suspense>
       </ToastProvider>
     </QueryClientProvider>
   );

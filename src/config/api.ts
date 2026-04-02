@@ -1,7 +1,3 @@
-const base = import.meta.env.VITE_API_URL;
+import { ENV } from "./env";
 
-if (!base) {
-  throw new Error("VITE_API_URL is not defined");
-}
-
-export const API_BASE = `${base}/api/v1`;
+export const API_BASE = `${ENV.API_URL}/api/v1`;

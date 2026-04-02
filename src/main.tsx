@@ -6,10 +6,12 @@ import { BrowserRouter } from "react-router-dom";
 import { validateStartupToken } from "@/bootstrap";
 import { apiClient } from "@/lib/apiClient";
 
-import { validateEnv } from "./system/env";
+import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
+
+import { assertEnv } from "./config/env";
+import { ErrorFallback } from "./components/ErrorBoundary";
 
 import App from "./App";
-import ErrorBoundary from "./components/ErrorBoundary";
 import "./index.css";
 
 const t = localStorage.getItem("token");
@@ -17,7 +19,7 @@ if (t === "null" || t === "undefined") {
   localStorage.removeItem("token");
 }
 
-validateEnv();
+assertEnv();
 
 window.addEventListener("unhandledrejection", (e) => {
   console.error("[UNHANDLED PROMISE]", e.reason);
@@ -43,9 +45,9 @@ async function bootstrap() {
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <BrowserRouter>
-        <ErrorBoundary>
+        <ReactErrorBoundary FallbackComponent={ErrorFallback}>
           <App />
-        </ErrorBoundary>
+        </ReactErrorBoundary>
       </BrowserRouter>
     </React.StrictMode>,
   );
