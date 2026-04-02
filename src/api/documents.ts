@@ -1,5 +1,5 @@
 import { requireAuth } from "@/utils/requireAuth";
-import { api, type RequestOptions } from "@/lib/api";
+import { api, type RequestOptions } from "@/api";
 import type { DocumentRequirementResponse, DocumentStatus } from "@/types/documents.types";
 
 export type DocumentRecord = {

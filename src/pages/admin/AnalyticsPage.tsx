@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/lib/api";
+import { api } from "@/api";
 
 type AnalyticsEvent = {
   event_name?: string;

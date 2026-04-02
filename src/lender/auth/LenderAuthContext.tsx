@@ -8,7 +8,7 @@ import {
   type LenderProfile,
   type VerifyOtpPayload
 } from "@/api/lender/auth";
-import { configureLenderApiClient, type LenderAuthTokens } from "@/lib/api";
+import { configureLenderApiClient, type LenderAuthTokens } from "@/api";
 import { canAccessLenderPortal } from "@/utils/roles";
 
 export type LenderAuthContextValue = {

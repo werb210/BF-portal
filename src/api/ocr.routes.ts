@@ -2,7 +2,7 @@ import type { OcrExtractionInput, OcrExtractionOutput } from "@/ocr/ocrExtractor
 import { runOcrExtraction } from "@/ocr/ocrExtractor";
 import type { OcrComparisonResult } from "@/ocr/ocrComparator";
 import type { OcrResultRecord } from "@/db/schema/ocrResults";
-import { api } from "@/lib/api";
+import { api } from "@/api";
 
 export type OcrInsightsResponse = OcrComparisonResult & {
   application_id: string;

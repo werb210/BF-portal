@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import api from "@/lib/api";
+import api from "@/api";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { getErrorMessage } from "@/utils/errors";

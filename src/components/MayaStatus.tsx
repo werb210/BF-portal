@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api as api } from "@/lib/api";
+import { api as api } from "@/api";
 
 export default function MayaStatus() {
   const [status, setStatus] = useState<string>("degraded");

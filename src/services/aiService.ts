@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import api from "@/lib/api";
+import api from "@/api";
 
 export type AiKnowledgeCategory = "Product" | "Lender" | "Underwriting" | "Process";
 

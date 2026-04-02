@@ -1,6 +1,7 @@
-import { ApiResponseSchema } from "@boreal/shared-contract";
-import { authToken } from "./authToken";
-import { setApiStatus } from "../state/apiStatus";
+import { apiFetch as coreFetch } from "./client";
+import { setApiStatus } from "@/state/apiStatus";
+
+const BASE = import.meta.env.VITE_API_BASE_URL || "/api";
 
 export type RequestOptions = {
   method?: string;
@@ -20,29 +21,61 @@ export type LenderAuthTokens = {
   refreshToken?: string;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
-
-if (!API_BASE_URL) {
-  throw new Error("VITE_API_URL is not defined");
-}
-
-export const API_BASE = API_BASE_URL;
 const requiresAuth = (path: string) => !path.includes("/auth/") && !path.includes("/health");
 
-const appendParams = (url: string, params?: RequestOptions["params"]) => {
-  if (!params) return url;
-  const parsed = new URL(url, url.startsWith("http") ? undefined : API_BASE);
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === null || value === undefined) return;
-    parsed.searchParams.set(key, String(value));
-  });
-  return /^https?:\/\//.test(url) ? parsed.toString() : `${parsed.pathname}${parsed.search}`;
+const getStoredToken = () => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("auth_token") || localStorage.getItem(import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token");
 };
 
-const buildUrl = (path: string, params?: RequestOptions["params"]) => {
-  const full = /^https?:\/\//.test(path) ? path : `${API_BASE}${path}`;
-  return appendParams(full, params);
+const withParams = (path: string, params?: RequestOptions["params"]) => {
+  if (!params) return path;
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    search.set(key, String(value));
+  });
+  const query = search.toString();
+  return query ? `${path}${path.includes("?") ? "&" : "?"}${query}` : path;
 };
+
+const toRelativeApiPath = (path: string) => {
+  if (/^https?:\/\//.test(path)) {
+    const parsed = new URL(path);
+    return parsed.pathname + parsed.search;
+  }
+  return path;
+};
+
+export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}) {
+  const res = await coreFetch(`${BASE}${toRelativeApiPath(path)}`, options);
+  const json = (await res.json()) as { status?: string; data?: T; error?: string };
+
+  if (json?.status === "ok") {
+    return { success: true, data: (json.data ?? ({} as T)) as T };
+  }
+
+  return { success: false, error: json?.error ?? "Request failed" };
+}
+
+export async function rawApiFetch(path: string, options: RequestInit = {}) {
+  return coreFetch(`${BASE}${toRelativeApiPath(path)}`, options);
+}
+
+export function get(path: string, headers: any = {}) {
+  return coreFetch(`${BASE}${path}`, {
+    method: "GET",
+    headers,
+  });
+}
+
+export function post(path: string, body: any, headers: any = {}) {
+  return coreFetch(`${BASE}${path}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+}
 
 async function safeJson(res: Response): Promise<unknown> {
   try {
@@ -53,19 +86,17 @@ async function safeJson(res: Response): Promise<unknown> {
 }
 
 async function baseApi<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
-  const token = authToken.get();
+  const normalizedPath = toRelativeApiPath(path);
+  const token = getStoredToken();
 
-  if (!token && requiresAuth(path)) {
+  if (!token && requiresAuth(normalizedPath)) {
     throw new Error("Auth token missing");
   }
 
-  const res = await fetch(buildUrl(path, options.params), {
+  const requestPath = withParams(normalizedPath, options.params);
+  const res = await coreFetch(`${BASE}${requestPath}`, {
     method: options.method || "GET",
-    headers: {
-      ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers ?? {}),
-    },
+    headers: options.headers,
     ...(options.body === undefined
       ? {}
       : {
@@ -75,35 +106,31 @@ async function baseApi<T = unknown>(path: string, options: RequestOptions = {}):
   });
 
   if (res.status === 401) {
-    authToken.clear();
-    window.location.href = "/login";
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem(import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token");
+      window.location.href = "/login";
+    }
     throw new Error("Unauthorized");
   }
 
-  const json = await safeJson(res);
-  const parsed = ApiResponseSchema.safeParse(json);
+  const json = (await safeJson(res)) as { status?: string; data?: T; error?: string };
 
-  if (!parsed.success) {
-    setApiStatus("unavailable");
-    throw new Error("API contract violation");
-  }
-
-  if (parsed.data.status === "error" && parsed.data.error === "DB_NOT_READY") {
+  if (json?.status === "error" && json.error === "DB_NOT_READY") {
     setApiStatus("degraded");
     return { degraded: true } as T;
   }
 
-  if (!res.ok || parsed.data.status !== "ok") {
-    const errorMessage = parsed.data.status === "error" ? parsed.data.error : `HTTP_ERROR_${res.status}`;
-    const err = new ApiError(errorMessage);
+  if (!res.ok || json?.status !== "ok") {
+    const err = new ApiError(json?.error || `HTTP_ERROR_${res.status}`);
     err.status = res.status;
-    err.details = parsed.data;
+    err.details = json;
     setApiStatus("unavailable");
     throw err;
   }
 
   setApiStatus("available");
-  return parsed.data.data as T;
+  return (json.data ?? ({} as T)) as T;
 }
 
 type NoMethodBody = Omit<RequestOptions, "method" | "body">;
@@ -129,43 +156,17 @@ export const api = Object.assign(baseApi, {
   getList: <T = unknown>(path: string, options?: NoMethodBody) => baseApi<T[]>(path, { ...options, method: "GET" }),
 }) as ApiFn;
 
-export const get = api.get;
-export const post = api.post;
-export const patch = api.patch;
-export const put = api.put;
-export const del = api.delete;
 export const apiPost = api.post;
-
-export async function apiFetch(path: string, options: RequestInit = {}) {
-  const token = authToken.get();
-
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
-
-  if (res.status === 503) {
-    throw new Error("SERVICE_NOT_READY");
-  }
-
-  if (res.status === 401) {
-    authToken.clear();
-    throw new Error("UNAUTHORIZED");
-  }
-
-  if (res.status === 410) {
-    throw new Error("ENDPOINT_DEPRECATED");
-  }
-
-  return res;
-}
+export const del = api.delete;
+export const put = api.put;
+export const patch = api.patch;
 
 export async function apiFetchWithRetry<T = unknown>(path: string, options?: RequestInit, _retries = 0) {
-  return apiFetch(path, options);
+  try {
+    return await apiFetch<T>(path, options);
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Request failed" };
+  }
 }
 
 let lenderTokenProvider: (() => LenderAuthTokens | null) | null = null;

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { checkBackend } from "@/bootstrap";
-import { api, apiFetch, apiFetchWithRetry } from "@/lib/api";
+import { api, apiFetch, apiFetchWithRetry } from "@/api";
 import { clearToken, setToken } from "@/auth/token";
 import { useApiStatusStore } from "@/state/apiStatus";
 

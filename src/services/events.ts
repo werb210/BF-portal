@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api";
 
 export async function getEvents(params?: { view?: string }) {
   const qs = params?.view ? `?view=${encodeURIComponent(params.view)}` : "";

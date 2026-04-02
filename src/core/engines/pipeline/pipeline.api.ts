@@ -1,4 +1,4 @@
-import { api, apiFetch } from "@/lib/api";
+import { api, rawApiFetch } from "@/api";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
 import type { BusinessUnit } from "@/types/businessUnit";
 import { PIPELINE_STAGE_LABELS, PIPELINE_STAGE_ORDER, normalizeStageId } from "./pipeline.types";
@@ -324,7 +324,7 @@ export const pipelineApi = {
     return applications.filter((application) => normalizeStageId(application.stage) === normalizedStage);
   },
   exportApplications: async (applicationIds: string[]) => {
-    const response = await apiFetch("/applications/export", {
+    const response = await rawApiFetch("/applications/export", {
       method: "POST",
       credentials: "include",
       body: JSON.stringify({ applicationIds })

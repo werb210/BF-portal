@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { rawApiFetch } from "@/api";
 import { ApiResponseSchema } from "@boreal/shared-contract";
 
 type ApiOptions = Omit<RequestInit, "body"> & {
@@ -14,7 +14,7 @@ const normalizeBody = (body: ApiOptions["body"]): BodyInit | undefined => {
 };
 
 export async function api<T>(url: string, options: ApiOptions = {}): Promise<T> {
-  const res = await apiFetch(url, {
+  const res = await rawApiFetch(url, {
     headers: { "Content-Type": "application/json", ...(options.headers ?? {}) },
     ...options,
     body: normalizeBody(options.body),
@@ -35,7 +35,7 @@ export async function api<T>(url: string, options: ApiOptions = {}): Promise<T> 
 }
 
 export async function apiBlob(url: string): Promise<Blob> {
-  const res = await apiFetch(url);
+  const res = await rawApiFetch(url);
   if (!res.ok) throw new Error("Download failed");
   return res.blob();
 }

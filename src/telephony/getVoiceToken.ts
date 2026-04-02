@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api";
 
 export async function getTelephonyToken() {
   const result = await api<{ token?: string }>("/api/telephony/token", { method: "GET" });

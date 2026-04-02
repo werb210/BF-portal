@@ -1,4 +1,4 @@
-import { api, type RequestOptions } from "@/lib/api";
+import { api, type RequestOptions } from "@/api";
 import type {
   Lender,
   LenderPayload,

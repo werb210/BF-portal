@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api";
 import { ENDPOINTS } from "@/lib/endpoints";
 
 export async function startCall(to: string) {

@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type BiApplication = {

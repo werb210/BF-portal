@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { api } from "../lib/api";
+import { api } from "../api";
 import { getToken, setToken, clearToken } from "../lib/authToken";
 
 type AuthContextType = {
