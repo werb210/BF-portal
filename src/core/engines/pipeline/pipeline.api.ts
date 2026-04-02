@@ -1,6 +1,4 @@
-import { env } from "@/config/env";
-import { api } from "@/lib/api";
-import { getToken } from "@/auth/token";
+import { api, apiFetch } from "@/lib/api";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
 import type { BusinessUnit } from "@/types/businessUnit";
 import { PIPELINE_STAGE_LABELS, PIPELINE_STAGE_ORDER, normalizeStageId } from "./pipeline.types";
@@ -326,14 +324,9 @@ export const pipelineApi = {
     return applications.filter((application) => normalizeStageId(application.stage) === normalizedStage);
   },
   exportApplications: async (applicationIds: string[]) => {
-    const token = getToken();
-    const response = await fetch(`${env.API_URL}/applications/export`, {
+    const response = await apiFetch("/applications/export", {
       method: "POST",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
       body: JSON.stringify({ applicationIds })
     });
     return response.blob();
