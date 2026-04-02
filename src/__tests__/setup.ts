@@ -1,4 +1,4 @@
-import { beforeEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 
 vi.mock("axios", () => ({
   default: vi.fn(() => {
@@ -25,4 +25,9 @@ Object.defineProperty(window, "__API_BASE__", {
   configurable: true,
   writable: true,
   value: "/",
+});
+
+
+afterEach(() => {
+  vi.clearAllMocks();
 });
