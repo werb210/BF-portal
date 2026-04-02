@@ -1,19 +1,13 @@
-import { ENV } from "../config/env";
+const KEY = "bf_access_token";
 
 export function getToken(): string | null {
-  return localStorage.getItem(ENV.JWT_STORAGE_KEY);
+  return localStorage.getItem(KEY);
 }
 
 export function setToken(token: string) {
-  localStorage.setItem(ENV.JWT_STORAGE_KEY, token);
+  localStorage.setItem(KEY, token);
 }
 
 export function clearToken() {
-  localStorage.removeItem(ENV.JWT_STORAGE_KEY);
+  localStorage.removeItem(KEY);
 }
-
-// Backward-compatible aliases.
-export const ACCESS_TOKEN_KEY = ENV.JWT_STORAGE_KEY;
-export const getAccessToken = getToken;
-export const setAccessToken = setToken;
-export const clearAccessToken = clearToken;
