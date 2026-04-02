@@ -19,12 +19,14 @@ export interface AiMessage {
 
 export async function fetchAiSessions(): Promise<AiSession[]> {
   const res = await api.get("/api/chat/sessions");
-  return res;
+  const sessions: AiSession[] = ((res as { data?: AiSession[] }).data ?? []) as AiSession[];
+  return sessions;
 }
 
 export async function fetchAiMessages(sessionId: string): Promise<AiMessage[]> {
   const res = await api.get(`/chat/sessions/${sessionId}/messages`);
-  return res;
+  const messages: AiMessage[] = ((res as { data?: AiMessage[] }).data ?? []) as AiMessage[];
+  return messages;
 }
 
 export async function sendHumanReply(sessionId: string, content: string) {
