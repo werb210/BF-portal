@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate env
+        run: |
+          if [ -z "${{ secrets.API_URL }}" ]; then
+            echo "MISSING_API_URL"
+            exit 1
+          fi
+      - run: npm ci
+      - run: npm run build
