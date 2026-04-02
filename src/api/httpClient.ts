@@ -1,4 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_URL;
+import { ENV } from "@/config/env";
+
+const API_BASE = ENV.API_URL;
 
 type RequestMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
