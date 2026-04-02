@@ -1,3 +1,4 @@
+import { ApiResponseSchema } from "@boreal/shared-contract";
 import { getEnv } from "../config/env";
 import { clearToken, getToken } from "@/lib/authStore";
 import { setApiStatus } from "../state/apiStatus";
@@ -20,12 +21,6 @@ export type LenderAuthTokens = {
   refreshToken?: string;
 };
 
-type ApiEnvelope<T> = {
-  status: "ok" | string;
-  data?: T;
-  error?: string;
-};
-
 const { VITE_API_URL } = getEnv();
 const requiresAuth = (path: string) => !path.includes("/auth/") && !path.includes("/health");
 
@@ -44,10 +39,18 @@ const buildUrl = (path: string, params?: RequestOptions["params"]) => {
   return appendParams(full, params);
 };
 
+async function safeJson(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    throw new Error("Invalid JSON response");
+  }
+}
+
 async function baseApi<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = getToken();
 
-  if (!token && !path.includes("/auth")) {
+  if (!token && requiresAuth(path)) {
     throw new Error("Auth token missing");
   }
 
@@ -72,31 +75,30 @@ async function baseApi<T = unknown>(path: string, options: RequestOptions = {}):
     throw new Error("Unauthorized");
   }
 
-  const json: unknown = await res.json();
+  const json = await safeJson(res);
+  const parsed = ApiResponseSchema.safeParse(json);
 
-  if (!json || typeof json !== "object" || !('status' in json)) {
+  if (!parsed.success) {
     setApiStatus("unavailable");
-    throw new Error("Invalid API response");
+    throw new Error("API contract violation");
   }
 
-  const payload = json as ApiEnvelope<T>;
-
-  if (payload.status === "error" && payload.error === "DB_NOT_READY") {
+  if (parsed.data.status === "error" && parsed.data.error === "DB_NOT_READY") {
     setApiStatus("degraded");
     return { degraded: true } as T;
   }
 
-  if (!res.ok || payload.status !== "ok") {
-    const errorMessage = typeof payload.error === "string" && payload.error.length > 0 ? payload.error : `HTTP_ERROR_${res.status}`;
+  if (!res.ok || parsed.data.status !== "ok") {
+    const errorMessage = parsed.data.status === "error" ? parsed.data.error : `HTTP_ERROR_${res.status}`;
     const err = new ApiError(errorMessage);
     err.status = res.status;
-    err.details = payload;
+    err.details = parsed.data;
     setApiStatus("unavailable");
     throw err;
   }
 
   setApiStatus("available");
-  return payload.data as T;
+  return parsed.data.data as T;
 }
 
 type NoMethodBody = Omit<RequestOptions, "method" | "body">;

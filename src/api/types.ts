@@ -1,18 +1,7 @@
-export type ApiSuccess<T> = {
-  success: true;
-  data: T;
-};
+import type { ApiResponse } from "@boreal/shared-contract";
 
-export type ApiError = {
-  success: false;
-  error: {
-    message: string;
-    code?: string;
-  };
-};
+export type { ApiResponse };
 
-export type ApiResponse<T> = ApiSuccess<T> | ApiError;
-
-export function isApiError(res: unknown): res is ApiError {
-  return typeof res === "object" && res !== null && (res as { success?: unknown }).success === false;
+export function isApiError(res: unknown): res is Extract<ApiResponse<unknown>, { status: "error" }> {
+  return typeof res === "object" && res !== null && (res as { status?: unknown }).status === "error";
 }
