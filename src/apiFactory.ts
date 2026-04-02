@@ -1,4 +1,4 @@
-import { http } from "@/api/httpClient";
+import { http } from "@/lib/api";
 
 const resolveBaseURL = (silo: string) => `${import.meta.env.VITE_API_URL}/${silo.toLowerCase()}`;
 

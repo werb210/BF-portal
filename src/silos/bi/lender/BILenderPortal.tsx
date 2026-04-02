@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 import ActivityTimeline from "../components/ActivityTimeline";
 
 type Application = {

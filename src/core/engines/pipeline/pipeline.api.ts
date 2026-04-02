@@ -1,5 +1,5 @@
-import { apiClient } from "@/api/httpClient";
-import api from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
+import api from "@/lib/api";
 import { getToken } from "@/auth/token";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
 import type { BusinessUnit } from "@/types/businessUnit";

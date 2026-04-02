@@ -1,4 +1,4 @@
-import api from "@/lib/apiClient";
+import api from "@/lib/api";
 
 export async function fetchOpenChats() {
   return api.get("/api/chat/sessions?status=open");

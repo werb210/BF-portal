@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 type LedgerRow = {

@@ -1,4 +1,4 @@
-import { apiClient, type RequestOptions } from "./httpClient";
+import { apiClient, type RequestOptions } from "@/lib/api";
 import { withBusinessUnitQuery } from "@/lib/businessUnit";
 import type { BusinessUnit } from "@/types/businessUnit";
 

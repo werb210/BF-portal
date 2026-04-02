@@ -1,5 +1,5 @@
-import { apiClient, type RequestOptions } from "./httpClient";
-import api from "@/lib/apiClient";
+import { apiClient, type RequestOptions } from "@/lib/api";
+import api from "@/lib/api";
 import type {
   Lender,
   LenderPayload,

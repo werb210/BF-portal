@@ -1,4 +1,4 @@
-import { apiClient } from "./httpClient";
+import { apiClient } from "@/lib/api";
 
 export type CalendarEvent = {
   id: string;

@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 
 export function sendOtp(phone: string) {
   return apiClient("/auth/send-otp", {

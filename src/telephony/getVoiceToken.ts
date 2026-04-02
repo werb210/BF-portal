@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 
 export async function getTelephonyToken() {
   const result = await apiClient<{ token?: string }>("/api/telephony/token", { method: "GET" });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 
 type KnowledgeEntry = {
   id: string;
