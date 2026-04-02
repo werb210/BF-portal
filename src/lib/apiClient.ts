@@ -27,9 +27,24 @@ const withBody = (body: unknown): BodyInit | undefined => {
   return JSON.stringify(body);
 };
 
+const normalizeApiPath = (path: string): string => {
+  const cleanPath = path.trim();
+  if (/^https?:\/\//i.test(cleanPath)) {
+    const url = new URL(cleanPath);
+    return normalizeApiPath(`${url.pathname}${url.search}`);
+  }
+  if (cleanPath.startsWith("/api/v1/")) return cleanPath;
+  if (cleanPath === "/api/v1") return "/api/v1";
+  if (cleanPath.startsWith("/api/")) return `/api/v1/${cleanPath.slice("/api/".length)}`;
+  if (cleanPath === "/api") return "/api/v1";
+  if (cleanPath.startsWith("/")) return `/api/v1${cleanPath}`;
+  return `/api/v1/${cleanPath}`;
+};
+
 const buildPath = (path: string, params?: ApiClientOptions["params"]): string => {
-  if (!params) return path;
-  const url = new URL(path, "http://localhost");
+  const normalizedPath = normalizeApiPath(path);
+  if (!params) return normalizedPath;
+  const url = new URL(normalizedPath, "http://localhost");
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
   });
@@ -62,23 +77,37 @@ export async function api<T = unknown>(path: string, options: ApiClientOptions =
       headers: toHeaders(options),
     });
 
-    if (!res.ok) throw new ApiError(`HTTP_ERROR_${res.status}`);
-    const validated = await res.json();
+    const payloadText = await res.text();
+    const validated = payloadText ? JSON.parse(payloadText) : {};
+    const errorCode =
+      typeof validated?.error === "string"
+        ? validated.error
+        : typeof validated?.error?.code === "string"
+          ? validated.error.code
+          : typeof validated?.code === "string"
+            ? validated.code
+            : undefined;
+
+    if (!res.ok) {
+      const err = new ApiError(errorCode || `HTTP_ERROR_${res.status}`);
+      (err as any).code = errorCode || `HTTP_ERROR_${res.status}`;
+      (err as any).status = res.status;
+      throw err;
+    }
 
     if (validated?.status === "ok") {
       setApiStatus("available");
       return validated.data as T;
     }
 
-    const errorCode =
-      typeof validated?.error === "string" ? validated.error : validated?.error?.code;
     if (errorCode === "DB_NOT_READY") {
       setApiStatus("degraded");
       return { degraded: true } as T;
     }
 
-    const err = new Error(errorCode || "API_ERROR");
-    (err as any).code = validated?.error?.code;
+    const err = new ApiError(errorCode || "API_ERROR");
+    (err as any).code = errorCode || "API_ERROR";
+    (err as any).status = res.status;
     throw err;
   } catch (e) {
     if (!(e instanceof Error && e.message === "MISSING_AUTH")) {
@@ -99,9 +128,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiClientOpti
 }
 
 export async function apiFetchWithRetry<T = unknown>(path: string, options: ApiClientOptions = {}, retries = 1): Promise<ApiResult<T>> {
-  const result = await apiFetch<T>(path, options);
-  if (result.success || retries <= 0) return result;
-  return apiFetchWithRetry<T>(path, options, retries - 1);
+  return apiFetch<T>(path, options);
 }
 
 export const get = <T = unknown>(path: string, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "GET" });
