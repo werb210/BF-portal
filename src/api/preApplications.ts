@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/apiClient";
+import { api } from "@/lib/apiClient";
 
 export interface PreApplicationRecord {
   id: string;
@@ -10,21 +10,13 @@ export interface PreApplicationRecord {
 }
 
 export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
-  const res = await apiFetch<PreApplicationRecord[]>("/api/preapp/admin/list");
-  if (!res.success) {
-    throw new Error(res.error);
-  }
-  if (!Array.isArray(res.data)) {
-    return [];
-  }
-  return res.data;
+  const data = await api<PreApplicationRecord[]>("/api/preapp/admin/list");
+  return Array.isArray(data) ? data : [];
 }
 
 export async function convertPreApplication(id: string) {
-  const res = await apiFetch<Record<string, unknown>>("/api/preapp/admin/convert", {
+  return api<Record<string, unknown>>("/api/preapp/admin/convert", {
     method: "POST",
     body: { id }
   });
-  if (!res.success) return { success: false, error: res.error };
-  return { success: true, data: res.data };
 }

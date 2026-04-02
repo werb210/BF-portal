@@ -4,15 +4,26 @@ export type ApiResult<T> =
 
 const API_BASE = import.meta.env.VITE_API_URL
 
-async function request<T>(
-  method: string,
+type RequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+export type ListResponse<T> = {
+  items: T[]
+} & Record<string, unknown>
+
+export type RequestOptions = {
+  method?: RequestMethod
+  body?: unknown
+  headers?: Record<string, string>
+  params?: Record<string, string | number | boolean | null | undefined>
+  data?: unknown
+  signal?: AbortSignal
+  skipAuth?: boolean
+}
+
+export async function request<T>(
   path: string,
-  options?: {
-    body?: unknown
-    headers?: Record<string, string>
-    params?: Record<string, string | number | boolean | null | undefined>
-  }
-): Promise<ApiResult<T>> {
+  options?: RequestOptions
+): Promise<T> {
   const url = new URL(`${API_BASE}${path}`)
   Object.entries(options?.params ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
@@ -21,46 +32,36 @@ async function request<T>(
   })
 
   const res = await fetch(url.toString(), {
-    method,
+    method: options?.method ?? 'GET',
     headers: {
       'Content-Type': 'application/json',
-      ...(options?.headers || {}),
+      ...(options?.headers ?? {}),
     },
     body: options?.body ? JSON.stringify(options.body) : undefined,
+    signal: options?.signal,
   })
 
-  if (!res.ok) {
-    return { success: false, error: await res.text() }
+  const json = await res.json()
+
+  // Normalize ApiResult
+  if (json && typeof json === 'object' && 'success' in json) {
+    if (!json.success) {
+      throw new Error((json as { error?: string }).error || 'API error')
+    }
+    return (json as { data: T }).data
   }
 
-  const data = (await res.json()) as T
-  return { success: true, data }
-}
-
-export type ListResponse<T> = {
-  items: T[]
-} & Record<string, unknown>
-
-export type RequestOptions = {
-  body?: unknown
-  headers?: Record<string, string>
-  params?: Record<string, string | number | boolean | null | undefined>
-  schema?: unknown
-  data?: unknown
-  responseType?: string
+  // fallback (non ApiResult endpoints)
+  return json as T
 }
 
 export const http = {
-  get: <T>(path: string, options?: RequestOptions) => request<T>('GET', path, options),
-  post: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('POST', path, { ...options, body: body ?? options?.body ?? options?.data }),
-  put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PUT', path, { ...options, body: body ?? options?.body ?? options?.data }),
-  patch: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PATCH', path, { ...options, body: body ?? options?.body ?? options?.data }),
-  delete: <T>(path: string, options?: RequestOptions) => request<T>('DELETE', path, options),
-  getList: async <T>(path: string, options?: RequestOptions) => {
-    const res = await request<ListResponse<T>>('GET', path, options)
-    if (!res.success) throw new Error(res.error)
-    return res.data
-  },
+  get: <T>(path: string, options?: RequestOptions) => request<T>(path, { ...options, method: 'GET' }),
+  post: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>(path, { ...options, method: 'POST', body: body ?? options?.body ?? options?.data }),
+  put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>(path, { ...options, method: 'PUT', body: body ?? options?.body ?? options?.data }),
+  patch: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>(path, { ...options, method: 'PATCH', body: body ?? options?.body ?? options?.data }),
+  delete: <T>(path: string, options?: RequestOptions) => request<T>(path, { ...options, method: 'DELETE' }),
+  getList: <T>(path: string, options?: RequestOptions) => request<ListResponse<T>>(path, { ...options, method: 'GET' }),
 }
 
 export const apiClient = http
