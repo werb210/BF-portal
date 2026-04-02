@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prebuild": "node scripts/no-legacy-check.js"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
