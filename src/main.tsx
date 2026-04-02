@@ -6,6 +6,8 @@ import { BrowserRouter } from "react-router-dom";
 import { validateStartupToken } from "@/bootstrap";
 import { apiClient } from "@/lib/apiClient";
 
+import { validateEnv } from "./system/env";
+
 import App from "./App";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "./index.css";
@@ -14,6 +16,8 @@ const t = localStorage.getItem("token");
 if (t === "null" || t === "undefined") {
   localStorage.removeItem("token");
 }
+
+validateEnv();
 
 window.addEventListener("unhandledrejection", (e) => {
   console.error("[UNHANDLED PROMISE]", e.reason);
