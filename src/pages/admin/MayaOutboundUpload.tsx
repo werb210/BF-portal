@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 
 export default function MayaOutboundUpload() {
 

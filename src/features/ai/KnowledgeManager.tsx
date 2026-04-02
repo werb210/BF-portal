@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAIKnowledge } from "@/api/support";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 
 export default function KnowledgeManager() {
   const [docs, setDocs] = useState<any[]>([]);

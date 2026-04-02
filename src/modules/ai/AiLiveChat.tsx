@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 const API_PREFIX = "/api";
 
 type Message = {

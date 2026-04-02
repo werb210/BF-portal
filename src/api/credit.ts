@@ -1,4 +1,4 @@
-import { apiClient, type RequestOptions } from "./httpClient";
+import { apiClient, type RequestOptions } from "@/lib/api";
 
 export type CreditSummary = {
   businessOverview?: string;

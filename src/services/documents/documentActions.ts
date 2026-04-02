@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/apiClient"
+import { apiClient } from "@/lib/api"
 
 export async function acceptDocument(documentId: string) {
   return apiClient.post(`/documents/${encodeURIComponent(documentId)}/accept`, {})

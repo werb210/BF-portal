@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 
-vi.mock("@/lib/apiClient", () => ({
+vi.mock("@/lib/api", () => ({
   apiClient: vi.fn(),
 }));
 

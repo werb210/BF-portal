@@ -1,6 +1,6 @@
-import api from "@/lib/apiClient";
+import api from "@/lib/api";
 import { requireAuth } from "@/utils/requireAuth";
-import { apiClient, type RequestOptions } from "./httpClient";
+import { apiClient, type RequestOptions } from "@/lib/api";
 import type { DocumentRequirementResponse, DocumentStatus } from "@/types/documents.types";
 
 export type DocumentRecord = {

@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/httpClient";
+import { apiClient } from "@/lib/api";
 
 export async function getTasks() {
   return apiClient.get("/api/tasks");

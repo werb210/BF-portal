@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import apiClient from "@/api/httpClient";
+import apiClient from "@/lib/api";
 import { ApiError } from "@/api/http";
 import { useApiStatusStore } from "@/state/apiStatus";
 

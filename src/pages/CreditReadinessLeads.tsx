@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "@/lib/apiClient";
+import api from "@/lib/api";
 
 export default function CreditReadinessLeads() {
   const [leads, setLeads] = useState<any[]>([]);

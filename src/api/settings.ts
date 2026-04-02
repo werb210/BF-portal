@@ -1,4 +1,4 @@
-import apiClient from "./httpClient";
+import apiClient from "@/lib/api";
 import type { AdminUser, BrandingSettingsState, ProfileSettings } from "@/state/settings.store";
 
 export const fetchProfile = () => apiClient.get<ProfileSettings>("/users/me");

@@ -1,1 +1,1 @@
-export { apiClient } from "@/lib/apiClient";
+export { apiClient } from "@/lib/api";

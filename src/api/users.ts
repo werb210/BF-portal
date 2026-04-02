@@ -1,4 +1,4 @@
-import api from "@/lib/apiClient";
+import api from "@/lib/api";
 
 export type User = {
   id: string;

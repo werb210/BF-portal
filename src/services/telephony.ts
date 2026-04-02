@@ -1,5 +1,5 @@
 import { Device } from "twilio-client";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 
 let device: Device | null = null;
 

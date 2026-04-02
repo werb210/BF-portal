@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 import { clearToken, getToken, setToken } from "@/auth/token";
 
 const originalLocation = window.location;
