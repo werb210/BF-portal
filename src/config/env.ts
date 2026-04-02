@@ -1,20 +1,16 @@
 type Env = {
-  API_URL: string;
-  JWT_STORAGE_KEY: string;
+  VITE_API_URL: string;
+  VITE_JWT_STORAGE_KEY: string;
 };
 
-const API_URL = import.meta.env.VITE_API_URL;
-const JWT_STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY;
+const VITE_API_URL = import.meta.env.VITE_API_URL || "";
+const VITE_JWT_STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token";
 
-if (!API_URL) {
-  throw new Error("Missing VITE_API_URL");
-}
-
-if (!JWT_STORAGE_KEY) {
-  throw new Error("Missing VITE_JWT_STORAGE_KEY");
+if (!VITE_API_URL) {
+  throw new Error("VITE_API_URL is not defined");
 }
 
 export const env: Env = {
-  API_URL,
-  JWT_STORAGE_KEY,
+  VITE_API_URL,
+  VITE_JWT_STORAGE_KEY,
 };

@@ -1,7 +1,7 @@
 import { env } from "@/config/env";
 import { http } from "@/lib/api";
 
-const resolveBaseURL = (silo: string) => `${env.API_URL}/${silo.toLowerCase()}`;
+const resolveBaseURL = (silo: string) => `${env.VITE_API_URL}/${silo.toLowerCase()}`;
 
 export function createApi(silo: string, _token: string) {
   return {
