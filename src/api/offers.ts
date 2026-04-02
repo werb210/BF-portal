@@ -17,30 +17,19 @@ export type OfferRecord = {
   createdAt?: string;
 };
 
-export async function getOffers(id: string) {
-  return api<OfferRecord[]>(`/api/offers/${id}`);
-}
+export const getOffers = (appId: string) => api<OfferRecord[]>(`/api/offers/${appId}`);
 
-export async function fetchOffers(applicationId: string, options?: { signal?: AbortSignal }) {
-  const res = await api<OfferRecord[]>(`/api/offers/${applicationId}`, { signal: options?.signal });
-  if ("error" in res) throw new Error(res.error.message);
-  return res.data;
-}
+export const fetchOffers = (applicationId: string, options?: { signal?: AbortSignal }) =>
+  api<OfferRecord[]>(`/api/offers/${applicationId}`, { signal: options?.signal });
 
-export async function uploadOffer(applicationIdOrBody: string | any, file?: File) {
-  const body =
-    typeof applicationIdOrBody === "string" && file
-      ? { applicationId: applicationIdOrBody, fileName: file.name }
-      : applicationIdOrBody;
-
-  return api("/api/offers", {
+export function uploadOffer(payload: Record<string, unknown>) {
+  return api<OfferRecord>("/api/offers", {
     method: "POST",
-    body,
+    body: JSON.stringify(payload),
   });
 }
 
-export async function archiveOffer(id: string) {
-  return api(`/api/offers/${id}`, {
+export const archiveOffer = (id: string) =>
+  api<void>(`/api/offers/${id}`, {
     method: "DELETE",
   });
-}

@@ -12,12 +12,7 @@ export async function refreshSession(): Promise<boolean> {
       method: "POST",
     });
 
-    if (!res.success) {
-      const message = "error" in res ? res.error.message : "INVALID_REFRESH";
-      throw new Error(message || "INVALID_REFRESH");
-    }
-
-    const token = res.data.token;
+    const token = res.token;
     if (!token) {
       throw new Error("INVALID_REFRESH");
     }

@@ -24,9 +24,9 @@ export default function GlobalAdmin() {
       ]);
 
       setCounts({
-        bfApplications: bfApps.data.length,
-        biApplications: biApps.data.length,
-        slfDeals: slfDeals.data.length
+        bfApplications: bfApps.length,
+        biApplications: biApps.length,
+        slfDeals: slfDeals.length
       });
     }
 

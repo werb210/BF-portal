@@ -1,15 +1,19 @@
-import { apiClient } from "@/api/httpClient";
+import { api } from "@/utils/api";
 import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config";
 import type { PipelineApplication, PipelineStage } from "@/core/engines/pipeline/pipeline.types";
 
-const API_PREFIX = "";
 export const biPipelineAdapter: PipelineApiAdapter = {
-  fetchPipeline: async (filters) => {
-    return apiClient.post<{ stages: PipelineStage[]; applications: PipelineApplication[] }>("/api/bi/pipeline", filters ?? {});
-  },
+  fetchPipeline: (filters) =>
+    api<{ stages: PipelineStage[]; applications: PipelineApplication[] }>("/api/bi/pipeline", {
+      method: "POST",
+      body: JSON.stringify(filters ?? {}),
+    }),
 
-  updateStage: async (applicationId, stage) => {
-    await apiClient.patch(`${API_PREFIX}/bi/pipeline/${applicationId}/stage`, { stage });
+  updateStage: async (applicationId, stage): Promise<void> => {
+    await api<void>(`/api/bi/pipeline/${applicationId}/stage`, {
+      method: "PATCH",
+      body: JSON.stringify({ stage }),
+    });
   },
 
   exportApplications: async (ids) => {

@@ -75,7 +75,7 @@ const OffersTab = () => {
   }, [currentStage]);
 
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => uploadOffer(applicationId ?? "", file),
+    mutationFn: (file: File) => uploadOffer({ applicationId: applicationId ?? "", fileName: file.name }),
     onSuccess: (response) => {
       setUploadError(null);
       if (applicationId) {

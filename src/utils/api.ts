@@ -1,56 +1,35 @@
-import { ApiResponse } from "@/types/api";
+import { isApiError, type ApiResponse } from "@/api/types";
 
-type ApiClientOptions = {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
-  body?: unknown;
-  headers?: Record<string, string>;
-  signal?: AbortSignal;
+type ApiOptions = Omit<RequestInit, "body"> & {
+  body?: BodyInit | Record<string, unknown> | null;
 };
 
-export async function api<T>(url: string, options: ApiClientOptions = {}): Promise<ApiResponse<T>> {
+const normalizeBody = (body: ApiOptions["body"]): BodyInit | undefined => {
+  if (body == null) return undefined;
+  if (typeof body === "string" || body instanceof FormData || body instanceof URLSearchParams || body instanceof Blob || body instanceof ArrayBuffer) {
+    return body;
+  }
+  return JSON.stringify(body);
+};
+
+export async function api<T>(url: string, options: ApiOptions = {}): Promise<T> {
   const res = await fetch(url, {
-    method: options.method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-    signal: options.signal,
+    headers: { "Content-Type": "application/json", ...(options.headers ?? {}) },
+    ...options,
+    body: normalizeBody(options.body),
   });
 
-  let json: unknown = null;
+  const json = (await res.json()) as ApiResponse<T>;
 
-  try {
-    json = await res.json();
-  } catch {
-    return {
-      success: false,
-      error: { message: "Invalid JSON response" },
-    };
+  if (isApiError(json)) {
+    throw new Error(json.error.message || "API error");
   }
 
-  if (!res.ok) {
-    return {
-      success: false,
-      error: {
-        message: (json as any)?.message || "Request failed",
-        details: json,
-      },
-    };
-  }
-
-  return {
-    success: true,
-    data: json as T,
-  };
+  return json.data;
 }
 
 export async function apiBlob(url: string): Promise<Blob> {
   const res = await fetch(url);
-
-  if (!res.ok) {
-    throw new Error("Download failed");
-  }
-
+  if (!res.ok) throw new Error("Download failed");
   return res.blob();
 }

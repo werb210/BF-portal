@@ -4,7 +4,7 @@ import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config
 
 export const bfPipelineAdapter: PipelineApiAdapter = {
   fetchPipeline: pipelineApi.fetchPipeline,
-  updateStage: async (id, stage) => {
+  updateStage: async (id, stage): Promise<void> => {
     await updatePortalApplication(id, { stage });
   },
   exportApplications: pipelineApi.exportApplications

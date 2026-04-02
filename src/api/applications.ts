@@ -21,64 +21,43 @@ const withParams = (url: string, params?: ApplicationRequestOptions["params"]) =
   return query ? `${url}?${query}` : url;
 };
 
-export async function getApplications() {
-  const res = await api<Application[]>("/api/applications");
-  if ("error" in res) throw new Error(res.error.message);
-  return res.data;
-}
+export const getApplications = () => api<Application[]>("/api/applications");
 
-export async function sendToLender(id: string, lenders: string[]) {
-  const res = await api<unknown>(`/api/applications/${id}/send`, {
+export const sendToLender = (id: string, lenders: string[]) =>
+  api<unknown>(`/api/applications/${id}/send`, {
     method: "POST",
     body: { lenders },
   });
-  if ("error" in res) throw new Error(res.error.message);
-  return res.data;
-}
 
-export async function createApplication(payload: unknown) {
-  const res = await api<Application>("/api/applications", {
+export const createApplication = (payload: unknown) =>
+  api<Application>("/api/applications", {
     method: "POST",
-    body: payload,
+    body: payload as Record<string, unknown>,
   });
-  if ("error" in res) throw new Error(res.error.message);
-  return res.data;
-}
 
-export async function fetchPortalApplication<T = Application>(id: string, options?: ApplicationRequestOptions) {
+export function fetchPortalApplication<T = Application>(id: string, options?: ApplicationRequestOptions) {
   const requestUrl = withParams(`/api/applications/${id}`, options?.params);
-  const res = await api<T>(requestUrl, { signal: options?.signal });
-  if ("error" in res) throw new Error(res.error.message);
-  return res.data;
+  return api<T>(requestUrl, { signal: options?.signal });
 }
 
-export async function updatePortalApplication(id: string, body: any) {
-  const res = await api<Application>(`/api/applications/${id}`, {
-    method: "PUT",
-    body,
+export function updatePortalApplication(id: string, payload: Record<string, unknown>) {
+  return api<Application>(`/api/applications/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
   });
-  if ("error" in res) throw new Error(res.error.message);
-  return res.data;
 }
 
-export async function fetchApplicationDetails<T = ApplicationDetail>(id: string, options?: ApplicationRequestOptions) {
+export function fetchApplicationDetails<T = ApplicationDetail>(id: string, options?: ApplicationRequestOptions) {
   const requestUrl = withParams(`/api/applications/${id}/details`, options?.params);
-  const res = await api<T>(requestUrl, { signal: options?.signal });
-  if ("error" in res) throw new Error(res.error.message);
-  return res.data;
+  return api<T>(requestUrl, { signal: options?.signal });
 }
 
-export async function fetchApplicationAudit<T = AuditEntry[]>(id: string, options?: ApplicationRequestOptions) {
+export function fetchApplicationAudit<T = AuditEntry[]>(id: string, options?: ApplicationRequestOptions) {
   const requestUrl = withParams(`/api/applications/${id}/audit`, options?.params);
-  const res = await api<T>(requestUrl, { signal: options?.signal });
-  if ("error" in res) throw new Error(res.error.message);
-  return res.data;
+  return api<T>(requestUrl, { signal: options?.signal });
 }
 
-export async function openPortalApplication(id: string) {
-  const res = await api<Application>(`/api/applications/${id}/open`, {
+export const openPortalApplication = (id: string) =>
+  api<Application>(`/api/applications/${id}/open`, {
     method: "POST",
   });
-  if ("error" in res) throw new Error(res.error.message);
-  return res.data;
-}
