@@ -16,7 +16,10 @@ export async function initTelephony() {
   device = new Device(token, { debug: false });
 
   device.on("ready", () => console.log("Twilio Device ready"));
-  device.on("error", (e: unknown) => console.error("Twilio error", e));
+  device.on("error", (...args: unknown[]) => {
+    const err = args[0] as Error;
+    console.error("Twilio error", err.message);
+  });
   device.on("incoming", (conn: { accept: () => void }) => {
     console.log("Incoming call");
     // auto-accept for now (can be gated by UI)
