@@ -1,47 +1,19 @@
-import { ENV } from "@/config/env";
-import { decodeJwt } from "@/auth/jwt";
-import { clearToken as clearCanonicalToken, getToken as getCanonicalToken, setToken as setCanonicalToken } from "@/auth/token";
+import { ENV } from "../config/env";
 
-const ACCESS_TOKEN_KEY = ENV.JWT_STORAGE_KEY;
-
-let inMemoryAccessToken: string | null = null;
-
-const readStoredToken = (): string | null => {
-  return getCanonicalToken();
-};
-
-const writeStoredToken = (token: string | null) => {
-  if (!token) {
-    clearCanonicalToken();
-    return;
-  }
-  setCanonicalToken(token);
-};
-
-const isExpired = (token: string | null) => {
-  const payload = decodeJwt(token);
-  if (!payload?.exp) return false;
-  return payload.exp * 1000 <= Date.now();
-};
-
-export function getAccessToken(): string | null {
-  const token = inMemoryAccessToken ?? readStoredToken();
-  if (isExpired(token)) {
-    clearAccessToken();
-    return null;
-  }
-  inMemoryAccessToken = token;
-  return token;
+export function getToken(): string | null {
+  return localStorage.getItem(ENV.JWT_STORAGE_KEY);
 }
 
-export function setAccessToken(token: string) {
-  inMemoryAccessToken = token;
-  writeStoredToken(token);
+export function setToken(token: string) {
+  localStorage.setItem(ENV.JWT_STORAGE_KEY, token);
 }
 
-export function clearAccessToken() {
-  inMemoryAccessToken = null;
-  writeStoredToken(null);
+export function clearToken() {
+  localStorage.removeItem(ENV.JWT_STORAGE_KEY);
 }
 
-export { ACCESS_TOKEN_KEY };
+// Backward-compatible aliases.
+export const ACCESS_TOKEN_KEY = ENV.JWT_STORAGE_KEY;
+export const getAccessToken = getToken;
+export const setAccessToken = setToken;
+export const clearAccessToken = clearToken;
