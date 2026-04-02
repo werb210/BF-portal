@@ -1,3 +1,3 @@
-import { ENV } from "./env";
+import { getEnv } from "./env";
 
-export const API_BASE = `${ENV.API_URL}/api/v1`;
+export const API_BASE = `${getEnv().VITE_API_URL}/api/v1`;

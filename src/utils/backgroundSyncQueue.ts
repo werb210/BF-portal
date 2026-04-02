@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
-import { getAccessToken } from "@/lib/authToken";
+import { getToken } from "@/lib/authToken";
 
 export type QueuedMutation = {
   id: string;
@@ -98,7 +98,7 @@ export const flushQueuedMutations = async () => {
   for (const mutation of pending) {
     try {
       const headers = new Headers({ "Content-Type": "application/json" });
-      const token = getAccessToken();
+      const token = getToken();
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }

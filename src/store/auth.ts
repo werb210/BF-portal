@@ -1,4 +1,4 @@
-import { setAccessToken } from "@/lib/authToken";
+import { setToken } from "@/lib/authToken";
 
 const REFRESH_TOKEN_KEY = "staff_refresh_token";
 
@@ -31,7 +31,7 @@ const writeStoredRefreshToken = (token: string | null) => {
 
 export const authStore = {
   setTokens(access: string, refresh: string) {
-    setAccessToken(access);
+    setToken(access);
     inMemoryRefreshToken = refresh;
     writeStoredRefreshToken(refresh);
   },

@@ -1,6 +1,6 @@
-import { ENV } from "@/config/env";
+import { getEnv } from "@/config/env";
 
-const API_BASE = ENV.API_URL;
+const API_BASE = getEnv().VITE_API_URL;
 
 type RequestMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -13,10 +13,7 @@ export type RequestOptions = {
   body?: unknown;
   headers?: Record<string, string>;
   params?: Record<string, string | number | boolean | null | undefined>;
-  data?: unknown;
-  responseType?: "json" | "blob" | "text";
   signal?: AbortSignal;
-  skipAuth?: boolean;
 };
 
 export async function request<T>(path: string, options?: RequestOptions): Promise<T> {
@@ -37,21 +34,14 @@ export async function request<T>(path: string, options?: RequestOptions): Promis
     signal: options?.signal,
   });
 
-  if (options?.responseType === "blob") {
-    return (await res.blob()) as T;
-  }
-
-  if (options?.responseType === "text") {
-    return (await res.text()) as T;
-  }
-
   const json = await res.json();
 
-  if (json && typeof json === "object" && "success" in json) {
-    if (!json.success) {
-      throw new Error((json as { error?: string }).error || "API error");
+  if (json && typeof json === "object" && "status" in json) {
+    const result = json as { status: string; error?: string; data?: T };
+    if (result.status !== "ok") {
+      throw new Error(result.error || "API error");
     }
-    return (json as { data: T }).data;
+    return result.data as T;
   }
 
   return json as T;
@@ -60,11 +50,11 @@ export async function request<T>(path: string, options?: RequestOptions): Promis
 export const http = {
   get: <T>(path: string, options?: RequestOptions) => request<T>(path, { ...options, method: "GET" }),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: "POST", body: body ?? options?.body ?? options?.data }),
+    request<T>(path, { ...options, method: "POST", body: body ?? options?.body }),
   put: <T>(path: string, body?: unknown, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: "PUT", body: body ?? options?.body ?? options?.data }),
+    request<T>(path, { ...options, method: "PUT", body: body ?? options?.body }),
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: "PATCH", body: body ?? options?.body ?? options?.data }),
+    request<T>(path, { ...options, method: "PATCH", body: body ?? options?.body }),
   delete: <T>(path: string, options?: RequestOptions) => request<T>(path, { ...options, method: "DELETE" }),
   getList: <T>(path: string, options?: RequestOptions) => request<ListResponse<T>>(path, { ...options, method: "GET" }),
 };

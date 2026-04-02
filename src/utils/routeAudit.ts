@@ -1,7 +1,7 @@
 import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
-import { getAccessToken } from "@/lib/authToken";
+import { getToken } from "@/lib/authToken";
 import { apiClient } from "@/lib/apiClient";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { logger } from "@/utils/logger";
@@ -60,7 +60,7 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
   if (typeof window !== "undefined" && window.location.pathname === "/login") {
     return false;
   }
-  const token = getAccessToken();
+  const token = getToken();
   if (!token) return false;
   try {
     await apiClient("/api/auth/me", {

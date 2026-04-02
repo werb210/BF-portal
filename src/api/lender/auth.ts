@@ -20,10 +20,10 @@ export type LenderLoginResponse = {
 };
 
 export const lenderLogin = (payload: LenderLoginPayload) =>
-  lenderApiClient.post<LenderLoginResponse>(`/lender/auth/login`, payload, { skipAuth: true });
+  lenderApiClient.post<LenderLoginResponse>(`/lender/auth/login`, payload);
 
 export const sendLenderOtp = (email: string) =>
-  lenderApiClient.post(`/lender/auth/send-otp`, { email }, { skipAuth: true });
+  lenderApiClient.post(`/lender/auth/send-otp`, { email });
 
 export type VerifyOtpPayload = {
   email: string;
@@ -38,7 +38,7 @@ export type VerifyOtpResponse = {
 };
 
 export const verifyLenderOtp = (payload: VerifyOtpPayload) =>
-  lenderApiClient.post<VerifyOtpResponse>(`/lender/auth/verify-otp`, payload, { skipAuth: true });
+  lenderApiClient.post<VerifyOtpResponse>(`/lender/auth/verify-otp`, payload);
 
 export const fetchLenderProfile = () => lenderApiClient.get<LenderProfile>(`/lender/auth/me`);
 

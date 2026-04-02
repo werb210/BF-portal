@@ -8,7 +8,6 @@ import { apiClient } from "@/lib/apiClient";
 
 import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
 
-import { assertEnv } from "./config/env";
 import { ErrorFallback } from "./components/ErrorBoundary";
 
 import App from "./App";
@@ -19,7 +18,6 @@ if (t === "null" || t === "undefined") {
   localStorage.removeItem("token");
 }
 
-assertEnv();
 
 window.addEventListener("unhandledrejection", (e) => {
   console.error("[UNHANDLED PROMISE]", e.reason);
@@ -34,7 +32,9 @@ async function assertBackend() {
 
   if (mode === "test" || mode === "production") return;
 
-  await apiClient("/health", { skipAuth: true });
+  await apiClient("/health", {
+    headers: { "x-skip-auth": "true" },
+  });
 }
 
 async function bootstrap() {

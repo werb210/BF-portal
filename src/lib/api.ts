@@ -1,31 +1,29 @@
-import { ENV } from "../config/env";
+import { getEnv } from "../config/env";
 
-export type ApiResponse<T> = {
+type ApiResponse<T> = {
   status: "ok" | "error" | "not_ready";
   data?: T;
   error?: string;
   rid?: string;
 };
 
-export type RequestOptions = {
-  method?: string;
-  body?: any;
-  headers?: Record<string, string>;
-  signal?: AbortSignal;
-};
-
 export async function api<T = unknown>(
   path: string,
-  options?: RequestOptions
+  options?: {
+    method?: string;
+    body?: any;
+    headers?: Record<string, string>;
+  }
 ): Promise<T> {
-  const res = await fetch(`${ENV.API_URL}${path}`, {
+  const { VITE_API_URL } = getEnv();
+
+  const res = await fetch(`${VITE_API_URL}${path}`, {
     method: options?.method || "GET",
     headers: {
       "Content-Type": "application/json",
       ...(options?.headers || {}),
     },
     body: options?.body ? JSON.stringify(options.body) : undefined,
-    signal: options?.signal,
   });
 
   const json: ApiResponse<T> = await res.json();

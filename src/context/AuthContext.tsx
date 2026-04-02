@@ -1,17 +1,18 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { api } from "../lib/api";
 import { getToken, setToken, clearToken } from "../lib/authToken";
 
 type AuthContextType = {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (t: string) => void;
+  login: (token: string) => void;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: any }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setTokenState] = useState<string | null>(null);
   const [isLoading, setLoading] = useState(true);
 
@@ -21,9 +22,9 @@ export function AuthProvider({ children }: { children: any }) {
     setLoading(false);
   }, []);
 
-  function login(t: string) {
-    setToken(t);
-    setTokenState(t);
+  function login(token: string) {
+    setToken(token);
+    setTokenState(token);
   }
 
   function logout() {

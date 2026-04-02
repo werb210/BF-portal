@@ -1,14 +1,22 @@
-function req(name: string, value: string | undefined) {
-  if (!value) throw new Error(`Missing env: ${name}`);
-  return value;
-}
+import { z } from "zod";
 
-export const ENV = {
-  API_URL: req("VITE_API_URL", import.meta.env.VITE_API_URL),
-  JWT_STORAGE_KEY:
-    import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token",
-};
+const schema = z.object({
+  VITE_API_URL: z.string().url(),
+});
 
-export function assertEnv() {
-  req("VITE_API_URL", import.meta.env.VITE_API_URL);
+let cached: z.infer<typeof schema> | null = null;
+
+export function getEnv() {
+  if (!cached) {
+    const raw = {
+      VITE_API_URL:
+        import.meta.env.VITE_API_URL ||
+        (import.meta.env.MODE === "test"
+          ? "http://localhost:3000"
+          : undefined),
+    };
+
+    cached = schema.parse(raw);
+  }
+  return cached;
 }

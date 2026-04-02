@@ -1,4 +1,4 @@
-import { clearAccessToken, getAccessToken } from "@/lib/authToken";
+import { clearToken, getToken } from "@/lib/authToken";
 import { decodeJwt } from "@/auth/jwt";
 
 const readRoleFromToken = (token: string | null): string | null => {
@@ -13,11 +13,11 @@ const readRoleFromToken = (token: string | null): string | null => {
 };
 
 export function getUserRole(): string | null {
-  return readRoleFromToken(getAccessToken());
+  return readRoleFromToken(getToken());
 }
 
 export function clearAuth() {
-  clearAccessToken();
+  clearToken();
 }
 
 export function isTokenExpired(token: string): boolean {
@@ -30,4 +30,4 @@ export function isTokenExpired(token: string): boolean {
   }
 }
 
-export { getAccessToken };
+export { getToken as getAccessToken };
