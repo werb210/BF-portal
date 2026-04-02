@@ -1,4 +1,4 @@
-import { isApiError, type ApiResponse } from "@/api/types";
+import { ApiResponseSchema } from "@boreal/shared-contract";
 
 type ApiOptions = Omit<RequestInit, "body"> & {
   body?: BodyInit | Record<string, unknown> | null;
@@ -19,13 +19,18 @@ export async function api<T>(url: string, options: ApiOptions = {}): Promise<T> 
     body: normalizeBody(options.body),
   });
 
-  const json = (await res.json()) as ApiResponse<T>;
+  const json = await res.json();
+  const parsed = ApiResponseSchema.safeParse(json);
 
-  if (isApiError(json)) {
-    throw new Error(json.error.message || "API error");
+  if (!parsed.success) {
+    throw new Error("API contract violation");
   }
 
-  return json.data;
+  if (parsed.data.status === "error") {
+    throw new Error(parsed.data.error || "API error");
+  }
+
+  return parsed.data.data as T;
 }
 
 export async function apiBlob(url: string): Promise<Blob> {

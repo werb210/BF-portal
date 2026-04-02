@@ -1,19 +1,15 @@
-import type { ApiResponse } from "@/types/api";
+import { ApiResponseSchema } from "@boreal/shared-contract";
 
 export function assertApiResponse<T>(data: unknown): T {
-  const res = data as ApiResponse<T> | null;
+  const parsed = ApiResponseSchema.safeParse(data);
 
-  if (!res || typeof res !== "object") {
-    throw new Error("INVALID_RESPONSE");
+  if (!parsed.success) {
+    throw new Error("API_CONTRACT_VIOLATION");
   }
 
-  if (res["success"] !== true) {
-    throw new Error("API_FAILURE");
+  if (parsed.data.status !== "ok") {
+    throw new Error(parsed.data.error || "API_FAILURE");
   }
 
-  if (!("data" in res)) {
-    throw new Error("MISSING_DATA");
-  }
-
-  return res["data"] as T;
+  return parsed.data.data as T;
 }
