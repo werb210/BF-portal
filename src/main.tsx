@@ -1,3 +1,4 @@
+import "@/lib/authSync";
 import "@/lib/networkGuard";
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -12,11 +13,6 @@ import { ErrorFallback } from "./components/ErrorBoundary";
 
 import App from "./App";
 import "./index.css";
-
-const t = localStorage.getItem("token");
-if (t === "null" || t === "undefined") {
-  localStorage.removeItem("token");
-}
 
 
 window.addEventListener("unhandledrejection", (e) => {

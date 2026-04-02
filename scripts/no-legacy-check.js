@@ -8,8 +8,10 @@ const __dirname = path.dirname(__filename);
 const banned = [
   /\bapiClient\b/,
   /\bhttpClient\b/,
+  /\bsuccess\b(?=\s*\.)/,
   /\bresponse\.success\b/,
   /\bresult\.success\b/,
+  /\bres\.success\b/,
 ];
 
 function scan(dir) {

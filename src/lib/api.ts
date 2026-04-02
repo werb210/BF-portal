@@ -1,5 +1,5 @@
 import { getEnv } from "../config/env";
-import { getToken } from "./authToken";
+import { clearToken, getToken } from "@/lib/authStore";
 import { setApiStatus } from "../state/apiStatus";
 
 export type RequestOptions = {
@@ -47,8 +47,8 @@ const buildUrl = (path: string, params?: RequestOptions["params"]) => {
 async function baseApi<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = getToken();
 
-  if (requiresAuth(path) && !token) {
-    throw new Error("MISSING_AUTH");
+  if (!token && !path.includes("/auth")) {
+    throw new Error("Auth token missing");
   }
 
   const res = await fetch(buildUrl(path, options.params), {
@@ -65,6 +65,12 @@ async function baseApi<T = unknown>(path: string, options: RequestOptions = {}):
         }),
     signal: options.signal,
   });
+
+  if (res.status === 401) {
+    clearToken();
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
 
   const json: unknown = await res.json();
 

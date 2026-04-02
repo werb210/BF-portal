@@ -41,7 +41,7 @@ describe("portal resilience", () => {
   });
 
   it("missing auth -> rejected", async () => {
-    await expect(api("/api/protected", { method: "GET" })).rejects.toThrow("MISSING_AUTH");
+    await expect(api("/api/protected", { method: "GET" })).rejects.toThrow("Auth token missing");
   });
 
   it("invalid response -> failure", async () => {

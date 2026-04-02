@@ -7,7 +7,7 @@ export function assertApiResponse<T>(data: unknown): T {
     throw new Error("INVALID_RESPONSE");
   }
 
-  if (res.success !== true) {
+  if (res["success"] !== true) {
     throw new Error("API_FAILURE");
   }
 

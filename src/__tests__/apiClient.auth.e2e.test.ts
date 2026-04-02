@@ -44,13 +44,13 @@ describe("auth and api hard pipeline e2e requirements", () => {
       new Response(JSON.stringify({ status: "error", error: { message: "denied" } }), { status: 401 }),
     ) as typeof fetch;
 
-    await expect(api("/api/test", { method: "GET" })).rejects.toThrow("HTTP_ERROR_401");
+    await expect(api("/api/test", { method: "GET" })).rejects.toThrow("Unauthorized");
   });
 
   it("TEST 5: request without token hard fails before network", async () => {
     clearToken();
 
-    await expect(api("https://evil.com/api/test", { method: "GET" })).rejects.toThrow("MISSING_AUTH");
+    await expect(api("https://evil.com/api/test", { method: "GET" })).rejects.toThrow("Auth token missing");
   });
 
   it("TEST 6: 204 response throws", async () => {
