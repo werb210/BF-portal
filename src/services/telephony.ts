@@ -4,13 +4,9 @@ import { apiClient } from "@/lib/apiClient";
 let device: Device | null = null;
 
 export async function initTelephony() {
-  // expects server endpoint to return { success, data: { token } }
-  const res = await apiClient("/telephony/token", { method: "GET" });
-  if (!res.success) {
-    throw new Error(res.error);
-  }
-  const token = (typeof res.data === "object" && res.data !== null && "token" in res.data)
-    ? String((res.data as { token?: string }).token ?? "")
+    const res = await apiClient<{ token?: string }>("/telephony/token", { method: "GET" });
+  const token = typeof res === "object" && res !== null && "token" in res
+    ? String((res as { token?: string }).token ?? "")
     : "";
 
   if (!token) {

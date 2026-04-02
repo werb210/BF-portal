@@ -86,7 +86,11 @@ export async function api<T = unknown>(path: string, options: ApiClientOptions =
     }
 
     if (payload && typeof payload === "object" && "success" in payload) {
-      return payload as T;
+      const result = payload as ApiResult<T>;
+      if (result.success === false) {
+        throw new ApiError(result.error || "API_ERROR");
+      }
+      return result.data;
     }
 
     return payload as T;

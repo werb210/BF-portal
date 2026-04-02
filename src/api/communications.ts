@@ -53,51 +53,45 @@ export type SmsMessage = {
   createdAt: string;
 };
 
-const unwrap = async <T>(call: Promise<ReturnType<typeof http.get<T>> extends Promise<infer R> ? R : never>) => {
-  const res = await call;
-  if (!res.success) throw new Error("error" in res ? res.error : "Request failed");
-  return res.data as T;
-};
-
 export const fetchCommunicationThreads = (businessUnit?: string) =>
-  unwrap<CommunicationConversation[]>(http.get(`/communications/threads${businessUnit ? `?businessUnit=${businessUnit}` : ""}`));
+  http.get<CommunicationConversation[]>(`/communications/threads${businessUnit ? `?businessUnit=${businessUnit}` : ""}`);
 
-export const fetchConversationById = (id: string) => unwrap<CommunicationConversation>(http.get(`/communications/threads/${id}`));
-export const fetchCrmLeads = () => unwrap<CrmLead[]>(http.get("/communications/leads"));
+export const fetchConversationById = (id: string) => http.get<CommunicationConversation>(`/communications/threads/${id}`);
+export const fetchCrmLeads = () => http.get<CrmLead[]>("/communications/leads");
 
 export const sendCommunication = (conversationId: string, body: string, channel: CommunicationType = "chat") =>
-  unwrap<CommunicationMessage>(http.post(`/communications/threads/${conversationId}/messages`, { body, channel }));
+  http.post<CommunicationMessage>(`/communications/threads/${conversationId}/messages`, { body, channel });
 
 export const receiveInboundMessage = (conversationId: string, body: string, channel: CommunicationType, silo: string) =>
-  unwrap<CommunicationMessage>(http.post(`/communications/threads/${conversationId}/inbound`, { body, channel, silo }));
+  http.post<CommunicationMessage>(`/communications/threads/${conversationId}/inbound`, { body, channel, silo });
 
 export const createHumanEscalation = (payload: Record<string, unknown>) =>
-  unwrap<CommunicationConversation>(http.post("/communications/escalations", payload));
+  http.post<CommunicationConversation>("/communications/escalations", payload);
 
 export const createIssueReport = (payload: Record<string, unknown>) =>
-  unwrap<CommunicationConversation>(http.post("/communications/issues", payload));
+  http.post<CommunicationConversation>("/communications/issues", payload);
 
 export const acknowledgeIssue = (conversationId: string) =>
-  unwrap<CommunicationConversation>(http.post(`/communications/issues/${conversationId}/acknowledge`));
+  http.post<CommunicationConversation>(`/communications/issues/${conversationId}/acknowledge`);
 
 export const archiveIssue = (conversationId: string) =>
-  unwrap<CommunicationConversation>(http.post(`/communications/issues/${conversationId}/archive`));
+  http.post<CommunicationConversation>(`/communications/issues/${conversationId}/archive`);
 
-export const deleteIssue = (conversationId: string) => unwrap<{ success: boolean }>(http.delete(`/communications/issues/${conversationId}`));
+export const deleteIssue = (conversationId: string) => http.delete<{ success: boolean }>(`/communications/issues/${conversationId}`);
 
 export const applyHumanActiveState = (conversationId: string) =>
-  unwrap<CommunicationConversation>(http.post(`/communications/threads/${conversationId}/human-active`));
+  http.post<CommunicationConversation>(`/communications/threads/${conversationId}/human-active`);
 
 export const closeEscalatedChat = (conversationId: string, transcript?: string) =>
-  unwrap<CommunicationConversation>(http.post(`/communications/threads/${conversationId}/close`, { transcript }));
+  http.post<CommunicationConversation>(`/communications/threads/${conversationId}/close`, { transcript });
 
 export const attachTranscriptToLead = (conversationId: string, transcript: string) =>
-  unwrap<{ success: boolean }>(http.post(`/communications/threads/${conversationId}/transcript`, { transcript }));
+  http.post<{ success: boolean }>(`/communications/threads/${conversationId}/transcript`, { transcript });
 
-export const fetchSmsThread = (contactId: string) => unwrap<SmsMessage[]>(http.get(`/communications/sms/${contactId}`));
+export const fetchSmsThread = (contactId: string) => http.get<SmsMessage[]>(`/communications/sms/${contactId}`);
 
 export const sendSms = (contact: Contact, body: string, fromNumber: string) =>
-  unwrap<SmsMessage>(http.post(`/communications/sms`, { contactId: contact.id, body, fromNumber }));
+  http.post<SmsMessage>(`/communications/sms`, { contactId: contact.id, body, fromNumber });
 
 export const logApplicationCallEvent = (payload: Record<string, unknown>) =>
-  unwrap<{ success: boolean }>(http.post("/communications/call-events", payload));
+  http.post<{ success: boolean }>("/communications/call-events", payload);
