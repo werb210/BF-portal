@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import { validateStartupToken } from "@/bootstrap";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
 
@@ -32,7 +32,7 @@ async function assertBackend() {
 
   if (mode === "test" || mode === "production") return;
 
-  await apiClient("/health", {
+  await api("/health", {
     headers: { "x-skip-auth": "true" },
   });
 }

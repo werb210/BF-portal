@@ -2,7 +2,7 @@ import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
 import { getToken } from "@/lib/authToken";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { logger } from "@/utils/logger";
 
@@ -63,7 +63,7 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
   const token = getToken();
   if (!token) return false;
   try {
-    await apiClient("/api/auth/me", {
+    await api("/api/auth/me", {
       headers: {
         "X-Request-Id": requestId,
         Authorization: `Bearer ${token}`
@@ -95,7 +95,7 @@ export const runRouteAudit = async (): Promise<void> => {
   });
 
   try {
-    const payload = await apiClient("/api/_int/routes", {
+    const payload = await api("/api/_int/routes", {
       headers: { "X-Request-Id": requestId }
     });
     const serverRoutes = extractServerRoutes(payload);

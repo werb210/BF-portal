@@ -1,7 +1,7 @@
-import { apiClient } from "@/lib/api"
+import { api } from "@/lib/api"
 
 export async function sendToLenders(applicationId: string, lenders: string[]) {
-  const res = await apiClient.post("/api/lenders/send", {
+  const res = await api.post("/api/lenders/send", {
     applicationId,
     lenders
   })

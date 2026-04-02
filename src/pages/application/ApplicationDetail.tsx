@@ -1,5 +1,5 @@
 import { type ChangeEvent, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import OfferUploader from "@/components/offers/OfferUploader";
 import ChatPanel from "@/components/chat/ChatPanel";
 
@@ -36,14 +36,14 @@ const ApplicationDetail = ({ applicationId = "app-1" }: { applicationId?: string
   const handleDocAction = async (status: "accepted" | "rejected") => {
     const reason = status === "rejected" ? window.prompt("Rejection reason") : "Accepted";
     if (!reason) return;
-    await apiClient.post(`${API_PREFIX}/applications/${applicationId}/documents/review`, { status, reason, notifyChannels: ["sms", "portal"] });
+    await api.post(`${API_PREFIX}/applications/${applicationId}/documents/review`, { status, reason, notifyChannels: ["sms", "portal"] });
   };
 
   const sendSelected = async () => {
     const lenders = Object.entries(selectedLenders)
       .filter(([, selected]) => selected)
       .map(([lender]) => lender);
-    await apiClient.post("/api/lender-submissions", { applicationId, lenders });
+    await api.post("/api/lender-submissions", { applicationId, lenders });
   };
 
   const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {

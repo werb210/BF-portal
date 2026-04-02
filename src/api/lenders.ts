@@ -1,5 +1,4 @@
-import { apiClient, type RequestOptions } from "@/lib/api";
-import api from "@/lib/api";
+import { api, type RequestOptions } from "@/lib/api";
 import type {
   Lender,
   LenderPayload,
@@ -450,7 +449,7 @@ const normalizeLenderProduct = (raw: unknown): LenderProduct | null => {
 };
 
 export const fetchLenders = async (options?: RequestOptions) => {
-  const res = await apiClient.get<unknown>("/lenders", options);
+  const res = await api.get<unknown>("/lenders", options);
   const lenders = parseLendersResponse(res)
     .map((item) => normalizeLender(item))
     .filter((item): item is Lender => Boolean(item));
@@ -458,25 +457,25 @@ export const fetchLenders = async (options?: RequestOptions) => {
 };
 
 export const fetchLenderById = async (id: string) => {
-  const lender = await apiClient.get<unknown>(`/lenders/${id}`);
+  const lender = await api.get<unknown>(`/lenders/${id}`);
   const normalized = normalizeLender(ensureEntityHasId((lender ?? {}) as LenderSummary, "lender", id));
   return ensureEntityHasId(normalized ?? (lender as Lender), "lender", id);
 };
 
 export const createLender = async (payload: LenderPayload) => {
-  const lender = await apiClient.post<unknown>(`/lenders`, payload);
+  const lender = await api.post<unknown>(`/lenders`, payload);
   const normalized = normalizeLender(ensureEntityHasId((lender ?? {}) as LenderSummary, "lender"));
   return ensureEntityHasId(normalized ?? (lender as Lender), "lender");
 };
 
 export const updateLender = async (id: string, payload: Partial<LenderPayload>) => {
-  const lender = await apiClient.patch<unknown>(`/lenders/${id}`, payload);
+  const lender = await api.patch<unknown>(`/lenders/${id}`, payload);
   const normalized = normalizeLender(ensureEntityHasId((lender ?? {}) as LenderSummary, "lender", id));
   return ensureEntityHasId(normalized ?? (lender as Lender), "lender", id);
 };
 
 export const fetchLenderProducts = async (lenderId?: string, options?: RequestOptions) => {
-  const res = await apiClient.get<unknown>(`/lender-products`, {
+  const res = await api.get<unknown>(`/lender-products`, {
     params: lenderId ? { lenderId } : undefined,
     ...options
   });
@@ -487,37 +486,37 @@ export const fetchLenderProducts = async (lenderId?: string, options?: RequestOp
 };
 
 export const fetchLenderProductById = async (productId: string) => {
-  const product = await apiClient.get<unknown>(`/lender-products/${productId}`);
+  const product = await api.get<unknown>(`/lender-products/${productId}`);
   const normalized = normalizeLenderProduct(ensureEntityHasId((product ?? {}) as { id?: string }, "lender product", productId));
   return ensureEntityHasId(normalized ?? (product as LenderProduct), "lender product", productId);
 };
 
 export const createLenderProduct = async (payload: LenderProductPayload) => {
-  const product = await apiClient.post<unknown>(`/lender-products`, payload);
+  const product = await api.post<unknown>(`/lender-products`, payload);
   const normalized = normalizeLenderProduct(ensureEntityHasId((product ?? {}) as { id?: string }, "lender product"));
   return ensureEntityHasId(normalized ?? (product as LenderProduct), "lender product");
 };
 
 export const updateLenderProduct = async (productId: string, payload: Partial<LenderProductPayload>) => {
-  const product = await apiClient.put<unknown>(`/lender-products/${productId}`, payload);
+  const product = await api.put<unknown>(`/lender-products/${productId}`, payload);
   const normalized = normalizeLenderProduct(ensureEntityHasId((product ?? {}) as { id?: string }, "lender product", productId));
   return ensureEntityHasId(normalized ?? (product as LenderProduct), "lender product", productId);
 };
 
 export const fetchLenderMatches = (applicationId: string, options?: RequestOptions) =>
-  apiClient.get<LenderMatch[]>(`/applications/${applicationId}/lenders`, options);
+  api.get<LenderMatch[]>(`/applications/${applicationId}/lenders`, options);
 
 export const createLenderSubmission = (applicationId: string, lenderProductIds: string[]) =>
-  apiClient.post(`/lender/submissions`, { applicationId, lenderProductIds });
+  api.post(`/lender/submissions`, { applicationId, lenderProductIds });
 
 export const fetchLenderSubmissions = (applicationId: string, options?: RequestOptions) =>
-  apiClient.get<LenderSubmission[]>(`/lender/submissions`, {
+  api.get<LenderSubmission[]>(`/lender/submissions`, {
     ...options,
     params: { applicationId, ...(options?.params ?? {}) }
   });
 
 export const retryLenderSubmission = (applicationId: string, lenderProductId?: string) =>
-  apiClient.post(`/lender-submissions/${applicationId}/submit`, lenderProductId ? { lenderProductId } : undefined);
+  api.post(`/lender-submissions/${applicationId}/submit`, lenderProductId ? { lenderProductId } : undefined);
 
 export const retryLenderTransmission = async (_transmissionId: string) => null;
 
@@ -585,7 +584,7 @@ export const createLenderProductRequirement = async (
   productId: string,
   payload: Omit<LenderProductRequirementApi, "id">
 ) => {
-  const requirement = await apiClient.post<LenderProductRequirementApi>(
+  const requirement = await api.post<LenderProductRequirementApi>(
     `/lender-products/${productId}/requirements`,
     payload
   );
@@ -597,7 +596,7 @@ export const updateLenderProductRequirement = async (
   requirementId: string,
   payload: Omit<LenderProductRequirementApi, "id">
 ) => {
-  const requirement = await apiClient.put<LenderProductRequirementApi>(
+  const requirement = await api.put<LenderProductRequirementApi>(
     `/lender-products/${productId}/requirements/${requirementId}`,
     payload
   );
@@ -605,4 +604,4 @@ export const updateLenderProductRequirement = async (
 };
 
 export const deleteLenderProductRequirement = (productId: string, requirementId: string) =>
-  apiClient.delete(`/lender-products/${productId}/requirements/${requirementId}`);
+  api.delete(`/lender-products/${productId}/requirements/${requirementId}`);

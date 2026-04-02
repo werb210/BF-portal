@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import apiClient from "@/lib/api";
+import api from "@/lib/api";
 import { ApiError } from "@/api/http";
 import { useApiStatusStore } from "@/state/apiStatus";
 
@@ -11,7 +11,7 @@ export const useApiHealthCheck = () => {
 
     const checkHealth = async () => {
       try {
-        await apiClient.get("/api/health");
+        await api.get("/api/health");
         if (isActive) {
           setStatus("available");
         }

@@ -24,7 +24,7 @@ export type RequiredDocsPayload = {
 
 export const fetchLenderProducts = async () => {
   const res = await lenderApiClient.getList<LenderProduct>(`/lender/products`);
-  return res.items;
+  return res;
 };
 
 export const createLenderProduct = (payload: Partial<LenderProduct>) =>

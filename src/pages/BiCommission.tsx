@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 type LedgerRow = {
@@ -15,7 +15,7 @@ export default function BiCommission() {
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
 
   useEffect(() => {
-    apiClient
+    api
       .get<LedgerRow[]>("/api/ledger")
       .then((result) => setLedger(Array.isArray(result) ? result : []));
   }, []);

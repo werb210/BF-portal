@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type AnalyticsEvent = {
   event_name?: string;
@@ -23,7 +23,7 @@ export default function AnalyticsPage() {
       }
     }
 
-    apiClient<AnalyticsEvent[]>("/analytics")
+    api<AnalyticsEvent[]>("/analytics")
       .then((data) => {
         const nextEvents = Array.isArray(data) ? data : [];
         setEvents(nextEvents);

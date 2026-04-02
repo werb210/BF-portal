@@ -1,4 +1,4 @@
-import { apiClient, type RequestOptions } from "@/lib/api";
+import { api, type RequestOptions } from "@/lib/api";
 
 export type BankingAnalysisMonthGroup = {
   year: string;
@@ -41,4 +41,4 @@ export type BankingAnalysis = {
 };
 
 export const fetchBankingAnalysis = (applicationId: string, options?: RequestOptions) =>
-  apiClient.get<BankingAnalysis>(`/applications/${applicationId}/banking-analysis`, options);
+  api.get<BankingAnalysis>(`/applications/${applicationId}/banking-analysis`, options);

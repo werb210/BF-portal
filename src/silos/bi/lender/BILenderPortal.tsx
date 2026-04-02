@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import ActivityTimeline from "../components/ActivityTimeline";
 
 type Application = {
@@ -30,7 +30,7 @@ export default function BILenderPortal() {
   }, []);
 
   async function load() {
-    const data = await apiClient<Application[]>("/api/bi/lender/applications");
+    const data = await api<Application[]>("/api/bi/lender/applications");
     setApps(data);
   }
 
@@ -53,7 +53,7 @@ export default function BILenderPortal() {
       formData.append("files", file);
     }
 
-    await apiClient(`/api/bi/application/${appId}/documents`, {
+    await api(`/api/bi/application/${appId}/documents`, {
       method: "POST",
       body: formData
     });

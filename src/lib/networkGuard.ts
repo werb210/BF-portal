@@ -3,7 +3,7 @@ const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   const stack = new Error().stack || "";
 
-  if (!stack.includes("apiClient.ts")) {
+  if (!stack.includes("api.ts")) {
     throw new Error("RAW_FETCH_BLOCKED");
   }
 

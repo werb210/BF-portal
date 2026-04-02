@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 const API_PREFIX = "/api";
 
 type Message = {
@@ -13,7 +13,7 @@ export default function AiLiveChat({ sessionId }: { sessionId: string }) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    apiClient<Message[]>(`${API_PREFIX}/ai/session/${sessionId}`)
+    api<Message[]>(`${API_PREFIX}/ai/session/${sessionId}`)
       .then(setMessages)
       .catch(() => setMessages([]));
 
@@ -50,7 +50,7 @@ export default function AiLiveChat({ sessionId }: { sessionId: string }) {
   }
 
   async function closeSession() {
-    await apiClient("/api/ai/close", {
+    await api("/api/ai/close", {
       method: "POST",
       body: { sessionId }
     });

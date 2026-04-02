@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type ScoringResponse = {
   score?: number;
@@ -10,7 +10,7 @@ export default function CapitalScorePreview() {
   const [score, setScore] = useState<ScoringResponse | null>(null);
 
   async function testScore() {
-    const data = await apiClient<ScoringResponse>("/scoring", {
+    const data = await api<ScoringResponse>("/scoring", {
       method: "POST",
       body: {
         revenue: 200000,

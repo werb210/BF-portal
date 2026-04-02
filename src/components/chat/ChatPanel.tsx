@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type ChatMessage = {
   id: string;
@@ -20,12 +20,12 @@ const ChatPanel = ({ applicationId }: ChatPanelProps) => {
 
   const { data } = useQuery({
     queryKey: ["messages", applicationId],
-    queryFn: () => apiClient.get<ChatMessage[]>(`/messages/${applicationId}`),
+    queryFn: () => api.get<ChatMessage[]>(`/messages/${applicationId}`),
     refetchInterval: 3000
   });
 
   const sendMessage = useMutation({
-    mutationFn: (body: string) => apiClient.post("/api/messages", { applicationId, body }),
+    mutationFn: (body: string) => api.post("/api/messages", { applicationId, body }),
     onSuccess: () => {
       setDraft("");
       setTyping(false);

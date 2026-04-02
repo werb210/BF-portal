@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export default function AIKnowledge() {
   const { user } = useAuth();
@@ -12,7 +12,7 @@ export default function AIKnowledge() {
     const formData = new FormData();
     formData.append("file", file);
 
-    await apiClient("/api/ai/knowledge", {
+    await api("/api/ai/knowledge", {
       method: "POST",
       body: formData,
       headers: { "Content-Type": "multipart/form-data" },

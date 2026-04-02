@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 const API_PREFIX = "";
 type SLFDocument = {
@@ -15,11 +15,11 @@ const SLFTabDocuments = ({ applicationId }: { applicationId: string }) => {
   const { data: docs = [], isLoading } = useQuery<SLFDocument[]>({
     queryKey: ["slf", "documents", applicationId],
     queryFn: ({ signal }) =>
-      apiClient.get<SLFDocument[]>(`${API_PREFIX}/slf/applications/${applicationId}/documents`, { signal })
+      api.get<SLFDocument[]>(`${API_PREFIX}/slf/applications/${applicationId}/documents`, { signal })
   });
 
   const handleView = async (docId: string) => {
-    const presign = await apiClient.get<{ url?: string }>(`${API_PREFIX}/slf/documents/${docId}/presign`);
+    const presign = await api.get<{ url?: string }>(`${API_PREFIX}/slf/documents/${docId}/presign`);
     const url = presign.url;
     if (url) {
       window.open(url, "_blank");

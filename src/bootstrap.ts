@@ -1,7 +1,7 @@
 import { decodeJwt } from "@/auth/jwt";
 import { clearToken, getToken } from "@/auth/token";
 
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type HealthResponse = {
   ok?: boolean;
@@ -31,7 +31,7 @@ export function validateStartupToken(): boolean {
 
 export async function checkBackend(): Promise<boolean> {
   try {
-    await apiClient<HealthResponse>("/api/health", {
+    await api<HealthResponse>("/api/health", {
       method: "GET"
     });
     return true;

@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export type LenderSubmissionPayload = {
   applicationId: string;
@@ -6,5 +6,5 @@ export type LenderSubmissionPayload = {
 };
 
 export const lenderSubmissionsApi = {
-  send: (payload: LenderSubmissionPayload) => apiClient.post("/api/lender-submissions", payload)
+  send: (payload: LenderSubmissionPayload) => api.post("/api/lender-submissions", payload)
 };

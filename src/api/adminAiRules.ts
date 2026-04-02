@@ -1,4 +1,4 @@
-import apiClient from "@/lib/api";
+import api from "@/lib/api";
 
 export type AdminAiRule = {
   id: string;
@@ -17,7 +17,7 @@ const withDelay = async <T,>(value: T) => new Promise<T>((resolve) => setTimeout
 
 export async function fetchAdminAiRules(): Promise<AdminAiRule[]> {
   try {
-    return await apiClient.get<AdminAiRule[]>("/admin/ai-rules");
+    return await api.get<AdminAiRule[]>("/admin/ai-rules");
   } catch {
     return withDelay([...fallbackRules].sort((a, b) => a.priority - b.priority));
   }
@@ -25,7 +25,7 @@ export async function fetchAdminAiRules(): Promise<AdminAiRule[]> {
 
 export async function createAdminAiRule(payload: Omit<AdminAiRule, "id">): Promise<AdminAiRule> {
   try {
-    return await apiClient.post<AdminAiRule>("/admin/ai-rules", payload);
+    return await api.post<AdminAiRule>("/admin/ai-rules", payload);
   } catch {
     const created = { ...payload, id: `rule-${Date.now()}` };
     fallbackRules = [...fallbackRules, created];
@@ -35,7 +35,7 @@ export async function createAdminAiRule(payload: Omit<AdminAiRule, "id">): Promi
 
 export async function updateAdminAiRule(ruleId: string, payload: Partial<Omit<AdminAiRule, "id">>): Promise<AdminAiRule> {
   try {
-    return await apiClient.patch<AdminAiRule>(`/admin/ai-rules/${ruleId}`, payload);
+    return await api.patch<AdminAiRule>(`/admin/ai-rules/${ruleId}`, payload);
   } catch {
     const current = fallbackRules.find((rule) => rule.id === ruleId);
     if (!current) {

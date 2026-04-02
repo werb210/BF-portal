@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import { getToken } from "@/lib/authToken";
 
 export type QueuedMutation = {
@@ -102,7 +102,7 @@ export const flushQueuedMutations = async () => {
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
-      await apiClient(mutation.path, {
+      await api(mutation.path, {
         method: mutation.method,
         headers: headersToRecord(headers),
         body: mutation.body

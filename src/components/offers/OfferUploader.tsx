@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type OfferUploaderProps = {
   applicationId: string;
@@ -14,7 +14,7 @@ const OfferUploader = ({ applicationId }: OfferUploaderProps) => {
     const formData = new FormData(form);
     setIsSubmitting(true);
     try {
-      await apiClient.post("/api/offers", formData);
+      await api.post("/api/offers", formData);
       form.reset();
     } finally {
       setIsSubmitting(false);

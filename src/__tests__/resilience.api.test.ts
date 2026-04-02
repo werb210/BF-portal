@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { checkBackend } from "@/bootstrap";
-import { apiClient, apiFetch, apiFetchWithRetry } from "@/lib/api";
+import { api, apiFetch, apiFetchWithRetry } from "@/lib/api";
 import { clearToken, setToken } from "@/auth/token";
 import { useApiStatusStore } from "@/state/apiStatus";
 
@@ -37,17 +37,17 @@ describe("portal resilience", () => {
     setToken("valid-token");
     global.fetch = vi.fn().mockRejectedValue(new DOMException("Aborted", "AbortError")) as typeof fetch;
 
-    await expect(apiClient("/api/health", { method: "GET" })).rejects.toThrow();
+    await expect(api("/api/health", { method: "GET" })).rejects.toThrow();
   });
 
   it("missing auth -> rejected", async () => {
-    await expect(apiClient("/api/protected", { method: "GET" })).rejects.toThrow("MISSING_AUTH");
+    await expect(api("/api/protected", { method: "GET" })).rejects.toThrow("MISSING_AUTH");
   });
 
   it("invalid response -> failure", async () => {
     setToken("valid-token");
     global.fetch = vi.fn().mockResolvedValue(new Response("{not-json", { status: 200 })) as typeof fetch;
-    await expect(apiClient("/api/health", { method: "GET" })).rejects.toThrow();
+    await expect(api("/api/health", { method: "GET" })).rejects.toThrow();
   });
 
   it("success path -> clean data", async () => {
@@ -68,7 +68,7 @@ describe("portal resilience", () => {
       new Response(JSON.stringify({ status: "error", error: "DB_NOT_READY" }), { status: 200 }),
     ) as typeof fetch;
 
-    await expect(apiClient<{ degraded: true }>("/api/health", { method: "GET" })).resolves.toEqual({ degraded: true });
+    await expect(api<{ degraded: true }>("/api/health", { method: "GET" })).resolves.toEqual({ degraded: true });
     expect(useApiStatusStore.getState().status).toBe("degraded");
   });
 });

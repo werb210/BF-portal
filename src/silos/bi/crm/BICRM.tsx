@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export default function BICRM() {
   const [contacts, setContacts] = useState<any[]>([]);
@@ -11,9 +11,9 @@ export default function BICRM() {
   }, []);
 
   async function load() {
-    setContacts(await apiClient("/api/bi/crm/contacts"));
-    setReferrers(await apiClient("/api/bi/crm/referrers"));
-    setLenders(await apiClient("/api/bi/crm/lenders"));
+    setContacts(await api("/api/bi/crm/contacts"));
+    setReferrers(await api("/api/bi/crm/referrers"));
+    setLenders(await api("/api/bi/crm/lenders"));
   }
 
   return (

@@ -1,5 +1,5 @@
-import { apiClient } from "@/lib/api";
-import api from "@/lib/api";
+import { getEnv } from "@/config/env";
+import { api } from "@/lib/api";
 import { getToken } from "@/auth/token";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
 import type { BusinessUnit } from "@/types/businessUnit";
@@ -309,7 +309,7 @@ const buildPipelineQuery = (filters?: PipelineFilters) => {
 
 export const pipelineApi = {
   fetchPipeline: async (filters?: PipelineFilters, options?: { signal?: AbortSignal }) => {
-    const res = await apiClient.get<unknown>(`${API_PREFIX}/pipeline${buildPipelineQuery(filters)}`, options);
+    const res = await api.get<unknown>(`${API_PREFIX}/pipeline${buildPipelineQuery(filters)}`, options);
     const parsed = parsePipelineResponse(res);
     return {
       stages: parsed.stages.length ? parsed.stages : buildLockedStages(),
@@ -327,7 +327,7 @@ export const pipelineApi = {
   },
   exportApplications: async (applicationIds: string[]) => {
     const token = getToken();
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/export`, {
+    const response = await fetch(`${getEnv().VITE_API_URL}/applications/export`, {
       method: "POST",
       credentials: "include",
       headers: {

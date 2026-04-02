@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api"
+import { api } from "@/lib/api"
 
 export interface SendPayload {
   applicationId: string
@@ -14,7 +14,7 @@ export async function sendSelectedLenders(payload: SendPayload) {
     throw new Error("No lenders selected")
   }
 
-  const res = await apiClient.post(
+  const res = await api.post(
     `/applications/${payload.applicationId}/send-to-lenders`,
     { lenders: payload.lenders }
   )

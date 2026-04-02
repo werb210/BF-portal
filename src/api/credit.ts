@@ -1,4 +1,4 @@
-import { apiClient, type RequestOptions } from "@/lib/api";
+import { api, type RequestOptions } from "@/lib/api";
 
 export type CreditSummary = {
   businessOverview?: string;
@@ -13,7 +13,7 @@ export type CreditSummary = {
 };
 
 export const fetchCreditSummary = (applicationId: string, options?: RequestOptions) =>
-  apiClient.get<CreditSummary>(`/internal/application/${applicationId}/credit-summary`, options);
+  api.get<CreditSummary>(`/internal/application/${applicationId}/credit-summary`, options);
 
 export const regenerateCreditSummary = (applicationId: string) =>
-  apiClient.post(`/internal/application/${applicationId}/credit-summary/regenerate`);
+  api.post(`/internal/application/${applicationId}/credit-summary/regenerate`);
