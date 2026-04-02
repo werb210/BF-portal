@@ -1,19 +1,38 @@
 import { ENV } from "../config/env";
 
-export async function apiRequest(path: string, options?: RequestInit) {
+export type ApiResponse<T> = {
+  status: "ok" | "error" | "not_ready";
+  data?: T;
+  error?: string;
+  rid?: string;
+};
+
+export type RequestOptions = {
+  method?: string;
+  body?: any;
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+};
+
+export async function api<T = unknown>(
+  path: string,
+  options?: RequestOptions
+): Promise<T> {
   const res = await fetch(`${ENV.API_URL}${path}`, {
+    method: options?.method || "GET",
     headers: {
       "Content-Type": "application/json",
       ...(options?.headers || {}),
     },
-    ...options,
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+    signal: options?.signal,
   });
 
-  const data = await res.json().catch(() => null);
+  const json: ApiResponse<T> = await res.json();
 
-  if (!res.ok) {
-    throw new Error(data?.message || `API error (${res.status})`);
+  if (json.status !== "ok") {
+    throw new Error(json.error || "API error");
   }
 
-  return data;
+  return json.data as T;
 }
