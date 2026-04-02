@@ -1,19 +1,37 @@
-import { env } from "@/config/env";
+const STORAGE_KEY =
+  import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token";
+
+export function getAuthToken(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAuthToken(token: string) {
+  try {
+    localStorage.setItem(STORAGE_KEY, token);
+  } catch {
+    // fail silently
+  }
+}
+
+export function clearAuthToken() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // fail silently
+  }
+}
 
 export const authToken = {
-  get(): string | null {
-    return localStorage.getItem(env.JWT_STORAGE_KEY);
-  },
-
-  set(token: string) {
-    localStorage.setItem(env.JWT_STORAGE_KEY, token);
-  },
-
-  clear() {
-    localStorage.removeItem(env.JWT_STORAGE_KEY);
-  },
+  get: getAuthToken,
+  set: setAuthToken,
+  clear: clearAuthToken,
 };
 
-export const getToken = () => authToken.get();
-export const setToken = (token: string) => authToken.set(token);
-export const clearToken = () => authToken.clear();
+export const getToken = getAuthToken;
+export const setToken = setAuthToken;
+export const clearToken = clearAuthToken;
+export const AUTH_STORAGE_KEY = STORAGE_KEY;

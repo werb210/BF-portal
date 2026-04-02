@@ -1,5 +1,4 @@
 import { ApiResponseSchema } from "@boreal/shared-contract";
-import { env } from "@/config/env";
 import { authToken } from "./authToken";
 import { setApiStatus } from "../state/apiStatus";
 
@@ -21,7 +20,13 @@ export type LenderAuthTokens = {
   refreshToken?: string;
 };
 
-export const API_BASE = env.API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error("VITE_API_URL is not defined");
+}
+
+export const API_BASE = API_BASE_URL;
 const requiresAuth = (path: string) => !path.includes("/auth/") && !path.includes("/health");
 
 const appendParams = (url: string, params?: RequestOptions["params"]) => {
@@ -134,7 +139,7 @@ export const apiPost = api.post;
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = authToken.get();
 
-  const res = await fetch(`${env.API_URL}${path}`, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
