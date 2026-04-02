@@ -98,8 +98,6 @@ export async function api<T = unknown>(path: string, options: ApiClientOptions =
   }
 }
 
-export const apiClient = api;
-
 export async function apiFetch<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<ApiResult<T>> {
   try {
     return { success: true, data: await api<T>(path, options) };
@@ -126,5 +124,7 @@ const apiMethods = {
     api<T>(path, { ...options, method: "PUT", body }),
   delete: <T = unknown>(path: string, options: ApiClientOptions = {}) => api<T>(path, { ...options, method: "DELETE" }),
 };
+
+export const apiClient = Object.assign(api, apiMethods);
 
 export default apiMethods;
