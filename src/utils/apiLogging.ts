@@ -51,6 +51,11 @@ const serialize = (value: unknown) => {
 };
 
 const truncate = (value: string, max = 1024) => (value.length > max ? `${value.slice(0, max)}…` : value);
+const headersToRecord = (headers: Headers) => {
+  const entries: Array<[string, string]> = [];
+  headers.forEach((value, key) => entries.push([key, value]));
+  return Object.fromEntries(entries);
+};
 
 export const buildRequestUrl = (config: RequestTrackingConfig) => {
   const base = config.baseURL ?? "";
@@ -66,7 +71,7 @@ export const attachRequestIdAndLog = (config: GenericRequestConfig) => {
   const requestId = getRequestId();
   const headers = new Headers((config.headers as HeadersInit) ?? {});
   if (!config.skipRequestId) headers.set("X-Request-Id", requestId);
-  config.headers = Object.fromEntries(headers.entries());
+  config.headers = headersToRecord(headers);
 
   const pendingId = startPendingRequest(config);
   config.__pendingId = pendingId;
@@ -75,7 +80,7 @@ export const attachRequestIdAndLog = (config: GenericRequestConfig) => {
     requestId,
     method: config.method?.toUpperCase(),
     url: buildRequestUrl(config),
-    headers: redactSensitive(Object.fromEntries(headers.entries())),
+    headers: redactSensitive(headersToRecord(headers)),
     payload: config.data ? redactSensitive(config.data) : undefined
   });
 

@@ -87,7 +87,8 @@ export const useTwilioCall = () => {
       call.on("disconnect", () => finalizeCall());
       call.on("cancel", () => finalizeCall("canceled", "failed", "user-canceled"));
       call.on("reject", () => finalizeCall("failed", "failed", "busy-no-answer"));
-      call.on("error", (error: Error) => {
+      call.on("error", (...args: unknown[]) => {
+        const error = args[0] as Error | undefined;
         const failureReason = classifyFailureReason(error);
         setError(error?.message ?? "Call failed.");
         setStatus("failed");
@@ -118,10 +119,12 @@ export const useTwilioCall = () => {
 
     device.on?.("registered", () => setDeviceState("registered"));
     device.on?.("unregistered", () => setDeviceState("unregistered"));
-    device.on?.("incoming", (call: VoiceCall) => {
+    device.on?.("incoming", (...args: unknown[]) => {
+      const call = args[0] as VoiceCall | undefined;
       call.accept?.();
     });
-    device.on?.("error", (error: Error) => {
+    device.on?.("error", (...args: unknown[]) => {
+      const error = args[0] as Error | undefined;
       logger.error("Twilio Device Error:", { error });
       setDeviceState((device.state as string) ?? "unregistered");
     });

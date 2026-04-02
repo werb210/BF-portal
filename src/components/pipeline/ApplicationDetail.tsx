@@ -19,10 +19,7 @@ export default function ApplicationDetail({ id, onClose }: ApplicationDetailProp
     const loadApplication = async () => {
       try {
         const response = await api.get<Application>(`/api/applications/${id}`);
-        if (!response.success) {
-          throw new Error(response.error);
-        }
-        setApplication(response.data);
+        setApplication(response);
       } catch (e) {
         console.error(e);
         setApplication(null);

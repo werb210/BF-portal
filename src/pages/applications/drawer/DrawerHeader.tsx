@@ -17,7 +17,7 @@ const DrawerHeader = ({
 }) => {
   const { data } = useQuery<ApplicationDetails>({
     queryKey: ["applications", applicationId, "details"],
-    queryFn: ({ signal }) => fetchApplicationDetails(applicationId, { signal }),
+    queryFn: ({ signal }) => fetchApplicationDetails<ApplicationDetails>(applicationId, { signal }),
     enabled: Boolean(applicationId)
   });
 

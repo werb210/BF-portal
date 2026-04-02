@@ -19,7 +19,7 @@ export default function AiPolicyEditor() {
   async function save(rule: PolicyRule) {
     await apiClient("/api/ai/policy", {
       method: "POST",
-      data: rule
+      body: rule
     });
   }
 

@@ -21,8 +21,8 @@ export default function AnalyticsDashboard() {
         AnalyticsService.getReadiness()
       ]);
 
-      setEvents(eventsRes.data || []);
-      setReadiness(readinessRes.data || {});
+      setEvents(Array.isArray(eventsRes) ? eventsRes : []);
+      setReadiness((readinessRes && typeof readinessRes === "object" ? readinessRes : {}) as ReadinessPayload);
     }
 
     void load();

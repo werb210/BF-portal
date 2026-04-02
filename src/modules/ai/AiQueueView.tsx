@@ -19,7 +19,7 @@ export default function AiQueueView() {
   async function takeSession(id: string) {
     await apiClient("/api/ai/take", {
       method: "POST",
-      data: { sessionId: id }
+      body: { sessionId: id }
     });
 
     window.location.href = `/portal/ai/${id}`;

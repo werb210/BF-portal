@@ -1,7 +1,8 @@
 import { applicationNeedsDocs } from "./documentStatus"
+import type { Document } from "./documentStatus"
 
 type PipelineApplication = {
-  documents?: unknown;
+  documents?: Document[];
   lenderSent?: boolean;
   approved?: boolean;
   declined?: boolean;

@@ -14,7 +14,7 @@ export default function MayaOutboundUpload() {
 
     const json = await apiClient<{ inserted: number }>("/admin/upload-leads", {
       method: "POST",
-      data: formData,
+      body: formData,
       headers: { "Content-Type": "multipart/form-data" },
     });
     setMessage(`Inserted ${json.inserted} leads.`);

@@ -41,6 +41,12 @@ const safeSerializeBody = (body: unknown) => {
   return body;
 };
 
+const headersToRecord = (headers: Headers): Record<string, string> => {
+  const entries: Array<[string, string]> = [];
+  headers.forEach((value, key) => entries.push([key, value]));
+  return Object.fromEntries(entries);
+};
+
 const shouldQueuePath = (path: string) => trackedPathPattern.test(path);
 
 export const queueFailedMutation = (mutation: Omit<QueuedMutation, "id" | "createdAt">) => {
@@ -98,8 +104,8 @@ export const flushQueuedMutations = async () => {
       }
       await apiClient(mutation.path, {
         method: mutation.method,
-        headers: Object.fromEntries(headers.entries()),
-        data: mutation.body
+        headers: headersToRecord(headers),
+        body: mutation.body
       });
     } catch {
       queue.push(mutation);

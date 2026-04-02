@@ -14,7 +14,7 @@ export default function AIKnowledge() {
 
     await apiClient("/api/ai/knowledge", {
       method: "POST",
-      data: formData,
+      body: formData,
       headers: { "Content-Type": "multipart/form-data" },
     });
 

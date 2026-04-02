@@ -31,7 +31,7 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
 
   useEffect(() => {
     apiClient<{ count?: number }>("/api/crm/leads/count")
-      .then((result) => setLeadCount(result.success ? result.data.count ?? 0 : 0))
+      .then((result) => setLeadCount(result.count ?? 0))
       .catch(() => setLeadCount(0));
   }, []);
 
@@ -39,7 +39,7 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
     apiClient<{ status?: string }>("/api/_int/production-readiness")
       .then((result) => {
         logger.info("Production readiness payload", { data: result });
-        setProductionStatus(result.success ? result.data?.status ?? "ok" : "degraded");
+        setProductionStatus(result.status ?? "ok");
       })
       .catch(() => setProductionStatus("degraded"));
   }, []);
@@ -48,7 +48,7 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
     const interval = setInterval(async () => {
       try {
         const result = await apiClient<{ count?: number }>("/api/support/live/count");
-        setLiveCount(result.success ? result.data.count ?? 0 : 0);
+        setLiveCount(result.count ?? 0);
       } catch {
         setLiveCount(0);
       }

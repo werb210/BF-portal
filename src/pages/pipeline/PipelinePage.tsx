@@ -3,8 +3,10 @@ import { getApplications } from "@/api/applications";
 import ApplicationCard from "../../components/pipeline/ApplicationCard";
 
 type PipelineCard = {
-  id: string | number;
-} & Record<string, unknown>;
+  id: string;
+  company: string;
+  amount: string;
+};
 
 type PipelineStage = {
   name: string;

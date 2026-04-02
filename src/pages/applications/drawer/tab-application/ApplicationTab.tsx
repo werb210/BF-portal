@@ -269,7 +269,7 @@ const ApplicationTab = () => {
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const { data: application, isLoading, error } = useQuery<PortalApplicationRecord>({
     queryKey: ["portal-application", applicationId],
-    queryFn: ({ signal }) => fetchPortalApplication(applicationId ?? "", { signal }),
+    queryFn: ({ signal }) => fetchPortalApplication<PortalApplicationRecord>(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId),
     retry: false
   });

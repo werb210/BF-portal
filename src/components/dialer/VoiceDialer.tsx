@@ -86,7 +86,10 @@ export default function VoiceDialer() {
       call.on("disconnect", () => endCall("completed", "completed"));
       call.on("cancel", () => endCall("canceled", "failed", "user-canceled"));
       call.on("reject", () => endCall("failed", "failed", "busy-no-answer"));
-      call.on("error", (err: Error) => classifyAndFail(err.message));
+      call.on("error", (...args: unknown[]) => {
+        const err = args[0] as Error | undefined;
+        classifyAndFail(err?.message ?? "Call failed.");
+      });
     } catch (err) {
       classifyAndFail((err as Error)?.message ?? "Call failed.");
     }

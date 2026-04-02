@@ -9,8 +9,7 @@ export default function LiveActivity() {
   useEffect(() => {
     const interval = setInterval(async () => {
       const result = await apiClient<{ events?: ActivityEvent[] }>("/api/support/events");
-      if (!result.success) return;
-      setEvents(result.data.events || []);
+      setEvents(result.events || []);
     }, 5000);
 
     return () => clearInterval(interval);

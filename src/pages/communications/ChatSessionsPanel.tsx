@@ -226,14 +226,14 @@ export default function ChatSessionsPanel() {
 
     const disconnect = connectAiSocket();
     const unsubscribeConnection = subscribeAiSocketConnection((state) => setConnectionState(state));
-    const unsubscribeEscalated = subscribeAiSocket("escalated_chat", () => {
+    const unsubscribeEscalated = subscribeAiSocket("session_timeout", () => {
       void loadSessions();
     });
-    const unsubscribeIssue = subscribeAiSocket("new_issue_report", () => {
+    const unsubscribeIssue = subscribeAiSocket("session_closed", () => {
       void loadSessions();
     });
-    const unsubscribeHumanActive = subscribeAiSocket("HUMAN_ACTIVE", (payload) => {
-      if (payload.sessionId) {
+    const unsubscribeHumanActive = subscribeAiSocket("new_chat_message", (payload) => {
+      if (payload && typeof payload === "object" && "sessionId" in payload && typeof payload.sessionId === "string") {
         void applyHumanActiveState(payload.sessionId).then(loadSessions);
       } else {
         void loadSessions();
@@ -414,7 +414,7 @@ export default function ChatSessionsPanel() {
               <div key={session.id} className="p-2">
                 <div>Session {session.sessionId ?? session.id}</div>
                 <div className="text-xs text-slate-500">Lead: {session.contactName ?? "Unknown"}</div>
-                <div className="text-xs text-slate-500">Closed at: {session.closedAt ? new Date(session.closedAt).toLocaleString() : "-"}</div>
+                <div className="text-xs text-slate-500">Closed at: {session.updatedAt ? new Date(session.updatedAt).toLocaleString() : "-"}</div>
               </div>
             ))}
           </div>
@@ -443,22 +443,22 @@ export default function ChatSessionsPanel() {
             {selectedLead ? (
               <div className="rounded border p-3 text-xs text-slate-700">
                 <div className="mb-2 font-semibold">CRM Lead Panel</div>
-                <div>Company Name: {selectedLead.company ?? "-"}</div>
-                <div>Full Name: {selectedLead.fullName ?? selectedLead.contact ?? selectedLead.name}</div>
+                <div>Company Name: {selectedLead.id ?? "-"}</div>
+                <div>Full Name: {selected?.contactName ?? "-"}</div>
                 <div>Email: {selectedLead.email ?? selected?.contactEmail ?? "-"}</div>
                 <div>Phone: {selectedLead.phone ?? selected?.contactPhone ?? "-"}</div>
-                <div>Industry: {selectedLead.industry ?? "-"}</div>
-                <div>YIB: {selectedLead.yib ?? "-"}</div>
-                <div>Revenue: {selectedLead.revenue ?? "-"}</div>
-                <div>A/R: {selectedLead.ar ?? "-"}</div>
-                <div>Available Collateral: {selectedLead.availableCollateral ?? "-"}</div>
-                <div>Status: {selectedLead.status ?? "-"}</div>
-                <div>Tags: {selectedLead.tags.join(", ") || "-"}</div>
+                <div>Industry: -</div>
+                <div>YIB: -</div>
+                <div>Revenue: -</div>
+                <div>A/R: -</div>
+                <div>Available Collateral: -</div>
+                <div>Status: -</div>
+                <div>Tags: {(selectedLead.tags ?? []).join(", ") || "-"}</div>
                 <div className="mt-2 font-semibold">Readiness</div>
-                <div>Score: {selectedLead.readinessScore ?? "-"}</div>
-                <div>Answers: {selectedLead.readinessAnswers ? JSON.stringify(selectedLead.readinessAnswers) : "-"}</div>
-                <div>Timestamp: {selectedLead.readinessCapturedAt ?? "-"}</div>
-                <div>Continue Application: {selectedLead.continueApplication ? "Yes" : "No"}</div>
+                <div>Score: -</div>
+                <div>Answers: -</div>
+                <div>Timestamp: -</div>
+                <div>Continue Application: {selected?.metadata?.continueApplication ? "Yes" : "No"}</div>
               </div>
             ) : null}
 
@@ -493,7 +493,7 @@ export default function ChatSessionsPanel() {
               <div>{issue.messages[0]?.message}</div>
               <div className="text-xs text-slate-500">
                 Session: {issue.sessionId ?? issue.id} · {String(issue.metadata?.context ?? "website")} ·
-                {` ${new Date(issue.createdAt).toLocaleString()}`}
+                {` ${new Date(issue.updatedAt).toLocaleString()}`}
               </div>
               <div className="text-xs text-slate-500">Lead: {issue.contactName ?? "Unknown"}</div>
               <div className="text-xs text-slate-500">Status: {issue.status === "closed" ? "Resolved" : "Open"}</div>

@@ -11,7 +11,7 @@ const AuditTimelineTab = () => {
 
   const { data: auditEvents = [] } = useQuery<ApplicationAuditEvent[]>({
     queryKey: ["applications", applicationId, "audit"],
-    queryFn: ({ signal }) => fetchApplicationAudit(applicationId ?? "", { signal }),
+    queryFn: ({ signal }) => fetchApplicationAudit<ApplicationAuditEvent[]>(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
 

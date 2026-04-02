@@ -11,6 +11,6 @@ export interface CallSession {
   voicemail_url?: string | null;
 }
 
-export async function fetchCallHistory(): Promise<CallSession[]> {
+export async function fetchCallHistory(_clientId?: string): Promise<CallSession[]> {
   return [];
 }
