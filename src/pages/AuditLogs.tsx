@@ -27,8 +27,8 @@ export default function AuditLogs() {
         slfApi.get<Omit<AuditLogEvent, "source">[]>("/slf/logs")
       ]);
       setEvents([
-        ...biEvents.data.map((event) => ({ ...event, source: "BI" as const })),
-        ...slfLogs.data.map((event) => ({ ...event, source: "SLF" as const }))
+        ...biEvents.map((event) => ({ ...event, source: "BI" as const })),
+        ...slfLogs.map((event) => ({ ...event, source: "SLF" as const }))
       ]);
       setIsLoading(false);
     }

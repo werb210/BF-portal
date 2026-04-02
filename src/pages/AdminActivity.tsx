@@ -26,8 +26,8 @@ export default function AdminActivity() {
       ]);
 
       const merged = [
-        ...biEvents.data.map((event) => ({ ...event, source: "BI" as const })),
-        ...slfLogs.data.map((event) => ({ ...event, source: "SLF" as const }))
+        ...biEvents.map((event) => ({ ...event, source: "BI" as const })),
+        ...slfLogs.map((event) => ({ ...event, source: "SLF" as const }))
       ].sort((a, b) => {
         const aTime = new Date(a.timestamp ?? a.created_at ?? 0).getTime();
         const bTime = new Date(b.timestamp ?? b.created_at ?? 0).getTime();

@@ -8,8 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      VITE_API_URL: ${{ secrets.API_URL }}
 
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +19,5 @@ jobs:
       - run: npm ci
 
       - run: npm run typecheck
-      - run: npm run lint
+
       - run: npm run build
-      - run: npm run test

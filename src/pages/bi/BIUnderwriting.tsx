@@ -18,7 +18,7 @@ export default function BIUnderwriting() {
   useEffect(() => {
     async function load() {
       const res = await api.get<UnderwritingApplication[]>("/admin/applications");
-      if (res.success && res.data) setApps(res.data);
+      setApps(res);
     }
 
     void load();
@@ -27,7 +27,7 @@ export default function BIUnderwriting() {
   async function updateStatus(id: string, status: string) {
     await api.patch(`/admin/application/${id}/status`, { status });
     const res = await api.get<UnderwritingApplication[]>("/admin/applications");
-    if (res.success && res.data) setApps(res.data);
+    setApps(res);
   }
 
   return (
