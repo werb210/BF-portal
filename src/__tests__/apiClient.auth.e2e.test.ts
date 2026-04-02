@@ -13,7 +13,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
 
     Object.defineProperty(window, "location", {
       configurable: true,
-      value: { href: "http://localhost/", replace: vi.fn() },
+      value: { href: "https://portal.example/", replace: vi.fn() },
     });
   });
 

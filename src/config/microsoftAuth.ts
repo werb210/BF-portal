@@ -4,7 +4,7 @@ const rawRedirectUri = import.meta.env.VITE_MSAL_REDIRECT_URI ?? "";
 const scopeValue = String(import.meta.env.VITE_MSAL_SCOPES ?? "User.Read");
 
 const redirectUri =
-  rawRedirectUri || (typeof window !== "undefined" ? window.location.origin : "");
+  rawRedirectUri || "";
 
 export const microsoftAuthConfig = {
   clientId: rawClientId,
