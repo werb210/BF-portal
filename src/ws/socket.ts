@@ -1,6 +1,6 @@
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE } from "@/config/api";
 
-const SOCKET_URL = API_BASE_URL.replace(/^http/, "ws");
+const SOCKET_URL = API_BASE.replace(/^http/, "ws");
 
 export function connectSocket() {
   const token = sessionStorage.getItem("bf_token");

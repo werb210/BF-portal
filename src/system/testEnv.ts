@@ -1,3 +1,9 @@
 export function getTestApiUrl() {
-  return "http://test.local/api/v1";
+  const url = import.meta.env.VITE_API_URL;
+
+  if (!url) {
+    throw new Error("VITE_API_URL is not defined");
+  }
+
+  return `${url}/api/v1`;
 }

@@ -1,4 +1,5 @@
 import { getToken } from "@/auth/token";
+import { API_BASE } from "@/config/api";
 import { setApiStatus } from "@/state/apiStatus";
 
 export type ApiClientOptions = Omit<RequestInit, "body"> & {
@@ -14,114 +15,86 @@ export type ApiResult<T = unknown> =
 export class ApiError extends Error {}
 export type DegradedApiResponse = { degraded: true };
 
-const getBase = (): string => {
-  const envBase = import.meta.env.VITE_API_URL;
-
-  if (!envBase) {
-    if (import.meta.env.MODE === "test") {
-      return "http://test.local/api/v1";
-    }
-    throw new Error("MISSING_API_URL");
-  }
-  if (!envBase.includes("/api/v1")) throw new Error("INVALID_API_VERSION");
-
-  return envBase;
-};
-
-const withBody = (body: unknown): BodyInit | undefined => {
+const toBody = (body: unknown): BodyInit | undefined => {
   if (body === undefined) return undefined;
   if (body instanceof FormData) return body;
   if (typeof body === "string") return body;
   return JSON.stringify(body);
 };
 
-const normalizeApiPath = (path: string): string => {
-  const cleanPath = path.trim();
-  if (/^https?:\/\//i.test(cleanPath)) {
-    const url = new URL(cleanPath);
-    return normalizeApiPath(`${url.pathname}${url.search}`);
+const normalizePath = (path: string): string => {
+  const clean = path.trim();
+  if (clean.startsWith("/api/v1")) return clean.slice("/api/v1".length) || "/";
+  if (clean === "/api") return "/";
+  if (clean.startsWith("/api/")) return clean.slice("/api".length);
+  return clean.startsWith("/") ? clean : `/${clean}`;
+};
+
+const withParams = (path: string, params?: ApiClientOptions["params"]): string => {
+  const url = new URL(`${API_BASE}${normalizePath(path)}`);
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.set(key, String(value));
+      }
+    });
   }
-  if (cleanPath.startsWith("/api/v1/")) return cleanPath;
-  if (cleanPath === "/api/v1") return "/api/v1";
-  if (cleanPath.startsWith("/api/")) return `/api/v1/${cleanPath.slice("/api/".length)}`;
-  if (cleanPath === "/api") return "/api/v1";
-  if (cleanPath.startsWith("/")) return `/api/v1${cleanPath}`;
-  return `/api/v1/${cleanPath}`;
+  return url.toString();
 };
 
-const buildPath = (path: string, params?: ApiClientOptions["params"]): string => {
-  const normalizedPath = normalizeApiPath(path);
-  if (!params) return normalizedPath;
-  const url = new URL(normalizedPath, "http://localhost");
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
-  });
-  return `${url.pathname}${url.search}`;
-};
+const toHeaders = (options: ApiClientOptions): Headers => {
+  const headers = new Headers(options.headers ?? {});
 
-const toHeaders = (options: ApiClientOptions = {}): HeadersInit => {
-  const headers = new Headers(options.headers || {});
   if (!options.skipAuth) {
     const token = getToken();
     if (!token) throw new Error("MISSING_AUTH");
     headers.set("Authorization", `Bearer ${token}`);
   }
+
   if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
+
   return headers;
 };
 
 export async function api<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<T> {
   const { body, params, ...rest } = options;
-  const base = getBase().replace(/\/$/, "");
-  const normalizedPath = buildPath(path, params).replace(/^\//, "");
-  const originalFetch = window.fetch;
 
   try {
-    const res = await originalFetch(`${base}/${normalizedPath}`, {
+    const res = await fetch(withParams(path, params), {
       ...rest,
-      body: withBody(body),
+      credentials: "include",
       headers: toHeaders(options),
+      body: toBody(body),
     });
 
-    const payloadText = await res.text();
-    const validated = payloadText ? JSON.parse(payloadText) : {};
-    const errorCode =
-      typeof validated?.error === "string"
-        ? validated.error
-        : typeof validated?.error?.code === "string"
-          ? validated.error.code
-          : typeof validated?.code === "string"
-            ? validated.code
-            : undefined;
-
     if (!res.ok) {
-      const err = new ApiError(errorCode || `HTTP_ERROR_${res.status}`);
-      (err as any).code = errorCode || `HTTP_ERROR_${res.status}`;
-      (err as any).status = res.status;
-      throw err;
+      throw new ApiError(`HTTP_ERROR_${res.status}`);
     }
 
-    if (validated?.status === "ok") {
+    const payload = await res.json();
+
+    if (payload?.status === "ok") {
       setApiStatus("available");
-      return validated.data as T;
+      return payload.data as T;
     }
 
-    if (errorCode === "DB_NOT_READY") {
+    if (payload?.error === "DB_NOT_READY" || payload?.error?.code === "DB_NOT_READY") {
       setApiStatus("degraded");
       return { degraded: true } as T;
     }
 
-    const err = new ApiError(errorCode || "API_ERROR");
-    (err as any).code = errorCode || "API_ERROR";
-    (err as any).status = res.status;
-    throw err;
-  } catch (e) {
-    if (!(e instanceof Error && e.message === "MISSING_AUTH")) {
+    if (payload && typeof payload === "object" && "success" in payload) {
+      return payload as T;
+    }
+
+    return payload as T;
+  } catch (error) {
+    if (!(error instanceof Error && error.message === "MISSING_AUTH")) {
       setApiStatus("unavailable");
     }
-    throw e;
+    throw error;
   }
 }
 
@@ -135,15 +108,23 @@ export async function apiFetch<T = unknown>(path: string, options: ApiClientOpti
   }
 }
 
-export async function apiFetchWithRetry<T = unknown>(path: string, options: ApiClientOptions = {}, retries = 1): Promise<ApiResult<T>> {
+export async function apiFetchWithRetry<T = unknown>(path: string, options: ApiClientOptions = {}): Promise<ApiResult<T>> {
   return apiFetch<T>(path, options);
 }
 
-export const get = <T = unknown>(path: string, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "GET" });
+export const get = <T = unknown>(path: string, options: ApiClientOptions = {}) => api<T>(path, { ...options, method: "GET" });
 export const post = <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) =>
-  apiClient<T>(path, { ...options, method: "POST", body });
+  api<T>(path, { ...options, method: "POST", body });
 export const apiPost = post;
 
-const apiMethods = { get, post, patch: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "PATCH", body }), put: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "PUT", body }), delete: <T = unknown>(path: string, options: ApiClientOptions = {}) => apiClient<T>(path, { ...options, method: "DELETE" }) };
+const apiMethods = {
+  get,
+  post,
+  patch: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) =>
+    api<T>(path, { ...options, method: "PATCH", body }),
+  put: <T = unknown>(path: string, body?: unknown, options: ApiClientOptions = {}) =>
+    api<T>(path, { ...options, method: "PUT", body }),
+  delete: <T = unknown>(path: string, options: ApiClientOptions = {}) => api<T>(path, { ...options, method: "DELETE" }),
+};
 
 export default apiMethods;

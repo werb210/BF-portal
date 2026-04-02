@@ -1,11 +1,13 @@
-import '@testing-library/jest-dom';
-import { beforeEach, vi } from "vitest";
+import { beforeAll, afterAll, afterEach } from "vitest";
+import { setupServer } from "msw/node";
+import { http, HttpResponse } from "msw";
 
-beforeEach(() => {
-  vi.resetModules();
-  vi.clearAllMocks();
-});
+export const server = setupServer(
+  http.post("*/api/v1/auth/otp/start", () => {
+    return HttpResponse.json({ success: true });
+  }),
+);
 
-global.fetch = vi.fn(() => {
-  throw new Error("UNMOCKED_FETCH");
-}) as unknown as typeof fetch;
+beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
