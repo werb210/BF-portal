@@ -1,6 +1,6 @@
 import { ApiResponseSchema } from "@boreal/shared-contract";
-import { getEnv } from "../config/env";
-import { clearToken, getToken } from "@/lib/authStore";
+import { env } from "../config/env";
+import { clearToken, getToken } from "@/lib/authToken";
 import { setApiStatus } from "../state/apiStatus";
 
 export type RequestOptions = {
@@ -21,12 +21,12 @@ export type LenderAuthTokens = {
   refreshToken?: string;
 };
 
-const { VITE_API_URL } = getEnv();
+export const API_BASE = env.API_URL;
 const requiresAuth = (path: string) => !path.includes("/auth/") && !path.includes("/health");
 
 const appendParams = (url: string, params?: RequestOptions["params"]) => {
   if (!params) return url;
-  const parsed = new URL(url, url.startsWith("http") ? undefined : VITE_API_URL);
+  const parsed = new URL(url, url.startsWith("http") ? undefined : API_BASE);
   Object.entries(params).forEach(([key, value]) => {
     if (value === null || value === undefined) return;
     parsed.searchParams.set(key, String(value));
@@ -35,7 +35,7 @@ const appendParams = (url: string, params?: RequestOptions["params"]) => {
 };
 
 const buildUrl = (path: string, params?: RequestOptions["params"]) => {
-  const full = /^https?:\/\//.test(path) ? path : `${VITE_API_URL}${path}`;
+  const full = /^https?:\/\//.test(path) ? path : `${API_BASE}${path}`;
   return appendParams(full, params);
 };
 
@@ -131,16 +131,23 @@ export const put = api.put;
 export const del = api.delete;
 export const apiPost = api.post;
 
-export async function apiFetch<T = unknown>(path: string, options?: RequestOptions) {
-  try {
-    return { success: true as const, data: await api<T>(path, options) };
-  } catch (error) {
-    return { success: false as const, error: error instanceof Error ? error.message : "API error" };
-  }
+export async function apiFetch(path: string, options: RequestInit = {}) {
+  const token = getToken();
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+
+  return fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+  });
 }
 
-export async function apiFetchWithRetry<T = unknown>(path: string, options?: RequestOptions, _retries = 0) {
-  return apiFetch<T>(path, options);
+export async function apiFetchWithRetry<T = unknown>(path: string, options?: RequestInit, _retries = 0) {
+  return apiFetch(path, options);
 }
 
 let lenderTokenProvider: (() => LenderAuthTokens | null) | null = null;

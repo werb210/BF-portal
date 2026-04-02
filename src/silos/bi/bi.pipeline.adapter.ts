@@ -1,4 +1,4 @@
-import { getEnv } from "@/config/env";
+import { env } from "@/config/env";
 import { api } from "@/lib/api";
 import type { PipelineApiAdapter } from "@/core/engines/pipeline/pipeline.config";
 import type { PipelineApplication, PipelineStage } from "@/core/engines/pipeline/pipeline.types";
@@ -18,7 +18,7 @@ export const biPipelineAdapter: PipelineApiAdapter = {
   },
 
   exportApplications: async (ids) => {
-    const response = await fetch(`${getEnv().VITE_API_URL}/api/bi/pipeline/export`, {
+    const response = await fetch(`${env.API_URL}/api/bi/pipeline/export`, {
       method: "POST",
       credentials: "include",
       headers: {

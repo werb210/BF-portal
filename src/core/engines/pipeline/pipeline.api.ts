@@ -1,4 +1,4 @@
-import { getEnv } from "@/config/env";
+import { env } from "@/config/env";
 import { api } from "@/lib/api";
 import { getToken } from "@/auth/token";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
@@ -327,7 +327,7 @@ export const pipelineApi = {
   },
   exportApplications: async (applicationIds: string[]) => {
     const token = getToken();
-    const response = await fetch(`${getEnv().VITE_API_URL}/applications/export`, {
+    const response = await fetch(`${env.API_URL}/applications/export`, {
       method: "POST",
       credentials: "include",
       headers: {
