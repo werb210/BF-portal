@@ -1,9 +1,10 @@
 import { API_BASE } from "@/config/api";
+import { getToken } from "@/lib/authStore";
 
 const SOCKET_URL = API_BASE.replace(/^http/, "ws");
 
 export function connectSocket() {
-  const token = sessionStorage.getItem("bf_token");
+  const token = getToken();
 
   if (!token) {
     return;
