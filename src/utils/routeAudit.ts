@@ -12,13 +12,13 @@ type RouteDescriptor = {
 };
 
 export const portalApiRoutes: RouteDescriptor[] = [
-  { method: "POST", path: "/api/auth/start-otp" },
-  { method: "POST", path: "/api/auth/verify-otp" },
-  { method: "GET", path: "/api/auth/me" },
+  { method: "POST", path: "/api/v1/auth/otp/start" },
+  { method: "POST", path: "/api/v1/auth/otp/verify" },
+  { method: "GET", path: "/api/v1/auth/me" },
   { method: "GET", path: "/api/_int/routes" }
 ];
 
-const AUTH_ROUTE_PREFIXES = ["/api/auth", "/api/auth/me"];
+const AUTH_ROUTE_PREFIXES = ["/api/v1/auth", "/api/v1/auth/me"];
 const normalizePath = (path: string) =>
   path
     .replace(/\/+$/, "");
@@ -63,7 +63,7 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
   const token = getToken();
   if (!token) return false;
   try {
-    await api("/api/auth/me", {
+    await api("/api/v1/auth/me", {
       headers: {
         "X-Request-Id": requestId,
         Authorization: `Bearer ${token}`
@@ -71,13 +71,9 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
     });
     return true;
   } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "response" in error &&
-      (error as { response?: { status?: number } }).response?.status === 401
-    ) {
-      reportAuthFailure("unauthorized");
+    reportAuthFailure("unauthorized");
+    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+      window.location.assign("/login");
     }
     return false;
   }
