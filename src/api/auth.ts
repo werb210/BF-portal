@@ -1,15 +1,18 @@
-import { api } from "@/api";
+import { baseApi } from "./index";
+import { endpoints } from "@/lib/endpoints";
 
-export function sendOtp(phone: string) {
-  return api("/auth/send-otp", {
+export async function startOtp(phone: string) {
+  return baseApi(endpoints.otpStart, {
     method: "POST",
-    body: { phone },
+    body: JSON.stringify({ phone }),
   });
 }
 
-export function verifyOtp(phone: string, code: string) {
-  return api("/auth/verify-otp", {
+export async function verifyOtp(phone: string, code: string) {
+  return baseApi(endpoints.otpVerify, {
     method: "POST",
-    body: { phone, code },
+    body: JSON.stringify({ phone, code }),
   });
 }
+
+export const sendOtp = startOtp;

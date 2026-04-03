@@ -1,6 +1,6 @@
 import { setApiStatus } from "@/state/apiStatus";
 
-const BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://server.boreal.financial";
 
 export type RequestOptions = {
   method?: string;
@@ -20,12 +20,13 @@ export type LenderAuthTokens = {
   refreshToken?: string;
 };
 
-const requiresAuth = (path: string) => !path.includes("/auth/") && !path.includes("/health");
-
-const getStoredToken = () => {
+/**
+ * Central token getter
+ */
+function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("auth_token") || localStorage.getItem(import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token");
-};
+  return localStorage.getItem("auth_token");
+}
 
 const withParams = (path: string, params?: RequestOptions["params"]) => {
   if (!params) return path;
@@ -46,93 +47,117 @@ const toRelativeApiPath = (path: string) => {
   return path;
 };
 
-const buildUrl = (path: string) => `${BASE}${toRelativeApiPath(path)}`;
+const buildUrl = (path: string) => `${API_BASE_URL}${toRelativeApiPath(path)}`;
 
-export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}) {
-  const res = await fetch(buildUrl(path), options);
-  const json = (await res.json()) as { status?: string; data?: T; error?: string };
+/**
+ * Core API wrapper
+ */
+export async function baseApi<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
+  const requestPath = withParams(toRelativeApiPath(path), options.params);
+  const token = getStoredToken();
 
-  if (json?.status === "ok") {
-    return { success: true, data: (json.data ?? ({} as T)) as T };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
-  return { success: false, error: json?.error ?? "Request failed" };
+  const body =
+    options.body === undefined
+      ? undefined
+      : options.body instanceof FormData
+        ? options.body
+        : typeof options.body === "string"
+          ? options.body
+          : JSON.stringify(options.body);
+
+  const res = await fetch(buildUrl(requestPath), {
+    method: options.method || "GET",
+    headers: options.body instanceof FormData ? (options.headers as Record<string, string> | undefined) : headers,
+    body,
+    signal: options.signal,
+    credentials: "include",
+  });
+
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
+  }
+
+  if ((data as { status?: string; error?: string } | null)?.status === "error" && (data as { error?: string } | null)?.error === "DB_NOT_READY") {
+    setApiStatus("degraded");
+    return { degraded: true } as T;
+  }
+
+  if (!res.ok) {
+    const err = new ApiError(
+      (data as { error?: { message?: string } | string } | null)?.error && typeof (data as { error?: unknown }).error === "string"
+        ? ((data as { error: string }).error || `HTTP_ERROR_${res.status}`)
+        : `HTTP_ERROR_${res.status}`
+    );
+    err.status = res.status;
+    err.details = data;
+    setApiStatus("unavailable");
+    throw err;
+  }
+
+  setApiStatus("available");
+
+  if (data && typeof data === "object" && "status" in (data as Record<string, unknown>)) {
+    const wrapped = data as { status?: string; data?: T; error?: string };
+    if (wrapped.status === "ok") {
+      return (wrapped.data ?? ({} as T)) as T;
+    }
+  }
+
+  return data as T;
+}
+
+export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}) {
+  try {
+    const data = await baseApi<T>(path, {
+      method: options.method,
+      body: options.body,
+      headers: options.headers as Record<string, string> | undefined,
+      signal: options.signal ?? undefined,
+    });
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Request failed" };
+  }
 }
 
 export async function rawApiFetch(path: string, options: RequestInit = {}) {
-  return fetch(buildUrl(path), options);
+  const token = getStoredToken();
+  const headers = new Headers(options.headers || {});
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  return fetch(buildUrl(path), {
+    ...options,
+    headers,
+    credentials: "include",
+  });
 }
 
 export function get(path: string, headers: Record<string, string> = {}) {
-  return fetch(`${BASE}${path}`, {
+  return rawApiFetch(path, {
     method: "GET",
     headers,
   });
 }
 
 export function post(path: string, body: unknown, headers: Record<string, string> = {}) {
-  return fetch(`${BASE}${path}`, {
+  return rawApiFetch(path, {
     method: "POST",
-    headers,
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
-}
-
-async function safeJson(res: Response): Promise<unknown> {
-  try {
-    return await res.json();
-  } catch {
-    throw new Error("Invalid JSON response");
-  }
-}
-
-async function baseApi<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
-  const normalizedPath = toRelativeApiPath(path);
-  const token = getStoredToken();
-
-  if (!token && requiresAuth(normalizedPath)) {
-    throw new Error("Auth token missing");
-  }
-
-  const requestPath = withParams(normalizedPath, options.params);
-  const res = await fetch(`${BASE}${requestPath}`, {
-    method: options.method || "GET",
-    headers: options.headers,
-    ...(options.body === undefined
-      ? {}
-      : {
-          body: options.body instanceof FormData ? options.body : JSON.stringify(options.body),
-        }),
-    signal: options.signal,
-  });
-
-  if (res.status === 401) {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem(import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token");
-      window.location.href = "/login";
-    }
-    throw new Error("Unauthorized");
-  }
-
-  const json = (await safeJson(res)) as { status?: string; data?: T; error?: string };
-
-  if (json?.status === "error" && json.error === "DB_NOT_READY") {
-    setApiStatus("degraded");
-    return { degraded: true } as T;
-  }
-
-  if (!res.ok || json?.status !== "ok") {
-    const message = typeof json?.error === "string" ? json.error : `HTTP_ERROR_${res.status}`;
-    const err = new ApiError(message);
-    err.status = res.status;
-    err.details = json;
-    setApiStatus("unavailable");
-    throw err;
-  }
-
-  setApiStatus("available");
-  return (json.data ?? ({} as T)) as T;
 }
 
 type NoMethodBody = Omit<RequestOptions, "method" | "body">;
