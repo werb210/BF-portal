@@ -1,7 +1,8 @@
 import { baseApi } from "./index";
 import { endpoints } from "@/lib/endpoints";
+import { setAuthToken } from "@/lib/authToken";
 
-export async function startOtp(phone: string) {
+export async function sendOtp(phone: string) {
   return baseApi(endpoints.otpStart, {
     method: "POST",
     body: JSON.stringify({ phone }),
@@ -16,10 +17,9 @@ export async function verifyOtp(phone: string, code: string) {
 
   const token = response?.data?.token || response?.token;
   if (token) {
-    localStorage.setItem("token", token);
+    setAuthToken(token);
   }
 
   return response;
 }
-
-export const sendOtp = startOtp;
+export const startOtp = sendOtp;
