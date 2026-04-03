@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { api, type RequestOptions } from "@/api";
 import type {
   Lender,

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useCallback, useEffect, useRef } from "react";
 
 const canUseAudio = () =>

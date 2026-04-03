@@ -4,6 +4,7 @@ type CallStats = {
   totalCalls: number;
   answered: number;
   missed: number;
+  avgDuration: number;
 };
 
 export default function CallPerformanceCard() {
@@ -11,23 +12,28 @@ export default function CallPerformanceCard() {
     totalCalls: 0,
     answered: 0,
     missed: 0,
+    avgDuration: 0,
   });
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/calls/stats");
-        if (!res.ok) return;
-
-        const data: CallStats = await res.json();
+        const res = await fetch("/api/metrics");
+        const data = await res.json();
 
         setStats({
-          totalCalls: data.totalCalls ?? 0,
-          answered: data.answered ?? 0,
-          missed: data.missed ?? 0,
+          totalCalls: data.totalCalls || 0,
+          answered: data.answered || 0,
+          missed: data.missed || 0,
+          avgDuration: data.avgDuration || 0,
         });
       } catch {
-        // fail silently for now
+        setStats({
+          totalCalls: 0,
+          answered: 0,
+          missed: 0,
+          avgDuration: 0,
+        });
       }
     }
 
@@ -35,11 +41,12 @@ export default function CallPerformanceCard() {
   }, []);
 
   return (
-    <div className="card">
+    <div>
       <h3>Call Performance</h3>
-      <p>Total: {stats.totalCalls}</p>
-      <p>Answered: {stats.answered}</p>
-      <p>Missed: {stats.missed}</p>
+      <div>Total: {stats.totalCalls}</div>
+      <div>Answered: {stats.answered}</div>
+      <div>Missed: {stats.missed}</div>
+      <div>Avg Duration: {stats.avgDuration}</div>
     </div>
   );
 }

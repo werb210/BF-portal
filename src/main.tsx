@@ -7,9 +7,7 @@ import { BrowserRouter } from "react-router-dom";
 import { validateStartupToken } from "@/bootstrap";
 import { api } from "@/api";
 
-import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
-
-import { ErrorFallback } from "./components/ErrorBoundary";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 import App from "./App";
 import "./index.css";
@@ -41,9 +39,9 @@ async function bootstrap() {
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <BrowserRouter>
-        <ReactErrorBoundary FallbackComponent={ErrorFallback}>
+        <ErrorBoundary>
           <App />
-        </ReactErrorBoundary>
+        </ErrorBoundary>
       </BrowserRouter>
     </React.StrictMode>,
   );

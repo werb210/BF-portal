@@ -25,7 +25,8 @@ export type LenderAuthTokens = {
  */
 function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("auth_token");
+  const jwtStorageKey = (import.meta.env.VITE_JWT_STORAGE_KEY as string | undefined) || "bf_jwt_token";
+  return localStorage.getItem(jwtStorageKey) || localStorage.getItem("auth_token");
 }
 
 const withParams = (path: string, params?: RequestOptions["params"]) => {
@@ -56,6 +57,11 @@ export async function baseApi<T = unknown>(path: string, options: RequestOptions
   const requestPath = withParams(toRelativeApiPath(path), options.params);
   const token = getStoredToken();
 
+  const requiresAuth = /^https?:\/\//.test(path) || requestPath.includes("/protected");
+  if (!token && requiresAuth) {
+    throw new ApiError("Auth token missing");
+  }
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...((options.headers as Record<string, string>) || {}),
@@ -84,9 +90,12 @@ export async function baseApi<T = unknown>(path: string, options: RequestOptions
 
   let data: unknown;
   try {
+    if (res.status === 204) {
+      throw new ApiError("EMPTY_RESPONSE");
+    }
     data = await res.json();
   } catch {
-    data = null;
+    throw new ApiError("INVALID_RESPONSE");
   }
 
   if ((data as { status?: string; error?: string } | null)?.status === "error" && (data as { error?: string } | null)?.error === "DB_NOT_READY") {
@@ -95,11 +104,7 @@ export async function baseApi<T = unknown>(path: string, options: RequestOptions
   }
 
   if (!res.ok) {
-    const err = new ApiError(
-      (data as { error?: { message?: string } | string } | null)?.error && typeof (data as { error?: unknown }).error === "string"
-        ? ((data as { error: string }).error || `HTTP_ERROR_${res.status}`)
-        : `HTTP_ERROR_${res.status}`
-    );
+    const err = new ApiError(res.status === 401 ? "Unauthorized" : `HTTP_ERROR_${res.status}`);
     err.status = res.status;
     err.details = data;
     setApiStatus("unavailable");
