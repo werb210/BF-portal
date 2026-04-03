@@ -1,23 +1,17 @@
-import { beforeAll, afterAll, afterEach, vi } from "vitest";
-import { setupServer } from "msw/node";
-import { http, HttpResponse } from "msw";
+const storage = new Map<string, string>();
 
-export const server = setupServer(
-  http.post("*/api/v1/auth/otp/start", () => {
-    return HttpResponse.json({ success: true });
-  }),
-);
-
-global.fetch = vi.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({}),
-  } as any),
-) as any;
-
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
-afterEach(() => {
-  server.resetHandlers();
-  vi.clearAllMocks();
+Object.defineProperty(window, "localStorage", {
+  value: {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      storage.set(key, value);
+    },
+    removeItem: (key: string) => {
+      storage.delete(key);
+    },
+    clear: () => {
+      storage.clear();
+    },
+  },
+  writable: true,
 });
-afterAll(() => server.close());

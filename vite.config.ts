@@ -10,12 +10,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5174,
     proxy: {
       "/api": {
-        target: process.env.VITE_PROXY_TARGET || "http://localhost:8080",
+        target: "http://localhost:8080",
         changeOrigin: true,
-        secure: false,
       },
     },
   },
