@@ -1,22 +1,27 @@
-export async function api(path: string, options: RequestInit = {}) {
-  const res = await fetch(path, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+export async function apiCall(path: string, options: RequestInit = {}) {
+  const base = import.meta.env.VITE_API_URL;
 
-  let data;
-  try {
-    data = await res.json();
-  } catch {
-    data = null;
+  const token = localStorage.getItem("token");
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
+  const res = await fetch(`${base}${path}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
+
+  const data = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    throw new Error(data?.error || "API_ERROR");
+    throw new Error((data as { error?: string })?.error || "API error");
   }
 
   return data;

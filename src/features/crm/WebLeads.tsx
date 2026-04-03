@@ -5,7 +5,7 @@ export default function WebLeads() {
   const [leads, setLeads] = useState<Array<{ id: string; companyName?: string; firstName?: string; lastName?: string; email?: string; phone?: string }>>([]);
 
   useEffect(() => {
-    api<{ leads?: Array<{ id: string; companyName?: string; firstName?: string; lastName?: string; email?: string; phone?: string }> }>("/api/crm/web-leads")
+    api<{ leads?: Array<{ id: string; companyName?: string; firstName?: string; lastName?: string; email?: string; phone?: string }> }>("/api/v1/crm/web-leads")
       .then((result) => setLeads(result.leads || []));
   }, []);
 
