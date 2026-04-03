@@ -8,12 +8,14 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: ${{ secrets.VITE_API_URL }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Verify required Azure env vars
         run: |
-          test -n "${{ vars.VITE_API_URL }}" || (echo "Missing VITE_API_URL" && exit 1)
+          echo "VITE_API_URL=${VITE_API_URL:-/api}"
           test -n "${{ vars.VITE_CLIENT_APP_URL }}" || (echo "Missing VITE_CLIENT_APP_URL" && exit 1)
 
       - name: Azure Static Web Apps Deploy

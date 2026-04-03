@@ -1,7 +1,7 @@
 import { apiFetch as coreFetch } from "./client";
 import { setApiStatus } from "@/state/apiStatus";
 
-const BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+const BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "/api";
 
 export type RequestOptions = {
   method?: string;
