@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import { validateStartupToken } from "@/bootstrap";
 import { api } from "@/api";
+import { getSilo } from "@/lib/silo";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
@@ -20,6 +21,9 @@ window.addEventListener("unhandledrejection", (e) => {
 window.addEventListener("error", (e) => {
   console.error("[RUNTIME ERROR]", e.error);
 });
+
+console.log("🔥 PORTAL BOOT");
+console.log("🧠 SILO:", getSilo());
 
 async function assertBackend() {
   const mode = import.meta.env.MODE;

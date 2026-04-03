@@ -89,7 +89,7 @@ const AppRoutes = () => (
       <Route path="/auth/otp" element={<AuthOtpPage />} />
       <Route path="/otp" element={<AuthOtpPage />} />
       <Route element={<AuthenticatedShell />}>
-        <Route path="/" element={<Navigate to="/portal" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/portal" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<Navigate to="/portal" replace />} />
         <Route

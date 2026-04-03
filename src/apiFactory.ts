@@ -1,12 +1,12 @@
-import { env } from "@/config/env";
 import { http } from "@/api";
+import { getApiBase } from "@/lib/apiBase";
 
-const resolveBaseURL = (silo: string) => `${env.VITE_API_URL}/${silo.toLowerCase()}`;
+const resolveBaseURL = () => getApiBase();
 
 export function createApi(silo: string, _token: string) {
   return {
     defaults: {
-      baseURL: resolveBaseURL(silo),
+      baseURL: resolveBaseURL(),
     },
     get: <T>(path: string): Promise<T> => http.get<T>(path),
     post: <T>(path: string, body?: unknown): Promise<T> => http.post<T>(path, body),
