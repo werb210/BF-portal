@@ -1,4 +1,3 @@
-import { apiFetch as coreFetch } from "./client";
 import { setApiStatus } from "@/state/apiStatus";
 
 const BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "/api";
@@ -47,8 +46,10 @@ const toRelativeApiPath = (path: string) => {
   return path;
 };
 
+const buildUrl = (path: string) => `${BASE}${toRelativeApiPath(path)}`;
+
 export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}) {
-  const res = await coreFetch(`${BASE}${toRelativeApiPath(path)}`, options);
+  const res = await fetch(buildUrl(path), options);
   const json = (await res.json()) as { status?: string; data?: T; error?: string };
 
   if (json?.status === "ok") {
@@ -59,18 +60,18 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
 }
 
 export async function rawApiFetch(path: string, options: RequestInit = {}) {
-  return coreFetch(`${BASE}${toRelativeApiPath(path)}`, options);
+  return fetch(buildUrl(path), options);
 }
 
-export function get(path: string, headers: any = {}) {
-  return coreFetch(`${BASE}${path}`, {
+export function get(path: string, headers: Record<string, string> = {}) {
+  return fetch(`${BASE}${path}`, {
     method: "GET",
     headers,
   });
 }
 
-export function post(path: string, body: any, headers: any = {}) {
-  return coreFetch(`${BASE}${path}`, {
+export function post(path: string, body: unknown, headers: Record<string, string> = {}) {
+  return fetch(`${BASE}${path}`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
@@ -94,7 +95,7 @@ async function baseApi<T = unknown>(path: string, options: RequestOptions = {}):
   }
 
   const requestPath = withParams(normalizedPath, options.params);
-  const res = await coreFetch(`${BASE}${requestPath}`, {
+  const res = await fetch(`${BASE}${requestPath}`, {
     method: options.method || "GET",
     headers: options.headers,
     ...(options.body === undefined
@@ -122,7 +123,8 @@ async function baseApi<T = unknown>(path: string, options: RequestOptions = {}):
   }
 
   if (!res.ok || json?.status !== "ok") {
-    const err = new ApiError(json?.error || `HTTP_ERROR_${res.status}`);
+    const message = typeof json?.error === "string" ? json.error : `HTTP_ERROR_${res.status}`;
+    const err = new ApiError(message);
     err.status = res.status;
     err.details = json;
     setApiStatus("unavailable");

@@ -1,3 +1,5 @@
-import type { ApiResponse } from "@boreal/shared-contract";
-
-export type { ApiResponse };
+export type ApiResponse<T> = {
+  success?: boolean;
+  data?: T;
+  error?: string;
+};
