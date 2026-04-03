@@ -1,5 +1,6 @@
 import { setApiStatus } from "@/state/apiStatus";
 import { apiCall } from "@/lib/api";
+import { getAuthToken } from "@/lib/authToken";
 
 export type RequestOptions = {
   method?: string;
@@ -43,9 +44,11 @@ const toRelativeApiPath = (path: string) => {
  */
 export async function baseApi<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const requestPath = withParams(toRelativeApiPath(path), options.params);
+  const token = getAuthToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...((options.headers as Record<string, string>) || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
 
