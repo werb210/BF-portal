@@ -1,13 +1,5 @@
-export async function apiFetch(
-  path: string,
-  options: RequestInit = {}
-): Promise<any> {
-  const res = await fetch(path, options);
+import { apiCall } from "@/lib/api";
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`API ERROR ${res.status}: ${text}`);
-  }
-
-  return res.json();
+export async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
+  return apiCall(path, options);
 }

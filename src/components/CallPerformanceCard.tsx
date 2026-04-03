@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiCall } from "@/lib/api";
 
 type CallStats = {
   totalCalls: number;
@@ -18,8 +19,7 @@ export default function CallPerformanceCard() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/metrics");
-        const data = await res.json();
+        const data = await apiCall("/api/v1/metrics");
 
         setStats({
           totalCalls: data.totalCalls || 0,
@@ -27,7 +27,8 @@ export default function CallPerformanceCard() {
           missed: data.missed || 0,
           avgDuration: data.avgDuration || 0,
         });
-      } catch {
+      } catch (err) {
+        console.error(err);
         setStats({
           totalCalls: 0,
           answered: 0,

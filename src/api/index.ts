@@ -1,6 +1,5 @@
 import { setApiStatus } from "@/state/apiStatus";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://server.boreal.financial";
+import { apiCall } from "@/lib/api";
 
 export type RequestOptions = {
   method?: string;
@@ -48,8 +47,6 @@ const toRelativeApiPath = (path: string) => {
   return path;
 };
 
-const buildUrl = (path: string) => `${API_BASE_URL}${toRelativeApiPath(path)}`;
-
 /**
  * Core API wrapper
  */
@@ -80,35 +77,23 @@ export async function baseApi<T = unknown>(path: string, options: RequestOptions
           ? options.body
           : JSON.stringify(options.body);
 
-  const res = await fetch(buildUrl(requestPath), {
-    method: options.method || "GET",
-    headers: options.body instanceof FormData ? (options.headers as Record<string, string> | undefined) : headers,
-    body,
-    signal: options.signal,
-    credentials: "include",
-  });
-
   let data: unknown;
   try {
-    if (res.status === 204) {
-      throw new ApiError("EMPTY_RESPONSE");
-    }
-    data = await res.json();
-  } catch {
-    throw new ApiError("INVALID_RESPONSE");
+    data = await apiCall(requestPath, {
+      method: options.method || "GET",
+      headers: options.body instanceof FormData ? (options.headers as Record<string, string> | undefined) : headers,
+      body: body as BodyInit | null | undefined,
+      signal: options.signal,
+    });
+  } catch (error) {
+    setApiStatus("unavailable");
+    const err = new ApiError(error instanceof Error ? error.message : "API error");
+    throw err;
   }
 
   if ((data as { status?: string; error?: string } | null)?.status === "error" && (data as { error?: string } | null)?.error === "DB_NOT_READY") {
     setApiStatus("degraded");
     return { degraded: true } as T;
-  }
-
-  if (!res.ok) {
-    const err = new ApiError(res.status === 401 ? "Unauthorized" : `HTTP_ERROR_${res.status}`);
-    err.status = res.status;
-    err.details = data;
-    setApiStatus("unavailable");
-    throw err;
   }
 
   setApiStatus("available");
@@ -138,16 +123,19 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
 }
 
 export async function rawApiFetch(path: string, options: RequestInit = {}) {
-  const token = getStoredToken();
-  const headers = new Headers(options.headers || {});
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
+  try {
+    const data = await apiCall(path, options);
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "API error";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
-  return fetch(buildUrl(path), {
-    ...options,
-    headers,
-    credentials: "include",
-  });
 }
 
 export function get(path: string, headers: Record<string, string> = {}) {

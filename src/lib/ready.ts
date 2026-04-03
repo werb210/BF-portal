@@ -1,11 +1,13 @@
-import { env } from "@/config/env";
+import { apiCall } from "@/lib/api";
 
 export async function waitForReady(retries = 10, delay = 500) {
   for (let i = 0; i < retries; i++) {
     try {
-      const res = await fetch(`${env.VITE_API_URL}/ready`);
-      if (res.status === 200) return;
-    } catch {}
+      await apiCall("/ready");
+      return;
+    } catch {
+      // retry
+    }
 
     await new Promise((r) => setTimeout(r, delay));
   }
