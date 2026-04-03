@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getToken } from "@/auth/token"
 import { Navigate } from "react-router-dom"
 

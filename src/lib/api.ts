@@ -1,18 +1,23 @@
-export async function apiFetch<T>(
-  url: string,
-  options?: RequestInit
-): Promise<T> {
-  const res = await fetch(url, {
+export async function api(path: string, options: RequestInit = {}) {
+  const res = await fetch(path, {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(options.headers || {}),
     },
     ...options,
   });
 
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
   }
 
-  return res.json();
+  if (!res.ok) {
+    throw new Error(data?.error || "API_ERROR");
+  }
+
+  return data;
 }

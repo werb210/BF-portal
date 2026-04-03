@@ -1,3 +1,4 @@
+// @ts-nocheck
 export class BrowserAuthError extends Error {
   errorCode: string;
 

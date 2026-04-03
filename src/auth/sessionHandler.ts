@@ -1,9 +1,9 @@
-export function setSession(token: string) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("auth_token", token);
-}
+export function handleAuthError(err: any) {
+  if (!err) return;
 
-export function clearSession() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("auth_token");
+  const msg = err.message || "";
+
+  if (msg.includes("401") || msg.includes("unauthorized")) {
+    window.location.href = "/login";
+  }
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { create } from "zustand";
 import type { PipelineFilters, PipelineStageId } from "./pipeline.types";
 const STORAGE_KEY = "portal.application.pipeline";

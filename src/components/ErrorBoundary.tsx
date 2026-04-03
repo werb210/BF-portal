@@ -1,15 +1,15 @@
 import React from "react";
-import { getRequestId } from "@/utils/requestId";
 
-type Props = { children: React.ReactNode };
-type State = { hasError: boolean };
+type ErrorBoundaryProps = {
+  children?: React.ReactNode;
+};
 
-export function ErrorFallback() {
-  return <div role="alert">Something went wrong. System error.</div>;
-}
+type ErrorBoundaryState = {
+  hasError: boolean;
+};
 
-class ErrorBoundary extends React.Component<Props, State> {
-  constructor(props: Props) {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
@@ -18,17 +18,9 @@ class ErrorBoundary extends React.Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("UI render failure", {
-      requestId: getRequestId(),
-      error,
-      info,
-    });
-  }
-
   render() {
     if (this.state.hasError) {
-      return <ErrorFallback />;
+      return <div role="alert">Something went wrong. System error.</div>;
     }
 
     return this.props.children;
