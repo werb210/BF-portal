@@ -3,7 +3,7 @@ import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStage
 import type { BusinessUnit } from "@/types/businessUnit";
 import { PIPELINE_STAGE_LABELS, PIPELINE_STAGE_ORDER, normalizeStageId } from "./pipeline.types";
 
-const API_PREFIX = "";
+const API_PREFIX = "/api/v1";
 const toTitleCase = (value: string) =>
   value
     .toLowerCase()

@@ -19,15 +19,6 @@ export type LenderAuthTokens = {
   refreshToken?: string;
 };
 
-/**
- * Central token getter
- */
-function getStoredToken(): string | null {
-  if (typeof window === "undefined") return null;
-  const jwtStorageKey = (import.meta.env.VITE_JWT_STORAGE_KEY as string | undefined) || "bf_jwt_token";
-  return localStorage.getItem(jwtStorageKey) || localStorage.getItem("auth_token");
-}
-
 const withParams = (path: string, params?: RequestOptions["params"]) => {
   if (!params) return path;
   const search = new URLSearchParams();
@@ -52,21 +43,11 @@ const toRelativeApiPath = (path: string) => {
  */
 export async function baseApi<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const requestPath = withParams(toRelativeApiPath(path), options.params);
-  const token = getStoredToken();
-
-  const requiresAuth = /^https?:\/\//.test(path) || requestPath.includes("/protected");
-  if (!token && requiresAuth) {
-    throw new ApiError("Auth token missing");
-  }
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
 
   const body =
     options.body === undefined
