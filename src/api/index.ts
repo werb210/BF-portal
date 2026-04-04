@@ -1,6 +1,6 @@
 import { getAuthToken } from '@/lib/authToken';
 import { ApiError } from '@/api/http';
-import { apiFetch } from '@/api/client';
+import { setApiStatus } from '@/state/apiStatus';
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -41,6 +41,7 @@ function parsePayload<T>(json: any): T {
     }
     if (json.status === 'error') {
       if (json.error === 'DB_NOT_READY') {
+        setApiStatus('degraded');
         return { degraded: true } as T;
       }
       throw new Error(json.error || 'API error');
@@ -89,8 +90,20 @@ async function request<T = any>(path: string, options: RequestOptions = {}): Pro
   const res = await rawApiFetch(path, options);
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new ApiError({ status: res.status, message: text || `API error ${res.status}` });
+    let text = 'Unknown error';
+
+    if (typeof res.text === 'function') {
+      text = await res.text();
+    } else if (typeof res.json === 'function') {
+      const data = await res.json();
+      text = typeof data === 'string' ? data : JSON.stringify(data);
+    }
+
+    if (res.status === 401) {
+      throw new Error('Unauthorized');
+    }
+
+    throw new Error(`API ERROR ${res.status}`);
   }
 
   const json = await res.json();
@@ -99,8 +112,7 @@ async function request<T = any>(path: string, options: RequestOptions = {}): Pro
 
 export async function apiFetchWithRetry<T = any>(path: string, options: RequestInit = {}, retries = 1) {
   try {
-    const data = await apiFetch(path, options);
-    return { success: true, data } as const;
+    return await apiFetch<T>(path, options);
   } catch (error) {
     if (error instanceof TypeError) {
       return { success: false, error: error.message } as const;
@@ -133,6 +145,10 @@ apiImpl.delete = <T = any>(path: string, options: RequestOptions = {}) =>
 export const api = apiImpl;
 export const http = apiImpl;
 export const apiPost = apiImpl.post;
+export async function apiFetch<T = any>(path: string, options: RequestOptions = {}) {
+  const data = await request<T>(path, options);
+  return { success: true, data } as const;
+}
 
 export type LenderAuthTokens = {
   accessToken: string;
