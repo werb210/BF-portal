@@ -103,7 +103,7 @@ async function request<T = any>(path: string, options: RequestOptions = {}): Pro
       throw new Error('Unauthorized');
     }
 
-    throw new Error(`API ERROR ${res.status}`);
+    throw new Error(`API error ${res.status}`);
   }
 
   const json = await res.json();

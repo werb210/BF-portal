@@ -72,7 +72,7 @@ async function request(path, options = {}) {
         if (res.status === 401) {
             throw new Error('Unauthorized');
         }
-        throw new Error(`API ERROR ${res.status}`);
+        throw new Error(`API error ${res.status}`);
     }
     const json = await res.json();
     return parsePayload(json);
