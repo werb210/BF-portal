@@ -1,6 +1,6 @@
 import { apiFetch } from "./client";
 export async function sendMessage(input, sessionId) {
-    return apiFetch("/api/v1/ai/message", {
+    return apiFetch("/api/ai/message", {
         method: "POST",
         body: JSON.stringify({
             message: input,

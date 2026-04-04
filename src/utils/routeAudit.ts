@@ -14,8 +14,7 @@ type RouteDescriptor = {
 export const portalApiRoutes: RouteDescriptor[] = [
   { method: "POST", path: "/api/auth/otp/start" },
   { method: "POST", path: "/api/auth/otp/verify" },
-  { method: "GET", path: "/api/auth/me" },
-  { method: "GET", path: "/api/_int/routes" }
+  { method: "GET", path: "/api/auth/me" }
 ];
 
 const AUTH_ROUTE_PREFIXES = ["/api/auth", "/api/auth/me"];
@@ -135,7 +134,7 @@ export const runRouteAudit = async (): Promise<void> => {
           timestamp: Date.now()
         });
       }
-      return;
+      throw new Error("ROUTE_AUDIT_MISMATCH");
     }
 
     console.info("Route audit complete", {

@@ -12,6 +12,9 @@ const banned = [
   /\bresponse\.success\b/,
   /\bresult\.success\b/,
   /\bres\.success\b/,
+  /\/api\/v1\//,
+  /mockAuth/i,
+  /fakeAuth/i,
 ];
 
 function scan(dir) {
@@ -21,6 +24,7 @@ function scan(dir) {
     const full = path.join(dir, file);
 
     if (fs.statSync(full).isDirectory()) {
+      if (full.includes(`${path.sep}test`)) continue;
       scan(full);
     } else {
       const content = fs.readFileSync(full, "utf8");

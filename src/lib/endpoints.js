@@ -1,6 +1,6 @@
 export const endpoints = {
-    dialerToken: '/api/v1/dialer/token',
-    callStart: '/api/v1/calls/start',
-    voiceStatus: '/api/v1/voice/status',
+    dialerToken: '/api/dialer/token',
+    callStart: '/api/calls/start',
+    voiceStatus: '/api/voice/status',
 };
 export const ENDPOINTS = endpoints;

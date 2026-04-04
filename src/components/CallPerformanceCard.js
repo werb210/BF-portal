@@ -11,7 +11,7 @@ export default function CallPerformanceCard() {
     useEffect(() => {
         async function load() {
             try {
-                const data = await apiCall("/api/v1/metrics");
+                const data = await apiCall("/api/metrics");
                 setStats({
                     totalCalls: data.totalCalls || 0,
                     answered: data.answered || 0,

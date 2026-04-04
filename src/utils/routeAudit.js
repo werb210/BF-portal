@@ -8,8 +8,7 @@ import { logger } from "@/utils/logger";
 export const portalApiRoutes = [
     { method: "POST", path: "/api/auth/otp/start" },
     { method: "POST", path: "/api/auth/otp/verify" },
-    { method: "GET", path: "/api/auth/me" },
-    { method: "GET", path: "/api/_int/routes" }
+    { method: "GET", path: "/api/auth/me" }
 ];
 const AUTH_ROUTE_PREFIXES = ["/api/auth", "/api/auth/me"];
 const normalizePath = (path) => path
@@ -113,7 +112,7 @@ export const runRouteAudit = async () => {
                     timestamp: Date.now()
                 });
             }
-            return;
+            throw new Error("ROUTE_AUDIT_MISMATCH");
         }
         console.info("Route audit complete", {
             requestId,

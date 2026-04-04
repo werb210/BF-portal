@@ -22,37 +22,37 @@ export const fetchContacts = async () => {
         params.set("owner", filters.owner);
     if (filters.hasActiveApplication)
         params.set("hasActiveApplication", "true");
-    return requestJson(`/api/v1/crm/contacts?${params.toString()}`);
+    return requestJson(`/api/crm/contacts?${params.toString()}`);
 };
 export const fetchCompanies = async () => {
     const { silo } = useCrmStore.getState();
     const params = new URLSearchParams({ silo });
-    return requestJson(`/api/v1/crm/companies?${params.toString()}`);
+    return requestJson(`/api/crm/companies?${params.toString()}`);
 };
 export const fetchTimeline = async (entityType, entityId) => {
     const params = new URLSearchParams({ entityType, entityId });
-    return requestJson(`/api/v1/crm/timeline?${params.toString()}`);
+    return requestJson(`/api/crm/timeline?${params.toString()}`);
 };
-export const createNote = async (entityId, summary) => requestJson("/api/v1/crm/timeline/notes", { method: "POST", body: JSON.stringify({ entityId, summary }) });
-export const logCallEvent = async (payload) => requestJson("/api/v1/crm/timeline/calls", { method: "POST", body: JSON.stringify(payload) });
-export const fetchApplications = async (contactId) => requestJson(`/api/v1/crm/contacts/${contactId}/applications`);
-export const fetchContactCompanies = async (contact) => requestJson(`/api/v1/crm/contacts/${contact.id}/companies`);
-export const fetchCompanyContacts = async (company) => requestJson(`/api/v1/crm/companies/${company.id}/contacts`);
-export const createContact = async (payload) => requestJson("/api/v1/crm/contacts", { method: "POST", body: JSON.stringify(payload) });
-export const createCompany = async (payload) => requestJson("/api/v1/crm/companies", { method: "POST", body: JSON.stringify(payload) });
-export const linkContactCompany = async (contactId, companyId) => requestJson(`/api/v1/crm/contacts/${contactId}/companies/${companyId}`, { method: "POST" });
-export const createContactApplication = async (payload) => requestJson("/api/v1/crm/applications", { method: "POST", body: JSON.stringify(payload) });
+export const createNote = async (entityId, summary) => requestJson("/api/crm/timeline/notes", { method: "POST", body: JSON.stringify({ entityId, summary }) });
+export const logCallEvent = async (payload) => requestJson("/api/crm/timeline/calls", { method: "POST", body: JSON.stringify(payload) });
+export const fetchApplications = async (contactId) => requestJson(`/api/crm/contacts/${contactId}/applications`);
+export const fetchContactCompanies = async (contact) => requestJson(`/api/crm/contacts/${contact.id}/companies`);
+export const fetchCompanyContacts = async (company) => requestJson(`/api/crm/companies/${company.id}/contacts`);
+export const createContact = async (payload) => requestJson("/api/crm/contacts", { method: "POST", body: JSON.stringify(payload) });
+export const createCompany = async (payload) => requestJson("/api/crm/companies", { method: "POST", body: JSON.stringify(payload) });
+export const linkContactCompany = async (contactId, companyId) => requestJson(`/api/crm/contacts/${contactId}/companies/${companyId}`, { method: "POST" });
+export const createContactApplication = async (payload) => requestJson("/api/crm/applications", { method: "POST", body: JSON.stringify(payload) });
 export async function fetchLeads() {
-    return requestJson("/api/v1/crm/leads");
+    return requestJson("/api/crm/leads");
 }
 export async function fetchLeadById(id) {
-    return requestJson(`/api/v1/crm/leads/${id}`);
+    return requestJson(`/api/crm/leads/${id}`);
 }
 export async function fetchCreditReadinessLeads() {
-    return requestJson("/api/v1/crm/credit-readiness");
+    return requestJson("/api/crm/credit-readiness");
 }
 export async function convertReadinessToApplication(id) {
-    return requestJson(`/api/v1/crm/credit-readiness/${id}/convert`, { method: "POST" });
+    return requestJson(`/api/crm/credit-readiness/${id}/convert`, { method: "POST" });
 }
 export async function fetchChatSessions() {
     return requestJson("/api/chat/sessions");
@@ -62,9 +62,9 @@ export async function fetchContinuationLeads() {
 }
 export const getDeals = async () => {
     requireAuth();
-    return api.get("/api/v1/crm/deals");
+    return api.get("/api/crm/deals");
 };
 export const updateDealStage = async (id, stage) => {
     requireAuth();
-    return api.patch(`/api/v1/crm/deals/${id}`, { stage });
+    return api.patch(`/api/crm/deals/${id}`, { stage });
 };

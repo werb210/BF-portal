@@ -1,11 +1,21 @@
 // @ts-nocheck
-import { getToken } from "@/auth/token"
-import { Navigate } from "react-router-dom"
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/auth/AuthContext";
 
 export default function ProtectedRoute({ children }) {
-  if (!getToken()) {
-    return <Navigate to="/login" replace />
+  const { authStatus, token } = useAuth();
+
+  if (authStatus === "pending") {
+    return null;
   }
 
-  return children
+  if (token) {
+    return children;
+  }
+
+  if (authStatus === "unauthenticated") {
+    return <Navigate to="/login" replace />;
+  }
+
+  return null;
 }

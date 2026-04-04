@@ -1,7 +1,7 @@
 import { decodeJwt } from "@/auth/jwt";
 import { clearToken, getToken } from "@/auth/token";
 import { api } from "@/api";
-function hasValidToken() {
+function hasValidTokenShape() {
     const token = getToken();
     if (!token)
         return true;
@@ -15,12 +15,24 @@ function hasValidToken() {
     const nowInSeconds = Math.floor(Date.now() / 1000);
     return payload.exp > nowInSeconds;
 }
-export function validateStartupToken() {
-    if (hasValidToken())
+export async function validateStartupToken() {
+    const token = getToken();
+    if (!token)
         return true;
-    clearToken();
-    window.location.assign("/login");
-    return false;
+    if (!hasValidTokenShape()) {
+        clearToken();
+        window.location.assign("/login");
+        return false;
+    }
+    try {
+        await api("/api/auth/me", { method: "GET" });
+        return true;
+    }
+    catch {
+        clearToken();
+        window.location.assign("/login");
+        return false;
+    }
 }
 export async function checkBackend() {
     try {
