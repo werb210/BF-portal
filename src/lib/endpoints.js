@@ -3,3 +3,4 @@ export const endpoints = {
     callStart: '/api/v1/calls/start',
     voiceStatus: '/api/v1/voice/status',
 };
+export const ENDPOINTS = endpoints;
