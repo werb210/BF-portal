@@ -83,7 +83,7 @@ const buildAuthValue = (): AuthContextValue => {
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const value = useMemo(buildAuthValue, []);
+  const value = useMemo(buildAuthValue, [localStorage.getItem("bf_jwt_token")]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

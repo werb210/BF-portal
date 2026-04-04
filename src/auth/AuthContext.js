@@ -51,7 +51,7 @@ const buildAuthValue = () => {
     };
 };
 export function AuthProvider({ children }) {
-    const value = useMemo(buildAuthValue, []);
+    const value = useMemo(buildAuthValue, [localStorage.getItem("bf_jwt_token")]);
     return _jsx(AuthContext.Provider, { value: value, children: children });
 }
 export function useAuth() {

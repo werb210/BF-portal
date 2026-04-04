@@ -6,12 +6,12 @@ import { api } from "@/api";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { logger } from "@/utils/logger";
 export const portalApiRoutes = [
-    { method: "POST", path: "/api/v1/auth/otp/start" },
-    { method: "POST", path: "/api/v1/auth/otp/verify" },
-    { method: "GET", path: "/api/v1/auth/me" },
+    { method: "POST", path: "/api/auth/otp/start" },
+    { method: "POST", path: "/api/auth/otp/verify" },
+    { method: "GET", path: "/api/auth/me" },
     { method: "GET", path: "/api/_int/routes" }
 ];
-const AUTH_ROUTE_PREFIXES = ["/api/v1/auth", "/api/v1/auth/me"];
+const AUTH_ROUTE_PREFIXES = ["/api/auth", "/api/auth/me"];
 const normalizePath = (path) => path
     .replace(/\/+$/, "");
 const extractServerRoutes = (payload) => {
@@ -48,7 +48,7 @@ const resolveAuthState = async (requestId) => {
     if (!token)
         return false;
     try {
-        await api("/api/v1/auth/me", {
+        await api("/api/auth/me", {
             headers: {
                 "X-Request-Id": requestId,
                 Authorization: `Bearer ${token}`
