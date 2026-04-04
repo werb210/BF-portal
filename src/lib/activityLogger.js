@@ -1,0 +1,6 @@
+import { logger } from "@/utils/logger";
+export function logActivity(event, metadata = {}) {
+    logger.info("Portal Activity", { event, metadata });
+    // Ready for future server push
+    // api("/activity", { method: "POST", data: { event, metadata } });
+}

@@ -1,25 +1,15 @@
-import { baseApi } from "./index";
-import { endpoints } from "@/lib/endpoints";
-import { setAuthToken } from "@/lib/authToken";
+import { api } from './index';
 
-export async function sendOtp(phone: string) {
-  return baseApi(endpoints.otpStart, {
-    method: "POST",
-    body: JSON.stringify({ phone }),
+export function sendOtp(phone: string) {
+  return api('/api/auth/otp/start', {
+    method: 'POST',
+    body: { phone },
   });
 }
 
-export async function verifyOtp(phone: string, code: string) {
-  const response = await baseApi<{ token?: string; data?: { token?: string } }>(endpoints.otpVerify, {
-    method: "POST",
-    body: JSON.stringify({ phone, code }),
+export function verifyOtp(phone: string, code: string) {
+  return api('/api/auth/otp/verify', {
+    method: 'POST',
+    body: { phone, code },
   });
-
-  const token = response?.data?.token || response?.token;
-  if (token) {
-    setAuthToken(token);
-  }
-
-  return response;
 }
-export const startOtp = sendOtp;

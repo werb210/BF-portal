@@ -1,0 +1,17 @@
+import { http } from "@/api";
+export const fetchCommunicationThreads = (businessUnit) => http.get(`/communications/threads${businessUnit ? `?businessUnit=${businessUnit}` : ""}`);
+export const fetchConversationById = (id) => http.get(`/communications/threads/${id}`);
+export const fetchCrmLeads = () => http.get("/communications/leads");
+export const sendCommunication = (conversationId, body, channel = "chat") => http.post(`/communications/threads/${conversationId}/messages`, { body, channel });
+export const receiveInboundMessage = (conversationId, body, channel, silo) => http.post(`/communications/threads/${conversationId}/inbound`, { body, channel, silo });
+export const createHumanEscalation = (payload) => http.post("/communications/escalations", payload);
+export const createIssueReport = (payload) => http.post("/communications/issues", payload);
+export const acknowledgeIssue = (conversationId) => http.post(`/communications/issues/${conversationId}/acknowledge`);
+export const archiveIssue = (conversationId) => http.post(`/communications/issues/${conversationId}/archive`);
+export const deleteIssue = (conversationId) => http.delete(`/communications/issues/${conversationId}`);
+export const applyHumanActiveState = (conversationId) => http.post(`/communications/threads/${conversationId}/human-active`);
+export const closeEscalatedChat = (conversationId, transcript) => http.post(`/communications/threads/${conversationId}/close`, { transcript });
+export const attachTranscriptToLead = (conversationId, transcript) => http.post(`/communications/threads/${conversationId}/transcript`, { transcript });
+export const fetchSmsThread = (contactId) => http.get(`/communications/sms/${contactId}`);
+export const sendSms = (contact, body, fromNumber) => http.post(`/communications/sms`, { contactId: contact.id, body, fromNumber });
+export const logApplicationCallEvent = (payload) => http.post("/communications/call-events", payload);
