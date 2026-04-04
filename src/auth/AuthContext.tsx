@@ -49,14 +49,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() => getToken());
 
   useEffect(() => {
+    const syncToken = () => {
+      setTokenState((current) => {
+        const next = getToken();
+        return current === next ? current : next;
+      });
+    };
+
     const onStorage = (event: StorageEvent) => {
       if (event.key === AUTH_STORAGE_KEY) {
-        setTokenState(getToken());
+        syncToken();
       }
     };
 
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener("focus", syncToken);
+    document.addEventListener("visibilitychange", syncToken);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", syncToken);
+      document.removeEventListener("visibilitychange", syncToken);
+    };
   }, []);
 
   const clearAuth = useCallback(() => {
