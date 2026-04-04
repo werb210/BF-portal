@@ -1,6 +1,6 @@
 import { getAuthToken } from '@/lib/authToken';
 import { ApiError } from '@/api/http';
-import { apiFetch } from '@/api/client';
+import { setApiStatus } from '@/state/apiStatus';
 const API_BASE = import.meta.env.VITE_API_URL;
 function requiresAuth(path) {
     return !path.includes('/auth/');
@@ -23,6 +23,7 @@ function parsePayload(json) {
         }
         if (json.status === 'error') {
             if (json.error === 'DB_NOT_READY') {
+                setApiStatus('degraded');
                 return { degraded: true };
             }
             throw new Error(json.error || 'API error');
@@ -60,16 +61,25 @@ export async function rawApiFetch(path, options = {}) {
 async function request(path, options = {}) {
     const res = await rawApiFetch(path, options);
     if (!res.ok) {
-        const text = await res.text();
-        throw new ApiError({ status: res.status, message: text || `API error ${res.status}` });
+        let text = 'Unknown error';
+        if (typeof res.text === 'function') {
+            text = await res.text();
+        }
+        else if (typeof res.json === 'function') {
+            const data = await res.json();
+            text = typeof data === 'string' ? data : JSON.stringify(data);
+        }
+        if (res.status === 401) {
+            throw new Error('Unauthorized');
+        }
+        throw new Error(`API ERROR ${res.status}`);
     }
     const json = await res.json();
     return parsePayload(json);
 }
 export async function apiFetchWithRetry(path, options = {}, retries = 1) {
     try {
-        const data = await apiFetch(path, options);
-        return { success: true, data };
+        return await apiFetch(path, options);
     }
     catch (error) {
         if (error instanceof TypeError) {
@@ -91,6 +101,10 @@ apiImpl.delete = (path, options = {}) => request(path, { ...options, method: 'DE
 export const api = apiImpl;
 export const http = apiImpl;
 export const apiPost = apiImpl.post;
+export async function apiFetch(path, options = {}) {
+    const data = await request(path, options);
+    return { success: true, data };
+}
 let lenderConfig = {};
 export function configureLenderApiClient(config) {
     lenderConfig = config;
