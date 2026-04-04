@@ -1,28 +1,36 @@
-const STORAGE_KEY =
-  import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token";
+const STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY;
+
+if (!STORAGE_KEY) {
+  throw new Error("VITE_JWT_STORAGE_KEY is required");
+}
+
+function emitStorageEvent(oldValue: string | null, newValue: string | null) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new StorageEvent("storage", {
+      key: STORAGE_KEY,
+      oldValue,
+      newValue,
+      storageArea: window.localStorage,
+      url: window.location.href,
+    }),
+  );
+}
 
 export function getAuthToken(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
+  return localStorage.getItem(STORAGE_KEY);
 }
 
 export function setAuthToken(token: string) {
-  try {
-    localStorage.setItem(STORAGE_KEY, token);
-  } catch {
-    // fail silently
-  }
+  const oldValue = localStorage.getItem(STORAGE_KEY);
+  localStorage.setItem(STORAGE_KEY, token);
+  emitStorageEvent(oldValue, token);
 }
 
 export function clearAuthToken() {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // fail silently
-  }
+  const oldValue = localStorage.getItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY);
+  emitStorageEvent(oldValue, null);
 }
 
 export const authToken = {

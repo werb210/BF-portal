@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { useSilo } from "../context/SiloContext";
 import AccessRestricted from "./auth/AccessRestricted";
@@ -10,8 +11,11 @@ type ProtectedRouteProps = {
 };
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { role, canAccessSilo } = useAuth();
+  const { role, canAccessSilo, authStatus, token } = useAuth();
   const { silo: currentSilo } = useSilo();
+
+  if (authStatus === "pending") return null;
+  if (!token && authStatus === "unauthenticated") return <Navigate to="/login" replace />;
 
   if (!role) return <div>Unauthorized</div>;
 

@@ -8,7 +8,7 @@ type HealthResponse = {
   status?: string;
 };
 
-function hasValidToken(): boolean {
+function hasValidTokenShape(): boolean {
   const token = getToken();
   if (!token) return true;
 
@@ -22,11 +22,23 @@ function hasValidToken(): boolean {
   return payload.exp > nowInSeconds;
 }
 
-export function validateStartupToken(): boolean {
-  if (hasValidToken()) return true;
-  clearToken();
-  window.location.assign("/login");
-  return false;
+export async function validateStartupToken(): Promise<boolean> {
+  const token = getToken();
+  if (!token) return true;
+  if (!hasValidTokenShape()) {
+    clearToken();
+    window.location.assign("/login");
+    return false;
+  }
+
+  try {
+    await api("/api/auth/me", { method: "GET" });
+    return true;
+  } catch {
+    clearToken();
+    window.location.assign("/login");
+    return false;
+  }
 }
 
 export async function checkBackend(): Promise<boolean> {

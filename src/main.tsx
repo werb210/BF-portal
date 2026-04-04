@@ -5,6 +5,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import { validateStartupToken } from "@/bootstrap";
+import { AuthProvider } from "@/auth/AuthProvider";
 import { api } from "@/api";
 import { getSilo } from "./lib/silo";
 
@@ -38,16 +39,18 @@ async function assertBackend() {
 }
 
 async function bootstrap() {
-  if (!validateStartupToken()) return;
+  if (!(await validateStartupToken())) return;
 
   await assertBackend();
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <BrowserRouter>
-        <ErrorBoundary>
-          <App />
-        </ErrorBoundary>
+        <AuthProvider>
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
+        </AuthProvider>
       </BrowserRouter>
     </React.StrictMode>,
   );

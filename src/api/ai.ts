@@ -18,7 +18,7 @@ export async function sendMessage(
   input: string,
   sessionId?: string
 ): Promise<AiResponse> {
-  return apiFetch("/api/v1/ai/message", {
+  return apiFetch("/api/ai/message", {
     method: "POST",
     body: JSON.stringify({
       message: input,

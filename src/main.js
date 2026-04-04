@@ -5,6 +5,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { validateStartupToken } from "@/bootstrap";
+import { AuthProvider } from "@/auth/AuthProvider";
 import { api } from "@/api";
 import { getSilo } from "./lib/silo";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -28,9 +29,9 @@ async function assertBackend() {
     });
 }
 async function bootstrap() {
-    if (!validateStartupToken())
+    if (!(await validateStartupToken()))
         return;
     await assertBackend();
-    ReactDOM.createRoot(document.getElementById("root")).render(_jsx(React.StrictMode, { children: _jsx(BrowserRouter, { children: _jsx(ErrorBoundary, { children: _jsx(App, {}) }) }) }));
+    ReactDOM.createRoot(document.getElementById("root")).render(_jsx(React.StrictMode, { children: _jsx(BrowserRouter, { children: _jsx(AuthProvider, { children: _jsx(ErrorBoundary, { children: _jsx(App, {}) }) }) }) }));
 }
 void bootstrap();

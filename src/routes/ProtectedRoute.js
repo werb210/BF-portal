@@ -1,10 +1,17 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 // @ts-nocheck
-import { getToken } from "@/auth/token";
 import { Navigate } from "react-router-dom";
+import { useAuth } from "@/auth/AuthContext";
 export default function ProtectedRoute({ children }) {
-    if (!getToken()) {
+    const { authStatus, token } = useAuth();
+    if (authStatus === "pending") {
+        return null;
+    }
+    if (token) {
+        return children;
+    }
+    if (authStatus === "unauthenticated") {
         return _jsx(Navigate, { to: "/login", replace: true });
     }
-    return children;
+    return null;
 }

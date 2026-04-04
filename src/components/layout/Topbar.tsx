@@ -30,7 +30,7 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   const [productionStatus, setProductionStatus] = useState("checking");
 
   useEffect(() => {
-    api<{ count?: number }>("/api/v1/crm/leads/count")
+    api<{ count?: number }>("/api/crm/leads/count")
       .then((result) => setLeadCount(result.count ?? 0))
       .catch(() => setLeadCount(0));
   }, []);
