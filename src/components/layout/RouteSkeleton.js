@@ -1,0 +1,3 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+const RouteSkeleton = ({ label = "Loading" }) => (_jsxs("div", { className: "route-skeleton", role: "status", "aria-live": "polite", children: [_jsx("span", { className: "route-skeleton__label", children: label }), _jsxs("div", { className: "route-skeleton__panel", children: [_jsx("div", { className: "skeleton-line" }), _jsx("div", { className: "skeleton-line skeleton-line--short" }), _jsx("div", { className: "skeleton-line" }), _jsxs("div", { className: "skeleton-pill-row", children: [_jsx("span", { className: "skeleton-pill" }), _jsx("span", { className: "skeleton-pill" }), _jsx("span", { className: "skeleton-pill" })] }), _jsx("div", { className: "skeleton-line" })] })] }));
+export default RouteSkeleton;
