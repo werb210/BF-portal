@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { AUTH_STORAGE_KEY, clearToken, getToken } from "@/auth/token";
+import { AUTH_STORAGE_KEY, authToken } from "@/lib/authToken";
 import { decodeJwt } from "@/auth/jwt";
 import { normalizeRole, type Role } from "@/auth/roles";
 
@@ -32,6 +32,16 @@ export type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function getValidToken(): string | null {
+  const token = authToken.get();
+  if (!token) return null;
+  if (token.length < 20) {
+    authToken.clear();
+    return null;
+  }
+  return token;
+}
+
 function resolveUser(token: string | null): AuthUser | null {
   if (!token) return null;
   const payload = decodeJwt(token) as { sub?: string; id?: string; role?: string; name?: string; email?: string } | null;
@@ -46,12 +56,12 @@ function resolveUser(token: string | null): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setTokenState] = useState<string | null>(() => getToken());
+  const [token, setTokenState] = useState<string | null>(() => getValidToken());
 
   useEffect(() => {
     const syncToken = () => {
       setTokenState((current) => {
-        const next = getToken();
+        const next = getValidToken();
         return current === next ? current : next;
       });
     };
@@ -74,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearAuth = useCallback(() => {
-    clearToken();
+    authToken.clear();
     setTokenState(null);
   }, []);
 
