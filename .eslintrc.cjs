@@ -12,6 +12,10 @@ module.exports = {
     sourceType: "module"
   },
 
+  rules: {
+    "react-hooks/incompatible-library": "off"
+  },
+
   overrides: [
     {
       files: [

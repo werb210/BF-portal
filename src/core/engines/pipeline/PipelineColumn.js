@@ -6,9 +6,8 @@ const LoadingSkeleton = () => (_jsxs("div", { className: "pipeline-card pipeline
 const EmptyState = ({ label }) => (_jsxs("div", { className: "pipeline-column__empty", children: ["No applications in ", label, "."] }));
 const PipelineColumn = ({ stage, stageLabel, cards, isLoading, onCardClick, selectedIds, selectable, onSelectCard }) => {
     const parentRef = useRef(null);
-    // TanStack Virtual returns function refs that trip `react-hooks/incompatible-library`.
-    // This component intentionally uses it for performant large-column rendering.
-    // eslint-disable-next-line react-hooks/incompatible-library
+    // TanStack Virtual returns function refs; this component uses it
+    // intentionally for performant large-column rendering.
     const rowVirtualizer = useVirtualizer({
         count: cards.length,
         getScrollElement: () => parentRef.current,
