@@ -1,9 +1,19 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { AUTH_STORAGE_KEY, clearToken, getToken } from "@/auth/token";
+import { AUTH_STORAGE_KEY, authToken } from "@/lib/authToken";
 import { decodeJwt } from "@/auth/jwt";
 import { normalizeRole } from "@/auth/roles";
 const AuthContext = createContext(null);
+function getValidToken() {
+    const token = authToken.get();
+    if (!token)
+        return null;
+    if (token.length < 20) {
+        authToken.clear();
+        return null;
+    }
+    return token;
+}
 function resolveUser(token) {
     if (!token)
         return null;
@@ -19,18 +29,30 @@ function resolveUser(token) {
     };
 }
 export function AuthProvider({ children }) {
-    const [token, setTokenState] = useState(() => getToken());
+    const [token, setTokenState] = useState(() => getValidToken());
     useEffect(() => {
+        const syncToken = () => {
+            setTokenState((current) => {
+                const next = getValidToken();
+                return current === next ? current : next;
+            });
+        };
         const onStorage = (event) => {
             if (event.key === AUTH_STORAGE_KEY) {
-                setTokenState(getToken());
+                syncToken();
             }
         };
         window.addEventListener("storage", onStorage);
-        return () => window.removeEventListener("storage", onStorage);
+        window.addEventListener("focus", syncToken);
+        document.addEventListener("visibilitychange", syncToken);
+        return () => {
+            window.removeEventListener("storage", onStorage);
+            window.removeEventListener("focus", syncToken);
+            document.removeEventListener("visibilitychange", syncToken);
+        };
     }, []);
     const clearAuth = useCallback(() => {
-        clearToken();
+        authToken.clear();
         setTokenState(null);
     }, []);
     const user = useMemo(() => resolveUser(token), [token]);
