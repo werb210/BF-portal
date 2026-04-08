@@ -1,8 +1,4 @@
-const STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY;
-
-if (!STORAGE_KEY) {
-  throw new Error("VITE_JWT_STORAGE_KEY is required");
-}
+const STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token";
 
 function emitStorageEvent(oldValue: string | null, newValue: string | null) {
   if (typeof window === "undefined") return;
