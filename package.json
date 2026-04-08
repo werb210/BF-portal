@@ -7,7 +7,7 @@
     "npm": ">=10"
   },
   "scripts": {
-    "build": "vite build",
+    "build": "tsc --noEmit && vite build",
     "start": "vite preview --port 8080",
     "typecheck": "tsc --noEmit",
     "test:ci": "vitest run --reporter=verbose",
