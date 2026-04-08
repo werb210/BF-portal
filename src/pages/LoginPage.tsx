@@ -25,6 +25,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       setError("");
+      console.log("OTP start request →", normalizedPhone);
       await sendOtp(normalizedPhone);
       setPhone(normalizedPhone);
       setStep("code");
@@ -47,6 +48,7 @@ export default function LoginPage() {
     try {
       setError("");
       const res = await verifyOtp(phone, code.trim());
+      console.log("OTP verify response →", res);
       authToken.set(res.token);
       navigate("/", { replace: true });
     } catch (e: any) {
