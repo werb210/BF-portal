@@ -1,0 +1,19 @@
+name: Protect Main
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject direct commits
+        run: |
+          if ! git log -1 --pretty=%B | grep -q "Merge pull request"; then
+            echo "Direct commits to main are not allowed"
+            exit 1
+          fi
