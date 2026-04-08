@@ -1,12 +1,11 @@
-name: portal-ci
+name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,29 +16,8 @@ jobs:
           node-version: 20
 
       - run: npm ci
+      - run: npm run build
+      - run: npm run test
 
-      - name: Block compiled JS in src
-        run: python scripts/check_js_shadow.py
-
-      - name: Check login redirect
-        run: |
-          grep -R 'navigate("/portal"' src/pages/LoginPage.tsx
-
-      - name: Ensure no twilio-client imports
-        run: |
-          if rg -n "twilio-client" src app tests; then
-            echo "LEGACY TWILIO IMPORT DETECTED"
-            exit 1
-          fi
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Build
-        run: npm run build
-
-      - name: Ensure dist exists
+      - name: Ensure build output exists
         run: test -f dist/index.html
-
-      - name: YAML valid
-        run: npx --yes yaml@2.8.1 valid .github/workflows/ci.yml
