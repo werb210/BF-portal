@@ -1,4 +1,0 @@
-import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
-import Input from "@/components/ui/Input";
-const UserDetailsFields = ({ firstName, lastName, email, phone, onChange, errors, emailDisabled = false }) => (_jsxs(_Fragment, { children: [_jsx(Input, { label: "First name", value: firstName, onChange: (event) => onChange({ firstName: event.target.value }), error: errors?.firstName, required: true }), _jsx(Input, { label: "Last name", value: lastName, onChange: (event) => onChange({ lastName: event.target.value }), error: errors?.lastName, required: true }), _jsx(Input, { label: "Phone", value: phone, onChange: (event) => onChange({ phone: event.target.value }), error: errors?.phone }), _jsx(Input, { label: "Email", type: "email", value: email, onChange: (event) => onChange({ email: event.target.value }), disabled: emailDisabled, error: errors?.email, required: true })] }));
-export default UserDetailsFields;

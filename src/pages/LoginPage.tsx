@@ -63,7 +63,7 @@ export default function LoginPage() {
         return;
       }
       authToken.set("test-token");
-      navigate("/", { replace: true });
+      navigate("/portal", { replace: true });
       return;
     }
 
@@ -73,7 +73,7 @@ export default function LoginPage() {
       const res = await verifyOtp(phone, code.trim());
       console.log("OTP verify response →", res);
       authToken.set(res.token);
-      navigate("/", { replace: true });
+      navigate("/portal", { replace: true });
     } catch (e: any) {
       setError(e?.message || "Verification failed");
     } finally {

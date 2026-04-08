@@ -1,3 +1,0 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-const Modal = ({ title, actions, onClose, children }) => (_jsxs("div", { className: "modal", role: "dialog", "aria-modal": "true", children: [_jsx("div", { className: "modal__backdrop", onClick: onClose, "aria-hidden": "true" }), _jsxs("div", { className: "modal__content", children: [_jsxs("header", { className: "modal__header", children: [_jsx("h3", { children: title }), _jsxs("div", { className: "modal__actions", children: [actions, _jsx("button", { type: "button", className: "modal__close", onClick: onClose, "aria-label": "Close", children: "\u00D7" })] })] }), _jsx("div", { className: "modal__body", children: children })] })] }));
-export default Modal;

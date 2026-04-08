@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Card from "@/components/ui/Card";
 import RequireRole from "@/components/auth/RequireRole";

@@ -95,7 +95,7 @@ export const logResponse = (response: GenericResponse) => {
 
   setLastApiRequest({
     path: buildRequestUrl(response.config),
-    method: response.config.method?.toUpperCase(),
+    method: response.config.method?.toUpperCase() ?? "GET",
     status: response.status,
     requestId,
     timestamp: Date.now()
@@ -124,7 +124,7 @@ export const logError = (error: GenericError) => {
 
   setLastApiRequest({
     path: buildRequestUrl(config),
-    method: config.method?.toUpperCase(),
+    method: config.method?.toUpperCase() ?? "GET",
     status: error.response?.status,
     requestId,
     timestamp: Date.now()

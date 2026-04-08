@@ -1,5 +1,4 @@
 import "@/lib/authSync";
-import "@/lib/networkGuard";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -9,7 +8,7 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { api } from "@/api";
 import { getSilo } from "./lib/silo";
 
-import { ErrorBoundary } from "./components/ErrorBoundary";
+import ErrorBoundary from "@/components/system/ErrorBoundary";
 
 import App from "./App";
 import "./index.css";

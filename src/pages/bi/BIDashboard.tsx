@@ -8,8 +8,8 @@ export default function BIDashboard() {
   const { token } = useAuth();
   const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
 
-  const [applications, setApplications] = useState([]);
-  const [commissions, setCommissions] = useState([]);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [commissions, setCommissions] = useState<any[]>([]);
 
   useEffect(() => {
     async function load() {

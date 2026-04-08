@@ -1,4 +1,3 @@
-// @ts-nocheck
 export async function disabledFeature() {
   return null;
 }
