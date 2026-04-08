@@ -36,7 +36,9 @@
       ]
     },
     "types": [
-      "vite/client"
+      "vite/client",
+      "vitest/globals",
+      "@testing-library/jest-dom"
     ],
     "strictNullChecks": true,
     "noUncheckedIndexedAccess": true
