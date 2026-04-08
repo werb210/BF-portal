@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Navigate, Outlet, Route, Routes, useInRouterContext } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { roleIn } from "@/auth/roles";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import IncomingCallModal from "@/components/IncomingCallModal";
@@ -86,7 +86,6 @@ const AppRoutes = () => (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/otp" element={<AuthOtpPage />} />
-      <Route path="/otp" element={<AuthOtpPage />} />
       <Route element={<AuthenticatedShell />}>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/portal" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
@@ -112,16 +111,7 @@ const AppRoutes = () => (
 );
 
 export default function App() {
-  const inRouterContext = useInRouterContext();
-
-
-  const withOptionalRouter = (children: React.ReactNode) => {
-    if (inRouterContext) return children;
-    const path = typeof window !== "undefined" ? window.location.pathname || "/" : "/";
-    return <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>;
-  };
-
-  return withOptionalRouter(
+  return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <ErrorBoundary>
