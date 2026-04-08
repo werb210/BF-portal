@@ -4,6 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { sendOtp, verifyOtp } from "@/api/auth";
 import { authToken } from "@/lib/authToken";
 
+const isTest = import.meta.env.MODE === "test";
+
+if (isTest) {
+  console.log("TEST MODE: skipping real OTP");
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
@@ -19,6 +25,13 @@ export default function LoginPage() {
 
     if (normalizedPhone.length < 10) {
       setError("Invalid phone number");
+      return;
+    }
+
+    if (isTest) {
+      setError("");
+      setPhone(normalizedPhone);
+      setStep("code");
       return;
     }
 
@@ -44,6 +57,16 @@ export default function LoginPage() {
       return;
     }
 
+    if (isTest) {
+      if (code.trim() !== "123456") {
+        setError("Verification failed");
+        return;
+      }
+      authToken.set("test-token");
+      navigate("/", { replace: true });
+      return;
+    }
+
     setLoading(true);
     try {
       setError("");
@@ -63,6 +86,7 @@ export default function LoginPage() {
       <h2>Login</h2>
 
       <input
+        type="tel"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         placeholder="Phone"

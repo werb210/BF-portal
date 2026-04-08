@@ -13,7 +13,9 @@
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "prebuild": "node scripts/no-legacy-check.js"
+    "prebuild": "node scripts/no-legacy-check.js",
+    "dev:test": "vite --mode test",
+    "test:e2e": "start-server-and-test dev:test http://localhost:5173 \"playwright test\""
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
@@ -77,6 +79,7 @@
     "typescript": "^5.6.3",
     "vite": "^5.4.14",
     "vite-plugin-pwa": "^1.2.0",
-    "vitest": "^1.0.0"
+    "vitest": "^1.0.0",
+    "start-server-and-test": "^2.0.10"
   }
 }
