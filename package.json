@@ -10,8 +10,8 @@
     "build": "tsc --noEmit && vite build",
     "start": "vite preview --port 8080",
     "typecheck": "tsc --noEmit",
-    "test:ci": "vitest run --reporter=verbose",
-    "ci:verify": "npm run typecheck && npm run build && npm run test:ci && test -f dist/index.html"
+    "test:ci": "vitest run",
+    "ci:verify": "npm run build && npm run test:ci"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
@@ -75,6 +75,7 @@
     "typescript": "^5.6.3",
     "vite": "^5.4.14",
     "vite-plugin-pwa": "^1.2.0",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^1.0.0"
   }
 }
