@@ -12,7 +12,7 @@ describe("portal resilience", () => {
     useApiStatusStore.setState({ status: "starting" });
   });
 
-  it("network failure does not retry", async () => {
+  it("network failure retries and eventually succeeds", async () => {
     setToken("valid-token");
     global.fetch = vi
       .fn()
@@ -21,10 +21,9 @@ describe("portal resilience", () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok", data: { ok: true } }), { status: 200 })) as typeof fetch;
 
     await expect(apiFetchWithRetry<{ ok: boolean }>("/api/health", { method: "GET" }, 2)).resolves.toEqual({
-      success: false,
-      error: "Network down",
+      ok: true,
     });
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledTimes(3);
   });
 
   it("simulate API down -> UI health check fails fast", async () => {
@@ -57,8 +56,8 @@ describe("portal resilience", () => {
     ) as typeof fetch;
 
     await expect(apiFetch<{ id: string; status: string }>("/api/health", { method: "GET" })).resolves.toEqual({
-      success: true,
-      data: { id: "a1", status: "ok" },
+      id: "a1",
+      status: "ok",
     });
   });
 

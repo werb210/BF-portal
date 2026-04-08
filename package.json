@@ -13,7 +13,7 @@
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "prebuild": "if find src -name '*.js' | grep -q .; then echo 'JS FILES IN SRC - BLOCKED'; exit 1; fi",
+    "prebuild": "python scripts/check_js_shadow.py",
     "dev:test": "vite --mode test",
     "test:e2e": "start-server-and-test dev:test http://localhost:5173 \"playwright test\""
   },

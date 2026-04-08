@@ -25,7 +25,7 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, S
 
   render() {
     if (this.state.hasError) {
-      throw new Error("UI_FATAL_ERROR");
+      return this.props.fallback ?? <div role="alert">System error logged.</div>;
     }
 
     return this.props.children;
