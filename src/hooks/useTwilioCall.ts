@@ -121,7 +121,7 @@ export const useTwilioCall = () => {
     device.on?.("unregistered", () => setDeviceState("unregistered"));
     device.on?.("incoming", (...args: unknown[]) => {
       const call = args[0] as VoiceCall | undefined;
-      call.accept?.();
+      call?.accept?.();
     });
     device.on?.("error", (...args: unknown[]) => {
       const error = args[0] as Error | undefined;

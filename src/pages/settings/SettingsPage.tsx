@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import RequireRole from "@/components/auth/RequireRole";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import ErrorBoundary from "@/components/system/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
 import IssueReports from "@/features/support/IssueReports";
 import SupportQueue from "@/features/support/SupportQueue";

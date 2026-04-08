@@ -149,7 +149,7 @@ export default function MayaIntelligence() {
                 <tr key={i}>
                   <td>{v.version}</td>
                   <td>{v.accuracy}%</td>
-                  <td>{new Date(v.created_at).toLocaleDateString()}</td>
+                  <td>{new Date(v.created_at ?? 0).toLocaleDateString()}</td>
                   <td>
                     <Button variant="secondary" onClick={() => rollbackModel(String(v.version ?? ""))}>
                       Rollback

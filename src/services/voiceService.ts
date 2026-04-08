@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Call, Device } from "@twilio/voice-sdk";
 import { setCallStatus } from "@/dialer/callStore";
 import { getVoiceToken } from "@/telephony/getVoiceToken";

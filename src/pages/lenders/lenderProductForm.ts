@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { ProductDocumentRequirement, LenderProduct } from "@/types/lenderManagement.models";
 import {
   DOCUMENT_TYPES,

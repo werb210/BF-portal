@@ -23,8 +23,13 @@ type ApiFn = {
   delete<T = any>(path: string, options?: RequestOptions): Promise<T>;
 };
 
+const PUBLIC_AUTH_PATHS = [
+  "/api/auth/otp/start",
+  "/api/auth/otp/verify",
+];
+
 function requiresAuth(path: string) {
-  return !path.includes("/auth/");
+  return !PUBLIC_AUTH_PATHS.includes(path);
 }
 
 function withQuery(path: string, params?: RequestOptions["params"]) {

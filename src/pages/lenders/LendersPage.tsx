@@ -12,7 +12,7 @@ import AppLoading from "@/components/layout/AppLoading";
 import RequireRole from "@/components/auth/RequireRole";
 import ActionGate from "@/components/auth/ActionGate";
 import { useAuthorization } from "@/hooks/useAuthorization";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import ErrorBoundary from "@/components/system/ErrorBoundary";
 import LenderProductModal, { type ProductFormValues } from "@/components/LenderProductModal";
 import GoogleSheetMappingEditor, {
   createEmptyMappingRow,

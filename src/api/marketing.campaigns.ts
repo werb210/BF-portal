@@ -66,7 +66,9 @@ export const upsertCampaign = async (payload: Partial<Campaign> & { id?: string 
   if (payload.id) {
     campaigns = campaigns.map((camp) => (camp.id === payload.id ? { ...camp, ...payload } : camp));
     const updated = campaigns.find((camp) => camp.id === payload.id);
-    if (!updated) return withDelay(campaigns[0]);
+    if (!updated) {
+      throw new Error("Campaign not found");
+    }
     return withDelay(updated);
   }
 

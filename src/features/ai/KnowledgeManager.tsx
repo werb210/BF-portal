@@ -10,8 +10,8 @@ export default function KnowledgeManager() {
   }, []);
 
   async function load() {
-    const data = await getAIKnowledge();
-    setDocs(data.documents || []);
+    const data = (await getAIKnowledge()) as { documents?: any[] } | null;
+    setDocs(data?.documents || []);
   }
 
   async function upload(file: File) {

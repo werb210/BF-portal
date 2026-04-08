@@ -9,7 +9,7 @@ type PipelineApplication = {
 };
 
 export function resolveStage(application: PipelineApplication) {
-  if (applicationNeedsDocs(application.documents)) {
+  if (applicationNeedsDocs(application.documents ?? [])) {
     return "REQUIRES_DOCS"
   }
 

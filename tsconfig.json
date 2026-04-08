@@ -38,7 +38,7 @@
     "types": [
       "vite/client"
     ],
-    "strictNullChecks": false,
+    "strictNullChecks": true,
     "noUncheckedIndexedAccess": true
   },
   "include": [

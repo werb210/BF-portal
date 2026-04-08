@@ -13,8 +13,8 @@ export default function SupportQueue() {
   }, []);
 
   async function load() {
-    const data = await getSupportQueue();
-    setSessions(data.sessions || []);
+    const data = (await getSupportQueue()) as { sessions?: any[] } | null;
+    setSessions(data?.sessions || []);
   }
 
   return (
