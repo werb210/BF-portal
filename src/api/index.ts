@@ -1,11 +1,12 @@
 import { getAuthToken } from "@/lib/authToken";
 import { ApiError } from "@/api/http";
 import { setApiStatus } from "@/state/apiStatus";
+import { API_ERROR } from "@/lib/errors";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
 if (!API_BASE) {
-  throw new Error("VITE_API_URL is required");
+  throw new Error("Missing VITE_API_URL");
 }
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
@@ -53,7 +54,7 @@ function parsePayload<T>(json: any): T {
         setApiStatus("degraded");
         return { degraded: true } as T;
       }
-      throw new Error("API_ERROR");
+      throw new Error(API_ERROR);
     }
   }
   return json as T;
@@ -63,7 +64,7 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
   const token = getAuthToken();
 
   if (!token && requiresAuth(path)) {
-    throw new Error("API_ERROR");
+    throw new Error(API_ERROR);
   }
 
   const headers: Record<string, string> = {
@@ -98,7 +99,7 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
 export async function apiFetch<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
   const res = await rawApiFetch(path, options);
   if (!res.ok) {
-    throw new Error("API_ERROR");
+    throw new Error(API_ERROR);
   }
 
   const json = await res.json();
@@ -112,7 +113,7 @@ export async function apiFetchWithRetry<T = any>(path: string, options: RequestO
     if (retries > 0) {
       return apiFetchWithRetry<T>(path, options, retries - 1);
     }
-    throw new Error("API_ERROR");
+    throw new Error(API_ERROR);
   }
 }
 

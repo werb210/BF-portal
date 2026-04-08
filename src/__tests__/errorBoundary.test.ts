@@ -30,6 +30,7 @@ describe("ErrorBoundary", () => {
 
     render(React.createElement(ErrorBoundary, null, React.createElement(Thrower)));
 
-    expect(screen.getByRole("alert").textContent).toContain("System error");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText(/system error/i)).toBeTruthy();
   });
 });

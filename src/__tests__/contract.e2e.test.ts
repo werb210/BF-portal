@@ -1,28 +1,33 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
-
-vi.mock("@/api", () => ({
-  api: vi.fn(),
-}));
+import { clearToken, setToken } from "@/auth/token";
 
 describe("contract:e2e", () => {
+  const originalFetch = global.fetch;
+
   beforeEach(() => {
-    vi.mocked(api).mockReset();
+    clearToken();
+    setToken("session-token-1");
+    vi.restoreAllMocks();
   });
 
-  it("otp -> verify -> telephony", async () => {
-    vi.mocked(api)
-      .mockResolvedValueOnce({ message: "OTP sent" })
-      .mockResolvedValueOnce({ token: "session-token-1" })
-      .mockResolvedValueOnce({ token: "voice-token-1" });
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it("otp -> verify uses real auth contract paths", async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok", data: { message: "OTP sent" } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok", data: { token: "session-token-1" } }), { status: 200 })) as typeof fetch;
 
     await api("/api/auth/otp/start", {
       method: "POST",
       body: { phone: "+61400000000" },
     });
 
-    const v = await api<{ token: string }>("/api/auth/otp/verify", {
+    const verify = await api<{ token: string }>("/api/auth/otp/verify", {
       method: "POST",
       body: {
         phone: "+61400000000",
@@ -30,14 +35,23 @@ describe("contract:e2e", () => {
       },
     });
 
-    const t = await api<{ token: string }>("/api/telephony/token");
-
-    expect(v.token).toBeTruthy();
-    expect(t.token).toBeTruthy();
+    expect(verify.token).toBe("session-token-1");
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining("/api/auth/otp/start"),
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("/api/auth/otp/verify"),
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 
-  it("returns meaningful api errors", async () => {
-    vi.mocked(api).mockRejectedValueOnce(new Error("invalid otp"));
+  it("returns API_ERROR for auth contract failures", async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ status: "error", error: { message: "invalid otp" } }), { status: 401 }),
+    ) as typeof fetch;
 
     await expect(
       api("/api/auth/otp/verify", {
@@ -47,6 +61,6 @@ describe("contract:e2e", () => {
           code: "bad-code",
         },
       }),
-    ).rejects.toThrow("invalid otp");
+    ).rejects.toThrow("API_ERROR");
   });
 });

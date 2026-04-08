@@ -1,4 +1,12 @@
+import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, vi } from "vitest";
+
+class MockStorageEvent extends Event {
+  key: string | null = null;
+  newValue: string | null = null;
+}
+
+(global as any).StorageEvent = MockStorageEvent;
 
 vi.mock("axios", () => ({
   default: vi.fn(() => {
