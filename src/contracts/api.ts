@@ -1,11 +1,10 @@
-export const API_ROUTES = {
-  health: "/api/health",
-  auth: {
-    otpStart: "/api/auth/otp/start",
-    otpVerify: "/api/auth/otp/verify",
-  },
-  application: {
-    create: "/api/applications",
-    upload: "/api/documents",
-  },
-};
+import { z } from "zod"
+
+export const OtpStartSchema = z.object({
+  phone: z.string().min(10)
+})
+
+export const OtpVerifySchema = z.object({
+  phone: z.string(),
+  code: z.string().length(6)
+})

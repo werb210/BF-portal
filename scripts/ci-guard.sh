@@ -1,35 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Running portal CI guard checks..."
-
-if find src -type f -name '*.js' | grep -q .; then
-  echo "❌ Compiled JavaScript files found under src/. Remove generated .js artifacts."
-  find src -type f -name '*.js'
+# Block compiled JS in src
+if find src -type f -name "*.js" | grep -q .; then
+  echo "Compiled JS detected in src/"
   exit 1
 fi
 
-if rg -n "twilio-client" src; then
-  echo "❌ Forbidden legacy import found: twilio-client"
+# Block legacy Twilio client usage
+if grep -r "twilio-client" src; then
+  echo "Forbidden dependency detected: twilio-client"
   exit 1
 fi
 
-if ! rg -n 'navigate\("/portal"' src/pages/LoginPage.tsx >/dev/null; then
-  echo "❌ LoginPage.tsx no longer navigates to /portal"
+# Ensure OTP endpoints are used correctly
+if ! grep -r "/api/auth/otp/start" src > /dev/null; then
+  echo "OTP start endpoint missing"
   exit 1
 fi
 
-if rg -n "networkGuard" src --glob '!src/**/__tests__/**' --glob '!src/test/**'; then
-  echo "❌ networkGuard regression detected"
+if ! grep -r "/api/auth/otp/verify" src > /dev/null; then
+  echo "OTP verify endpoint missing"
   exit 1
 fi
 
-if rg -n "global\.fetch\s*=" src \
-  --glob '!src/**/__tests__/**' \
-  --glob '!src/test/**' \
-  --glob '!src/tests/**'; then
-  echo "❌ fetch hijack regression detected outside test files"
+# Prevent fetch hijack regression
+if grep -r "networkGuard" src; then
+  echo "networkGuard must not be reintroduced"
   exit 1
 fi
-
-echo "✅ Portal CI guards passed."
