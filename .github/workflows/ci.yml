@@ -15,11 +15,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install (non-blocking)
-        run: npm ci --ignore-scripts || true
+      - name: Install
+        run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Run portal CI guards
+        run: bash scripts/ci-guard.sh
 
-      - name: Verify dist output
-        run: test -f dist/index.html
+      - name: Verify
+        run: npm run ci:verify
