@@ -10,14 +10,15 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "echo \"Tests disabled in restricted environment\" && exit 0",
+    "test": "vitest",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "prebuild": "python scripts/check_js_shadow.py",
     "dev:test": "vite --mode test",
     "test:e2e": "start-server-and-test dev:test http://localhost:5173 \"playwright test\"",
     "start": "vite preview --port 8080",
-    "ci:verify": "npm run build && test -f dist/index.html"
+    "ci:verify": "npm run typecheck && npm run build && npm run test:ci && test -f dist/index.html",
+    "test:ci": "vitest run --reporter=verbose"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
