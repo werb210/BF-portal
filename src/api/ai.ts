@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import api from "./client";
 
 export type AiMessage = {
   role: "user" | "assistant";
@@ -18,28 +18,24 @@ export async function sendMessage(
   input: string,
   sessionId?: string
 ): Promise<AiResponse> {
-  return apiFetch("/api/ai/message", {
-    method: "POST",
-    body: JSON.stringify({
-      message: input,
-      sessionId,
-    }),
+  const response = await api.post("/api/ai/message", {
+    message: input,
+    sessionId,
   });
+  return response.data;
 }
 
 export async function fetchActiveChats() {
-  return apiFetch("/ai/portal/chats");
+  const response = await api.get("/ai/portal/chats");
+  return response.data;
 }
 
 export async function sendStaffMessage(sessionId: string, message: string) {
-  return apiFetch("/ai/staff-message", {
-    method: "POST",
-    body: JSON.stringify({ sessionId, message }),
-  });
+  const response = await api.post("/ai/staff-message", { sessionId, message });
+  return response.data;
 }
 
 export async function closeChat(sessionId: string) {
-  return apiFetch(`/ai/portal/chats/${sessionId}/close`, {
-    method: "POST",
-  });
+  const response = await api.post(`/ai/portal/chats/${sessionId}/close`);
+  return response.data;
 }
