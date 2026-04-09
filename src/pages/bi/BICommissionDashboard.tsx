@@ -1,83 +1,42 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { useSilo } from "../../context/SiloContext";
-import { createApi } from "@/apiFactory";
-import { useAuth } from "../../auth/AuthContext";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
-import { usePolling } from "../../hooks/usePolling";
-import Skeleton from "../../components/Skeleton";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/api";
+import { retryUnlessClientError } from "@/api/retryPolicy";
+import { useSilo } from "@/hooks/useSilo";
+import type { Silo } from "@/types/silo";
 
-interface CommissionDatum {
-  name: string;
-  commission: number;
+type BICommissionRow = {
   policyId: string;
-}
-
-interface CommissionResponse {
-  application_id: string;
-  commission_amount?: string | number | null;
-}
+  applicationId: string;
+  commissionAmount: number;
+};
 
 export default function BICommissionDashboard() {
-  const { silo } = useSilo();
-  const { token } = useAuth();
-  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
-
-  const [data, setData] = useState<CommissionDatum[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    const result = await api.get<CommissionResponse[]>("/admin/commissions");
-
-    const grouped = result.map((c) => ({
-      name: c.application_id.slice(0, 6),
-      commission: Number(c.commission_amount || 0),
-      policyId: c.application_id
-    }));
-
-    setData(grouped);
-    setIsLoading(false);
-  }, [api]);
+  const { silo, setSilo } = useSilo() as { silo: Silo; setSilo: (next: Silo) => void };
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (silo !== "bi") {
+      setSilo("bi");
+    }
+  }, [setSilo, silo]);
 
-  usePolling(() => {
-    void load();
+  const { data = [] } = useQuery<BICommissionRow[]>({
+    queryKey: ["bi", "commissions"],
+    queryFn: ({ signal }) => api.getList<BICommissionRow>("/bi/admin/commissions", { signal }),
+    enabled: silo === "bi",
+    retry: retryUnlessClientError
   });
 
-  if (isLoading) {
-    return (
-      <div style={{ width: "100%", height: 400 }}>
-        <h2>Recurring Commission Overview</h2>
-        <Skeleton height={320} />
-      </div>
-    );
-  }
+  if (silo !== "bi") return null;
 
   return (
-    <div style={{ width: "100%", height: 400 }}>
-      <h2>Recurring Commission Overview</h2>
-      <ResponsiveContainer>
-        <BarChart data={data}>
-          <CartesianGrid stroke="#444" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey="commission" fill="#00bcd4" />
-        </BarChart>
-      </ResponsiveContainer>
-      <div style={{ marginTop: 12 }}>
-        <h3>Policies</h3>
-        <ul>
-          {data.map((item) => (
-            <li key={item.policyId}>
-              <Link to={`/bi/commissions/${item.policyId}`}>{item.policyId}</Link>
-            </li>
-          ))}
-        </ul>
-      </div>
+    <div className="space-y-3">
+      <h1 className="text-2xl font-semibold">BI Commissions</h1>
+      <ul className="list-disc pl-5">
+        {data.map((row) => (
+          <li key={row.policyId}>{row.policyId} · ${row.commissionAmount.toLocaleString("en-US")}</li>
+        ))}
+      </ul>
     </div>
   );
 }
