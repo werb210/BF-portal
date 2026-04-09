@@ -1,4 +1,4 @@
-const STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY || "bf_jwt_token";
+const STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY || "auth_token";
 
 export function getToken() {
   if (typeof window === "undefined") return null;
