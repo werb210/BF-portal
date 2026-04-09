@@ -21,6 +21,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      localStorage.removeItem("auth_token");
+      window.location.assign("/login");
+    }
+
+    return Promise.reject(error);
+  },
+);
+
 export async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
   const response = await api.request({
     url: path,
