@@ -17,8 +17,10 @@ jobs:
       - name: Inject env for Vite
         run: |
           echo "VITE_API_URL=${{ secrets.VITE_API_BASE_URL }}" >> .env
+          echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}" >> .env
           echo "VITE_APP_URL=${{ secrets.VITE_APP_URL }}" >> .env
           echo "VITE_CLIENT_APP_URL=${{ secrets.VITE_CLIENT_APP_URL }}" >> .env
+          echo "VITE_JWT_STORAGE_KEY=auth_token" >> .env
 
       # 🔍 Debug (proves fix)
       - name: Debug env
