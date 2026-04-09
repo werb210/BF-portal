@@ -58,7 +58,14 @@ function resolveTokenUser(token: string | null): AuthUser | null {
 
 function resolveApiUser(payload: unknown): AuthUser | null {
   if (!payload || typeof payload !== "object") return null;
-  const candidate = payload as { id?: string | number; sub?: string | number; role?: string; name?: string; email?: string };
+  const root = payload as { user?: unknown };
+  const candidate = (root.user && typeof root.user === "object" ? root.user : payload) as {
+    id?: string | number;
+    sub?: string | number;
+    role?: string;
+    name?: string;
+    email?: string;
+  };
   const role = normalizeRole(candidate.role ?? null);
   if (!role) return null;
 

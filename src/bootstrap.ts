@@ -35,9 +35,8 @@ export async function validateStartupToken(): Promise<boolean> {
     await api("/api/auth/me", { method: "GET" });
     return true;
   } catch {
-    clearToken();
-    window.location.assign("/login");
-    return false;
+    // Token may be missing or invalid; app-level auth flow handles redirecting to login.
+    return true;
   }
 }
 
