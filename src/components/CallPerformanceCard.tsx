@@ -1,53 +1,43 @@
-import { useEffect, useState } from "react";
-import { apiCall } from "@/lib/api";
+import React, { useEffect, useState } from "react";
 
 type CallStats = {
   totalCalls: number;
-  answered: number;
-  missed: number;
-  avgDuration: number;
+  answeredCalls: number;
+  missedCalls: number;
+  averageDuration: number;
 };
 
 export default function CallPerformanceCard() {
-  const [stats, setStats] = useState<CallStats>({
-    totalCalls: 0,
-    answered: 0,
-    missed: 0,
-    avgDuration: 0,
-  });
+  const [statsMap, setStatsMap] = useState<Record<string, CallStats>>({});
 
   useEffect(() => {
-    async function load() {
+    const loadStats = async () => {
       try {
-        const data = await apiCall("/api/metrics");
-
-        setStats({
-          totalCalls: data.totalCalls || 0,
-          answered: data.answered || 0,
-          missed: data.missed || 0,
-          avgDuration: data.avgDuration || 0,
-        });
+        const res = await fetch("/api/call/stats");
+        if (!res.ok) throw new Error("Failed to fetch call stats");
+        const data: Record<string, CallStats> = await res.json();
+        setStatsMap(data);
       } catch (err) {
-        console.error(err);
-        setStats({
-          totalCalls: 0,
-          answered: 0,
-          missed: 0,
-          avgDuration: 0,
-        });
+        console.error("Call stats fetch error:", err);
       }
-    }
+    };
 
-    load();
+    void loadStats();
   }, []);
 
   return (
-    <div>
-      <h3>Call Performance</h3>
-      <div>Total: {stats.totalCalls}</div>
-      <div>Answered: {stats.answered}</div>
-      <div>Missed: {stats.missed}</div>
-      <div>Avg Duration: {stats.avgDuration}</div>
+    <div className="card">
+      <h2>Call Performance</h2>
+
+      {Object.entries(statsMap).map(([userId, stats]) => (
+        <div key={userId} className="stat-row">
+          <h4>{userId}</h4>
+          <p>Total Calls: {stats.totalCalls}</p>
+          <p>Answered: {stats.answeredCalls}</p>
+          <p>Missed: {stats.missedCalls}</p>
+          <p>Avg Duration: {stats.averageDuration}s</p>
+        </div>
+      ))}
     </div>
   );
 }
