@@ -4,6 +4,10 @@ import { setApiStatus } from "@/state/apiStatus";
 import { API_ERROR } from "@/lib/errors";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+// NOTE: API_BASE is set from VITE_API_BASE_URL env var.
+// For BI/SLF silos, set VITE_API_BASE_URL to the respective
+// server URL in that deployment's environment config.
+// See src/lib/apiBase.ts for the silo→server URL mapping.
 
 if (!API_BASE) {
   throw new Error("Missing VITE_API_BASE_URL");
