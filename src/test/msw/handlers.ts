@@ -1,6 +1,9 @@
 import { http, HttpResponse } from "msw";
 
 export const handlers = [
+  http.get("*/api/auth/me", () => {
+    return HttpResponse.json({ error: "missing token" }, { status: 401 });
+  }),
 
   // LENDERS
   http.get("/lenders", () => {
