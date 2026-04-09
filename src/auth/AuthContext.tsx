@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import api from "@/api/client";
+import { rawApiFetch } from "@/api/index";
 import { AUTH_STORAGE_KEY, authToken } from "@/lib/authToken";
 import { decodeJwt } from "@/auth/jwt";
 import { normalizeRole, type Role } from "@/auth/roles";
@@ -112,19 +112,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
 
-    api.get("/api/auth/me")
-      .then((res) => {
+    rawApiFetch("/api/auth/me")
+      .then(async (response) => {
         if (!isActive) return;
-        const payload = (res as { data?: unknown })?.data ?? res;
+        if (response.status === 401) {
+          localStorage.removeItem("auth_token");
+          authToken.clear();
+          setTokenState(null);
+          setUser(null);
+          return;
+        }
+        if (!response.ok) {
+          setUser(resolveTokenUser(token));
+          return;
+        }
+        const json = await response.json();
+        const payload = (json as { data?: unknown })?.data ?? json;
         const apiUser = resolveApiUser(payload);
         setUser(apiUser ?? resolveTokenUser(token));
       })
       .catch(() => {
         if (!isActive) return;
-        localStorage.removeItem("auth_token");
-        authToken.clear();
-        setTokenState(null);
-        setUser(null);
+        setUser(resolveTokenUser(token));
       })
       .finally(() => {
         if (!isActive) return;
