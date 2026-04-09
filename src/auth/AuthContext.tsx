@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import api from "@/api/client";
 import { AUTH_STORAGE_KEY, authToken } from "@/lib/authToken";
 import { decodeJwt } from "@/auth/jwt";
 import { normalizeRole, type Role } from "@/auth/roles";
@@ -42,7 +43,7 @@ function getValidToken(): string | null {
   return token;
 }
 
-function resolveUser(token: string | null): AuthUser | null {
+function resolveTokenUser(token: string | null): AuthUser | null {
   if (!token) return null;
   const payload = decodeJwt(token) as { sub?: string; id?: string; role?: string; name?: string; email?: string } | null;
   const role = normalizeRole(payload?.role ?? null);
@@ -55,8 +56,24 @@ function resolveUser(token: string | null): AuthUser | null {
   };
 }
 
+function resolveApiUser(payload: unknown): AuthUser | null {
+  if (!payload || typeof payload !== "object") return null;
+  const candidate = payload as { id?: string | number; sub?: string | number; role?: string; name?: string; email?: string };
+  const role = normalizeRole(candidate.role ?? null);
+  if (!role) return null;
+
+  return {
+    id: String(candidate.id ?? candidate.sub ?? "unknown"),
+    role,
+    name: candidate.name,
+    email: candidate.email,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() => getValidToken());
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const syncToken = () => {
@@ -67,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const onStorage = (event: StorageEvent) => {
-      if (event.key === AUTH_STORAGE_KEY) {
+      if (event.key === AUTH_STORAGE_KEY || event.key === "auth_token") {
         syncToken();
       }
     };
@@ -83,28 +100,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    let isActive = true;
+
+    setIsLoading(true);
+
+    api.get("/api/auth/me")
+      .then((res) => {
+        if (!isActive) return;
+        const payload = (res as { data?: unknown })?.data ?? res;
+        const apiUser = resolveApiUser(payload);
+        setUser(apiUser ?? resolveTokenUser(token));
+      })
+      .catch(() => {
+        if (!isActive) return;
+        localStorage.removeItem("auth_token");
+        authToken.clear();
+        setTokenState(null);
+        setUser(null);
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [token]);
+
   const clearAuth = useCallback(() => {
+    localStorage.removeItem("auth_token");
     authToken.clear();
     setTokenState(null);
+    setUser(null);
   }, []);
 
-  const user = useMemo(() => resolveUser(token), [token]);
   const role = user?.role ?? null;
 
-  const value: AuthContextValue = {
-    user,
-    role,
-    token,
-    logout: clearAuth,
-    clearAuth,
-    authenticated: Boolean(user),
-    isAuthenticated: Boolean(user),
-    authStatus: token ? (user ? "authenticated" : "unauthenticated") : "unauthenticated",
-    isLoading: false,
-    rolesStatus: "ready",
-    authReady: true,
-    canAccessSilo: () => Boolean(user),
-  };
+  const value: AuthContextValue = useMemo(
+    () => ({
+      user,
+      role,
+      token,
+      logout: clearAuth,
+      clearAuth,
+      authenticated: Boolean(user),
+      isAuthenticated: Boolean(user),
+      authStatus: isLoading ? "pending" : user ? "authenticated" : "unauthenticated",
+      isLoading,
+      rolesStatus: "ready",
+      authReady: !isLoading,
+      canAccessSilo: () => Boolean(user),
+    }),
+    [clearAuth, isLoading, role, token, user],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

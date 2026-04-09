@@ -3,10 +3,10 @@ import { ApiError } from "@/api/http";
 import { setApiStatus } from "@/state/apiStatus";
 import { API_ERROR } from "@/lib/errors";
 
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
 
 if (!API_BASE) {
-  throw new Error("Missing VITE_API_URL");
+  throw new Error("Missing VITE_API_BASE_URL");
 }
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
