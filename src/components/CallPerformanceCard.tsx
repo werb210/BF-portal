@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/api";
+import { retryUnlessClientError } from "@/api/retryPolicy";
 
 type CallStats = {
   totalCalls: number;
@@ -8,22 +10,11 @@ type CallStats = {
 };
 
 export default function CallPerformanceCard() {
-  const [statsMap, setStatsMap] = useState<Record<string, CallStats>>({});
-
-  useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const res = await fetch("/api/call/stats");
-        if (!res.ok) throw new Error("Failed to fetch call stats");
-        const data: Record<string, CallStats> = await res.json();
-        setStatsMap(data);
-      } catch (err) {
-        console.error("Call stats fetch error:", err);
-      }
-    };
-
-    void loadStats();
-  }, []);
+  const { data: statsMap = {} } = useQuery<Record<string, CallStats>>({
+    queryKey: ["bf", "call-stats"],
+    queryFn: ({ signal }) => api.get<Record<string, CallStats>>("/api/call/stats", { signal }),
+    retry: retryUnlessClientError
+  });
 
   return (
     <div className="card">

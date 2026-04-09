@@ -17,6 +17,10 @@ import PipelinePage from "@/pages/pipeline/PipelinePage";
 import ApplicationDetail from "@/pages/application/ApplicationDetail";
 import MayaPage from "@/pages/MayaPage";
 import ApplyPage from "@/pages/ApplyPage";
+import BIDashboardPage from "@/pages/bi/BIDashboardPage";
+import BICommissionDashboard from "@/pages/bi/BICommissionDashboard";
+import BIReferrersPage from "@/pages/bi/BIReferrersPage";
+import BIPipelinePage from "@/pages/applications/bi/BIPipelinePage";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import DialerButton from "@/components/DialerButton";
@@ -104,6 +108,46 @@ const AppRoutes = () => (
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
+        <Route
+          path="/bi"
+          element={
+            <ProtectedRoute>
+              <RequireRole roles={["Admin", "Staff"]}>
+                <BIDashboardPage />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bi/pipeline"
+          element={
+            <ProtectedRoute>
+              <RequireRole roles={["Admin", "Staff", "Marketing"]}>
+                <BIPipelinePage />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bi/commissions"
+          element={
+            <ProtectedRoute>
+              <RequireRole roles={["Admin", "Staff"]}>
+                <BICommissionDashboard />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bi/referrers"
+          element={
+            <ProtectedRoute>
+              <RequireRole roles={["Admin", "Staff"]}>
+                <BIReferrersPage />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
         <Route path="/apply" element={<ApplyPage />} />
       </Route>
     </Routes>
