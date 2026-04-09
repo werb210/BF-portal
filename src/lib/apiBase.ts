@@ -4,9 +4,9 @@ export function getApiBase() {
   const silo = getSilo();
 
   switch (silo) {
-    case "BI":
+    case "bi":
       return "https://bi-server.boreal.financial";
-    case "SLF":
+    case "slf":
       return "https://slf-server.boreal.financial";
     default:
       return "https://server.boreal.financial";
