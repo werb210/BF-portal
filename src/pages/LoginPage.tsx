@@ -81,7 +81,7 @@ export default function LoginPage() {
       console.log("OTP verify response →", res);
       authToken.set(res.token);
       localStorage.setItem("auth_token", res.token);
-      navigate("/portal", { replace: true });
+      window.location.replace("/portal");
     } catch (e: any) {
       setError(e?.message || "Verification failed");
     } finally {
