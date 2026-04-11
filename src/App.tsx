@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { roleIn } from "@/auth/roles";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import IncomingCallModal from "@/components/IncomingCallModal";
@@ -28,10 +28,29 @@ import BIDashboardPage from "@/pages/bi/BIDashboardPage";
 import BICommissionDashboard from "@/pages/bi/BICommissionDashboard";
 import BIReferrersPage from "@/pages/bi/BIReferrersPage";
 import BIPipelinePage from "@/pages/applications/bi/BIPipelinePage";
+import Leads from "@/pages/Leads";
+import IssueInboxPage from "@/pages/IssueInboxPage";
+import AiCommsPage from "@/pages/AiCommsPage";
+import AIChatDashboard from "@/pages/AIChatDashboard";
+import AIKnowledgeManager from "@/pages/admin/AIKnowledgeManager";
+import AIKnowledgeBasePage from "@/pages/admin/AIKnowledgeBasePage";
+import GlobalAdmin from "@/pages/GlobalAdmin";
+import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
+import IssueReportsPage from "@/pages/admin/IssueReportsPage";
+import WebsiteLeadsPage from "@/pages/admin/WebsiteLeadsPage";
+import LeadsPage from "@/pages/admin/LeadsPage";
+import LiveChatQueuePage from "@/pages/admin/LiveChatQueuePage";
+import ConversionDashboardPage from "@/pages/admin/ConversionDashboardPage";
+import AiPolicyEditorPage from "@/pages/admin/AiPolicyEditorPage";
+import Operations from "@/pages/admin/Operations";
+import MayaIntelligence from "@/pages/admin/MayaIntelligence";
+import AiLiveChatPage from "@/pages/ai/AiLiveChatPage";
+import AiChatDashboard from "@/pages/admin/AiChatDashboard";
+import AiIssueReports from "@/pages/admin/AiIssueReports";
+import CreditReadiness from "@/pages/CreditReadiness";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
-import DialerButton from "@/components/DialerButton";
-import MobileShell from "@/mobile/MobileShell";
+import AppLayout from "@/components/layout/AppLayout";
 import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
 import PortalDialer from "./telephony/components/PortalDialer";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
@@ -76,12 +95,9 @@ function AppShell() {
       <ServerCallSyncBootstrap />
       <ActiveCallBanner />
       <IncomingCallModal />
-      <DialerButton />
       <PortalDialer />
       <IncomingCallOverlay />
-      <MobileShell>
-        <Outlet />
-      </MobileShell>
+      <AppLayout />
     </>
   );
 }
@@ -163,6 +179,27 @@ const AppRoutes = () => (
           }
         />
         <Route path="/apply" element={<ApplyPage />} />
+        <Route path="/leads" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><Leads /></RequireRole></ProtectedRoute>} />
+        <Route path="/issues" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><IssueInboxPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/ai-chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AIChatDashboard /></RequireRole></ProtectedRoute>} />
+        <Route path="/ai-comms" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/ai" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AIKnowledgeManager /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/ai-knowledge" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AIKnowledgeBasePage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/support" element={<ProtectedRoute><RequireRole roles={["Admin"]}><GlobalAdmin /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/analytics" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AnalyticsDashboard /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/issue-reports" element={<ProtectedRoute><RequireRole roles={["Admin"]}><IssueReportsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/website-leads" element={<ProtectedRoute><RequireRole roles={["Admin"]}><WebsiteLeadsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/leads" element={<ProtectedRoute><RequireRole roles={["Admin"]}><LeadsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/live-chat" element={<ProtectedRoute><RequireRole roles={["Admin"]}><LiveChatQueuePage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/conversions" element={<ProtectedRoute><RequireRole roles={["Admin"]}><ConversionDashboardPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/ai-policy" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AiPolicyEditorPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/operations" element={<ProtectedRoute><RequireRole roles={["Admin"]}><Operations /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/maya" element={<ProtectedRoute><RequireRole roles={["Admin"]}><MayaIntelligence /></RequireRole></ProtectedRoute>} />
+        <Route path="/portal/ai" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiLiveChatPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/ai/chats" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiChatDashboard /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/ai/issues" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiIssueReports /></RequireRole></ProtectedRoute>} />
+        <Route path="/continuations" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CreditReadiness /></RequireRole></ProtectedRoute>} />
       </Route>
     </Routes>
   </>
