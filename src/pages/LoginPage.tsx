@@ -21,7 +21,13 @@ export default function LoginPage() {
   async function handleSendOtp() {
     if (loading) return;
 
-    const normalizedPhone = phone.replace(/\D/g, "");
+    const digits = phone.replace(/\D/g, "");
+    const normalizedPhone =
+      digits.startsWith("1") && digits.length === 11
+        ? `+${digits}`
+        : digits.length === 10
+          ? `+1${digits}`
+          : `+${digits}`;
 
     if (normalizedPhone.length < 10) {
       setError("Invalid phone number");
