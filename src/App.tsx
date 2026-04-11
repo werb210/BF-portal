@@ -50,6 +50,7 @@ import AiIssueReports from "@/pages/admin/AiIssueReports";
 import CreditReadiness from "@/pages/CreditReadiness";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
+import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
 import AppLayout from "@/components/layout/AppLayout";
 import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
 import PortalDialer from "./telephony/components/PortalDialer";
@@ -208,14 +209,16 @@ const AppRoutes = () => (
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <ErrorBoundary>
-          <AppRoutes />
-        </ErrorBoundary>
-        <Suspense fallback={null}>
-          <FloatingChat />
-        </Suspense>
-      </ToastProvider>
+      <BusinessUnitProvider>
+        <ToastProvider>
+          <ErrorBoundary>
+            <AppRoutes />
+          </ErrorBoundary>
+          <Suspense fallback={null}>
+            <FloatingChat />
+          </Suspense>
+        </ToastProvider>
+      </BusinessUnitProvider>
     </QueryClientProvider>
   );
 }
