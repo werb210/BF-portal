@@ -24,7 +24,7 @@ export default function MobileShell({ children }: Props) {
       </main>
 
       <nav className="h-14 border-t border-white/10 flex justify-around items-center text-sm">
-        <Link to="/dashboard" className={active("/dashboard")}>
+        <Link to="/portal" className={location.pathname === "/portal" || location.pathname.startsWith("/dashboard") ? "text-white" : "text-white/40"}>
           Dashboard
         </Link>
         <Link to="/pipeline" className={active("/pipeline")}>

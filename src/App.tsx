@@ -15,8 +15,15 @@ import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
 import PipelinePage from "@/pages/pipeline/PipelinePage";
 import ApplicationDetail from "@/pages/application/ApplicationDetail";
+import ApplicationsPage from "@/pages/applications/ApplicationsPage";
 import MayaPage from "@/pages/MayaPage";
 import ApplyPage from "@/pages/ApplyPage";
+import CRMPage from "@/pages/crm/CRMPage";
+import CalendarPage from "@/pages/calendar/CalendarPage";
+import CommunicationsPage from "@/pages/communications/CommunicationsPage";
+import SettingsPage from "@/pages/settings/SettingsPage";
+import MarketingPage from "@/pages/marketing/MarketingPage";
+import ReadinessLeadsPage from "@/pages/ReadinessLeadsPage";
 import BIDashboardPage from "@/pages/bi/BIDashboardPage";
 import BICommissionDashboard from "@/pages/bi/BICommissionDashboard";
 import BIReferrersPage from "@/pages/bi/BIReferrersPage";
@@ -92,7 +99,14 @@ const AppRoutes = () => (
       <Route path="/auth/otp" element={<AuthOtpPage />} />
       <Route element={<AuthenticatedShell />}>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/portal" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/applications" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><ApplicationsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/crm/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CRMPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+        <Route path="/communications/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CommunicationsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/settings/*" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        <Route path="/marketing/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><MarketingPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/portal/readiness" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><ReadinessLeadsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/portal/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<Navigate to="/portal" replace />} />
         <Route
           path="/pipeline"
