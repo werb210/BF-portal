@@ -4,6 +4,6 @@
     "exclude": ["/api/*"]
   },
   "globalHeaders": {
-    "Content-Security-Policy": "default-src 'self'; connect-src 'self' https://server.boreal.financial https://voice-js.twilio.com https://eventgw.twilio.com https://media.twiliocdn.com https://sdk.twilio.com wss://voice-js.twilio.com wss://eventgw.twilio.com; media-src 'self' https://media.twiliocdn.com https://sdk.twilio.com;"
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://media.twiliocdn.com https://sdk.twilio.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://media.twiliocdn.com; font-src 'self'; connect-src 'self' https://server.boreal.financial https://voice-js.twilio.com wss://voice-js.twilio.com https://eventgw.twilio.com wss://eventgw.twilio.com https://media.twiliocdn.com wss://media.twiliocdn.com https://sdk.twilio.com; media-src 'self' https://media.twiliocdn.com https://sdk.twilio.com; base-uri 'self'; form-action 'self';"
   }
 }
