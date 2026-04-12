@@ -56,6 +56,8 @@ import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
 import PortalDialer from "./telephony/components/PortalDialer";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import { queryClient } from "@/lib/queryClient";
+import { sanitizeOtpFlowStateOnBoot } from "@/auth/otpFlow";
+import { getAuthToken } from "@/lib/authToken";
 
 function SessionGuard() {
   usePortalSessionGuard();
@@ -110,7 +112,11 @@ function AuthenticatedShell() {
 const FloatingChat = lazy(() => import("./components/FloatingChat"));
 
 const AppRoutes = () => {
-  const token = localStorage.getItem("token");
+  const token = getAuthToken();
+
+  useEffect(() => {
+    sanitizeOtpFlowStateOnBoot();
+  }, []);
 
   return (
     <>
