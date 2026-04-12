@@ -45,11 +45,15 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   }, []);
 
   useEffect(() => {
+    let consecutiveErrors = 0;
     const interval = setInterval(async () => {
+      if (consecutiveErrors >= 3) return;
       try {
         const result = await api<{ count?: number }>("/api/support/live/count");
         setLiveCount(result.count ?? 0);
+        consecutiveErrors = 0;
       } catch {
+        consecutiveErrors++;
         setLiveCount(0);
       }
     }, 5000);
