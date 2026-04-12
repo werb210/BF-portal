@@ -51,7 +51,7 @@ import CreditReadiness from "@/pages/CreditReadiness";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
-import AppLayout from "@/components/layout/AppLayout";
+import AppLayout from "@/layouts/AppLayout";
 import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
 import PortalDialer from "./telephony/components/PortalDialer";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
