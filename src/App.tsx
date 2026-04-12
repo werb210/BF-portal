@@ -9,8 +9,8 @@ import ProtectedRoute from "@/routes/ProtectedRoute";
 import RequireRole from "@/components/auth/RequireRole";
 import { useServerCallSync } from "@/dialer/useServerCallSync";
 import { bootstrapVoice, destroyVoiceDevice } from "@/telephony/bootstrapVoice";
-import LoginPage from "@/pages/LoginPage";
-import AuthOtpPage from "@/pages/AuthOtpPage";
+import Login from "@/pages/Login";
+import Verify from "@/pages/Verify";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
 import PipelinePage from "@/pages/pipeline/PipelinePage";
@@ -109,13 +109,16 @@ function AuthenticatedShell() {
 
 const FloatingChat = lazy(() => import("./components/FloatingChat"));
 
-const AppRoutes = () => (
-  <>
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/auth/otp" element={<AuthOtpPage />} />
-      <Route element={<AuthenticatedShell />}>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+const AppRoutes = () => {
+  const token = localStorage.getItem("token");
+
+  return (
+    <>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/verify" element={<Verify />} />
+        <Route element={token ? <AuthenticatedShell /> : <Navigate to="/login" replace />}>
+          <Route path="/" element={<Navigate to="/portal" replace />} />
         <Route path="/applications" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><ApplicationsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/crm/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CRMPage /></RequireRole></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
@@ -201,10 +204,11 @@ const AppRoutes = () => (
         <Route path="/admin/ai/chats" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiChatDashboard /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/ai/issues" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiIssueReports /></RequireRole></ProtectedRoute>} />
         <Route path="/continuations" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CreditReadiness /></RequireRole></ProtectedRoute>} />
-      </Route>
-    </Routes>
-  </>
-);
+        </Route>
+      </Routes>
+    </>
+  );
+};
 
 export default function App() {
   return (
