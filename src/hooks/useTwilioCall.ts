@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDialerStore, type DialerStatus } from "@/state/dialer.store";
 import { safeNormalizeToE164 } from "@/utils/phone";
-import { initializeTwilioVoice } from "@/services/twilioVoice";
+import { initTwilio } from "@/services/twilio";
 import { logger } from "@/utils/logger";
 
 type VoiceCallEvent = "ringing" | "accept" | "disconnect" | "cancel" | "reject" | "error";
@@ -110,7 +110,7 @@ export const useTwilioCall = () => {
       return deviceRef.current;
     }
 
-    const device = (await initializeTwilioVoice()) as VoiceDevice | null;
+    const device = (await initTwilio()) as VoiceDevice | null;
     if (!device) {
       setDeviceState("unregistered");
       return null;
