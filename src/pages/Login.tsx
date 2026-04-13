@@ -50,6 +50,7 @@ export default function Login() {
         throw new Error("OTP start failed");
       }
 
+      localStorage.setItem("auth_phone", normalizedPhone);
       setOtpStartSucceeded(normalizedPhone);
       navigate("/verify");
     } catch {
