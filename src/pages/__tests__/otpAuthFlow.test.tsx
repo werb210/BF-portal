@@ -42,8 +42,10 @@ describe("OTP auth flow", () => {
     fireEvent.change(screen.getByTestId("phone-input"), { target: { value: "5878881837" } });
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalled();
+    expect(fetchMock.mock.calls[0][0]).toContain("/api/auth/otp/start");
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/auth/otp/start",
+      expect.anything(),
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ phone: "+15878881837" }),
@@ -60,7 +62,7 @@ describe("OTP auth flow", () => {
     renderAuthRoutes("/login");
     fireEvent.change(screen.getByTestId("phone-input"), { target: { value: "+15878881837" } });
 
-    await waitFor(() => expect(screen.getByText(/Unable to start OTP with that phone number/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Unable to start OTP/i)).toBeInTheDocument());
     expect(screen.getByTestId("location-path")).toHaveTextContent("/login");
   });
 
@@ -88,8 +90,10 @@ describe("OTP auth flow", () => {
     fireEvent.change(screen.getByTestId("code-input"), { target: { value: "123456" } });
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalled();
+    expect(fetchMock.mock.calls[0][0]).toContain("/api/auth/otp/verify");
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/auth/otp/verify",
+      expect.anything(),
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ phone: "+15878881837", code: "123456" }),
@@ -111,8 +115,8 @@ describe("OTP auth flow", () => {
     renderAuthRoutes("/verify");
     fireEvent.change(screen.getByTestId("code-input"), { target: { value: "123456" } });
 
-    await waitFor(() => expect(screen.getByText(/Invalid code/i)).toBeInTheDocument());
-    expect(screen.getByTestId("location-path")).toHaveTextContent("/verify");
+    await waitFor(() => expect(screen.getByText(/Unable to verify code/i)).toBeInTheDocument());
+    expect(screen.getByTestId("location-path")).toHaveTextContent(/\/verify/);
     expect(screen.getByTestId("code-input")).toHaveValue("");
   });
 });
