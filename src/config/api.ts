@@ -1,10 +1,10 @@
 const REQUIRED_API_BASE = 'https://server.boreal.financial';
 
 // Fail fast if missing or wrong
-const envBase = import.meta.env.VITE_API_BASE_URL;
+const envBase = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_BASE_URL;
 
 if (!envBase) {
-  throw new Error('VITE_API_BASE_URL is missing. Portal cannot call API.');
+  throw new Error('VITE_API_BASE is missing. Portal cannot call API.');
 }
 
 if (!envBase.includes('server.boreal.financial')) {

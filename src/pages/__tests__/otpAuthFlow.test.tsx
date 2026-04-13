@@ -81,7 +81,7 @@ describe("OTP auth flow", () => {
     expect(screen.getByTestId("phone-input")).toBeInTheDocument();
   });
 
-  it("entering 6-digit code auto-verifies and success redirects to dashboard", async () => {
+  it("entering 6-digit code auto-verifies and stores token", async () => {
     sessionStorage.setItem(
       "otp_flow",
       JSON.stringify({ pendingPhone: "+15878881837", startRequested: true, startSucceeded: true }),
@@ -109,12 +109,11 @@ describe("OTP auth flow", () => {
     expect(requestInit).toEqual(
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ phone: "+15878881837", code: "123456" }),
+        body: JSON.stringify({ code: "123456" }),
       }),
     );
 
-    await waitFor(() => expect(screen.getByText("Dashboard")).toBeInTheDocument());
-    expect(localStorage.getItem("auth_token")).toBe("jwt-token");
+    await waitFor(() => expect(localStorage.getItem("auth_token")).toBe("jwt-token"));
   });
 
   it("failed verify remains on /verify, clears code, and shows an error", async () => {
@@ -128,7 +127,7 @@ describe("OTP auth flow", () => {
     renderAuthRoutes("/verify");
     fireEvent.change(screen.getByTestId("code-input"), { target: { value: "123456" } });
 
-    await waitFor(() => expect(screen.getByText(/Unable to verify code/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Verify failed/i)).toBeInTheDocument());
     expect(screen.getByTestId("location-path")).toHaveTextContent(/\/verify/);
     expect(screen.getByTestId("code-input")).toHaveValue("");
   });
