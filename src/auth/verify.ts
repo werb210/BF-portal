@@ -1,11 +1,24 @@
+import { normalizePhone } from "@/utils/normalizePhone";
+
 export async function verifyOtp(code: string) {
   try {
+    const storedPhone = localStorage.getItem("auth_phone");
+
+    if (!storedPhone) {
+      throw new Error("Missing phone number. Restart login.");
+    }
+
+    const phone = normalizePhone(storedPhone);
+
     const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/auth/otp/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({
+        phone,
+        code,
+      }),
     });
 
     console.log("VERIFY STATUS:", res.status);
@@ -28,14 +41,14 @@ export async function verifyOtp(code: string) {
     console.log("VERIFY RESPONSE:", data);
 
     if (!res.ok) {
-      throw new Error(data?.message || "Verify failed");
+      throw new Error(data?.error || data?.message || "Verify failed");
     }
 
     const token = data.token || data.accessToken || data.jwt || data?.data?.token;
 
     if (!token) {
       console.error("NO TOKEN IN RESPONSE:", data);
-      throw new Error("No token returned from server");
+      throw new Error("No token returned");
     }
 
     localStorage.setItem("auth_token", token);

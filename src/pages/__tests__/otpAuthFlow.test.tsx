@@ -58,6 +58,7 @@ describe("OTP auth flow", () => {
         body: JSON.stringify({ phone: "+15878881837" }),
       }),
     );
+    expect(localStorage.getItem("auth_phone")).toBe("+15878881837");
 
     await waitFor(() => expect(screen.getByTestId("location-path")).toHaveTextContent("/verify"));
     expect(screen.getByTestId("code-input")).toBeInTheDocument();
@@ -86,6 +87,7 @@ describe("OTP auth flow", () => {
       "otp_flow",
       JSON.stringify({ pendingPhone: "+15878881837", startRequested: true, startSucceeded: true }),
     );
+    localStorage.setItem("auth_phone", "+15878881837");
 
     const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ token: "jwt-token" }), {
@@ -109,7 +111,7 @@ describe("OTP auth flow", () => {
     expect(requestInit).toEqual(
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ code: "123456" }),
+        body: JSON.stringify({ phone: "+15878881837", code: "123456" }),
       }),
     );
 
@@ -121,6 +123,7 @@ describe("OTP auth flow", () => {
       "otp_flow",
       JSON.stringify({ pendingPhone: "+15878881837", startRequested: true, startSucceeded: true }),
     );
+    localStorage.setItem("auth_phone", "+15878881837");
 
     vi.spyOn(global, "fetch").mockResolvedValue(new Response("{}", { status: 401 }));
 
