@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { normalizePhone } from "@/utils/normalizePhone";
 import { clearOtpFlowState, setOtpStartRequested, setOtpStartSucceeded } from "@/auth/otpFlow";
-import { api } from "@/lib/apiClient";
+import { API_BASE } from "@/config/api";
 
 type StartError = string | null;
 
@@ -18,9 +18,8 @@ function normalizeNorthAmericanPhone(value: string): string | null {
 export default function Login() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<StartError>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const lastSubmittedPhoneRef = useRef<string | null>(null);
-  const inFlightRef = useRef(false);
 
   useEffect(() => {
     clearOtpFlowState();
@@ -28,40 +27,38 @@ export default function Login() {
 
   const normalizedPhone = useMemo(() => normalizeNorthAmericanPhone(phone), [phone]);
 
-  useEffect(() => {
-    if (!normalizedPhone) {
-      lastSubmittedPhoneRef.current = null;
+  const handleStartOTP = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!normalizedPhone || isSubmitting) {
       return;
     }
 
-    if (inFlightRef.current || lastSubmittedPhoneRef.current === normalizedPhone) {
-      return;
-    }
+    setIsSubmitting(true);
+    setError(null);
+    setOtpStartRequested();
 
-    const sendOtp = async () => {
-      inFlightRef.current = true;
-      lastSubmittedPhoneRef.current = normalizedPhone;
-      setError(null);
-      setOtpStartRequested();
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/otp/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ phone: normalizedPhone }),
+      });
 
-      try {
-        await api("/api/auth/otp/start", {
-          method: "POST",
-          body: JSON.stringify({ phone: normalizedPhone }),
-        });
-
-        setOtpStartSucceeded(normalizedPhone);
-        navigate("/verify", { replace: true });
-      } catch {
-        clearOtpFlowState();
-        setError("Unable to start OTP. Please try again.");
-      } finally {
-        inFlightRef.current = false;
+      if (!res.ok) {
+        throw new Error("OTP start failed");
       }
-    };
 
-    void sendOtp();
-  }, [navigate, normalizedPhone]);
+      setOtpStartSucceeded(normalizedPhone);
+      navigate("/verify");
+    } catch {
+      clearOtpFlowState();
+      setError("Unable to start OTP. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div data-testid="login-screen" className="h-screen w-screen flex items-center justify-center bg-white">
@@ -70,14 +67,25 @@ export default function Login() {
           Boreal Group of Companies Staff Portal
         </h1>
 
-        <input
-          data-testid="phone-input"
-          type="tel"
-          placeholder="Enter phone number"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="border border-gray-300 rounded-md px-4 py-3 text-lg w-72 text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <form className="flex flex-col items-center gap-3" onSubmit={handleStartOTP}>
+          <input
+            data-testid="phone-input"
+            type="tel"
+            placeholder="Enter phone number"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="border border-gray-300 rounded-md px-4 py-3 text-lg w-72 text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
+          <button
+            data-testid="start-otp-button"
+            type="submit"
+            disabled={!normalizedPhone || isSubmitting}
+            className="w-72 rounded-md bg-blue-600 px-4 py-3 text-white disabled:cursor-not-allowed disabled:bg-blue-300"
+          >
+            {isSubmitting ? "Sending..." : "Send code"}
+          </button>
+        </form>
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </div>

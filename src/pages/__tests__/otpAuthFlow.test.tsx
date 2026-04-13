@@ -35,11 +35,12 @@ describe("OTP auth flow", () => {
     expect(screen.getByTestId("phone-input")).toBeInTheDocument();
   });
 
-  it("entering complete phone auto-calls OTP start once and success navigates to /verify", async () => {
+  it("submitting phone calls OTP start and success navigates to /verify", async () => {
     const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
 
     renderAuthRoutes("/login");
     fireEvent.change(screen.getByTestId("phone-input"), { target: { value: "5878881837" } });
+    fireEvent.click(screen.getByTestId("start-otp-button"));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalled();
@@ -63,6 +64,7 @@ describe("OTP auth flow", () => {
 
     renderAuthRoutes("/login");
     fireEvent.change(screen.getByTestId("phone-input"), { target: { value: "+15878881837" } });
+    fireEvent.click(screen.getByTestId("start-otp-button"));
 
     await waitFor(() => expect(screen.getByText(/Unable to start OTP/i)).toBeInTheDocument());
     expect(screen.getByTestId("location-path")).toHaveTextContent("/login");
