@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { getOtpFlowState, hasPendingOtpVerification } from "@/auth/otpFlow";
 import { setAuthToken } from "@/lib/authToken";
+import { api } from "@/lib/apiClient";
 
 export default function Verify() {
   const [code, setCode] = useState("");
@@ -26,24 +27,10 @@ export default function Verify() {
       setError(null);
 
       try {
-        const res = await fetch("/api/auth/otp/verify", {
+        const data = (await api("/api/auth/otp/verify", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ phone, code }),
-        });
-
-        if (!res.ok) {
-          if (res.status === 400 || res.status === 401) {
-            setError("Invalid code. Please try again.");
-          } else {
-            setError("Unable to verify code right now.");
-          }
-          setCode("");
-          lastSubmittedCodeRef.current = null;
-          return;
-        }
-
-        const data = (await res.json()) as { token?: string };
+        })) as { token?: string };
         if (!data.token) {
           setError("Unable to verify code right now.");
           setCode("");

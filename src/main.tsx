@@ -7,6 +7,7 @@ import { validateStartupToken } from "@/bootstrap";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { api } from "@/api";
 import { getSilo } from "./lib/silo";
+import { API_BASE } from "@/config/api";
 
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 
@@ -26,6 +27,7 @@ window.addEventListener("error", (e) => {
 
 console.log("🔥 PORTAL BOOT");
 console.log("🧠 ACTIVE SILO:", (window as any).__SILO__);
+console.log("API BASE:", API_BASE);
 
 async function assertBackend() {
   const mode = import.meta.env.MODE;
