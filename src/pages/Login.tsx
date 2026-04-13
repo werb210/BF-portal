@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { normalizePhone } from "@/utils/normalizePhone";
 import { clearOtpFlowState, setOtpStartRequested, setOtpStartSucceeded } from "@/auth/otpFlow";
+import { api } from "@/lib/apiClient";
 
 type StartError = string | null;
 
@@ -44,25 +45,10 @@ export default function Login() {
       setOtpStartRequested();
 
       try {
-        const response = await fetch("/api/auth/otp/start", {
+        await api("/api/auth/otp/start", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ phone: normalizedPhone }),
         });
-
-        if (!response.ok) {
-          clearOtpFlowState();
-          if (response.status === 405) {
-            setError("OTP start is unavailable right now. Please try again later.");
-            return;
-          }
-          if (response.status === 400 || response.status === 401) {
-            setError("Unable to start OTP with that phone number.");
-            return;
-          }
-          setError("Unable to start OTP. Please try again.");
-          return;
-        }
 
         setOtpStartSucceeded(normalizedPhone);
         navigate("/verify", { replace: true });

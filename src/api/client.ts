@@ -1,13 +1,8 @@
 import axios from "axios";
-
-const baseURL =
-  (typeof window !== "undefined" && (window as any).__ENV__?.API_BASE_URL) ||
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://server.boreal.financial";
+import { API_BASE } from "@/config/api";
 
 const api = axios.create({
-  baseURL,
+  baseURL: API_BASE,
   withCredentials: true,
 });
 

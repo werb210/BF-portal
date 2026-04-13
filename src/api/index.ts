@@ -2,16 +2,7 @@ import { getAuthToken } from "@/lib/authToken";
 import { ApiError } from "@/api/http";
 import { setApiStatus } from "@/state/apiStatus";
 import { API_ERROR } from "@/lib/errors";
-
-const API_BASE =
-  (typeof window !== "undefined" && (window as any).__ENV__?.API_BASE_URL) ||
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://server.boreal.financial";
-// NOTE: API_BASE is set from VITE_API_BASE_URL env var.
-// For BI/SLF silos, set VITE_API_BASE_URL to the respective
-// server URL in that deployment's environment config.
-// See src/lib/apiBase.ts for the silo→server URL mapping.
+import { API_BASE, buildApiUrl } from "@/config/api";
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -92,7 +83,7 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
         : JSON.stringify(options.body)
       : (options.body as BodyInit | null | undefined);
 
-  return fetch(`${API_BASE}${requestPath}`, {
+  return fetch(buildApiUrl(requestPath), {
     ...options,
     headers,
     credentials: "include",
