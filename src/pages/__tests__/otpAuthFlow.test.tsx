@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import Login from "@/pages/Login";
 import Verify from "@/pages/Verify";
+import { API_BASE } from "@/config/api";
 
 function LocationProbe() {
   const location = useLocation();
@@ -45,10 +46,13 @@ describe("OTP auth flow", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalled();
     const firstCall = fetchMock.mock.calls[0];
-    expect(firstCall).toBeDefined();
-    expect(firstCall?.[0]).toContain("/api/auth/otp/start");
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.anything(),
+    if (!firstCall) {
+      throw new Error("Expected OTP start request to be called once");
+    }
+
+    const [requestUrl, requestInit] = firstCall;
+    expect(requestUrl).toBe(`${API_BASE}/api/auth/otp/start`);
+    expect(requestInit).toEqual(
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ phone: "+15878881837" }),
@@ -96,10 +100,13 @@ describe("OTP auth flow", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalled();
     const firstCall = fetchMock.mock.calls[0];
-    expect(firstCall).toBeDefined();
-    expect(firstCall?.[0]).toContain("/api/auth/otp/verify");
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.anything(),
+    if (!firstCall) {
+      throw new Error("Expected OTP verify request to be called once");
+    }
+
+    const [requestUrl, requestInit] = firstCall;
+    expect(requestUrl).toBe(`${API_BASE}/api/auth/otp/verify`);
+    expect(requestInit).toEqual(
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ phone: "+15878881837", code: "123456" }),
