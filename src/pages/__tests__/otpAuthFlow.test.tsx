@@ -43,7 +43,9 @@ describe("OTP auth flow", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalled();
-    expect(fetchMock.mock.calls[0][0]).toContain("/api/auth/otp/start");
+    const firstCall = fetchMock.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    expect(firstCall?.[0]).toContain("/api/auth/otp/start");
     expect(fetchMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -91,7 +93,9 @@ describe("OTP auth flow", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalled();
-    expect(fetchMock.mock.calls[0][0]).toContain("/api/auth/otp/verify");
+    const firstCall = fetchMock.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    expect(firstCall?.[0]).toContain("/api/auth/otp/verify");
     expect(fetchMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
