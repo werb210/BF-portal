@@ -1,22 +1,19 @@
 const REQUIRED_API_BASE = 'https://server.boreal.financial';
 
-// Fail fast if missing or wrong
-const envBase = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_BASE_URL;
+export const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  REQUIRED_API_BASE;
 
-if (!envBase) {
-  throw new Error('VITE_API_BASE is missing. Portal cannot call API.');
-}
-
-if (!envBase.includes('server.boreal.financial')) {
-  console.error('INVALID API BASE:', envBase);
+if (!API_BASE.includes('server.boreal.financial')) {
+  console.error('INVALID API BASE:', API_BASE);
   throw new Error('API must point to server.boreal.financial');
 }
 
-if (envBase !== REQUIRED_API_BASE) {
-  console.warn(`API base must be exactly ${REQUIRED_API_BASE}. Received: ${envBase}`);
+if (API_BASE !== REQUIRED_API_BASE) {
+  console.warn(`API base must be exactly ${REQUIRED_API_BASE}. Received: ${API_BASE}`);
 }
-
-export const API_BASE = envBase;
 
 // Helper to build URLs safely
 export const buildApiUrl = (path: string) => {
