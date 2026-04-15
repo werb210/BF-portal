@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import clsx from "clsx";
 
 export type DrawerTabId =
+  | "overview"
   | "application"
   | "banking"
   | "financials"
@@ -20,14 +21,15 @@ export type DrawerTab = {
 };
 
 export const TABS: DrawerTab[] = [
+  { id: "overview", label: "Overview" },
   { id: "application", label: "Application" },
   { id: "banking", label: "Banking Analysis" },
   { id: "financials", label: "Financials" },
   { id: "documents", label: "Documents" },
   { id: "credit-summary", label: "Credit Summary" },
-  { id: "call-history", label: "Calls" },
   { id: "notes", label: "Notes" },
-  { id: "lenders", label: "Lenders" }
+  { id: "lenders", label: "Lenders" },
+  { id: "call-history", label: "Calls" }
 ];
 
 type DrawerTabsProps = {

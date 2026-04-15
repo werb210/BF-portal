@@ -2,7 +2,7 @@ import { getAuthToken } from "@/lib/authToken";
 import { ApiError } from "@/api/http";
 import { setApiStatus } from "@/state/apiStatus";
 import { API_ERROR } from "@/lib/errors";
-import { API_BASE, buildApiUrl } from "@/config/api";
+import { getApiBase } from "@/config/api";
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -30,13 +30,19 @@ function requiresAuth(path: string) {
 
 function withQuery(path: string, params?: RequestOptions["params"]) {
   if (!params) return path;
-  const url = new URL(path, API_BASE);
+  const url = new URL(path, getApiBase());
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       url.searchParams.set(key, String(value));
     }
   });
   return `${url.pathname}${url.search}`;
+}
+
+
+function buildUrl(path: string): string {
+  const base = getApiBase();
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 function parsePayload<T>(json: any): T {
@@ -83,7 +89,7 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
         : JSON.stringify(options.body)
       : (options.body as BodyInit | null | undefined);
 
-  return fetch(buildApiUrl(requestPath), {
+  return fetch(buildUrl(requestPath), {
     ...options,
     headers,
     credentials: "include",
