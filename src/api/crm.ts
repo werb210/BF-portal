@@ -173,7 +173,7 @@ export async function convertReadinessToApplication(id: string) {
 }
 
 export async function fetchChatSessions() {
-  return requestJson("/api/chat/sessions");
+  return requestJson("/api/ai/ai/sessions");
 }
 
 export async function fetchContinuationLeads() {

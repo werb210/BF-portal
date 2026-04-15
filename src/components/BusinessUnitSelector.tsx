@@ -12,14 +12,19 @@ const unitLabels = {
 const isBusinessUnit = (value: unknown): value is BusinessUnit =>
   value === "BF" || value === "BI" || value === "SLF";
 
+const ALL_UNITS: BusinessUnit[] = ["BF", "BI", "SLF"];
+
 const BusinessUnitSelector = () => {
   const { silo, setSilo } = useSilo();
   const { user } = useAuth();
 
+  const userRole = (user as { role?: string } | null)?.role?.toLowerCase();
   const businessUnits =
-    ((user as { businessUnits?: BusinessUnit[] } | null)?.businessUnits ?? [DEFAULT_BUSINESS_UNIT]).filter(
-      isBusinessUnit
-    );
+    userRole === "admin"
+      ? ALL_UNITS
+      : ((user as { businessUnits?: BusinessUnit[] } | null)?.businessUnits ?? [DEFAULT_BUSINESS_UNIT]).filter(
+          isBusinessUnit
+        );
 
   return (
     <Select

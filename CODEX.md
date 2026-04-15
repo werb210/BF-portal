@@ -110,3 +110,34 @@ Never duplicate service files. If behaviour needs to change, edit the canonical 
 - Do not create alternative AuthContext files in `src/context/`.
 - Do not create new files named after existing canonical components in different folders.
 - Do not use `localStorage.getItem('auth_token')` directly — use `getAuthToken()` from `@/lib/authToken`.
+
+
+### CSS / Styling
+
+- `src/styles/globals.css` MUST be imported in `src/main.tsx`.
+- Never remove the `import "./styles/globals.css"` line from `src/main.tsx`.
+- Layout classes (`.app-shell`, `.sidebar`, `.topbar`, `.sidebar__link`) are defined in `src/styles/globals.css`. Do not add inline Tailwind replacements for these.
+
+### Topbar API calls
+
+- Never call `/api/_int/*` endpoints from the browser except `/api/_int/health`.
+- Use `/api/_int/health` (not `/api/_int/production-readiness`) for health status.
+- Gate Admin-only data calls (leads count, CRM stats) behind a role check before calling.
+- Never poll an endpoint that does not exist in the server route manifest.
+
+### API paths — lenders
+
+- All lender endpoints are under `/portal/lenders` and `/portal/lender-products`.
+- Never use bare `/lenders` or `/lender-products`; these return 404.
+- Lender submissions must use `/portal/lender-submissions`.
+
+### Chat / AI sessions
+
+- AI chat session endpoints are under `/api/ai/ai/`.
+- There is no `/api/chat/sessions` route on the server. Do not create calls to `/chat/sessions`.
+
+### Silos
+
+- Admin users must always see all three silos: BF, BI, SLF.
+- Do not gate silo visibility on `user.businessUnits` alone for Admin role.
+- `SiloProvider` must remain in the app tree wrapping all routes.

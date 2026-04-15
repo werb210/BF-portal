@@ -1,4 +1,5 @@
 import { api } from "@/api";
+import { getAuthToken } from "@/lib/authToken";
 
 export type CalendarEvent = {
   id: string;
@@ -15,6 +16,7 @@ export type CalendarEvent = {
 };
 
 export const fetchLocalEvents = async () => {
+  if (!getAuthToken()) throw new Error("Not authenticated");
   const res = await api.getList<CalendarEvent>("/calendar/events");
   return res;
 };

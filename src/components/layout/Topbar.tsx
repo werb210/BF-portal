@@ -8,7 +8,6 @@ import Button from "../ui/Button";
 import BusinessUnitSelector from "@/components/BusinessUnitSelector";
 import PushNotificationCta from "@/components/PushNotificationCta";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
-import { logger } from "@/utils/logger";
 import MayaStatus from "@/components/MayaStatus";
 import { api } from "@/api";
 
@@ -30,36 +29,28 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   const [productionStatus, setProductionStatus] = useState("checking");
 
   useEffect(() => {
+    if (!user) return;
+    const userRole = (user as { role?: string } | null)?.role?.toLowerCase();
+    if (userRole !== "admin") return;
+
     api<{ count?: number }>("/api/crm/leads/count")
       .then((result) => setLeadCount(result.count ?? 0))
       .catch(() => setLeadCount(0));
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    api<{ status?: string }>("/api/_int/production-readiness")
-      .then((result) => {
-        logger.info("Production readiness payload", { data: result });
-        setProductionStatus(result.status ?? "ok");
-      })
+    api<{ status?: string }>("/api/_int/health")
+      .then((result) => setProductionStatus(result.status ?? "ok"))
       .catch(() => setProductionStatus("degraded"));
   }, []);
 
   useEffect(() => {
-    let consecutiveErrors = 0;
-    const interval = setInterval(async () => {
-      if (consecutiveErrors >= 3) return;
-      try {
-        const result = await api<{ count?: number }>("/api/support/live/count");
-        setLiveCount(result.count ?? 0);
-        consecutiveErrors = 0;
-      } catch {
-        consecutiveErrors++;
-        setLiveCount(0);
-      }
-    }, 5000);
+    if (!user) return;
 
-    return () => clearInterval(interval);
-  }, []);
+    api<{ liveCount?: number; liveChatCount?: number }>("/api/staff/overview")
+      .then((result) => setLiveCount(result.liveChatCount ?? result.liveCount ?? 0))
+      .catch(() => setLiveCount(0));
+  }, [user]);
 
   return (
     <header className="topbar">

@@ -1,4 +1,5 @@
 import { api } from "@/api";
+import { getAuthToken } from "@/lib/authToken";
 
 export type TaskStatus = "todo" | "in-progress" | "done";
 export type TaskPriority = "low" | "medium" | "high";
@@ -18,6 +19,7 @@ export type TaskItem = {
 };
 
 export const fetchTasks = async () => {
+  if (!getAuthToken()) throw new Error("Not authenticated");
   const res = await api.getList<TaskItem>("/calendar/tasks");
   return res;
 };

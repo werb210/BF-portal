@@ -19,26 +19,25 @@ export async function retry<T>(fn: () => Promise<T>, attempts = 3, delayMs = 500
 }
 
 export const getHumanSessions = async () => {
-  const res = await retry(() => api.get<ChatSession[]>("/chat/sessions", { params: { status: "human" } }));
+  const res = await retry(() => api.get<ChatSession[]>("/api/ai/ai/sessions", { params: { status: "human" } }));
   return res;
 };
 
 export const getMessages = async (sessionId: string) => {
-  const res = await retry(() => api.get<ChatMessage[]>(`/chat/${sessionId}/messages`));
+  const res = await retry(() => api.get<ChatMessage[]>(`/api/ai/ai/sessions/${sessionId}/messages`));
   return res;
 };
 
 export const sendStaffMessage = async (sessionId: string, message: string) => {
-  const res = await api.post<ChatMessage>("/chat/message", {
+  const res = await api.post<ChatMessage>("/api/ai/ai/message", {
     sessionId,
-    message,
-    role: "staff"
+    message
   });
   return res;
 };
 
 export const closeSession = async (sessionId: string) => {
-  const res = await api.post<{ success: boolean }>("/chat/close", {
+  const res = await api.post<{ success: boolean }>("/api/ai/ai/close", {
     sessionId
   });
   return res;

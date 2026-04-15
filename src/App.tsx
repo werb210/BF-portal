@@ -51,6 +51,7 @@ import CreditReadiness from "@/pages/CreditReadiness";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
+import { SiloProvider } from "@/context/SiloContext";
 import AppLayout from "@/layouts/AppLayout";
 import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
 import PortalDialer from "./telephony/components/PortalDialer";
@@ -220,14 +221,16 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BusinessUnitProvider>
-        <ToastProvider>
-          <ErrorBoundary>
-            <AppRoutes />
-          </ErrorBoundary>
-          <Suspense fallback={null}>
-            <FloatingChat />
-          </Suspense>
-        </ToastProvider>
+        <SiloProvider>
+          <ToastProvider>
+            <ErrorBoundary>
+              <AppRoutes />
+            </ErrorBoundary>
+            <Suspense fallback={null}>
+              <FloatingChat />
+            </Suspense>
+          </ToastProvider>
+        </SiloProvider>
       </BusinessUnitProvider>
     </QueryClientProvider>
   );

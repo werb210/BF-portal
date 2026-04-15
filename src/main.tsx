@@ -13,6 +13,7 @@ import ErrorBoundary from "@/components/system/ErrorBoundary";
 
 import App from "./App";
 import "./index.css";
+import "./styles/globals.css";
 
 
 (window as any).__SILO__ = getSilo();
