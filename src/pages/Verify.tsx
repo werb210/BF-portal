@@ -64,7 +64,22 @@ export default function Verify() {
           disabled={loading}
           className="border border-gray-300 rounded-md px-4 py-3 text-lg w-48 text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        {error ? <p className="text-xs text-red-600">{error}</p> : null}
+        {error ? (
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-xs text-red-600 text-center max-w-xs">{error}</p>
+            {error.includes("administrator") ? (
+              <button
+                type="button"
+                className="text-xs text-blue-500 underline mt-1"
+                onClick={() => {
+                  window.location.href = "/login";
+                }}
+              >
+                Back to login
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );

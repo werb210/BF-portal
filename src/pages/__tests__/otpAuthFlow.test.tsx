@@ -130,7 +130,7 @@ describe("OTP auth flow", () => {
     renderAuthRoutes("/verify");
     fireEvent.change(screen.getByTestId("code-input"), { target: { value: "123456" } });
 
-    await waitFor(() => expect(screen.getByText(/Verify failed/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Unable to verify code/i)).toBeInTheDocument());
     expect(screen.getByTestId("location-path")).toHaveTextContent(/\/verify/);
     expect(screen.getByTestId("code-input")).toHaveValue("");
   });

@@ -1,5 +1,12 @@
 import { normalizePhone } from "@/utils/normalizePhone";
 
+const SERVER_ERROR_MESSAGES: Record<string, string> = {
+  no_account: "Your account hasn't been set up yet. Contact your administrator.",
+  no_role: "Your account has no role assigned. Contact your administrator.",
+  account_disabled: "Your account has been disabled. Contact your administrator.",
+  auth_not_configured: "The server is not configured correctly. Contact support.",
+};
+
 export async function verifyOtp(code: string) {
   try {
     const storedPhone = localStorage.getItem("auth_phone");
@@ -31,7 +38,10 @@ export async function verifyOtp(code: string) {
     }
 
     if (!res.ok) {
-      throw new Error(data?.error || data?.message || "Verify failed");
+      const errorCode = data?.error ?? "";
+      const humanMessage =
+        SERVER_ERROR_MESSAGES[errorCode] ?? data?.message ?? "Unable to verify code. Please try again.";
+      throw new Error(humanMessage);
     }
 
     // Server canonical response: { status: "ok", data: { token: "..." } }

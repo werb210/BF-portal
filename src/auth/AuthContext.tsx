@@ -33,6 +33,24 @@ export type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isValidUuidToken(token: string | null): boolean {
+  if (!token) return false;
+
+  try {
+    const [, payloadB64] = token.split(".");
+    if (!payloadB64) return false;
+
+    const payload = JSON.parse(atob(payloadB64));
+    const sub = payload?.sub ?? "";
+
+    return UUID_REGEX.test(sub);
+  } catch {
+    return false;
+  }
+}
+
 function getValidToken(): string | null {
   const token = authToken.get();
   if (!token) return null;
@@ -111,6 +129,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let isActive = true;
 
     setIsLoading(true);
+
+    if (token && !isValidUuidToken(token)) {
+      localStorage.removeItem("auth_token");
+      authToken.clear();
+      setTokenState(null);
+      setUser(null);
+      setIsLoading(false);
+      return () => {
+        isActive = false;
+      };
+    }
 
     rawApiFetch("/api/auth/me")
       .then(async (response) => {
