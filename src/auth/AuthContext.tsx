@@ -4,6 +4,7 @@ import { rawApiFetch } from "@/api/index";
 import { AUTH_STORAGE_KEY, authToken } from "@/lib/authToken";
 import { decodeJwt } from "@/auth/jwt";
 import { normalizeRole, type Role } from "@/auth/roles";
+import { setAuthTelemetryContext } from "@/utils/uiTelemetry";
 
 export type AuthStatus = "authenticated" | "unauthenticated" | "pending";
 export type RolesStatus = "ready" | "loading";
@@ -173,6 +174,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isActive = false;
     };
   }, [token]);
+
+
+  useEffect(() => {
+    setAuthTelemetryContext({
+      authStatus: isLoading ? "pending" : user ? "authenticated" : "unauthenticated",
+      role: (user?.role as any) ?? null,
+      silo: null
+    });
+  }, [isLoading, user]);
 
   const clearAuth = useCallback(() => {
     localStorage.removeItem("auth_token");
