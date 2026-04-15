@@ -51,7 +51,7 @@ export const useBusinessUnit = () => {
     };
   }
 
-  if (process.env.NODE_ENV === "test") {
+  if (import.meta.env.MODE === "test") {
     return TEST_BUSINESS_UNIT_STUB;
   }
 

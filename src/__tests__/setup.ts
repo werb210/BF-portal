@@ -6,7 +6,7 @@ class MockStorageEvent extends Event {
   newValue: string | null = null;
 }
 
-(global as any).StorageEvent = MockStorageEvent;
+(globalThis as any).StorageEvent = MockStorageEvent;
 
 vi.mock("axios", () => ({
   default: vi.fn(() => {
@@ -14,13 +14,13 @@ vi.mock("axios", () => ({
   }),
 }));
 
-global.fetch = vi.fn(() => {
+globalThis.fetch = vi.fn(() => {
   throw new Error("UNMOCKED_FETCH");
 }) as unknown as typeof fetch;
-global.XMLHttpRequest = vi.fn(() => {
+globalThis.XMLHttpRequest = vi.fn(() => {
   throw new Error("NETWORK_BLOCKED");
 }) as unknown as typeof XMLHttpRequest;
-global.WebSocket = vi.fn(() => {
+globalThis.WebSocket = vi.fn(() => {
   throw new Error("NETWORK_BLOCKED");
 }) as unknown as typeof WebSocket;
 

@@ -7,7 +7,7 @@ let api: (typeof import("@/api/index"))["api"];
 beforeEach(async () => {
   vi.resetModules();
   mockFetch.mockReset();
-  global.fetch = mockFetch as typeof fetch;
+  globalThis.fetch = mockFetch as typeof fetch;
   localStorage.setItem("auth_token", "test-token");
 
   ({ api } = await import("@/api/index"));

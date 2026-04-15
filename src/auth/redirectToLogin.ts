@@ -1,7 +1,7 @@
 export function redirectToLogin() {
   if (typeof window === "undefined") return;
 
-  if (process.env.NODE_ENV === "test") {
+  if (import.meta.env.MODE === "test") {
     window.history.replaceState({}, "", "/login");
     window.dispatchEvent(new PopStateEvent("popstate"));
     return;

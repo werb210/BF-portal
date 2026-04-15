@@ -3,7 +3,7 @@ import Card from "@/components/ui/Card";
 import { dashboardApi } from "@/api/dashboard";
 
 const UrgentActions = () => {
-  const enableDashboardQueries = process.env.NODE_ENV !== "test";
+  const enableDashboardQueries = import.meta.env.MODE !== "test";
   const { data, isLoading } = useQuery({ queryKey: ["dashboard", "actions"], queryFn: dashboardApi.getActions, enabled: enableDashboardQueries });
 
   return (

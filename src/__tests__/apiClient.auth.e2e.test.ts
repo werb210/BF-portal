@@ -4,7 +4,7 @@ import { api } from "@/api";
 import { clearToken, getToken, setToken } from "@/auth/token";
 
 const originalLocation = window.location;
-const originalFetch = global.fetch;
+const originalFetch = globalThis.fetch;
 
 describe("auth and api hard pipeline e2e requirements", () => {
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
   it("TEST 3: authorization header override attempt is blocked", async () => {
     setToken("valid-token");
 
-    global.fetch = vi.fn().mockResolvedValueOnce(
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(
       new Response(JSON.stringify({ status: "ok", data: { message: "ok" } }), { status: 200 }),
     ) as typeof fetch;
 
@@ -40,7 +40,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
   it("TEST 4: API 401 throws", async () => {
     setToken("valid-token");
 
-    global.fetch = vi.fn().mockResolvedValueOnce(
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(
       new Response(JSON.stringify({ status: "error", error: { message: "denied" } }), { status: 401 }),
     ) as typeof fetch;
 
@@ -55,7 +55,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
 
   it("TEST 6: 204 response throws", async () => {
     setToken("valid-token");
-    global.fetch = vi.fn().mockResolvedValueOnce(new Response(null, { status: 204 })) as typeof fetch;
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(new Response(null, { status: 204 })) as typeof fetch;
 
     await expect(api("/api/test", { method: "DELETE" })).rejects.toThrow();
   });
@@ -63,7 +63,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
   it("TEST 7: empty response returns empty object", async () => {
     setToken("valid-token");
 
-    global.fetch = vi.fn().mockResolvedValueOnce(
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(
       new Response(JSON.stringify({ status: "ok", data: {} }), { status: 200 }),
     ) as typeof fetch;
 
@@ -73,7 +73,7 @@ describe("auth and api hard pipeline e2e requirements", () => {
   it("TEST 8: request failure surfaces message", async () => {
     setToken("valid-token");
 
-    global.fetch = vi.fn().mockRejectedValueOnce(new TypeError("NetworkError")) as typeof fetch;
+    globalThis.fetch = vi.fn().mockRejectedValueOnce(new TypeError("NetworkError")) as typeof fetch;
 
     await expect(api("/api/test")).rejects.toThrow("NetworkError");
   });
@@ -84,5 +84,5 @@ afterAll(() => {
     configurable: true,
     value: originalLocation,
   });
-  global.fetch = originalFetch;
+  globalThis.fetch = originalFetch;
 });
