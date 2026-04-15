@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 describe("API config", () => {
   it("API_BASE is defined in test environment", async () => {
@@ -20,5 +20,12 @@ describe("API config", () => {
   it("buildApiUrl accepts valid paths", async () => {
     const { buildApiUrl } = await import("@/config/api");
     expect(buildApiUrl("/api/auth/me")).toContain("/api/auth/me");
+  });
+
+
+  it("API_BASE in tests is localhost (setupEnv override active)", async () => {
+    vi.resetModules();
+    const { API_BASE } = await import("@/config/api");
+    expect(API_BASE).toContain("localhost");
   });
 });

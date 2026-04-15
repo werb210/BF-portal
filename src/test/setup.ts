@@ -1,3 +1,4 @@
+import "./setupEnv";
 import "@testing-library/jest-dom";
 import { server } from "./msw/server";
 

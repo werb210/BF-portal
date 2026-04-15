@@ -90,7 +90,7 @@ describe("OTP auth flow", () => {
     localStorage.setItem("auth_phone", "+15878881837");
 
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ token: "jwt-token" }), {
+      new Response(JSON.stringify({ status: "ok", data: { token: "jwt-token" } }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }),
