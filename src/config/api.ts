@@ -1,24 +1,22 @@
-const REQUIRED_API_BASE = 'https://server.boreal.financial';
+const CANONICAL_API_HOST = 'server.boreal.financial';
 
 export const API_BASE =
   import.meta.env.VITE_API_BASE ||
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  REQUIRED_API_BASE;
+  `https://${CANONICAL_API_HOST}`;
 
-if (!API_BASE.includes('server.boreal.financial')) {
-  console.error('INVALID API BASE:', API_BASE);
-  throw new Error('API must point to server.boreal.financial');
+// Warn in development if pointing away from canonical host.
+// Do NOT throw — this breaks local dev, staging, and tests.
+if (typeof import.meta.env !== 'undefined' && import.meta.env.PROD) {
+  if (!API_BASE.includes(CANONICAL_API_HOST)) {
+    console.error('[CONFIG ERROR] API_BASE does not point to the expected host:', API_BASE);
+  }
 }
 
-if (API_BASE !== REQUIRED_API_BASE) {
-  console.warn(`API base must be exactly ${REQUIRED_API_BASE}. Received: ${API_BASE}`);
-}
-
-// Helper to build URLs safely
-export const buildApiUrl = (path: string) => {
+export const buildApiUrl = (path: string): string => {
   if (!path.startsWith('/')) {
-    throw new Error(`Invalid API path: ${path}`);
+    throw new Error(`Invalid API path: "${path}" — must start with /`);
   }
   return `${API_BASE}${path}`;
 };

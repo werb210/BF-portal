@@ -130,7 +130,7 @@ const AppRoutes = () => {
         <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
         <Route path="/communications/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CommunicationsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/settings/*" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-        <Route path="/marketing/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><MarketingPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/marketing/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Ops"]}><MarketingPage /></RequireRole></ProtectedRoute>} />
         <Route path="/portal/readiness" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><ReadinessLeadsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/portal/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<Navigate to="/portal" replace />} />
@@ -138,7 +138,7 @@ const AppRoutes = () => {
           path="/pipeline"
           element={
             <ProtectedRoute>
-              <RequireRole roles={["Admin", "Staff", "Marketing"]}>
+              <RequireRole roles={["Admin", "Staff", "Ops"]}>
                 <PipelinePage />
               </RequireRole>
             </ProtectedRoute>
@@ -146,7 +146,7 @@ const AppRoutes = () => {
         />
         <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Ops"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
         <Route
           path="/bi"
@@ -162,7 +162,7 @@ const AppRoutes = () => {
           path="/bi/pipeline"
           element={
             <ProtectedRoute>
-              <RequireRole roles={["Admin", "Staff", "Marketing"]}>
+              <RequireRole roles={["Admin", "Staff", "Ops"]}>
                 <BIPipelinePage />
               </RequireRole>
             </ProtectedRoute>

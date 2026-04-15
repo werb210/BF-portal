@@ -6,16 +6,12 @@ import { fileURLToPath, URL } from "node:url";
 export default defineConfig({
   plugins: [
     react(),
-    tsconfigPaths({ projects: ["./tsconfig.json"] })
+    tsconfigPaths({ projects: ["./tsconfig.json"] }),
   ],
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url))
-    }
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
   },
-  test: {
-    environment: "jsdom",
-    globals: true,
-    setupFiles: ["./src/test/setup.ts"],
-  }
+  // No test block here — vitest.config.ts owns test configuration
 });
