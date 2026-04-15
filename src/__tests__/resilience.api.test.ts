@@ -14,7 +14,7 @@ describe("portal resilience", () => {
 
   it("network failure retries and eventually succeeds", async () => {
     setToken("valid-token");
-    global.fetch = vi
+    globalThis.fetch = vi
       .fn()
       .mockRejectedValueOnce(new TypeError("Network down"))
       .mockResolvedValueOnce(new Response(null, { status: 502 }))
@@ -23,18 +23,18 @@ describe("portal resilience", () => {
     await expect(apiFetchWithRetry<{ ok: boolean }>("/api/health", { method: "GET" }, 2)).resolves.toEqual({
       ok: true,
     });
-    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(3);
   });
 
   it("simulate API down -> UI health check fails fast", async () => {
-    global.fetch = vi.fn().mockRejectedValue(new TypeError("Network down")) as typeof fetch;
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError("Network down")) as typeof fetch;
 
     await expect(checkBackend()).resolves.toBe(false);
   });
 
   it("simulate timeout -> handled", async () => {
     setToken("valid-token");
-    global.fetch = vi.fn().mockRejectedValue(new DOMException("Aborted", "AbortError")) as typeof fetch;
+    globalThis.fetch = vi.fn().mockRejectedValue(new DOMException("Aborted", "AbortError")) as typeof fetch;
 
     await expect(api("/api/health", { method: "GET" })).rejects.toThrow();
   });
@@ -45,13 +45,13 @@ describe("portal resilience", () => {
 
   it("invalid response -> failure", async () => {
     setToken("valid-token");
-    global.fetch = vi.fn().mockResolvedValue(new Response("{not-json", { status: 200 })) as typeof fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response("{not-json", { status: 200 })) as typeof fetch;
     await expect(api("/api/health", { method: "GET" })).rejects.toThrow();
   });
 
   it("success path -> clean data", async () => {
     setToken("valid-token");
-    global.fetch = vi.fn().mockResolvedValue(
+    globalThis.fetch = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ status: "ok", data: { id: "a1", status: "ok" } }), { status: 200 }),
     ) as typeof fetch;
 
@@ -63,7 +63,7 @@ describe("portal resilience", () => {
 
   it("db not ready -> degraded mode result without crash", async () => {
     setToken("valid-token");
-    global.fetch = vi.fn().mockResolvedValue(
+    globalThis.fetch = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ status: "error", error: "DB_NOT_READY" }), { status: 200 }),
     ) as typeof fetch;
 

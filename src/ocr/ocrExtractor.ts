@@ -1,5 +1,5 @@
 import { OCR_FIELD_REGISTRY, OCR_FIELD_REGISTRY_MAP, type OcrFieldDefinition } from "./OCR_FIELD_REGISTRY";
-import type { OcrResultRecord, OcrRunRecord, OcrExtractionTrigger } from "@/db/schema/ocrResults";
+import type { OcrResultRecord, OcrRunRecord, OcrExtractionTrigger } from "@/ocr/ocrTypes";
 
 export type OcrExtractionInput = {
   applicationId: string;

@@ -68,7 +68,7 @@ function VoiceBootstrap() {
   const { role, authenticated, authStatus } = useAuth();
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "test") return;
+    if (import.meta.env.MODE === "test") return;
     if (!authenticated || authStatus !== "authenticated") return;
     if (!roleIn(role, ["Admin", "Staff"])) return;
 

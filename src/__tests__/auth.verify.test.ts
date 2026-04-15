@@ -7,7 +7,7 @@ describe("verifyOtp token extraction", () => {
   });
 
   it("extracts token from data.data.token (canonical server shape)", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(
         JSON.stringify({ status: "ok", data: { token: "jwt-abc-123" } }),
         { status: 200, headers: { "Content-Type": "application/json" } }
@@ -21,7 +21,7 @@ describe("verifyOtp token extraction", () => {
   });
 
   it("fails gracefully when no token in response", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify({ status: "ok", data: {} }), {
         status: 200,
         headers: { "Content-Type": "application/json" },

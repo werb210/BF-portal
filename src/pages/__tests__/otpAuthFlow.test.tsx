@@ -37,7 +37,7 @@ describe("OTP auth flow", () => {
   });
 
   it("submitting phone calls OTP start and success navigates to /verify", async () => {
-    const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
 
     renderAuthRoutes("/login");
     fireEvent.change(screen.getByTestId("phone-input"), { target: { value: "5878881837" } });
@@ -65,7 +65,7 @@ describe("OTP auth flow", () => {
   });
 
   it("failed OTP start does not navigate to /verify", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValue(new Response("{}", { status: 400 }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 400 }));
 
     renderAuthRoutes("/login");
     fireEvent.change(screen.getByTestId("phone-input"), { target: { value: "+15878881837" } });
@@ -89,7 +89,7 @@ describe("OTP auth flow", () => {
     );
     localStorage.setItem("auth_phone", "+15878881837");
 
-    const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue(
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ token: "jwt-token" }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -125,7 +125,7 @@ describe("OTP auth flow", () => {
     );
     localStorage.setItem("auth_phone", "+15878881837");
 
-    vi.spyOn(global, "fetch").mockResolvedValue(new Response("{}", { status: 401 }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 401 }));
 
     renderAuthRoutes("/verify");
     fireEvent.change(screen.getByTestId("code-input"), { target: { value: "123456" } });

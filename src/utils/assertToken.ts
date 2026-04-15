@@ -12,9 +12,6 @@ const decodeBase64 = (value: string) => {
   if (typeof atob === "function") {
     return atob(value);
   }
-  if (typeof Buffer !== "undefined") {
-    return Buffer.from(value, "base64").toString("utf-8");
-  }
   throw new Error("No base64 decoder available");
 };
 

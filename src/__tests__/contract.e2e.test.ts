@@ -4,7 +4,7 @@ import { api } from "@/api";
 import { clearToken, setToken } from "@/auth/token";
 
 describe("contract:e2e", () => {
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     clearToken();
@@ -13,11 +13,11 @@ describe("contract:e2e", () => {
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   it("otp -> verify uses real auth contract paths", async () => {
-    global.fetch = vi
+    globalThis.fetch = vi
       .fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok", data: { message: "OTP sent" } }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok", data: { token: "session-token-1" } }), { status: 200 })) as typeof fetch;
@@ -36,12 +36,12 @@ describe("contract:e2e", () => {
     });
 
     expect(verify.token).toBe("session-token-1");
-    expect(global.fetch).toHaveBeenNthCalledWith(
+    expect(globalThis.fetch).toHaveBeenNthCalledWith(
       1,
       expect.stringContaining("/api/auth/otp/start"),
       expect.objectContaining({ method: "POST" }),
     );
-    expect(global.fetch).toHaveBeenNthCalledWith(
+    expect(globalThis.fetch).toHaveBeenNthCalledWith(
       2,
       expect.stringContaining("/api/auth/otp/verify"),
       expect.objectContaining({ method: "POST" }),
@@ -49,7 +49,7 @@ describe("contract:e2e", () => {
   });
 
   it("returns API_ERROR for auth contract failures", async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce(
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(
       new Response(JSON.stringify({ status: "error", error: { message: "invalid otp" } }), { status: 401 }),
     ) as typeof fetch;
 

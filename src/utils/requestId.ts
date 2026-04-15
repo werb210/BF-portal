@@ -1,5 +1,5 @@
 export const getRequestId = () => {
-  if (process.env.NODE_ENV === "test") {
+  if (import.meta.env.MODE === "test") {
     return "72dd093b-4ae3-4b11-9428-8c9bea91a857";
   }
 

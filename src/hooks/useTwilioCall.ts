@@ -30,9 +30,7 @@ const isCallInProgressStatus = (status: DialerStatus) =>
 
 export const useTwilioCall = () => {
   const isMock = import.meta.env.VITE_TWILIO_MODE === "mock";
-  const isTest =
-    typeof process !== "undefined" &&
-    process.env.NODE_ENV === "test";
+  const isTest = import.meta.env.MODE === "test";
   const [deviceState, setDeviceState] = useState<string>("unregistered");
   const status = useDialerStore((state) => state.status);
   const number = useDialerStore((state) => state.number);
