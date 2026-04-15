@@ -33,4 +33,22 @@ describe("verifyOtp token extraction", () => {
     expect(result.success).toBe(false);
     expect(result.error).toContain("No token");
   });
+
+
+  it("does not fall through to data.token when data.data.token is present", async () => {
+    vi.resetModules();
+    localStorage.setItem("auth_phone", "+15550001234");
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ status: "ok", data: { token: "correct-token" }, token: "wrong-token" }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+
+    const { verifyOtp } = await import("@/auth/verify");
+    const result = await verifyOtp("000000");
+    expect(result.success).toBe(true);
+    expect(localStorage.getItem("auth_token")).toBe("correct-token");
+  });
 });

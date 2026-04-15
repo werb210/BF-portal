@@ -21,24 +21,14 @@ export async function verifyOtp(code: string) {
       }),
     });
 
-    console.log("VERIFY STATUS:", res.status);
-    const headerEntries: Array<[string, string]> = [];
-    res.headers.forEach((value, key) => {
-      headerEntries.push([key, value]);
-    });
-    console.log("VERIFY HEADERS:", headerEntries);
-
     const text = await res.text();
 
     let data: any = {};
     try {
       data = JSON.parse(text);
     } catch {
-      console.error("VERIFY PARSE ERROR:", text);
       throw new Error("Invalid server response");
     }
-
-    console.log("VERIFY RESPONSE:", data);
 
     if (!res.ok) {
       throw new Error(data?.error || data?.message || "Verify failed");
