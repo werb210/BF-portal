@@ -1,22 +1,23 @@
-const CANONICAL_API_HOST = 'server.boreal.financial';
+import { getActiveBusinessUnit } from "@/context/BusinessUnitContext";
 
-export const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  `https://${CANONICAL_API_HOST}`;
+const DEFAULT_API_BASE = "https://server.boreal.financial";
 
-// Warn in development if pointing away from canonical host.
-// Do NOT throw — this breaks local dev, staging, and tests.
-if (typeof import.meta.env !== 'undefined' && import.meta.env.PROD) {
-  if (!API_BASE.includes(CANONICAL_API_HOST)) {
-    console.error('[CONFIG ERROR] API_BASE does not point to the expected host:', API_BASE);
-  }
+const SILO_URLS: Record<string, string> = {
+  BF: import.meta.env.VITE_BF_API_URL || import.meta.env.VITE_API_URL || DEFAULT_API_BASE,
+  BI: import.meta.env.VITE_BI_API_URL || "https://bi-server.boreal.financial",
+  SLF: import.meta.env.VITE_SLF_API_URL || "https://slf-server.boreal.financial",
+};
+
+export function getApiBase(): string {
+  const silo = getActiveBusinessUnit() ?? "BF";
+  return SILO_URLS[silo] ?? SILO_URLS.BF ?? DEFAULT_API_BASE;
 }
 
+export const API_BASE = SILO_URLS.BF ?? DEFAULT_API_BASE;
+
 export const buildApiUrl = (path: string): string => {
-  if (!path.startsWith('/')) {
+  if (!path.startsWith("/")) {
     throw new Error(`Invalid API path: "${path}" — must start with /`);
   }
-  return `${API_BASE}${path}`;
+  return `${getApiBase()}${path}`;
 };

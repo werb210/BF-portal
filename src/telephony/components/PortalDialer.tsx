@@ -1,3 +1,5 @@
+import DialerPanel from "@/components/dialer/DialerPanel";
+
 export default function PortalDialer() {
-  return null;
+  return <DialerPanel />;
 }

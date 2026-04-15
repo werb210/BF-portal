@@ -48,6 +48,10 @@ import AiLiveChatPage from "@/pages/ai/AiLiveChatPage";
 import AiChatDashboard from "@/pages/admin/AiChatDashboard";
 import AiIssueReports from "@/pages/admin/AiIssueReports";
 import CreditReadiness from "@/pages/CreditReadiness";
+import ReferrerPortalLayout from "@/pages/referrer/ReferrerPortalLayout";
+import ReferrerLoginPage from "@/pages/referrer/ReferrerLoginPage";
+import LenderPortalPage from "@/pages/lender/LenderPortalPage";
+import LenderLoginPage from "@/pages/lender/LenderLoginPage";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
@@ -124,6 +128,12 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/verify" element={<Verify />} />
+        <Route path="/referrer/login" element={<ReferrerLoginPage />} />
+        <Route path="/referrer/*" element={<ReferrerPortalLayout />} />
+        <Route path="/lender-portal/login" element={<LenderLoginPage />} />
+        <Route path="/lender-portal/deals" element={<LenderPortalPage />} />
+        <Route path="/lender-portal/deals/:id" element={<LenderPortalPage />} />
+        <Route path="/lender-portal/products" element={<LenderPortalPage />} />
         <Route element={token ? <AuthenticatedShell /> : <Navigate to="/login" replace />}>
           <Route path="/" element={<Navigate to="/portal" replace />} />
         <Route path="/applications" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><ApplicationsPage /></RequireRole></ProtectedRoute>} />

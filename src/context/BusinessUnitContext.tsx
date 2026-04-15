@@ -30,6 +30,20 @@ export type BusinessUnitContextValue = {
 
 const BusinessUnitContext = createContext<BusinessUnitContextValue | undefined>(undefined);
 
+export const getActiveBusinessUnit = (): BusinessUnit => {
+  if (typeof window === "undefined") return DEFAULT_BUSINESS_UNIT;
+  try {
+    const fromSession = window.sessionStorage.getItem(STORAGE_KEY);
+    if (isBusinessUnit(fromSession)) return fromSession;
+    const legacy = window.sessionStorage.getItem("staff-portal.silo");
+    if (isBusinessUnit(legacy)) return legacy;
+  } catch {
+    // ignore storage errors
+  }
+  return DEFAULT_BUSINESS_UNIT;
+};
+
+
 export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }) => {
   const { authStatus, user } = useAuth();
   const storedBusinessUnit = readStoredBusinessUnit();

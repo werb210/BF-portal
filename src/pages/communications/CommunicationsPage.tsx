@@ -1,172 +1,85 @@
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import Card from "@/components/ui/Card";
-import AppLoading from "@/components/layout/AppLoading";
-import ConversationList from "./ConversationList";
-import ConversationViewer from "./ConversationViewer";
-import { useCommunicationsStore } from "@/state/communications.store";
-import { fetchCommunicationThreads, type CommunicationConversation } from "@/api/communications";
-import { getErrorMessage } from "@/utils/errors";
-import { getRequestId } from "@/utils/requestId";
+import { useState } from "react";
 import RequireRole from "@/components/auth/RequireRole";
-import { emitUiTelemetry } from "@/utils/uiTelemetry";
-import { useAuth } from "@/hooks/useAuth";
-import { ContactSubmissions } from "@/features/support/ContactSubmissions";
-import ChatSessionsPanel from "./ChatSessionsPanel";
-import ChatPanel from "./ChatPanel";
-import { fetchIssueReports } from "@/api/support";
-import { logger } from "@/utils/logger";
-import { useBusinessUnit } from "@/hooks/useBusinessUnit";
-import { normalizeBusinessUnit } from "@/types/businessUnit";
-import { BUSINESS_UNIT_CONFIG } from "@/config/businessUnitConfig";
+import Card from "@/components/ui/Card";
 
-type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | "contact-forms";
+type CommsTab = "messages" | "sms" | "email" | "issues" | "contact-forms";
 
-
-
-type WebsiteIssue = {
-  id: string;
-  message: string;
-  screenshot?: string;
-  createdAt: string;
-};
-
-const WebsiteIssuesPanel = () => {
-  const [issues, setIssues] = useState<WebsiteIssue[]>([]);
-
-  useEffect(() => {
-    void loadIssues();
-  }, []);
-
-  async function loadIssues() {
-    const response = await fetchIssueReports();
-    setIssues(Array.isArray(response) ? response : []);
-  }
-
-  async function deleteIssue(id: string) {
-    // Endpoint intentionally disabled until server contract supports issue deletion.
-    setIssues((previous) => previous.filter((issue) => issue.id !== id));
-  }
-
-  return (
-    <div className="space-y-4">
-      <h2 className="mb-4 mt-10 text-xl">Reported Issues</h2>
-      {issues.map((issue) => (
-        <div key={issue.id} className="mb-4 rounded border p-4">
-          <div>
-            <strong>Message:</strong> {issue.message}
-          </div>
-          {issue.screenshot && (
-            <img
-              src={issue.screenshot}
-              className="max-h-40 mt-2 border"
-              alt="Issue screenshot thumbnail"
-            />
-          )}
-          <div className="mt-2 text-xs text-slate-500">{new Date(issue.createdAt).toLocaleString()}</div>
-          <button onClick={() => void deleteIssue(issue.id)} className="mt-2 text-sm text-red-600">
-            Delete
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-};
+const COMMS_TABS: { id: CommsTab; label: string }[] = [
+  { id: "messages", label: "Messages" },
+  { id: "sms", label: "SMS" },
+  { id: "email", label: "Email" },
+  { id: "issues", label: "Issue Reports" },
+  { id: "contact-forms", label: "Contact Forms" },
+];
 
 const CommunicationsContent = () => {
-  const {
-    setConversations,
-    conversations,
-    selectedConversationId,
-    selectConversation,
-    filteredConversations,
-    filters,
-    setFilters,
-    sendReply,
-    acknowledgeIssue
-  } = useCommunicationsStore();
-  const { user } = useAuth();
-  const { activeBusinessUnit } = useBusinessUnit();
-  const businessUnit = normalizeBusinessUnit(activeBusinessUnit);
-  const businessUnitConfig = BUSINESS_UNIT_CONFIG[businessUnit];
-  const isAdmin = user?.role?.toLowerCase() === "admin";
-  const [view, setView] = useState<CommsView>("threads");
-  const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId);
-
-  const { data, isLoading, error } = useQuery<CommunicationConversation[], Error>({
-    queryKey: ["communications", businessUnit, "threads"],
-    queryFn: () => fetchCommunicationThreads(businessUnit)
-  });
-
-  useEffect(() => {
-    if (data) {
-      setConversations(data);
-    }
-  }, [data, setConversations]);
-
-  useEffect(() => {
-    if (error) {
-      logger.error("Failed to load communications", { requestId: getRequestId(), error });
-    }
-  }, [error]);
-
-  useEffect(() => {
-    if (!isLoading && !error) {
-      emitUiTelemetry("data_loaded", { view: "communications", count: data?.length ?? 0 });
-    }
-  }, [data?.length, error, isLoading]);
+  const [tab, setTab] = useState<CommsTab>("messages");
 
   return (
     <div className="page space-y-4">
-      <Card
-        title="Communications Control Room"
-        actions={
-          <div className="flex gap-2">
-            <button onClick={() => setView("threads")}>Threads</button>
-            {isAdmin && <button onClick={() => setView("ai-live-chat")}>AI Live Chat</button>}
-            {isAdmin && <button onClick={() => setView("ai-sessions")}>AI Sessions</button>}
-            {isAdmin && <button onClick={() => setView("issue-reports")}>Issue Report</button>}
-            {isAdmin && <button onClick={() => setView("contact-forms")}>Contact Forms</button>}
+      <Card title="Communications">
+        <div className="flex flex-wrap gap-2 mb-4">
+          {COMMS_TABS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`ui-button ${tab === item.id ? "ui-button--primary" : "ui-button--secondary"}`}
+              onClick={() => setTab(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "messages" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="drawer-section">
+              <div className="drawer-section__title">Conversations</div>
+              <p>Client and staff conversation list appears here.</p>
+            </div>
+            <div className="drawer-section md:col-span-2">
+              <div className="drawer-section__title">Thread</div>
+              <p>Two-way message thread with client mini-portal.</p>
+              <textarea className="w-full mt-3 p-2 rounded border" placeholder="Message with #upload #networth #equipment #realestate #other" />
+            </div>
           </div>
-        }
-      >
-        {!businessUnitConfig.allowClientComms && (
-          <p className="text-slate-600">Client communications are disabled for this business unit.</p>
         )}
-        {view === "threads" && businessUnitConfig.allowClientComms && (
-          <>
-            {isLoading && <AppLoading />}
-            {error && <p className="text-red-700">{getErrorMessage(error, "Unable to load conversations.")}</p>}
-            {!isLoading && !error && data?.length === 0 && <p>No conversations available yet.</p>}
-            {!isLoading && !error && data?.length !== 0 && (
-              <div className="grid h-[70vh] grid-cols-10 gap-4">
-                <div className="col-span-3 border-r pr-3">
-                  <ConversationList
-                    conversations={filteredConversations()}
-                    selectedConversationId={selectedConversationId}
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                    onSelectConversation={selectConversation}
-                  />
-                </div>
-                <div className="col-span-7">
-                  <ConversationViewer
-                    conversation={selectedConversation}
-                    onSend={async (body, channel) => {
-                      if (!selectedConversationId) return;
-                      await sendReply(selectedConversationId, body, channel);
-                    }}
-                    onAcknowledgeIssue={async (id) => acknowledgeIssue(id)}
-                  />
-                </div>
-              </div>
-            )}
-          </>
+
+        {tab === "sms" && (
+          <div className="drawer-section">
+            <div className="drawer-section__title">Twilio SMS</div>
+            <p>Compose SMS and view per-contact history.</p>
+            <textarea className="w-full mt-3 p-2 rounded border" placeholder="Write SMS message" />
+          </div>
         )}
-        {view === "ai-live-chat" && businessUnitConfig.allowClientComms && <ChatPanel />}
-        {view === "ai-sessions" && isAdmin && businessUnitConfig.allowClientComms && <ChatSessionsPanel />}
-        {view === "issue-reports" && isAdmin && <WebsiteIssuesPanel />}
-        {view === "contact-forms" && businessUnitConfig.allowClientComms && <ContactSubmissions isAdmin={isAdmin} />}
+
+        {tab === "email" && (
+          <div className="drawer-section space-y-3">
+            <div className="drawer-section__title">Email Composer</div>
+            <select className="w-full p-2 rounded border">
+              <option>Personal inbox: todd@boreal.financial</option>
+              <option>Shared: deals@boreal.financial</option>
+            </select>
+            <input className="w-full p-2 rounded border" placeholder="To" />
+            <input className="w-full p-2 rounded border" placeholder="Subject" />
+            <textarea className="w-full p-2 rounded border min-h-[120px]" placeholder="Body (rich text)" />
+            <p className="text-sm text-slate-500">Sent and received history appears below this composer.</p>
+          </div>
+        )}
+
+        {tab === "issues" && (
+          <div className="drawer-section">
+            <div className="drawer-section__title">Issue Reports</div>
+            <p>Client issue reports with screenshot, date, status and "Mark as resolved" actions appear here.</p>
+          </div>
+        )}
+
+        {tab === "contact-forms" && (
+          <div className="drawer-section">
+            <div className="drawer-section__title">Contact Forms</div>
+            <p>Submissions from BF website contact form appear in this tab.</p>
+          </div>
+        )}
       </Card>
     </div>
   );

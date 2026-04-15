@@ -1,3 +1,4 @@
+import "./styles/globals.css";
 import "@/lib/authSync";
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -10,11 +11,8 @@ import { getSilo } from "./lib/silo";
 import { API_BASE } from "@/config/api";
 
 import ErrorBoundary from "@/components/system/ErrorBoundary";
-
 import App from "./App";
 import "./index.css";
-import "./styles/globals.css";
-
 
 (window as any).__SILO__ = getSilo();
 
