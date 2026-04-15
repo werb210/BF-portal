@@ -29,9 +29,11 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   const [productionStatus, setProductionStatus] = useState("checking");
 
   useEffect(() => {
-    if (!user) return;
     const userRole = (user as { role?: string } | null)?.role?.toLowerCase();
-    if (userRole !== "admin") return;
+    if (userRole !== "admin") {
+      setLeadCount(0);
+      return;
+    }
 
     api<{ count?: number }>("/api/crm/leads/count")
       .then((result) => setLeadCount(result.count ?? 0))
@@ -45,11 +47,31 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    const userRole = (user as { role?: string } | null)?.role?.toLowerCase();
+    if (userRole !== "admin") {
+      setLiveCount(0);
+      return;
+    }
 
-    api<{ liveCount?: number; liveChatCount?: number }>("/api/staff/overview")
-      .then((result) => setLiveCount(result.liveChatCount ?? result.liveCount ?? 0))
-      .catch(() => setLiveCount(0));
+    const interval = setInterval(async () => {
+      try {
+        const result = await api<{ liveCount?: number; liveChatCount?: number }>("/api/staff/overview");
+        setLiveCount(result.liveChatCount ?? result.liveCount ?? 0);
+      } catch {
+        setLiveCount(0);
+      }
+    }, 30000);
+
+    void (async () => {
+      try {
+        const result = await api<{ liveCount?: number; liveChatCount?: number }>("/api/staff/overview");
+        setLiveCount(result.liveChatCount ?? result.liveCount ?? 0);
+      } catch {
+        setLiveCount(0);
+      }
+    })();
+
+    return () => clearInterval(interval);
   }, [user]);
 
   return (

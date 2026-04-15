@@ -141,3 +141,20 @@ Never duplicate service files. If behaviour needs to change, edit the canonical 
 - Admin users must always see all three silos: BF, BI, SLF.
 - Do not gate silo visibility on `user.businessUnits` alone for Admin role.
 - `SiloProvider` must remain in the app tree wrapping all routes.
+
+## Agent rules — Portal fix block (2026-04-15)
+
+### Layout
+- AppLayout MUST render a permanent left sidebar (220px) that is ALWAYS visible on desktop.
+- Do NOT use `useState(false)` for the sidebar — nav links must be visible without interaction.
+- Do NOT replace AppLayout with a hamburger-only design.
+- Nav links are rendered directly in AppLayout from NAV_SECTIONS — do not re-add Sidebar.tsx as the primary nav container.
+
+### API path prefixes
+- Pipeline data lives at `/api/portal/applications` — NOT `/api/v1/pipeline` or `/api/pipeline`.
+- Do NOT introduce a new API_PREFIX constant. Use full literal paths.
+
+### CSP
+- Twilio WebSocket requires `wss://*.twilio.com` in connect-src.
+- The CSP is set in `public/staticwebapp.config.json` globalHeaders.
+- Do NOT add a `<meta http-equiv="Content-Security-Policy">` tag to index.html.
