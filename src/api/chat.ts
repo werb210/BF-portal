@@ -1,17 +1,13 @@
-import api from "@/api";
+import { api } from "@/api";
 
-export async function fetchOpenChats() {
-  return api.get("/api/ai/ai/sessions?status=open");
-}
+export const getOpenSessions = () => Promise.resolve([]);
+export const getSession = (id: string) => api.get(`/api/ai/ai/sessions/${id}`).catch(() => null);
+export const sendMessage = (sessionId: string, message: string) =>
+  api.post("/api/ai/ai/message", { sessionId, content: message });
+export const closeSession = (sessionId: string) =>
+  api.post("/api/ai/ai/close", { sessionId });
 
-export async function fetchChatSession(id: string) {
-  return api.get(`/api/ai/ai/sessions/${id}`);
-}
-
-export async function sendStaffMessage(sessionId: string, message: string) {
-  return api.post("/api/ai/ai/message", { sessionId, message });
-}
-
-export async function closeChatSession(sessionId: string) {
-  return api.post("/api/ai/ai/close", { sessionId });
-}
+export const fetchOpenChats = getOpenSessions;
+export const fetchChatSession = getSession;
+export const sendStaffMessage = sendMessage;
+export const closeChatSession = closeSession;

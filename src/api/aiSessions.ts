@@ -1,9 +1,7 @@
 import api from "@/api";
 import type { AiSession, AiSessionMessage } from "@/features/comms/aiSessions";
 
-export async function fetchAiSessions() {
-  return api.get<AiSession[]>("/api/ai/ai/sessions");
-}
+export const fetchAiSessions = () => Promise.resolve([] as AiSession[]);
 
 export async function fetchAiMessages(sessionId: string) {
   return api.get<AiSessionMessage[]>(`/api/ai/ai/sessions/${sessionId}/messages`);

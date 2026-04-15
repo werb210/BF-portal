@@ -3,7 +3,6 @@ import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStage
 import type { BusinessUnit } from "@/types/businessUnit";
 import { PIPELINE_STAGE_LABELS, PIPELINE_STAGE_ORDER, normalizeStageId } from "./pipeline.types";
 
-const API_PREFIX = "/api/v1";
 const toTitleCase = (value: string) =>
   value
     .toLowerCase()
@@ -307,7 +306,7 @@ const buildPipelineQuery = (filters?: PipelineFilters) => {
 
 export const pipelineApi = {
   fetchPipeline: async (filters?: PipelineFilters, options?: { signal?: AbortSignal }) => {
-    const res = await api.get<unknown>(`${API_PREFIX}/pipeline${buildPipelineQuery(filters)}`, options);
+    const res = await api.get<unknown>(`/api/portal/applications${buildPipelineQuery(filters)}`, options);
     const parsed = parsePipelineResponse(res);
     return {
       stages: parsed.stages.length ? parsed.stages : buildLockedStages(),
