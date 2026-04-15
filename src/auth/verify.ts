@@ -44,11 +44,12 @@ export async function verifyOtp(code: string) {
       throw new Error(data?.error || data?.message || "Verify failed");
     }
 
-    const token = data.token || data.accessToken || data.jwt || data?.data?.token;
+    // Server canonical response: { status: "ok", data: { token: "..." } }
+    const token = data?.data?.token ?? data?.token ?? data?.accessToken ?? data?.jwt ?? null;
 
     if (!token) {
-      console.error("NO TOKEN IN RESPONSE:", data);
-      throw new Error("No token returned");
+      console.error("[AUTH] Token not found in verify response. Response shape:", JSON.stringify(Object.keys(data)));
+      throw new Error("No token returned from server");
     }
 
     localStorage.setItem("auth_token", token);

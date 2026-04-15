@@ -20,7 +20,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <RequireRole roles={["Admin", "Staff", "Marketing"]}>
+    <RequireRole roles={["Admin", "Staff", "Ops"]}>
       <Dashboard />
     </RequireRole>
   );

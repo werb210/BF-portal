@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
-  role?: "Admin" | "Staff" | "Marketing" | "Lender" | "Referrer";
+  role?: "Admin" | "Staff" | "Ops" | "Lender" | "Referrer";
 };
 
 export function TestAuthProvider({ children }: Props) {

@@ -1,11 +1,11 @@
-export type Role = "Admin" | "Staff" | "Lender" | "Referrer" | "Marketing";
+export type Role = "Admin" | "Staff" | "Ops" | "Lender" | "Referrer";
 
 const ROLE_LOOKUP: Record<string, Role> = {
   admin: "Admin",
   staff: "Staff",
+  ops: "Ops",
   lender: "Lender",
   referrer: "Referrer",
-  marketing: "Marketing"
 };
 
 export function normalizeRole(input: unknown): Role | null {
@@ -17,4 +17,3 @@ export function normalizeRole(input: unknown): Role | null {
 export function roleIn(role: Role | null, allowed: Role[]): boolean {
   return Boolean(role && allowed.includes(role));
 }
-
