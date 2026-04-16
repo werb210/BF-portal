@@ -2,6 +2,7 @@ import { type ChangeEvent, useState } from "react";
 import { api } from "@/api";
 import OfferUploader from "@/components/offers/OfferUploader";
 import ChatPanel from "@/components/chat/ChatPanel";
+import { useParams } from "react-router-dom";
 
 const API_PREFIX = "";
 const tabs = ["Application", "Banking Analysis", "Financials", "Documents", "Credit Summary", "Notes", "Lenders"] as const;
@@ -28,7 +29,9 @@ const ALLOWED_FILE_TYPES = new Set([
 ]);
 const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
 
-const ApplicationDetail = ({ applicationId = "app-1" }: { applicationId?: string }) => {
+const ApplicationDetail = ({ applicationId: propId }: { applicationId?: string }) => {
+  const { id: paramId } = useParams<{ id: string }>();
+  const applicationId = propId ?? paramId ?? "";
   const [activeTab, setActiveTab] = useState<TabName>("Application");
   const [selectedLenders, setSelectedLenders] = useState<Record<string, boolean>>({});
   const [uploadError, setUploadError] = useState<string>("");
