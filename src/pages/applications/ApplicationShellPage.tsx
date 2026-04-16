@@ -16,6 +16,16 @@ type PortalApplicationShell = {
   stage: string;
 };
 
+type ApplicationOverviewRecord = {
+  id: string;
+  stage: string;
+  requested_amount: number;
+  product_category: string;
+  submitted_at: string;
+  company_name: string;
+  assigned_staff?: string;
+};
+
 const APPLICATION_TABS: DrawerTab[] = [
   { id: "overview", label: "Overview" },
   { id: "application", label: "Application" },
@@ -70,6 +80,20 @@ const parsePortalApplication = (data: unknown, id: string): PortalApplicationShe
   return { id, businessName, stage: stageValue };
 };
 
+
+const parseOverviewRecord = (data: unknown, id: string): ApplicationOverviewRecord => {
+  const record = (data ?? {}) as Record<string, unknown>;
+  return {
+    id,
+    stage: String(record.stage ?? record.current_stage ?? "Received"),
+    requested_amount: Number(record.requested_amount ?? record.requestedAmount ?? 0),
+    product_category: String(record.product_category ?? record.productType ?? "—"),
+    submitted_at: String(record.submitted_at ?? record.submittedAt ?? record.created_at ?? ""),
+    company_name: String(record.company_name ?? record.business_name ?? record.businessName ?? "—"),
+    assigned_staff: typeof record.assigned_staff === "string" ? record.assigned_staff : undefined
+  };
+};
+
 const resolveStageLabel = (stage: string) => {
   const normalized = normalizeStageId(stage);
   return PIPELINE_STAGE_LABELS[normalized] ?? stage;
@@ -121,7 +145,7 @@ const ApplicationShellPage = () => {
           </div>
         </div>
         <ApplicationCard tabs={APPLICATION_TABS} selectedTab={selectedTab} onSelect={setSelectedTab}>
-          {selectedTab === "overview" && <ApplicationOverviewTab application={applicationQuery.data} />}
+          {selectedTab === "overview" && <ApplicationOverviewTab application={parseOverviewRecord(applicationQuery.data, application.id)} />}
           {selectedTab !== "overview" && (
             <div className="application-shell__placeholder">Coming in next block.</div>
           )}
