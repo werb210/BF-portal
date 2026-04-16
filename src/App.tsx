@@ -23,7 +23,6 @@ import CalendarPage from "@/pages/calendar/CalendarPage";
 import CommunicationsPage from "@/pages/communications/CommunicationsPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
 import MarketingPage from "@/pages/marketing/MarketingPage";
-import ReadinessLeadsPage from "@/pages/ReadinessLeadsPage";
 import BIDashboardPage from "@/pages/bi/BIDashboardPage";
 import BICommissionDashboard from "@/pages/bi/BICommissionDashboard";
 import BIReferrersPage from "@/pages/bi/BIReferrersPage";
@@ -142,7 +141,6 @@ const AppRoutes = () => {
         <Route path="/communications/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CommunicationsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/settings/*" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/marketing/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Ops"]}><MarketingPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/portal/readiness" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><ReadinessLeadsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/portal/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<Navigate to="/portal" replace />} />
         <Route
