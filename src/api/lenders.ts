@@ -449,7 +449,7 @@ const normalizeLenderProduct = (raw: unknown): LenderProduct | null => {
 };
 
 export const fetchLenders = async (options?: RequestOptions) => {
-  const res = await api.get<unknown>("/portal/lenders", options);
+  const res = await api.get<unknown>("/api/portal/lenders", options);
   const lenders = parseLendersResponse(res)
     .map((item) => normalizeLender(item))
     .filter((item): item is Lender => Boolean(item));
@@ -457,19 +457,19 @@ export const fetchLenders = async (options?: RequestOptions) => {
 };
 
 export const fetchLenderById = async (id: string) => {
-  const lender = await api.get<unknown>(`/portal/lenders/${id}`);
+  const lender = await api.get<unknown>(`/api/portal/lenders/${id}`);
   const normalized = normalizeLender(ensureEntityHasId((lender ?? {}) as LenderSummary, "lender", id));
   return ensureEntityHasId(normalized ?? (lender as Lender), "lender", id);
 };
 
 export const createLender = async (payload: LenderPayload) => {
-  const lender = await api.post<unknown>(`/portal/lenders`, payload);
+  const lender = await api.post<unknown>(`/api/portal/lenders`, payload);
   const normalized = normalizeLender(ensureEntityHasId((lender ?? {}) as LenderSummary, "lender"));
   return ensureEntityHasId(normalized ?? (lender as Lender), "lender");
 };
 
 export const updateLender = async (id: string, payload: Partial<LenderPayload>) => {
-  const lender = await api.patch<unknown>(`/portal/lenders/${id}`, payload);
+  const lender = await api.patch<unknown>(`/api/portal/lenders/${id}`, payload);
   const normalized = normalizeLender(ensureEntityHasId((lender ?? {}) as LenderSummary, "lender", id));
   return ensureEntityHasId(normalized ?? (lender as Lender), "lender", id);
 };
@@ -521,7 +521,7 @@ export const retryLenderSubmission = (applicationId: string, lenderProductId?: s
 export const retryLenderTransmission = async (_transmissionId: string) => null;
 
 export async function fetchClientLenders(): Promise<ClientLender[]> {
-  const payload = await api.get<unknown>("/portal/lenders");
+  const payload = await api.get<unknown>("/api/portal/lenders");
   const normalized = (payload as { data?: unknown }).data ?? payload;
   if (Array.isArray(normalized)) {
     return normalized as ClientLender[];
