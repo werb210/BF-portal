@@ -98,7 +98,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   fetchProfile: async () => {
     set({ isLoadingProfile: true });
     try {
-      const data = await api.get<ProfileResponse>("/users/me");
+      const data = await api.get<ProfileResponse>("/api/users/me");
       if (data) {
         set((state) => ({
           profile: (() => {
@@ -121,7 +121,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   saveProfile: async (updates) => {
     set({ isLoadingProfile: true });
     try {
-      const data = await api.patch<ProfileResponse>("/users/me", updates);
+      const data = await api.patch<ProfileResponse>("/api/users/me", updates);
       const nextProfile = data ? { ...get().profile, ...data } : { ...get().profile, ...updates };
       set({
         profile: nextProfile,
@@ -161,7 +161,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   fetchUsers: async () => {
     set({ isLoadingUsers: true });
     try {
-      const data = await api.get<UsersResponse | { users?: UsersResponse }>("/users");
+      const data = await api.get<UsersResponse | { users?: UsersResponse }>("/api/users");
       const nextUsers = Array.isArray(data)
         ? data
         : Array.isArray(data?.users)
@@ -179,7 +179,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   addUser: async (user) => {
     set({ isLoadingUsers: true });
     try {
-      const data = await api.post<AdminUser>("/users", user);
+      const data = await api.post<AdminUser>("/api/users", user);
       const created = data ?? {
         id: `u-${Date.now()}`,
         firstName: user.firstName,
@@ -198,7 +198,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   updateUser: async (id, updates) => {
     set({ isLoadingUsers: true });
     try {
-      const data = await api.patch<AdminUser>(`/users/${id}`, updates);
+      const data = await api.patch<AdminUser>(`/api/users/${id}`, updates);
       set((state) => ({
         users: state.users.map((user) => (user.id === id ? { ...user, ...updates, ...data } : user)),
         statusMessage: "User updated"
@@ -210,7 +210,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   updateUserRole: async (id, role) => {
     set({ isLoadingUsers: true });
     try {
-      const data = await api.post<AdminUser>(`/users/${id}/role`, { role });
+      const data = await api.post<AdminUser>(`/api/users/${id}/role`, { role });
       set((state) => ({
         users: state.users.map((user) => (user.id === id ? { ...user, ...data, role } : user)),
         statusMessage: "Role updated"
@@ -222,7 +222,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setUserDisabled: async (id, disabled) => {
     set({ isLoadingUsers: true });
     try {
-      const endpoint = disabled ? `/users/${id}/disable` : `/users/${id}/enable`;
+      const endpoint = disabled ? `/api/users/${id}/disable` : `/api/users/${id}/enable`;
       const data = await api.post<AdminUser>(endpoint);
       set((state) => ({
         users: state.users.map((user) => (user.id === id ? { ...user, ...data, disabled } : user)),
