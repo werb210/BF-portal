@@ -7,7 +7,6 @@ import MayaPanel from "@/components/maya/MayaPanel";
 
 const NAV_ITEMS = [
   { label: "Dashboard", path: "/portal", roles: ["Admin", "Staff", "Ops"] },
-  { label: "Applications", path: "/applications", roles: ["Admin", "Staff"] },
   { label: "Pipeline", path: "/pipeline", roles: ["Admin", "Staff", "Ops"] },
   { label: "CRM", path: "/crm", roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications", roles: ["Admin", "Staff"] },

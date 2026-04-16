@@ -3,15 +3,15 @@ import RequireRole from "@/components/auth/RequireRole";
 import Card from "@/components/ui/Card";
 import { api } from "@/api";
 import type { MessageRecord } from "@/types/messages.types";
+import ApplicationContactPicker from "@/components/communications/ApplicationContactPicker";
 
-type CommsTab = "messages" | "sms" | "email" | "issues" | "contact-forms";
+type CommsTab = "messages" | "sms" | "email" | "issues";
 
 const COMMS_TABS: { id: CommsTab; label: string }[] = [
   { id: "messages", label: "Messages" },
   { id: "sms", label: "SMS" },
   { id: "email", label: "Email" },
-  { id: "issues", label: "Issue Reports" },
-  { id: "contact-forms", label: "Contact Forms" }
+  { id: "issues", label: "Issue Reports" }
 ];
 
 const CommunicationsContent = () => {
@@ -28,7 +28,7 @@ const CommunicationsContent = () => {
     }
 
     try {
-      const thread = await api<MessageRecord[]>(`/api/messages?contactId=${encodeURIComponent(activeContactId)}`);
+      const thread = await api<MessageRecord[]>(`/api/messages?contactId=${encodeURIComponent(activeContactId)}&applicationId=${encodeURIComponent(activeContactId)}`);
       setMessages(thread);
     } catch (error) {
       console.error(error);
@@ -39,7 +39,7 @@ const CommunicationsContent = () => {
     if (!activeContactId) return;
 
     const fetchMessages = () => {
-      api<MessageRecord[]>(`/api/messages?contactId=${encodeURIComponent(activeContactId)}`)
+      api<MessageRecord[]>(`/api/messages?contactId=${encodeURIComponent(activeContactId)}&applicationId=${encodeURIComponent(activeContactId)}`)
         .then(setMessages)
         .catch(console.error);
     };
@@ -97,13 +97,13 @@ const CommunicationsContent = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="drawer-section space-y-3">
               <div className="drawer-section__title">Conversations</div>
-              <p className="text-sm text-slate-500">Enter a contact ID to load its thread.</p>
-              <input
-                className="w-full p-2 rounded border"
-                placeholder="Contact ID"
-                value={activeContactId}
-                onChange={(event) => setActiveContactId(event.target.value.trim())}
-              />
+              <p className="text-sm text-slate-500">Select an application or contact to load its thread.</p>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>
+                  Search by application or contact
+                </label>
+                <ApplicationContactPicker onSelect={(contactId) => setActiveContactId(contactId)} />
+              </div>
             </div>
             <div className="drawer-section md:col-span-2 space-y-3">
               <div className="drawer-section__title">Thread</div>
@@ -164,12 +164,7 @@ const CommunicationsContent = () => {
           </div>
         )}
 
-        {tab === "contact-forms" && (
-          <div className="drawer-section">
-            <div className="drawer-section__title">Contact Forms</div>
-            <p>Submissions from BF website contact form appear in this tab.</p>
-          </div>
-        )}
+        
       </Card>
     </div>
   );
