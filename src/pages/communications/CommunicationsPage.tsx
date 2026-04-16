@@ -97,7 +97,7 @@ const CommunicationsContent = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="drawer-section space-y-3">
               <div className="drawer-section__title">Conversations</div>
-              <p className="text-sm text-slate-500">Select an application or contact to load its thread.</p>
+              <p className="text-sm text-slate-500">Messages loads the client↔staff thread from <code>/api/messages?contactId=…</code> (communications_messages), and staff can search by application/contact.</p>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>
                   Search by application or contact
@@ -136,24 +136,66 @@ const CommunicationsContent = () => {
         )}
 
         {tab === "sms" && (
-          <div className="drawer-section">
-            <div className="drawer-section__title">Twilio SMS</div>
-            <p>Compose SMS and view per-contact history.</p>
-            <textarea className="w-full mt-3 p-2 rounded border" placeholder="Write SMS message" />
+          <div style={{ padding: 16 }}>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13, color: "#94a3b8", display: "block", marginBottom: 4 }}>
+                To (E.164 phone number)
+              </label>
+              <input
+                type="tel"
+                placeholder="+15550000000"
+                style={{
+                  width: "100%", padding: "8px 12px", borderRadius: 8,
+                  border: "1px solid #334155", background: "#1e293b",
+                  color: "#f1f5f9", fontSize: 14, boxSizing: "border-box"
+                }}
+                id="sms-to"
+              />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13, color: "#94a3b8", display: "block", marginBottom: 4 }}>
+                Message
+              </label>
+              <textarea
+                rows={4}
+                placeholder="Type your SMS message..."
+                style={{
+                  width: "100%", padding: "8px 12px", borderRadius: 8,
+                  border: "1px solid #334155", background: "#1e293b",
+                  color: "#f1f5f9", fontSize: 14, resize: "vertical", boxSizing: "border-box"
+                }}
+                id="sms-body"
+              />
+            </div>
+            <button
+              onClick={async () => {
+                const to = (document.getElementById("sms-to") as HTMLInputElement)?.value;
+                const body = (document.getElementById("sms-body") as HTMLTextAreaElement)?.value;
+                if (!to || !body) return;
+                try {
+                  await api("/api/communications/sms", { method: "POST", body: { to, body } });
+                  alert("SMS sent");
+                } catch {
+                  alert("Failed to send SMS");
+                }
+              }}
+              style={{
+                background: "#3b82f6", color: "#fff", border: "none",
+                borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 14
+              }}
+            >
+              Send SMS
+            </button>
           </div>
         )}
 
         {tab === "email" && (
-          <div className="drawer-section space-y-3">
-            <div className="drawer-section__title">Email Composer</div>
-            <select className="w-full p-2 rounded border">
-              <option>Personal inbox: todd@boreal.financial</option>
-              <option>Shared: deals@boreal.financial</option>
-            </select>
-            <input className="w-full p-2 rounded border" placeholder="To" />
-            <input className="w-full p-2 rounded border" placeholder="Subject" />
-            <textarea className="w-full p-2 rounded border min-h-[120px]" placeholder="Body (rich text)" />
-            <p className="text-sm text-slate-500">Sent and received history appears below this composer.</p>
+          <div style={{ padding: 24, color: "#64748b", textAlign: "center" }}>
+            <div style={{ fontSize: 18, marginBottom: 8 }}>📧 Email via Microsoft 365</div>
+            <div style={{ fontSize: 14 }}>
+              O365 inbox integration is configured separately. Connect your Microsoft 365 account
+              in Settings → Connected Accounts to enable email here.
+            </div>
           </div>
         )}
 
