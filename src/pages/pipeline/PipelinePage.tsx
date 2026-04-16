@@ -53,7 +53,7 @@ export default function PipelinePage() {
           map.get(stage)!.push(item);
         });
         setColumns(
-          STAGE_ORDER.filter((s) => (map.get(s)?.length ?? 0) > 0 || ["Received", "In Review"].includes(s))
+          STAGE_ORDER.filter(() => true)  // Always show all 6 canonical stages
             .map((s) => ({ name: s, cards: map.get(s) ?? [] }))
         );
       })

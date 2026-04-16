@@ -20,12 +20,12 @@ export type TaskItem = {
 
 export const fetchTasks = async () => {
   if (!getAuthToken()) throw new Error("Not authenticated");
-  const res = await api.getList<TaskItem>("/calendar/tasks");
+  const res = await api.getList<TaskItem>("/api/tasks");
   return res;
 };
 
-export const createTask = (task: Partial<TaskItem>) => api.post<TaskItem>("/calendar/tasks", task);
+export const createTask = (task: Partial<TaskItem>) => api.post<TaskItem>("/api/tasks", task);
 
-export const updateTask = (id: string, task: Partial<TaskItem>) => api.patch<TaskItem>(`/calendar/tasks/${id}`, task);
+export const updateTask = (id: string, task: Partial<TaskItem>) => api.patch<TaskItem>(`/api/tasks/${id}`, task);
 
-export const deleteTask = (id: string) => api.delete<void>(`/calendar/tasks/${id}`);
+export const deleteTask = (id: string) => api.delete<void>(`/api/tasks/${id}`);

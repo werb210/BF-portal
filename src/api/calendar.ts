@@ -17,14 +17,14 @@ export type CalendarEvent = {
 
 export const fetchLocalEvents = async () => {
   if (!getAuthToken()) throw new Error("Not authenticated");
-  const res = await api.getList<CalendarEvent>("/calendar/events");
+  const res = await api.getList<CalendarEvent>("/api/calendar/events");
   return res;
 };
 
 export const createLocalEvent = (event: Partial<CalendarEvent>) =>
-  api.post<CalendarEvent>("/calendar/events", event);
+  api.post<CalendarEvent>("/api/calendar/events", event);
 
 export const updateLocalEvent = (id: string, event: Partial<CalendarEvent>) =>
-  api.patch<CalendarEvent>(`/calendar/events/${id}`, event);
+  api.patch<CalendarEvent>(`/api/calendar/events/${id}`, event);
 
-export const deleteLocalEvent = (id: string) => api.delete<void>(`/calendar/events/${id}`);
+export const deleteLocalEvent = (id: string) => api.delete<void>(`/api/calendar/events/${id}`);
