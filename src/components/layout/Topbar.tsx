@@ -25,20 +25,7 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   const openDialer = useDialerStore((state) => state.openDialer);
   const [isCenterOpen, setIsCenterOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
-  const [leadCount, setLeadCount] = useState(0);
   const [productionStatus, setProductionStatus] = useState("checking");
-
-  useEffect(() => {
-    const userRole = (user as { role?: string } | null)?.role?.toLowerCase();
-    if (userRole !== "admin") {
-      setLeadCount(0);
-      return;
-    }
-
-    api<{ count?: number }>("/api/crm/leads/count")
-      .then((result) => setLeadCount(result.count ?? 0))
-      .catch(() => setLeadCount(0));
-  }, [user]);
 
   useEffect(() => {
     api<{ status?: string }>("/api/_int/health")
@@ -116,11 +103,6 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
           Prod: {productionStatus}
         </span>
         <MayaStatus />
-        {leadCount > 0 && (
-          <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold text-white" aria-label="Website lead count">
-            Leads {leadCount}
-          </span>
-        )}
         <button
           type="button"
           className="topbar__icon-button"

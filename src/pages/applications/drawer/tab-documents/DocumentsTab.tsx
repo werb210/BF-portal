@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { acceptDocument, fetchDocumentRequirements, rejectDocument } from "@/api/documents";
+import { fetchDocumentRequirements } from "@/api/documents";
+import { api } from "@/api";
 import { retryUnlessClientError } from "@/api/retryPolicy";
 import Modal from "@/components/ui/Modal";
 import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
@@ -84,6 +85,20 @@ const DocumentsTab = () => {
     return parsed.toLocaleString();
   };
 
+  const refetchDocuments = async () => {
+    await refetch();
+  };
+
+  const handleAccept = async (documentId: string) => {
+    await api(`/api/documents/${documentId}/accept`, { method: "POST" });
+    await refetchDocuments();
+  };
+
+  const handleReject = async (documentId: string, reason: string) => {
+    await api(`/api/documents/${documentId}/reject`, { method: "POST", body: { reason } });
+    await refetchDocuments();
+  };
+
   const handleConfirmAction = async () => {
     if (!activeAction) return;
     if (activeAction.type === "reject" && !rejectionReason.trim()) {
@@ -95,13 +110,12 @@ const DocumentsTab = () => {
     setFeedback(null);
     try {
       if (activeAction.type === "accept") {
-        await acceptDocument(activeAction.document.id);
+        await handleAccept(activeAction.document.id);
         setFeedback({ type: "success", message: "Document accepted." });
       } else {
-        await rejectDocument(activeAction.document.id, rejectionReason.trim());
+        await handleReject(activeAction.document.id, rejectionReason.trim());
         setFeedback({ type: "success", message: "Document rejected." });
       }
-      await refetch ();
       setActiveAction(null);
       setRejectionReason("");
       queryClient.invalidateQueries({ queryKey: ["applications", applicationId, "details"] });

@@ -1,124 +1,64 @@
-import { useMemo, useState } from "react";
-import { useDialerStore } from "@/state/dialer.store";
+interface ApplicationOverview {
+  id: string;
+  stage: string;
+  requested_amount: number;
+  product_category: string;
+  submitted_at: string;
+  company_name: string;
+  assigned_staff?: string;
+}
+
+interface Props {
+  application: ApplicationOverview;
+}
 
 const STAGE_COLORS: Record<string, string> = {
-  Received: "#60a5fa",
+  Received: "#6366f1",
   "In Review": "#f59e0b",
-  "Documents Required": "#f97316",
-  "Additional Steps Required": "#a78bfa",
-  "Off to Lender": "#22c55e",
-  Offer: "#14b8a6"
+  "Documents Required": "#ef4444",
+  "Additional Steps Required": "#f97316",
+  "Off to Lender": "#3b82f6",
+  Offer: "#16a34a"
 };
 
-type ApplicationOverviewTabProps = {
-  application: unknown;
-};
-
-const formatCurrency = (value: unknown) => {
-  const amount = Number(value ?? 0);
-  if (!Number.isFinite(amount) || amount <= 0) return "—";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
-};
-
-const formatDate = (value: unknown) => {
-  if (!value) return "—";
-  const parsed = new Date(String(value));
-  return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString();
-};
-
-export default function ApplicationOverviewTab({ application }: ApplicationOverviewTabProps) {
-  const [quickNote, setQuickNote] = useState("");
-  const openDialer = useDialerStore((state) => state.openDialer);
-
-  const view = useMemo(() => {
-    const record = (application ?? {}) as Record<string, unknown>;
-    const stage = String(record.current_stage ?? record.stage ?? "Received");
-    const docsAccepted = Number(record.acceptedDocumentCount ?? 0);
-    const docsTotal = Number(record.documentCount ?? 0);
-    const stageEnteredAt = record.stageEnteredAt ?? record.stage_entered_at ?? record.updatedAt;
-    const daysInStage = stageEnteredAt
-      ? Math.max(0, Math.floor((Date.now() - new Date(String(stageEnteredAt)).getTime()) / (1000 * 60 * 60 * 24)))
-      : 0;
-
-    return {
-      stage,
-      amount: formatCurrency(record.requestedAmount ?? record.amount),
-      productType: String(record.productType ?? record.product_type ?? "—"),
-      submittedAt: formatDate(record.submittedAt ?? record.createdAt ?? record.created_at),
-      assignedTo: String(record.assignedStaffName ?? record.ownerName ?? record.assigned_to ?? "Unassigned"),
-      docsAccepted,
-      docsTotal,
-      daysInStage,
-      clientPhone: String(record.clientPhone ?? record.phone ?? "")
-    };
-  }, [application]);
+export default function ApplicationOverviewTab({ application }: Props) {
+  const color = STAGE_COLORS[application?.stage] ?? "#6b7280";
 
   return (
-    <div className="space-y-4">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+    <div style={{ padding: "24px 28px" }}>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <span
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            borderRadius: 999,
-            padding: "6px 12px",
-            fontWeight: 600,
-            fontSize: 12,
-            background: STAGE_COLORS[view.stage] ?? "#334155",
-            color: "#fff"
+            background: color,
+            color: "#fff",
+            borderRadius: 20,
+            padding: "4px 14px",
+            fontSize: 13,
+            fontWeight: 600
           }}
         >
-          {view.stage}
+          {application?.stage ?? "—"}
         </span>
-        <button
-          type="button"
-          className="ui-button ui-button--secondary"
-          onClick={() =>
-            openDialer({
-              phone: view.clientPhone,
-              applicationId: String((application as { id?: string })?.id ?? ""),
-              applicationName: String((application as { businessName?: string })?.businessName ?? "")
-            })
-          }
-          disabled={!view.clientPhone}
-        >
-          Call Client
-        </button>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="drawer-section">
-          <div className="drawer-section__title">Amount + Product</div>
-          <div>{view.amount}</div>
-          <div className="text-sm text-slate-500">{view.productType}</div>
-        </div>
-        <div className="drawer-section">
-          <div className="drawer-section__title">Submission</div>
-          <div>{view.submittedAt}</div>
-          <div className="text-sm text-slate-500">Assigned to {view.assignedTo}</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="drawer-section">
-          <div className="drawer-section__title">Documents</div>
-          <div>{view.docsAccepted}/{view.docsTotal} accepted</div>
-        </div>
-        <div className="drawer-section">
-          <div className="drawer-section__title">Current Stage</div>
-          <div>{view.daysInStage} day(s)</div>
-        </div>
-      </div>
-
-      <div className="drawer-section">
-        <div className="drawer-section__title">Quick Note</div>
-        <textarea
-          value={quickNote}
-          onChange={(event) => setQuickNote(event.target.value)}
-          placeholder="Add a quick internal note"
-          style={{ width: "100%", minHeight: 96, padding: 10, borderRadius: 8, border: "1px solid #cbd5e1" }}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        <StatCard label="Requested Amount" value={`$${application?.requested_amount?.toLocaleString() ?? "—"}`} />
+        <StatCard label="Product Category" value={application?.product_category ?? "—"} />
+        <StatCard
+          label="Submitted"
+          value={application?.submitted_at ? new Date(application.submitted_at).toLocaleDateString() : "—"}
         />
+        <StatCard label="Company" value={application?.company_name ?? "—"} />
+        <StatCard label="Assigned Staff" value={application?.assigned_staff ?? "Unassigned"} />
       </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ background: "#f9fafb", borderRadius: 10, padding: "14px 16px", border: "1px solid #e5e7eb" }}>
+      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{value}</div>
     </div>
   );
 }
