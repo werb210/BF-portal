@@ -31,20 +31,52 @@ const DashboardPage = () => {
 
   const stageStr = metrics?.pipelineByStage
     ? Object.entries(metrics.pipelineByStage)
-        .map(([k, v]) => `${k} ${v}`)
-        .join(" · ")
+      .map(([k, v]) => `${k} ${v}`)
+      .join(" · ")
     : "—";
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <div className="grid gap-3 grid-cols-1 md:grid-cols-5">
-        <div className="drawer-section"><div className="drawer-section__title">Active Applications</div><div>{fmt(metrics?.activeApplications)}</div></div>
-        <div className="drawer-section"><div className="drawer-section__title">Pipeline by Stage</div><div style={{ fontSize: 12 }}>{stageStr}</div></div>
-        <div className="drawer-section"><div className="drawer-section__title">Deals Won This Month</div><div>{fmt(metrics?.dealsWonThisMonth)}</div></div>
-        <div className="drawer-section"><div className="drawer-section__title">Commission Earned</div><div>{metrics?.commissionEarned !== undefined ? `$${fmt(metrics.commissionEarned)}` : "—"}</div></div>
-        <div className="drawer-section"><div className="drawer-section__title">New Leads Today</div><div>{fmt(metrics?.newLeadsToday)}</div></div>
+    <div className="page dashboard-page">
+      <div>
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <p className="text-sm text-slate-500">Welcome back, {user?.name}. Here is your operating snapshot.</p>
       </div>
+
+      <div className="dashboard-grid">
+        <article className="dashboard-card">
+          <span className="dashboard-card__label">Active Applications</span>
+          <strong className="dashboard-card__value">{fmt(metrics?.activeApplications)}</strong>
+        </article>
+        <article className="dashboard-card">
+          <span className="dashboard-card__label">Pipeline by Stage</span>
+          <strong className="dashboard-card__value dashboard-card__value--small">{stageStr}</strong>
+        </article>
+        <article className="dashboard-card">
+          <span className="dashboard-card__label">Deals Won This Month</span>
+          <strong className="dashboard-card__value">{fmt(metrics?.dealsWonThisMonth)}</strong>
+        </article>
+        <article className="dashboard-card">
+          <span className="dashboard-card__label">Commission Earned</span>
+          <strong className="dashboard-card__value">
+            {metrics?.commissionEarned !== undefined ? `$${fmt(metrics.commissionEarned)}` : "—"}
+          </strong>
+        </article>
+        <article className="dashboard-card">
+          <span className="dashboard-card__label">New Leads Today</span>
+          <strong className="dashboard-card__value">{fmt(metrics?.newLeadsToday)}</strong>
+        </article>
+      </div>
+
+      {!metrics && (
+        <div className="ui-empty-state">
+          <div className="ui-empty-state__icon" aria-hidden="true">📊</div>
+          <h3>Metrics are still syncing</h3>
+          <p>Try refreshing to load the latest dashboard numbers.</p>
+          <button type="button" className="ui-button ui-button--secondary" onClick={() => window.location.reload()}>
+            Refresh Dashboard
+          </button>
+        </div>
+      )}
     </div>
   );
 };
