@@ -22,6 +22,11 @@ const owners = ["Alex", "Taylor"];
 const ContactsPage = () => {
   const { silo, setSilo, filters, setFilters, resetFilters } = useCrmStore();
   const { silo: globalSilo } = useSilo();
+
+  useEffect(() => {
+    setSilo(globalSilo as "BF" | "BI" | "SLF");
+  }, [globalSilo, setSilo]);
+
   const [selected, setSelected] = useState<Contact | null>(null);
   const [showForm, setShowForm] = useState(false);
   const {
@@ -32,10 +37,6 @@ const ContactsPage = () => {
     queryKey: ["contacts", silo, filters],
     queryFn: fetchContacts
   });
-
-  useEffect(() => {
-    setSilo(globalSilo as "BF" | "BI" | "SLF");
-  }, [globalSilo, setSilo]);
 
   useEffect(() => {
     if (error) {
