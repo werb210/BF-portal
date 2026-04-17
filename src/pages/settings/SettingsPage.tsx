@@ -3,11 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import RequireRole from "@/components/auth/RequireRole";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
-import IssueReports from "@/features/support/IssueReports";
-import SupportQueue from "@/features/support/SupportQueue";
 import KnowledgeManager from "@/features/ai/KnowledgeManager";
-import WebLeads from "@/features/crm/WebLeads";
-import LiveActivity from "@/features/analytics/LiveActivity";
 import SettingsSectionLayout from "./components/SettingsSectionLayout";
 import BrandingSettings from "./tabs/BrandingSettings";
 import ProfileSettings from "./tabs/ProfileSettings";
@@ -21,21 +17,16 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
-  const canViewSupport = user?.role === "Admin" || user?.role === "Staff";
 
   const tabs = useMemo(
     () => [
       { id: "users", label: "User Management", visible: isAdmin, content: <UserManagement /> },
-      { id: "support", label: "Support Queue", visible: canViewSupport, content: <SupportQueue /> },
-      { id: "issues", label: "Issue Reports", visible: canViewSupport, content: <IssueReports /> },
       { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin, content: isAdmin ? <KnowledgeManager /> : null },
-      { id: "web-leads", label: "Website Leads", visible: canViewSupport, content: <WebLeads /> },
-      { id: "live-activity", label: "Live Activity", visible: canViewSupport, content: <LiveActivity /> },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "branding", label: "Branding", visible: true, content: <BrandingSettings /> },
-      { id: "runtime", label: "Runtime Verification", visible: true, content: <RuntimeSettings /> }
+      { id: "runtime", label: "Runtime Verification", visible: true, content: <RuntimeSettings /> },
     ],
-    [canViewSupport, isAdmin]
+    [isAdmin]
   );
 
   const safeTabs = Array.isArray(tabs) ? tabs : [];
@@ -69,7 +60,7 @@ const SettingsPage = () => {
             </div>
           ) : (
             <div className="settings-layout">
-              <div className="settings-tabs" role="tablist" aria-label="Settings tabs">
+              <div className="settings-tabs" role="tablist" aria-label="Settings tabs" style={{ display: "flex", flexDirection: "row", gap: 4, borderBottom: "1px solid #e2e8f0", marginBottom: 24, flexWrap: "wrap" }}>
                 {availableTabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -77,6 +68,7 @@ const SettingsPage = () => {
                     role="tab"
                     aria-selected={tab.id === resolvedTabId}
                     className={`settings-tab ${tab.id === resolvedTabId ? "is-active" : ""}`}
+                    style={{ padding: "8px 16px", borderRadius: "6px 6px 0 0", whiteSpace: "nowrap" }}
                     onClick={() => navigate(`/settings/${tab.id}`)}
                   >
                     {tab.label}

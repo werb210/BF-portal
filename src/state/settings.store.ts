@@ -26,6 +26,7 @@ export type AdminUser = {
   email: string;
   phone?: string;
   role: UserRole;
+  silo?: string;
   disabled?: boolean;
 };
 

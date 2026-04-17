@@ -3,7 +3,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSilo } from "@/hooks/useSilo";
 import { useNotificationsStore } from "@/state/notifications.store";
 import { getRoleLabel, resolveUserRole } from "@/utils/roles";
-import { useDialerStore } from "@/state/dialer.store";
 import Button from "../ui/Button";
 import BusinessUnitSelector from "@/components/BusinessUnitSelector";
 import PushNotificationCta from "@/components/PushNotificationCta";
@@ -13,16 +12,14 @@ import { api } from "@/api";
 
 type TopbarProps = {
   onToggleSidebar: () => void;
-  onOpenMaya?: () => void;
 };
 
-const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
+const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const { user, logout } = useAuth();
   const { silo } = useSilo();
   const unreadCount = useNotificationsStore(
     (state) => state.notifications.filter((item) => !item.read).length
   );
-  const openDialer = useDialerStore((state) => state.openDialer);
   const [isCenterOpen, setIsCenterOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
   const [productionStatus, setProductionStatus] = useState("checking");
@@ -84,13 +81,6 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
       </div>
       <div className="topbar__right">
         <BusinessUnitSelector />
-        <button
-          type="button"
-          className="relative rounded border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm hover:border-slate-300"
-          onClick={onOpenMaya}
-        >
-          Maya
-        </button>
         {liveCount > 0 && (
           <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white" aria-label="Live chat queue count">
             Live {liveCount}
@@ -103,14 +93,6 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
           Prod: {productionStatus}
         </span>
         <MayaStatus />
-        <button
-          type="button"
-          className="topbar__icon-button"
-          aria-label="Open dialer"
-          onClick={() => openDialer({ source: "global" })}
-        >
-          ☎︎
-        </button>
         <div className="relative">
           <button
             type="button"

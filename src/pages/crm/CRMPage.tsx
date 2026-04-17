@@ -32,9 +32,6 @@ const CRMContent = () => {
           </div>
         }
       >
-        <p>
-          Manage contacts, companies, communications, and timeline entries across BF, BI, and SLF silos.
-        </p>
       </Card>
       {view === "contacts" && <ContactsPage />}
       {view === "companies" && <CompaniesPage />}
