@@ -36,10 +36,10 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
           onClick={() => setMobileNavOpen(false)}
           style={({ isActive }) => ({
             display: "block",
-            padding: "10px 12px",
-            borderRadius: 10,
+            padding: "8px 12px",
+            borderRadius: 8,
             fontSize: 14,
-            fontWeight: isActive ? 600 : 500,
+            fontWeight: isActive ? 600 : 400,
             color: isActive ? "var(--ui-text)" : "var(--ui-text-muted)",
             background: isActive ? "rgba(59,130,246,0.18)" : "transparent",
             textDecoration: "none",
@@ -54,19 +54,51 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   );
 
   return (
-    <div className="portal-layout">
-      <aside className="app-sidebar">
-        <div className="app-sidebar__brand">
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      <aside
+        style={{
+          width: 220,
+          minWidth: 220,
+          background: "var(--ui-surface-strong)",
+          borderRight: "1px solid rgba(255,255,255,0.06)",
+          display: "flex",
+          flexDirection: "column",
+          padding: "20px 12px",
+          overflowY: "auto",
+          boxShadow: "var(--ui-shadow-strong)",
+          flexShrink: 0
+        }}
+        className="app-sidebar"
+      >
+        <div
+          style={{
+            fontWeight: 700,
+            fontSize: 15,
+            letterSpacing: "0.01em",
+            marginBottom: 24,
+            padding: "0 4px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8
+          }}
+        >
           <img src="/images/Header.png" alt="Boreal" style={{ height: 28, width: "auto" }} />
-          <span>{String(silo ?? "BF").toUpperCase()}</span>
+          <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{String(silo ?? "BF").toUpperCase()}</span>
         </div>
         <NavContent />
       </aside>
 
-      <div className="portal-layout__content">
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <Topbar onToggleSidebar={() => setMobileNavOpen((prev) => !prev)} onOpenMaya={() => setIsMayaOpen(true)} />
-        <main className="portal-layout__main">
-          <div className="portal-layout__inner">{children ?? <Outlet />}</div>
+        <main
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: 24,
+            background: "var(--bg-primary)"
+          }}
+        >
+          {children ?? <Outlet />}
         </main>
       </div>
 

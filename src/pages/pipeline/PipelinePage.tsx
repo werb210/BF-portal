@@ -10,18 +10,18 @@ const STAGE_ORDER = [
   "Off to Lender",
   "Offer",
   "Accepted",
-  "Rejected"
+  "Rejected",
 ];
 
 const STAGE_COLORS: Record<string, string> = {
-  Received: "#6366f1",
-  "In Review": "#f59e0b",
-  "Documents Required": "#ef4444",
+  "Received":                  "#6366f1",
+  "In Review":                 "#f59e0b",
+  "Documents Required":        "#ef4444",
   "Additional Steps Required": "#f97316",
-  "Off to Lender": "#3b82f6",
-  Offer: "#16a34a",
-  Accepted: "#15803d",
-  Rejected: "#6b7280"
+  "Off to Lender":             "#3b82f6",
+  "Offer":                     "#16a34a",
+  "Accepted":                  "#15803d",
+  "Rejected":                  "#6b7280",
 };
 
 type PipelineItem = {
@@ -44,13 +44,18 @@ export default function PipelinePage() {
   useEffect(() => {
     api<{ items: PipelineItem[] }>("/api/pipeline")
       .then(({ items }) => {
-        const map = new Map<string, PipelineItem[]>(STAGE_ORDER.map((s) => [s, []]));
+        const map = new Map<string, PipelineItem[]>(
+          STAGE_ORDER.map((s) => [s, []])
+        );
         items.forEach((item) => {
           const stage = item.stage ?? "Received";
           if (!map.has(stage)) map.set(stage, []);
-          map.get(stage)?.push(item);
+          map.get(stage)!.push(item);
         });
-        setColumns(STAGE_ORDER.map((s) => ({ name: s, cards: map.get(s) ?? [] })));
+        setColumns(
+          STAGE_ORDER.filter(() => true)  // Always show all 6 canonical stages
+            .map((s) => ({ name: s, cards: map.get(s) ?? [] }))
+        );
       })
       .catch(() => setError("Failed to load pipeline."))
       .finally(() => setLoading(false));
@@ -60,35 +65,36 @@ export default function PipelinePage() {
   if (error) return <div style={{ padding: 32, color: "#ef4444" }}>{error}</div>;
 
   return (
-    <div className="page pipeline-page-v2">
-      <div>
-        <h1 className="text-2xl font-semibold">Sales Pipeline</h1>
-        <p className="text-sm text-slate-500">Drag applications across stages to keep the pipeline moving.</p>
-      </div>
-
-      <div className="pipeline-scroll">
+    <div style={{ padding: "20px" }}>
+      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20, color: "#0f172a" }}>Sales Pipeline</h1>
+      <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 16 }}>
         {columns.map((col) => (
-          <section key={col.name} className="pipeline-stage" aria-label={`${col.name} stage`}>
-            <header className="pipeline-stage__header">
-              <h3 style={{ color: STAGE_COLORS[col.name] ?? "#94a3b8" }}>{col.name}</h3>
-              <span className="pipeline-stage__count">{col.cards.length}</span>
-            </header>
-            <div className="pipeline-stage__body">
-              {col.cards.length === 0 ? (
-                <div className="ui-empty-state ui-empty-state--compact">
-                  <div className="ui-empty-state__icon" aria-hidden="true">🗂️</div>
-                  <p>No applications in this stage</p>
-                  <button type="button" className="ui-button ui-button--secondary">
-                    Add Application
-                  </button>
-                </div>
-              ) : (
-                col.cards.map((card) => (
-                  <ApplicationCard key={card.id} card={{ id: card.id, company: card.name ?? "Unnamed", amount: "" }} />
-                ))
-              )}
+          <div
+            key={col.name}
+            style={{
+              minWidth: 280,
+              background: "#0f172a",
+              borderRadius: 10,
+              padding: 12,
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: STAGE_COLORS[col.name] ?? "#94a3b8", margin: 0 }}>
+                {col.name}
+              </h3>
+              <span style={{ fontSize: 12, color: "#64748b", background: "#1e293b", borderRadius: 12, padding: "2px 8px" }}>
+                {col.cards.length}
+              </span>
             </div>
-          </section>
+            {col.cards.length === 0 ? (
+              <div style={{ color: "#334155", fontSize: 12, textAlign: "center", padding: "12px 0" }}>Empty</div>
+            ) : (
+              col.cards.map((card) => (
+                <ApplicationCard key={card.id} card={{ id: card.id, company: card.name ?? "Unnamed", amount: "" }} />
+              ))
+            )}
+          </div>
         ))}
       </div>
     </div>

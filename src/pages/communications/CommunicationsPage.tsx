@@ -80,7 +80,7 @@ const CommunicationsContent = () => {
   return (
     <div className="page space-y-4">
       <Card title="Communications">
-        <div className="communications-tabs">
+        <div className="flex flex-wrap gap-2 mb-4">
           {COMMS_TABS.map((item) => (
             <button
               key={item.id}
@@ -94,34 +94,35 @@ const CommunicationsContent = () => {
         </div>
 
         {tab === "messages" && (
-          <div className="communications-shell">
-            <aside className="communications-shell__list">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="drawer-section space-y-3">
               <div className="drawer-section__title">Conversations</div>
-              <p className="text-sm text-slate-500">Search by application/contact to load client ↔ staff history.</p>
-              <ApplicationContactPicker onSelect={(contactId) => setActiveContactId(contactId)} />
-            </aside>
-            <section className="communications-shell__thread">
+              <p className="text-sm text-slate-500">Messages loads the client↔staff thread from <code>/api/messages?contactId=…</code> (communications_messages), and staff can search by application/contact.</p>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>
+                  Search by application or contact
+                </label>
+                <ApplicationContactPicker onSelect={(contactId) => setActiveContactId(contactId)} />
+              </div>
+            </div>
+            <div className="drawer-section md:col-span-2 space-y-3">
               <div className="drawer-section__title">Thread</div>
-              <div className="communications-thread-list">
+              <div className="max-h-[320px] overflow-y-auto rounded border bg-slate-50 p-3 space-y-2">
                 {sortedMessages.length ? (
                   sortedMessages.map((message) => (
-                    <div key={message.id} className="communications-message">
+                    <div key={message.id} className="rounded border bg-white px-3 py-2 text-sm">
                       <div className="font-semibold text-slate-700">{message.senderName ?? message.senderType ?? "Unknown"}</div>
                       <div>{message.body}</div>
                       <div className="text-xs text-slate-500 mt-1">{new Date(message.createdAt).toLocaleString()}</div>
                     </div>
                   ))
                 ) : (
-                  <div className="ui-empty-state ui-empty-state--compact">
-                    <div className="ui-empty-state__icon" aria-hidden="true">💬</div>
-                    <p>No messages loaded.</p>
-                    <button type="button" className="ui-button ui-button--secondary">Select a Conversation</button>
-                  </div>
+                  <p className="text-sm text-slate-500">No messages loaded.</p>
                 )}
               </div>
-              <form onSubmit={handleSendMessage} className="communications-input-wrap">
+              <form onSubmit={handleSendMessage} className="space-y-2">
                 <textarea
-                  className="communications-input"
+                  className="w-full p-2 rounded border"
                   placeholder="Message with #upload #networth #equipment #realestate #other"
                   value={messageText}
                   onChange={(event) => setMessageText(event.target.value)}
@@ -130,7 +131,7 @@ const CommunicationsContent = () => {
                   {isSending ? "Sending..." : "Send Message"}
                 </button>
               </form>
-            </section>
+            </div>
           </div>
         )}
 
@@ -189,22 +190,23 @@ const CommunicationsContent = () => {
         )}
 
         {tab === "email" && (
-          <div className="ui-empty-state">
-            <div className="ui-empty-state__icon">📧</div>
-            <h3>Email via Microsoft 365</h3>
-            <p>Connect your Microsoft 365 account in Settings → Connected Accounts to enable email here.</p>
-            <button type="button" className="ui-button ui-button--secondary">Open Connected Accounts</button>
+          <div style={{ padding: 24, color: "#64748b", textAlign: "center" }}>
+            <div style={{ fontSize: 18, marginBottom: 8 }}>📧 Email via Microsoft 365</div>
+            <div style={{ fontSize: 14 }}>
+              O365 inbox integration is configured separately. Connect your Microsoft 365 account
+              in Settings → Connected Accounts to enable email here.
+            </div>
           </div>
         )}
 
         {tab === "issues" && (
-          <div className="ui-empty-state">
-            <div className="ui-empty-state__icon">🛠️</div>
-            <h3>Issue Reports</h3>
-            <p>Client issue reports with screenshot, date, and status appear here.</p>
-            <button type="button" className="ui-button ui-button--secondary">View Issue Queue</button>
+          <div className="drawer-section">
+            <div className="drawer-section__title">Issue Reports</div>
+            <p>Client issue reports with screenshot, date, status and "Mark as resolved" actions appear here.</p>
           </div>
         )}
+
+        
       </Card>
     </div>
   );
