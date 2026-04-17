@@ -9,7 +9,6 @@ import PushNotificationCta from "@/components/PushNotificationCta";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import MayaStatus from "@/components/MayaStatus";
 import { api } from "@/api";
-
 type TopbarProps = {
   onToggleSidebar: () => void;
 };
@@ -17,6 +16,8 @@ type TopbarProps = {
 const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const { user, logout } = useAuth();
   const { silo } = useSilo();
+  // silo retained for future use but not displayed in header
+  void silo;
   const unreadCount = useNotificationsStore(
     (state) => state.notifications.filter((item) => !item.read).length
   );
@@ -72,12 +73,12 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         <img
           src="/images/Header.png"
           alt="Boreal Financial"
-          className="h-10 w-auto object-contain"
+          className="h-12 w-auto object-contain"
+          style={{ minWidth: 48 }}
         />
-        <div className="topbar__title-stack">
-          <h1 className="topbar__title">Boreal Financial</h1>
-          <span className="topbar__subtitle">Business Unit: {silo}</span>
-        </div>
+        <h1 className="topbar__title" style={{ color: "#0b1220", margin: 0, fontSize: 18, fontWeight: 700 }}>
+          Boreal Financial
+        </h1>
       </div>
       <div className="topbar__right">
         <BusinessUnitSelector />

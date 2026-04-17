@@ -1,41 +1,67 @@
 import { useEffect, useRef, useState } from "react";
 import { Device, Call } from "@twilio/voice-sdk";
 import { useDialerStore } from "@/state/dialer.store";
+import { useSilo } from "@/hooks/useSilo";
 import { fetchTwilioToken } from "@/services/twilioVoice";
 import { api } from "@/api";
 
+const DTMF_KEYS = [
+  ["1", "2", "3"],
+  ["4", "5", "6"],
+  ["7", "8", "9"],
+  ["*", "0", "#"],
+];
+
+const SMART_REPLIES = [
+  "Let me look into that for you",
+  "I'll get in touch with the team",
+  "I'll review and get back to you",
+  "Can I put you on a brief hold?",
+  "Let me check that for you right now",
+];
+
+function CtrlBtn({
+  label, icon, active, onClick, danger,
+}: { label: string; icon: string; active?: boolean; onClick: () => void; danger?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        gap: 4, padding: "10px 6px", border: "none", borderRadius: 10, cursor: "pointer",
+        background: danger ? "#ef4444" : active ? "#3b82f6" : "#374151",
+        color: "#fff", fontSize: 11, minWidth: 56,
+      }}
+    >
+      <span style={{ fontSize: 20 }}>{icon}</span>
+      {label}
+    </button>
+  );
+}
+
 export default function DialerPanel() {
   const {
-    isOpen, isMinimized, context, status, muted, onHold,
-    number, dialedNumber, error, elapsedSeconds,
+    isOpen, context, status, muted, onHold,
+    number, error, elapsedSeconds,
     setStatus, setNumber, setMuted, setOnHold,
-    startCall, endCall, openDialer, closeDialer,
-    currentCallId, setError, logs
+    startCall, endCall, closeDialer,
+    currentCallId, setError,
   } = useDialerStore();
+  const { silo } = useSilo();
 
   const deviceRef = useRef<Device | null>(null);
   const callRef = useRef<Call | null>(null);
-  const [transcript, setTranscript] = useState<string>("");
-  const [participants, setParticipants] = useState<string[]>([]);
-  const [addParticipantInput, setAddParticipantInput] = useState("");
+  const [transcript, setTranscript] = useState("");
+  const [participants, setParticipants] = useState<{ number: string; duration: number }[]>([]);
+  const [addInput, setAddInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [consentLogged, setConsentLogged] = useState(false);
-
-  const SMART_REPLIES = [
-    "Let me look into that for you",
-    "I'll get in touch with the team",
-    "I'll review and get back to you",
-    "Can I put you on a brief hold?",
-    "Let me check that for you right now",
-  ];
+  const [showKeypad, setShowKeypad] = useState(false);
 
   const isActive = status === "connected";
   const inProgress = ["dialing", "ringing", "connected"].includes(status);
 
   useEffect(() => {
-    if (context.phone && !number) {
-      setNumber(context.phone);
-    }
+    if (context.phone && !number) setNumber(context.phone);
   }, [context.phone, number, setNumber]);
 
   useEffect(() => {
@@ -46,24 +72,13 @@ export default function DialerPanel() {
     };
   }, []);
 
-  // keep references in use to avoid dead state and to support debugging/tracing
-  void isMinimized;
-  void dialedNumber;
-  void openDialer;
-  void logs;
-
   async function initDevice() {
     if (deviceRef.current) return deviceRef.current;
     const token = await fetchTwilioToken();
     const device = new Device(token, { logLevel: "warn" });
     await device.register();
     deviceRef.current = device;
-
-    device.on("incoming", (call: Call) => {
-      callRef.current = call;
-      setStatus("ringing");
-    });
-
+    device.on("incoming", (call: Call) => { callRef.current = call; setStatus("ringing"); });
     return device;
   }
 
@@ -94,24 +109,15 @@ export default function DialerPanel() {
     setTranscript("");
     setParticipants([]);
     if (transcript && context.contactId) {
-      api.post("/api/calls/transcript", {
-        callSid: currentCallId,
-        transcript,
-        crmContactId: context.contactId,
-        applicationId: context.applicationId,
-      }).catch(() => {});
+      api.post("/api/calls/transcript", { callSid: currentCallId, transcript, crmContactId: context.contactId, applicationId: context.applicationId }).catch(() => {});
     }
   }
 
   function handleMute() {
     if (!callRef.current) return;
-    const newMuted = !muted;
-    callRef.current.mute(newMuted);
-    setMuted(newMuted);
-  }
-
-  function handleHold() {
-    setOnHold(!onHold);
+    const next = !muted;
+    callRef.current.mute(next);
+    setMuted(next);
   }
 
   async function handleRecord() {
@@ -124,174 +130,215 @@ export default function DialerPanel() {
         await api.post("/api/telephony/record/stop", { callSid: currentCallId });
         setIsRecording(false);
       }
-    } catch {
-      // no-op for transient recording API failures
-    }
+    } catch {}
   }
 
-  async function handleRecordingConsent() {
-    if (consentLogged || !context.contactId) return;
-    await api.post("/api/crm/events", {
-      contactId: context.contactId,
-      applicationId: context.applicationId,
-      eventType: "recording_consent_given",
-      payload: { callSid: currentCallId },
-    }).catch(() => {});
-    setConsentLogged(true);
+  function handleDtmf(digit: string) {
+    callRef.current?.sendDigits(digit);
   }
 
   async function handleAddParticipant() {
-    if (!addParticipantInput.trim() || !currentCallId) return;
-    await api.post("/api/telephony/conference/add", {
-      callSid: currentCallId,
-      to: addParticipantInput.trim(),
-    }).catch(() => {});
-    setParticipants(prev => [...prev, addParticipantInput.trim()]);
-    setAddParticipantInput("");
+    if (!addInput.trim() || !currentCallId) return;
+    await api.post("/api/telephony/conference/add", { callSid: currentCallId, to: addInput.trim() }).catch(() => {});
+    setParticipants((prev) => [...prev, { number: addInput.trim(), duration: 0 }]);
+    setAddInput("");
   }
 
   async function handleTransfer() {
-    if (!addParticipantInput.trim() || !currentCallId) return;
-    await api.post("/api/telephony/transfer", {
-      callSid: currentCallId,
-      to: addParticipantInput.trim(),
-    }).catch(() => {});
+    if (!addInput.trim() || !currentCallId) return;
+    await api.post("/api/telephony/transfer", { callSid: currentCallId, to: addInput.trim() }).catch(() => {});
+  }
+
+  async function handleMerge() {
+    if (!currentCallId) return;
+    await api.post("/api/telephony/conference/merge", { callSid: currentCallId }).catch(() => {});
+  }
+
+  async function handleStartConference() {
+    if (!currentCallId) return;
+    await api.post("/api/telephony/conference/start", { callSid: currentCallId }).catch(() => {});
   }
 
   if (!isOpen) return null;
+
+  const siloColors: Record<string, string> = { BF: "#3b82f6", BI: "#8b5cf6", SLF: "#f59e0b" };
+  const siloColor = siloColors[silo ?? ""] ?? "#374151";
+
+  const fmt = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   return (
     <div style={{
       position: "fixed", top: 0, right: 0, height: "100vh", width: 360,
       background: "#111827", color: "#fff", zIndex: 2000,
-      display: "flex", flexDirection: "column", boxShadow: "-4px 0 24px rgba(0,0,0,0.3)",
-      transform: isOpen ? "translateX(0)" : "translateX(100%)",
-      transition: "transform 220ms ease"
+      display: "flex", flexDirection: "column", boxShadow: "-4px 0 24px rgba(0,0,0,0.4)",
+      overflowY: "auto",
     }}>
-      <div style={{ padding: "16px", borderBottom: "1px solid #374151", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          {context.contactName && <div style={{ fontWeight: 600 }}>{context.contactName}</div>}
-          {context.applicationName && <div style={{ fontSize: 12, color: "#9ca3af" }}>{context.applicationName}</div>}
+      {/* ── Header ── */}
+      <div style={{ padding: "14px 16px", borderBottom: "1px solid #1f2937", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#374151", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
+            {context.contactName?.charAt(0).toUpperCase() || "?"}
+          </div>
+          <div>
+            {context.contactName && <div style={{ fontWeight: 700, fontSize: 15 }}>{context.contactName}</div>}
+            {context.applicationName && <div style={{ fontSize: 12, color: "#9ca3af" }}>{context.applicationName}</div>}
+            {!context.contactName && !context.applicationName && (
+              <div style={{ fontSize: 13, color: "#9ca3af" }}>
+                {status === "idle" ? "Ready" : status === "dialing" ? "Connecting…" : status === "ringing" ? "Ringing…" : "Connected"}
+              </div>
+            )}
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {silo && (
+            <span style={{ background: siloColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6 }}>{silo}</span>
+          )}
           {context.contactId && (
-            <button style={{ fontSize: 11, padding: "4px 8px", background: "#374151", border: "none", borderRadius: 6, color: "#fff", cursor: "pointer" }}
-              onClick={() => window.open(`/crm/contacts/${context.contactId}`, "_blank")}>
+            <button
+              style={{ fontSize: 11, padding: "4px 8px", background: "#374151", border: "none", borderRadius: 6, color: "#fff", cursor: "pointer" }}
+              onClick={() => window.open(`/crm/contacts/${context.contactId}`, "_blank")}
+            >
               Open Contact
             </button>
           )}
-          <button onClick={closeDialer} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: 20 }}>×</button>
+          <button onClick={closeDialer} style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>×</button>
         </div>
       </div>
 
-      <div style={{ padding: "12px 16px", textAlign: "center" }}>
+      {/* ── Timer / Status ── */}
+      <div style={{ textAlign: "center", padding: "12px 0 4px" }}>
         {inProgress && (
-          <div style={{ fontSize: 28, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-            {String(Math.floor(elapsedSeconds / 60)).padStart(2, "0")}:{String(elapsedSeconds % 60).padStart(2, "0")}
+          <div style={{ fontSize: 30, fontWeight: 700, fontVariantNumeric: "tabular-nums", letterSpacing: 2 }}>
+            {fmt(elapsedSeconds)}
           </div>
         )}
-        <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
-          {status === "idle" ? "Ready" : status === "dialing" ? "Dialing…" : status === "ringing" ? "Ringing…" : status === "connected" ? "Connected" : status}
+        <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
+          {status === "idle" ? "Ready" : status === "dialing" ? "Connecting…" : status === "ringing" ? "Ringing…" : status === "connected" ? "Connected" : status}
         </div>
+        {number && !inProgress && (
+          <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4, color: "#e5e7eb" }}>{number}</div>
+        )}
+        {inProgress && (
+          <div style={{ fontSize: 14, color: "#6b7280", marginTop: 2 }}>{number}</div>
+        )}
       </div>
 
+      {/* ── Active call controls ── */}
       {isActive && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, padding: "0 16px 12px" }}>
-          {[
-            { label: "Mute", active: muted, onClick: handleMute },
-            { label: "Hold", active: onHold, onClick: handleHold },
-            { label: "Record", active: isRecording, onClick: handleRecord },
-            { label: "Consent", active: consentLogged, onClick: handleRecordingConsent },
-          ].map(btn => (
-            <button key={btn.label} onClick={btn.onClick} style={{
-              background: btn.active ? "#3b82f6" : "#374151",
-              border: "none", borderRadius: 8, padding: "10px 0",
-              color: "#fff", cursor: "pointer", fontSize: 11, textAlign: "center",
-            }}>
-              <div style={{ fontSize: 18, marginBottom: 2 }}>
-                {btn.label === "Mute" ? "🎙" : btn.label === "Hold" ? "⏸" : btn.label === "Record" ? "⏺" : "✅"}
-              </div>
-              {btn.label}
-            </button>
-          ))}
+        <div style={{ padding: "8px 16px 4px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+          <CtrlBtn label="Mute"     icon="🎙"  active={muted}       onClick={handleMute} />
+          <CtrlBtn label="Hold"     icon="⏸"  active={onHold}      onClick={() => setOnHold(!onHold)} />
+          <CtrlBtn label="Record"   icon="⏺"  active={isRecording} onClick={handleRecord} />
+          <CtrlBtn label="Keypad"   icon="🔢"  active={showKeypad}  onClick={() => setShowKeypad((v) => !v)} />
+          <CtrlBtn label="Transfer" icon="↗"  active={false}       onClick={handleTransfer} />
+          <CtrlBtn label="Add"      icon="👤+" active={false}       onClick={handleAddParticipant} />
+          <CtrlBtn label="Merge"    icon="⑂"  active={false}       onClick={handleMerge} />
+          <CtrlBtn label="End"      icon="📵"  danger               onClick={() => handleEndCall()} />
         </div>
       )}
 
+      {/* ── Participant search / transfer input ── */}
       {isActive && (
-        <div style={{ padding: "0 16px 12px", display: "flex", gap: 8 }}>
+        <div style={{ padding: "4px 16px 8px", display: "flex", gap: 6 }}>
           <input
-            value={addParticipantInput}
-            onChange={e => setAddParticipantInput(e.target.value)}
+            value={addInput}
+            onChange={(e) => setAddInput(e.target.value)}
             placeholder="Search participants…"
-            style={{ flex: 1, background: "#374151", border: "none", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13 }}
+            style={{ flex: 1, background: "#1f2937", border: "1px solid #374151", borderRadius: 8, padding: "7px 12px", color: "#fff", fontSize: 13 }}
           />
-          <button onClick={handleAddParticipant} style={{ background: "#374151", border: "none", borderRadius: 8, padding: "8px 12px", color: "#fff", cursor: "pointer", fontSize: 12 }}>Add</button>
-          <button onClick={handleTransfer} style={{ background: "#374151", border: "none", borderRadius: 8, padding: "8px 12px", color: "#fff", cursor: "pointer", fontSize: 12 }}>→</button>
         </div>
       )}
 
+      {/* ── Participants list ── */}
       {participants.length > 0 && (
-        <div style={{ padding: "0 16px 12px" }}>
+        <div style={{ margin: "0 16px 8px", background: "#1f2937", borderRadius: 8, overflow: "hidden" }}>
           {participants.map((p, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderTop: "1px solid #374151", fontSize: 13 }}>
-              <span>{p}</span>
-              <span style={{ color: "#9ca3af" }}>🎙 🔊</span>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderTop: i > 0 ? "1px solid #374151" : "none" }}>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#374151", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                {p.number[0] ?? "?"}
+              </div>
+              <div style={{ flex: 1, fontSize: 13 }}>{p.number}</div>
+              <span style={{ color: "#6b7280", fontSize: 12 }}>🎙 🔊</span>
             </div>
           ))}
-          <button style={{ marginTop: 8, width: "100%", padding: 10, background: "#f59e0b", border: "none", borderRadius: 8, color: "#fff", cursor: "pointer", fontWeight: 600 }}>
+          <button
+            style={{ width: "100%", padding: "10px 0", background: "#f59e0b", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+            onClick={handleStartConference}
+          >
             Start Conference
           </button>
         </div>
       )}
 
-      {!inProgress && (
-        <div style={{ padding: "0 16px 16px" }}>
-          <input
-            value={number}
-            onChange={e => setNumber(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && void handleDial()}
-            placeholder="Enter phone number"
-            style={{ width: "100%", background: "#374151", border: "none", borderRadius: 8, padding: "10px 12px", color: "#fff", fontSize: 15, boxSizing: "border-box" }}
-          />
+      {/* ── DTMF keypad ── */}
+      {(showKeypad || (!inProgress)) && (
+        <div style={{ padding: "8px 16px" }}>
+          {DTMF_KEYS.map((row, ri) => (
+            <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 8 }}>
+              {row.map((digit) => (
+                <button
+                  key={digit}
+                  onClick={() => inProgress ? handleDtmf(digit) : setNumber(`${number}${digit}`)}
+                  style={{ padding: "14px 0", background: "#1f2937", border: "1px solid #374151", borderRadius: 10, color: "#fff", fontSize: 18, fontWeight: 600, cursor: "pointer" }}
+                >
+                  {digit}
+                </button>
+              ))}
+            </div>
+          ))}
+          {!inProgress && (
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <input
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && void handleDial()}
+                placeholder="Enter phone number"
+                style={{ flex: 1, background: "#1f2937", border: "1px solid #374151", borderRadius: 8, padding: "10px 12px", color: "#fff", fontSize: 15 }}
+              />
+              {number && (
+                <button onClick={() => setNumber(number.slice(0, -1))} style={{ background: "#374151", border: "none", borderRadius: 8, padding: "0 14px", color: "#9ca3af", cursor: "pointer", fontSize: 18 }}>⌫</button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {error && <div style={{ padding: "0 16px", color: "#ef4444", fontSize: 13 }}>{error}</div>}
+      {error && <div style={{ margin: "0 16px 8px", padding: "8px 12px", background: "#450a0a", borderRadius: 8, color: "#ef4444", fontSize: 13 }}>{error}</div>}
 
+      {/* ── Transcript ── */}
       {isActive && (
-        <div style={{ flex: 1, margin: "0 16px 12px", background: "#1f2937", borderRadius: 8, padding: 12, overflow: "auto", fontSize: 12, color: "#d1d5db" }}>
-          {transcript || <span style={{ color: "#6b7280" }}>Call transcript will appear here</span>}
+        <div style={{ flex: 1, margin: "0 16px 8px", background: "#1f2937", borderRadius: 8, padding: 12, minHeight: 60, overflow: "auto", fontSize: 12, color: "#d1d5db" }}>
+          {transcript || <span style={{ color: "#4b5563" }}>Call transcript will appear here</span>}
         </div>
       )}
 
+      {/* ── Smart replies ── */}
       {isActive && (
-        <div style={{ padding: "0 16px 12px", display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {SMART_REPLIES.map(reply => (
+        <div style={{ padding: "0 16px 8px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {SMART_REPLIES.map((reply) => (
             <button key={reply} style={{ background: "#1f2937", border: "1px solid #374151", borderRadius: 20, padding: "4px 10px", color: "#d1d5db", cursor: "pointer", fontSize: 12 }}>
               {reply}
             </button>
           ))}
+          <p style={{ width: "100%", fontSize: 10, color: "#4b5563", margin: "4px 0 0" }}>
+            * Transcript and smart replies will only display on answered calls
+          </p>
         </div>
       )}
 
-      <div style={{ padding: "0 16px 24px" }}>
-        {!inProgress ? (
+      {/* ── Main call button ── */}
+      {!inProgress && (
+        <div style={{ padding: "8px 16px 24px" }}>
           <button
             onClick={() => void handleDial()}
             disabled={!number.trim()}
-            style={{ width: "100%", padding: 14, background: "#22c55e", border: "none", borderRadius: 12, color: "#fff", fontSize: 16, cursor: "pointer", fontWeight: 600 }}
+            style={{ width: "100%", padding: 14, background: number.trim() ? "#22c55e" : "#374151", border: "none", borderRadius: 12, color: "#fff", fontSize: 16, cursor: number.trim() ? "pointer" : "default", fontWeight: 700 }}
           >
             📞 Call
           </button>
-        ) : (
-          <button
-            onClick={() => handleEndCall()}
-            style={{ width: "100%", padding: 14, background: "#ef4444", border: "none", borderRadius: 12, color: "#fff", fontSize: 16, cursor: "pointer", fontWeight: 600 }}
-          >
-            📵 End Call
-          </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
