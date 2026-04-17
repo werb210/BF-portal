@@ -1,11 +1,14 @@
 import type { PropsWithChildren } from "react";
+import Card from "@/components/ui/Card";
 
 type SettingsSectionLayoutProps = PropsWithChildren<{
   title?: string;
 }>;
 
-const SettingsSectionLayout = ({ children }: SettingsSectionLayoutProps) => (
-  <div className="page settings-page settings-shell">{children}</div>
+const SettingsSectionLayout = ({ title = "Settings", children }: SettingsSectionLayoutProps) => (
+  <div className="page settings-page">
+    <Card title={title}>{children}</Card>
+  </div>
 );
 
 export default SettingsSectionLayout;
