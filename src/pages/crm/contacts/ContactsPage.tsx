@@ -11,6 +11,7 @@ import ContactForm from "./ContactForm";
 import { fetchContacts } from "@/api/crm";
 import type { Contact } from "@/api/crm";
 import { useCrmStore } from "@/state/crm.store";
+import { useSilo } from "@/hooks/useSilo";
 import { getErrorMessage } from "@/utils/errors";
 import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
@@ -20,6 +21,7 @@ const owners = ["Alex", "Taylor"];
 
 const ContactsPage = () => {
   const { silo, setSilo, filters, setFilters, resetFilters } = useCrmStore();
+  const { silo: globalSilo } = useSilo();
   const [selected, setSelected] = useState<Contact | null>(null);
   const [showForm, setShowForm] = useState(false);
   const {
@@ -30,6 +32,10 @@ const ContactsPage = () => {
     queryKey: ["contacts", silo, filters],
     queryFn: fetchContacts
   });
+
+  useEffect(() => {
+    setSilo(globalSilo as "BF" | "BI" | "SLF");
+  }, [globalSilo, setSilo]);
 
   useEffect(() => {
     if (error) {
@@ -67,16 +73,7 @@ const ContactsPage = () => {
     <div className="page" data-testid="contacts-page">
       <Card
         title="Contacts"
-        actions={
-          <div className="flex gap-2">
-            <Select value={silo} onChange={(e) => setSilo(e.target.value as any)}>
-              <option value="BF">BF</option>
-              <option value="BI">BI</option>
-              <option value="SLF">SLF</option>
-            </Select>
-            <Button onClick={() => setShowForm(true)}>Add Contact</Button>
-          </div>
-        }
+        actions={<Button onClick={() => setShowForm(true)}>Add Contact</Button>}
       >
         <div className="flex gap-2 mb-2 items-center">
           <Input placeholder="Search" value={filters.search} onChange={handleSearch} />
