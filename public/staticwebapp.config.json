@@ -4,6 +4,6 @@
     "exclude": ["/api/*"]
   },
   "globalHeaders": {
-    "Content-Security-Policy": "default-src 'self'; connect-src 'self' https://server.boreal.financial https://graph.microsoft.com https://login.microsoftonline.com wss://voice-js.roaming.twilio.com wss://eventgw.twilio.com wss://insights.twilio.com https://voice-js.twilio.com https://eventgw.twilio.com https://media.twiliocdn.com https://sdk.twilio.com https://insights.twilio.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob: https://media.twiliocdn.com; worker-src 'self' blob:;"
+    "Content-Security-Policy": "default-src 'self'; connect-src 'self' https://server.boreal.financial https://graph.microsoft.com https://login.microsoftonline.com wss://voice-js.roaming.twilio.com wss://voice-js.twilio.com wss://eventgw.twilio.com wss://insights.twilio.com https://voice-js.twilio.com https://eventgw.twilio.com https://media.twiliocdn.com https://sdk.twilio.com https://insights.twilio.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob: https://media.twiliocdn.com; worker-src 'self' blob:;"
   }
 }
