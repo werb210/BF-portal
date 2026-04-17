@@ -763,25 +763,26 @@ a,
 }
 
 .settings-layout {
-  display: flex;
-  gap: 20px;
+  display: grid;
+  gap: 16px;
 }
 
 .settings-tabs {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 8px;
-  min-width: 200px;
 }
 
 .settings-tab {
   border: none;
   background: var(--ui-surface-muted);
   border-radius: 10px;
-  padding: 10px 12px;
-  text-align: left;
+  padding: 10px 16px;
+  text-align: center;
   cursor: pointer;
   color: var(--ui-text);
+  font-weight: 600;
 }
 
 .settings-tab.is-active {
@@ -798,6 +799,7 @@ a,
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
 }
 
 .settings-grid {
@@ -830,6 +832,7 @@ a,
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  justify-content: space-between;
 }
 
 .avatar-upload {
@@ -871,7 +874,7 @@ a,
 
 .branding-preview {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: 1.2fr 1fr;
   gap: 16px;
 }
 
@@ -919,6 +922,33 @@ a,
   display: grid;
   gap: 12px;
 }
+
+.runtime-status--cards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.runtime-card {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: var(--ui-surface-strong);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.runtime-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.runtime-card__icon {
+  font-size: 20px;
+}
+
+.runtime-card--green { border-color: rgba(34, 197, 94, 0.4); }
+.runtime-card--yellow { border-color: rgba(245, 158, 11, 0.4); }
+.runtime-card--red { border-color: rgba(239, 68, 68, 0.4); }
 
 .runtime-status__row {
   display: flex;
@@ -996,6 +1026,11 @@ a,
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.user-actions__button {
+  min-width: 88px;
 }
 
 .otp-inputs {
@@ -1272,11 +1307,11 @@ a,
   }
 
   .settings-layout {
-    flex-direction: column;
+    gap: 12px;
   }
 
   .settings-tabs {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .settings-grid {
@@ -1287,6 +1322,7 @@ a,
   .management-actions {
     flex-direction: column;
     align-items: stretch;
+    justify-content: flex-start;
   }
 
   .settings-actions .ui-button,
@@ -3023,9 +3059,167 @@ a,
 .calendar-event__meta,
 .calendar-event__subtitle { font-size: 12px; color: var(--ui-text-muted); }
 
+.settings-shell,
+.marketing-page,
+.lenders-page {
+  width: min(100%, 1240px);
+  margin: 0 auto;
+}
+
+.settings-shell {
+  padding-top: 4px;
+}
+
+.settings-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.profile-settings__container {
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.profile-settings__section {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-settings__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-inline-alert {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.settings-inline-alert--error {
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  background: rgba(254, 226, 226, 0.65);
+  color: #991b1b;
+}
+
+.settings-inline-alert--success {
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  background: rgba(220, 252, 231, 0.7);
+  color: #166534;
+}
+
+.branding-preview__left,
+.branding-preview__right {
+  display: grid;
+  gap: 12px;
+}
+
 .marketing-layout { display: grid; gap: 18px; }
 .marketing-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
-.marketing-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.marketing-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+
+.marketing-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.marketing-funnel {
+  display: grid;
+  gap: 12px;
+}
+
+.marketing-funnel__step {
+  display: grid;
+  gap: 8px;
+}
+
+.marketing-funnel__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.marketing-funnel__bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+}
+
+.marketing-funnel__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 100%);
+}
+
+.marketing-panel--form .ui-field {
+  margin: 0;
+}
+
+.marketing-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.marketing-panel__textarea {
+  min-height: 160px;
+}
+
+.marketing-panel__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.marketing-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-assets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.brand-assets-card {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 12px;
+  background: var(--ui-surface-strong);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.brand-assets-card__thumb {
+  border-radius: 10px;
+  min-height: 80px;
+  display: grid;
+  place-items: center;
+  background: rgba(59, 130, 246, 0.12);
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+.lenders-page__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.lenders-toolbar {
+  display: grid;
+  grid-template-columns: 1.6fr 220px auto;
+  gap: 12px;
+  align-items: end;
+}
 
 @media (max-width: 1199px) {
   .portal-layout__main {
@@ -3051,6 +3245,19 @@ a,
   .marketing-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .marketing-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .runtime-status--cards {
+    grid-template-columns: 1fr;
+  }
+
+  .branding-preview,
+  .lenders-toolbar {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 767px) {
@@ -3070,6 +3277,10 @@ a,
 
   .dashboard-grid,
   .marketing-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-settings__grid {
     grid-template-columns: 1fr;
   }
 
