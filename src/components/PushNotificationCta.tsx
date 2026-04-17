@@ -21,7 +21,7 @@ const PushNotificationCta = () => {
   }
 
   if (permission === "granted") {
-    return <span className="text-xs text-emerald-600">Notifications enabled</span>;
+    return null;
   }
 
   return (
