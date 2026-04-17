@@ -107,7 +107,7 @@ const ContactsPage = () => {
           <p className="mb-2 text-amber-700" data-testid="dedupe-indicator">Potential duplicates detected: {dedupeCount}</p>
         ) : null}
         {!error && (
-          <Table headers={["Name", "Email", "Phone", "Silo", "Owner", "Active", "Actions"]}>
+          <Table headers={["Name", "Company", "Amount Requested", "Funding Type", "Date Created", "Actions"]}>
             {isLoading && (
               <tr>
                 <td colSpan={7}>Loading contacts…</td>

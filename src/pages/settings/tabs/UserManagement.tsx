@@ -25,6 +25,7 @@ const UserManagement = () => {
     email: string;
     phone: string;
     role: AdminUser["role"];
+    silo: string;
   };
 
   const [userForm, setUserForm] = useState<UserFormState>({
@@ -32,7 +33,8 @@ const UserManagement = () => {
     lastName: "",
     email: "",
     phone: "",
-    role: "Staff"
+    role: "Staff",
+    silo: "BF",
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -104,7 +106,7 @@ const UserManagement = () => {
         await addUser({ ...userForm });
       }
       await fetchUsers();
-      setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff" });
+      setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff", silo: "BF" });
       setEditingUser(null);
       setIsModalOpen(false);
     } catch (error) {
@@ -187,7 +189,7 @@ const UserManagement = () => {
           onClick={() => {
             setEditingUser(null);
             setFormErrors({});
-            setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff" });
+            setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff", silo: "BF" });
             setIsModalOpen(true);
           }}
         >
@@ -251,6 +253,7 @@ const UserManagement = () => {
                       setUserForm({
                         firstName: user.firstName ?? fallbackName.firstName,
                         lastName: user.lastName ?? fallbackName.lastName,
+                        silo: (user as AdminUser & { silo?: string }).silo ?? "BF",
                         email: user.email ?? "",
                         phone: user.phone ?? "",
                         role: roleValue
@@ -325,6 +328,7 @@ const UserManagement = () => {
                       setUserForm({
                         firstName: user.firstName ?? fallbackName.firstName,
                         lastName: user.lastName ?? fallbackName.lastName,
+                        silo: (user as AdminUser & { silo?: string }).silo ?? "BF",
                         email: user.email ?? "",
                         phone: user.phone ?? "",
                         role: roleValue
@@ -355,6 +359,30 @@ const UserManagement = () => {
               errors={formErrors}
               onChange={(updates) => setUserForm((prev) => ({ ...prev, ...updates }))}
             />
+            <div className="ui-field">
+              <label className="ui-field__label">Silo access</label>
+              <select
+                className="ui-field__input"
+                value={userForm.role === "Admin" ? "ALL" : userForm.silo}
+                disabled={userForm.role === "Admin"}
+                onChange={(e) => setUserForm((prev) => ({ ...prev, silo: e.target.value }))}
+              >
+                {userForm.role === "Admin" ? (
+                  <option value="ALL">All silos (Admin)</option>
+                ) : (
+                  <>
+                    <option value="BF">BF — Boreal Financial</option>
+                    <option value="BI">BI — Boreal Insurance</option>
+                    <option value="SLF">SLF — Site Level Financial</option>
+                  </>
+                )}
+              </select>
+              {userForm.role === "Admin" && (
+                <p style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 4 }}>
+                  Admin users have access to all silos.
+                </p>
+              )}
+            </div>
             <Select
               label="Role"
               value={userForm.role}

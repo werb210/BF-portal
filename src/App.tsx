@@ -12,7 +12,7 @@ import { bootstrapVoice, destroyVoiceDevice } from "@/telephony/bootstrapVoice";
 import Login from "@/pages/Login";
 import Verify from "@/pages/Verify";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
-import LendersPage from "@/pages/Lenders";
+import LendersPage from "@/pages/lenders/LendersPage";
 import PipelinePage from "@/pages/pipeline/PipelinePage";
 import ApplicationDetail from "@/pages/application/ApplicationDetail";
 import MayaPage from "@/pages/MayaPage";
