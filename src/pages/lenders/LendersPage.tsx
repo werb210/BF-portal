@@ -7,7 +7,6 @@ import ErrorBanner from "@/components/ui/ErrorBanner";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
-import Table from "@/components/ui/Table";
 import AppLoading from "@/components/layout/AppLoading";
 import RequireRole from "@/components/auth/RequireRole";
 import ActionGate from "@/components/auth/ActionGate";
@@ -35,8 +34,7 @@ import { ApiError } from "@/api";
 import { getErrorMessage } from "@/utils/errors";
 import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
-import { SUBMISSION_METHODS, type SubmissionMethod } from "@/types/lenderManagement.types";
-import { SUBMISSION_METHOD_LABELS, getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
+import { type SubmissionMethod } from "@/types/lenderManagement.types";
 import {
   LENDER_PRODUCT_CATEGORIES,
   LENDER_PRODUCT_CATEGORY_LABELS,
@@ -68,6 +66,11 @@ type LenderFormValues = {
   primaryContactPhone: string;
   website: string;
   internalNotes: string;
+  street: string;
+  city: string;
+  region: string;
+  postalCode: string;
+  phone: string;
   submissionMethod: SubmissionMethod;
   submissionEmail: string;
   submissionAttachmentFormat: "PDF" | "CSV";
@@ -91,6 +94,11 @@ const createEmptyLenderForm = (): LenderFormValues => ({
   primaryContactPhone: "",
   website: "",
   internalNotes: "",
+  street: "",
+  city: "",
+  region: "",
+  postalCode: "",
+  phone: "",
   submissionMethod: "EMAIL",
   submissionEmail: "",
   submissionAttachmentFormat: "PDF",
@@ -185,12 +193,6 @@ const normalizeLenderCountryValue = (value?: string | null) => {
   if (normalized === "US" || normalized === "USA" || normalized === "UNITED STATES") return "US";
   if (normalized === "BOTH") return "BOTH";
   return trimmed;
-};
-
-const formatLenderCountryLabel = (value?: string | null) => {
-  const normalized = normalizeLenderCountryValue(value);
-  if (!normalized) return "";
-  return COUNTRIES.find((country) => country.value === normalized)?.label ?? value ?? "";
 };
 
 const toFormString = (value?: number | string | null) => {
@@ -299,15 +301,6 @@ const getLenderStatus = (lender?: Lender | null) => {
 
 const isLenderActive = (lender?: Lender | null) => getLenderStatus(lender) === "ACTIVE";
 
-const getSubmissionBadgeLabel = (method?: Lender["submissionConfig"]["method"] | null) =>
-  method === "GOOGLE_SHEET" ? "Sheet-based submission" : getSubmissionMethodLabel(method);
-
-const renderSubmissionMethodBadge = (method?: Lender["submissionConfig"]["method"] | null) => (
-  <span className={`status-pill status-pill--submission-${getSubmissionMethodBadgeTone(method)}`}>
-    {getSubmissionBadgeLabel(method)}
-  </span>
-);
-
 const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
   const primaryContact = lender.primaryContact ?? {
     name: "",
@@ -339,6 +332,11 @@ const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
     primaryContactPhone: primaryContact.phone ?? "",
     website: lender.website ?? "",
     internalNotes: lender.internalNotes ?? "",
+    street: lender.address?.street ?? "",
+    city: lender.address?.city ?? "",
+    region: lender.address?.stateProvince ?? "",
+    postalCode: lender.address?.postalCode ?? "",
+    phone: lender.phone ?? "",
     submissionMethod: submissionConfig.method ?? "EMAIL",
     submissionEmail: submissionConfig.submissionEmail ?? "",
     submissionAttachmentFormat: submissionConfig.attachmentFormat ?? "PDF",
@@ -366,6 +364,7 @@ const LendersContent = () => {
   const safeLenders = Array.isArray(lenders) ? lenders : [];
 
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
+  const [filteredLenders, setFilteredLenders] = useState<typeof safeLenders | null>(null);
   const [isLenderModalOpen, setIsLenderModalOpen] = useState(false);
   const [editingLenderId, setEditingLenderId] = useState<string | null>(null);
   const [editingLender, setEditingLender] = useState<Lender | null>(null);
@@ -498,7 +497,12 @@ const LendersContent = () => {
       contact_name: "primaryContactName",
       contact_email: "primaryContactEmail",
       contact_phone: "primaryContactPhone",
-      website: "website"
+      website: "website",
+      street: "street",
+      city: "city",
+      region: "region",
+      postal_code: "postalCode",
+      phone: "phone"
     }),
     []
   );
@@ -648,12 +652,15 @@ const LendersContent = () => {
     const nextErrors: Record<string, string> = {};
     if (!values.name.trim()) nextErrors.name = "Name is required.";
     if (!values.country.trim()) nextErrors.country = "Country is required.";
+    if (!values.street.trim()) nextErrors.street = "Street address is required.";
+    if (!values.phone.trim()) nextErrors.phone = "Main phone number is required.";
     if (!values.primaryContactName.trim()) nextErrors.primaryContactName = "Primary contact name is required.";
     if (!values.primaryContactEmail.trim()) {
       nextErrors.primaryContactEmail = "Primary contact email is required.";
     } else if (!isValidEmail(values.primaryContactEmail)) {
       nextErrors.primaryContactEmail = "Enter a valid email.";
     }
+    if (!values.primaryContactPhone.trim()) nextErrors.primaryContactPhone = "Primary contact phone is required.";
     if (!values.submissionMethod) nextErrors.submissionMethod = "Submission method is required.";
     if (values.submissionMethod === "EMAIL" && !values.submissionEmail.trim()) {
       nextErrors.submissionEmail = "Target email address is required.";
@@ -678,15 +685,15 @@ const LendersContent = () => {
   const buildLenderPayload = (values: LenderFormValues): LenderPayload => ({
     name: values.name.trim(),
     status: values.active ? "ACTIVE" : "INACTIVE",
-    phone: values.primaryContactPhone.trim(),
+    phone: values.phone.trim(),
     website: values.website.trim() ? values.website.trim() : null,
     description: null,
     internal_notes: values.internalNotes.trim() ? values.internalNotes.trim() : null,
-    street: "",
-    city: "",
-    region: "",
+    street: values.street.trim(),
+    city: values.city.trim(),
+    region: values.region.trim(),
     country: values.country.trim(),
-    postal_code: "",
+    postal_code: values.postalCode.trim(),
     contact_name: values.primaryContactName.trim(),
     contact_email: values.primaryContactEmail.trim(),
     contact_phone: values.primaryContactPhone.trim(),
@@ -853,11 +860,6 @@ const LendersContent = () => {
     navigate("/lenders");
   };
 
-  const openEditModal = (lenderIdValue: string) => {
-    setEditingLenderId(lenderIdValue);
-    setIsLenderModalOpen(true);
-  };
-
   const closeProductModal = () => {
     setIsProductModalOpen(false);
     setEditingProduct(null);
@@ -929,102 +931,118 @@ const LendersContent = () => {
         </ActionGate>
       </div>
 
-      <div className="page-grid">
+      <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: "1.5rem", alignItems: "start" }}>
+        {/* LEFT: Lenders list */}
         <Card>
           <div className="card__body">
-            {!safeLenders.length ? (
-              <div className="text-sm text-slate-500">No lenders added yet.</div>
-            ) : (
-              <div className="management-grid">
-                <Select
-                  label="Lender"
-                  value={selectedLenderId ?? ""}
-                  onChange={(event) => handleLenderSelection(event.target.value)}
-                >
-                  {safeLenders.map((lender) => (
-                    <option key={lender.id} value={lender.id}>
-                      {lender.name || "Unnamed lender"}
-                    </option>
-                  ))}
-                </Select>
-                {selectedLender && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`status-pill status-pill--${isLenderActive(selectedLender) ? "active" : "paused"}`}>
-                      {isLenderActive(selectedLender) ? "Lender active" : "Lender inactive"}
-                    </span>
-                    <span>{formatLenderCountryLabel(selectedLender.address?.country) || "—"}</span>
-                    {!isLenderActive(selectedLender) && (
-                      <span className="text-xs text-amber-600">Inactive lenders hide products.</span>
-                    )}
-                  </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+              <input
+                type="search"
+                placeholder="Search lenders..."
+                style={{ flex: 1, padding: "0.5rem 0.75rem", border: "1px solid #e2e8f0", borderRadius: "0.375rem", fontSize: "0.875rem" }}
+                onChange={(e) => {
+                  const q = e.target.value.toLowerCase();
+                  setFilteredLenders(q ? safeLenders.filter((l) => l.name?.toLowerCase().includes(q)) : safeLenders);
+                }}
+              />
+              <ActionGate actions={["create_lender"]}>
+                <Button variant="primary" onClick={() => {
+                  setEditingLender(null);
+                  setEditingLenderId(null);
+                  setIsLenderModalOpen(true);
+                  setLenderFormValues(createEmptyLenderForm());
+                  setLenderFormErrors({});
+                }}>
+                  Create lender
+                </Button>
+              </ActionGate>
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                  <th style={{ textAlign: "left", padding: "0.5rem 0.25rem", fontWeight: 600 }}>Lender</th>
+                  <th style={{ textAlign: "left", padding: "0.5rem 0.25rem", fontWeight: 600 }}>Status</th>
+                  <th style={{ textAlign: "left", padding: "0.5rem 0.25rem", fontWeight: 600 }}>Country</th>
+                  <th style={{ textAlign: "left", padding: "0.5rem 0.25rem", fontWeight: 600 }}>Primary Contact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(filteredLenders ?? safeLenders).map((lender) => {
+                  const active = isLenderActive(lender);
+                  return (
+                    <tr
+                      key={lender.id}
+                      onClick={() => handleLenderSelection(lender.id)}
+                      style={{
+                        cursor: "pointer",
+                        backgroundColor: selectedLenderId === lender.id ? "#eff6ff" : undefined,
+                        borderBottom: "1px solid #f1f5f9"
+                      }}
+                    >
+                      <td style={{ padding: "0.6rem 0.25rem", fontWeight: 500 }}>{lender.name}</td>
+                      <td style={{ padding: "0.6rem 0.25rem" }}>
+                        <span className={`status-pill status-pill--${active ? "active" : "paused"}`}>
+                          {active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "0.6rem 0.25rem" }}>{lender.address?.country ?? "—"}</td>
+                      <td style={{ padding: "0.6rem 0.25rem" }}>{lender.primaryContact?.name ?? "—"}</td>
+                    </tr>
+                  );
+                })}
+                {!safeLenders.length && (
+                  <tr><td colSpan={4} style={{ padding: "1.5rem", textAlign: "center", color: "#94a3b8" }}>No lenders added yet.</td></tr>
                 )}
-                {selectedLender ? (
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" onClick={() => openEditModal(selectedLender.id)}>
-                      Edit lender
-                    </Button>
-                    <Button variant="secondary" onClick={handleAddProduct} disabled={isSelectedLenderInactive}>
-                      Add product
-                    </Button>
-                  </div>
-                ) : null}
-              </div>
-            )}
+              </tbody>
+            </table>
           </div>
         </Card>
 
+        {/* RIGHT: Lender products */}
         <Card>
           <div className="card__body">
-            {hasSelectedLender && !isSelectedLenderInactive ? (
-              <div className="space-y-4">
-                {groupedProducts.map((group) => (
-                  <div key={group.category}>
-                    <h3 className="text-lg font-semibold">{group.label}</h3>
-                    <div className="mt-2">
-                      <Table headers={["Product", "Country", "Submission", "Status", "Min/Max"]}>
-                        {group.products.map((product) => {
-                          const productActive = Boolean(product.active);
-                          const minAmount = product.minAmount || 0;
-                          const maxAmount = product.maxAmount || 0;
-                          return (
-                            <tr key={product.id}>
-                              <td>
-                                <button
-                                  type="button"
-                                  className="text-left text-sm font-medium text-slate-900 hover:underline"
-                                  onClick={() => handleEditProduct(product)}
-                                >
-                                  {product.productName}
-                                </button>
-                              </td>
-                              <td>{formatLenderCountryLabel(product.country) || "—"}</td>
-                              <td>{renderSubmissionMethodBadge(selectedLender?.submissionConfig?.method ?? "MANUAL")}</td>
-                              <td>
-                                <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
-                                  {productActive ? "Active" : "Inactive"}
-                                </span>
-                              </td>
-                              <td>
-                                ${minAmount.toLocaleString()} - ${maxAmount.toLocaleString()}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </Table>
-                    </div>
-                  </div>
-                ))}
-                {!productsToRender.length && (
-                  <div className="text-sm text-slate-500">No products for this lender.</div>
-                )}
-              </div>
-            ) : (
-              <div className="text-sm text-slate-500">
-                {hasSelectedLender
-                  ? "This lender is inactive, so products are hidden."
-                  : "Select a lender to view products."}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <h2 style={{ fontSize: "1.125rem", fontWeight: 600 }}>Lender Products</h2>
+              {hasSelectedLender && (
+                <ActionGate actions={["create_lender_product"]}>
+                  <Button variant="secondary" onClick={handleAddProduct} disabled={isSelectedLenderInactive}>
+                    Add product
+                  </Button>
+                </ActionGate>
+              )}
+            </div>
+            {selectedLender && isSelectedLenderInactive && (
+              <div style={{ background: "#fefce8", border: "1px solid #fde68a", borderRadius: "0.5rem", padding: "0.75rem 1rem", marginBottom: "1rem", fontSize: "0.875rem", color: "#92400e" }}>
+                ⚠ {selectedLender.name} is inactive and cannot receive deals until reactivated.
               </div>
             )}
+            {!hasSelectedLender && (
+              <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>Select a lender to view products.</p>
+            )}
+            {hasSelectedLender && groupedProducts.map((group) => (
+              <div key={group.category} style={{ marginBottom: "1.25rem" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                  <h3 style={{ fontWeight: 600, fontSize: "1rem" }}>{group.label}</h3>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b", background: "#f1f5f9", borderRadius: "0.25rem", padding: "0.125rem 0.5rem" }}>Draft</span>
+                </div>
+                {group.products.map((product) => (
+                  <div
+                    key={product.id}
+                    onClick={() => handleEditProduct(product)}
+                    style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "0.625rem 0.75rem", borderRadius: "0.375rem", cursor: "pointer", border: "1px solid #e2e8f0", marginBottom: "0.5rem", fontSize: "0.875rem" }}
+                  >
+                    <span style={{ flex: 1, fontWeight: 500 }}>{product.productName}</span>
+                    {product.maxAmount ? <span style={{ color: "#64748b" }}>${Number(product.maxAmount).toLocaleString()}</span> : null}
+                    {(product.termLength?.min || product.termLength?.max) ? (
+                      <span style={{ color: "#64748b" }}>{product.termLength?.min}–{product.termLength?.max} months</span>
+                    ) : null}
+                    {product.interestRateMin ? (
+                      <span style={{ color: "#64748b" }}>{product.interestRateMin}–{product.interestRateMax}%</span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         </Card>
       </div>
@@ -1056,65 +1074,73 @@ const LendersContent = () => {
             <div className="management-field">
               <span className="management-field__label">Lender details</span>
               <Input
-                label="Lender name"
+                label="Lender name *"
                 value={lenderFormValues.name}
-                onChange={(event) => setLenderFormValues((prev) => ({ ...prev, name: event.target.value }))}
+                onChange={(e) => setLenderFormValues((p) => ({ ...p, name: e.target.value }))}
                 error={lenderFormErrors.name}
               />
-              <Select
-                label="Country"
-                value={lenderFormValues.country}
-                onChange={(event) =>
-                  setLenderFormValues((prev) => ({
-                    ...prev,
-                    country: event.target.value
-                  }))
-                }
-              >
-                {COUNTRIES.map((country) => (
-                  <option key={country.value} value={country.value}>
-                    {country.label}
-                  </option>
-                ))}
-              </Select>
-              {lenderFormErrors.country && <span className="ui-field__error">{lenderFormErrors.country}</span>}
-              <label className="management-toggle">
-                <input
-                  type="checkbox"
-                  checked={lenderFormValues.active}
-                  onChange={(event) =>
-                    setLenderFormValues((prev) => ({ ...prev, active: event.target.checked }))
-                  }
+              <Input
+                label="Street address *"
+                value={lenderFormValues.street}
+                onChange={(e) => setLenderFormValues((p) => ({ ...p, street: e.target.value }))}
+                error={lenderFormErrors.street}
+              />
+              <div className="management-grid__row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                <Input
+                  label="City"
+                  value={lenderFormValues.city}
+                  onChange={(e) => setLenderFormValues((p) => ({ ...p, city: e.target.value }))}
                 />
-                <span>Active lender</span>
-              </label>
+                <Input
+                  label="State / Province"
+                  value={lenderFormValues.region}
+                  onChange={(e) => setLenderFormValues((p) => ({ ...p, region: e.target.value }))}
+                />
+              </div>
+              <div className="management-grid__row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                <Input
+                  label="ZIP / Postal Code"
+                  value={lenderFormValues.postalCode}
+                  onChange={(e) => setLenderFormValues((p) => ({ ...p, postalCode: e.target.value }))}
+                />
+                <Select
+                  label="Country"
+                  value={lenderFormValues.country}
+                  onChange={(e) => setLenderFormValues((p) => ({ ...p, country: e.target.value }))}
+                >
+                  {COUNTRIES.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </Select>
+              </div>
+              <Input
+                label="Main phone number *"
+                value={lenderFormValues.phone}
+                onChange={(e) => setLenderFormValues((p) => ({ ...p, phone: e.target.value }))}
+                error={lenderFormErrors.phone}
+              />
             </div>
 
             <div className="management-field">
               <span className="management-field__label">Primary contact</span>
               <Input
-                label="Contact name"
+                label="Contact person *"
                 value={lenderFormValues.primaryContactName}
-                onChange={(event) =>
-                  setLenderFormValues((prev) => ({ ...prev, primaryContactName: event.target.value }))
-                }
+                onChange={(e) => setLenderFormValues((p) => ({ ...p, primaryContactName: e.target.value }))}
                 error={lenderFormErrors.primaryContactName}
               />
-              <Input
-                label="Contact email"
-                value={lenderFormValues.primaryContactEmail}
-                onChange={(event) =>
-                  setLenderFormValues((prev) => ({ ...prev, primaryContactEmail: event.target.value }))
-                }
-                error={lenderFormErrors.primaryContactEmail}
-              />
-              <div className="management-grid__row">
+              <div className="management-grid__row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                 <Input
-                  label="Contact phone"
+                  label="Contact phone (OTP) *"
                   value={lenderFormValues.primaryContactPhone}
-                  onChange={(event) =>
-                    setLenderFormValues((prev) => ({ ...prev, primaryContactPhone: event.target.value }))
-                  }
+                  onChange={(e) => setLenderFormValues((p) => ({ ...p, primaryContactPhone: e.target.value }))}
+                  error={lenderFormErrors.primaryContactPhone}
+                />
+                <Input
+                  label="Contact email *"
+                  value={lenderFormValues.primaryContactEmail}
+                  onChange={(e) => setLenderFormValues((p) => ({ ...p, primaryContactEmail: e.target.value }))}
+                  error={lenderFormErrors.primaryContactEmail}
                 />
               </div>
             </div>
@@ -1139,26 +1165,22 @@ const LendersContent = () => {
             </div>
 
             <div className="management-field">
-              <span className="management-field__label">Submission method</span>
-              <Select
-                label="Submission method"
-                value={lenderFormValues.submissionMethod}
-                onChange={(event) =>
-                  setLenderFormValues((prev) => ({
-                    ...prev,
-                    submissionMethod: event.target.value as SubmissionMethod
-                  }))
-                }
-              >
-                {SUBMISSION_METHODS.map((method) => (
-                  <option key={method} value={method}>
-                    {SUBMISSION_METHOD_LABELS[method]}
-                  </option>
-                ))}
-              </Select>
+              <span className="management-field__label">Submission method *</span>
               {lenderFormErrors.submissionMethod && (
                 <span className="ui-field__error">{lenderFormErrors.submissionMethod}</span>
               )}
+              <div className="space-y-2">
+                {(["EMAIL", "API", "GOOGLE_SHEET"] as const).map((method) => (
+                  <label key={method} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={lenderFormValues.submissionMethod === method}
+                      onChange={() => setLenderFormValues((p) => ({ ...p, submissionMethod: method }))}
+                    />
+                    <span>{method === "EMAIL" ? "Email" : method === "API" ? "API" : "Google Sheet (Merchant Growth)"}</span>
+                  </label>
+                ))}
+              </div>
               {lenderFormValues.submissionMethod === "GOOGLE_SHEET" && (
                 <div className="space-y-3">
                   <Input
