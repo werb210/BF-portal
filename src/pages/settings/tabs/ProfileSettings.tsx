@@ -255,108 +255,112 @@ const ProfileSettings = () => {
         : "";
 
   return (
-    <form className="settings-panel" onSubmit={onSave} aria-label="Profile settings">
-      <header>
-        <h2>My profile</h2>
-        <p>Update your name, phone, and avatar. OAuth connections open in a new window.</p>
-      </header>
-      {formError && <ErrorBanner message={formError} />}
-      {microsoftError && <ErrorBanner message={microsoftError} />}
+    <form className="settings-panel profile-settings" onSubmit={onSave} aria-label="Profile settings">
+      <div className="profile-settings__container">
+        <header>
+          <h2>My profile</h2>
+          <p>Update your name, phone, and avatar. OAuth connections open in a new window.</p>
+        </header>
+        {formError && <ErrorBanner message={formError} />}
+        {microsoftError && <ErrorBanner message={microsoftError} />}
 
-      <div className="profile-summary">
-        <div>
-          <p className="ui-field__label">Signed in as</p>
-          <div className="profile-summary__name">{displayName || user?.name || "—"}</div>
-          <div className="profile-summary__email">{localProfile.email}</div>
-          <div className="profile-summary__email">
-            Last login: {localProfile.lastLogin ? new Date(localProfile.lastLogin).toLocaleString() : "Unavailable"}
+        <section className="profile-settings__section">
+          <h3>Identity</h3>
+          <div className="profile-summary">
+            <div>
+              <p className="ui-field__label">Signed in as</p>
+              <div className="profile-summary__name">{displayName || user?.name || "—"}</div>
+              <div className="profile-summary__email">{localProfile.email}</div>
+              <div className="profile-summary__email">
+                Last login: {localProfile.lastLogin ? new Date(localProfile.lastLogin).toLocaleString() : "Unavailable"}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+          <div className="settings-grid profile-settings__grid">
+            <UserDetailsFields
+              firstName={localProfile.firstName}
+              lastName={localProfile.lastName}
+              email={localProfile.email}
+              phone={localProfile.phone}
+              errors={formErrors}
+              onChange={(updates) => setLocalProfile((prev) => ({ ...prev, ...updates }))}
+            />
+          </div>
+        </section>
 
-      <div className="settings-grid">
-        <UserDetailsFields
-          firstName={localProfile.firstName}
-          lastName={localProfile.lastName}
-          email={localProfile.email}
-          phone={localProfile.phone}
-          errors={formErrors}
-          onChange={(updates) => setLocalProfile((prev) => ({ ...prev, ...updates }))}
-        />
-      </div>
+        <section className="avatar-upload profile-settings__section">
+          <div>
+            <h3>Profile image</h3>
+            {localProfile.profileImage && (
+              <img src={localProfile.profileImage} alt="Profile preview" className="avatar-preview" />
+            )}
+          </div>
+          <div className="avatar-actions">
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={onFileChange}
+              aria-label="Upload profile image"
+            />
+            <p className="avatar-helper">Square crop enforced, max 256×256px, 2MB limit.</p>
+            {avatarError && <p className="ui-field__error">{avatarError}</p>}
+          </div>
+        </section>
 
-      <div className="avatar-upload">
-        <div>
-          <p className="ui-field__label">Profile image</p>
-          {localProfile.profileImage && (
-            <img src={localProfile.profileImage} alt="Profile preview" className="avatar-preview" />
-          )}
-        </div>
-        <div className="avatar-actions">
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={onFileChange}
-            aria-label="Upload profile image"
-          />
-          <p className="avatar-helper">Square crop enforced, max 256×256px, 2MB limit.</p>
-          {avatarError && <p className="ui-field__error">{avatarError}</p>}
-        </div>
-      </div>
+        <section className="connected-accounts profile-settings__section">
+          <h3>Connected accounts</h3>
+          <p>Connect optional services. OAuth prompts open in a new window.</p>
+          <div className="connected-accounts__actions">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleMicrosoftConnect}
+              disabled={!isMicrosoftConfigured || isLinkingMicrosoft || hideMicrosoftButton}
+              title={
+                !isMicrosoftConfigured || isLinkingMicrosoft || hideMicrosoftButton
+                  ? microsoftDisabledReason
+                  : undefined
+              }
+            >
+              {profile.microsoftConnected ? "Microsoft 365 connected" : "Connect Microsoft 365"}
+            </Button>
+            {!isMicrosoftConfigured && (
+              <span className="text-xs text-slate-500">Microsoft OAuth is not configured.</span>
+            )}
+            {hideMicrosoftButton && (
+              <span className="text-xs text-amber-600">
+                Microsoft sign-in needs a popup or redirect. Use a browser that allows pop-ups.
+              </span>
+            )}
+            {profile.microsoftConnected && profile.microsoftAccountEmail && (
+              <span className="text-xs text-emerald-600">Linked: {profile.microsoftAccountEmail}</span>
+            )}
+            {!hideMicrosoftButton && isLinkingMicrosoft && (
+              <span className="text-xs text-slate-500">Connecting…</span>
+            )}
+          </div>
+        </section>
 
-      <div className="connected-accounts">
-        <h3>Connected accounts</h3>
-        <p>Connect optional services. OAuth prompts open in a new window.</p>
-        <div className="connected-accounts__actions">
+        <div className="settings-actions">
           <Button
             type="button"
             variant="secondary"
-            onClick={handleMicrosoftConnect}
-            disabled={!isMicrosoftConfigured || isLinkingMicrosoft || hideMicrosoftButton}
-            title={
-              !isMicrosoftConfigured || isLinkingMicrosoft || hideMicrosoftButton
-                ? microsoftDisabledReason
-                : undefined
-            }
+            onClick={onLoadProfile}
+            disabled={isLoadingProfile}
+            title={isLoadingProfile ? "Profile is refreshing." : undefined}
           >
-            {profile.microsoftConnected ? "Microsoft 365 connected" : "Connect Microsoft 365"}
+            {isLoadingProfile ? "Refreshing..." : "Refresh profile"}
           </Button>
-          {!isMicrosoftConfigured && (
-            <span className="text-xs text-slate-500">Microsoft OAuth is not configured.</span>
-          )}
-          {hideMicrosoftButton && (
-            <span className="text-xs text-amber-600">
-              Microsoft sign-in needs a popup or redirect. Use a browser that allows pop-ups.
-            </span>
-          )}
-          {profile.microsoftConnected && profile.microsoftAccountEmail && (
-            <span className="text-xs text-emerald-600">Linked: {profile.microsoftAccountEmail}</span>
-          )}
-          {!hideMicrosoftButton && isLinkingMicrosoft && (
-            <span className="text-xs text-slate-500">Connecting…</span>
-          )}
+          <Button
+            type="submit"
+            disabled={isLoadingProfile}
+            title={isLoadingProfile ? "Profile is saving." : undefined}
+          >
+            {isLoadingProfile ? "Saving..." : "Save changes"}
+          </Button>
+          {statusMessage && <span role="status">{statusMessage}</span>}
         </div>
-      </div>
-
-      <div className="settings-actions">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onLoadProfile}
-          disabled={isLoadingProfile}
-          title={isLoadingProfile ? "Profile is refreshing." : undefined}
-        >
-          {isLoadingProfile ? "Refreshing..." : "Refresh profile"}
-        </Button>
-        <Button
-          type="submit"
-          disabled={isLoadingProfile}
-          title={isLoadingProfile ? "Profile is saving." : undefined}
-        >
-          {isLoadingProfile ? "Saving..." : "Save changes"}
-        </Button>
-        {statusMessage && <span role="status">{statusMessage}</span>}
       </div>
     </form>
   );
