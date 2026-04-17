@@ -50,34 +50,22 @@ const CalendarContent = () => {
   };
 
   return (
-    <div className="page calendar-page">
-      <div className="calendar-page__left">
-        <Card
-          title={
-            <CalendarHeader
-              view={view}
-              onViewChange={setView}
-              onPrev={goPrev}
-              onNext={goNext}
-              onToday={goToToday}
-              onAddTask={() => setSelectedTask({
-                id: "", title: "", priority: "medium", status: "todo"
-              })}
-              onAddEvent={() => setShowEventForm((state) => !state)}
-              onBookMeeting={() => setShowBooking(true)}
-            />
-          }
-        >
-          {loadingLocal && <AppLoading />}
-          {localError && (
-            <p className="text-red-700">{getErrorMessage(localError, "Unable to load calendar events.")}</p>
-          )}
-          {!loadingLocal && !localError && localEvents.length === 0 && (
-            <p>No calendar events scheduled yet.</p>
-          )}
-          {!loadingLocal && !localError && (
-            <CalendarView view={view} date={currentDate} localEvents={localEvents} />
-          )}
+    <div className="page calendar-page-v2">
+      <aside className="calendar-page-v2__left">
+        <Card title="Calendar Controls">
+          <CalendarHeader
+            view={view}
+            onViewChange={setView}
+            onPrev={goPrev}
+            onNext={goNext}
+            onToday={goToToday}
+            onAddTask={() => setSelectedTask({
+              id: "", title: "", priority: "medium", status: "todo"
+            })}
+            onAddEvent={() => setShowEventForm((state) => !state)}
+            onBookMeeting={() => setShowBooking(true)}
+          />
+
           {showEventForm && (
             <div className="event-form" data-testid="event-form">
               <h4>Add Event</h4>
@@ -87,6 +75,7 @@ const CalendarContent = () => {
               <Button onClick={handleAddEvent}>Save Event</Button>
             </div>
           )}
+
           {showBooking && (
             <div className="booking-modal" role="dialog">
               <div className="booking-modal__header">
@@ -116,10 +105,28 @@ const CalendarContent = () => {
             </div>
           )}
         </Card>
-      </div>
-      <div className="calendar-page__right">
-        <TaskPane />
-      </div>
+
+        <Card title="Tasks">
+          <TaskPane />
+        </Card>
+      </aside>
+
+      <section className="calendar-page-v2__right">
+        <Card title="Calendar View">
+          {loadingLocal && <AppLoading />}
+          {localError && <p className="text-red-700">{getErrorMessage(localError, "Unable to load calendar events.")}</p>}
+          {!loadingLocal && !localError && <CalendarView view={view} date={currentDate} localEvents={localEvents} />}
+          {!loadingLocal && !localError && localEvents.length === 0 && (
+            <div className="ui-empty-state ui-empty-state--compact">
+              <div className="ui-empty-state__icon" aria-hidden="true">📆</div>
+              <p>No calendar events scheduled yet.</p>
+              <button className="ui-button ui-button--secondary" type="button" onClick={() => setShowEventForm(true)}>
+                Create Event
+              </button>
+            </div>
+          )}
+        </Card>
+      </section>
     </div>
   );
 };

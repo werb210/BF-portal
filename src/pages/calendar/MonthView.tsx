@@ -1,6 +1,8 @@
 import type { CalendarEvent } from "@/api/calendar";
 import { getMonthGrid, groupEventsByDay } from "./utils";
 
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 const MonthView = ({ date, localEvents }: { date: Date; localEvents: CalendarEvent[] }) => {
   const grid = getMonthGrid(date);
   const groupedLocal = groupEventsByDay(localEvents);
@@ -9,6 +11,10 @@ const MonthView = ({ date, localEvents }: { date: Date; localEvents: CalendarEve
   return (
     <div className="calendar-view calendar-view--month">
       <div className="calendar-month-grid">
+        {WEEKDAYS.map((day) => (
+          <div key={day} className="calendar-month-grid__weekday">{day}</div>
+        ))}
+
         {grid.map((day) => {
           const isCurrentMonth = day.getMonth() === month;
           const dayKey = day.toDateString();
