@@ -72,9 +72,12 @@ const ContactsPage = () => {
 
   return (
     <div className="page" data-testid="contacts-page">
-      <Card title="Contacts" actions={<Button onClick={() => setShowForm(true)}>Add Contact</Button>}>
-        <div className="crm-filters-row">
-          <Input placeholder="Search contacts" value={filters.search} onChange={handleSearch} />
+      <Card
+        title="Contacts"
+        actions={<Button onClick={() => setShowForm(true)}>Add Contact</Button>}
+      >
+        <div className="flex gap-2 mb-2 items-center">
+          <Input placeholder="Search" value={filters.search} onChange={handleSearch} />
           <Select
             value={filters.owner ?? ""}
             onChange={(e) => setFilters({ owner: e.target.value || null })}
@@ -87,7 +90,7 @@ const ContactsPage = () => {
               </option>
             ))}
           </Select>
-          <label className="crm-filters-row__checkbox">
+          <label className="flex items-center gap-2">
             <input
               type="checkbox"
               checked={filters.hasActiveApplication}
@@ -104,35 +107,27 @@ const ContactsPage = () => {
           <p className="mb-2 text-amber-700" data-testid="dedupe-indicator">Potential duplicates detected: {dedupeCount}</p>
         ) : null}
         {!error && (
-          <div className="crm-table-wrap">
-            <Table headers={["Name", "Email", "Phone", "Silo", "Owner", "Active", "Actions"]}>
-              {isLoading && (
-                <tr>
-                  <td colSpan={7}>Loading contacts…</td>
-                </tr>
-              )}
-              {!isLoading &&
-                filtered.map((contact) => (
-                  <ContactRow
-                    key={contact.id}
-                    contact={contact}
-                    onSelect={setSelected}
-                    onCall={() => setSelected(contact)}
-                  />
-                ))}
-            </Table>
-
-            {!isLoading && filtered.length === 0 && (
-              <div className="ui-empty-state">
-                <div className="ui-empty-state__icon" aria-hidden="true">👤</div>
-                <h3>No contacts yet</h3>
-                <p>Start building your CRM by adding your first contact.</p>
-                <button type="button" className="ui-button" onClick={() => setShowForm(true)}>
-                  Add First Contact
-                </button>
-              </div>
+          <Table headers={["Name", "Email", "Phone", "Silo", "Owner", "Active", "Actions"]}>
+            {isLoading && (
+              <tr>
+                <td colSpan={7}>Loading contacts…</td>
+              </tr>
             )}
-          </div>
+            {!isLoading &&
+              filtered.map((contact) => (
+                <ContactRow
+                  key={contact.id}
+                  contact={contact}
+                  onSelect={setSelected}
+                  onCall={() => setSelected(contact)}
+                />
+              ))}
+            {!isLoading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={7}>No contacts match these filters.</td>
+              </tr>
+            )}
+          </Table>
         )}
       </Card>
       {showForm && (

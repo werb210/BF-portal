@@ -1,38 +1,47 @@
-import { useState } from "react";
-import ApplicationDetail from "./ApplicationDetail";
+import { useState } from "react"
+import ApplicationDetail from "./ApplicationDetail"
 
 type ApplicationCardProps = {
   card: {
-    id: string;
-    company: string;
-    amount: string;
-  };
-};
+    id: string
+    company: string
+    amount: string
+  }
+}
 
 export default function ApplicationCard({ card }: ApplicationCardProps) {
-  const [tab, setTab] = useState<"application" | "documents" | "notes">("application");
-  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"application" | "documents" | "notes">("application")
+  const [open, setOpen] = useState(false)
 
   return (
     <>
-      <article className="pipeline-stage-card">
+      <div
+        style={{
+          background: "#1e293b",
+          padding: "12px",
+          borderRadius: "8px",
+          marginBottom: "10px"
+        }}
+      >
         <strong onClick={() => setOpen(true)} style={{ cursor: "pointer" }}>
           {card.company}
         </strong>
 
-        <div className="pipeline-stage-card__tabs">
-          <button className="ui-button ui-button--secondary" onClick={() => setTab("application")}>Application</button>
-          <button className="ui-button ui-button--secondary" onClick={() => setTab("documents")}>Documents</button>
-          <button className="ui-button ui-button--secondary" onClick={() => setTab("notes")}>Notes</button>
+        <div style={{ marginTop: "10px", display: "flex", gap: "6px" }}>
+          <button onClick={() => setTab("application")}>Application</button>
+          <button onClick={() => setTab("documents")}>Documents</button>
+          <button onClick={() => setTab("notes")}>Notes</button>
         </div>
 
-        <div className="pipeline-stage-card__body">
-          {tab === "application" && <div>Amount: {card.amount || "Pending"}</div>}
+        <div style={{ marginTop: "10px" }}>
+          {tab === "application" && <div>Amount: {card.amount}</div>}
+
           {tab === "documents" && <div>No documents uploaded</div>}
+
           {tab === "notes" && <div>No notes yet</div>}
         </div>
-      </article>
+      </div>
       {open && <ApplicationDetail id={card.id} onClose={() => setOpen(false)} />}
     </>
-  );
+  )
 }
