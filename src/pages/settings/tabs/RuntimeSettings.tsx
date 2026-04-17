@@ -108,22 +108,25 @@ const RuntimeSettings = () => {
       </header>
       {runtimeError && <ErrorBanner message={runtimeError} />}
 
-      <div className="runtime-status runtime-status--cards">
-        {[
-          { id: "api", icon: "🌐", ...runtime.api },
-          { id: "database", icon: "🗄️", ...runtime.database },
-          { id: "auth", icon: "🔐", ...runtime.auth }
-        ].map((item) => (
-          <article key={item.id} className={`runtime-card runtime-card--${item.status}`}>
-            <div className="runtime-card__header">
-              <span className="runtime-card__icon" aria-hidden="true">{item.icon}</span>
-              <span className="runtime-status__label">{item.label}</span>
-            </div>
-            <span className={`runtime-status__indicator runtime-status__indicator--${item.status}`}>
-              {item.detail}
-            </span>
-          </article>
-        ))}
+      <div className="runtime-status">
+        <div className="runtime-status__row">
+          <span className="runtime-status__label">{runtime.api.label}</span>
+          <span className={`runtime-status__indicator runtime-status__indicator--${runtime.api.status}`}>
+            {runtime.api.detail}
+          </span>
+        </div>
+        <div className="runtime-status__row">
+          <span className="runtime-status__label">{runtime.database.label}</span>
+          <span className={`runtime-status__indicator runtime-status__indicator--${runtime.database.status}`}>
+            {runtime.database.detail}
+          </span>
+        </div>
+        <div className="runtime-status__row">
+          <span className="runtime-status__label">{runtime.auth.label}</span>
+          <span className={`runtime-status__indicator runtime-status__indicator--${runtime.auth.status}`}>
+            {runtime.auth.detail}
+          </span>
+        </div>
       </div>
 
       <div className="settings-actions">

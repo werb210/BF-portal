@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
+import ErrorBanner from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { useSettingsStore } from "@/state/settings.store";
 import { getErrorMessage } from "@/utils/errors";
@@ -13,7 +14,6 @@ const BrandingSettings = () => {
   const isAdmin = user?.role === "Admin";
   const [localBranding, setLocalBranding] = useState(branding);
   const [formError, setFormError] = useState<string | null>(null);
-  const [localMessage, setLocalMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setLocalBranding(branding);
@@ -53,10 +53,8 @@ const BrandingSettings = () => {
 
   const onSave = async () => {
     setFormError(null);
-    setLocalMessage(null);
     try {
       await saveBranding(localBranding);
-      setLocalMessage("Brand settings saved.");
     } catch (error) {
       setFormError(getErrorMessage(error, "Unable to save branding settings."));
     }
@@ -84,11 +82,10 @@ const BrandingSettings = () => {
         <h2>Branding</h2>
         <p>Upload a logo and size it for the portal header, emails, PDFs, and client apps.</p>
       </header>
-      {formError && <div className="settings-inline-alert settings-inline-alert--error" role="alert">{formError}</div>}
-      {localMessage && <div className="settings-inline-alert settings-inline-alert--success" role="status">{localMessage}</div>}
+      {formError && <ErrorBanner message={formError} />}
 
       <div className="branding-preview">
-        <div className="branding-preview__left">
+        <div>
           <p className="ui-field__label">Logo preview</p>
           <div className="logo-preview__frame">
             {localBranding.logoUrl ? (
@@ -99,14 +96,11 @@ const BrandingSettings = () => {
                 style={logoPreviewStyle}
               />
             ) : (
-              <div className="ui-empty-state ui-empty-state--compact">
-                <strong>No logo yet</strong>
-                <p>Upload your company logo to preview it across the portal.</p>
-              </div>
+              <span className="text-sm text-slate-500">No logo uploaded.</span>
             )}
           </div>
         </div>
-        <div className="branding-controls branding-preview__right">
+        <div className="branding-controls">
           <label className="ui-field">
             <span className="ui-field__label">Logo size</span>
             <input
@@ -125,12 +119,7 @@ const BrandingSettings = () => {
               aria-label="Resize logo"
             />
           </label>
-          {isAdmin && (
-            <label className="ui-field">
-              <span className="ui-field__label">Upload logo</span>
-              <input type="file" accept="image/*" onChange={handleLogo} aria-label="Upload logo" />
-            </label>
-          )}
+          {isAdmin && <input type="file" accept="image/*" onChange={handleLogo} aria-label="Upload logo" />}
           {!isAdmin && <p className="ui-field__helper">Admins can upload and resize the logo.</p>}
         </div>
       </div>

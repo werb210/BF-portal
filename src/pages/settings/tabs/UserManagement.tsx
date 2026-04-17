@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
-import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
@@ -41,20 +40,8 @@ const UserManagement = () => {
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [pendingUserIds, setPendingUserIds] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"all" | "Admin" | "Staff">("all");
 
-  const visibleUsers = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-    return users.filter((user) => {
-      const displayName = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim().toLowerCase();
-      const email = (user.email ?? "").toLowerCase();
-      const roleMatches = roleFilter === "all" ? true : user.role === roleFilter;
-      const searchMatches =
-        !normalizedQuery || displayName.includes(normalizedQuery) || email.includes(normalizedQuery);
-      return roleMatches && searchMatches;
-    });
-  }, [roleFilter, searchQuery, users]);
+  const visibleUsers = useMemo(() => users, [users]);
   const safeUsers = Array.isArray(visibleUsers) ? visibleUsers : [];
 
   const splitName = (name?: string) => {
@@ -184,22 +171,6 @@ const UserManagement = () => {
       {formError && <ErrorBanner message={formError} />}
 
       <div className="settings-actions">
-        <Input
-          label="Search users"
-          placeholder="Search by name or email"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-        />
-        <Select
-          label="Role filter"
-          value={roleFilter}
-          onChange={(event) => setRoleFilter(event.target.value as "all" | "Admin" | "Staff")}
-          options={[
-            { value: "all", label: "All roles" },
-            { value: "Admin", label: "Admin" },
-            { value: "Staff", label: "Staff" }
-          ]}
-        />
         <Button
           type="button"
           variant="secondary"
@@ -263,7 +234,6 @@ const UserManagement = () => {
                   <Button
                     type="button"
                     variant="secondary"
-                    className="user-actions__button"
                     onClick={() => onToggleDisabled(userId, !user.disabled)}
                     disabled={isLoadingUsers || isPending || !userId}
                     title={isPending ? "User update in progress." : isLoadingUsers ? "User updates are refreshing." : undefined}
@@ -273,7 +243,6 @@ const UserManagement = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="user-actions__button"
                     disabled={!userId}
                     onClick={() => {
                       const fallbackName = splitName(user.name);
@@ -339,7 +308,6 @@ const UserManagement = () => {
                   <Button
                     type="button"
                     variant="secondary"
-                    className="user-actions__button"
                     onClick={() => onToggleDisabled(userId, !user.disabled)}
                     disabled={isLoadingUsers || isPending || !userId}
                     title={isPending ? "User update in progress." : isLoadingUsers ? "User updates are refreshing." : undefined}
@@ -349,7 +317,6 @@ const UserManagement = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="user-actions__button"
                     disabled={!userId}
                     onClick={() => {
                       const fallbackName = splitName(user.name);
