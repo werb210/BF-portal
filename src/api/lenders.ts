@@ -475,7 +475,7 @@ export const updateLender = async (id: string, payload: Partial<LenderPayload>) 
 };
 
 export const fetchLenderProducts = async (lenderId?: string, options?: RequestOptions) => {
-  const res = await api.get<unknown>(`/portal/lender-products`, {
+  const res = await api.get<unknown>(`/api/portal/lender-products`, {
     params: lenderId ? { lenderId } : undefined,
     ...options
   });
@@ -486,19 +486,19 @@ export const fetchLenderProducts = async (lenderId?: string, options?: RequestOp
 };
 
 export const fetchLenderProductById = async (productId: string) => {
-  const product = await api.get<unknown>(`/portal/lender-products/${productId}`);
+  const product = await api.get<unknown>(`/api/portal/lender-products/${productId}`);
   const normalized = normalizeLenderProduct(ensureEntityHasId((product ?? {}) as { id?: string }, "lender product", productId));
   return ensureEntityHasId(normalized ?? (product as LenderProduct), "lender product", productId);
 };
 
 export const createLenderProduct = async (payload: LenderProductPayload) => {
-  const product = await api.post<unknown>(`/portal/lender-products`, payload);
+  const product = await api.post<unknown>(`/api/portal/lender-products`, payload);
   const normalized = normalizeLenderProduct(ensureEntityHasId((product ?? {}) as { id?: string }, "lender product"));
   return ensureEntityHasId(normalized ?? (product as LenderProduct), "lender product");
 };
 
 export const updateLenderProduct = async (productId: string, payload: Partial<LenderProductPayload>) => {
-  const product = await api.put<unknown>(`/portal/lender-products/${productId}`, payload);
+  const product = await api.put<unknown>(`/api/portal/lender-products/${productId}`, payload);
   const normalized = normalizeLenderProduct(ensureEntityHasId((product ?? {}) as { id?: string }, "lender product", productId));
   return ensureEntityHasId(normalized ?? (product as LenderProduct), "lender product", productId);
 };
@@ -507,16 +507,16 @@ export const fetchLenderMatches = (applicationId: string, options?: RequestOptio
   api.get<LenderMatch[]>(`/applications/${applicationId}/lenders`, options);
 
 export const createLenderSubmission = (applicationId: string, lenderProductIds: string[]) =>
-  api.post(`/portal/lender-submissions`, { applicationId, lenderProductIds });
+  api.post(`/api/portal/lender-submissions`, { applicationId, lenderProductIds });
 
 export const fetchLenderSubmissions = (applicationId: string, options?: RequestOptions) =>
-  api.get<LenderSubmission[]>(`/portal/lender-submissions`, {
+  api.get<LenderSubmission[]>(`/api/portal/lender-submissions`, {
     ...options,
     params: { applicationId, ...(options?.params ?? {}) }
   });
 
 export const retryLenderSubmission = (applicationId: string, lenderProductId?: string) =>
-  api.post(`/portal/lender-submissions/${applicationId}/submit`, lenderProductId ? { lenderProductId } : undefined);
+  api.post(`/api/portal/lender-submissions/${applicationId}/submit`, lenderProductId ? { lenderProductId } : undefined);
 
 export const retryLenderTransmission = async (_transmissionId: string) => null;
 
@@ -533,7 +533,7 @@ export async function fetchClientLenders(): Promise<ClientLender[]> {
 }
 
 export async function fetchClientLenderProducts(): Promise<ClientLenderProduct[]> {
-  const payload = await api.get<unknown>("/portal/lender-products");
+  const payload = await api.get<unknown>("/api/portal/lender-products");
   const normalized = (payload as { data?: unknown }).data ?? payload;
   if (Array.isArray(normalized)) {
     return normalized as ClientLenderProduct[];
@@ -571,7 +571,7 @@ const parseRequirementResponse = (data: unknown) => {
 };
 
 export async function fetchClientLenderProductRequirements(productId: string) {
-  const payload = await api.get<unknown>(`/portal/lender-products/${productId}/requirements`);
+  const payload = await api.get<unknown>(`/api/portal/lender-products/${productId}/requirements`);
   const normalized = (payload as { data?: unknown }).data ?? payload;
   const parsed = parseRequirementResponse(normalized);
   return {
@@ -585,7 +585,7 @@ export const createLenderProductRequirement = async (
   payload: Omit<LenderProductRequirementApi, "id">
 ) => {
   const requirement = await api.post<LenderProductRequirementApi>(
-    `/portal/lender-products/${productId}/requirements`,
+    `/api/portal/lender-products/${productId}/requirements`,
     payload
   );
   return normalizeRequirement(ensureEntityHasId(requirement, "requirement"));
@@ -597,11 +597,11 @@ export const updateLenderProductRequirement = async (
   payload: Omit<LenderProductRequirementApi, "id">
 ) => {
   const requirement = await api.put<LenderProductRequirementApi>(
-    `/portal/lender-products/${productId}/requirements/${requirementId}`,
+    `/api/portal/lender-products/${productId}/requirements/${requirementId}`,
     payload
   );
   return normalizeRequirement(ensureEntityHasId(requirement, "requirement", requirementId));
 };
 
 export const deleteLenderProductRequirement = (productId: string, requirementId: string) =>
-  api.delete(`/portal/lender-products/${productId}/requirements/${requirementId}`);
+  api.delete(`/api/portal/lender-products/${productId}/requirements/${requirementId}`);

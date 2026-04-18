@@ -2,7 +2,7 @@ import { getAuthToken } from "@/lib/authToken";
 import { ApiError } from "@/api/http";
 import { setApiStatus } from "@/state/apiStatus";
 import { API_ERROR } from "@/lib/errors";
-import { getApiBase } from "@/config/api";
+import { getApiBase, getActiveSilo } from "@/config/api";
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -45,6 +45,12 @@ function buildUrl(path: string): string {
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+
+function getSiloHeaders(): Record<string, string> {
+  const silo = getActiveSilo();
+  return silo ? { "X-Silo": silo } : {};
+}
+
 function parsePayload<T>(json: any): T {
   if (json && typeof json === "object") {
     if ("data" in json) {
@@ -69,6 +75,7 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
   }
 
   const headers: Record<string, string> = {
+    ...getSiloHeaders(),
     ...(options.headers as Record<string, string> | undefined),
   };
 
