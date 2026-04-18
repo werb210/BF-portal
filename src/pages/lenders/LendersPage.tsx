@@ -533,11 +533,12 @@ const LendersContent = () => {
       setLenderFormErrors({});
     },
     onSuccess: async (created) => {
+      void queryClient.invalidateQueries({ queryKey: ["lenders"] });
+      void queryClient.invalidateQueries({ queryKey: ["portal-lenders"] });
       emitUiTelemetry("lender_create", {
         lenderId: created.id,
         requestId: getRequestId()
       });
-      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
       setEditingLender(created);
       setEditingLenderId(created.id);
       setSelectedLenderId(created.id);
@@ -1152,7 +1153,7 @@ const LendersContent = () => {
                 value={lenderFormValues.website}
                 onChange={(event) => setLenderFormValues((prev) => ({ ...prev, website: event.target.value }))}
               />
-              <label className="ui-field">
+              <div className="ui-field">
                 <span className="ui-field__label">Notes (internal only)</span>
                 <textarea
                   className="ui-input ui-textarea"
@@ -1161,7 +1162,7 @@ const LendersContent = () => {
                     setLenderFormValues((prev) => ({ ...prev, internalNotes: event.target.value }))
                   }
                 />
-              </label>
+              </div>
             </div>
 
             <div className="management-field">
