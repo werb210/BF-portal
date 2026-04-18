@@ -3,53 +3,22 @@ import { api } from "@/api";
 import { useNavigate } from "react-router-dom";
 
 const STAGES = [
-  "Received",
-  "In Review",
-  "Documents Required",
-  "Additional Steps Required",
-  "Off to Lender",
-  "Offer",
-  "Accepted",
-  "Rejected",
+  "Received", "In Review", "Documents Required",
+  "Additional Steps Required", "Off to Lender",
+  "Offer", "Accepted", "Rejected",
 ] as const;
 
 type Stage = typeof STAGES[number];
 
-const LEGAL: Record<Stage, Stage[]> = {
-  "Received": ["In Review", "Documents Required"],
-  "In Review": ["Documents Required", "Additional Steps Required", "Off to Lender"],
-  "Documents Required": ["In Review", "Additional Steps Required"],
-  "Additional Steps Required": ["Off to Lender", "Documents Required"],
-  "Off to Lender": ["Offer", "Accepted", "Rejected", "Documents Required"],
-  Offer: ["Accepted", "Rejected", "Documents Required"],
-  Accepted: [],
-  Rejected: [],
-};
-
-const STAGE_SERVER: Record<Stage, string> = {
-  Received: "RECEIVED",
-  "In Review": "IN_REVIEW",
-  "Documents Required": "DOCUMENTS_REQUIRED",
-  "Additional Steps Required": "ADDITIONAL_STEPS_REQUIRED",
-  "Off to Lender": "OFF_TO_LENDER",
-  Offer: "OFFER",
-  Accepted: "ACCEPTED",
-  Rejected: "REJECTED",
-};
-
-const STAGE_FROM_SERVER: Record<string, Stage> = Object.fromEntries(
-  Object.entries(STAGE_SERVER).map(([k, v]) => [v, k as Stage]),
-);
-
 const COLORS: Record<Stage, string> = {
-  Received: "#6366f1",
-  "In Review": "#f59e0b",
-  "Documents Required": "#ef4444",
+  "Received":                  "#6366f1",
+  "In Review":                 "#f59e0b",
+  "Documents Required":        "#ef4444",
   "Additional Steps Required": "#f97316",
-  "Off to Lender": "#3b82f6",
-  Offer: "#16a34a",
-  Accepted: "#15803d",
-  Rejected: "#6b7280",
+  "Off to Lender":             "#3b82f6",
+  "Offer":                     "#16a34a",
+  "Accepted":                  "#15803d",
+  "Rejected":                  "#6b7280",
 };
 
 type Card = {
@@ -64,7 +33,7 @@ type Card = {
 export default function PipelinePage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
-  const [moving, setMoving] = useState<string | null>(null);
+  const [acting, setActing] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const load = useCallback(() => {
@@ -74,28 +43,23 @@ export default function PipelinePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  async function moveCard(cardId: string, nextStage: Stage) {
-    setMoving(cardId);
+  async function move(cardId: string, toStage: string) {
+    setActing(cardId);
     try {
       await api.patch(`/api/portal/applications/${cardId}/status`, {
-        status: STAGE_SERVER[nextStage],
-        reason: `Moved to ${nextStage}`,
+        status: toStage, reason: `Manually set to ${toStage}`,
       });
       setCards((prev) =>
-        prev.map((c) => (c.id === cardId ? { ...c, pipeline_state: STAGE_SERVER[nextStage] } : c)),
+        prev.map((c) => c.id === cardId ? { ...c, pipeline_state: toStage } : c)
       );
-    } catch {
-      // no-op — leave card where it is
-    } finally {
-      setMoving(null);
-    }
+    } catch { /* leave in place */ } finally { setActing(null); }
   }
 
-  if (loading) return <div style={{ padding: 32, color: "#94a3b8" }}>Loading pipeline…</div>;
+  if (loading) return (
+    <div style={{ padding: 32, color: "#94a3b8", fontSize: 14 }}>Loading pipeline…</div>
+  );
 
   return (
     <div>
@@ -105,46 +69,28 @@ export default function PipelinePage() {
       </div>
       <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 16, alignItems: "flex-start" }}>
         {STAGES.map((stage) => {
-          const stageCards = cards.filter((c) => (STAGE_FROM_SERVER[c.pipeline_state] ?? c.pipeline_state) === stage);
+          const col = cards.filter((c) => (c.pipeline_state ?? "Received") === stage);
           return (
-            <div key={stage} style={{ minWidth: 270, maxWidth: 270, flexShrink: 0 }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 10,
-                  padding: "6px 2px",
-                  borderBottom: `2px solid ${COLORS[stage]}`,
-                }}
-              >
-                <span style={{ fontSize: 13, fontWeight: 700, color: COLORS[stage] }}>{stage}</span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    background: `${COLORS[stage]}22`,
-                    color: COLORS[stage],
-                    borderRadius: 20,
-                    padding: "1px 8px",
-                    fontWeight: 600,
-                  }}
-                >
-                  {stageCards.length}
+            <div key={stage} style={{ minWidth: 260, maxWidth: 260, flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
+                padding: "6px 2px", borderBottom: `2px solid ${COLORS[stage]}` }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: COLORS[stage] }}>{stage}</span>
+                <span style={{ fontSize: 11, background: COLORS[stage] + "22", color: COLORS[stage],
+                  borderRadius: 20, padding: "1px 8px", fontWeight: 600 }}>
+                  {col.length}
                 </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {stageCards.map((card) => (
-                  <PipelineCard
-                    key={card.id}
-                    card={card}
-                    stage={stage}
-                    moving={moving === card.id}
+                {col.map((card) => (
+                  <PipeCard key={card.id} card={card} stage={stage}
+                    busy={acting === card.id}
                     onOpen={() => navigate(`/applications/${card.id}`)}
-                    onMove={(next) => moveCard(card.id, next)}
-                  />
+                    onMove={move} />
                 ))}
-                {stageCards.length === 0 && (
-                  <div style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: "16px 0" }}>Empty</div>
+                {col.length === 0 && (
+                  <div style={{ fontSize: 12, color: "#475569", textAlign: "center", padding: "14px 0" }}>
+                    Empty
+                  </div>
                 )}
               </div>
             </div>
@@ -155,93 +101,60 @@ export default function PipelinePage() {
   );
 }
 
-function PipelineCard({
-  card,
-  stage,
-  moving,
-  onOpen,
-  onMove,
-}: {
-  card: Card;
-  stage: Stage;
-  moving: boolean;
+function PipeCard({ card, stage, busy, onOpen, onMove }: {
+  card: Card; stage: Stage; busy: boolean;
   onOpen: () => void;
-  onMove: (next: Stage) => void;
+  onMove: (id: string, to: string) => void;
 }) {
-  const [showMoves, setShowMoves] = useState(false);
-  const transitions = LEGAL[stage] ?? [];
   const name = card.business_legal_name ?? card.name ?? "Unnamed";
-  const amount = card.requested_amount ? `$${Number(card.requested_amount).toLocaleString()}` : null;
-  const date = new Date(card.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+  const amount = card.requested_amount
+    ? `$${Number(card.requested_amount).toLocaleString()}` : null;
+  const date = new Date(card.created_at).toLocaleDateString("en-CA",
+    { month: "short", day: "numeric" });
+
+  const btnBase: React.CSSProperties = {
+    flex: 1, fontSize: 11, padding: "5px 0", borderRadius: 6,
+    cursor: busy ? "default" : "pointer", fontWeight: 700, border: "1px solid",
+  };
 
   return (
-    <div
-      style={{
-        background: "#1e293b",
-        borderRadius: 10,
-        padding: 12,
-        border: "1px solid rgba(255,255,255,0.06)",
-        opacity: moving ? 0.6 : 1,
-        transition: "opacity 0.15s",
-      }}
-    >
+    <div style={{ background: "#1e293b", borderRadius: 10, padding: 12,
+      border: "1px solid rgba(255,255,255,0.06)",
+      opacity: busy ? 0.6 : 1, transition: "opacity 0.15s" }}>
+
+      {/* Click anywhere on the card header to open */}
       <div onClick={onOpen} style={{ cursor: "pointer", marginBottom: 8 }}>
-        <div style={{ fontWeight: 600, fontSize: 13, color: "#f1f5f9", marginBottom: 4 }}>{name}</div>
+        <div style={{ fontWeight: 600, fontSize: 13, color: "#f1f5f9", marginBottom: 3 }}>{name}</div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#94a3b8" }}>
           {amount && <span>{amount}</span>}
           <span>{date}</span>
         </div>
+        <div style={{ fontSize: 10, color: "#475569", marginTop: 3 }}>
+          Click to open · auto-advances on actions
+        </div>
       </div>
 
-      {transitions.length > 0 && (
-        <div>
-          <button
-            onClick={() => setShowMoves((v) => !v)}
-            style={{
-              width: "100%",
-              fontSize: 11,
-              padding: "4px 8px",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 6,
-              color: "#94a3b8",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span>Move stage</span>
-            <span>{showMoves ? "▲" : "▼"}</span>
+      {/* Request Additional Steps — only on In Review or Documents Required */}
+      {(stage === "In Review" || stage === "Documents Required") && (
+        <button disabled={busy} onClick={() => onMove(card.id, "Additional Steps Required")}
+          style={{ ...btnBase, width: "100%", flex: "unset",
+            background: "#f97316" + "18", borderColor: "#f97316" + "55",
+            color: "#f97316", marginBottom: 0, textAlign: "left", paddingLeft: 8 }}>
+          ↗ Request additional steps
+        </button>
+      )}
+
+      {/* Accept / Reject — only on Offer */}
+      {stage === "Offer" && (
+        <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
+          <button disabled={busy} onClick={() => onMove(card.id, "Accepted")}
+            style={{ ...btnBase, background: "#15803d18", borderColor: "#15803d55", color: "#15803d" }}>
+            ✓ Accept
           </button>
-          {showMoves && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
-              {transitions.map((next) => (
-                <button
-                  key={next}
-                  disabled={moving}
-                  onClick={() => {
-                    setShowMoves(false);
-                    onMove(next);
-                  }}
-                  style={{
-                    width: "100%",
-                    fontSize: 11,
-                    padding: "5px 10px",
-                    background: `${COLORS[next]}20`,
-                    border: `1px solid ${COLORS[next]}44`,
-                    borderRadius: 6,
-                    color: COLORS[next],
-                    cursor: moving ? "default" : "pointer",
-                    textAlign: "left",
-                    fontWeight: 600,
-                  }}
-                >
-                  → {next}
-                </button>
-              ))}
-            </div>
-          )}
+          <button disabled={busy} onClick={() => onMove(card.id, "Rejected")}
+            style={{ ...btnBase, background: "#ef444418", borderColor: "#ef444455", color: "#ef4444" }}>
+            ✗ Reject
+          </button>
         </div>
       )}
     </div>
