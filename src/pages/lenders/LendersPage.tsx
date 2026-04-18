@@ -9,6 +9,8 @@ import {
   type LenderProduct,
 } from "@/api/lenders";
 import { getErrorMessage } from "@/utils/errors";
+import { useDocumentTypes } from "@/hooks/useDocumentTypes";
+import { phoneInputHandler, formatDollar, formatRate, unformatDollar } from "@/utils/format";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type SubmissionMethod = "EMAIL" | "API" | "GOOGLE_SHEET";
@@ -30,55 +32,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CATEGORY_ORDER = ["LOC", "TERM", "FACTORING", "PO", "EQUIPMENT", "MCA", "MEDIA"];
-
-// ─── Required documents config ────────────────────────────────────────────────
-const CORE_DOCS = [
-  { id: "three_year_financials",  label: "3 years accountant prepared financials" },
-  { id: "three_year_tax_returns", label: "3 years business tax returns" },
-  { id: "pnl_interim",           label: "PnL – Interim financials" },
-  { id: "balance_sheet_interim", label: "Balance Sheet – Interim financials" },
-  { id: "ar",                    label: "A/R" },
-  { id: "ap",                    label: "A/P" },
-  { id: "government_id",         label: "2 pieces of Government Issued ID" },
-  { id: "void_cheque",           label: "VOID cheque or PAD" },
-];
-
-const CONDITIONAL_DOCS: Record<string, { label: string; docs: { id: string; label: string }[] }> = {
-  EQUIPMENT: {
-    label: "Equipment / Asset Financing",
-    docs: [
-      { id: "purchase_order",    label: "Purchase Order (PO)" },
-      { id: "invoice",           label: "Invoice" },
-      { id: "equipment_details", label: "Equipment details / quote" },
-    ],
-  },
-  PO: {
-    label: "Equipment / Asset Financing",
-    docs: [
-      { id: "purchase_order",    label: "Purchase Order (PO)" },
-      { id: "invoice",           label: "Invoice" },
-      { id: "equipment_details", label: "Equipment details / quote" },
-    ],
-  },
-  FACTORING: {
-    label: "Factoring / A/R Financing",
-    docs: [
-      { id: "customer_list",      label: "Customer list" },
-      { id: "sample_invoices",    label: "Sample invoices" },
-      { id: "customer_contracts", label: "Contract(s) with customers" },
-    ],
-  },
-  MEDIA: {
-    label: "Media / Film Financing",
-    docs: [
-      { id: "media_budget",           label: "Budget" },
-      { id: "finance_plan",           label: "Finance plan" },
-      { id: "tax_credit_status",      label: "Tax credit status (applying / approved / certified)" },
-      { id: "production_schedule",    label: "Production schedule" },
-      { id: "minimum_guarantees",     label: "Minimum guarantees / presales (if any)" },
-    ],
-  },
-};
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ active, status }: { active?: boolean; status?: string }) {
@@ -281,7 +234,7 @@ function CreateLenderModal({
           {/* Phone */}
           <div>
             <label style={labelStyle}>Lender Main Phone Number <span style={{ color: "#ef4444" }}>*</span></label>
-            <input placeholder="(___) ___–____" value={form.phone} onChange={(e) => set("phone", e.target.value)}
+            <input placeholder="(___) ___–____" value={form.phone} onChange={(e) => phoneInputHandler(e.target.value, (v) => set("phone", v))}
               style={inputStyle(!!errors.phone)} />
             {errors.phone && <p style={errorStyle}>{errors.phone}</p>}
           </div>
@@ -298,7 +251,7 @@ function CreateLenderModal({
               </div>
               <div>
                 <label style={labelStyle}>Contact Phone Number (OTP) <span style={{ color: "#ef4444" }}>*</span></label>
-                <input placeholder="(___) ___–____" value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)}
+                <input placeholder="(___) ___–____" value={form.contactPhone} onChange={(e) => phoneInputHandler(e.target.value, (v) => set("contactPhone", v))}
                   style={inputStyle()} />
               </div>
             </div>
@@ -348,8 +301,22 @@ function CreateProductModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const alwaysRequired = ["six_month_bank_statements"];
-  const coreDefaults = CORE_DOCS.map((d) => d.id);
+  const { data: docTypes = [] } = useDocumentTypes();
+
+  const alwaysTypes = docTypes.filter((d) => d.category === "always" && d.active !== false);
+  const coreTypes = docTypes.filter((d) => d.category === "core" && d.active !== false);
+  const alwaysKeys = alwaysTypes.map((d) => d.key);
+  const coreDefaults = coreTypes.map((d) => d.key);
+
+  const conditionalMap: Record<string, typeof docTypes> = {
+    EQUIPMENT: docTypes.filter((d) => d.category === "equipment" && d.active !== false),
+    PO: docTypes.filter((d) => d.category === "equipment" && d.active !== false),
+    FACTORING: docTypes.filter((d) => d.category === "factoring" && d.active !== false),
+    MEDIA: docTypes.filter((d) => d.category === "media" && d.active !== false),
+  };
+
+  const getAlwaysLocked = (category: string) =>
+    category === "MEDIA" ? [] : alwaysKeys;
 
   const [form, setForm] = useState({
     selectedLenderId: defaultLenderId,
@@ -358,23 +325,20 @@ function CreateProductModal({
     eligibilityNotes: "", signnowTemplateId: "", active: true,
     category: "LOC",
   });
-  const [checkedDocs, setCheckedDocs] = useState<Set<string>>(
-    new Set([...alwaysRequired, ...coreDefaults])
-  );
+  const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
-    const conditional = CONDITIONAL_DOCS[form.category];
-    if (conditional) {
-      setCheckedDocs((prev) => {
-        const next = new Set(prev);
-        conditional.docs.forEach((d) => next.add(d.id));
-        return next;
-      });
-    }
-  }, [form.category]);
+    setCheckedDocs((prev) => {
+      const next = new Set(prev);
+      getAlwaysLocked(form.category).forEach((id) => next.add(id));
+      coreDefaults.forEach((id) => next.add(id));
+      (conditionalMap[form.category] ?? []).forEach((d) => next.add(d.key));
+      return next;
+    });
+  }, [form.category, docTypes]);
 
   function set(key: string, value: string | boolean) {
     setForm((p) => ({ ...p, [key]: value }));
@@ -382,7 +346,7 @@ function CreateProductModal({
   }
 
   function toggleDoc(id: string) {
-    if (alwaysRequired.includes(id)) return;
+    if (getAlwaysLocked(form.category).includes(id)) return;
     setCheckedDocs((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -398,12 +362,7 @@ function CreateProductModal({
     if (Object.keys(next).length) { setErrors(next); return; }
 
     const requiredDocuments = Array.from(checkedDocs).map((id) => {
-      const all = [
-        { id: "six_month_bank_statements", label: "6 months business banking statements" },
-        ...CORE_DOCS,
-        ...Object.values(CONDITIONAL_DOCS).flatMap((g) => g.docs),
-      ];
-      const found = all.find((d) => d.id === id);
+      const found = docTypes.find((d) => d.key === id);
       return { category: found?.label ?? id, required: true, description: null };
     });
 
@@ -417,8 +376,8 @@ function CreateProductModal({
         category: form.category as any,
         country: "CA",
         active: form.active,
-        minAmount: Number(form.minAmount.replace(/[^0-9.]/g, "")) || 0,
-        maxAmount: Number(form.maxAmount.replace(/[^0-9.]/g, "")) || 0,
+        minAmount: unformatDollar(form.minAmount),
+        maxAmount: unformatDollar(form.maxAmount),
         interestRateMin: form.minRate ? Number(form.minRate) : null,
         interestRateMax: form.maxRate ? Number(form.maxRate) : null,
         rateType: "fixed",
@@ -458,7 +417,7 @@ function CreateProductModal({
     );
   }
 
-  const conditionalGroup = CONDITIONAL_DOCS[form.category];
+  const conditionalGroup = conditionalMap[form.category] ?? [];
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -516,10 +475,10 @@ function CreateProductModal({
           <div>
             <label style={labelStyle}>Amount Range <span style={{ color: "#ef4444" }}>*</span></label>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <input placeholder="Minimum amount" value={form.minAmount} onChange={(e) => set("minAmount", e.target.value)}
+              <input placeholder="Minimum amount" value={form.minAmount} onChange={(e) => set("minAmount", formatDollar(e.target.value))}
                 style={{ ...inputStyle(!!errors.amount), flex: 1 }} />
               <span style={{ color: "#9ca3af", fontSize: 18, flexShrink: 0 }}>—</span>
-              <input placeholder="Maximum amount" value={form.maxAmount} onChange={(e) => set("maxAmount", e.target.value)}
+              <input placeholder="Maximum amount" value={form.maxAmount} onChange={(e) => set("maxAmount", formatDollar(e.target.value))}
                 style={{ ...inputStyle(), flex: 1 }} />
             </div>
             {errors.amount && <p style={errorStyle}>{errors.amount}</p>}
@@ -529,10 +488,10 @@ function CreateProductModal({
           <div>
             <label style={labelStyle}>Rate / Fee Range <span style={{ color: "#ef4444" }}>*</span></label>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <input placeholder="Minimum (%)" value={form.minRate} onChange={(e) => set("minRate", e.target.value)}
+              <input placeholder="Minimum (%)" value={form.minRate} onChange={(e) => set("minRate", formatRate(e.target.value).replace(/%$/, ""))}
                 style={{ ...inputStyle(), flex: 1 }} />
               <span style={{ color: "#9ca3af", fontSize: 18, flexShrink: 0 }}>—</span>
-              <input placeholder="Maximum (%)" value={form.maxRate} onChange={(e) => set("maxRate", e.target.value)}
+              <input placeholder="Maximum (%)" value={form.maxRate} onChange={(e) => set("maxRate", formatRate(e.target.value).replace(/%$/, ""))}
                 style={{ ...inputStyle(), flex: 1 }} />
             </div>
           </div>
@@ -565,25 +524,27 @@ function CreateProductModal({
 
             <div style={{ ...sectionStyle, marginBottom: 10 }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
-              <DocCheckbox id="six_month_bank_statements" label="6 months business banking statements" locked />
+              {alwaysTypes.map((d) => (
+                <DocCheckbox key={d.key} id={d.key} label={d.label} locked={getAlwaysLocked(form.category).includes(d.key)} />
+              ))}
             </div>
 
             <div style={{ ...sectionStyle, marginBottom: 10 }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Core Underwriting Pack</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
-                {CORE_DOCS.map((d) => (
-                  <DocCheckbox key={d.id} id={d.id} label={d.label} />
+                {coreTypes.map((d) => (
+                  <DocCheckbox key={d.key} id={d.key} label={d.label} />
                 ))}
               </div>
             </div>
 
-            {conditionalGroup && (
+            {conditionalGroup.length > 0 && (
               <div style={sectionStyle}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
-                  {conditionalGroup.label} — Conditional
+                  Conditional
                 </p>
-                {conditionalGroup.docs.map((d) => (
-                  <DocCheckbox key={d.id} id={d.id} label={d.label} />
+                {conditionalGroup.map((d) => (
+                  <DocCheckbox key={d.key} id={d.key} label={d.label} />
                 ))}
               </div>
             )}
@@ -664,13 +625,13 @@ function ProductsPanel({
 
   function formatAmount(n: number | null | undefined) {
     if (!n) return "";
-    return `$${n.toLocaleString()}`;
+    return formatDollar(n);
   }
 
-  function formatRate(min: number | string | null, max: number | string | null) {
+  function formatRateRange(min: number | string | null, max: number | string | null) {
     if (!min && !max) return "";
-    if (min === max || !max) return `${min}%`;
-    return `${min} – ${max}%`;
+    if (min === max || !max) return formatRate(Number(min));
+    return `${formatRate(Number(min))} – ${formatRate(Number(max))}`;
   }
 
   function formatTerm(p: LenderProduct) {
@@ -741,8 +702,8 @@ function ProductsPanel({
                   {formatTerm(p) && (
                     <span style={{ color: "#64748b" }}>{formatTerm(p)}</span>
                   )}
-                  {formatRate(p.interestRateMin, p.interestRateMax) && (
-                    <span style={{ color: "#374151" }}>{formatRate(p.interestRateMin, p.interestRateMax)}</span>
+                  {formatRateRange(p.interestRateMin, p.interestRateMax) && (
+                    <span style={{ color: "#374151" }}>{formatRateRange(p.interestRateMin, p.interestRateMax)}</span>
                   )}
                   <span style={{ padding: "3px 10px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 11, fontWeight: 600, color: "#64748b" }}>
                     Draft
