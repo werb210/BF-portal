@@ -26,9 +26,59 @@ const CATEGORY_LABELS: Record<string, string> = {
   PO: "Purchase Order",
   EQUIPMENT: "Equipment Loans",
   MCA: "Merchant Cash Advance",
+  MEDIA: "Media Financing",
 };
 
-const CATEGORY_ORDER = ["LOC", "TERM", "FACTORING", "PO", "EQUIPMENT", "MCA"];
+const CATEGORY_ORDER = ["LOC", "TERM", "FACTORING", "PO", "EQUIPMENT", "MCA", "MEDIA"];
+
+// ─── Required documents config ────────────────────────────────────────────────
+const CORE_DOCS = [
+  { id: "three_year_financials",  label: "3 years accountant prepared financials" },
+  { id: "three_year_tax_returns", label: "3 years business tax returns" },
+  { id: "pnl_interim",           label: "PnL – Interim financials" },
+  { id: "balance_sheet_interim", label: "Balance Sheet – Interim financials" },
+  { id: "ar",                    label: "A/R" },
+  { id: "ap",                    label: "A/P" },
+  { id: "government_id",         label: "2 pieces of Government Issued ID" },
+  { id: "void_cheque",           label: "VOID cheque or PAD" },
+];
+
+const CONDITIONAL_DOCS: Record<string, { label: string; docs: { id: string; label: string }[] }> = {
+  EQUIPMENT: {
+    label: "Equipment / Asset Financing",
+    docs: [
+      { id: "purchase_order",    label: "Purchase Order (PO)" },
+      { id: "invoice",           label: "Invoice" },
+      { id: "equipment_details", label: "Equipment details / quote" },
+    ],
+  },
+  PO: {
+    label: "Equipment / Asset Financing",
+    docs: [
+      { id: "purchase_order",    label: "Purchase Order (PO)" },
+      { id: "invoice",           label: "Invoice" },
+      { id: "equipment_details", label: "Equipment details / quote" },
+    ],
+  },
+  FACTORING: {
+    label: "Factoring / A/R Financing",
+    docs: [
+      { id: "customer_list",      label: "Customer list" },
+      { id: "sample_invoices",    label: "Sample invoices" },
+      { id: "customer_contracts", label: "Contract(s) with customers" },
+    ],
+  },
+  MEDIA: {
+    label: "Media / Film Financing",
+    docs: [
+      { id: "media_budget",           label: "Budget" },
+      { id: "finance_plan",           label: "Finance plan" },
+      { id: "tax_credit_status",      label: "Tax credit status (applying / approved / certified)" },
+      { id: "production_schedule",    label: "Production schedule" },
+      { id: "minimum_guarantees",     label: "Minimum guarantees / presales (if any)" },
+    ],
+  },
+};
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ active, status }: { active?: boolean; status?: string }) {
@@ -288,41 +338,82 @@ function CreateLenderModal({
 
 // ─── Create Product Modal ─────────────────────────────────────────────────────
 function CreateProductModal({
-  lenderId,
+  defaultLenderId,
+  lenders,
   onClose,
   onCreated,
 }: {
-  lenderId: string;
+  defaultLenderId: string;
+  lenders: Lender[];
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const alwaysRequired = ["six_month_bank_statements"];
+  const coreDefaults = CORE_DOCS.map((d) => d.id);
+
   const [form, setForm] = useState({
+    selectedLenderId: defaultLenderId,
     productName: "", minAmount: "", maxAmount: "",
     minRate: "", maxRate: "", term: "",
     eligibilityNotes: "", signnowTemplateId: "", active: true,
     category: "LOC",
   });
+  const [checkedDocs, setCheckedDocs] = useState<Set<string>>(
+    new Set([...alwaysRequired, ...coreDefaults])
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const conditional = CONDITIONAL_DOCS[form.category];
+    if (conditional) {
+      setCheckedDocs((prev) => {
+        const next = new Set(prev);
+        conditional.docs.forEach((d) => next.add(d.id));
+        return next;
+      });
+    }
+  }, [form.category]);
 
   function set(key: string, value: string | boolean) {
     setForm((p) => ({ ...p, [key]: value }));
     setErrors((p) => { const n = { ...p }; delete n[key]; return n; });
   }
 
+  function toggleDoc(id: string) {
+    if (alwaysRequired.includes(id)) return;
+    setCheckedDocs((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
   async function submit() {
     const next: Record<string, string> = {};
+    if (!form.selectedLenderId) next.selectedLenderId = "Please select a lender.";
     if (!form.productName.trim()) next.productName = "Product name is required.";
     if (!form.minAmount.trim() && !form.maxAmount.trim()) next.amount = "Amount range is required.";
     if (Object.keys(next).length) { setErrors(next); return; }
+
+    const requiredDocuments = Array.from(checkedDocs).map((id) => {
+      const all = [
+        { id: "six_month_bank_statements", label: "6 months business banking statements" },
+        ...CORE_DOCS,
+        ...Object.values(CONDITIONAL_DOCS).flatMap((g) => g.docs),
+      ];
+      const found = all.find((d) => d.id === id);
+      return { category: found?.label ?? id, required: true, description: null };
+    });
 
     setSaving(true);
     setServerError(null);
     try {
       await createLenderProduct({
-        lenderId,
+        lenderId: form.selectedLenderId,
         productName: form.productName.trim(),
+        name: form.productName.trim(),
         category: form.category as any,
         country: "CA",
         active: form.active,
@@ -333,7 +424,8 @@ function CreateProductModal({
         rateType: "fixed",
         termLength: form.term ? { min: 0, max: parseInt(form.term) || 0, unit: "months" } : undefined,
         eligibilityRules: form.eligibilityNotes || null,
-        requiredDocuments: [],
+        requiredDocuments,
+        signnowTemplateId: form.signnowTemplateId || null,
       } as any);
       onCreated();
     } catch (err) {
@@ -349,6 +441,24 @@ function CreateProductModal({
   });
   const labelStyle: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 };
   const errorStyle: React.CSSProperties = { fontSize: 12, color: "#ef4444", marginTop: 3 };
+  const sectionStyle: React.CSSProperties = { padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" };
+
+  function DocCheckbox({ id, label, locked }: { id: string; label: string; locked?: boolean }) {
+    return (
+      <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: locked ? "default" : "pointer", fontSize: 13, color: "#374151", padding: "3px 0" }}>
+        <input
+          type="checkbox"
+          checked={checkedDocs.has(id)}
+          disabled={locked}
+          onChange={() => toggleDoc(id)}
+          style={{ width: 15, height: 15, marginTop: 1, flexShrink: 0, cursor: locked ? "default" : "pointer", accentColor: "#2563eb" }}
+        />
+        <span style={{ opacity: locked ? 0.6 : 1 }}>{label}{locked && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 4 }}>(always required)</span>}</span>
+      </label>
+    );
+  }
+
+  const conditionalGroup = CONDITIONAL_DOCS[form.category];
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -367,6 +477,22 @@ function CreateProductModal({
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Lender selector */}
+          <div>
+            <label style={labelStyle}>Lender <span style={{ color: "#ef4444" }}>*</span></label>
+            <select
+              value={form.selectedLenderId}
+              onChange={(e) => set("selectedLenderId", e.target.value)}
+              style={{ ...inputStyle(!!errors.selectedLenderId), appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", backgroundSize: 18 }}
+            >
+              <option value="">Select lender…</option>
+              {lenders.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+            {errors.selectedLenderId && <p style={errorStyle}>{errors.selectedLenderId}</p>}
+          </div>
+
           {/* Product Name */}
           <div>
             <label style={labelStyle}>Product Name <span style={{ color: "#ef4444" }}>*</span></label>
@@ -428,9 +554,39 @@ function CreateProductModal({
 
           {/* SignNow Template ID */}
           <div>
-            <label style={labelStyle}>SignNow Template ID <span style={{ color: "#ef4444" }}>*</span></label>
+            <label style={labelStyle}>SignNow Template ID <span style={{ color: "#6b7280", fontWeight: 400 }}>(Optional)</span></label>
             <input placeholder="Enter SignNow template ID" value={form.signnowTemplateId}
               onChange={(e) => set("signnowTemplateId", e.target.value)} style={inputStyle()} />
+          </div>
+
+          {/* Required Documents */}
+          <div>
+            <label style={{ ...labelStyle, marginBottom: 10 }}>Required Documents</label>
+
+            <div style={{ ...sectionStyle, marginBottom: 10 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
+              <DocCheckbox id="six_month_bank_statements" label="6 months business banking statements" locked />
+            </div>
+
+            <div style={{ ...sectionStyle, marginBottom: 10 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Core Underwriting Pack</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
+                {CORE_DOCS.map((d) => (
+                  <DocCheckbox key={d.id} id={d.id} label={d.label} />
+                ))}
+              </div>
+            </div>
+
+            {conditionalGroup && (
+              <div style={sectionStyle}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
+                  {conditionalGroup.label} — Conditional
+                </p>
+                {conditionalGroup.docs.map((d) => (
+                  <DocCheckbox key={d.id} id={d.id} label={d.label} />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Active toggle */}
@@ -751,9 +907,10 @@ export default function LendersPage() {
           onCreated={handleLenderCreated}
         />
       )}
-      {showCreateProduct && selected && (
+      {showCreateProduct && (
         <CreateProductModal
-          lenderId={selected.id}
+          defaultLenderId={selected?.id ?? ""}
+          lenders={lenders}
           onClose={() => setShowCreateProduct(false)}
           onCreated={handleProductCreated}
         />
