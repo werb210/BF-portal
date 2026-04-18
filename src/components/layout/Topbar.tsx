@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useSilo } from "@/hooks/useSilo";
 import { useNotificationsStore } from "@/state/notifications.store";
 import { getRoleLabel, resolveUserRole } from "@/utils/roles";
 import Button from "../ui/Button";
@@ -15,9 +14,6 @@ type TopbarProps = {
 
 const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const { user, logout } = useAuth();
-  const { silo } = useSilo();
-  // silo retained for future use but not displayed in header
-  void silo;
   const unreadCount = useNotificationsStore(
     (state) => state.notifications.filter((item) => !item.read).length
   );
