@@ -2439,8 +2439,19 @@ a,
 .management-toggle {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 600;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--ui-text);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.management-toggle input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
 }
 
 .management-actions {
@@ -2457,8 +2468,9 @@ a,
 
 .management-docs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px 12px;
+  color: var(--ui-text);
 }
 
 .management-docs__title {
