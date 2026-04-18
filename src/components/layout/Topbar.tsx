@@ -76,7 +76,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   }
 
   return (
-    <header className="topbar">
+    <header className="topbar" style={{ color: "#0f172a" }}>
       <div className="topbar__left">
         <button
           type="button"

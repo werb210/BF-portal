@@ -57,9 +57,23 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
   const activeSilo = (silo ?? "BF").toUpperCase() as "BF" | "BI" | "SLF";
   const brand = SILO_BRAND[activeSilo] ?? SILO_BRAND.BF!;
-  const navItems = (SILO_NAV[activeSilo] ?? BF_NAV).filter((item) =>
-    item.roles.some((r) => r.toLowerCase() === role.toLowerCase())
-  );
+  const roleUpper = role.toUpperCase();
+  const isAdmin = roleUpper === "ADMIN";
+  const isMarketing = roleUpper === "MARKETING";
+  const isStaff = roleUpper === "STAFF";
+
+  const canSee = (path: string) => {
+    const tab = path.replace(/^\//, "").toLowerCase();
+    if (isAdmin) return true;
+    if (isMarketing) return tab !== "lenders";
+    if (isStaff) return tab !== "marketing";
+    return false;
+  };
+
+  const navItems = (SILO_NAV[activeSilo] ?? BF_NAV).filter((item) => {
+    if (isAdmin || isMarketing || isStaff) return canSee(item.path);
+    return item.roles.some((r) => r.toLowerCase() === role.toLowerCase());
+  });
 
   const NavContent = () => (
     <nav style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, overflowY: "auto" }}>
