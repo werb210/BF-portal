@@ -488,11 +488,11 @@ function CreateProductModal({
           <div>
             <label style={labelStyle}>Rate / Fee Range <span style={{ color: "#ef4444" }}>*</span></label>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <input placeholder="Minimum (%)" value={form.minRate} onChange={(e) => set("minRate", formatRate(e.target.value).replace(/%$/, ""))}
-                style={{ ...inputStyle(), flex: 1 }} />
+              <input placeholder="e.g. 4.99" value={form.minRate} onChange={(e) => set("minRate", e.target.value)}
+                style={{ ...inputStyle(), flex: 1 }} type="text" inputMode="decimal" />
               <span style={{ color: "#9ca3af", fontSize: 18, flexShrink: 0 }}>—</span>
-              <input placeholder="Maximum (%)" value={form.maxRate} onChange={(e) => set("maxRate", formatRate(e.target.value).replace(/%$/, ""))}
-                style={{ ...inputStyle(), flex: 1 }} />
+              <input placeholder="e.g. 19.99" value={form.maxRate} onChange={(e) => set("maxRate", e.target.value)}
+                style={{ ...inputStyle(), flex: 1 }} type="text" inputMode="decimal" />
             </div>
           </div>
 

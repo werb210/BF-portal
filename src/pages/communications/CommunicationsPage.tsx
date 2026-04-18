@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
 import { api } from "@/api";
-import { formatPhone } from "@/utils/format";
 
 type Tab = "messages" | "sms" | "inbox" | "issues";
 
@@ -13,119 +11,451 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 type Contact = { id: string; name: string; phone: string | null };
-type Message = { id: string; direction: "inbound" | "outbound"; body: string; created_at: string; staff_name: string | null };
-type Issue = { id: string; title: string; description: string; screenshot_url: string | null; created_at: string; status: string };
-
-const tabBase: CSSProperties = {
-  padding: "8px 18px", border: "none", background: "transparent",
-  fontSize: 14, fontWeight: 500, cursor: "pointer",
-  borderBottom: "2px solid transparent", color: "#64748b",
+type Message = {
+  id: string;
+  direction: "inbound" | "outbound";
+  body: string;
+  created_at: string;
+  staff_name?: string | null;
 };
-const tabActive: CSSProperties = {
-  ...tabBase, borderBottomColor: "#2563eb", color: "#2563eb", fontWeight: 600,
+type Issue = {
+  id: string;
+  title: string;
+  description: string;
+  screenshot_url: string | null;
+  created_at: string;
+  status: string;
 };
 
+// ── Initials avatar ────────────────────────────────────────────────────────
+function Avatar({ name, size = 38 }: { name: string; size?: number }) {
+  const initials = name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const colors = ["#2563eb", "#7c3aed", "#059669", "#d97706", "#dc2626", "#0891b2"];
+  const color = colors[name.charCodeAt(0) % colors.length];
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: color,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#fff",
+        fontSize: size * 0.36,
+        fontWeight: 700,
+        flexShrink: 0,
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
+
+// ── SMS Tab — iPhone Messages style ──────────────────────────────────────────
 function SmsTab() {
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [threads, setThreads] = useState<Record<string, Message[]>>({});
   const [selected, setSelected] = useState<Contact | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
+  const [newThreadPhone, setNewThreadPhone] = useState("");
+  const [showNewThread, setShowNewThread] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    api<{ contacts: Contact[] }>("/api/crm/contacts")
+    api<{ contacts: Contact[] }>("/api/crm/contacts?pageSize=200")
       .then((r) => setContacts(Array.isArray(r.contacts) ? r.contacts : []))
       .catch(() => {});
   }, []);
 
   const loadMessages = useCallback((contactId: string) => {
     api<{ messages: Message[] }>(`/api/communications/messages?contactId=${contactId}`)
-      .then((r) => setMessages(Array.isArray(r.messages) ? r.messages : []))
+      .then((r) => {
+        const msgs = Array.isArray(r.messages) ? r.messages : [];
+        setThreads((prev) => ({ ...prev, [contactId]: msgs }));
+      })
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!selected) return;
     loadMessages(selected.id);
-    pollRef.current = setInterval(() => loadMessages(selected.id), 8000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    pollRef.current = setInterval(() => loadMessages(selected.id), 6000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [selected, loadMessages]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [threads, selected]);
 
   async function send() {
     if (!draft.trim() || !selected?.phone || sending) return;
     setSending(true);
     try {
-      await api.post("/api/communications/sms", { to: selected.phone, body: draft.trim(), contactId: selected.id });
+      await api.post("/api/communications/sms", {
+        to: selected.phone,
+        body: draft.trim(),
+        contactId: selected.id,
+      });
       setDraft("");
       loadMessages(selected.id);
-    } finally { setSending(false); }
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } finally {
+      setSending(false);
+    }
   }
 
-  const filtered = contacts.filter(
-    (c) => c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search),
-  );
+  function lastMessage(contactId: string) {
+    const msgs = threads[contactId] ?? [];
+    return msgs[msgs.length - 1];
+  }
+
+  function timeLabel(iso: string) {
+    const d = new Date(iso);
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    if (sameDay) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+  }
+
+  const filtered = contacts.filter((c) => {
+    const q = search.toLowerCase();
+    return c.name?.toLowerCase().includes(q) || c.phone?.includes(q);
+  });
+
+  const messages = selected ? (threads[selected.id] ?? []) : [];
 
   return (
-    <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-      <div style={{ width: 260, borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: 10, borderBottom: "1px solid #e2e8f0" }}>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search contacts…"
-            style={{ width: "100%", padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 7, fontSize: 13, boxSizing: "border-box" }} />
+    <div style={{ display: "flex", flex: 1, overflow: "hidden", background: "#f5f5f7" }}>
+      {/* ── Left — conversation list ── */}
+      <div
+        style={{
+          width: 320,
+          borderRight: "1px solid #e0e0e5",
+          display: "flex",
+          flexDirection: "column",
+          background: "#fff",
+        }}
+      >
+        {/* Search + New */}
+        <div style={{ padding: "12px 12px 8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontWeight: 700, fontSize: 17, color: "#000", flex: 1 }}>Messages</span>
+            <button
+              onClick={() => setShowNewThread(true)}
+              title="New Message"
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#007aff", padding: 0 }}
+            >
+              ✏️
+            </button>
+          </div>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search"
+            style={{
+              width: "100%",
+              padding: "7px 12px",
+              borderRadius: 10,
+              border: "none",
+              background: "#f0f0f5",
+              fontSize: 14,
+              outline: "none",
+              boxSizing: "border-box",
+              color: "#000",
+            }}
+          />
         </div>
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          {filtered.map((c) => (
-            <div key={c.id} onClick={() => { setSelected(c); setMessages([]); }}
-              style={{ padding: "9px 14px", cursor: "pointer", borderBottom: "1px solid #f1f5f9",
-                background: selected?.id === c.id ? "#eff6ff" : "transparent",
-                borderLeft: selected?.id === c.id ? "3px solid #2563eb" : "3px solid transparent" }}>
-              <div style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{c.name}</div>
-              {c.phone && <div style={{ fontSize: 11, color: "#94a3b8" }}>{formatPhone(c.phone)}</div>}
+
+        {/* New thread input */}
+        {showNewThread && (
+          <div style={{ padding: "8px 12px", background: "#f8f8f8", borderBottom: "1px solid #e0e0e5" }}>
+            <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>Enter phone number</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                value={newThreadPhone}
+                onChange={(e) => setNewThreadPhone(e.target.value)}
+                placeholder="+1 (555) 555-5555"
+                style={{
+                  flex: 1,
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  border: "1px solid #d1d5db",
+                  fontSize: 13,
+                  color: "#000",
+                  outline: "none",
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (!newThreadPhone.trim()) return;
+                  const fake: Contact = { id: `new-${newThreadPhone}`, name: newThreadPhone, phone: newThreadPhone };
+                  setSelected(fake);
+                  setShowNewThread(false);
+                  setNewThreadPhone("");
+                }}
+                style={{
+                  padding: "6px 12px",
+                  background: "#007aff",
+                  border: "none",
+                  borderRadius: 8,
+                  color: "#fff",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                Start
+              </button>
+              <button
+                onClick={() => setShowNewThread(false)}
+                style={{
+                  padding: "6px 10px",
+                  background: "#e5e5ea",
+                  border: "none",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  color: "#000",
+                }}
+              >
+                ✕
+              </button>
             </div>
-          ))}
-          {filtered.length === 0 && <div style={{ padding: 16, textAlign: "center", fontSize: 12, color: "#94a3b8" }}>No contacts</div>}
+          </div>
+        )}
+
+        {/* Thread list */}
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {filtered.length === 0 && (
+            <div style={{ padding: "20px 16px", textAlign: "center", color: "#8e8e93", fontSize: 14 }}>
+              No contacts. Add contacts in CRM first.
+            </div>
+          )}
+          {filtered.map((c) => {
+            const last = lastMessage(c.id);
+            const isSelected = selected?.id === c.id;
+            return (
+              <div
+                key={c.id}
+                onClick={() => setSelected(c)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 16px",
+                  cursor: "pointer",
+                  borderBottom: "1px solid #f0f0f5",
+                  background: isSelected ? "#e8f0fe" : "transparent",
+                }}
+              >
+                <Avatar name={c.name} size={44} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <span style={{ fontWeight: 600, fontSize: 15, color: "#000" }}>{c.name}</span>
+                    {last && <span style={{ fontSize: 11, color: "#8e8e93", flexShrink: 0 }}>{timeLabel(last.created_at)}</span>}
+                  </div>
+                  {last ? (
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#8e8e93",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {last.direction === "outbound" ? "You: " : ""}
+                      {last.body}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 13, color: "#c7c7cc" }}>{c.phone}</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+
+      {/* ── Right — thread ── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#fff" }}>
         {!selected ? (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 14 }}>
-            Select a contact to start a thread
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#8e8e93",
+              gap: 8,
+            }}
+          >
+            <div style={{ fontSize: 40 }}>💬</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "#000" }}>No conversation selected</div>
+            <div style={{ fontSize: 14 }}>Choose from the list or start a new message</div>
           </div>
         ) : (
           <>
-            <div style={{ padding: "10px 16px", borderBottom: "1px solid #e2e8f0", background: "#fff" }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>{selected.name}</div>
-              {selected.phone && <div style={{ fontSize: 12, color: "#64748b" }}>{formatPhone(selected.phone)}</div>}
+            {/* Thread header */}
+            <div
+              style={{
+                padding: "12px 20px",
+                borderBottom: "1px solid #f0f0f5",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                background: "#fff",
+              }}
+            >
+              <Avatar name={selected.name} size={36} />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#000" }}>{selected.name}</div>
+                {selected.phone && <div style={{ fontSize: 12, color: "#8e8e93" }}>{selected.phone}</div>}
+              </div>
             </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 8, background: "#f8fafc" }}>
-              {messages.length === 0 && <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 13, marginTop: 32 }}>No messages yet</div>}
-              {messages.map((m) => (
-                <div key={m.id} style={{ alignSelf: m.direction === "outbound" ? "flex-end" : "flex-start", maxWidth: "70%" }}>
-                  <div style={{ background: m.direction === "outbound" ? "#2563eb" : "#fff",
-                    color: m.direction === "outbound" ? "#fff" : "#1e293b",
-                    borderRadius: m.direction === "outbound" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                    padding: "9px 13px", fontSize: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.07)" }}>
-                    {m.body}
-                  </div>
-                  <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2, textAlign: m.direction === "outbound" ? "right" : "left" }}>
-                    {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </div>
+
+            {/* Messages */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: "16px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                background: "#fff",
+              }}
+            >
+              {messages.length === 0 && (
+                <div style={{ textAlign: "center", color: "#8e8e93", fontSize: 14, marginTop: 40 }}>
+                  No messages yet. Send the first one.
                 </div>
-              ))}
+              )}
+              {messages.map((m, i) => {
+                const isOut = m.direction === "outbound";
+                const prevSameSide = i > 0 && messages[i - 1]?.direction === m.direction;
+                return (
+                  <div
+                    key={m.id}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: isOut ? "flex-end" : "flex-start",
+                      marginTop: prevSameSide ? 2 : 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        maxWidth: "70%",
+                        background: isOut ? "#007aff" : "#e5e5ea",
+                        color: isOut ? "#fff" : "#000",
+                        padding: "9px 14px",
+                        borderRadius: isOut ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                        fontSize: 15,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {m.body}
+                    </div>
+                    {(!messages[i + 1] || messages[i + 1]?.direction !== m.direction) && (
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: "#8e8e93",
+                          marginTop: 3,
+                          paddingLeft: isOut ? 0 : 4,
+                          paddingRight: isOut ? 4 : 0,
+                        }}
+                      >
+                        {timeLabel(m.created_at)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <div ref={bottomRef} />
             </div>
-            <div style={{ padding: 10, borderTop: "1px solid #e2e8f0", background: "#fff", display: "flex", gap: 8 }}>
-              <textarea value={draft} onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
-                placeholder="Type a message…" rows={2}
-                style={{ flex: 1, resize: "none", border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 11px", fontSize: 14, outline: "none" }} />
-              <button onClick={() => void send()} disabled={!draft.trim() || !selected.phone || sending}
-                style={{ padding: "0 16px", background: "#2563eb", border: "none", borderRadius: 8, color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", opacity: !draft.trim() || sending ? 0.5 : 1 }}>
-                {sending ? "…" : "Send"}
+
+            {/* Compose */}
+            <div
+              style={{
+                padding: "8px 16px 12px",
+                borderTop: "1px solid #f0f0f5",
+                display: "flex",
+                alignItems: "flex-end",
+                gap: 10,
+                background: "#fff",
+              }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  border: "1px solid #d1d5db",
+                  borderRadius: 20,
+                  padding: "6px 14px",
+                  background: "#f9f9f9",
+                }}
+              >
+                <textarea
+                  ref={inputRef}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void send();
+                    }
+                  }}
+                  placeholder="iMessage"
+                  rows={1}
+                  style={{
+                    width: "100%",
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    fontSize: 15,
+                    resize: "none",
+                    color: "#000",
+                    fontFamily: "inherit",
+                    lineHeight: 1.4,
+                    maxHeight: 100,
+                    overflow: "auto",
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => void send()}
+                disabled={!draft.trim() || sending}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  border: "none",
+                  background: draft.trim() ? "#007aff" : "#e5e5ea",
+                  color: "#fff",
+                  fontSize: 18,
+                  cursor: draft.trim() ? "pointer" : "default",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  transition: "background 0.15s",
+                }}
+              >
+                ↑
               </button>
             </div>
           </>
@@ -135,50 +465,70 @@ function SmsTab() {
   );
 }
 
+// ── Messages tab ──────────────────────────────────────────────────────────────
 function MessagesTab() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api<{ messages: Message[] }>("/api/communications/messages?type=client_message")
+    api<{ messages: Message[] }>("/api/communications/messages")
       .then((r) => setMessages(Array.isArray(r.messages) ? r.messages : []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div style={{ padding: 24, flex: 1 }}>
-      <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Client Messages</h3>
-      {loading && <div style={{ color: "#94a3b8" }}>Loading…</div>}
+    <div style={{ padding: 24, flex: 1, overflowY: "auto" }}>
+      <h3 style={{ margin: "0 0 16px", fontSize: 17, fontWeight: 700, color: "#0f172a" }}>Client Messages</h3>
+      {loading && <div style={{ color: "#8e8e93" }}>Loading…</div>}
       {!loading && messages.length === 0 && (
-        <div style={{ color: "#94a3b8", fontSize: 14 }}>No client messages yet. Messages from the client portal "Talk to a Human" button will appear here.</div>
+        <div style={{ color: "#8e8e93", fontSize: 14 }}>
+          No client messages yet. Messages from the client portal "Talk to a Human" button will appear here.
+        </div>
       )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {messages.map((m) => (
-          <div key={m.id} style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "12px 16px" }}>
-            <div style={{ fontSize: 13, color: "#1e293b", marginBottom: 6 }}>{m.body}</div>
-            <div style={{ fontSize: 11, color: "#94a3b8" }}>{new Date(m.created_at).toLocaleString()}</div>
-          </div>
-        ))}
-      </div>
+      {messages.map((m) => (
+        <div
+          key={m.id}
+          style={{
+            background: "#fff",
+            borderRadius: 12,
+            border: "1px solid #e2e8f0",
+            padding: "12px 16px",
+            marginBottom: 10,
+          }}
+        >
+          <div style={{ fontSize: 14, color: "#1e293b", marginBottom: 6 }}>{m.body}</div>
+          <div style={{ fontSize: 11, color: "#8e8e93" }}>{new Date(m.created_at).toLocaleString()}</div>
+        </div>
+      ))}
     </div>
   );
 }
 
+// ── Inbox tab ─────────────────────────────────────────────────────────────────
 function InboxTab() {
   return (
-    <div style={{ padding: 24, flex: 1 }}>
-      <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Inbox</h3>
-      <p style={{ color: "#64748b", fontSize: 14, margin: "0 0 20px" }}>
-        Connect Microsoft 365 in Settings → Profile to sync your work email here.
-      </p>
-      <div style={{ background: "#f8fafc", borderRadius: 10, border: "1px solid #e2e8f0", padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
-        O365 inbox will appear here once Microsoft 365 is connected.
+    <div
+      style={{
+        padding: 32,
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#8e8e93",
+      }}
+    >
+      <div style={{ fontSize: 40, marginBottom: 12 }}>📧</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>O365 Inbox</div>
+      <div style={{ fontSize: 14, textAlign: "center", maxWidth: 320 }}>
+        Connect Microsoft 365 in Settings → Profile to sync your work inbox here.
       </div>
     </div>
   );
 }
 
+// ── Issues tab ────────────────────────────────────────────────────────────────
 function IssuesTab() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,49 +546,89 @@ function IssuesTab() {
 
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-      <div style={{ width: 320, borderRight: "1px solid #e2e8f0", overflowY: "auto" }}>
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
+      <div style={{ width: 300, borderRight: "1px solid #e2e8f0", overflowY: "auto", background: "#fff" }}>
+        <div
+          style={{
+            padding: "12px 16px",
+            borderBottom: "1px solid #e2e8f0",
+            fontWeight: 700,
+            fontSize: 15,
+            color: "#0f172a",
+          }}
+        >
           Reported Issues
         </div>
-        {loading && <div style={{ padding: 20, color: "#94a3b8", fontSize: 13 }}>Loading…</div>}
+        {loading && <div style={{ padding: 16, color: "#8e8e93", fontSize: 13 }}>Loading…</div>}
         {!loading && issues.length === 0 && (
-          <div style={{ padding: 20, color: "#94a3b8", fontSize: 13 }}>
-            No issues reported yet. Issues submitted via the client portal AI chat will appear here.
+          <div style={{ padding: 20, color: "#8e8e93", fontSize: 13 }}>
+            No issues yet. Client portal "Report an Issue" submissions appear here.
           </div>
         )}
         {issues.map((issue) => (
-          <div key={issue.id} onClick={() => setSelected(issue)}
-            style={{ padding: "11px 16px", cursor: "pointer", borderBottom: "1px solid #f1f5f9",
+          <div
+            key={issue.id}
+            onClick={() => setSelected(issue)}
+            style={{
+              padding: "10px 16px",
+              cursor: "pointer",
+              borderBottom: "1px solid #f1f5f9",
               background: selected?.id === issue.id ? "#eff6ff" : "transparent",
-              borderLeft: selected?.id === issue.id ? "3px solid #2563eb" : "3px solid transparent" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <span style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{issue.title || "Untitled issue"}</span>
-              <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 20,
-                background: `${statusColor(issue.status)}22`, color: statusColor(issue.status), fontWeight: 600 }}>
+              borderLeft: selected?.id === issue.id ? "3px solid #2563eb" : "3px solid transparent",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+              <span style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{issue.title || "Untitled"}</span>
+              <span
+                style={{
+                  fontSize: 10,
+                  padding: "1px 6px",
+                  borderRadius: 20,
+                  background: `${statusColor(issue.status)}22`,
+                  color: statusColor(issue.status),
+                  fontWeight: 600,
+                }}
+              >
                 {issue.status}
               </span>
             </div>
-            <div style={{ fontSize: 11, color: "#94a3b8" }}>{new Date(issue.created_at).toLocaleString()}</div>
+            <div style={{ fontSize: 11, color: "#8e8e93" }}>{new Date(issue.created_at).toLocaleString()}</div>
           </div>
         ))}
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: 24, background: "#f8fafc" }}>
         {!selected ? (
-          <div style={{ color: "#94a3b8", fontSize: 14, marginTop: 40, textAlign: "center" }}>Select an issue to view details</div>
+          <div style={{ color: "#8e8e93", fontSize: 14, marginTop: 40, textAlign: "center" }}>
+            Select an issue to view details
+          </div>
         ) : (
           <>
-            <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{selected.title || "Untitled issue"}</h3>
-            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>{new Date(selected.created_at).toLocaleString()}</div>
+            <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{selected.title || "Untitled"}</h3>
+            <div style={{ fontSize: 12, color: "#8e8e93", marginBottom: 16 }}>
+              {new Date(selected.created_at).toLocaleString()}
+            </div>
             {selected.description && (
-              <div style={{ background: "#f8fafc", borderRadius: 8, padding: "12px 14px", fontSize: 14, color: "#374151", marginBottom: 16 }}>
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: 10,
+                  padding: "12px 16px",
+                  fontSize: 14,
+                  color: "#374151",
+                  marginBottom: 16,
+                  border: "1px solid #e2e8f0",
+                }}
+              >
                 {selected.description}
               </div>
             )}
             {selected.screenshot_url && (
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 8 }}>SCREENSHOT</div>
-                <img src={selected.screenshot_url} alt="Issue screenshot"
-                  style={{ maxWidth: "100%", borderRadius: 8, border: "1px solid #e2e8f0" }} />
+                <img
+                  src={selected.screenshot_url}
+                  alt="Issue screenshot"
+                  style={{ maxWidth: "100%", borderRadius: 8, border: "1px solid #e2e8f0" }}
+                />
               </div>
             )}
           </>
@@ -248,20 +638,54 @@ function IssuesTab() {
   );
 }
 
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function CommunicationsPage() {
   const [tab, setTab] = useState<Tab>("sms");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 80px)", overflow: "hidden" }}>
-      <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", background: "#fff", flexShrink: 0 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100vh - 80px)",
+        overflow: "hidden",
+        background: "#fff",
+      }}
+    >
+      {/* Sub-nav */}
+      <div
+        style={{
+          display: "flex",
+          borderBottom: "2px solid #e2e8f0",
+          background: "#fff",
+          flexShrink: 0,
+          padding: "0 4px",
+        }}
+      >
         {TABS.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={tab === t.id ? tabActive : tabBase}>
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            style={{
+              padding: "12px 20px",
+              border: "none",
+              background: "transparent",
+              fontSize: 14,
+              fontWeight: tab === t.id ? 700 : 500,
+              cursor: "pointer",
+              color: tab === t.id ? "#007aff" : "#6b7280",
+              borderBottom: tab === t.id ? "2px solid #007aff" : "2px solid transparent",
+              marginBottom: -2,
+              transition: "all 0.1s",
+            }}
+          >
             {t.label}
           </button>
         ))}
       </div>
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", background: "#f8fafc" }}>
+      {/* Content */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {tab === "sms" && <SmsTab />}
         {tab === "messages" && <MessagesTab />}
         {tab === "inbox" && <InboxTab />}
