@@ -1,221 +1,256 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import RequireRole from "@/components/auth/RequireRole";
-import Card from "@/components/ui/Card";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/api";
-import type { MessageRecord } from "@/types/messages.types";
-import ApplicationContactPicker from "@/components/communications/ApplicationContactPicker";
 
-type CommsTab = "messages" | "sms" | "email" | "issues";
+type Contact = { id: string; name: string; phone: string | null };
+type Message = {
+  id: string;
+  direction: "inbound" | "outbound";
+  body: string;
+  created_at: string;
+  staff_name: string | null;
+};
 
-const COMMS_TABS: { id: CommsTab; label: string }[] = [
-  { id: "messages", label: "Messages" },
-  { id: "sms", label: "SMS" },
-  { id: "email", label: "Email" },
-  { id: "issues", label: "Issue Reports" }
-];
-
-const CommunicationsContent = () => {
-  const [tab, setTab] = useState<CommsTab>("messages");
-  const [activeContactId, setActiveContactId] = useState("");
-  const [messages, setMessages] = useState<MessageRecord[]>([]);
-  const [messageText, setMessageText] = useState("");
-  const [isSending, setIsSending] = useState(false);
-
-  const refetchMessages = async () => {
-    if (!activeContactId) {
-      setMessages([]);
-      return;
-    }
-
-    try {
-      const thread = await api<MessageRecord[]>(`/api/messages?contactId=${encodeURIComponent(activeContactId)}&applicationId=${encodeURIComponent(activeContactId)}`);
-      setMessages(thread);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+export default function CommunicationsPage() {
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [selected, setSelected] = useState<Contact | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [search, setSearch] = useState("");
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!activeContactId) return;
+    api<{ contacts: Contact[] }>("/api/crm/contacts")
+      .then((r) => setContacts(Array.isArray(r.contacts) ? r.contacts : []))
+      .catch(() => {});
+  }, []);
 
-    const fetchMessages = () => {
-      api<MessageRecord[]>(`/api/messages?contactId=${encodeURIComponent(activeContactId)}&applicationId=${encodeURIComponent(activeContactId)}`)
-        .then(setMessages)
-        .catch(console.error);
+  const loadMessages = useCallback((contactId: string) => {
+    api<{ messages: Message[] }>(`/api/communications/messages?contactId=${contactId}`)
+      .then((r) => setMessages(Array.isArray(r.messages) ? r.messages : []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!selected) return;
+    loadMessages(selected.id);
+    pollRef.current = setInterval(() => loadMessages(selected.id), 8000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
     };
+  }, [selected, loadMessages]);
 
-    fetchMessages();
-    const interval = window.setInterval(fetchMessages, 5000);
-    return () => window.clearInterval(interval);
-  }, [activeContactId]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  const handleSendMessage = async (event: FormEvent) => {
-    event.preventDefault();
-    const text = messageText.trim();
-    if (!activeContactId || !text) return;
-
-    setIsSending(true);
+  async function send() {
+    if (!draft.trim() || !selected?.phone || sending) return;
+    setSending(true);
     try {
-      await api("/api/messages", {
-        method: "POST",
-        body: { contactId: activeContactId, text, direction: "outbound" }
+      await api.post("/api/communications/sms", {
+        to: selected.phone,
+        body: draft.trim(),
+        contactId: selected.id,
       });
-      setMessageText("");
-      await refetchMessages();
-    } catch (error) {
-      console.error(error);
+      setDraft("");
+      loadMessages(selected.id);
+    } catch {
+      // surface error via toast in future
     } finally {
-      setIsSending(false);
+      setSending(false);
     }
-  };
+  }
 
-  const sortedMessages = useMemo(
-    () =>
-      [...messages].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      ),
-    [messages]
+  const filtered = contacts.filter(
+    (c) => c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search),
   );
 
   return (
-    <div className="page space-y-4">
-      <Card title="Communications">
-        <div className="flex flex-wrap gap-2 mb-4">
-          {COMMS_TABS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`ui-button ${tab === item.id ? "ui-button--primary" : "ui-button--secondary"}`}
-              onClick={() => setTab(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
+    <div style={{ display: "flex", height: "calc(100vh - 80px)", gap: 0 }}>
+      <div
+        style={{
+          width: 280,
+          borderRight: "1px solid #e2e8f0",
+          display: "flex",
+          flexDirection: "column",
+          background: "#fff",
+        }}
+      >
+        <div style={{ padding: 12, borderBottom: "1px solid #e2e8f0" }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 8px", color: "#0f172a" }}>Communications</h2>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search contacts…"
+            style={{
+              width: "100%",
+              padding: "6px 10px",
+              borderRadius: 8,
+              border: "1px solid #e2e8f0",
+              fontSize: 13,
+              boxSizing: "border-box",
+            }}
+          />
         </div>
-
-        {tab === "messages" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="drawer-section space-y-3">
-              <div className="drawer-section__title">Conversations</div>
-              <p className="text-sm text-slate-500">Messages loads the client↔staff thread from <code>/api/messages?contactId=…</code> (communications_messages), and staff can search by application/contact.</p>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>
-                  Search by application or contact
-                </label>
-                <ApplicationContactPicker onSelect={(contactId) => setActiveContactId(contactId)} />
-              </div>
-            </div>
-            <div className="drawer-section md:col-span-2 space-y-3">
-              <div className="drawer-section__title">Thread</div>
-              <div className="max-h-[320px] overflow-y-auto rounded border bg-slate-50 p-3 space-y-2">
-                {sortedMessages.length ? (
-                  sortedMessages.map((message) => (
-                    <div key={message.id} className="rounded border bg-white px-3 py-2 text-sm">
-                      <div className="font-semibold text-slate-700">{message.senderName ?? message.senderType ?? "Unknown"}</div>
-                      <div>{message.body}</div>
-                      <div className="text-xs text-slate-500 mt-1">{new Date(message.createdAt).toLocaleString()}</div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-slate-500">No messages loaded.</p>
-                )}
-              </div>
-              <form onSubmit={handleSendMessage} className="space-y-2">
-                <textarea
-                  className="w-full p-2 rounded border"
-                  placeholder="Message with #upload #networth #equipment #realestate #other"
-                  value={messageText}
-                  onChange={(event) => setMessageText(event.target.value)}
-                />
-                <button type="submit" className="ui-button ui-button--primary" disabled={isSending || !activeContactId.trim()}>
-                  {isSending ? "Sending..." : "Send Message"}
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {tab === "sms" && (
-          <div style={{ padding: 16 }}>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 13, color: "#94a3b8", display: "block", marginBottom: 4 }}>
-                To (E.164 phone number)
-              </label>
-              <input
-                type="tel"
-                placeholder="+15550000000"
-                style={{
-                  width: "100%", padding: "8px 12px", borderRadius: 8,
-                  border: "1px solid #334155", background: "#1e293b",
-                  color: "#f1f5f9", fontSize: 14, boxSizing: "border-box"
-                }}
-                id="sms-to"
-              />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 13, color: "#94a3b8", display: "block", marginBottom: 4 }}>
-                Message
-              </label>
-              <textarea
-                rows={4}
-                placeholder="Type your SMS message..."
-                style={{
-                  width: "100%", padding: "8px 12px", borderRadius: 8,
-                  border: "1px solid #334155", background: "#1e293b",
-                  color: "#f1f5f9", fontSize: 14, resize: "vertical", boxSizing: "border-box"
-                }}
-                id="sms-body"
-              />
-            </div>
-            <button
-              onClick={async () => {
-                const to = (document.getElementById("sms-to") as HTMLInputElement)?.value;
-                const body = (document.getElementById("sms-body") as HTMLTextAreaElement)?.value;
-                if (!to || !body) return;
-                try {
-                  await api("/api/communications/sms", { method: "POST", body: { to, body } });
-                  alert("SMS sent");
-                } catch {
-                  alert("Failed to send SMS");
-                }
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {filtered.map((c) => (
+            <div
+              key={c.id}
+              onClick={() => {
+                setSelected(c);
+                setMessages([]);
               }}
               style={{
-                background: "#3b82f6", color: "#fff", border: "none",
-                borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 14
+                padding: "10px 14px",
+                cursor: "pointer",
+                borderBottom: "1px solid #f1f5f9",
+                background: selected?.id === c.id ? "#eff6ff" : "transparent",
+                borderLeft: selected?.id === c.id ? "3px solid #3b82f6" : "3px solid transparent",
               }}
             >
-              Send SMS
-            </button>
-          </div>
-        )}
-
-        {tab === "email" && (
-          <div style={{ padding: 24, color: "#64748b", textAlign: "center" }}>
-            <div style={{ fontSize: 18, marginBottom: 8 }}>📧 Email via Microsoft 365</div>
-            <div style={{ fontSize: 14 }}>
-              O365 inbox integration is configured separately. Connect your Microsoft 365 account
-              in Settings → Connected Accounts to enable email here.
+              <div style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{c.name}</div>
+              {c.phone && <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.phone}</div>}
             </div>
-          </div>
-        )}
+          ))}
+          {filtered.length === 0 && (
+            <div style={{ padding: 20, textAlign: "center", fontSize: 13, color: "#94a3b8" }}>No contacts found</div>
+          )}
+        </div>
+      </div>
 
-        {tab === "issues" && (
-          <div className="drawer-section">
-            <div className="drawer-section__title">Issue Reports</div>
-            <p>Client issue reports with screenshot, date, status and "Mark as resolved" actions appear here.</p>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#f8fafc" }}>
+        {!selected ? (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#94a3b8",
+              fontSize: 14,
+            }}
+          >
+            Select a contact to view messages
           </div>
+        ) : (
+          <>
+            <div
+              style={{
+                padding: "12px 16px",
+                borderBottom: "1px solid #e2e8f0",
+                background: "#fff",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>{selected.name}</div>
+                {selected.phone && <div style={{ fontSize: 12, color: "#94a3b8" }}>{selected.phone}</div>}
+              </div>
+            </div>
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: 16,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              {messages.length === 0 && (
+                <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 13, marginTop: 40 }}>No messages yet</div>
+              )}
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  style={{
+                    alignSelf: m.direction === "outbound" ? "flex-end" : "flex-start",
+                    maxWidth: "70%",
+                  }}
+                >
+                  <div
+                    style={{
+                      background: m.direction === "outbound" ? "#2563eb" : "#fff",
+                      color: m.direction === "outbound" ? "#fff" : "#1e293b",
+                      borderRadius: m.direction === "outbound" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                      padding: "10px 14px",
+                      fontSize: 14,
+                      lineHeight: 1.5,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                    }}
+                  >
+                    {m.body}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "#94a3b8",
+                      marginTop: 3,
+                      textAlign: m.direction === "outbound" ? "right" : "left",
+                    }}
+                  >
+                    {m.direction === "outbound" && m.staff_name ? `${m.staff_name} · ` : ""}
+                    {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                </div>
+              ))}
+              <div ref={bottomRef} />
+            </div>
+            <div
+              style={{
+                padding: 12,
+                borderTop: "1px solid #e2e8f0",
+                background: "#fff",
+                display: "flex",
+                gap: 8,
+              }}
+            >
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void send();
+                  }
+                }}
+                placeholder="Type a message…"
+                rows={2}
+                style={{
+                  flex: 1,
+                  resize: "none",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 10,
+                  padding: "8px 12px",
+                  fontSize: 14,
+                  outline: "none",
+                }}
+              />
+              <button
+                onClick={() => void send()}
+                disabled={!draft.trim() || !selected.phone || sending}
+                style={{
+                  padding: "0 18px",
+                  background: "#2563eb",
+                  border: "none",
+                  borderRadius: 10,
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  opacity: !draft.trim() || sending ? 0.5 : 1,
+                }}
+              >
+                {sending ? "…" : "Send"}
+              </button>
+            </div>
+          </>
         )}
-
-        
-      </Card>
+      </div>
     </div>
   );
-};
-
-const CommunicationsPage = () => (
-  <RequireRole roles={["Admin", "Staff"]}>
-    <CommunicationsContent />
-  </RequireRole>
-);
-
-export default CommunicationsPage;
+}

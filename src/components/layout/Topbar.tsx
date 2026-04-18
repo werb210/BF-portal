@@ -8,18 +8,18 @@ import PushNotificationCta from "@/components/PushNotificationCta";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import MayaStatus from "@/components/MayaStatus";
 import { api } from "@/api";
+
 type TopbarProps = {
   onToggleSidebar: () => void;
 };
 
 const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const { user, logout } = useAuth();
-  const unreadCount = useNotificationsStore(
-    (state) => state.notifications.filter((item) => !item.read).length
-  );
+  const unreadCount = useNotificationsStore((state) => state.notifications.filter((item) => !item.read).length);
   const [isCenterOpen, setIsCenterOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
   const [productionStatus, setProductionStatus] = useState("checking");
+  const [presence, setPresence] = useState<"available" | "busy" | "offline">("available");
 
   useEffect(() => {
     api<{ status?: string }>("/api/_int/health")
@@ -55,6 +55,26 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
     return () => clearInterval(interval);
   }, [user]);
 
+  useEffect(() => {
+    const setAvailable = () => api.post("/api/telephony/presence", { status: "available" }).catch(() => {});
+
+    setAvailable();
+    const interval = setInterval(() => {
+      api.post("/api/telephony/presence/heartbeat", {}).catch(() => {});
+    }, 60_000);
+
+    return () => {
+      clearInterval(interval);
+      api.post("/api/telephony/presence", { status: "offline" }).catch(() => {});
+    };
+  }, []);
+
+  async function togglePresence() {
+    const next = presence === "available" ? "busy" : "available";
+    await api.post("/api/telephony/presence", { status: next }).catch(() => {});
+    setPresence(next);
+  }
+
   return (
     <header className="topbar">
       <div className="topbar__left">
@@ -79,7 +99,10 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
       <div className="topbar__right">
         <BusinessUnitSelector />
         {liveCount > 0 && (
-          <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white" aria-label="Live chat queue count">
+          <span
+            className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white"
+            aria-label="Live chat queue count"
+          >
             Live {liveCount}
           </span>
         )}
@@ -89,6 +112,35 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         >
           Prod: {productionStatus}
         </span>
+        <button
+          onClick={() => void togglePresence()}
+          title={`Status: ${presence} — click to toggle`}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            background: "none",
+            border: "1px solid",
+            borderColor: presence === "available" ? "#22c55e" : "#f59e0b",
+            borderRadius: 20,
+            padding: "3px 10px",
+            cursor: "pointer",
+            fontSize: 11,
+            fontWeight: 600,
+            color: presence === "available" ? "#22c55e" : "#f59e0b",
+          }}
+        >
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: presence === "available" ? "#22c55e" : "#f59e0b",
+              flexShrink: 0,
+            }}
+          />
+          {presence === "available" ? "Available" : "Busy"}
+        </button>
         <MayaStatus />
         <div className="relative">
           <button
