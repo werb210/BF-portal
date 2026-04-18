@@ -590,30 +590,37 @@ function ProductsPanel({
   lender,
   onAddProduct,
 }: {
-  lender: Lender;
+  lender: Lender | null;
   onAddProduct: () => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ["lender-products", lender.id],
-    queryFn: () => fetchLenderProducts(lender.id),
+    queryKey: ["lender-products", lender?.id ?? "all"],
+    queryFn: () => fetchLenderProducts(lender?.id ?? ""),
     staleTime: 30_000,
+  });
+
+  const filtered = products.filter((p) => {
+    const q = search.toLowerCase();
+    const name = ((p as any).productName || (p as any).name || "").toLowerCase();
+    return name.includes(q);
   });
 
   const grouped = useMemo(() => {
     const map = new Map<string, LenderProduct[]>();
     for (const cat of CATEGORY_ORDER) map.set(cat, []);
-    for (const p of products) {
+    for (const p of filtered) {
       const cat = (p as any).category ?? "LOC";
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat)!.push(p);
     }
     return Array.from(map.entries()).filter(([, items]) => items.length > 0);
-  }, [products]);
+  }, [filtered]);
 
-  const isActive = lender.active !== false &&
-    (!lender.status || lender.status.toUpperCase() === "ACTIVE");
+  const isActive = !lender || (lender.active !== false &&
+    (!lender.status || lender.status.toUpperCase() === "ACTIVE"));
 
   function toggleCollapse(cat: string) {
     setCollapsed((prev) => {
@@ -643,21 +650,29 @@ function ProductsPanel({
 
   return (
     <div style={{ flex: 1, background: "#f8fafc", display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px", borderBottom: "1px solid #e2e8f0", background: "#fff" }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>Lender Products</h2>
-        <button
-          onClick={onAddProduct}
-          style={{ padding: "8px 16px", background: "#fff", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#374151", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
-        >
-          Add product <span style={{ fontSize: 16 }}>▾</span>
-        </button>
+      {/* Header — always visible */}
+      <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid #e2e8f0", background: "#fff" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>
+            Lender Products{lender ? ` — ${lender.name}` : ""}
+          </h2>
+          <button onClick={onAddProduct}
+            style={{ padding: "8px 16px", background: "#2563eb", border: "none", borderRadius: 8,
+              fontSize: 13, fontWeight: 600, color: "#fff", cursor: "pointer" }}>
+            + Create Product
+          </button>
+        </div>
+        <input value={search} onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search products…"
+          style={{ width: "100%", padding: "7px 12px", border: "1px solid #d1d5db",
+            borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
       </div>
 
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-        {/* Inactive warning */}
-        {!isActive && (
-          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#92400e" }}>
+        {lender && !isActive && (
+          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8,
+            padding: "10px 14px", display: "flex", alignItems: "center", gap: 8,
+            fontSize: 13, color: "#92400e" }}>
             <span>⚠️</span>
             <span><strong>{lender.name}</strong> is inactive and cannot receive deals until reactivated.</span>
           </div>
@@ -667,7 +682,7 @@ function ProductsPanel({
 
         {!isLoading && grouped.length === 0 && (
           <div style={{ padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
-            No products yet. Click "Add product" to create one.
+            {search ? `No products matching "${search}"` : "No products yet. Click \"+ Create Product\" to create one."}
           </div>
         )}
 
@@ -849,17 +864,11 @@ export default function LendersPage() {
         </div>
       </div>
 
-      {/* ── Right panel — products ── */}
-      {selected ? (
-        <ProductsPanel
-          lender={selected}
-          onAddProduct={() => setShowCreateProduct(true)}
-        />
-      ) : (
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 14, background: "#f8fafc" }}>
-          Select a lender to view their products
-        </div>
-      )}
+      {/* ── Right panel — always visible ── */}
+      <ProductsPanel
+        lender={selected}
+        onAddProduct={() => setShowCreateProduct(true)}
+      />
 
       {/* Modals */}
       {showCreateLender && (
