@@ -84,11 +84,11 @@ export default function MayaChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
-          placeholder="Ask Maya…"
+          placeholder="Ask Maya anything…"
           disabled={loading}
           style={{
             flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 8, padding: "6px 10px", color: "#fff", fontSize: 12,
+            borderRadius: 8, padding: "6px 10px", color: "#0f172a", fontSize: 12,
             outline: "none",
           }}
         />

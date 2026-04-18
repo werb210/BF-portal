@@ -27,6 +27,12 @@ const ContactsPage = () => {
     setSilo(globalSilo as "BF" | "BI" | "SLF");
   }, [globalSilo, setSilo]);
 
+  useEffect(() => {
+    if (filters.hasActiveApplication) {
+      setFilters({ hasActiveApplication: false });
+    }
+  }, [filters.hasActiveApplication, setFilters]);
+
   const [selected, setSelected] = useState<Contact | null>(null);
   const [showForm, setShowForm] = useState(false);
   const {
