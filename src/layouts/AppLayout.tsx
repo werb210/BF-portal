@@ -7,6 +7,9 @@ import MayaChat from "@/components/maya/MayaChat";
 import { useDialerStore } from "@/state/dialer.store";
 import PortalDialer from "@/telephony/components/PortalDialer";
 
+
+const TOPBAR_HEIGHT = 68;
+
 type NavItem = { label: string; path: string; roles: string[] };
 
 const BF_NAV: NavItem[] = [
@@ -118,9 +121,9 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
       >
         {/* Brand header */}
         <div style={{ marginBottom: 24, padding: "0 4px", display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/images/Header.png" alt="Boreal" style={{ height: 28, width: "auto" }} />
+          <img src="/images/Header.png" alt="Boreal" style={{ height: 52, width: "auto" }} />
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#0b1220", lineHeight: 1.2 }}>
               {brand.label}
             </div>
             <div style={{ fontSize: 10, color: brand.accent, fontWeight: 600, letterSpacing: "0.05em" }}>
@@ -157,8 +160,8 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
       {/* ── Main ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Topbar onToggleSidebar={() => setMobileNavOpen((prev) => !prev)} />
-        <main style={{ flex: 1, overflowY: "auto", padding: 24, background: "var(--bg-primary)" }}>
+        <div style={{ position: "sticky", top: 0, zIndex: 30, flexShrink: 0 }}><Topbar onToggleSidebar={() => setMobileNavOpen((prev) => !prev)} /></div>
+        <main style={{ height: `calc(100vh - ${TOPBAR_HEIGHT}px)`, overflowY: "auto", padding: 24, background: "var(--bg-primary)" }}>
           {children ?? <Outlet />}
         </main>
       </div>

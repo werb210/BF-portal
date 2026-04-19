@@ -137,7 +137,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
               openDialer({
                 contactId: contact.id,
                 contactName: contact.name,
-                applicationId: contact.applicationIds[0],
+                applicationId: (contact.applicationIds ?? [])[0],
                 phone: contact.phone,
                 source: "crm"
               });
@@ -145,7 +145,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
           >
             Call
           </Button>
-          <Button onClick={() => setShowSms(true)}>SMS</Button>
+          <Button onClick={() => { window.location.href = `/communications?tab=sms&contact_id=${contact.id}`; }}>SMS</Button>
           <Button onClick={() => setShowEmail(true)}>Email</Button>
           <Button variant="secondary" onClick={() => setIncoming(contact.phone)}>
             Simulate Incoming
@@ -179,7 +179,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
             openDialer({
               contactId: contact.id,
               contactName: contact.name,
-              applicationId: contact.applicationIds[0],
+              applicationId: (contact.applicationIds ?? [])[0],
               phone: contact.phone,
               source: "crm"
             });

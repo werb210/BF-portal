@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotificationsStore } from "@/state/notifications.store";
-import { getRoleLabel, resolveUserRole } from "@/utils/roles";
-import Button from "../ui/Button";
 import BusinessUnitSelector from "@/components/BusinessUnitSelector";
-import PushNotificationCta from "@/components/PushNotificationCta";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import MayaStatus from "@/components/MayaStatus";
 import { api } from "@/api";
@@ -13,47 +11,37 @@ type TopbarProps = {
   onToggleSidebar: () => void;
 };
 
+const getInitials = (fullName?: string | null) => {
+  if (!fullName) return "U";
+  return fullName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "U";
+};
+
 const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const { user, logout } = useAuth();
   const unreadCount = useNotificationsStore((state) => state.notifications.filter((item) => !item.read).length);
   const [isCenterOpen, setIsCenterOpen] = useState(false);
-  const [liveCount, setLiveCount] = useState(0);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [productionStatus, setProductionStatus] = useState("checking");
   const [presence, setPresence] = useState<"available" | "busy" | "offline">("available");
+
+  const firstName = (user as { first_name?: string; firstName?: string; name?: string } | null)?.first_name
+    ?? (user as { firstName?: string } | null)?.firstName
+    ?? ((user as { name?: string } | null)?.name?.split(" ")[0] ?? "there");
+
+  const avatarUrl = (user as { avatar_url?: string; profileImage?: string } | null)?.avatar_url
+    ?? (user as { profileImage?: string } | null)?.profileImage;
+  const avatarInitials = useMemo(() => getInitials((user as { name?: string } | null)?.name), [user]);
 
   useEffect(() => {
     api<{ status?: string }>("/api/_int/health")
       .then((result) => setProductionStatus(result.status ?? "ok"))
       .catch(() => setProductionStatus("degraded"));
   }, []);
-
-  useEffect(() => {
-    const userRole = (user as { role?: string } | null)?.role?.toLowerCase();
-    if (userRole !== "admin") {
-      setLiveCount(0);
-      return;
-    }
-
-    const interval = setInterval(async () => {
-      try {
-        const result = await api<{ liveCount?: number; liveChatCount?: number }>("/api/staff/overview");
-        setLiveCount(result.liveChatCount ?? result.liveCount ?? 0);
-      } catch {
-        setLiveCount(0);
-      }
-    }, 30000);
-
-    void (async () => {
-      try {
-        const result = await api<{ liveCount?: number; liveChatCount?: number }>("/api/staff/overview");
-        setLiveCount(result.liveChatCount ?? result.liveCount ?? 0);
-      } catch {
-        setLiveCount(0);
-      }
-    })();
-
-    return () => clearInterval(interval);
-  }, [user]);
 
   useEffect(() => {
     const setAvailable = () => api.post("/api/telephony/presence", { status: "available" }).catch(() => {});
@@ -76,8 +64,8 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   }
 
   return (
-    <header className="topbar" style={{ color: "#0f172a" }}>
-      <div className="topbar__left">
+    <header className="topbar" style={{ color: "#0f172a", height: 68, minHeight: 68, maxHeight: 68 }}>
+      <div className="topbar__left" style={{ gap: 12 }}>
         <button
           type="button"
           className="topbar__menu-button"
@@ -86,26 +74,15 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         >
           ☰
         </button>
-        <img
-          src="/images/Header.png"
-          alt="Boreal Financial"
-          className="h-12 w-auto object-contain"
-          style={{ minWidth: 48 }}
-        />
-        <h1 className="topbar__title" style={{ color: "#0b1220", margin: 0, fontSize: 18, fontWeight: 700 }}>
-          Boreal Financial
-        </h1>
+        <div>
+          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 2 }}>Welcome back</div>
+          <h1 className="topbar__title" style={{ color: "#0b1220", margin: 0, fontSize: 20, fontWeight: 700 }}>
+            Hello, {firstName}
+          </h1>
+        </div>
       </div>
       <div className="topbar__right">
         <BusinessUnitSelector />
-        {liveCount > 0 && (
-          <span
-            className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white"
-            aria-label="Live chat queue count"
-          >
-            Live {liveCount}
-          </span>
-        )}
         <span
           className={`rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${productionStatus === "ok" ? "bg-emerald-600" : productionStatus === "checking" ? "bg-amber-500" : "bg-red-600"}`}
           aria-label="Production readiness status"
@@ -130,15 +107,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
             color: presence === "available" ? "#22c55e" : "#f59e0b",
           }}
         >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: presence === "available" ? "#22c55e" : "#f59e0b",
-              flexShrink: 0,
-            }}
-          />
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: presence === "available" ? "#22c55e" : "#f59e0b", flexShrink: 0 }} />
           {presence === "available" ? "Available" : "Busy"}
         </button>
         <MayaStatus />
@@ -158,20 +127,33 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
           </button>
           {isCenterOpen && <NotificationCenter onClose={() => setIsCenterOpen(false)} />}
         </div>
-        <PushNotificationCta />
-        {user && (
-          <div className="topbar__user">
-            <div>
-              <div className="topbar__user-name">{user.name}</div>
-              <div className="topbar__user-role">
-                {getRoleLabel(resolveUserRole((user as { role?: string | null } | null)?.role ?? null))}
+
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsUserMenuOpen((prev) => !prev)}
+            aria-label="Open user menu"
+            style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0 }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
+            ) : (
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1d4ed8", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 12 }}>
+                {avatarInitials}
               </div>
+            )}
+          </button>
+          {isUserMenuOpen && (
+            <div style={{ position: "absolute", right: 0, top: 42, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, minWidth: 150, boxShadow: "0 10px 24px rgba(2, 6, 23, 0.12)", zIndex: 20 }}>
+              <Link to="/settings/profile" onClick={() => setIsUserMenuOpen(false)} style={{ display: "block", padding: "10px 12px", color: "#0f172a", textDecoration: "none", fontSize: 13 }}>
+                My Profile
+              </Link>
+              <button type="button" onClick={logout} style={{ width: "100%", textAlign: "left", border: "none", background: "transparent", padding: "10px 12px", fontSize: 13, cursor: "pointer", color: "#dc2626" }}>
+                Logout
+              </button>
             </div>
-            <Button variant="secondary" onClick={logout}>
-              Logout
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </header>
   );

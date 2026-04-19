@@ -14,6 +14,8 @@ const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_DIMENSION = 256;
 
 type MeResponse = {
+  o365_connected?: boolean | null;
+  o365_email?: string | null;
   first_name?: string | null;
   last_name?: string | null;
   firstName?: string | null;
@@ -47,6 +49,7 @@ const ProfileSettings = () => {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [microsoftError, setMicrosoftError] = useState<string | null>(null);
   const [isLinkingMicrosoft, setIsLinkingMicrosoft] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [hideMicrosoftButton, setHideMicrosoftButton] = useState(false);
   const [msalReady, setMsalReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -75,6 +78,7 @@ const ProfileSettings = () => {
         const me = await api.get<MeResponse>("/api/users/me");
         if (!isMounted) return;
         const normalized = normalizeMeProfile(me);
+        setMicrosoftConnection({ connected: Boolean(me?.o365_connected), email: me?.o365_email ?? normalized.email });
         setLocalProfile((prev) => ({
           ...prev,
           firstName: normalized.firstName || prev.firstName,
@@ -149,10 +153,17 @@ const ProfileSettings = () => {
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
     try {
-      await api.patch("/api/users/me", {
+      const payload: Record<string, string> = {
         first_name: localProfile.firstName.trim(),
         last_name: localProfile.lastName.trim()
-      });
+      };
+      if (localProfile.phone?.trim()) payload.phone = localProfile.phone.trim();
+      await api.patch("/api/users/me", payload);
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append("avatar", avatarFile);
+        await api.patch("/api/users/me", formData);
+      }
       await fetchProfile();
       setStatusMessage("Profile updated");
     } catch (error) {
@@ -205,6 +216,7 @@ const ProfileSettings = () => {
         context.drawImage(image, cropX, cropY, squareSize, squareSize, 0, 0, outputSize, outputSize);
         const previewUrl = canvas.toDataURL("image/png");
         setLocalProfile((prev) => ({ ...prev, profileImage: previewUrl }));
+        setAvatarFile(file);
         setAvatarError(null);
       } catch (error) {
         logger.error("Profile settings update failed", { error });
@@ -383,7 +395,7 @@ const ProfileSettings = () => {
                 : undefined
             }
           >
-            {profile.microsoftConnected ? "Microsoft 365 connected" : "Connect Microsoft 365"}
+            {profile.microsoftConnected ? `✓ Connected: ${profile.microsoftAccountEmail ?? localProfile.email}` : "Connect Microsoft 365"}
           </Button>
           {!isMicrosoftConfigured && (
             <span className="text-xs text-slate-500">Microsoft OAuth is not configured.</span>
@@ -393,8 +405,8 @@ const ProfileSettings = () => {
               Microsoft sign-in needs a popup or redirect. Use a browser that allows pop-ups.
             </span>
           )}
-          {profile.microsoftConnected && profile.microsoftAccountEmail && (
-            <span className="text-xs text-emerald-600">Linked: {profile.microsoftAccountEmail}</span>
+          {profile.microsoftConnected && (
+            <Button type="button" variant="ghost" onClick={() => setMicrosoftConnection({ connected: false, email: undefined })}>Disconnect</Button>
           )}
           {!hideMicrosoftButton && isLinkingMicrosoft && (
             <span className="text-xs text-slate-500">Connecting…</span>

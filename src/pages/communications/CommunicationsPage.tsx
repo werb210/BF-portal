@@ -82,8 +82,23 @@ function SmsTab() {
   }, []);
 
   useEffect(() => {
-    api<{ contacts: Contact[] }>("/api/crm/contacts?pageSize=200")
-      .then((r) => setContacts(Array.isArray(r.contacts) ? r.contacts : []))
+    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null; latest_message_at?: string; preview?: string }> }>("/api/communications/sms")
+      .then((r) => {
+        const convo = Array.isArray(r.conversations) ? r.conversations : [];
+        const mapped = convo.map((row) => ({
+          id: row.contact_id ?? "",
+          name: row.contact_name ?? row.contact_phone ?? "Unknown",
+          phone: row.contact_phone ?? null,
+          latest: row.latest_message_at ?? "",
+        })).filter((c) => c.id);
+        if (mapped.length > 0) {
+          mapped.sort((a, b) => new Date(b.latest).getTime() - new Date(a.latest).getTime());
+          setContacts(mapped as Contact[]);
+          return;
+        }
+        const fallback = (r as { contacts?: Contact[] }).contacts;
+        setContacts(Array.isArray(fallback) ? fallback : []);
+      })
       .catch(() => {});
   }, []);
 
@@ -362,9 +377,16 @@ function SmsTab() {
                 </div>
               )}
               {messages.map((m, i) => {
+                const currentDay = new Date(m.created_at).toDateString();
+                const prevDay = i > 0 ? new Date(messages[i - 1]!.created_at).toDateString() : null;
+                const showDayBreak = currentDay !== prevDay;
                 const isOut = m.direction === "outbound";
                 const prevSameSide = i > 0 && messages[i - 1]?.direction === m.direction;
                 return (
+                  <>
+                  {showDayBreak && (
+                    <div style={{ alignSelf: "center", fontSize: 11, color: "#94a3b8", margin: "8px 0" }}>{new Date(m.created_at).toLocaleDateString()}</div>
+                  )}
                   <div
                     key={m.id}
                     style={{
@@ -413,6 +435,7 @@ function SmsTab() {
                       </div>
                     )}
                   </div>
+                  </>
                 );
               })}
               <div ref={bottomRef} />
@@ -538,22 +561,58 @@ function MessagesTab() {
 
 // ── Inbox tab ─────────────────────────────────────────────────────────────────
 function InboxTab() {
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
+  const [emails, setEmails] = useState<Array<{ id?: string; sender?: string; subject?: string; preview?: string; timestamp?: string; body?: string }>>([]);
+  const [selected, setSelected] = useState<{ id?: string; sender?: string; subject?: string; preview?: string; timestamp?: string; body?: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const me = await api<{ o365_connected?: boolean }>("/api/settings/me");
+        const connected = Boolean(me?.o365_connected);
+        if (!active) return;
+        setIsConnected(connected);
+        if (connected) {
+          const inbox = await api<{ emails?: Array<{ id?: string; sender?: string; subject?: string; preview?: string; timestamp?: string; body?: string }> }>("/api/calendar");
+          const list = Array.isArray(inbox.emails) ? inbox.emails : [];
+          if (!active) return;
+          setEmails(list);
+          setSelected(list[0] ?? null);
+        }
+      } catch {
+        if (active) setIsConnected(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  if (isConnected === false) {
+    return <div style={{ padding: 24, color: "#8e8e93" }}>Connect Microsoft 365 in Settings → Profile to sync your inbox.</div>;
+  }
+  if (isConnected === null) return <div style={{ padding: 24, color: "#8e8e93" }}>Loading inbox…</div>;
+
   return (
-    <div
-      style={{
-        padding: 32,
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#8e8e93",
-      }}
-    >
-      <div style={{ fontSize: 40, marginBottom: 12 }}>📧</div>
-      <div style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>O365 Inbox</div>
-      <div style={{ fontSize: 14, textAlign: "center", maxWidth: 320 }}>
-        Connect Microsoft 365 in Settings → Profile to sync your work inbox here.
+    <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+      <div style={{ width: 360, borderRight: "1px solid #e2e8f0", overflowY: "auto" }}>
+        {emails.map((email) => (
+          <div key={email.id ?? `${email.subject}-${email.timestamp}`} onClick={() => setSelected(email)} style={{ padding: 12, borderBottom: "1px solid #f1f5f9", cursor: "pointer", background: selected?.id === email.id ? "#eff6ff" : "#fff" }}>
+            <div style={{ fontSize: 12, color: "#64748b" }}>{email.sender}</div>
+            <div style={{ fontWeight: 600, color: "#0f172a" }}>{email.subject}</div>
+            <div style={{ fontSize: 12, color: "#64748b" }}>{email.preview}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ flex: 1, padding: 16, overflowY: "auto" }}>
+        {selected ? (
+          <>
+            <h3 style={{ margin: 0 }}>{selected.subject}</h3>
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>{selected.sender} • {selected.timestamp}</div>
+            <div>{selected.body ?? selected.preview}</div>
+          </>
+        ) : (
+          <div style={{ color: "#8e8e93" }}>Select an email.</div>
+        )}
       </div>
     </div>
   );
@@ -678,7 +737,7 @@ export default function CommunicationsPage() {
       style={{
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: "100%",
         overflow: "hidden",
         background: "#fff",
       }}
