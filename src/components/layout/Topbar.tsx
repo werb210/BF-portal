@@ -31,11 +31,17 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
 
   const firstName = (user as { first_name?: string; firstName?: string; name?: string } | null)?.first_name
     ?? (user as { firstName?: string } | null)?.firstName
-    ?? ((user as { name?: string } | null)?.name?.split(" ")[0] ?? "there");
+    ?? ((user as { name?: string } | null)?.name?.split(" ")[0] ?? "");
+  const greeting = firstName ? `Hello, ${firstName}` : "Hello";
 
   const avatarUrl = (user as { avatar_url?: string; profileImage?: string } | null)?.avatar_url
     ?? (user as { profileImage?: string } | null)?.profileImage;
-  const avatarInitials = useMemo(() => getInitials((user as { name?: string } | null)?.name), [user]);
+  const avatarInitials = useMemo(() => {
+    const resolvedFirstName = (user as { first_name?: string; firstName?: string } | null)?.first_name
+      ?? (user as { firstName?: string } | null)?.firstName;
+    if (resolvedFirstName?.trim()) return resolvedFirstName.trim().charAt(0).toUpperCase();
+    return getInitials((user as { name?: string } | null)?.name);
+  }, [user]);
 
   useEffect(() => {
     api<{ status?: string }>("/api/_int/health")
@@ -49,7 +55,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
     setAvailable();
     const interval = setInterval(() => {
       api.post("/api/telephony/presence/heartbeat", {}).catch(() => {});
-    }, 60_000);
+    }, 30_000);
 
     return () => {
       clearInterval(interval);
@@ -77,7 +83,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         <div>
           <div style={{ fontSize: 13, color: "#64748b", marginBottom: 2 }}>Welcome back</div>
           <h1 className="topbar__title" style={{ color: "#0b1220", margin: 0, fontSize: 20, fontWeight: 700 }}>
-            Hello, {firstName}
+            {greeting}
           </h1>
         </div>
       </div>

@@ -588,7 +588,11 @@ function InboxTab() {
   }, []);
 
   if (isConnected === false) {
-    return <div style={{ padding: 24, color: "#8e8e93" }}>Connect Microsoft 365 in Settings → Profile to sync your inbox.</div>;
+    return (
+      <div style={{ padding: 24, color: "#8e8e93" }}>
+        Connect Microsoft 365 in <a href="/settings/profile" style={{ color: "#2563eb" }}>Settings → My Profile</a> to sync your inbox.
+      </div>
+    );
   }
   if (isConnected === null) return <div style={{ padding: 24, color: "#8e8e93" }}>Loading inbox…</div>;
 

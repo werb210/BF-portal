@@ -68,23 +68,27 @@ const RuntimeSettings = () => {
       const apiStatus =
         apiHealthResult.status === "fulfilled" ? normalizeStatus(apiDetail) : "red";
 
+      if (runtimeResult.status === "rejected") {
+        setRuntime({
+          api: { label: "API health", status: "red", detail: "Error" },
+          database: { label: "DB connection", status: "red", detail: "Error" },
+          auth: { label: "Auth readiness", status: "red", detail: "Error" }
+        });
+        setLastChecked(new Date().toLocaleTimeString());
+        return;
+      }
+
       const internalData = runtimeResult.status === "fulfilled" ? runtimeResult.value : null;
-      const dbDetail = String(
-        internalData?.database ?? internalData?.db ?? internalData?.dbStatus ?? "Unknown"
-      );
-      const authDetail = String(
-        internalData?.auth ?? internalData?.authStatus ?? internalData?.authReady ?? "Unknown"
-      );
-      const databaseStatus = internalData
-        ? normalizeStatus(dbDetail)
-        : runtimeResult.status === "rejected"
-          ? "red"
-          : "yellow";
-      const authStatus = internalData
-        ? normalizeStatus(authDetail)
-        : runtimeResult.status === "rejected"
-          ? "red"
-          : "yellow";
+      const dbValue = String(
+        internalData?.database ?? internalData?.db ?? internalData?.dbStatus ?? "unknown"
+      ).toLowerCase();
+      const authValue = String(
+        internalData?.auth ?? internalData?.authStatus ?? internalData?.authReady ?? "unknown"
+      ).toLowerCase();
+      const dbDetail = dbValue === "ok" ? "ok" : dbValue === "unknown" ? "Unknown" : "error";
+      const authDetail = authValue === "ok" || authValue === "ready" ? authValue : authValue === "unknown" ? "Unknown" : "error";
+      const databaseStatus = dbDetail === "ok" ? "green" : dbDetail === "Unknown" ? "yellow" : "red";
+      const authStatus = authDetail === "ok" || authDetail === "ready" ? "green" : authDetail === "Unknown" ? "yellow" : "red";
 
       setRuntime({
         api: { label: "API health", status: apiStatus, detail: apiDetail },
