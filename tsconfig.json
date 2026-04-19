@@ -38,10 +38,13 @@
     "types": [
       "vite/client",
       "vitest/globals",
-      "@testing-library/jest-dom"
+      "@testing-library/jest-dom",
+      "node"
     ],
     "strictNullChecks": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "outDir": "dist",
+    "rootDir": "src"
   },
   "include": [
     "src"
