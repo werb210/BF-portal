@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import Input from "@/components/ui/Input";
@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import ContactRow from "./ContactRow";
 import ContactDetailsDrawer from "./ContactDetailsDrawer";
 import ContactForm from "./ContactForm";
-import { fetchContacts } from "@/api/crm";
+import { fetchContacts, createContact } from "@/api/crm";
 import type { Contact } from "@/api/crm";
 import { useCrmStore } from "@/state/crm.store";
 import { useSilo } from "@/hooks/useSilo";
@@ -20,6 +20,7 @@ import { logger } from "@/utils/logger";
 const owners = ["Alex", "Taylor"];
 
 const ContactsPage = () => {
+  const queryClient = useQueryClient();
   const { silo, setSilo, filters, setFilters, resetFilters } = useCrmStore();
   const { silo: globalSilo } = useSilo();
 
@@ -35,6 +36,27 @@ const ContactsPage = () => {
 
   const [selected, setSelected] = useState<Contact | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const handleSaveContact = useCallback(async (data: { name: string; email: string; phone: string }) => {
+    setSaveError(null);
+    try {
+      await createContact({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        silo: (globalSilo as "BF" | "BI" | "SLF") ?? "BF",
+        owner: "",
+        tags: [],
+      });
+      setShowForm(false);
+      void queryClient.invalidateQueries({ queryKey: ["contacts"] });
+    } catch (err) {
+      setSaveError("Failed to save contact. Please try again.");
+      throw err;
+    }
+  }, [globalSilo, queryClient]);
+
   const {
     data: contacts = [],
     isLoading,
@@ -138,7 +160,8 @@ const ContactsPage = () => {
       </Card>
       {showForm && (
         <Card title="New Contact" actions={<Button onClick={() => setShowForm(false)}>Close</Button>}>
-          <ContactForm onSave={() => setShowForm(false)} />
+          {saveError && <p style={{ color: "#ef4444", marginBottom: 8, fontSize: 13 }}>{saveError}</p>}
+          <ContactForm onSave={handleSaveContact} />
         </Card>
       )}
       <ContactDetailsDrawer contact={selected} onClose={() => setSelected(null)} />
