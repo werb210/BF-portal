@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import ContactsPage from "@/pages/crm/contacts/ContactsPage";
 import CommunicationsPage from "@/pages/communications/CommunicationsPage";
 import ProfileSettings from "@/pages/settings/tabs/ProfileSettings";
+import RuntimeSettings from "@/pages/settings/tabs/RuntimeSettings";
 import { useCrmStore } from "@/state/crm.store";
 import { useSettingsStore } from "@/state/settings.store";
 import { fetchContacts } from "@/api/crm";
@@ -37,6 +38,9 @@ vi.mock("@/hooks/useSilo", () => ({
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ user: { name: "Portal User", role: "Admin" } }),
+}));
+vi.mock("@/lib/authToken", () => ({
+  getAuthToken: vi.fn(() => "staff-jwt-token"),
 }));
 
 vi.mock("@/config/microsoftAuth", () => ({
@@ -112,7 +116,7 @@ describe("CRM filters API params", () => {
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it("sends owner_id and has_active_applications when active application filter is enabled", async () => {
+  it("sends owner_id and has_applications when active application filter is enabled", async () => {
     useCrmStore.setState({
       silo: "BF",
       filters: { search: "", owner: "owner-7", hasActiveApplication: true },
@@ -123,7 +127,7 @@ describe("CRM filters API params", () => {
     await fetchContacts();
 
     expect(apiMock.get).toHaveBeenCalledWith(
-      "/api/crm/contacts?silo=BF&owner_id=owner-7&has_active_applications=true",
+      "/api/crm/contacts?silo=BF&owner_id=owner-7&has_applications=true",
     );
   });
 });
@@ -191,6 +195,33 @@ describe("My Profile save", () => {
         first_name: "Casey",
         last_name: "Morgan",
       });
+    });
+  });
+});
+
+describe("Runtime verification", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("calls /api/_int/runtime with staff JWT authorization and renders statuses", async () => {
+    apiMock.get.mockImplementation((path: string, options?: { headers?: Record<string, string> }) => {
+      if (path === "/api/health") {
+        return Promise.resolve({ status: "ok" });
+      }
+      if (path === "/api/_int/runtime") {
+        expect(options?.headers?.Authorization).toBe("Bearer staff-jwt-token");
+        return Promise.resolve({ database: "ok", auth: "ready" });
+      }
+      return Promise.resolve({});
+    });
+
+    render(<RuntimeSettings />);
+
+    expect((await screen.findAllByText("ok")).length).toBeGreaterThan(0);
+    expect(await screen.findByText("ready")).toBeInTheDocument();
+    expect(apiMock.get).toHaveBeenCalledWith("/api/_int/runtime", {
+      headers: { Authorization: "Bearer staff-jwt-token" },
     });
   });
 });

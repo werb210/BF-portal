@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import api from "@/api";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
+import { getAuthToken } from "@/lib/authToken";
 import { getErrorMessage } from "@/utils/errors";
 
 type RuntimeStatus = "green" | "red" | "yellow";
@@ -42,9 +43,22 @@ const RuntimeSettings = () => {
     setIsFetching(true);
     setRuntimeError(null);
     try {
-      const [apiHealthResult, internalHealthResult] = await Promise.allSettled([
+      const token = getAuthToken();
+      if (!token) {
+        setRuntime((prev) => ({
+          ...prev,
+          database: { ...prev.database, status: "yellow", detail: "Unauthorized" },
+          auth: { ...prev.auth, status: "yellow", detail: "Unauthorized" }
+        }));
+        setRuntimeError("Staff authentication is required to run runtime verification checks.");
+        setLastChecked(new Date().toLocaleTimeString());
+        return;
+      }
+      const [apiHealthResult, runtimeResult] = await Promise.allSettled([
         api.get<Record<string, unknown>>("/api/health"),
-        api.get<Record<string, unknown>>("/api/_int/health")
+        api.get<Record<string, unknown>>("/api/_int/runtime", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
       ]);
 
       const apiDetail =
@@ -54,8 +68,7 @@ const RuntimeSettings = () => {
       const apiStatus =
         apiHealthResult.status === "fulfilled" ? normalizeStatus(apiDetail) : "red";
 
-      const internalData =
-        internalHealthResult.status === "fulfilled" ? internalHealthResult.value : null;
+      const internalData = runtimeResult.status === "fulfilled" ? runtimeResult.value : null;
       const dbDetail = String(
         internalData?.database ?? internalData?.db ?? internalData?.dbStatus ?? "Unknown"
       );
@@ -64,12 +77,12 @@ const RuntimeSettings = () => {
       );
       const databaseStatus = internalData
         ? normalizeStatus(dbDetail)
-        : internalHealthResult.status === "rejected"
+        : runtimeResult.status === "rejected"
           ? "red"
           : "yellow";
       const authStatus = internalData
         ? normalizeStatus(authDetail)
-        : internalHealthResult.status === "rejected"
+        : runtimeResult.status === "rejected"
           ? "red"
           : "yellow";
 

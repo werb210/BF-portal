@@ -97,7 +97,7 @@ export const fetchContacts = async () => {
 
   if (filters.search) params.set("search", filters.search);
   if (filters.owner) params.set("owner_id", filters.owner);
-  if (filters.hasActiveApplication) params.set("has_active_applications", "true");
+  if (filters.hasActiveApplication) params.set("has_applications", "true");
 
   return requestJson<Contact[]>(`/api/crm/contacts?${params.toString()}`);
 };
