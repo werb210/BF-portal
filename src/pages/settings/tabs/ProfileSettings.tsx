@@ -30,6 +30,7 @@ const ProfileSettings = () => {
   const [microsoftError, setMicrosoftError] = useState<string | null>(null);
   const [isLinkingMicrosoft, setIsLinkingMicrosoft] = useState(false);
   const [hideMicrosoftButton, setHideMicrosoftButton] = useState(false);
+  const [msalReady, setMsalReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const redirectHandledRef = useRef(false);
 
@@ -64,7 +65,24 @@ const ProfileSettings = () => {
     });
   }, []);
 
-  const isMicrosoftConfigured = Boolean(microsoftAuthConfig?.clientId);
+  // MSAL v3 requires explicit initialization before any API call
+  useEffect(() => {
+    if (!msalClient) return;
+    let cancelled = false;
+    msalClient
+      .initialize()
+      .then(() => {
+        if (!cancelled) setMsalReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setMsalReady(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [msalClient]);
+
+  const isMicrosoftConfigured = Boolean(microsoftAuthConfig?.clientId) && msalReady;
 
   const validateProfile = () => {
     const errors: Record<string, string> = {};
@@ -170,7 +188,7 @@ const ProfileSettings = () => {
   );
 
   useEffect(() => {
-    if (!msalClient) return;
+    if (!msalClient || !msalReady) return;
     let isMounted = true;
     const handleRedirect = async () => {
       if (redirectHandledRef.current) return;
@@ -200,10 +218,10 @@ const ProfileSettings = () => {
     return () => {
       isMounted = false;
     };
-  }, [exchangeMicrosoftToken, msalClient]);
+  }, [exchangeMicrosoftToken, msalClient, msalReady]);
 
   const handleMicrosoftConnect = async () => {
-    if (!msalClient || isLinkingMicrosoft) return;
+    if (!msalClient || !msalReady || isLinkingMicrosoft) return;
     setMicrosoftError(null);
     setIsLinkingMicrosoft(true);
     try {

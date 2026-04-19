@@ -389,10 +389,11 @@ function SmsTab() {
               <div ref={bottomRef} />
             </div>
 
-            {/* Compose */}
+            {/* Compose — padding-right keeps send button clear of floating dialer */}
             <div
               style={{
-                padding: "8px 16px 12px",
+                padding: "8px 16px 12px 16px",
+                paddingRight: 80,
                 borderTop: "1px solid #f0f0f5",
                 display: "flex",
                 alignItems: "flex-end",
