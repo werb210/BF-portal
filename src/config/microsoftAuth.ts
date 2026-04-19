@@ -1,15 +1,14 @@
 const rawClientId = import.meta.env.VITE_MSAL_CLIENT_ID ?? "";
-const rawTenantId = import.meta.env.VITE_MSAL_TENANT_ID ?? "common";
 const rawRedirectUri = import.meta.env.VITE_MSAL_REDIRECT_URI ?? "";
 const scopeValue = String(import.meta.env.VITE_MSAL_SCOPES ?? "User.Read");
 
 const redirectUri =
-  rawRedirectUri || "";
+  rawRedirectUri || (typeof window !== "undefined" ? window.location.origin : "");
 
 export const microsoftAuthConfig = {
   clientId: rawClientId,
-  tenantId: rawTenantId,
-  authority: `https://login.microsoftonline.com/${rawTenantId}`,
+  tenantId: "common",
+  authority: "https://login.microsoftonline.com/common",
   redirectUri,
   scopes: scopeValue
     .split(",")

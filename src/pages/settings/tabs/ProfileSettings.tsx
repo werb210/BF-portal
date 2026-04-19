@@ -240,8 +240,9 @@ const ProfileSettings = () => {
       const exchange = await api.post<{ email?: string; connected?: boolean }>("/api/auth/microsoft", payload);
       const connectedEmail = exchange?.email ?? accountEmail ?? "";
       setMicrosoftConnection({ connected: true, email: connectedEmail });
+      await fetchProfile();
     },
-    [setMicrosoftConnection]
+    [fetchProfile, setMicrosoftConnection]
   );
 
   useEffect(() => {
