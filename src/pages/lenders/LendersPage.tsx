@@ -325,12 +325,13 @@ function CreateProductModal({
     eligibilityNotes: "", signnowTemplateId: "", active: true,
     category: "LOC",
   });
-  const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set());
+  const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set(alwaysKeys));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (docTypes.length === 0) return;
     setCheckedDocs((prev) => {
       const next = new Set(prev);
       getAlwaysLocked(form.category).forEach((id) => next.add(id));
