@@ -138,7 +138,7 @@ function SmsTab() {
   const messages = selected ? (threads[selected.id] ?? []) : [];
 
   return (
-    <div style={{ display: "flex", flex: 1, overflow: "hidden", background: "#f5f5f7" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0, overflow: "hidden", background: "#f5f5f7" }}>
       {/* ── Left — conversation list ── */}
       <div
         style={{
@@ -147,6 +147,8 @@ function SmsTab() {
           display: "flex",
           flexDirection: "column",
           background: "#fff",
+          height: "100%",
+          minHeight: 0,
         }}
       >
         {/* Search + New */}
@@ -290,7 +292,7 @@ function SmsTab() {
       </div>
 
       {/* ── Right — thread ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#fff" }}>
+      <div style={{ display: "flex", flexDirection: "column", background: "#fff", minWidth: 0, minHeight: 0, height: "100%" }}>
         {!selected ? (
           <div
             style={{
@@ -318,6 +320,9 @@ function SmsTab() {
                 alignItems: "center",
                 gap: 12,
                 background: "#fff",
+                position: "sticky",
+                top: 0,
+                zIndex: 2,
               }}
             >
               <Avatar name={selected.name} size={36} />
@@ -337,6 +342,7 @@ function SmsTab() {
                 flexDirection: "column",
                 gap: 6,
                 background: "#fff",
+                minHeight: 0,
               }}
             >
               {messages.length === 0 && (
@@ -399,6 +405,9 @@ function SmsTab() {
                 alignItems: "flex-end",
                 gap: 10,
                 background: "#fff",
+                position: "sticky",
+                bottom: 0,
+                zIndex: 2,
               }}
             >
               <div

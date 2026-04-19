@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import api from "@/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
@@ -17,7 +18,20 @@ import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { logger } from "@/utils/logger";
 
-const owners = ["Alex", "Taylor"];
+type OwnerApiRecord = {
+  id?: string;
+  name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+};
+
+type OwnerOption = {
+  id: string;
+  label: string;
+};
 
 const ContactsPage = () => {
   const queryClient = useQueryClient();
@@ -28,12 +42,49 @@ const ContactsPage = () => {
     setSilo(globalSilo as "BF" | "BI" | "SLF");
   }, [globalSilo, setSilo]);
 
-  useEffect(() => {
-    if (filters.hasActiveApplication) {
-      setFilters({ hasActiveApplication: false });
-    }
-  }, [filters.hasActiveApplication, setFilters]);
 
+  const [owners, setOwners] = useState<OwnerOption[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadOwners = async () => {
+      try {
+        const response = await api.get<OwnerApiRecord[] | { users?: OwnerApiRecord[] }>("/api/users", {
+          params: { silo }
+        });
+        const users = Array.isArray(response) ? response : Array.isArray(response?.users) ? response.users : [];
+        const options = users
+          .map((user) => {
+            const id = typeof user.id === "string" ? user.id : "";
+            if (!id) return null;
+            const firstName = user.first_name ?? user.firstName ?? "";
+            const lastName = user.last_name ?? user.lastName ?? "";
+            const fullName = `${firstName} ${lastName}`.trim();
+            const label = fullName || user.name?.trim() || user.email?.trim() || id;
+            return { id, label };
+          })
+          .filter((option): option is OwnerOption => Boolean(option));
+
+        if (isMounted) {
+          setOwners(options);
+          if (filters.owner && !options.some((option) => option.id === filters.owner)) {
+            setFilters({ owner: null });
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setOwners([]);
+        }
+      }
+    };
+
+    void loadOwners();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [silo, filters.owner, setFilters]);
   const [selected, setSelected] = useState<Contact | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -113,8 +164,8 @@ const ContactsPage = () => {
           >
             <option value="">All owners</option>
             {owners.map((owner) => (
-              <option key={owner} value={owner}>
-                {owner}
+              <option key={owner.id} value={owner.id}>
+                {owner.label}
               </option>
             ))}
           </Select>

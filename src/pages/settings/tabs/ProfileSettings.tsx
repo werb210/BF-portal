@@ -13,15 +13,33 @@ import { logger } from "@/utils/logger";
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_DIMENSION = 256;
 
+type MeResponse = {
+  first_name?: string | null;
+  last_name?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+};
+
+function normalizeMeProfile(data: MeResponse | null | undefined) {
+  return {
+    firstName: data?.first_name ?? data?.firstName ?? "",
+    lastName: data?.last_name ?? data?.lastName ?? "",
+    email: data?.email ?? "",
+    phone: data?.phone ?? ""
+  };
+}
+
 const ProfileSettings = () => {
   const { user } = useAuth();
   const {
     profile,
     fetchProfile,
-    saveProfile,
     statusMessage,
     isLoadingProfile,
-    setMicrosoftConnection
+    setMicrosoftConnection,
+    setStatusMessage
   } = useSettingsStore();
   const [localProfile, setLocalProfile] = useState(profile);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -48,6 +66,34 @@ const ProfileSettings = () => {
       isMounted = false;
     };
   }, [fetchProfile]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadNameFields = async () => {
+      try {
+        const me = await api.get<MeResponse>("/api/users/me");
+        if (!isMounted) return;
+        const normalized = normalizeMeProfile(me);
+        setLocalProfile((prev) => ({
+          ...prev,
+          firstName: normalized.firstName || prev.firstName,
+          lastName: normalized.lastName || prev.lastName,
+          email: normalized.email || prev.email,
+          phone: normalized.phone || prev.phone
+        }));
+      } catch (error) {
+        if (!isMounted) return;
+        logger.warn("Unable to pre-populate profile name fields", { error });
+      }
+    };
+
+    void loadNameFields();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const msalClient = useMemo(() => {
     if (!microsoftAuthConfig?.clientId) return null;
@@ -103,13 +149,12 @@ const ProfileSettings = () => {
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
     try {
-      await saveProfile({
-        firstName: localProfile.firstName,
-        lastName: localProfile.lastName,
-        email: localProfile.email,
-        phone: localProfile.phone,
-        profileImage: localProfile.profileImage
+      await api.patch("/api/users/me", {
+        first_name: localProfile.firstName.trim(),
+        last_name: localProfile.lastName.trim()
       });
+      await fetchProfile();
+      setStatusMessage("Profile updated");
     } catch (error) {
       setFormError(getErrorMessage(error, "Unable to save profile."));
     }

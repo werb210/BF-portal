@@ -94,6 +94,23 @@ type ProfileResponse = Partial<ProfileSettings>;
 type BrandingResponse = Partial<BrandingSettingsState>;
 type UsersResponse = AdminUser[];
 
+function normalizeProfileResponse(data: ProfileResponse): Partial<ProfileSettings> {
+  const mapped = data as ProfileResponse & {
+    first_name?: string | null;
+    last_name?: string | null;
+    profile_image?: string | null;
+    last_login?: string | null;
+  };
+
+  return {
+    ...data,
+    firstName: data.firstName ?? mapped.first_name ?? undefined,
+    lastName: data.lastName ?? mapped.last_name ?? undefined,
+    profileImage: data.profileImage ?? mapped.profile_image ?? undefined,
+    lastLogin: data.lastLogin ?? mapped.last_login ?? undefined
+  };
+}
+
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   ...createInitialState(),
   fetchProfile: async () => {
@@ -101,10 +118,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       const data = await api.get<ProfileResponse>("/api/users/me");
       if (data) {
+        const normalized = normalizeProfileResponse(data);
         set((state) => ({
           profile: (() => {
             const nameValue = (data as { name?: string }).name?.trim() ?? "";
-            const nextProfile = { ...state.profile, ...data };
+            const nextProfile = { ...state.profile, ...normalized };
             if (nameValue && (!nextProfile.firstName || !nextProfile.lastName)) {
               const [firstName, ...rest] = nameValue.split(" ");
               nextProfile.firstName = nextProfile.firstName || firstName || "";
@@ -123,7 +141,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ isLoadingProfile: true });
     try {
       const data = await api.patch<ProfileResponse>("/api/users/me", updates);
-      const nextProfile = data ? { ...get().profile, ...data } : { ...get().profile, ...updates };
+      const normalized = data ? normalizeProfileResponse(data) : updates;
+      const nextProfile = { ...get().profile, ...normalized };
       set({
         profile: nextProfile,
         statusMessage: "Profile updated"

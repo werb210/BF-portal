@@ -96,8 +96,8 @@ export const fetchContacts = async () => {
   const params = new URLSearchParams({ silo });
 
   if (filters.search) params.set("search", filters.search);
-  if (filters.owner) params.set("owner", filters.owner);
-  if (filters.hasActiveApplication) params.set("hasActiveApplication", "true");
+  if (filters.owner) params.set("owner_id", filters.owner);
+  if (filters.hasActiveApplication) params.set("has_active_applications", "true");
 
   return requestJson<Contact[]>(`/api/crm/contacts?${params.toString()}`);
 };
