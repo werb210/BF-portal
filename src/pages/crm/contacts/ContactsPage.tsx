@@ -156,7 +156,7 @@ const ContactsPage = () => {
         actions={<Button onClick={() => setShowForm(true)}>Add Contact</Button>}
       >
         <div className="flex gap-2 mb-2 items-center">
-          <Input placeholder="Search" value={filters.search} onChange={handleSearch} />
+          <Input placeholder="Search name, email, phone, or company" value={filters.search} onChange={handleSearch} />
           <Select
             value={filters.owner ?? ""}
             onChange={(e) => setFilters({ owner: e.target.value || null })}
@@ -186,7 +186,7 @@ const ContactsPage = () => {
           <p className="mb-2 text-amber-700" data-testid="dedupe-indicator">Potential duplicates detected: {dedupeCount}</p>
         ) : null}
         {!error && (
-          <Table headers={["Name", "Company", "Amount Requested", "Funding Type", "Date Created", "Actions"]}>
+          <Table headers={["Name", "Company Name", "Lead Status", "Owner", "Created Date", "Actions"]}>
             {isLoading && (
               <tr>
                 <td colSpan={7}>Loading contacts…</td>

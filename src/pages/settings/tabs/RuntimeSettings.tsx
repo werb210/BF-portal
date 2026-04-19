@@ -117,7 +117,7 @@ const RuntimeSettings = () => {
     <section className="settings-panel" aria-label="Runtime status">
       <header>
         <h2>Runtime verification</h2>
-        <p>Read-only checks for API health, database connectivity, and auth readiness.</p>
+        <p>These checks verify that the server, database, and authentication are all functioning correctly.</p>
       </header>
       {runtimeError && <ErrorBanner message={runtimeError} />}
 

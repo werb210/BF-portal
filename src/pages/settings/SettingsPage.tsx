@@ -5,7 +5,6 @@ import ErrorBoundary from "@/components/system/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
 import KnowledgeManager from "@/features/ai/KnowledgeManager";
 import SettingsSectionLayout from "./components/SettingsSectionLayout";
-import BrandingSettings from "./tabs/BrandingSettings";
 import ProfileSettings from "./tabs/ProfileSettings";
 import RuntimeSettings from "./tabs/RuntimeSettings";
 import UserManagement from "./tabs/UserManagement";
@@ -23,7 +22,6 @@ const SettingsPage = () => {
       { id: "users", label: "User Management", visible: isAdmin, content: <UserManagement /> },
       { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin, content: isAdmin ? <KnowledgeManager /> : null },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
-      { id: "branding", label: "Branding", visible: true, content: <BrandingSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: true, content: <RuntimeSettings /> },
     ],
     [isAdmin]
