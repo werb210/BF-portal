@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ContactsPage from "@/pages/crm/contacts/ContactsPage";
 import CommunicationsPage from "@/pages/communications/CommunicationsPage";
@@ -94,7 +95,11 @@ describe("CRM owner dropdown", () => {
       return Promise.resolve([]);
     });
 
-    renderWithQuery(<ContactsPage />);
+    renderWithQuery(
+      <MemoryRouter>
+        <ContactsPage />
+      </MemoryRouter>,
+    );
 
     const ownerFilter = await screen.findByTestId("owner-filter");
     await waitFor(() => {
