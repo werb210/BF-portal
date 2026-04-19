@@ -12,13 +12,10 @@ export default function AIKnowledge() {
     const formData = new FormData();
     formData.append("file", file);
 
-    await api("/api/ai/knowledge", {
+    await api("/api/portal/lender-documents", {
       method: "POST",
       body: formData,
-      headers: { "Content-Type": "multipart/form-data" },
     });
-
-    throw new Error("Uploaded");
   }
 
   if (user?.role !== "Admin") {

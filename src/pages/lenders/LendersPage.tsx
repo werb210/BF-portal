@@ -35,9 +35,9 @@ const CATEGORY_ORDER = ["LOC", "TERM", "FACTORING", "PO", "EQUIPMENT", "MCA", "M
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ active, status }: { active?: boolean; status?: string }) {
-  const isActive =
-    active === true ||
-    (typeof status === "string" && status.toUpperCase() === "ACTIVE");
+  const normalizedStatus = typeof status === "string" ? status.toUpperCase() : undefined;
+  const isActive = normalizedStatus === "ACTIVE" || active === true;
+  const isInactive = normalizedStatus === "INACTIVE" || active === false;
   return (
     <span
       style={{
@@ -47,9 +47,9 @@ function StatusBadge({ active, status }: { active?: boolean; status?: string }) 
         borderRadius: 20,
         fontSize: 12,
         fontWeight: 600,
-        background: isActive ? "#22c55e22" : "#f59e0b22",
-        color: isActive ? "#16a34a" : "#d97706",
-        border: `1px solid ${isActive ? "#22c55e44" : "#f59e0b44"}`,
+        background: isActive ? "#22c55e22" : isInactive ? "#e2e8f0" : "#e2e8f0",
+        color: isActive ? "#16a34a" : isInactive ? "#475569" : "#475569",
+        border: `1px solid ${isActive ? "#22c55e44" : "#cbd5e1"}`,
         whiteSpace: "nowrap",
       }}
     >
@@ -724,7 +724,7 @@ function ProductsPanel({
                   <span style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>{CATEGORY_LABELS[cat] ?? cat}</span>
                 </div>
                 <span style={{ fontSize: 12, color: "#94a3b8", background: "#f1f5f9", padding: "2px 8px", borderRadius: 20, fontWeight: 600 }}>
-                  Draft ▾
+                  Status
                 </span>
               </div>
 
@@ -744,9 +744,7 @@ function ProductsPanel({
                   {formatRateRange(p.interestRateMin, p.interestRateMax) && (
                     <span style={{ color: "#374151" }}>{formatRateRange(p.interestRateMin, p.interestRateMax)}</span>
                   )}
-                  <span style={{ padding: "3px 10px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 11, fontWeight: 600, color: "#64748b" }}>
-                    Draft
-                  </span>
+                  <StatusBadge active={(p as { is_active?: boolean }).is_active} status={(p as { status?: string }).status} />
                 </div>
               ))}
             </div>
