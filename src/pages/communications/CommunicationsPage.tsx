@@ -88,7 +88,7 @@ function SmsTab() {
   }, []);
 
   const loadMessages = useCallback((contactId: string) => {
-    api<{ messages: Message[] }>(`/api/communications/messages?contactId=${contactId}`)
+    api<{ messages: Message[] }>(`/api/communications/messages?contact_id=${contactId}`)
       .then((r) => {
         const msgs = Array.isArray(r.messages) ? r.messages : [];
         setThreads((prev) => ({
@@ -102,7 +102,7 @@ function SmsTab() {
   useEffect(() => {
     if (!selected) return;
     loadMessages(selected.id);
-    pollRef.current = setInterval(() => loadMessages(selected.id), 3000);
+    pollRef.current = setInterval(() => loadMessages(selected.id), 5000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
@@ -151,7 +151,7 @@ function SmsTab() {
   const messages = selected ? (threads[selected.id] ?? []) : [];
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0, overflow: "hidden", background: "#f5f5f7" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0, height: "100%", overflow: "hidden", background: "#f5f5f7" }}>
       {/* ── Left — conversation list ── */}
       <div
         style={{
@@ -333,9 +333,7 @@ function SmsTab() {
                 alignItems: "center",
                 gap: 12,
                 background: "#fff",
-                position: "sticky",
-                top: 0,
-                zIndex: 2,
+                flexShrink: 0,
               }}
             >
               <Avatar name={selected.name} size={36} />
@@ -430,9 +428,7 @@ function SmsTab() {
                 alignItems: "flex-end",
                 gap: 10,
                 background: "#fff",
-                position: "sticky",
-                bottom: 0,
-                zIndex: 2,
+                flexShrink: 0,
               }}
             >
               <div
@@ -682,7 +678,7 @@ export default function CommunicationsPage() {
       style={{
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 80px)",
+        height: "100vh",
         overflow: "hidden",
         background: "#fff",
       }}

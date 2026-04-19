@@ -113,8 +113,8 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
           <p>Phone: {contact.phone}</p>
           <p>Silo: {contact.silo}</p>
           <p>Owner: {contact.owner}</p>
-          <p>Tags: {contact.tags.join(", ")}</p>
-          {contact.tags.includes("startup_interest") ? (
+          <p>Tags: {(contact.tags ?? []).join(", ")}</p>
+          {(contact.tags ?? []).includes("startup_interest") ? (
             <p>Startup Interest: Yes</p>
           ) : null}
           {contact.referrerName ? <p>Referred by: {contact.referrerName}</p> : null}

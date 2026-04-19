@@ -302,17 +302,40 @@ function CreateProductModal({
   onCreated: () => void;
 }) {
   const { data: docTypes = [] } = useDocumentTypes();
+  const supplementalDocTypes = [
+    { key: "personal_net_worth_statement", label: "Personal net worth statement", category: "core" },
+    { key: "corporate_structure_org_chart", label: "Corporate structure / org chart", category: "core" },
+    { key: "two_years_personal_tax_returns_t1_generals", label: "2 years personal tax returns (T1 generals)", category: "core" },
+    { key: "business_plan_projections", label: "Business plan / projections", category: "core" },
+    { key: "lease_agreement_if_applicable", label: "Lease agreement (if applicable)", category: "core" },
+    { key: "equipment_list_appraisal_if_applicable", label: "Equipment list / appraisal (if applicable)", category: "equipment" },
+    { key: "accounts_receivable_aging_report", label: "Accounts receivable aging report", category: "core" },
+    { key: "accounts_payable_aging_report", label: "Accounts payable aging report", category: "core" },
+  ] as const;
+  const mergedDocTypes = [
+    ...docTypes,
+    ...supplementalDocTypes
+      .filter((supplemental) => !docTypes.some((existing) => existing.key === supplemental.key))
+      .map((supplemental, index) => ({
+        id: `supplemental-${supplemental.key}`,
+        key: supplemental.key,
+        label: supplemental.label,
+        category: supplemental.category,
+        sort_order: 1_000 + index,
+        active: true,
+      })),
+  ];
 
-  const alwaysTypes = docTypes.filter((d) => d.category === "always" && d.active !== false);
-  const coreTypes = docTypes.filter((d) => d.category === "core" && d.active !== false);
+  const alwaysTypes = mergedDocTypes.filter((d) => d.category === "always" && d.active !== false);
+  const coreTypes = mergedDocTypes.filter((d) => d.category === "core" && d.active !== false);
   const alwaysKeys = alwaysTypes.map((d) => d.key);
   const coreDefaults = coreTypes.map((d) => d.key);
 
   const conditionalMap: Record<string, typeof docTypes> = {
-    EQUIPMENT: docTypes.filter((d) => d.category === "equipment" && d.active !== false),
-    PO: docTypes.filter((d) => d.category === "equipment" && d.active !== false),
-    FACTORING: docTypes.filter((d) => d.category === "factoring" && d.active !== false),
-    MEDIA: docTypes.filter((d) => d.category === "media" && d.active !== false),
+    EQUIPMENT: mergedDocTypes.filter((d) => d.category === "equipment" && d.active !== false),
+    PO: mergedDocTypes.filter((d) => d.category === "equipment" && d.active !== false),
+    FACTORING: mergedDocTypes.filter((d) => d.category === "factoring" && d.active !== false),
+    MEDIA: mergedDocTypes.filter((d) => d.category === "media" && d.active !== false),
   };
 
   const getAlwaysLocked = (category: string) =>
@@ -331,7 +354,7 @@ function CreateProductModal({
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (docTypes.length === 0) return;
+    if (mergedDocTypes.length === 0) return;
     setCheckedDocs((prev) => {
       const next = new Set(prev);
       getAlwaysLocked(form.category).forEach((id) => next.add(id));
@@ -339,7 +362,7 @@ function CreateProductModal({
       (conditionalMap[form.category] ?? []).forEach((d) => next.add(d.key));
       return next;
     });
-  }, [form.category, docTypes]);
+  }, [form.category, mergedDocTypes.length]);
 
   function set(key: string, value: string | boolean) {
     setForm((p) => ({ ...p, [key]: value }));
@@ -363,7 +386,7 @@ function CreateProductModal({
     if (Object.keys(next).length) { setErrors(next); return; }
 
     const requiredDocuments = Array.from(checkedDocs).map((id) => {
-      const found = docTypes.find((d) => d.key === id);
+      const found = mergedDocTypes.find((d) => d.key === id);
       return { category: found?.label ?? id, required: true, description: null };
     });
 
