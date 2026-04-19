@@ -4,6 +4,8 @@ import {
   fetchLenders,
   createLender,
   createLenderProduct,
+  updateLender,
+  updateLenderProduct,
   fetchLenderProducts,
   type Lender,
   type LenderProduct,
@@ -127,14 +129,21 @@ function SubmissionDropdown({
 function CreateLenderModal({
   onClose,
   onCreated,
+  lender,
 }: {
   onClose: () => void;
   onCreated: (lender: Lender) => void;
+  lender?: Lender | null;
 }) {
   const [form, setForm] = useState({
-    name: "", street: "", cityStateZip: "", phone: "",
-    contactName: "", contactPhone: "", contactEmail: "",
-    submissionMethod: "" as SubmissionMethod | "",
+    name: lender?.name ?? "",
+    street: lender?.address?.street ?? "",
+    cityStateZip: "",
+    phone: lender?.phone ?? "",
+    contactName: lender?.primaryContact?.name ?? "",
+    contactPhone: lender?.primaryContact?.phone ?? "",
+    contactEmail: lender?.primaryContact?.email ?? "",
+    submissionMethod: (lender?.submissionConfig?.method as SubmissionMethod | undefined) ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -157,7 +166,7 @@ function CreateLenderModal({
     setSaving(true);
     setServerError(null);
     try {
-      const lender = await createLender({
+      const payload = {
         name: form.name.trim(),
         country: "CA",
         street: form.street.trim() || null,
@@ -176,8 +185,9 @@ function CreateLenderModal({
         primaryContactPhone: form.contactPhone.trim() || null,
         active: true,
         status: "ACTIVE",
-      } as any);
-      onCreated(lender);
+      } as any;
+      const saved = lender?.id ? await updateLender(lender.id, payload) : await createLender(payload);
+      onCreated(saved);
     } catch (err) {
       setServerError(getErrorMessage(err, "Failed to create lender."));
     } finally {
@@ -205,7 +215,7 @@ function CreateLenderModal({
         maxHeight: "90vh", overflowY: "auto", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
       }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "#6b7280", cursor: "pointer" }}>×</button>
-        <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "#111827" }}>Create New Lender</h2>
+        <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "#111827" }}>{lender ? "Edit Lender" : "Create New Lender"}</h2>
 
         {serverError && (
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 16, color: "#dc2626", fontSize: 13 }}>
@@ -281,7 +291,7 @@ function CreateLenderModal({
           </button>
           <button onClick={() => void submit()} disabled={saving}
             style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#2563eb", fontSize: 14, fontWeight: 600, color: "#fff", cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}>
-            {saving ? "Creating..." : "Create Lender"}
+            {saving ? "Saving..." : lender ? "Save Changes" : "Create Lender"}
           </button>
         </div>
       </div>
@@ -295,74 +305,64 @@ function CreateProductModal({
   lenders,
   onClose,
   onCreated,
+  product,
 }: {
   defaultLenderId: string;
   lenders: Lender[];
   onClose: () => void;
   onCreated: () => void;
+  product?: LenderProduct | null;
 }) {
-  const { data: docTypes = [] } = useDocumentTypes();
-  const supplementalDocTypes = [
-    { key: "personal_net_worth_statement", label: "Personal net worth statement", category: "core" },
-    { key: "corporate_structure_org_chart", label: "Corporate structure / org chart", category: "core" },
-    { key: "two_years_personal_tax_returns_t1_generals", label: "2 years personal tax returns (T1 generals)", category: "core" },
-    { key: "business_plan_projections", label: "Business plan / projections", category: "core" },
-    { key: "lease_agreement_if_applicable", label: "Lease agreement (if applicable)", category: "core" },
-    { key: "equipment_list_appraisal_if_applicable", label: "Equipment list / appraisal (if applicable)", category: "equipment" },
-    { key: "accounts_receivable_aging_report", label: "Accounts receivable aging report", category: "core" },
-    { key: "accounts_payable_aging_report", label: "Accounts payable aging report", category: "core" },
-  ] as const;
-  const mergedDocTypes = [
-    ...docTypes,
-    ...supplementalDocTypes
-      .filter((supplemental) => !docTypes.some((existing) => existing.key === supplemental.key))
-      .map((supplemental, index) => ({
-        id: `supplemental-${supplemental.key}`,
-        key: supplemental.key,
-        label: supplemental.label,
-        category: supplemental.category,
-        sort_order: 1_000 + index,
-        active: true,
-      })),
-  ];
-
-  const alwaysTypes = mergedDocTypes.filter((d) => d.category === "always" && d.active !== false);
-  const coreTypes = mergedDocTypes.filter((d) => d.category === "core" && d.active !== false);
-  const alwaysKeys = alwaysTypes.map((d) => d.key);
-  const coreDefaults = coreTypes.map((d) => d.key);
-
-  const conditionalMap: Record<string, typeof docTypes> = {
-    EQUIPMENT: mergedDocTypes.filter((d) => d.category === "equipment" && d.active !== false),
-    PO: mergedDocTypes.filter((d) => d.category === "equipment" && d.active !== false),
-    FACTORING: mergedDocTypes.filter((d) => d.category === "factoring" && d.active !== false),
-    MEDIA: mergedDocTypes.filter((d) => d.category === "media" && d.active !== false),
-  };
-
-  const getAlwaysLocked = (category: string) =>
-    category === "MEDIA" ? [] : alwaysKeys;
+  useDocumentTypes();
+  const alwaysRequiredDoc = { key: "business_banking_statements_6_months", label: "6 months business banking statements" };
+  const coreTypes = [
+    "3 years accountant prepared financials",
+    "3 years business tax returns",
+    "PnL – Interim financials",
+    "Balance Sheet – Interim financials",
+    "A/R",
+    "A/P",
+    "2 pieces of Government Issued ID",
+    "VOID cheque or PAD",
+    "Personal net worth statement",
+    "2 years personal tax returns (T1 generals)",
+    "Corporate structure / org chart",
+    "Business plan / projections",
+    "Lease agreement (if applicable)",
+    "Accounts receivable aging report",
+    "Accounts payable aging report",
+  ].map((label) => ({ key: label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label }));
+  const conditionalTypes = [
+    "Budget",
+    "Finance plan",
+    "Tax credit status",
+    "Production schedule",
+    "Minimum guarantees / presales",
+  ].map((label) => ({ key: label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label }));
 
   const [form, setForm] = useState({
-    selectedLenderId: defaultLenderId,
-    productName: "", minAmount: "", maxAmount: "",
-    minRate: "", maxRate: "", term: "",
-    eligibilityNotes: "", signnowTemplateId: "", active: true,
-    category: "LOC",
+    selectedLenderId: product?.lenderId ?? defaultLenderId,
+    productName: (product as any)?.productName ?? (product as any)?.name ?? "",
+    minAmount: product?.minAmount ? formatDollar(product.minAmount) : "",
+    maxAmount: product?.maxAmount ? formatDollar(product.maxAmount) : "",
+    minRate: product?.interestRateMin ? String(product.interestRateMin) : "",
+    maxRate: product?.interestRateMax ? String(product.interestRateMax) : "",
+    term: (product as any)?.termLength?.max ? String((product as any).termLength.max) : "",
+    eligibilityNotes: product?.eligibilityRules ?? "",
+    signnowTemplateId: (product as any)?.signnowTemplateId ?? "",
+    active: product?.active ?? true,
+    category: (product as any)?.category ?? "LOC",
   });
-  const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set(alwaysKeys));
+  const [checkedDocs, setCheckedDocs] = useState<Set<string>>(() => {
+    const initial = new Set<string>([alwaysRequiredDoc.key]);
+    if (product?.requiredDocuments?.length) {
+      product.requiredDocuments.forEach((doc) => initial.add(doc.category.toLowerCase().replace(/[^a-z0-9]+/g, "_")));
+    }
+    return initial;
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (mergedDocTypes.length === 0) return;
-    setCheckedDocs((prev) => {
-      const next = new Set(prev);
-      getAlwaysLocked(form.category).forEach((id) => next.add(id));
-      coreDefaults.forEach((id) => next.add(id));
-      (conditionalMap[form.category] ?? []).forEach((d) => next.add(d.key));
-      return next;
-    });
-  }, [form.category, mergedDocTypes.length]);
 
   function set(key: string, value: string | boolean) {
     setForm((p) => ({ ...p, [key]: value }));
@@ -370,7 +370,7 @@ function CreateProductModal({
   }
 
   function toggleDoc(id: string) {
-    if (getAlwaysLocked(form.category).includes(id)) return;
+    if (id === alwaysRequiredDoc.key) return;
     setCheckedDocs((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -386,14 +386,14 @@ function CreateProductModal({
     if (Object.keys(next).length) { setErrors(next); return; }
 
     const requiredDocuments = Array.from(checkedDocs).map((id) => {
-      const found = mergedDocTypes.find((d) => d.key === id);
+      const found = [...coreTypes, ...conditionalTypes, alwaysRequiredDoc].find((d) => d.key === id);
       return { category: found?.label ?? id, required: true, description: null };
     });
 
     setSaving(true);
     setServerError(null);
     try {
-      await createLenderProduct({
+      const payload = {
         lenderId: form.selectedLenderId,
         productName: form.productName.trim(),
         name: form.productName.trim(),
@@ -409,7 +409,12 @@ function CreateProductModal({
         eligibilityRules: form.eligibilityNotes || null,
         requiredDocuments,
         signnowTemplateId: form.signnowTemplateId || null,
-      } as any);
+      } as any;
+      if (product?.id) {
+        await updateLenderProduct(product.id, payload);
+      } else {
+        await createLenderProduct(payload);
+      }
       onCreated();
     } catch (err) {
       setServerError(getErrorMessage(err, "Failed to create product."));
@@ -441,8 +446,6 @@ function CreateProductModal({
     );
   }
 
-  const conditionalGroup = conditionalMap[form.category] ?? [];
-
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.5)" }} onClick={onClose} />
@@ -451,7 +454,7 @@ function CreateProductModal({
         maxHeight: "90vh", overflowY: "auto", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
       }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "#6b7280", cursor: "pointer" }}>×</button>
-        <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "#111827" }}>Create New Product</h2>
+        <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "#111827" }}>{product ? "Edit Product" : "Create New Product"}</h2>
 
         {serverError && (
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 16, color: "#dc2626", fontSize: 13 }}>
@@ -548,9 +551,7 @@ function CreateProductModal({
 
             <div style={{ ...sectionStyle, marginBottom: 10 }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
-              {alwaysTypes.map((d) => (
-                <DocCheckbox key={d.key} id={d.key} label={d.label} locked={getAlwaysLocked(form.category).includes(d.key)} />
-              ))}
+              <DocCheckbox id={alwaysRequiredDoc.key} label={alwaysRequiredDoc.label} locked />
             </div>
 
             <div style={{ ...sectionStyle, marginBottom: 10 }}>
@@ -561,17 +562,14 @@ function CreateProductModal({
                 ))}
               </div>
             </div>
-
-            {conditionalGroup.length > 0 && (
-              <div style={sectionStyle}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
-                  Conditional
-                </p>
-                {conditionalGroup.map((d) => (
-                  <DocCheckbox key={d.key} id={d.key} label={d.label} />
-                ))}
-              </div>
-            )}
+            <div style={sectionStyle}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
+                Conditional
+              </p>
+              {conditionalTypes.map((d) => (
+                <DocCheckbox key={d.key} id={d.key} label={d.label} />
+              ))}
+            </div>
           </div>
 
           {/* Active toggle */}
@@ -601,7 +599,7 @@ function CreateProductModal({
           </button>
           <button onClick={() => void submit()} disabled={saving}
             style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#2563eb", fontSize: 14, fontWeight: 600, color: "#fff", cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}>
-            {saving ? "Saving..." : "Save Product"}
+            {saving ? "Saving..." : product ? "Save Changes" : "Save Product"}
           </button>
         </div>
       </div>
@@ -613,9 +611,11 @@ function CreateProductModal({
 function ProductsPanel({
   lender,
   onAddProduct,
+  onEditProduct,
 }: {
   lender: Lender | null;
   onAddProduct: () => void;
+  onEditProduct: (product: LenderProduct) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -723,9 +723,7 @@ function ProductsPanel({
                   <span style={{ color: "#6b7280", fontSize: 12 }}>{isOpen ? "▼" : "▶"}</span>
                   <span style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>{CATEGORY_LABELS[cat] ?? cat}</span>
                 </div>
-                <span style={{ fontSize: 12, color: "#94a3b8", background: "#f1f5f9", padding: "2px 8px", borderRadius: 20, fontWeight: 600 }}>
-                  Status
-                </span>
+                <span style={{ fontSize: 12, color: "#94a3b8" }}>{items.length} products</span>
               </div>
 
               {/* Products */}
@@ -744,7 +742,14 @@ function ProductsPanel({
                   {formatRateRange(p.interestRateMin, p.interestRateMax) && (
                     <span style={{ color: "#374151" }}>{formatRateRange(p.interestRateMin, p.interestRateMax)}</span>
                   )}
-                  <StatusBadge active={(p as { is_active?: boolean }).is_active} status={(p as { status?: string }).status} />
+                  <StatusBadge active={(p as { is_active?: boolean; active?: boolean }).is_active ?? p.active} status={(p as { status?: string }).status} />
+                  <button
+                    type="button"
+                    onClick={() => onEditProduct(p)}
+                    style={{ padding: "5px 10px", border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
+                  >
+                    Edit
+                  </button>
                 </div>
               ))}
             </div>
@@ -765,6 +770,8 @@ export default function LendersPage() {
   const [selected, setSelected] = useState<Lender | null>(null);
   const [showCreateLender, setShowCreateLender] = useState(false);
   const [showCreateProduct, setShowCreateProduct] = useState(false);
+  const [editingLender, setEditingLender] = useState<Lender | null>(null);
+  const [editingProduct, setEditingProduct] = useState<LenderProduct | null>(null);
 
   const { data: lenders = [], isLoading } = useQuery({
     queryKey: ["lenders"],
@@ -832,17 +839,17 @@ export default function LendersPage() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
-                {["Lender", "Status", "Country", "Primary Contact"].map((h) => (
+                {["Lender", "Status", "Country", "Primary Contact", "Actions"].map((h) => (
                   <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Loading…</td></tr>
+                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Loading…</td></tr>
               )}
               {!isLoading && paginated.length === 0 && (
-                <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No lenders found</td></tr>
+                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No lenders found</td></tr>
               )}
               {paginated.map((l) => {
                 const isSelected = selected?.id === l.id;
@@ -866,6 +873,18 @@ export default function LendersPage() {
                       {l.address?.country === "CA" ? "Canada" : l.address?.country === "US" ? "USA" : l.address?.country ?? "—"}
                     </td>
                     <td style={{ padding: "10px 12px", color: "#64748b" }}>{l.primaryContact?.name ?? "—"}</td>
+                    <td style={{ padding: "10px 12px" }}>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setEditingLender(l);
+                        }}
+                        style={{ padding: "5px 10px", border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -890,6 +909,7 @@ export default function LendersPage() {
       <ProductsPanel
         lender={selected}
         onAddProduct={() => setShowCreateProduct(true)}
+        onEditProduct={(product) => setEditingProduct(product)}
       />
 
       {/* Modals */}
@@ -899,12 +919,34 @@ export default function LendersPage() {
           onCreated={handleLenderCreated}
         />
       )}
+      {editingLender && (
+        <CreateLenderModal
+          lender={editingLender}
+          onClose={() => setEditingLender(null)}
+          onCreated={(lender) => {
+            setEditingLender(null);
+            handleLenderCreated(lender);
+          }}
+        />
+      )}
       {showCreateProduct && (
         <CreateProductModal
           defaultLenderId={selected?.id ?? ""}
           lenders={lenders}
           onClose={() => setShowCreateProduct(false)}
           onCreated={handleProductCreated}
+        />
+      )}
+      {editingProduct && (
+        <CreateProductModal
+          product={editingProduct}
+          defaultLenderId={selected?.id ?? ""}
+          lenders={lenders}
+          onClose={() => setEditingProduct(null)}
+          onCreated={() => {
+            setEditingProduct(null);
+            handleProductCreated();
+          }}
         />
       )}
     </div>

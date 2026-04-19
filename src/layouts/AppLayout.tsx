@@ -151,7 +151,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
             <span>{mayaOpen ? "▼" : "▲"}</span>
           </button>
           {mayaOpen && (
-            <div style={{ paddingBottom: 12 }}>
+            <div style={{ paddingBottom: 12, flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
               <MayaChat />
             </div>
           )}

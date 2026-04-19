@@ -1,4 +1,5 @@
 import Button from "@/components/ui/Button";
+import type { CSSProperties } from "react";
 import type { Contact } from "@/api/crm";
 
 interface ContactRowProps {
@@ -15,6 +16,16 @@ const ContactRow = ({ contact, onSelect, onCall }: ContactRowProps) => {
     created_at?: string | null;
   };
   const createdAt = raw.created_at ? new Date(raw.created_at).toLocaleDateString("en-CA") : "—";
+  const leadStatus = raw.lead_status ?? "New";
+  const normalizedStatus = leadStatus.toLowerCase();
+  const statusStyle: CSSProperties =
+    normalizedStatus === "new"
+      ? { background: "#dbeafe", color: "#1d4ed8" }
+      : normalizedStatus === "qualified"
+        ? { background: "#dcfce7", color: "#15803d" }
+        : normalizedStatus === "lost"
+          ? { background: "#fee2e2", color: "#dc2626" }
+          : { background: "#f1f5f9", color: "#475569" };
 
   return (
     <tr data-testid={`contact-row-${contact.id}`} onClick={() => onSelect(contact)} style={{ cursor: "pointer" }}>
@@ -27,7 +38,7 @@ const ContactRow = ({ contact, onSelect, onCall }: ContactRowProps) => {
         </div>
       </td>
       <td>{raw.company_name ?? "—"}</td>
-      <td><span className="status-pill status-pill--active">{raw.lead_status ?? "New"}</span></td>
+      <td><span className="status-pill" style={statusStyle}>{leadStatus}</span></td>
       <td>{raw.owner_name ?? contact.owner ?? "—"}</td>
       <td>{createdAt}</td>
       <td>

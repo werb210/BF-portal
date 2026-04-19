@@ -89,10 +89,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   return (
     <aside className={`sidebar ${isOpen ? "sidebar--open" : ""}`}>
       <div className="sidebar__header">
-        <span>{silo} Portal</span>
-        <button type="button" className="sidebar__close" onClick={onClose} aria-label="Close navigation">
-          ×
-        </button>
+        <div className="flex items-center gap-2">
+          <img src={businessUnitConfig.logoUrl} alt={`${businessUnitConfig.name} logo`} style={{ height: 28, width: "auto" }} />
+          <span>{businessUnitConfig.name || "Boreal Financial"}</span>
+        </div>
       </div>
       <nav className="sidebar__nav">
         {visibleSections.map((section) => (

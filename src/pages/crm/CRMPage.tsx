@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import Card from "@/components/ui/Card";
 import ContactsPage from "./contacts/ContactsPage";
 import CompaniesPage from "./companies/CompaniesPage";
@@ -16,6 +16,16 @@ const CRMContent = () => {
   const [view, setView] = useState<CrmView>("contacts");
   const { user } = useAuth();
   const isAdmin = user?.role?.toLowerCase() === "admin";
+  const tabButtonStyle = (tab: CrmView): CSSProperties => ({
+    padding: "8px 12px",
+    borderRadius: 8,
+    border: "none",
+    cursor: "pointer",
+    fontWeight: 600,
+    background: view === tab ? "#dbeafe" : "transparent",
+    color: view === tab ? "#1d4ed8" : "#475569",
+    borderBottom: view === tab ? "2px solid #2563eb" : "2px solid transparent"
+  });
 
   return (
     <div className="page">
@@ -23,12 +33,12 @@ const CRMContent = () => {
         title="CRM Navigation"
         actions={
           <div className="flex gap-2">
-            <button onClick={() => setView("contacts")}>Contacts</button>
-            <button onClick={() => setView("companies")}>Companies</button>
-            <button onClick={() => setView("timeline")}>Global Timeline</button>
-            {isAdmin && <button onClick={() => setView("website-leads")}>Website Leads</button>}
-            {isAdmin && <button onClick={() => setView("continuations")}>Continuations</button>}
-            {isAdmin && <button onClick={() => setView("credit-readiness")}>Credit Readiness</button>}
+            <button style={tabButtonStyle("contacts")} onClick={() => setView("contacts")}>Contacts</button>
+            <button style={tabButtonStyle("companies")} onClick={() => setView("companies")}>Companies</button>
+            <button style={tabButtonStyle("timeline")} onClick={() => setView("timeline")}>Global Timeline</button>
+            {isAdmin && <button style={tabButtonStyle("website-leads")} onClick={() => setView("website-leads")}>Website Leads</button>}
+            {isAdmin && <button style={tabButtonStyle("continuations")} onClick={() => setView("continuations")}>Continuations</button>}
+            {isAdmin && <button style={tabButtonStyle("credit-readiness")} onClick={() => setView("credit-readiness")}>Credit Readiness</button>}
           </div>
         }
       >

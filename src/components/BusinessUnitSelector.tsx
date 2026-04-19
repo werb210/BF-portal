@@ -28,7 +28,6 @@ const BusinessUnitSelector = () => {
 
   return (
     <Select
-      label="Business Unit"
       value={silo}
       onChange={(event) =>
         (setSilo as (value: BusinessUnit) => void)(

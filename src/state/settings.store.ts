@@ -118,10 +118,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       const data = await api.get<ProfileResponse>("/api/users/me");
       if (data) {
-        const normalized = normalizeProfileResponse(data);
+        const profileData = ((data as { data?: ProfileResponse })?.data ?? data) as ProfileResponse;
+        const normalized = normalizeProfileResponse(profileData);
         set((state) => ({
           profile: (() => {
-            const nameValue = (data as { name?: string }).name?.trim() ?? "";
+            const nameValue = (profileData as { name?: string }).name?.trim() ?? "";
             const nextProfile = { ...state.profile, ...normalized };
             if (nameValue && (!nextProfile.firstName || !nextProfile.lastName)) {
               const [firstName, ...rest] = nameValue.split(" ");
@@ -184,8 +185,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       const data = await api.get<UsersResponse | { users?: UsersResponse }>("/api/users");
       const nextUsers = Array.isArray(data)
         ? data
-        : Array.isArray(data?.users)
-          ? data.users
+        : Array.isArray((data as { users?: UsersResponse })?.users)
+          ? (data as { users?: UsersResponse }).users ?? []
+          : Array.isArray((data as { data?: UsersResponse })?.data)
+            ? (data as { data?: UsersResponse }).data ?? []
           : [];
       const safeUsers = nextUsers.map((user) => ({
         ...user,
