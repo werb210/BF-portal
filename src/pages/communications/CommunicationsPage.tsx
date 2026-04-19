@@ -71,6 +71,15 @@ function SmsTab() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const mergeMessages = useCallback((existing: Message[], incoming: Message[]) => {
+    const byId = new Map<string, Message>();
+    [...existing, ...incoming].forEach((message) => {
+      if (message?.id) byId.set(message.id, message);
+    });
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+  }, []);
 
   useEffect(() => {
     api<{ contacts: Contact[] }>("/api/crm/contacts?pageSize=200")
@@ -82,15 +91,18 @@ function SmsTab() {
     api<{ messages: Message[] }>(`/api/communications/messages?contactId=${contactId}`)
       .then((r) => {
         const msgs = Array.isArray(r.messages) ? r.messages : [];
-        setThreads((prev) => ({ ...prev, [contactId]: msgs }));
+        setThreads((prev) => ({
+          ...prev,
+          [contactId]: mergeMessages(prev[contactId] ?? [], msgs),
+        }));
       })
       .catch(() => {});
-  }, []);
+  }, [mergeMessages]);
 
   useEffect(() => {
     if (!selected) return;
     loadMessages(selected.id);
-    pollRef.current = setInterval(() => loadMessages(selected.id), 6000);
+    pollRef.current = setInterval(() => loadMessages(selected.id), 3000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
@@ -103,10 +115,11 @@ function SmsTab() {
   async function send() {
     if (!draft.trim() || !selected?.phone || sending) return;
     setSending(true);
+    const pendingBody = draft.trim();
     try {
       await api.post("/api/communications/sms", {
         to: selected.phone,
-        body: draft.trim(),
+        body: pendingBody,
         contactId: selected.id,
       });
       setDraft("");
@@ -292,7 +305,7 @@ function SmsTab() {
       </div>
 
       {/* ── Right — thread ── */}
-      <div style={{ display: "flex", flexDirection: "column", background: "#fff", minWidth: 0, minHeight: 0, height: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", background: "#fff", minWidth: 0, minHeight: 0, height: "100%", overflow: "hidden" }}>
         {!selected ? (
           <div
             style={{
@@ -363,6 +376,18 @@ function SmsTab() {
                       marginTop: prevSameSide ? 2 : 8,
                     }}
                   >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#6b7280",
+                        marginBottom: 2,
+                        marginRight: isOut ? 4 : 0,
+                        marginLeft: isOut ? 0 : 4,
+                      }}
+                    >
+                      {isOut ? "You" : selected.name}
+                    </div>
                     <div
                       style={{
                         maxWidth: "70%",
