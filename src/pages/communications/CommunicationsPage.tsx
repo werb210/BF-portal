@@ -102,24 +102,35 @@ function SmsTab() {
       })
       .catch(() => {});
 
-    api<{ messages?: Message[] }>("/api/communications/messages")
+    Promise.resolve(
+      api<{ messages?: Message[] }>("/api/communications/messages")
+    )
       .then((r) => {
-        const list = Array.isArray(r.messages) ? r.messages : [];
+        const list = Array.isArray(r?.messages) ? r.messages : [];
         setHasSentMessages(list.some((m) => m.direction === "outbound"));
       })
       .catch(() => {});
   }, []);
 
   const loadMessages = useCallback((contactId: string) => {
-    api<{ messages: Message[] }>(`/api/communications/messages?contact_id=${contactId}`)
+    Promise.resolve(
+      api<{ messages: Message[] }>(
+        `/api/communications/messages?contactId=${contactId}`
+      )
+    )
       .then((r) => {
-        const msgs = Array.isArray(r.messages) ? r.messages : [];
+        const msgs = Array.isArray(r?.messages) ? r.messages : [];
         setThreads((prev) => ({
           ...prev,
           [contactId]: mergeMessages(prev[contactId] ?? [], msgs),
         }));
       })
-      .catch(() => {});
+      .catch(() => {
+        setThreads((prev) => ({
+          ...prev,
+          [contactId]: [],
+        }));
+      });
   }, [mergeMessages]);
 
   useEffect(() => {
@@ -533,9 +544,13 @@ function MessagesTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api<{ messages: Message[] }>("/api/communications/messages")
-      .then((r) => setMessages(Array.isArray(r.messages) ? r.messages : []))
-      .catch(() => {})
+    Promise.resolve(
+      api<{ messages: Message[] }>("/api/communications/messages")
+    )
+      .then((r) => setMessages(Array.isArray(r?.messages) ? r.messages : []))
+      .catch(() => {
+        setMessages([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
