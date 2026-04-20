@@ -23,17 +23,19 @@ const SUBMISSION_LABELS: Record<SubmissionMethod, string> = {
   GOOGLE_SHEET: "Google Sheet (Merchant Growth)",
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  LOC: "Line of Credit",
-  TERM: "Term Loans",
-  FACTORING: "Factoring",
-  PO: "Purchase Order",
-  EQUIPMENT: "Equipment Loans",
-  MCA: "Merchant Cash Advance",
-  MEDIA: "Media Financing",
-};
+const CATEGORY_ORDER = ["TERM_LOAN", "LINE_OF_CREDIT", "FACTORING", "EQUIPMENT_FINANCE", "PURCHASE_ORDER_FINANCE", "MERCHANT_CASH_ADVANCE", "ASSET_BASED_LENDING", "SBA_GOVERNMENT", "STARTUP_CAPITAL"];
 
-const CATEGORY_ORDER = ["LOC", "TERM", "FACTORING", "PO", "EQUIPMENT", "MCA", "MEDIA"];
+const CATEGORY_LABELS: Record<string, string> = {
+  TERM_LOAN: "Term Loans",
+  LINE_OF_CREDIT: "Line of Credit",
+  FACTORING: "Factoring",
+  EQUIPMENT_FINANCE: "Equipment Finance",
+  PURCHASE_ORDER_FINANCE: "Purchase Order Finance",
+  MERCHANT_CASH_ADVANCE: "Merchant Cash Advance",
+  ASSET_BASED_LENDING: "Asset Based Lending",
+  SBA_GOVERNMENT: "SBA / Government",
+  STARTUP_CAPITAL: "Startup Capital",
+};
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ active, status }: { active?: boolean; status?: string }) {
@@ -144,6 +146,10 @@ function CreateLenderModal({
     contactPhone: lender?.primaryContact?.phone ?? "",
     contactEmail: lender?.primaryContact?.email ?? "",
     submissionMethod: (lender?.submissionConfig?.method as SubmissionMethod | undefined) ?? "",
+    submissionEmail: lender?.submissionConfig?.submissionEmail ?? "",
+    apiEndpoint: lender?.submissionConfig?.apiBaseUrl ?? "",
+    apiKey: lender?.submissionConfig?.apiPassword ?? "",
+    sheetId: lender?.submissionConfig?.sheetId ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -175,6 +181,10 @@ function CreateLenderModal({
         postalCode: null,
         phone: form.phone.trim(),
         submissionMethod: form.submissionMethod as SubmissionMethod,
+        submissionEmail: form.submissionMethod === "EMAIL" ? (form.submissionEmail.trim() || null) : null,
+        apiEndpoint: form.submissionMethod === "API" ? (form.apiEndpoint.trim() || null) : null,
+        apiKey: form.submissionMethod === "API" ? (form.apiKey.trim() || null) : null,
+        sheetId: form.submissionMethod === "GOOGLE_SHEET" ? (form.sheetId.trim() || null) : null,
         primaryContact: {
           name: form.contactName.trim(),
           phone: form.contactPhone.trim() || null,
@@ -282,6 +292,33 @@ function CreateLenderModal({
             />
             {errors.submissionMethod && <p style={errorStyle}>{errors.submissionMethod}</p>}
           </div>
+
+          {form.submissionMethod === "EMAIL" && (
+            <div>
+              <label style={labelStyle}>Submission Email</label>
+              <input placeholder="submissions@lender.com" value={form.submissionEmail} onChange={(e) => set("submissionEmail", e.target.value)} style={inputStyle()} />
+            </div>
+          )}
+
+          {form.submissionMethod === "API" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={labelStyle}>API Endpoint</label>
+                <input placeholder="https://api.lender.com/submit" value={form.apiEndpoint} onChange={(e) => set("apiEndpoint", e.target.value)} style={inputStyle()} />
+              </div>
+              <div>
+                <label style={labelStyle}>API Key</label>
+                <input placeholder="Enter API key" value={form.apiKey} onChange={(e) => set("apiKey", e.target.value)} style={inputStyle()} />
+              </div>
+            </div>
+          )}
+
+          {form.submissionMethod === "GOOGLE_SHEET" && (
+            <div>
+              <label style={labelStyle}>Google Sheet ID</label>
+              <input placeholder="Enter Google Sheet ID" value={form.sheetId} onChange={(e) => set("sheetId", e.target.value)} style={inputStyle()} />
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 28 }}>
@@ -351,7 +388,7 @@ function CreateProductModal({
     eligibilityNotes: product?.eligibilityRules ?? "",
     signnowTemplateId: (product as any)?.signnowTemplateId ?? "",
     active: product?.active ?? true,
-    category: (product as any)?.category ?? "LOC",
+    category: (product as any)?.category ?? "TERM_LOAN",
   });
   const [checkedDocs, setCheckedDocs] = useState<Set<string>>(() => {
     const initial = new Set<string>([alwaysRequiredDoc.key]);
@@ -439,7 +476,7 @@ function CreateProductModal({
           checked={checkedDocs.has(id)}
           disabled={locked}
           onChange={() => toggleDoc(id)}
-          style={{ width: 15, height: 15, marginTop: 1, flexShrink: 0, cursor: locked ? "default" : "pointer", accentColor: "#2563eb" }}
+          style={{ width: 15, height: 15, marginTop: 1, flexShrink: 0, cursor: locked ? "default" : "pointer" }}
         />
         <span style={{ opacity: locked ? 0.6 : 1 }}>{label}{locked && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 4 }}>(always required)</span>}</span>
       </label>
@@ -636,7 +673,7 @@ function ProductsPanel({
     const map = new Map<string, LenderProduct[]>();
     for (const cat of CATEGORY_ORDER) map.set(cat, []);
     for (const p of filtered) {
-      const cat = (p as any).category ?? "LOC";
+      const cat = (p as any).category ?? "TERM_LOAN";
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat)!.push(p);
     }
@@ -758,6 +795,17 @@ function ProductsPanel({
       </div>
     </div>
   );
+}
+
+
+function EditLenderModal({ lender, onClose, onSaved }: { lender: Lender | null; onClose: () => void; onSaved: (lender: Lender) => void }) {
+  if (!lender) return null;
+  return <CreateLenderModal lender={lender} onClose={onClose} onCreated={onSaved} />;
+}
+
+function EditProductModal({ product, lenders, onClose, onSaved }: { product: LenderProduct | null; lenders: Lender[]; onClose: () => void; onSaved: () => void }) {
+  if (!product) return null;
+  return <CreateProductModal product={product} defaultLenderId={product.lenderId} lenders={lenders} onClose={onClose} onCreated={onSaved} />;
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -920,10 +968,10 @@ export default function LendersPage() {
         />
       )}
       {editingLender && (
-        <CreateLenderModal
+        <EditLenderModal
           lender={editingLender}
           onClose={() => setEditingLender(null)}
-          onCreated={(lender) => {
+          onSaved={(lender) => {
             setEditingLender(null);
             handleLenderCreated(lender);
           }}
@@ -938,12 +986,11 @@ export default function LendersPage() {
         />
       )}
       {editingProduct && (
-        <CreateProductModal
+        <EditProductModal
           product={editingProduct}
-          defaultLenderId={selected?.id ?? ""}
           lenders={lenders}
           onClose={() => setEditingProduct(null)}
-          onCreated={() => {
+          onSaved={() => {
             setEditingProduct(null);
             handleProductCreated();
           }}

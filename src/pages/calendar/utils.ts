@@ -31,10 +31,16 @@ export const getWeekDays = (date: Date) => {
 
 export const getMonthGrid = (date: Date) => {
   const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
   const start = getStartOfWeek(firstDay);
-  return Array.from({ length: 42 }).map((_, idx) => {
-    const day = new Date(start);
-    day.setDate(start.getDate() + idx);
-    return day;
-  });
+  const end = new Date(getStartOfWeek(lastDay));
+  end.setDate(end.getDate() + 6);
+
+  const days: Date[] = [];
+  const cursor = new Date(start);
+  while (cursor <= end && days.length < 42) {
+    days.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
 };

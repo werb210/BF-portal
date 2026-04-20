@@ -68,6 +68,7 @@ function SmsTab() {
   const [search, setSearch] = useState("");
   const [newThreadPhone, setNewThreadPhone] = useState("");
   const [showNewThread, setShowNewThread] = useState(false);
+  const [hasSentMessages, setHasSentMessages] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -94,10 +95,17 @@ function SmsTab() {
         if (mapped.length > 0) {
           mapped.sort((a, b) => new Date(b.latest).getTime() - new Date(a.latest).getTime());
           setContacts(mapped as Contact[]);
-          return;
+        } else {
+          const fallback = (r as { contacts?: Contact[] }).contacts;
+          setContacts(Array.isArray(fallback) ? fallback : []);
         }
-        const fallback = (r as { contacts?: Contact[] }).contacts;
-        setContacts(Array.isArray(fallback) ? fallback : []);
+      })
+      .catch(() => {});
+
+    api<{ messages?: Message[] }>("/api/communications/messages")
+      .then((r) => {
+        const list = Array.isArray(r.messages) ? r.messages : [];
+        setHasSentMessages(list.some((m) => m.direction === "outbound"));
       })
       .catch(() => {});
   }, []);
@@ -270,7 +278,7 @@ function SmsTab() {
         <div style={{ flex: 1, overflowY: "auto" }}>
           {filtered.length === 0 && (
             <div style={{ padding: "20px 16px", textAlign: "center", color: "#8e8e93", fontSize: 14 }}>
-              No contacts. Add contacts in CRM first.
+              {hasSentMessages ? "No conversations yet" : "No contacts. Add contacts in CRM first."}
             </div>
           )}
           {filtered.map((c) => {
