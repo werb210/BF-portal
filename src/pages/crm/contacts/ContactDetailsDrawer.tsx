@@ -34,15 +34,27 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
     if (!contact) return;
     let isActive = true;
 
-    fetchContactCompanies(contact).then((result) => {
-      if (isActive) setCompanies(result);
-    });
-    fetchApplications(contact.id).then((result) => {
-      if (isActive) setApplications(result);
-    });
-    fetchTimeline("contact", contact.id).then((result) => {
-      if (isActive) setTimeline(result);
-    });
+    fetchContactCompanies(contact)
+      .then((result) => {
+        if (isActive) setCompanies(result);
+      })
+      .catch(() => {
+        if (isActive) setCompanies([]);
+      });
+    fetchApplications(contact.id)
+      .then((result) => {
+        if (isActive) setApplications(result);
+      })
+      .catch(() => {
+        if (isActive) setApplications([]);
+      });
+    fetchTimeline("contact", contact.id)
+      .then((result) => {
+        if (isActive) setTimeline(result);
+      })
+      .catch(() => {
+        if (isActive) setTimeline([]);
+      });
 
     return () => {
       isActive = false;

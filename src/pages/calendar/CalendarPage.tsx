@@ -53,6 +53,8 @@ const inputStyle: CSSProperties = {
   borderRadius: 8,
   marginTop: 6,
   marginBottom: 10,
+  background: "#fff",
+  color: "#111827",
 };
 
 function groupTasks(tasks: CalendarTask[]) {
@@ -95,7 +97,7 @@ function CalendarContent() {
   const [showEventForm, setShowEventForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [eventForm, setEventForm] = useState({ title: "", start: "", end: "", attendees: "", location: "", notes: "" });
-  const [taskForm, setTaskForm] = useState({ title: "", due_date: "", linked_contact: "" });
+  const [taskForm, setTaskForm] = useState({ title: "", due_date: "", assigned_to: "" });
   const queryClient = useQueryClient();
 
   const eventsQuery = useQuery({
@@ -122,7 +124,7 @@ function CalendarContent() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["calendar-tasks"] });
       setShowTaskForm(false);
-      setTaskForm({ title: "", due_date: "", linked_contact: "" });
+      setTaskForm({ title: "", due_date: "", assigned_to: "" });
     },
   });
 
@@ -229,12 +231,12 @@ function CalendarContent() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
           <div style={{ width: "min(560px, 90vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>Add Event</h3>
-            <label>Title<input style={inputStyle} value={eventForm.title} onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))} /></label>
-            <label>Start<input style={inputStyle} type="datetime-local" value={eventForm.start} onChange={(e) => setEventForm((prev) => ({ ...prev, start: e.target.value }))} /></label>
-            <label>End<input style={inputStyle} type="datetime-local" value={eventForm.end} onChange={(e) => setEventForm((prev) => ({ ...prev, end: e.target.value }))} /></label>
-            <label>Attendees<input style={inputStyle} value={eventForm.attendees} onChange={(e) => setEventForm((prev) => ({ ...prev, attendees: e.target.value }))} /></label>
-            <label>Location<input style={inputStyle} value={eventForm.location} onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))} /></label>
-            <label>Notes<textarea style={inputStyle} value={eventForm.notes} onChange={(e) => setEventForm((prev) => ({ ...prev, notes: e.target.value }))} /></label>
+            <label>Event Title<input style={inputStyle} value={eventForm.title} onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))} /></label>
+            <label>Start Date & Time<input style={inputStyle} type="datetime-local" value={eventForm.start} onChange={(e) => setEventForm((prev) => ({ ...prev, start: e.target.value }))} /></label>
+            <label>End Date & Time<input style={inputStyle} type="datetime-local" value={eventForm.end} onChange={(e) => setEventForm((prev) => ({ ...prev, end: e.target.value }))} /></label>
+            <label>Attendees<input style={{ ...inputStyle, background: "#fff", color: "#111827" }} value={eventForm.attendees} onChange={(e) => setEventForm((prev) => ({ ...prev, attendees: e.target.value }))} /></label>
+            <label>Location<input style={{ ...inputStyle, background: "#fff", color: "#111827" }} value={eventForm.location} onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))} /></label>
+            <label>Notes<textarea style={{ ...inputStyle, background: "#fff", color: "#111827" }} value={eventForm.notes} onChange={(e) => setEventForm((prev) => ({ ...prev, notes: e.target.value }))} /></label>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => createEventMutation.mutate(eventForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2563eb", background: "#2563eb", color: "#fff" }}>Save</button>
               <button onClick={() => setShowEventForm(false)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}>Cancel</button>
@@ -247,9 +249,9 @@ function CalendarContent() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
           <div style={{ width: "min(560px, 90vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>Add Task</h3>
-            <label>Title<input style={inputStyle} value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} /></label>
-            <label>Due date<input style={inputStyle} type="datetime-local" value={taskForm.due_date} onChange={(e) => setTaskForm((prev) => ({ ...prev, due_date: e.target.value }))} /></label>
-            <label>Linked contact (optional)<input style={inputStyle} value={taskForm.linked_contact} onChange={(e) => setTaskForm((prev) => ({ ...prev, linked_contact: e.target.value }))} /></label>
+            <label>Task Title<input style={inputStyle} value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} /></label>
+            <label>Due Date<input style={inputStyle} type="datetime-local" value={taskForm.due_date} onChange={(e) => setTaskForm((prev) => ({ ...prev, due_date: e.target.value }))} /></label>
+            <label>Assign To<input style={inputStyle} value={taskForm.assigned_to} onChange={(e) => setTaskForm((prev) => ({ ...prev, assigned_to: e.target.value }))} /></label>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => createTaskMutation.mutate(taskForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #0f766e", background: "#0f766e", color: "#fff" }}>Save</button>
               <button onClick={() => setShowTaskForm(false)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}>Cancel</button>
