@@ -1,4 +1,5 @@
 import { normalizePhone } from "@/utils/normalizePhone";
+import { setAuthToken } from "@/lib/authToken";
 
 const SERVER_ERROR_MESSAGES: Record<string, string> = {
   no_account: "Your account hasn't been set up yet. Contact your administrator.",
@@ -52,7 +53,7 @@ export async function verifyOtp(code: string) {
       throw new Error("No token returned from server");
     }
 
-    localStorage.setItem("auth_token", token);
+    setAuthToken(token);
 
     if (data.user) {
       localStorage.setItem("auth_user", JSON.stringify(data.user));

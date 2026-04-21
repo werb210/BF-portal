@@ -1,7 +1,7 @@
 import { api } from "@/api";
 import type { BIActivityItem, BIPipelineApplication, BIRequirementItem, BIRequirementStatus, BIStageId } from "./bi.pipeline.types";
 
-const BI_API_PREFIX = "/bi";
+const BI_API_PREFIX = "/api/v1/bi";
 
 export const biPipelineApi = {
   fetchColumn: (stage: BIStageId, options?: { signal?: AbortSignal }) =>
@@ -13,7 +13,7 @@ export const biPipelineApi = {
   fetchActivity: (applicationId: string, options?: { signal?: AbortSignal }) =>
     api.getList<BIActivityItem>(`${BI_API_PREFIX}/applications/${applicationId}/activity`, options),
   fetchDocuments: (applicationId: string, options?: { signal?: AbortSignal }) =>
-    api.getList<{ id: string; file_name: string; url: string; uploaded_at?: string | null }>(
+    api.getList<{ id: string; file_name: string; url: string; uploaded_at: string }>(
       `${BI_API_PREFIX}/applications/${applicationId}/documents`,
       options
     ),

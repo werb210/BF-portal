@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { retryUnlessClientError } from "@/api/retryPolicy";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { useSilo } from "@/hooks/useSilo";
 import { biPipelineApi } from "../bi.pipeline.api";
-import type { BIRequirementStatus } from "../bi.pipeline.types";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -26,14 +26,15 @@ const dayDiff = (dateString: string) => Math.max(0, Math.floor((Date.now() - new
 
 const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProps) => {
   const { silo } = useSilo();
-  const queryClient = useQueryClient();
   const [tab, setTab] = useState<BIDrawerTab>("overview");
+  const requirementsEnabled = FEATURE_FLAGS.BI_REQUIREMENTS;
 
   const detailQuery = useQuery({
     queryKey: ["bi", "application", applicationId],
     queryFn: ({ signal }) => biPipelineApi.fetchDetail(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId) && silo === "bi",
-    retry: retryUnlessClientError
+    retry: retryUnlessClientError,
+    refetchInterval: 30_000
   });
 
   const documentsQuery = useQuery({
@@ -46,7 +47,7 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
   const requirementsQuery = useQuery({
     queryKey: ["bi", "requirements", applicationId],
     queryFn: ({ signal }) => biPipelineApi.fetchRequirements(applicationId ?? "", { signal }),
-    enabled: Boolean(applicationId) && silo === "bi",
+    enabled: Boolean(applicationId) && silo === "bi" && requirementsEnabled,
     retry: retryUnlessClientError
   });
 
@@ -55,15 +56,6 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
     queryFn: ({ signal }) => biPipelineApi.fetchActivity(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId) && silo === "bi",
     retry: retryUnlessClientError
-  });
-
-  const updateRequirement = useMutation({
-    mutationFn: ({ requirementId, status }: { requirementId: string; status: BIRequirementStatus }) =>
-      biPipelineApi.updateRequirement(applicationId ?? "", requirementId, status),
-    onSuccess: async () => {
-      if (!applicationId) return;
-      await queryClient.invalidateQueries({ queryKey: ["bi", "requirements", applicationId] });
-    }
   });
 
   const quoteCountdown = useMemo(() => {
@@ -77,7 +69,8 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
   if (!applicationId || silo !== "bi") return null;
 
   const detail = detailQuery.data;
-  const requirements = requirementsQuery.data ?? [];
+  const requirements = requirementsEnabled ? requirementsQuery.data ?? [] : [];
+  const visibleTabs = requirementsEnabled ? TABS : TABS.filter((item) => item.id !== "requirements");
 
   return (
     <div className="application-drawer-overlay" onClick={onClose}>
@@ -91,7 +84,7 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
         </div>
 
         <div className="tabs">
-          {TABS.map((t) => (
+          {visibleTabs.map((t) => (
             <button key={t.id} className={`tab ${tab === t.id ? "tab--active" : ""}`} onClick={() => setTab(t.id)} type="button">
               {t.label}
             </button>
@@ -103,8 +96,11 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
             <div className="space-y-3">
               <div>Stage badge: {detail?.stage ?? "—"}</div>
               <div>CORE score: {detail?.core_score ?? "—"}</div>
-              <div>PGI app ID: {detail?.pgi_app_id ?? "—"}</div>
-              <div>Quote summary: {detail?.quote_summary ?? "—"}</div>
+              {detail?.pgi_external_id ? <div>PGI external ID: {detail.pgi_external_id}</div> : null}
+              {detail?.quote_summary ? <div>Quote summary: {detail.quote_summary}</div> : null}
+              {detail?.quote_expiry_at ? <div>Quote expiry: {detail.quote_expiry_at}</div> : null}
+              {detail?.underwriter_ref ? <div>Underwriter ref: {detail.underwriter_ref}</div> : null}
+              {detail?.coverage_amount != null ? <div>Coverage amount: {detail.coverage_amount}</div> : null}
               <div>Days in stage: {detail?.updated_at ? dayDiff(detail.updated_at) : "—"}</div>
               <div>Quick actions: Request docs · Escalate · Contact broker</div>
             </div>
@@ -133,7 +129,7 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
                         key={status}
                         type="button"
                         className={`btn btn-sm ${item.status === status ? "btn--active" : ""}`}
-                        onClick={() => updateRequirement.mutate({ requirementId: item.id, status })}
+                        onClick={() => void 0}
                       >
                         {status}
                       </button>
