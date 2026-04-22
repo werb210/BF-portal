@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/api";
+import { ApiError } from "@/api/http";
 
 type Tab = "messages" | "sms" | "inbox" | "issues";
 
@@ -26,6 +27,10 @@ type Issue = {
   created_at: string;
   status: string;
 };
+
+function isBadRequest(error: unknown) {
+  return error instanceof ApiError && error.status === 400;
+}
 
 // ── Initials avatar ────────────────────────────────────────────────────────
 function Avatar({ name, size = 38 }: { name: string; size?: number }) {
@@ -95,21 +100,16 @@ function SmsTab() {
         if (mapped.length > 0) {
           mapped.sort((a, b) => new Date(b.latest).getTime() - new Date(a.latest).getTime());
           setContacts(mapped as Contact[]);
+          setHasSentMessages(true);
         } else {
           const fallback = (r as { contacts?: Contact[] }).contacts;
           setContacts(Array.isArray(fallback) ? fallback : []);
+          setHasSentMessages(Array.isArray(fallback) && fallback.length > 0);
         }
       })
-      .catch(() => {});
-
-    Promise.resolve(
-      api<{ messages?: Message[] }>("/api/communications/messages")
-    )
-      .then((r) => {
-        const list = Array.isArray(r?.messages) ? r.messages : [];
-        setHasSentMessages(list.some((m) => m.direction === "outbound"));
+      .catch((error) => {
+        if (isBadRequest(error)) return;
       })
-      .catch(() => {});
   }, []);
 
   const loadMessages = useCallback((contactId: string) => {
@@ -125,7 +125,8 @@ function SmsTab() {
           [contactId]: mergeMessages(prev[contactId] ?? [], msgs),
         }));
       })
-      .catch(() => {
+      .catch((error) => {
+        if (isBadRequest(error)) return;
         setThreads((prev) => ({
           ...prev,
           [contactId]: [],
@@ -159,6 +160,8 @@ function SmsTab() {
       setDraft("");
       loadMessages(selected.id);
       setTimeout(() => inputRef.current?.focus(), 50);
+    } catch (error) {
+      if (isBadRequest(error)) return;
     } finally {
       setSending(false);
     }
@@ -541,23 +544,64 @@ function SmsTab() {
 // ── Messages tab ──────────────────────────────────────────────────────────────
 function MessagesTab() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [selectedContactId, setSelectedContactId] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.resolve(
-      api<{ messages: Message[] }>("/api/communications/messages")
-    )
-      .then((r) => setMessages(Array.isArray(r?.messages) ? r.messages : []))
-      .catch(() => {
-        setMessages([]);
+    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null }> }>("/api/communications/sms")
+      .then((r) => {
+        const convo = Array.isArray(r.conversations) ? r.conversations : [];
+        const mapped = convo
+          .map((row) => ({
+            id: row.contact_id ?? "",
+            name: row.contact_name ?? row.contact_phone ?? "Unknown",
+            phone: row.contact_phone ?? null,
+          }))
+          .filter((c) => c.id);
+        setContacts(mapped as Contact[]);
+      })
+      .catch((error) => {
+        if (isBadRequest(error)) return;
       })
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!selectedContactId) {
+      setMessages([]);
+      return;
+    }
+
+    setLoading(true);
+    api<{ messages: Message[] }>(`/api/communications/messages?contactId=${selectedContactId}`)
+      .then((r) => setMessages(Array.isArray(r?.messages) ? r.messages : []))
+      .catch((error) => {
+        if (isBadRequest(error)) return;
+        setMessages([]);
+      })
+      .finally(() => setLoading(false));
+  }, [selectedContactId]);
+
   return (
     <div style={{ padding: 24, flex: 1, overflowY: "auto" }}>
       <h3 style={{ margin: "0 0 16px", fontSize: 17, fontWeight: 700, color: "#0f172a" }}>Client Messages</h3>
+      <div style={{ marginBottom: 16 }}>
+        <select
+          value={selectedContactId}
+          onChange={(e) => setSelectedContactId(e.target.value)}
+          style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d5db", minWidth: 240 }}
+        >
+          <option value="">Select a contact</option>
+          {contacts.map((contact) => (
+            <option key={contact.id} value={contact.id}>
+              {contact.name}
+            </option>
+          ))}
+        </select>
+      </div>
       {loading && <div style={{ color: "#8e8e93" }}>Loading…</div>}
+      {!loading && !selectedContactId && <div style={{ color: "#8e8e93" }}>Select a contact to load messages.</div>}
       {!loading && messages.length === 0 && (
         <div style={{ color: "#8e8e93", fontSize: 14 }}>
           No client messages yet. Messages from the client portal "Talk to a Human" button will appear here.
@@ -604,6 +648,7 @@ function InboxTab() {
           setSelected(list[0] ?? null);
         }
       } catch {
+        if (!active) return;
         if (active) setIsConnected(false);
       }
     })();
@@ -654,7 +699,9 @@ function IssuesTab() {
   useEffect(() => {
     api<{ issues: Issue[] }>("/api/portal/issues")
       .then((r) => setIssues(Array.isArray(r.issues) ? r.issues : []))
-      .catch(() => {})
+      .catch((error) => {
+        if (isBadRequest(error)) return;
+      })
       .finally(() => setLoading(false));
   }, []);
 

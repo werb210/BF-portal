@@ -107,7 +107,32 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
 export async function apiFetch<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
   const res = await rawApiFetch(path, options);
   if (!res.ok) {
-    throw new Error(API_ERROR);
+    let message = API_ERROR;
+    let code: string | undefined;
+    let details: unknown;
+    try {
+      const payload = await res.json();
+      if (payload && typeof payload === "object") {
+        const maybeMessage = (payload as { message?: unknown; error?: unknown }).message
+          ?? (payload as { message?: unknown; error?: unknown }).error;
+        if (typeof maybeMessage === "string" && maybeMessage.trim()) {
+          message = maybeMessage;
+        }
+        if (typeof (payload as { code?: unknown }).code === "string") {
+          code = (payload as { code?: string }).code;
+        }
+        details = payload;
+      }
+    } catch {
+      // Ignore non-JSON error responses and preserve fallback message.
+    }
+    throw new ApiError({
+      status: res.status,
+      message,
+      code,
+      details,
+      requestId: res.headers.get("x-request-id") ?? undefined,
+    });
   }
 
   const json = await res.json();
