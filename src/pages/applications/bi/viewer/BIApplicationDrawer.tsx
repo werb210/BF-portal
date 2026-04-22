@@ -10,12 +10,19 @@ const TABS = [
   { id: "application", label: "Application" },
   { id: "documents", label: "Documents" },
   { id: "requirements", label: "Requirements" },
+  { id: "requirement_history", label: "Requirement History" },
   { id: "pgi_comms", label: "PGI Comms" },
   { id: "notes", label: "Notes" },
   { id: "activity", label: "Activity" }
 ] as const;
 
 type BIDrawerTab = (typeof TABS)[number]["id"];
+
+const quoteSummaryValue = (value: unknown) => {
+  if (value == null) return "—";
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  return JSON.stringify(value);
+};
 
 type BIApplicationDrawerProps = {
   applicationId: string | null;
@@ -51,12 +58,21 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
     retry: retryUnlessClientError
   });
 
+  const requirementHistoryQuery = useQuery({
+    queryKey: ["bi", "requirements", "history", applicationId],
+    queryFn: ({ signal }) => biPipelineApi.fetchRequirementHistory(applicationId ?? "", { signal }),
+    enabled: Boolean(applicationId) && silo === "bi" && requirementsEnabled,
+    retry: retryUnlessClientError
+  });
+
   const activityQuery = useQuery({
     queryKey: ["bi", "activity", applicationId],
     queryFn: ({ signal }) => biPipelineApi.fetchActivity(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId) && silo === "bi",
     retry: retryUnlessClientError
   });
+
+  const documentsAvailable = !documentsQuery.error || ![404, 501].includes((documentsQuery.error as { status?: number } | null)?.status ?? 0);
 
   const quoteCountdown = useMemo(() => {
     const expiry = detailQuery.data?.quote_expiry_at;
@@ -70,7 +86,8 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
 
   const detail = detailQuery.data;
   const requirements = requirementsEnabled ? requirementsQuery.data ?? [] : [];
-  const visibleTabs = requirementsEnabled ? TABS : TABS.filter((item) => item.id !== "requirements");
+  const visibleTabs = (requirementsEnabled ? TABS : TABS.filter((item) => item.id !== "requirements" && item.id !== "requirement_history"))
+    .filter((item) => (documentsAvailable ? true : item.id !== "documents"));
 
   return (
     <div className="application-drawer-overlay" onClick={onClose}>
@@ -97,7 +114,16 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
               <div>Stage badge: {detail?.stage ?? "—"}</div>
               <div>CORE score: {detail?.core_score ?? "—"}</div>
               {detail?.pgi_external_id ? <div>PGI external ID: {detail.pgi_external_id}</div> : null}
-              {detail?.quote_summary ? <div>Quote summary: {detail.quote_summary}</div> : null}
+              {detail?.quote_summary ? (
+                <div>
+                  Quote summary:
+                  <ul>
+                    {Object.entries(detail.quote_summary).map(([key, value]) => (
+                      <li key={key}>{key}: {quoteSummaryValue(value)}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               {detail?.quote_expiry_at ? <div>Quote expiry: {detail.quote_expiry_at}</div> : null}
               {detail?.underwriter_ref ? <div>Underwriter ref: {detail.underwriter_ref}</div> : null}
               {detail?.coverage_amount != null ? <div>Coverage amount: {detail.coverage_amount}</div> : null}
@@ -109,13 +135,17 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
           {tab === "application" ? <pre>{JSON.stringify(detail?.submitted_data ?? {}, null, 2)}</pre> : null}
 
           {tab === "documents" ? (
-            <ul className="space-y-2">
-              {(documentsQuery.data ?? []).map((doc) => (
-                <li key={doc.id}>
-                  <a className="text-brand-primary underline" href={doc.url} target="_blank" rel="noreferrer">{doc.file_name}</a>
-                </li>
-              ))}
-            </ul>
+            documentsQuery.data?.length ? (
+              <ul className="space-y-2">
+                {(documentsQuery.data ?? []).map((doc) => (
+                  <li key={doc.id}>
+                    <a className="text-brand-primary underline" href={doc.url} target="_blank" rel="noreferrer">{doc.file_name}</a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div>No documents available for this application.</div>
+            )
           ) : null}
 
           {tab === "requirements" ? (
@@ -140,9 +170,32 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
             </ul>
           ) : null}
 
+          {tab === "requirement_history" ? (
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th align="left">Date</th>
+                  <th align="left">Requirement</th>
+                  <th align="left">Old Status</th>
+                  <th align="left">New Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(requirementHistoryQuery.data ?? []).map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{entry.changed_at}</td>
+                    <td>{entry.requirement}</td>
+                    <td>{entry.old_status ?? "—"}</td>
+                    <td>{entry.new_status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : null}
+
           {tab === "pgi_comms" ? (
             <div className="space-y-3">
-              <div>Quote details: {detail?.quote_summary ?? "—"}</div>
+              <div>Quote details: {quoteSummaryValue(detail?.quote_summary)}</div>
               <div>Underwriter ref: {detail?.underwriter_ref ?? "—"}</div>
               <div>Quote expiry countdown: {quoteCountdown}</div>
               <button type="button" className="btn-primary">Bind</button>
