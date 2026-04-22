@@ -8,7 +8,7 @@ type BIPipelineCardProps = {
   onClick: (id: string) => void;
 };
 
-const formatCurrency = (value: number | null) => {
+const formatCurrency = (value?: number | null) => {
   if (value == null) return "—";
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 };

@@ -7,6 +7,7 @@ import { useSilo } from "@/hooks/useSilo";
 import type { Silo } from "@/types/silo";
 import BIPipelineCard from "./BIPipelineCard";
 import BIPipelineColumn from "./BIPipelineColumn";
+import BIPipelineLoginPanel from "./BIPipelineLoginPanel";
 import BIApplicationDrawer from "./viewer/BIApplicationDrawer";
 import { biPipelineApi } from "./bi.pipeline.api";
 import { BI_PIPELINE_STAGES, type BIPipelineApplication, type BIStageId } from "./bi.pipeline.types";
@@ -17,12 +18,22 @@ const BIPipelinePage = () => {
   const [activeCard, setActiveCard] = useState<BIPipelineApplication | null>(null);
   const [activeStage, setActiveStage] = useState<BIStageId | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => biPipelineApi.hasToken());
 
   useEffect(() => {
     if (silo !== "bi") {
       setSilo("bi");
     }
   }, [setSilo, silo]);
+
+  useEffect(() => {
+    const onExpired = () => {
+      setIsAuthenticated(false);
+      setSelectedId(null);
+    };
+    window.addEventListener("bi:auth-expired", onExpired as EventListener);
+    return () => window.removeEventListener("bi:auth-expired", onExpired as EventListener);
+  }, []);
 
   const moveCard = useMutation({
     mutationFn: ({ applicationId, stageId }: { applicationId: string; stageId: BIStageId }) =>
@@ -71,6 +82,10 @@ const BIPipelinePage = () => {
 
   if (silo !== "bi") {
     return null;
+  }
+
+  if (!isAuthenticated) {
+    return <BIPipelineLoginPanel onAuthenticated={() => setIsAuthenticated(true)} />;
   }
 
   return (

@@ -87,9 +87,11 @@ export default function BIApplicationDetail() {
           <select className="bg-brand-bgAlt border border-card rounded-lg px-3 h-10" defaultValue="" onChange={(e) => void changeStage(e.target.value)}>
             <option value="">Select</option>
             <option value="under_review">Under Review</option>
-            <option value="approved">Approved</option>
+            <option value="bound">Approved</option>
+            <option value="quoted">Quoted</option>
             <option value="declined">Declined</option>
             <option value="policy_issued">Policy Issued</option>
+            <option value="claim">Claim</option>
           </select>
         </>
       )}

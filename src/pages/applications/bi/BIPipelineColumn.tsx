@@ -33,6 +33,7 @@ const BIPipelineColumn = ({ stage, onCardClick, activeCard }: BIPipelineColumnPr
     queryKey: ["bi", "pipeline", stage.id],
     queryFn: ({ signal }) => biPipelineApi.fetchColumn(stage.id, { signal }),
     staleTime: 30_000,
+    refetchInterval: 15_000,
     retry: retryUnlessClientError
   });
 
