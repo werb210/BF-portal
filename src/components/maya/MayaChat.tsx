@@ -1,9 +1,10 @@
 /**
  * Maya in-portal chat widget.
- * Sends messages to /api/maya/message and renders replies inline.
+ * Sends messages to /api/ai/maya/message and renders replies inline.
  */
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/api";
+import { ApiError } from "@/api/http";
 
 type Message = { role: "user" | "maya"; text: string; ts: number };
 
@@ -25,7 +26,7 @@ export default function MayaChat() {
     setLoading(true);
     try {
       const res = await api.post<{ reply?: string; message?: string; response?: string }>(
-        "/api/maya/message",
+        "/api/ai/maya/message",
         { message: text, source: "portal" }
       );
       const reply =
@@ -34,7 +35,10 @@ export default function MayaChat() {
         typeof res?.response === "string" ? res.response :
         "I'm here to help — what would you like to know?";
       setMessages((prev) => [...prev, { role: "maya", text: reply, ts: Date.now() }]);
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 400) {
+        return;
+      }
       setMessages((prev) => [
         ...prev,
         { role: "maya", text: "I'm having trouble connecting right now. Please try again.", ts: Date.now() },
