@@ -9,6 +9,7 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { api } from "@/api";
 import { getSilo } from "./lib/silo";
 import { API_BASE } from "@/config/api";
+import { registerPortalSW } from "./pwa/registerSW";
 
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import App from "./App";
@@ -54,6 +55,8 @@ async function bootstrap() {
       </BrowserRouter>
     </React.StrictMode>,
   );
+
+  registerPortalSW();
 }
 
 void bootstrap();
