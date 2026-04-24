@@ -204,7 +204,7 @@ const UserManagement = () => {
             const rowKey = userId || `user-${index}`;
             const safeEmail = user.email ?? "";
             const displayName =
-              `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+              `${user.firstName ?? user.first_name ?? ""} ${user.lastName ?? user.last_name ?? ""}`.trim() ||
               user.name ||
               (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
             const statusLabel = user.disabled ? "Disabled" : "Active";
@@ -251,8 +251,8 @@ const UserManagement = () => {
                       setEditingUser(user);
                       setFormErrors({});
                       setUserForm({
-                        firstName: user.firstName ?? fallbackName.firstName,
-                        lastName: user.lastName ?? fallbackName.lastName,
+                        firstName: user.firstName ?? user.first_name ?? fallbackName.firstName,
+                        lastName: user.lastName ?? user.last_name ?? fallbackName.lastName,
                         silo: (user as AdminUser & { silo?: string }).silo ?? "BF",
                         email: user.email ?? "",
                         phone: user.phone ?? "",
@@ -281,7 +281,7 @@ const UserManagement = () => {
             const cardKey = userId || `user-${index}`;
             const safeEmail = user.email ?? "";
             const displayName =
-              `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+              `${user.firstName ?? user.first_name ?? ""} ${user.lastName ?? user.last_name ?? ""}`.trim() ||
               user.name ||
               (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
             const statusLabel = user.disabled ? "Disabled" : "Active";
@@ -326,8 +326,8 @@ const UserManagement = () => {
                       setEditingUser(user);
                       setFormErrors({});
                       setUserForm({
-                        firstName: user.firstName ?? fallbackName.firstName,
-                        lastName: user.lastName ?? fallbackName.lastName,
+                        firstName: user.firstName ?? user.first_name ?? fallbackName.firstName,
+                        lastName: user.lastName ?? user.last_name ?? fallbackName.lastName,
                         silo: (user as AdminUser & { silo?: string }).silo ?? "BF",
                         email: user.email ?? "",
                         phone: user.phone ?? "",

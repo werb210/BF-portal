@@ -8,6 +8,8 @@ export default function MayaStatus() {
     void api
       .get("/api/health")
       .then((res) => {
+        // res is the unwrapped `data` object from /api/health. The server
+        // places `maya` inside data so it survives parsePayload.
         setStatus((res as { maya?: string })?.maya ?? "degraded");
       })
       .catch(() => {

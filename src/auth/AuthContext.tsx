@@ -9,7 +9,17 @@ import { setAuthTelemetryContext } from "@/utils/uiTelemetry";
 export type AuthStatus = "authenticated" | "unauthenticated" | "pending";
 export type RolesStatus = "ready" | "loading";
 
-export type AuthUser = { id: string; role: Role; name?: string; email?: string };
+export type AuthUser = {
+  id: string;
+  role: Role;
+  name?: string;
+  email?: string;
+  first_name?: string;
+  firstName?: string;
+  last_name?: string;
+  lastName?: string;
+  silo?: string;
+};
 
 export type AuthContextType = AuthContextValue;
 export type AuthState =
@@ -62,20 +72,38 @@ function getValidToken(): string | null {
   return token;
 }
 
-function resolveTokenUser(token: string | null): AuthUser | null {
+export function resolveTokenUser(token: string | null): AuthUser | null {
   if (!token) return null;
-  const payload = decodeJwt(token) as { sub?: string; id?: string; role?: string; name?: string; email?: string } | null;
+  const payload = decodeJwt(token) as {
+    sub?: string;
+    id?: string;
+    role?: string;
+    name?: string;
+    email?: string;
+    firstName?: string;
+    first_name?: string;
+    lastName?: string;
+    last_name?: string;
+    silo?: string;
+  } | null;
   const role = normalizeRole(payload?.role ?? null);
   if (!role) return null;
+  const firstName = payload?.firstName ?? payload?.first_name;
+  const lastName = payload?.lastName ?? payload?.last_name;
   return {
     id: payload?.sub ?? payload?.id ?? "unknown",
     role,
-    name: payload?.name,
+    name: payload?.name ?? ([firstName, lastName].filter(Boolean).join(" ") || undefined),
     email: payload?.email,
+    firstName,
+    first_name: firstName,
+    lastName,
+    last_name: lastName,
+    silo: payload?.silo,
   };
 }
 
-function resolveApiUser(payload: unknown): AuthUser | null {
+export function resolveApiUser(payload: unknown): AuthUser | null {
   if (!payload || typeof payload !== "object") return null;
   const root = payload as { user?: unknown };
   const candidate = (root.user && typeof root.user === "object" ? root.user : payload) as {
@@ -87,12 +115,23 @@ function resolveApiUser(payload: unknown): AuthUser | null {
   };
   const role = normalizeRole(candidate.role ?? null);
   if (!role) return null;
+  const c = candidate as Record<string, unknown>;
+  const firstName = (c.firstName as string | undefined)
+    ?? (c.first_name as string | undefined);
+  const lastName = (c.lastName as string | undefined)
+    ?? (c.last_name as string | undefined);
 
   return {
-    id: String(candidate.id ?? candidate.sub ?? "unknown"),
+    id: String(c.id ?? c.sub ?? "unknown"),
     role,
-    name: candidate.name,
-    email: candidate.email,
+    name: (c.name as string | undefined)
+      ?? ([firstName, lastName].filter(Boolean).join(" ") || undefined),
+    email: c.email as string | undefined,
+    firstName,
+    first_name: firstName,
+    lastName,
+    last_name: lastName,
+    silo: typeof c.silo === "string" ? c.silo : undefined,
   };
 }
 
@@ -177,10 +216,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   useEffect(() => {
+    const userSilo = (user as { silo?: string } | null)?.silo
+      ?? null;
     setAuthTelemetryContext({
       authStatus: isLoading ? "pending" : user ? "authenticated" : "unauthenticated",
       role: (user?.role as any) ?? null,
-      silo: null
+      silo: userSilo,
     });
   }, [isLoading, user]);
 
