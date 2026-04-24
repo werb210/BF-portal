@@ -50,6 +50,7 @@ import ReferrerPortalLayout from "@/pages/referrer/ReferrerPortalLayout";
 import ReferrerLoginPage from "@/pages/referrer/ReferrerLoginPage";
 import LenderPortalPage from "@/pages/lender/LenderPortalPage";
 import LenderLoginPage from "@/pages/lender/LenderLoginPage";
+import LenderProfilePage from "@/pages/lender/LenderProfilePage";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
@@ -129,6 +130,7 @@ const AppRoutes = () => {
         <Route path="/referrer/login" element={<ReferrerLoginPage />} />
         <Route path="/referrer/*" element={<ReferrerPortalLayout />} />
         <Route path="/lender-portal/login" element={<LenderLoginPage />} />
+        <Route path="/lender-portal/profile" element={<LenderProfilePage />} />
         <Route path="/lender-portal/deals" element={<LenderPortalPage />} />
         <Route path="/lender-portal/deals/:id" element={<LenderPortalPage />} />
         <Route path="/lender-portal/products" element={<LenderPortalPage />} />

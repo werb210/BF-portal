@@ -1,68 +1,84 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "@/api";
+import { PGI_STAGE_LABEL } from "@/contracts/pgiStages";
+import LenderApplicationForm from "./LenderApplicationForm";
 
-type Deal = { id: string; company: string; amount: string; productType: string; stage: string };
-type Product = { id: string; name: string; status: "Draft" | "Active" };
+type LenderApp = {
+  id: string;
+  stage: string;
+  primary_contact_name: string | null;
+  company_name: string | null;
+  premium_calc: { annualPremium?: number } | null;
+  created_at: string;
+};
 
-const SAMPLE_DEALS: Deal[] = [
-  { id: "d-1", company: "Northline Transport", amount: "$350,000", productType: "Equipment", stage: "In Review" },
-  { id: "d-2", company: "Blue Harbor Dental", amount: "$180,000", productType: "Working Capital", stage: "Off to Lender" }
-];
+function authHeader() {
+  return { Authorization: `Bearer ${sessionStorage.getItem("lender_token")}` };
+}
 
 export default function LenderPortalPage() {
-  const [products, setProducts] = useState<Product[]>([
-    { id: "p1", name: "SBA Line", status: "Active" },
-    { id: "p2", name: "Equipment Bridge", status: "Draft" }
-  ]);
-  const [newProduct, setNewProduct] = useState("");
+  const [apps, setApps] = useState<LenderApp[]>([]);
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  async function load() {
+    try {
+      const data = await api<LenderApp[]>("/api/v1/bi/lender/applications", {
+        headers: authHeader()
+      });
+      setApps(Array.isArray(data) ? data : []);
+    } catch {
+      setApps([]);
+    }
+  }
 
   return (
     <div className="page space-y-4">
-      <h1 className="text-2xl font-semibold">Lender Portal</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Lender Portal</h1>
+        <button className="ui-button ui-button--primary" onClick={() => setShowForm(true)}>
+          Add Application
+        </button>
+      </div>
 
       <section className="drawer-section">
-        <div className="drawer-section__title">Deals</div>
+        <div className="drawer-section__title">Your Applications</div>
         <div className="space-y-2">
-          {SAMPLE_DEALS.map((deal) => (
-            <article key={deal.id} className="rounded border p-3 flex items-center justify-between">
+          {apps.length === 0 && <div className="text-sm text-slate-500">No applications yet.</div>}
+          {apps.map((app) => (
+            <article key={app.id} className="rounded border p-3 flex items-center justify-between">
               <div>
-                <div className="font-medium">{deal.company}</div>
-                <div className="text-sm">{deal.amount} • {deal.productType} • {deal.stage}</div>
+                <div className="font-medium">
+                  {app.company_name || app.primary_contact_name || "Application"}
+                </div>
+                <div className="text-sm">
+                  {PGI_STAGE_LABEL[app.stage] || app.stage}
+                  {" · "}
+                  Premium: {app.premium_calc?.annualPremium
+                    ? `$${app.premium_calc.annualPremium.toLocaleString()}`
+                    : "—"}
+                </div>
               </div>
-              <button className="ui-button ui-button--secondary">Upload Term Sheet</button>
+              <div className="text-xs text-slate-500">
+                {new Date(app.created_at).toLocaleDateString()}
+              </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="drawer-section">
-        <div className="drawer-section__title">Products</div>
-        <div className="flex gap-2 mb-2">
-          <input className="border rounded p-2 flex-1" value={newProduct} onChange={(e) => setNewProduct(e.target.value)} placeholder="New product" />
-          <button
-            className="ui-button ui-button--primary"
-            onClick={() => {
-              if (!newProduct.trim()) return;
-              setProducts((prev) => [...prev, { id: `p-${Date.now()}`, name: newProduct.trim(), status: "Draft" }]);
-              setNewProduct("");
-            }}
-          >
-            Add
-          </button>
-        </div>
-        <div className="space-y-2">
-          {products.map((product) => (
-            <div key={product.id} className="rounded border p-2 flex items-center justify-between">
-              <span>{product.name}</span>
-              <button
-                className="ui-button ui-button--secondary"
-                onClick={() => setProducts((prev) => prev.map((item) => item.id === product.id ? { ...item, status: item.status === "Draft" ? "Active" : "Draft" } : item))}
-              >
-                {product.status}
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
+      {showForm && (
+        <LenderApplicationForm
+          onClose={() => setShowForm(false)}
+          onSubmitted={() => {
+            setShowForm(false);
+            void load();
+          }}
+        />
+      )}
     </div>
   );
 }
