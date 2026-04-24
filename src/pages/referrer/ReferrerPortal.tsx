@@ -41,13 +41,18 @@ const ReferrerPortal = () => {
   }
 
   const grouped = useMemo(() => {
-    const g: Record<string, Referral[]> = { new: [] };
-    PGI_STAGES.forEach((s) => (g[s] = []));
-    referrals.forEach((r) => {
-      const key = r.application_stage || "new";
-      (g[key] ||= []).push(r);
+    const g: Partial<Record<PGIStage | "new", Referral[]>> = { new: [] };
+    PGI_STAGES.forEach((stage) => {
+      g[stage] = [];
     });
-    return g;
+    referrals.forEach((r) => {
+      const key =
+        r.application_stage && PGI_STAGES.includes(r.application_stage as PGIStage)
+          ? (r.application_stage as PGIStage)
+          : "new";
+      (g[key] ??= []).push(r);
+    });
+    return g as Record<PGIStage | "new", Referral[]>;
   }, [referrals]);
 
   async function addContact() {
@@ -86,7 +91,7 @@ const ReferrerPortal = () => {
         <section className="drawer-section">
           <div className="drawer-section__title">No Application Yet</div>
           <div className="space-y-2">
-            {grouped.new.map((r) => (
+            {(grouped.new ?? []).map((r) => (
               <article key={r.id} className="rounded border p-2">
                 <div className="font-medium">{r.full_name}</div>
                 <div className="text-sm">{r.company_name || ""}</div>
