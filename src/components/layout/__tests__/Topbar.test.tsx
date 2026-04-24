@@ -26,9 +26,11 @@ vi.mock("@/components/MayaStatus", () => ({
 }));
 
 vi.mock("@/api", () => {
-  const fn = vi.fn(() => Promise.resolve({ status: "ok" }));
-  fn.post = vi.fn(() => Promise.resolve({}));
-  return { api: fn };
+  const mock = Object.assign(vi.fn().mockResolvedValue({ status: "ok" }), {
+    post: vi.fn().mockResolvedValue({ status: "ok" }),
+  });
+
+  return { api: mock };
 });
 
 import Topbar from "@/components/layout/Topbar";
