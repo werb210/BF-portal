@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "@/api";
 import ActivityTimeline from "../components/ActivityTimeline";
+import BIDocumentList from "./BIDocumentList";
 
 type BIApplicationDetailData = {
   stage: string;
@@ -9,12 +10,6 @@ type BIApplicationDetailData = {
   premium_calc?: {
     annualPremium?: number;
   };
-};
-
-type DocumentRow = {
-  id: string;
-  original_filename: string;
-  created_at: string;
 };
 
 type CommissionRow = {
@@ -39,7 +34,7 @@ export default function BIApplicationDetail() {
       return;
     }
 
-    const data = await api<BIApplicationDetailData>(`/api/bi/applications/${id}`);
+    const data = await api<BIApplicationDetailData>(`/api/v1/bi/applications/${id}`);
     setApp(data);
   }
 
@@ -48,8 +43,8 @@ export default function BIApplicationDetail() {
       return;
     }
 
-    await api(`/api/bi/applications/${id}/stage`, {
-      method: "POST",
+    await api(`/api/v1/bi/applications/${id}/stage`, {
+      method: "PATCH",
       body: JSON.stringify({
         stage,
         actorType: "staff"
@@ -85,47 +80,22 @@ export default function BIApplicationDetail() {
 
           <h3 className="mt-6 mb-2 text-lg font-semibold">Change Stage</h3>
           <select className="bg-brand-bgAlt border border-card rounded-lg px-3 h-10" defaultValue="" onChange={(e) => void changeStage(e.target.value)}>
-            <option value="">Select</option>
+            <option value="">Select stage</option>
+            <option value="received">Received</option>
+            <option value="documents_pending">Documents Pending</option>
             <option value="under_review">Under Review</option>
-            <option value="bound">Approved</option>
             <option value="quoted">Quoted</option>
+            <option value="bound">Bound</option>
             <option value="declined">Declined</option>
-            <option value="policy_issued">Policy Issued</option>
-            <option value="claim">Claim</option>
           </select>
         </>
       )}
 
-      {tab === "documents" && <DocumentList applicationId={id} />}
+      {tab === "documents" && <BIDocumentList applicationId={id} />}
 
       {tab === "timeline" && <ActivityTimeline applicationId={id} />}
 
       {tab === "commission" && <CommissionTab applicationId={id} />}
-    </div>
-  );
-}
-
-function DocumentList({ applicationId }: { applicationId: string }) {
-  const [docs, setDocs] = useState<DocumentRow[]>([]);
-
-  useEffect(() => {
-    void load();
-  }, [applicationId]);
-
-  async function load() {
-    const data = await api<DocumentRow[]>(`/api/bi/applications/${applicationId}/documents`);
-    setDocs(data);
-  }
-
-  return (
-    <div>
-      <h3 className="text-lg font-semibold mb-3">Documents</h3>
-      {docs.map((d) => (
-        <div key={d.id} className="bg-brand-surface border border-card rounded-xl p-4 mb-3">
-          <p>{d.original_filename}</p>
-          <p>{new Date(d.created_at).toLocaleString()}</p>
-        </div>
-      ))}
     </div>
   );
 }
