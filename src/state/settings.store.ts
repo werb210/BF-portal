@@ -23,12 +23,23 @@ export type AdminUser = {
   name?: string;
   firstName?: string;
   lastName?: string;
+  first_name?: string;
+  last_name?: string;
   email: string;
   phone?: string;
   role: UserRole;
   silo?: string;
   disabled?: boolean;
 };
+
+export function normalizeAdminUser(raw: any): AdminUser {
+  if (!raw || typeof raw !== "object") return raw;
+  return {
+    ...raw,
+    firstName: raw.firstName ?? raw.first_name ?? undefined,
+    lastName: raw.lastName ?? raw.last_name ?? undefined,
+  };
+}
 
 export type SettingsState = {
   profile: ProfileSettings;
@@ -190,7 +201,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           : Array.isArray((data as { data?: UsersResponse })?.data)
             ? (data as { data?: UsersResponse }).data ?? []
           : [];
-      const safeUsers = nextUsers.map((user) => ({
+      const safeUsers = nextUsers.map(normalizeAdminUser).map((user) => ({
         ...user,
         id: typeof user.id === "string" ? user.id : ""
       }));
@@ -203,13 +214,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ isLoadingUsers: true });
     try {
       const data = await api.post<AdminUser>("/api/users", user);
-      const created = data ?? {
+      const created = normalizeAdminUser(data ?? {
         id: `u-${Date.now()}`,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         role: user.role
-      };
+      });
       set((state) => ({
         users: [...state.users, created],
         statusMessage: "User added"
@@ -223,7 +234,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       const data = await api.patch<AdminUser>(`/api/users/${id}`, updates);
       set((state) => ({
-        users: state.users.map((user) => (user.id === id ? { ...user, ...updates, ...data } : user)),
+        users: state.users.map((user) =>
+          user.id === id
+            ? normalizeAdminUser({ ...user, ...updates, ...data })
+            : user
+        ),
         statusMessage: "User updated"
       }));
     } finally {
