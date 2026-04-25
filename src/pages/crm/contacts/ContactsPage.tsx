@@ -1,229 +1,157 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import api from "@/api";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import Card from "@/components/ui/Card";
-import Table from "@/components/ui/Table";
-import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
-import Button from "@/components/ui/Button";
-import ContactRow from "./ContactRow";
-import ContactDetailsDrawer from "./ContactDetailsDrawer";
-import ContactForm from "./ContactForm";
-import { fetchContacts, createContact } from "@/api/crm";
-import type { Contact } from "@/api/crm";
-import { useCrmStore } from "@/state/crm.store";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Link } from "react-router-dom";
+import { api } from "@/api";
+import { crmApi, type ContactRow } from "@/api/crm";
 import { useSilo } from "@/hooks/useSilo";
-import { getErrorMessage } from "@/utils/errors";
-import { getRequestId } from "@/utils/requestId";
-import { emitUiTelemetry } from "@/utils/uiTelemetry";
-import { logger } from "@/utils/logger";
+import { useCrmStore } from "@/state/crm.store";
 
-type OwnerApiRecord = {
-  id?: string;
-  name?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  email?: string | null;
-};
+type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
 
-type OwnerOption = {
-  id: string;
-  label: string;
-};
-
-const ContactsPage = () => {
-  const queryClient = useQueryClient();
-  const { silo, setSilo, filters, setFilters, resetFilters } = useCrmStore();
-  const { silo: globalSilo } = useSilo();
+export default function ContactsPage() {
+  const { silo } = useSilo();
+  const [rows, setRows] = useState<ContactRow[]>([]);
+  const [q, setQ] = useState("");
+  const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
+  const [ownerId, setOwnerId] = useState("");
+  const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>({ col: "created_at", dir: "desc" });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    setSilo(globalSilo as "BF" | "BI" | "SLF");
-  }, [globalSilo, setSilo]);
-
-
-  const [owners, setOwners] = useState<OwnerOption[]>([]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadOwners = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const response = await api.get<OwnerApiRecord[] | { users?: OwnerApiRecord[] }>("/api/users", {
-          params: { silo }
-        });
-        const users = Array.isArray(response) ? response : Array.isArray(response?.users) ? response.users : [];
-        const options = users
-          .map((user) => {
-            const id = typeof user.id === "string" ? user.id : "";
-            if (!id) return null;
-            const firstName = user.first_name ?? user.firstName ?? "";
-            const lastName = user.last_name ?? user.lastName ?? "";
-            const fullName = `${firstName} ${lastName}`.trim();
-            const label = fullName || user.name?.trim() || user.email?.trim() || id;
-            return { id, label };
-          })
-          .filter((option): option is OwnerOption => Boolean(option));
-
-        if (isMounted) {
-          setOwners(options);
-          if (filters.owner && !options.some((option) => option.id === filters.owner)) {
-            setFilters({ owner: null });
-          }
-        }
+        const r = await api.get<{ users?: Array<{ id: string; first_name?: string; last_name?: string }> } | Array<{ id: string; first_name?: string; last_name?: string }>>("/api/users");
+        const list = Array.isArray(r) ? r : (r?.users ?? []);
+        if (!cancelled) setOwners(list);
       } catch {
-        if (isMounted) {
-          setOwners([]);
-        }
+        if (!cancelled) setOwners([]);
       }
-    };
-
-    void loadOwners();
-
+    })();
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, [silo, filters.owner, setFilters]);
-  const [selected, setSelected] = useState<Contact | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-
-  const handleSaveContact = useCallback(async (data: {
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone: string;
-  }) => {
-    setSaveError(null);
-    try {
-      await createContact({
-        first_name: data.first_name,
-        last_name: data.last_name,
-        email: data.email,
-        phone: data.phone,
-        silo: (globalSilo as "BF" | "BI" | "SLF") ?? "BF",
-        owner: "",
-        tags: [],
-      });
-      setShowForm(false);
-      void queryClient.invalidateQueries({ queryKey: ["contacts"] });
-    } catch (err) {
-      setSaveError("Failed to save contact. Please try again.");
-      throw err;
-    }
-  }, [globalSilo, queryClient]);
-
-  const {
-    data: contacts = [],
-    isLoading,
-    error
-  } = useQuery<Contact[], Error>({
-    queryKey: ["contacts", silo, filters],
-    queryFn: fetchContacts
-  });
+  }, []);
 
   useEffect(() => {
-    if (error) {
-      logger.error("Failed to load contacts", { requestId: getRequestId(), error });
-    }
-  }, [error]);
-
-  useEffect(() => {
-    if (!isLoading && !error) {
-      emitUiTelemetry("data_loaded", { view: "crm_contacts", count: contacts.length });
-    }
-  }, [contacts.length, error, isLoading]);
-
-  const filtered = useMemo(() => contacts, [contacts]);
-
-  const dedupeCount = useMemo(() => {
-    const seen = new Set<string>();
-    let duplicates = 0;
-    contacts.forEach((contact) => {
-      const key = `${contact.email.toLowerCase()}::${contact.phone}`;
-      if (seen.has(key)) {
-        duplicates += 1;
-      } else {
-        seen.add(key);
+    let cancelled = false;
+    setLoading(true);
+    setErr(null);
+    (async () => {
+      try {
+        const r = await crmApi.listContacts({
+          silo: String(silo).toLowerCase(),
+          q,
+          sort: `${sort.col}:${sort.dir}`,
+          owner_id: ownerId || undefined,
+        });
+        if (!cancelled) setRows(Array.isArray(r) ? r : []);
+      } catch (e: any) {
+        if (!cancelled) setErr(e?.message ?? "Could not load contacts.");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    });
-    return duplicates;
-  }, [contacts]);
+    })();
+    return () => { cancelled = true; };
+  }, [silo, q, sort.col, sort.dir, ownerId]);
 
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters({ search: event.target.value });
-  };
+  const onSort = (col: SortCol) =>
+    setSort(s => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
+
+  const sortIndicator = (col: SortCol) =>
+    sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "";
+
+  const tableRows = useMemo(() => rows.map(r => (
+    <tr key={r.id} style={trStyle}>
+      <td style={tdStyle}>
+        <Link to={`/crm/contacts/${r.id}`} style={linkStyle}>{r.name || "(no name)"}</Link>
+      </td>
+      <td style={tdStyle}>{r.company_name ?? "—"}</td>
+      <td style={tdStyle}>{r.lead_status ?? "—"}</td>
+      <td style={tdStyle}>{r.owner_name ?? "—"}</td>
+      <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
+    </tr>
+  )), [rows]);
 
   return (
-    <div className="page" data-testid="contacts-page">
-      <Card
-        title="Contacts"
-        actions={<Button onClick={() => setShowForm(true)}>Add Contact</Button>}
-      >
-        <div className="flex gap-2 mb-2 items-center">
-          <Input placeholder="Search name, email, phone, or company" value={filters.search} onChange={handleSearch} />
-          <Select
-            value={filters.owner ?? ""}
-            onChange={(e) => setFilters({ owner: e.target.value || null })}
-            data-testid="owner-filter"
-          >
-            <option value="">All owners</option>
-            {owners.map((owner) => (
-              <option key={owner.id} value={owner.id}>
-                {owner.label}
-              </option>
-            ))}
-          </Select>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={filters.hasActiveApplication}
-              onChange={(e) => setFilters({ hasActiveApplication: e.target.checked })}
-            />
-            Has active applications
-          </label>
-          <Button variant="secondary" onClick={resetFilters}>
-            Reset
-          </Button>
-        </div>
-        {error && <p className="text-red-700">{getErrorMessage(error, "Unable to load contacts.")}</p>}
-        {!error && dedupeCount > 0 ? (
-          <p className="mb-2 text-amber-700" data-testid="dedupe-indicator">Potential duplicates detected: {dedupeCount}</p>
-        ) : null}
-        {!error && (
-          <Table headers={["Name", "Company Name", "Lead Status", "Owner", "Created Date", "Actions"]}>
-            {isLoading && (
-              <tr>
-                <td colSpan={7}>Loading contacts…</td>
-              </tr>
-            )}
-            {!isLoading &&
-              filtered.map((contact) => (
-                <ContactRow
-                  key={contact.id}
-                  contact={contact}
-                  onSelect={setSelected}
-                  onCall={() => setSelected(contact)}
-                />
-              ))}
-            {!isLoading && filtered.length === 0 && (
-              <tr>
-                <td colSpan={7}>No contacts match these filters.</td>
-              </tr>
-            )}
-          </Table>
-        )}
-      </Card>
-      {showForm && (
-        <Card title="New Contact" actions={<Button onClick={() => setShowForm(false)}>Close</Button>}>
-          {saveError && <p style={{ color: "#ef4444", marginBottom: 8, fontSize: 13 }}>{saveError}</p>}
-          <ContactForm onSave={handleSaveContact} />
-        </Card>
-      )}
-      <ContactDetailsDrawer contact={selected} onClose={() => setSelected(null)} />
+    <div style={page}>
+      <div style={toolbar}>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search contacts"
+          style={searchInput}
+        />
+        <select
+          data-testid="owner-filter"
+          value={ownerId}
+          onChange={(e) => {
+            const value = e.target.value;
+            setOwnerId(value);
+            useCrmStore.setState((state) => ({
+              ...state,
+              filters: { ...state.filters, owner: value || null },
+            }));
+          }}
+          style={ownerSelect}
+        >
+          <option value="">All owners</option>
+          {owners.map((o) => (
+            <option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>
+          ))}
+        </select>
+        <button style={toolbarBtn}>Export</button>
+        <button style={toolbarBtn}>Edit columns</button>
+      </div>
+
+      <table style={table}>
+        <thead>
+          <tr style={theadRow}>
+            <Th onClick={() => onSort("name")}>Name{sortIndicator("name")}</Th>
+            <Th onClick={() => onSort("company_name")}>Company{sortIndicator("company_name")}</Th>
+            <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>
+            <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>
+            <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading && <tr><td colSpan={5} style={emptyCell}>Loading…</td></tr>}
+          {err && <tr><td colSpan={5} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
+          {!loading && !err && rows.length === 0 && (
+            <tr><td colSpan={5} style={emptyCell}>No contacts in this silo.</td></tr>
+          )}
+          {!loading && !err && tableRows}
+        </tbody>
+      </table>
     </div>
   );
-};
+}
 
-export default ContactsPage;
+function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+  return <th onClick={onClick} style={thStyle}>{children}</th>;
+}
+
+const page: CSSProperties = { background: "#fff", color: "#000", padding: 24 };
+const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16 };
+const searchInput: CSSProperties = {
+  flex: 1, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4,
+  background: "#fff", color: "#000",
+};
+const ownerSelect: CSSProperties = {
+  minWidth: 180, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4,
+  background: "#fff", color: "#000",
+};
+const toolbarBtn: CSSProperties = {
+  padding: "8px 16px", border: "1px solid #cbd6e2", background: "#fff",
+  borderRadius: 4, cursor: "pointer",
+};
+const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "#fff" };
+const theadRow: CSSProperties = { borderBottom: "1px solid #cbd6e2", background: "#f5f8fa" };
+const thStyle: CSSProperties = {
+  padding: 12, textAlign: "left", cursor: "pointer", color: "#33475b",
+  textTransform: "uppercase", fontSize: 12, userSelect: "none",
+};
+const tdStyle: CSSProperties = { padding: 12, color: "#000" };
+const trStyle: CSSProperties = { borderBottom: "1px solid #eaf0f6" };
+const linkStyle: CSSProperties = { color: "#0091ae", textDecoration: "none" };
+const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "#7c98b6" };

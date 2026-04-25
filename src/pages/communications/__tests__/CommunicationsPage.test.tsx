@@ -27,6 +27,8 @@ describe("CommunicationsPage", () => {
       conversations: [{ contact_id: "c-1", contact_name: "Jordan Lee", contact_phone: "+15551234567" }],
     });
     apiMock.mockResolvedValueOnce({ messages: [] });
+    apiMock.mockResolvedValueOnce({ mine: null, shared: [] });
+    apiMock.mockResolvedValueOnce([]);
 
     render(<CommunicationsPage />);
 
