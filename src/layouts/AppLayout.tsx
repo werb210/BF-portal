@@ -15,7 +15,8 @@ type NavItem = { label: string; path: string; roles: string[] };
 const BF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",         roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
-  { label: "CRM",            path: "/crm",             roles: ["Admin", "Staff"] },
+  { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
+  { label: "Companies",      path: "/crm/companies",   roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
@@ -25,7 +26,8 @@ const BF_NAV: NavItem[] = [
 
 const BI_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",          roles: ["Admin", "Staff", "Ops"] },
-  { label: "CRM",            path: "/crm",             roles: ["Admin", "Staff"] },
+  { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
+  { label: "Companies",      path: "/crm/companies",   roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
@@ -35,7 +37,8 @@ const BI_NAV: NavItem[] = [
 const SLF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",          roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
-  { label: "CRM",            path: "/crm",             roles: ["Admin", "Staff"] },
+  { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
+  { label: "Companies",      path: "/crm/companies",   roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Lenders",        path: "/lenders",         roles: ["Admin", "Staff"] },

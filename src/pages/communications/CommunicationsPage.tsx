@@ -629,62 +629,136 @@ function MessagesTab() {
 
 // ── Inbox tab ─────────────────────────────────────────────────────────────────
 function InboxTab() {
-  const [isConnected, setIsConnected] = useState<boolean | null>(null);
-  const [emails, setEmails] = useState<Array<{ id?: string; sender?: string; subject?: string; preview?: string; timestamp?: string; body?: string }>>([]);
-  const [selected, setSelected] = useState<{ id?: string; sender?: string; subject?: string; preview?: string; timestamp?: string; body?: string } | null>(null);
+  const [mailboxes, setMailboxes] = useState<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>({ mine: null, shared: [] });
+  const [active, setActive] = useState<string>("");
+  const [messages, setMessages] = useState<Array<{ id: string; subject: string; bodyPreview?: string; from?: { emailAddress?: { address: string; name?: string } }; receivedDateTime?: string; isRead?: boolean }>>([]);
+  const [selectedId, setSelectedId] = useState<string>("");
+  const [selected, setSelected] = useState<{ subject: string; from?: { emailAddress?: { address: string; name?: string } }; body?: { content: string; contentType: "html" | "text" }; receivedDateTime?: string } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
+  // Load mailboxes once
   useEffect(() => {
-    let active = true;
+    let cancelled = false;
     (async () => {
       try {
-        const me = await api<{ o365_connected?: boolean }>("/api/settings/me");
-        const connected = Boolean(me?.o365_connected);
-        if (!active) return;
-        setIsConnected(connected);
-        if (connected) {
-          const inbox = await api<{ emails?: Array<{ id?: string; sender?: string; subject?: string; preview?: string; timestamp?: string; body?: string }> }>("/api/calendar");
-          const list = Array.isArray(inbox.emails) ? inbox.emails : [];
-          if (!active) return;
-          setEmails(list);
-          setSelected(list[0] ?? null);
-        }
-      } catch {
-        if (!active) return;
-        if (active) setIsConnected(false);
+        const r = await api<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>("/api/crm/shared-mailboxes");
+        if (cancelled) return;
+        setMailboxes(r);
+        // Default to personal mailbox if available, else first shared
+        setActive(r.mine ? "" : (r.shared[0]?.address ?? ""));
+      } catch (e: any) {
+        if (!cancelled) setErr("Connect Microsoft 365 in Settings → My Profile to view inbox.");
       }
     })();
-    return () => { active = false; };
+    return () => { cancelled = true; };
   }, []);
 
-  if (isConnected === false) {
-    return (
-      <div style={{ padding: 24, color: "#8e8e93" }}>
-        Connect Microsoft 365 in <a href="/settings/profile" style={{ color: "#2563eb" }}>Settings → My Profile</a> to sync your inbox.
-      </div>
-    );
-  }
-  if (isConnected === null) return <div style={{ padding: 24, color: "#8e8e93" }}>Loading inbox…</div>;
+  // Load messages whenever active mailbox changes
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setErr(null);
+    setSelectedId("");
+    setSelected(null);
+    (async () => {
+      try {
+        const params = active ? { mailbox: active } : {};
+        const r = await api<typeof messages>("/api/crm/inbox", { params });
+        if (!cancelled) setMessages(Array.isArray(r) ? r : []);
+      } catch (e: any) {
+        if (!cancelled) setErr(e?.message ?? "Could not load inbox.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [active]);
+
+  // Load body when a message is selected
+  useEffect(() => {
+    if (!selectedId) { setSelected(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const params = active ? { mailbox: active } : {};
+        const r = await api<typeof selected>(`/api/crm/inbox/${encodeURIComponent(selectedId)}`, { params });
+        if (!cancelled) setSelected(r);
+      } catch {
+        if (!cancelled) setSelected(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedId, active]);
+
+  const mailboxOptions: Array<{ value: string; label: string }> = [];
+  if (mailboxes.mine) mailboxOptions.push({ value: "", label: `${mailboxes.mine.display_name} (mine)` });
+  for (const m of mailboxes.shared) mailboxOptions.push({ value: m.address, label: m.display_name });
 
   return (
-    <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-      <div style={{ width: 360, borderRight: "1px solid #e2e8f0", overflowY: "auto" }}>
-        {emails.map((email) => (
-          <div key={email.id ?? `${email.subject}-${email.timestamp}`} onClick={() => setSelected(email)} style={{ padding: 12, borderBottom: "1px solid #f1f5f9", cursor: "pointer", background: selected?.id === email.id ? "#eff6ff" : "#fff" }}>
-            <div style={{ fontSize: 12, color: "#64748b" }}>{email.sender}</div>
-            <div style={{ fontWeight: 600, color: "#0f172a" }}>{email.subject}</div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>{email.preview}</div>
-          </div>
-        ))}
+    <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, height: "100%", background: "#fff", color: "#000" }}>
+      <div style={{ borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: 12, borderBottom: "1px solid #e2e8f0" }}>
+          <select
+            value={active}
+            onChange={(e) => setActive(e.target.value)}
+            style={{ width: "100%", padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000" }}
+          >
+            {mailboxOptions.map(o => <option key={o.value || "self"} value={o.value}>{o.label}</option>)}
+            {mailboxOptions.length === 0 && <option value="">No mailbox available</option>}
+          </select>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {loading && <div style={{ padding: 16, color: "#7c98b6" }}>Loading…</div>}
+          {err && <div style={{ padding: 16, color: "#b00020" }}>{err}</div>}
+          {!loading && !err && messages.length === 0 && (
+            <div style={{ padding: 16, color: "#7c98b6" }}>Nothing in this inbox.</div>
+          )}
+          {messages.map(m => (
+            <button
+              key={m.id}
+              onClick={() => setSelectedId(m.id)}
+              style={{
+                display: "block", width: "100%", textAlign: "left",
+                padding: 12, border: "none", background: selectedId === m.id ? "#eaf2fb" : "transparent",
+                borderBottom: "1px solid #f0f4f8", cursor: "pointer", color: "#000",
+                fontWeight: m.isRead ? 400 : 600,
+              }}
+            >
+              <div style={{ fontSize: 13, color: "#33475b" }}>
+                {m.from?.emailAddress?.name || m.from?.emailAddress?.address || "(unknown)"}
+              </div>
+              <div style={{ fontSize: 14, marginTop: 2 }}>{m.subject || "(no subject)"}</div>
+              <div style={{ fontSize: 12, color: "#7c98b6", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {m.bodyPreview || ""}
+              </div>
+              {m.receivedDateTime && (
+                <div style={{ fontSize: 11, color: "#7c98b6", marginTop: 2 }}>
+                  {new Date(m.receivedDateTime).toLocaleString()}
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
-      <div style={{ flex: 1, padding: 16, overflowY: "auto" }}>
-        {selected ? (
-          <>
-            <h3 style={{ margin: 0 }}>{selected.subject}</h3>
-            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>{selected.sender} • {selected.timestamp}</div>
-            <div>{selected.body ?? selected.preview}</div>
-          </>
-        ) : (
-          <div style={{ color: "#8e8e93" }}>Select an email.</div>
+
+      <div style={{ padding: 16, overflowY: "auto" }}>
+        {!selectedId && <div style={{ color: "#8e8e93" }}>Select an email.</div>}
+        {selectedId && !selected && <div style={{ color: "#8e8e93" }}>Loading…</div>}
+        {selected && (
+          <article>
+            <h2 style={{ marginTop: 0 }}>{selected.subject || "(no subject)"}</h2>
+            <div style={{ color: "#516f90", fontSize: 13, marginBottom: 16 }}>
+              {selected.from?.emailAddress?.name || selected.from?.emailAddress?.address || ""}
+              {selected.receivedDateTime && (
+                <span style={{ marginLeft: 8 }}>· {new Date(selected.receivedDateTime).toLocaleString()}</span>
+              )}
+            </div>
+            {selected.body?.contentType === "html"
+              ? <div dangerouslySetInnerHTML={{ __html: selected.body.content }} />
+              : <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{selected.body?.content ?? ""}</pre>}
+          </article>
         )}
       </div>
     </div>

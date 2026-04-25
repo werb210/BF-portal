@@ -1,99 +1,122 @@
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import Card from "@/components/ui/Card";
-import Table from "@/components/ui/Table";
-import Button from "@/components/ui/Button";
-import Select from "@/components/ui/Select";
-import Input from "@/components/ui/Input";
-import CompanyRow from "./CompanyRow";
-import CompanyForm from "./CompanyForm";
-import CompanyDetailsDrawer from "./CompanyDetailsDrawer";
-import { fetchCompanies } from "@/api/crm";
-import type { Company } from "@/api/crm";
-import { useCrmStore } from "@/state/crm.store";
-import { getErrorMessage } from "@/utils/errors";
-import { getRequestId } from "@/utils/requestId";
-import { emitUiTelemetry } from "@/utils/uiTelemetry";
-import { logger } from "@/utils/logger";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Link } from "react-router-dom";
+import { crmApi, type CompanyRow } from "@/api/crm";
+import { useSilo } from "@/hooks/useSilo";
 
-const CompaniesPage = () => {
-  const { silo, setSilo } = useCrmStore();
-  const [selected, setSelected] = useState<Company | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [search, setSearch] = useState("");
-  const {
-    data: companies = [],
-    isLoading,
-    error
-  } = useQuery<Company[], Error>({
-    queryKey: ["companies", silo],
-    queryFn: fetchCompanies
-  });
+type SortCol = "name" | "industry" | "owner_name" | "created_at";
+
+export default function CompaniesPage() {
+  const { silo } = useSilo();
+  const [rows, setRows] = useState<CompanyRow[]>([]);
+  const [q, setQ] = useState("");
+  const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>({ col: "created_at", dir: "desc" });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (error) {
-      logger.error("Failed to load companies", { requestId: getRequestId(), error });
-    }
-  }, [error]);
+    let cancelled = false;
+    setLoading(true);
+    setErr(null);
+    (async () => {
+      try {
+        const r = await crmApi.listCompanies({
+          silo: String(silo).toLowerCase(),
+          q,
+          sort: `${sort.col}:${sort.dir}`,
+        });
+        if (!cancelled) setRows(Array.isArray(r) ? r : []);
+      } catch (e: any) {
+        if (!cancelled) setErr(e?.message ?? "Could not load companies.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [silo, q, sort.col, sort.dir]);
 
-  useEffect(() => {
-    if (!isLoading && !error) {
-      emitUiTelemetry("data_loaded", { view: "crm_companies", count: companies.length });
-    }
-  }, [companies.length, error, isLoading]);
+  const onSort = (col: SortCol) =>
+    setSort(s => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
 
-  const filtered = companies.filter(
-    (company) =>
-      !search || company.name.toLowerCase().includes(search.toLowerCase()) ||
-      company.industry.toLowerCase().includes(search.toLowerCase())
-  );
+  const sortIndicator = (col: SortCol) =>
+    sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "";
+
+  const tableRows = useMemo(() => rows.map(r => (
+    <tr key={r.id} style={trStyle}>
+      <td style={tdStyle}>
+        <Link to={`/crm/companies/${r.id}`} style={linkStyle}>{r.name}</Link>
+      </td>
+      <td style={tdStyle}>{r.industry ?? "—"}</td>
+      <td style={tdStyle}>
+        {(r.types_of_financing ?? []).map(t => (
+          <span key={t} style={tag}>{t}</span>
+        ))}
+      </td>
+      <td style={tdStyle}>{r.owner_name ?? "—"}</td>
+      <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
+    </tr>
+  )), [rows]);
 
   return (
-    <div className="page" data-testid="companies-page">
-      <Card
-        title="Companies"
-        actions={
-          <div className="flex gap-2">
-            <Select value={silo} onChange={(e) => setSilo(e.target.value as any)}>
-              <option value="BF">BF</option>
-              <option value="BI">BI</option>
-              <option value="SLF">SLF</option>
-            </Select>
-            <Button onClick={() => setShowForm(true)}>Add Company</Button>
-          </div>
-        }
-      >
-        <div className="flex gap-2 mb-2 items-center">
-          <Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        {error && <p className="text-red-700">{getErrorMessage(error, "Unable to load companies.")}</p>}
-        {!error && (
-          <Table headers={["Name", "Industry", "Silo", "Owner", "Tags", "Actions"]}>
-            {isLoading && (
-              <tr>
-                <td colSpan={6}>Loading companies…</td>
-              </tr>
-            )}
-            {!isLoading &&
-              filtered.map((company) => (
-                <CompanyRow key={company.id} company={company} onSelect={setSelected} />
-              ))}
-            {!isLoading && filtered.length === 0 && (
-              <tr>
-                <td colSpan={6}>No companies found for this search.</td>
-              </tr>
-            )}
-          </Table>
-        )}
-      </Card>
-      {showForm && (
-        <Card title="New Company" actions={<Button onClick={() => setShowForm(false)}>Close</Button>}>
-          <CompanyForm onSave={() => setShowForm(false)} />
-        </Card>
-      )}
-      <CompanyDetailsDrawer company={selected} onClose={() => setSelected(null)} />
+    <div style={page}>
+      <div style={toolbar}>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search companies"
+          style={searchInput}
+        />
+        <button style={toolbarBtn}>Export</button>
+        <button style={toolbarBtn}>Edit columns</button>
+      </div>
+
+      <table style={table}>
+        <thead>
+          <tr style={theadRow}>
+            <Th onClick={() => onSort("name")}>Company name{sortIndicator("name")}</Th>
+            <Th onClick={() => onSort("industry")}>Industry{sortIndicator("industry")}</Th>
+            <Th>Types of financing</Th>
+            <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>
+            <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading && <tr><td colSpan={5} style={emptyCell}>Loading…</td></tr>}
+          {err && <tr><td colSpan={5} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
+          {!loading && !err && rows.length === 0 && (
+            <tr><td colSpan={5} style={emptyCell}>No companies in this silo.</td></tr>
+          )}
+          {!loading && !err && tableRows}
+        </tbody>
+      </table>
     </div>
   );
-};
+}
 
-export default CompaniesPage;
+function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+  return <th onClick={onClick} style={thStyle}>{children}</th>;
+}
+
+const page: CSSProperties = { background: "#fff", color: "#000", padding: 24 };
+const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16 };
+const searchInput: CSSProperties = {
+  flex: 1, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4,
+  background: "#fff", color: "#000",
+};
+const toolbarBtn: CSSProperties = {
+  padding: "8px 16px", border: "1px solid #cbd6e2", background: "#fff",
+  borderRadius: 4, cursor: "pointer",
+};
+const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "#fff" };
+const theadRow: CSSProperties = { borderBottom: "1px solid #cbd6e2", background: "#f5f8fa" };
+const thStyle: CSSProperties = {
+  padding: 12, textAlign: "left", cursor: "pointer", color: "#33475b",
+  textTransform: "uppercase", fontSize: 12, userSelect: "none",
+};
+const tdStyle: CSSProperties = { padding: 12, color: "#000" };
+const trStyle: CSSProperties = { borderBottom: "1px solid #eaf0f6" };
+const linkStyle: CSSProperties = { color: "#0091ae", textDecoration: "none" };
+const tag: CSSProperties = {
+  display: "inline-block", background: "#cef7e6", color: "#0a6e57",
+  padding: "2px 8px", borderRadius: 12, fontSize: 12, marginRight: 4, marginBottom: 2,
+};
+const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "#7c98b6" };
