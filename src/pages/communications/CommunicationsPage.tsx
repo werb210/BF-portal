@@ -369,15 +369,15 @@ function SmsTab() {
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                background: "var(--ui-card-bg)",
-                color: "var(--ui-text)",
+                background: "#f5f5f7",
+                color: "#000",
                 flexShrink: 0,
               }}
             >
               <Avatar name={selected.name} size={36} />
               <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>{selected.name}</div>
-                {selected.phone && <div style={{ fontSize: 12, color: "var(--ui-text)" }}>{selected.phone}</div>}
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#000" }}>{selected.name}</div>
+                {selected.phone && <div style={{ fontSize: 12, color: "#3c3c43" }}>{selected.phone}</div>}
               </div>
             </div>
 

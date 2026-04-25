@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
-import { hasRequiredRole, resolveUserRole, type UserRole } from "@/utils/roles";
+import { canAccessStaffNav, hasRequiredRole, resolveUserRole, type UserRole } from "@/utils/roles";
 import { BUSINESS_UNIT_CONFIG } from "@/config/businessUnitConfig";
 
 type SidebarProps = {
@@ -28,14 +28,14 @@ const navigationSections: NavigationSection[] = [
       { label: "CRM", path: "/crm" },
       { label: "Leads", path: "/leads" },
       { label: "Communications", path: "/communications" },
-      { label: "Readiness Leads", path: "/portal/readiness", roles: ["Admin", "Staff"] },
-      { label: "Capital Readiness", path: "/continuations", roles: ["Admin", "Staff"] },
+      { label: "Readiness Leads", path: "/portal/readiness", roles: ["Admin", "Staff", "Marketing"] },
+      { label: "Capital Readiness", path: "/continuations", roles: ["Admin", "Staff", "Marketing"] },
       { label: "Live Chat", path: "/chat" },
-      { label: "AI Chat", path: "/ai-chat", roles: ["Admin", "Staff"] },
-      { label: "AI Comms", path: "/ai-comms", roles: ["Admin", "Staff"] },
-      { label: "Issues", path: "/issues", roles: ["Admin", "Staff"] },
+      { label: "AI Chat", path: "/ai-chat", roles: ["Admin", "Staff", "Marketing"] },
+      { label: "AI Comms", path: "/ai-comms", roles: ["Admin", "Staff", "Marketing"] },
+      { label: "Issues", path: "/issues", roles: ["Admin", "Staff", "Marketing"] },
       { label: "Calendar", path: "/calendar" },
-      { label: "Marketing", path: "/marketing" },
+      { label: "Marketing", path: "/marketing", roles: ["Admin", "Marketing"] },
       { label: "Lenders", path: "/lenders" },
       { label: "Settings", path: "/settings" }
     ]
@@ -55,10 +55,10 @@ const navigationSections: NavigationSection[] = [
       { label: "Issue Reports", path: "/admin/issue-reports", roles: ["Admin"] },
       { label: "Live Chat Queue", path: "/admin/live-chat", roles: ["Admin"] },
       { label: "Conversions", path: "/admin/conversions", roles: ["Admin"] },
-      { label: "AI Live Chat", path: "/portal/ai", roles: ["Admin", "Staff"] },
-      { label: "Chats", path: "/admin/ai/chats", roles: ["Admin", "Staff"] },
+      { label: "AI Live Chat", path: "/portal/ai", roles: ["Admin", "Staff", "Marketing"] },
+      { label: "Chats", path: "/admin/ai/chats", roles: ["Admin", "Staff", "Marketing"] },
       { label: "AI Policy", path: "/admin/ai-policy", roles: ["Admin"] },
-      { label: "Issues", path: "/admin/ai/issues", roles: ["Admin", "Staff"] },
+      { label: "Issues", path: "/admin/ai/issues", roles: ["Admin", "Staff", "Marketing"] },
       { label: "Operations", path: "/admin/operations", roles: ["Admin"] },
       { label: "Maya Intelligence", path: "/admin/maya", roles: ["Admin"] },
       { label: "Maya Outbound Upload", path: "/admin/maya-outbound", roles: ["Admin"] }
@@ -71,7 +71,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const businessUnitConfig = BUSINESS_UNIT_CONFIG[silo as keyof typeof BUSINESS_UNIT_CONFIG] ?? BUSINESS_UNIT_CONFIG.BF;
   const { user } = useAuth();
   const role = resolveUserRole((user as { role?: string | null } | null)?.role ?? null);
-  const canViewStaffNav = role === "Admin" || role === "Staff";
+  const canViewStaffNav = canAccessStaffNav(role);
   const visibleSections = canViewStaffNav
     ? navigationSections
         .map((section) => ({
