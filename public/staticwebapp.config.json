@@ -1,9 +1,11 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/api/*"]
+    "exclude": [
+      "/api/*"
+    ]
   },
   "globalHeaders": {
-    "Content-Security-Policy": "default-src 'self'; connect-src 'self' https://server.boreal.financial https://graph.microsoft.com https://login.microsoftonline.com https://voice-js.twilio.com wss://voice-js.twilio.com wss://voice-js.roaming.twilio.com https://eventgw.twilio.com wss://eventgw.twilio.com https://media.twiliocdn.com wss://media.twiliocdn.com https://sdk.twilio.com wss://sdk.twilio.com https://icebroker.twilio.com wss://global.vss.twilio.com https://insights.twilio.com wss://insights.twilio.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob: https://media.twiliocdn.com; worker-src 'self' blob:;"
+    "Content-Security-Policy": "default-src 'self'; connect-src 'self' https://server.boreal.financial https://graph.microsoft.com https://login.microsoftonline.com https://*.twilio.com wss://*.twilio.com https://*.twiliocdn.com wss://*.twiliocdn.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob: https://*.twiliocdn.com; worker-src 'self' blob:;"
   }
 }

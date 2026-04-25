@@ -262,6 +262,38 @@ const ProfileSettings = () => {
     };
   }, [exchangeMicrosoftToken, msalReady]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const msal = (window as any).msalInstance;
+        if (!msal) return;
+        const accounts = msal.getAllAccounts?.() ?? [];
+        if (!accounts.length) return;
+        const result = await msal.acquireTokenSilent({
+          scopes: [
+            "User.Read",
+            "Mail.Send",
+            "Mail.ReadWrite",
+            "Mail.Send.Shared",
+            "Calendars.ReadWrite",
+            "Tasks.ReadWrite",
+          ],
+          account: accounts[0],
+        });
+        if (cancelled) return;
+        if (result?.accessToken) {
+          await api.patch("/api/users/me/o365-token", { access_token: result.accessToken });
+        }
+      } catch {
+        // silent — user will be prompted to reconnect on next manual action
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleMicrosoftConnect = async () => {
     if (!microsoftAuthConfig?.clientId || !msalReady || isLinkingMicrosoft) return;
     setMicrosoftError(null);

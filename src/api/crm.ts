@@ -192,3 +192,129 @@ export const updateDealStage = async (id: string, stage: string) => {
 
   return api.patch(`/api/crm/deals/${id}`, { stage });
 };
+
+// CRM V1 helper API for upcoming pages/popups
+export type Scope = { kind: "contact" | "company"; id: string };
+const root = (s: Scope) =>
+  `/api/crm/${s.kind === "contact" ? "contacts" : "companies"}/${s.id}`;
+
+export type ContactRow = {
+  id: string;
+  name: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  job_title?: string;
+  company_id?: string | null;
+  company_name?: string | null;
+  lead_status?: string | null;
+  lifecycle_stage?: string | null;
+  owner_id?: string | null;
+  owner_name?: string | null;
+  created_at: string;
+};
+
+export type CompanyRow = {
+  id: string;
+  name: string;
+  industry?: string | null;
+  domain?: string | null;
+  city?: string | null;
+  region?: string | null;
+  types_of_financing?: string[];
+  owner_id?: string | null;
+  owner_name?: string | null;
+  created_at: string;
+};
+
+export type TimelineItem = {
+  kind: "note" | "task" | "call" | "email" | "meeting";
+  id: string;
+  ts: string;
+  title: string | null;
+  body: string | null;
+  extra: string | null;
+};
+
+export type SharedMailbox = { address: string; display_name: string };
+export type SharedMailboxList = { mine: SharedMailbox | null; shared: SharedMailbox[] };
+
+export type InboxMessage = {
+  id: string;
+  subject: string;
+  bodyPreview?: string;
+  body?: { content: string; contentType: "html" | "text" };
+  from?: { emailAddress?: { address: string; name?: string } };
+  receivedDateTime?: string;
+  isRead?: boolean;
+};
+
+function unwrap<T>(r: any): T {
+  if (r && typeof r === "object" && "data" in r) return r.data as T;
+  return r as T;
+}
+
+export const crmApi = {
+  // Lists
+  listContacts: (params: Record<string, string | number | undefined> = {}) =>
+    api.get<{ data?: ContactRow[] } | ContactRow[]>(`/api/crm/contacts`, { params }).then(unwrap<ContactRow[]>),
+  listCompanies: (params: Record<string, string | number | undefined> = {}) =>
+    api.get<{ data?: CompanyRow[] } | CompanyRow[]>(`/api/crm/companies`, { params }).then(unwrap<CompanyRow[]>),
+
+  // Detail fetches
+  getContact: (id: string) =>
+    api.get<{ data?: ContactRow } | ContactRow>(`/api/crm/contacts/${id}`).then(unwrap<ContactRow>),
+  getCompany: (id: string) =>
+    api.get<{ data?: CompanyRow } | CompanyRow>(`/api/crm/companies/${id}`).then(unwrap<CompanyRow>),
+
+  // Aggregated activity
+  timeline: (s: Scope) =>
+    api.get<{ data?: TimelineItem[] } | TimelineItem[]>(`${root(s)}/timeline`).then(unwrap<TimelineItem[]>),
+
+  // Sub-resources (one helper per kind)
+  notes: {
+    list: (s: Scope) => api.get<any>(`${root(s)}/notes`).then(unwrap<any[]>),
+    create: (s: Scope, body: { body: string }) => api.post<any>(`${root(s)}/notes`, body),
+  },
+  tasks: {
+    list: (s: Scope) => api.get<any>(`${root(s)}/tasks`).then(unwrap<any[]>),
+    create: (s: Scope, body: Record<string, unknown>) => api.post<any>(`${root(s)}/tasks`, body),
+    update: (s: Scope, id: string, body: Record<string, unknown>) =>
+      api.patch<any>(`${root(s)}/tasks/${id}`, body),
+  },
+  calls: {
+    list: (s: Scope) => api.get<any>(`${root(s)}/calls`).then(unwrap<any[]>),
+    create: (s: Scope, body: Record<string, unknown>) => api.post<any>(`${root(s)}/calls`, body),
+  },
+  emails: {
+    list: (s: Scope) => api.get<any>(`${root(s)}/emails`).then(unwrap<any[]>),
+    send: (s: Scope, body: {
+      from: string;
+      to: string[];
+      cc?: string[];
+      bcc?: string[];
+      subject: string;
+      body_html: string;
+    }) => api.post<any>(`${root(s)}/emails`, body),
+  },
+  meetings: {
+    list: (s: Scope) => api.get<any>(`${root(s)}/meetings`).then(unwrap<any[]>),
+    create: (s: Scope, body: Record<string, unknown>) => api.post<any>(`${root(s)}/meetings`, body),
+  },
+
+  // Shared mailbox + inbox
+  sharedMailboxes: () =>
+    api.get<{ data?: SharedMailboxList } | SharedMailboxList>(`/api/crm/shared-mailboxes`).then(unwrap<SharedMailboxList>),
+  inbox: {
+    list: (mailbox?: string) =>
+      api.get<{ data?: InboxMessage[] } | InboxMessage[]>(
+        `/api/crm/inbox`, { params: mailbox ? { mailbox } : {} },
+      ).then(unwrap<InboxMessage[]>),
+    get: (id: string, mailbox?: string) =>
+      api.get<{ data?: InboxMessage } | InboxMessage>(
+        `/api/crm/inbox/${encodeURIComponent(id)}`,
+        { params: mailbox ? { mailbox } : {} },
+      ).then(unwrap<InboxMessage>),
+  },
+};

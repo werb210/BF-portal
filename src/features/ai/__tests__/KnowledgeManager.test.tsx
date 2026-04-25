@@ -48,6 +48,20 @@ describe("KnowledgeManager", () => {
     });
   });
 
+  it("renders warning banner when save returns savedWithoutIndex", async () => {
+    const user = userEvent.setup();
+    apiMock.mockResolvedValue({ documents: [] });
+    postMock.mockResolvedValue({ savedWithoutIndex: true, message: "Saved without embeddings." });
+
+    render(<KnowledgeManager />);
+
+    await screen.findByText("Indexed entries (0)");
+    await user.type(screen.getByPlaceholderText("Paste reference content Maya should know about…"), "Useful text");
+    await user.click(screen.getByRole("button", { name: "Add entry" }));
+
+    expect(await screen.findByText("Saved without embeddings.")).toBeInTheDocument();
+  });
+
   it("clicking Remove fires DELETE and updates the list", async () => {
     const user = userEvent.setup();
     apiMock

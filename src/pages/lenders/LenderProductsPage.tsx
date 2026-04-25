@@ -23,13 +23,14 @@ import {
   type LenderProductPayload
 } from "@/api/lenders";
 import {
+  DOCUMENT_TYPES,
+  DOCUMENT_TYPE_LABELS,
   LENDER_PRODUCT_CATEGORIES,
   LENDER_PRODUCT_CATEGORY_LABELS,
   type LenderProductCategory,
   type RateType
 } from "@/types/lenderManagement.types";
 import {
-  PRODUCT_DOCUMENT_OPTIONS,
   buildRequiredDocumentsPayload,
   deriveCurrency,
   deriveProductName,
@@ -178,6 +179,7 @@ const LenderProductsContent = () => {
   const [editingProduct, setEditingProduct] = useState<LenderProduct | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formValues, setFormValues] = useState<ProductFormValues>(emptyProductForm(""));
+  const [productsState, setProductsState] = useState<LenderProduct[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const canManageProducts = useAuthorization({ roles: ["Admin", "Staff"] });
@@ -242,12 +244,16 @@ const LenderProductsContent = () => {
   });
   const safeProducts = Array.isArray(products) ? products : [];
 
+  useEffect(() => {
+    setProductsState(safeProducts);
+  }, [safeProducts]);
+
   const visibleProducts = useMemo(() => {
     const activeIds = new Set(activeLenders.map((lender) => lender.id));
-    return safeProducts.filter(
+    return productsState.filter(
       (product) => activeIds.has(product.lenderId) && (!activeLenderId || product.lenderId === activeLenderId)
     );
-  }, [activeLenderId, activeLenders, safeProducts]);
+  }, [activeLenderId, activeLenders, productsState]);
 
   const hasStartupCategory = useMemo(
     () => visibleProducts.some((product) => product.category === "STARTUP_CAPITAL") || editingProduct?.category === "STARTUP_CAPITAL",
@@ -340,11 +346,15 @@ const LenderProductsContent = () => {
       }
       setSubmitError(getErrorMessage(error, "Unable to save product. Please retry."));
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
-      await refetchProducts();
-      setIsModalOpen(false);
-      setEditingProduct(null);
+    onSuccess: async (response) => {
+      const created = (response as any)?.data ?? response;
+      if (created && created.id) {
+        setProductsState((prev) => [created, ...prev]);
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+        await refetchProducts();
+      }
+      closeModal();
       setSubmitError(null);
     }
   });
@@ -644,7 +654,10 @@ const LenderProductsContent = () => {
           label: PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category]
         }))}
         rateTypes={RATE_TYPE_OPTIONS}
-        documentOptions={PRODUCT_DOCUMENT_OPTIONS}
+        documentOptions={DOCUMENT_TYPES.map((docType) => ({
+          value: docType,
+          label: DOCUMENT_TYPE_LABELS[docType]
+        }))}
         formatRateType={formatRateType}
         onChange={updateForm}
         onSubmit={handleSubmit}

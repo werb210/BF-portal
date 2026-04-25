@@ -16,6 +16,8 @@ export default function KnowledgeManager() {
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<"idle" | "saving" | "ok" | "warn" | "err">("idle");
+  const [statusMessage, setStatusMessage] = useState<string>("");
 
   useEffect(() => {
     void load();
@@ -33,12 +35,25 @@ export default function KnowledgeManager() {
   async function uploadFile(file: File) {
     setBusy(true);
     setError(null);
+    setStatus("saving");
     try {
       const fd = new FormData();
       fd.append("file", file);
-      await api("/api/settings/ai-knowledge", { method: "POST", body: fd });
+      const resp = await api("/api/settings/ai-knowledge", { method: "POST", body: fd });
+      if (resp && (resp as any).savedWithoutIndex) {
+        setStatus("warn");
+        setStatusMessage(
+          (resp as any).message ??
+            "Saved, but Maya search is degraded — set OPENAI_API_KEY on the server to enable embeddings.",
+        );
+      } else {
+        setStatus("ok");
+        setStatusMessage("Saved.");
+      }
       await load();
     } catch {
+      setStatus("err");
+      setStatusMessage("Upload failed.");
       setError("Upload failed.");
     } finally {
       setBusy(false);
@@ -50,12 +65,25 @@ export default function KnowledgeManager() {
     if (!content) return;
     setBusy(true);
     setError(null);
+    setStatus("saving");
     try {
-      await api.post("/api/settings/ai-knowledge/text", { content, title: title.trim() });
+      const resp = await api.post("/api/settings/ai-knowledge/text", { content, title: title.trim() });
       setText("");
       setTitle("");
+      if (resp && (resp as any).savedWithoutIndex) {
+        setStatus("warn");
+        setStatusMessage(
+          (resp as any).message ??
+            "Saved, but Maya search is degraded — set OPENAI_API_KEY on the server to enable embeddings.",
+        );
+      } else {
+        setStatus("ok");
+        setStatusMessage("Saved.");
+      }
       await load();
     } catch {
+      setStatus("err");
+      setStatusMessage("Save failed.");
       setError("Save failed.");
     } finally {
       setBusy(false);
@@ -77,6 +105,37 @@ export default function KnowledgeManager() {
       <h2>AI Knowledge Base</h2>
       {error && <div style={{ color: "#dc2626" }}>{error}</div>}
 
+      {status === "warn" && (
+        <div
+          style={{
+            background: "#fff8e1", border: "1px solid #f0c419", color: "#5b4900",
+            padding: 12, borderRadius: 4, marginBottom: 12,
+          }}
+        >
+          {statusMessage}
+        </div>
+      )}
+      {status === "ok" && (
+        <div
+          style={{
+            background: "#e6f4ea", border: "1px solid #34a853", color: "#0a5d1c",
+            padding: 12, borderRadius: 4, marginBottom: 12,
+          }}
+        >
+          {statusMessage}
+        </div>
+      )}
+      {status === "err" && (
+        <div
+          style={{
+            background: "#fdecea", border: "1px solid #d93025", color: "#a50e0e",
+            padding: 12, borderRadius: 4, marginBottom: 12,
+          }}
+        >
+          {statusMessage}
+        </div>
+      )}
+
       <section>
         <h3>Upload a file</h3>
         <input
@@ -85,6 +144,14 @@ export default function KnowledgeManager() {
           onChange={(e) => {
             const f = e.target.files?.[0];
             if (f) void uploadFile(f);
+          }}
+          style={{
+            background: "#ffffff",
+            color: "#000000",
+            border: "1px solid #cbd6e2",
+            borderRadius: 4,
+            padding: 8,
+            width: "100%",
           }}
         />
         <p style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
@@ -98,14 +165,30 @@ export default function KnowledgeManager() {
           placeholder="Title (optional)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          style={{ width: "100%", padding: 6, marginBottom: 6 }}
+          style={{
+            background: "#ffffff",
+            color: "#000000",
+            border: "1px solid #cbd6e2",
+            borderRadius: 4,
+            padding: 8,
+            width: "100%",
+            marginBottom: 6,
+          }}
         />
         <textarea
           placeholder="Paste reference content Maya should know about…"
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={5}
-          style={{ width: "100%", padding: 6, fontFamily: "inherit" }}
+          style={{
+            background: "#ffffff",
+            color: "#000000",
+            border: "1px solid #cbd6e2",
+            borderRadius: 4,
+            padding: 8,
+            width: "100%",
+            fontFamily: "inherit",
+          }}
         />
         <div style={{ marginTop: 6 }}>
           <Button onClick={() => void submitText()} disabled={busy || !text.trim()}>

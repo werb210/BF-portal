@@ -1,314 +1,179 @@
-/**
- * Maya in-portal chat widget.
- * Embedded in AppLayout's MAYA sidebar slot.
- * - Greeting on first render
- * - Chat input + reply (POST /api/ai/maya/message)
- * - Talk to Human button (POST /api/maya/escalate)
- * - Report Issue button (POST /api/client/issues)
- */
-import { useEffect, useRef, useState } from "react";
-import { ApiError } from "@/api/http";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { sendMayaMessage, escalateToHuman, reportPortalIssue } from "@/api/maya";
 
-type Message = { role: "user" | "maya"; text: string; ts: number };
+type Msg = { role: "user" | "maya"; text: string; ts: number };
 
-const GREETING = "Hi, I'm Maya. How can I help with your work today?";
+const GREETING = "👋 Hi, I'm Maya. How can I help you today?";
 
 export default function MayaChat() {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "maya", text: GREETING, ts: Date.now() },
-  ]);
+  const [open, setOpen] = useState(false);
+  const [msgs, setMsgs] = useState<Msg[]>([{ role: "maya", text: GREETING, ts: Date.now() }]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportText, setReportText] = useState("");
-  const [confirm, setConfirm] = useState<string | null>(null);
-  const confirmTimer = useRef<number | null>(null);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(
-    () => () => {
-      if (confirmTimer.current) window.clearTimeout(confirmTimer.current);
-    },
-    [],
-  );
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  function flash(msg: string) {
-    setConfirm(msg);
-    if (confirmTimer.current) window.clearTimeout(confirmTimer.current);
-    confirmTimer.current = window.setTimeout(() => setConfirm(null), 4000);
-  }
+    if (scrollRef.current && typeof scrollRef.current.scrollTo === "function") {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+  }, [msgs, open]);
 
   async function send() {
     const text = input.trim();
     if (!text || sending) return;
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", text, ts: Date.now() }]);
+    setMsgs((p) => [...p, { role: "user", text, ts: Date.now() }]);
     setSending(true);
     try {
-      const res = await sendMayaMessage(text);
-      const reply =
-        typeof (res as any)?.reply === "string"
-          ? (res as any).reply
-          : typeof (res as any)?.message === "string"
-            ? (res as any).message
-            : typeof (res as any)?.response === "string"
-              ? (res as any).response
-              : "I'm here to help — what would you like to know?";
-      setMessages((prev) => [...prev, { role: "maya", text: reply, ts: Date.now() }]);
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 400) return;
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "maya",
-          text: "I'm having trouble connecting right now. Please try again.",
-          ts: Date.now(),
-        },
+      const reply = await sendMayaMessage(text);
+      setMsgs((p) => [...p, { role: "maya", text: reply || "I'm here.", ts: Date.now() }]);
+    } catch {
+      setMsgs((p) => [
+        ...p,
+        { role: "maya", text: "I'm having trouble right now — want me to connect you to a human?", ts: Date.now() },
       ]);
     } finally {
       setSending(false);
     }
   }
 
-  async function handleTalkToHuman() {
+  async function escalate() {
     try {
       await escalateToHuman();
-      flash("✓ A team member has been notified.");
+      setMsgs((p) => [...p, { role: "maya", text: "✓ A team member has been notified.", ts: Date.now() }]);
     } catch {
-      flash("Could not escalate right now.");
+      setMsgs((p) => [...p, { role: "maya", text: "Couldn't reach the team. Please try again.", ts: Date.now() }]);
     }
   }
 
-  async function handleReport() {
-    const msg = reportText.trim();
-    if (!msg) return;
-    let screenshot: string | undefined;
+  async function report() {
+    const message = reportText.trim();
+    if (!message) return;
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(document.body);
-      screenshot = canvas.toDataURL("image/png");
+      await reportPortalIssue({ message });
+      setMsgs((p) => [...p, { role: "maya", text: "✓ Thanks — we got your report.", ts: Date.now() }]);
     } catch {
-      // text-only fallback
-    }
-    try {
-      await reportPortalIssue({ message: msg, screenshotBase64: screenshot });
-      flash("✓ Thanks — your report was sent.");
-      setReportText("");
+      setMsgs((p) => [...p, { role: "maya", text: "Report failed. Please try again.", ts: Date.now() }]);
+    } finally {
       setReportOpen(false);
-    } catch {
-      flash("Report failed. Please try again.");
+      setReportText("");
     }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        aria-label="Open Maya"
+        style={fabStyle}
+      >
+        💬
+      </button>
+    );
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-        height: "100%",
-        minHeight: 0,
-      }}
-    >
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-          padding: "4px 2px",
-        }}
-      >
-        {messages.map((m) => (
-          <div
-            key={m.ts}
-            style={{
-              alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-              background: m.role === "user" ? "#2563eb" : "rgba(255,255,255,0.08)",
-              color: "#fff",
-              borderRadius: m.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
-              padding: "6px 10px",
-              fontSize: 12,
-              maxWidth: "90%",
-              lineHeight: 1.4,
-            }}
-          >
-            {m.text}
-          </div>
+    <div style={panelStyle} role="dialog" aria-label="Maya assistant">
+      <div style={headerStyle}>
+        <span style={{ fontWeight: 600 }}>Maya</span>
+        <button onClick={() => setOpen(false)} aria-label="Close" style={closeBtn}>×</button>
+      </div>
+
+      <div ref={scrollRef} style={listStyle}>
+        {msgs.map((m) => (
+          <div key={m.ts} style={bubbleStyle(m.role)}>{m.text}</div>
         ))}
-        {sending && (
-          <div
-            style={{
-              alignSelf: "flex-start",
-              background: "rgba(255,255,255,0.08)",
-              color: "var(--ui-text-muted)",
-              borderRadius: "12px 12px 12px 2px",
-              padding: "6px 10px",
-              fontSize: 12,
-            }}
-          >
-            …
-          </div>
-        )}
-        <div ref={bottomRef} />
       </div>
-
-      <div style={{ display: "flex", gap: 4 }}>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-          placeholder="Ask Maya anything…"
-          disabled={sending}
-          style={{
-            flex: 1,
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 8,
-            padding: "6px 10px",
-            color: "#fff",
-            fontSize: 12,
-            outline: "none",
-          }}
-        />
-        <button
-          onClick={() => void send()}
-          disabled={!input.trim() || sending}
-          style={{
-            background: "#2563eb",
-            border: "none",
-            borderRadius: 8,
-            padding: "6px 10px",
-            color: "#fff",
-            cursor: "pointer",
-            fontSize: 13,
-            opacity: !input.trim() || sending ? 0.5 : 1,
-          }}
-        >
-          ↑
-        </button>
-      </div>
-
-      {confirm && (
-        <div
-          style={{
-            padding: "4px 8px",
-            borderRadius: 6,
-            fontSize: 11,
-            color: "#86efac",
-            background: "rgba(34,197,94,0.15)",
-          }}
-        >
-          {confirm}
-        </div>
-      )}
 
       {reportOpen && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 8,
-            padding: 6,
-          }}
-        >
+        <div style={reportBoxStyle}>
           <textarea
             value={reportText}
             onChange={(e) => setReportText(e.target.value)}
-            placeholder="Describe the issue"
             rows={3}
-            style={{
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 6,
-              padding: 6,
-              color: "#fff",
-              fontSize: 12,
-              resize: "none",
-              outline: "none",
-            }}
+            placeholder="Describe the issue…"
+            style={textareaStyle}
           />
-          <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
-            <button
-              onClick={() => {
-                setReportOpen(false);
-                setReportText("");
-              }}
-              style={{
-                padding: "4px 8px",
-                borderRadius: 4,
-                border: "1px solid rgba(255,255,255,0.2)",
-                background: "transparent",
-                color: "var(--ui-text-muted)",
-                cursor: "pointer",
-                fontSize: 11,
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => void handleReport()}
-              disabled={!reportText.trim()}
-              style={{
-                padding: "4px 8px",
-                borderRadius: 4,
-                border: "none",
-                background: "#dc2626",
-                color: "#fff",
-                cursor: "pointer",
-                fontSize: 11,
-                opacity: reportText.trim() ? 1 : 0.5,
-              }}
-            >
-              Send
-            </button>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+            <button onClick={() => setReportOpen(false)} style={ghostBtn}>Cancel</button>
+            <button onClick={report} disabled={!reportText.trim()} style={primaryBtn}>Send</button>
           </div>
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-        <button
-          onClick={() => void handleTalkToHuman()}
-          style={{
-            padding: "6px 8px",
-            borderRadius: 6,
-            border: "1px solid #2563eb",
-            background: "rgba(37,99,235,0.15)",
-            color: "#93c5fd",
-            cursor: "pointer",
-            fontSize: 11,
-          }}
-        >
-          Talk to Human
-        </button>
-        <button
-          onClick={() => setReportOpen((p) => !p)}
-          style={{
-            padding: "6px 8px",
-            borderRadius: 6,
-            border: "1px solid #dc2626",
-            background: "rgba(220,38,38,0.15)",
-            color: "#fca5a5",
-            cursor: "pointer",
-            fontSize: 11,
-          }}
-        >
-          Report Issue
-        </button>
+      <div style={composerStyle}>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !sending) void send(); }}
+            placeholder="Ask Maya anything…"
+            disabled={sending}
+            style={inputStyle}
+          />
+          <button onClick={() => void send()} disabled={!input.trim() || sending} style={primaryBtn}>
+            {sending ? "…" : "Send"}
+          </button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+          <button onClick={escalate} style={ghostBtnBlue}>Talk to Human</button>
+          <button onClick={() => setReportOpen((p) => !p)} style={ghostBtnRed}>Report Issue</button>
+        </div>
       </div>
     </div>
   );
 }
+
+const fabStyle: CSSProperties = {
+  position: "fixed", bottom: 24, right: 24, width: 56, height: 56,
+  borderRadius: "50%", background: "#2563eb", color: "#fff", border: "none",
+  fontSize: 24, cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", zIndex: 1000,
+};
+const panelStyle: CSSProperties = {
+  position: "fixed", bottom: 24, right: 24, width: 360, height: 540,
+  background: "#fff", color: "#000", borderRadius: 12,
+  boxShadow: "0 16px 40px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column",
+  zIndex: 1000, border: "1px solid #e2e8f0",
+};
+const headerStyle: CSSProperties = {
+  display: "flex", justifyContent: "space-between", alignItems: "center",
+  padding: 12, borderBottom: "1px solid #e2e8f0",
+};
+const closeBtn: CSSProperties = {
+  background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: "#000", lineHeight: 1,
+};
+const listStyle: CSSProperties = {
+  flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8,
+};
+const bubbleStyle = (role: "user" | "maya"): CSSProperties => ({
+  alignSelf: role === "user" ? "flex-end" : "flex-start",
+  background: role === "user" ? "#2563eb" : "#f1f5f9",
+  color: role === "user" ? "#fff" : "#000",
+  padding: "8px 12px", borderRadius: 12, maxWidth: "85%", whiteSpace: "pre-wrap", lineHeight: 1.4,
+});
+const composerStyle: CSSProperties = { padding: 12, borderTop: "1px solid #e2e8f0" };
+const inputStyle: CSSProperties = {
+  flex: 1, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, color: "#000", background: "#fff",
+};
+const textareaStyle: CSSProperties = {
+  width: "100%", padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, color: "#000", background: "#fff",
+};
+const primaryBtn: CSSProperties = {
+  background: "#2563eb", color: "#fff", border: "none",
+  padding: "8px 16px", borderRadius: 4, cursor: "pointer",
+};
+const ghostBtn: CSSProperties = {
+  background: "#fff", color: "#000", border: "1px solid #cbd6e2",
+  padding: "8px 16px", borderRadius: 4, cursor: "pointer",
+};
+const ghostBtnBlue: CSSProperties = {
+  background: "#fff", color: "#2563eb", border: "1px solid #2563eb",
+  padding: "8px", borderRadius: 4, cursor: "pointer",
+};
+const ghostBtnRed: CSSProperties = {
+  background: "#fff", color: "#dc2626", border: "1px solid #dc2626",
+  padding: "8px", borderRadius: 4, cursor: "pointer",
+};
+const reportBoxStyle: CSSProperties = { padding: 12, borderTop: "1px solid #e2e8f0" };
