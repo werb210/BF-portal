@@ -1,10 +1,13 @@
-export const roleValues = ["Admin", "Staff", "Ops", "Viewer", "Lender", "Referrer"] as const;
+export const roleValues = ["Admin", "Staff", "Marketing", "Ops", "Viewer", "Lender", "Referrer"] as const;
 
 export type UserRole = (typeof roleValues)[number];
 
 export const fullStaffRoles: UserRole[] = ["Admin", "Staff", "Ops"];
 
-export const canAccessMarketing = (role?: UserRole | null) => role === "Admin";
+export const canAccessMarketing = (role?: UserRole | null) =>
+  role === "Admin" || role === "Marketing";
+export const canAccessStaffNav = (role?: UserRole | null) =>
+  role === "Admin" || role === "Staff" || role === "Marketing";
 export const canAccessStaffPortal = (role?: UserRole | null) =>
   role != null && fullStaffRoles.includes(role);
 
@@ -31,6 +34,8 @@ export const getRoleLabel = (role?: UserRole | null) => {
       return "Admin";
     case "Staff":
       return "Staff";
+    case "Marketing":
+      return "Marketing";
     case "Ops":
       return "Ops";
     case "Viewer":

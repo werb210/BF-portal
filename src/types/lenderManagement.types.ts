@@ -42,6 +42,7 @@ export const DOCUMENT_TYPES = [
   "customer_list",
   "invoices",
   "vendor_quote_invoice",
+  "purchase_order_or_invoice_of_equipment",
   "identity_documents",
   "net_worth_statement"
 ] as const;
@@ -63,6 +64,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   customer_list: "Customer list",
   invoices: "Invoices",
   vendor_quote_invoice: "Vendor quote / invoice",
+  purchase_order_or_invoice_of_equipment: "Purchase Order or Invoice of Equipment",
   identity_documents: "Identity documents",
   net_worth_statement: "Net worth statement"
 };
