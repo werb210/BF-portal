@@ -130,7 +130,8 @@ export const fetchContactCompanies = async (contact: Contact) => requestJson<Com
 export const fetchCompanyContacts = async (company: Company) => requestJson<Contact[]>(`/api/crm/companies/${company.id}/contacts`);
 
 export const createContact = async (payload: {
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   silo: Contact["silo"];

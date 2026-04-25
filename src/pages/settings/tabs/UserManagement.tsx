@@ -4,7 +4,7 @@ import ErrorBanner from "@/components/ui/ErrorBanner";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
-import { useSettingsStore, type AdminUser } from "@/state/settings.store";
+import { useSettingsStore, type AdminUser, type AdminUserRole } from "@/state/settings.store";
 import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
 
@@ -214,7 +214,10 @@ const UserManagement = () => {
               user.name ||
               (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
             const statusLabel = user.disabled ? "Disabled" : "Active";
-            const roleValue = user.role === "Admin" || user.role === "Staff" ? user.role : "Staff";
+            const roleValue: AdminUserRole =
+              user.role === "Admin" || user.role === "Marketing" || user.role === "Staff"
+                ? user.role
+                : "Staff";
             const isPending = userId ? pendingUserIds.has(userId) : false;
             return (
               <tr key={rowKey}>
@@ -229,6 +232,7 @@ const UserManagement = () => {
                     onChange={(e) => onUpdateRole(userId, e.target.value as AdminUser["role"])}
                     options={[
                       { value: "Admin", label: "Admin" },
+                      { value: "Marketing", label: "Marketing" },
                       { value: "Staff", label: "Staff" }
                     ]}
                     hideLabel
@@ -291,7 +295,10 @@ const UserManagement = () => {
               user.name ||
               (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
             const statusLabel = user.disabled ? "Disabled" : "Active";
-            const roleValue = user.role === "Admin" || user.role === "Staff" ? user.role : "Staff";
+            const roleValue: AdminUserRole =
+              user.role === "Admin" || user.role === "Marketing" || user.role === "Staff"
+                ? user.role
+                : "Staff";
             const isPending = userId ? pendingUserIds.has(userId) : false;
             return (
             <div key={cardKey} className="user-card">
@@ -309,6 +316,7 @@ const UserManagement = () => {
                   onChange={(e) => onUpdateRole(userId, e.target.value as AdminUser["role"])}
                   options={[
                     { value: "Admin", label: "Admin" },
+                    { value: "Marketing", label: "Marketing" },
                     { value: "Staff", label: "Staff" }
                   ]}
                   disabled={isLoadingUsers || isPending || !userId}
@@ -367,38 +375,33 @@ const UserManagement = () => {
             />
             <div className="ui-field">
               <label className="ui-field__label">Silo access</label>
-              <select
-                className="ui-field__input"
-                multiple
-                value={userForm.role === "Admin" ? ["BF", "BI", "SLF"] : userForm.silos}
-                disabled={userForm.role === "Admin"}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions).map((option) => option.value);
-                  setUserForm((prev) => ({ ...prev, silos: selected.length > 0 ? selected : ["BF"] }));
-                }}
-              >
-                {userForm.role === "Admin" ? (
-                  <>
-                    <option value="BF">BF — Boreal Financial</option>
-                    <option value="BI">BI — Boreal Insurance</option>
-                    <option value="SLF">SLF — Site Level Financial</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="BF">BF — Boreal Financial</option>
-                    <option value="BI">BI — Boreal Insurance</option>
-                    <option value="SLF">SLF — Site Level Financial</option>
-                  </>
-                )}
-              </select>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: "var(--ui-card-bg)", border: "1px solid var(--ui-border)", borderRadius: 6 }}>
+                {[
+                  { v: "BF", label: "BF — Boreal Financial" },
+                  { v: "BI", label: "BI — Boreal Insurance" },
+                  { v: "SLF", label: "SLF — Site Level Financial" },
+                ].map(({ v, label }) => (
+                  <label key={v} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "var(--ui-text)" }}>
+                    <input
+                      type="checkbox"
+                      disabled={userForm.role === "Admin"}
+                      checked={userForm.role === "Admin" ? true : userForm.silos.includes(v)}
+                      onChange={(e) => {
+                        setUserForm((prev) => {
+                          const set = new Set(prev.silos);
+                          if (e.target.checked) set.add(v); else set.delete(v);
+                          const nextSilos = Array.from(set);
+                          return { ...prev, silos: nextSilos.length > 0 ? nextSilos : ["BF"] };
+                        });
+                      }}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
               {userForm.role === "Admin" && (
                 <p style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 4 }}>
                   Admin users have access to all silos.
-                </p>
-              )}
-              {userForm.role !== "Admin" && (
-                <p style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 4 }}>
-                  Hold Ctrl (Windows) or Command (Mac) to select multiple silos.
                 </p>
               )}
             </div>
@@ -408,6 +411,7 @@ const UserManagement = () => {
               onChange={(e) => setUserForm({ ...userForm, role: e.target.value as AdminUser["role"] })}
               options={[
                 { value: "Admin", label: "Admin" },
+                { value: "Marketing", label: "Marketing" },
                 { value: "Staff", label: "Staff" }
               ]}
             />

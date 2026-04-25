@@ -25,9 +25,14 @@ export type ReferralResponse = {
 };
 
 export const submitReferral = async (payload: ReferralPayload): Promise<ReferralResponse> => {
+  const [firstNameRaw, ...lastNameParts] = payload.contactName.trim().split(/\s+/);
+  const firstName = firstNameRaw ?? "";
+  const lastName = lastNameParts.join(" ");
+
   const [contact, company] = await Promise.all([
     createContact({
-      name: payload.contactName,
+      first_name: firstName,
+      last_name: lastName,
       email: payload.email,
       phone: payload.phone,
       silo: payload.silo,

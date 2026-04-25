@@ -89,11 +89,17 @@ const ContactsPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const handleSaveContact = useCallback(async (data: { name: string; email: string; phone: string }) => {
+  const handleSaveContact = useCallback(async (data: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+  }) => {
     setSaveError(null);
     try {
       await createContact({
-        name: data.name,
+        first_name: data.first_name,
+        last_name: data.last_name,
         email: data.email,
         phone: data.phone,
         silo: (globalSilo as "BF" | "BI" | "SLF") ?? "BF",
