@@ -1,7 +1,10 @@
 const rawClientId = import.meta.env.VITE_MSAL_CLIENT_ID ?? "";
 const rawRedirectUri = import.meta.env.VITE_MSAL_REDIRECT_URI ?? "";
 const rawTenantId = import.meta.env.VITE_MSAL_TENANT_ID ?? "";
-const scopeValue = String(import.meta.env.VITE_MSAL_SCOPES ?? "User.Read");
+const scopeValue = String(
+  import.meta.env.VITE_MSAL_SCOPES
+    ?? "User.Read,Mail.Send,Calendars.ReadWrite,Tasks.ReadWrite,offline_access"
+);
 
 const tenantId = rawTenantId.trim() || "common";
 

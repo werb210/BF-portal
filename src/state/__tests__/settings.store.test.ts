@@ -30,6 +30,7 @@ describe("settings.store admin user normalization", () => {
       last_name: "W",
       firstName: "Todd",
       lastName: "W",
+      silos: [],
     });
   });
 

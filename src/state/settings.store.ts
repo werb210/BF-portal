@@ -29,15 +29,19 @@ export type AdminUser = {
   phone?: string;
   role: UserRole;
   silo?: string;
+  silos?: string[];
   disabled?: boolean;
 };
 
 export function normalizeAdminUser(raw: any): AdminUser {
   if (!raw || typeof raw !== "object") return raw;
+  const firstName = raw.firstName ?? raw.first_name ?? undefined;
+  const lastName = raw.lastName ?? raw.last_name ?? undefined;
   return {
     ...raw,
-    firstName: raw.firstName ?? raw.first_name ?? undefined,
-    lastName: raw.lastName ?? raw.last_name ?? undefined,
+    firstName,
+    lastName,
+    silos: Array.isArray(raw.silos) ? raw.silos : [],
   };
 }
 
@@ -54,7 +58,7 @@ export type SettingsState = {
   fetchBranding: () => Promise<void>;
   saveBranding: (branding: BrandingSettingsState) => Promise<void>;
   fetchUsers: () => Promise<void>;
-  addUser: (user: Pick<AdminUser, "email" | "role" | "firstName" | "lastName" | "phone">) => Promise<void>;
+  addUser: (user: Pick<AdminUser, "email" | "role" | "firstName" | "lastName" | "phone" | "silo" | "silos">) => Promise<void>;
   updateUser: (id: string, updates: Partial<AdminUser>) => Promise<void>;
   updateUserRole: (id: string, role: UserRole) => Promise<void>;
   setUserDisabled: (id: string, disabled: boolean) => Promise<void>;
@@ -219,7 +223,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        role: user.role
+        role: user.role,
+        silo: user.silo,
+        silos: user.silos ?? []
       });
       set((state) => ({
         users: [...state.users, created],
@@ -233,14 +239,15 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ isLoadingUsers: true });
     try {
       const data = await api.patch<AdminUser>(`/api/users/${id}`, updates);
-      set((state) => ({
-        users: state.users.map((user) =>
-          user.id === id
-            ? normalizeAdminUser({ ...user, ...updates, ...data })
-            : user
-        ),
-        statusMessage: "User updated"
-      }));
+      set((state) => {
+        const merged = state.users.map((user) =>
+          user.id === id ? normalizeAdminUser({ ...user, ...updates, ...data }) : user
+        );
+        return {
+          users: merged,
+          statusMessage: "User updated"
+        };
+      });
     } finally {
       set({ isLoadingUsers: false });
     }

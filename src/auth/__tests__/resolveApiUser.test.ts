@@ -3,8 +3,15 @@ import { describe, expect, it } from "vitest";
 import { resolveApiUser } from "@/auth/AuthContext";
 
 describe("resolveApiUser", () => {
-  it("maps snake_case names and silo and builds name", () => {
-    const result = resolveApiUser({ id: "u1", role: "Admin", first_name: "Todd", last_name: "W", silo: "BF" });
+  it("maps snake_case names and silo/silos and builds name", () => {
+    const result = resolveApiUser({
+      id: "u1",
+      role: "Admin",
+      first_name: "Todd",
+      last_name: "W",
+      silo: "BF",
+      silos: ["BF", "BI"],
+    });
 
     expect(result).toMatchObject({
       id: "u1",
@@ -14,6 +21,7 @@ describe("resolveApiUser", () => {
       first_name: "Todd",
       last_name: "W",
       silo: "BF",
+      silos: ["BF", "BI"],
       name: "Todd W",
     });
   });
@@ -30,5 +38,11 @@ describe("resolveApiUser", () => {
     const result = resolveApiUser({ id: "u1", role: "Admin", email: "t@x.com" });
 
     expect(result?.name).toBeUndefined();
+  });
+
+  it("returns silos as an empty array when silos is missing", () => {
+    const result = resolveApiUser({ id: "u1", role: "Admin", first_name: "Todd", last_name: "W" });
+
+    expect(result?.silos).toEqual([]);
   });
 });
