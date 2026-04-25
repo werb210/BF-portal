@@ -4,8 +4,6 @@ import { useAuth } from "@/auth/AuthContext";
 import { useSilo } from "@/hooks/useSilo";
 import Topbar from "@/components/layout/Topbar";
 import MayaChat from "@/components/maya/MayaChat";
-import { useDialerStore } from "@/state/dialer.store";
-import PortalDialer from "@/telephony/components/PortalDialer";
 
 
 const TOPBAR_HEIGHT = 68;
@@ -16,7 +14,6 @@ const BF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",         roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
-  { label: "Companies",      path: "/crm/companies",   roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
@@ -27,7 +24,6 @@ const BF_NAV: NavItem[] = [
 const BI_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",          roles: ["Admin", "Staff", "Ops"] },
   { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
-  { label: "Companies",      path: "/crm/companies",   roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
@@ -38,7 +34,6 @@ const SLF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",          roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
-  { label: "Companies",      path: "/crm/companies",   roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Lenders",        path: "/lenders",         roles: ["Admin", "Staff"] },
@@ -59,7 +54,6 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const { user } = useAuth();
   const { silo } = useSilo();
   const role = (user as { role?: string } | null)?.role ?? "";
-  const openDialer = useDialerStore((state) => state.openDialer);
 
   const activeSilo = (silo ?? "BF").toUpperCase() as "BF" | "BI" | "SLF";
   const brand = SILO_BRAND[activeSilo] ?? SILO_BRAND.BF!;
@@ -180,25 +174,6 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         </div>
       )}
 
-      {/* ── Dialer panel ── */}
-      <PortalDialer />
-
-      {/* ── Dialer FAB ── */}
-      <button
-        type="button"
-        onClick={() => openDialer({ source: "global" })}
-        aria-label="Open dialer"
-        style={{
-          position: "fixed", bottom: 24, right: 24, zIndex: 100,
-          width: 52, height: 52, borderRadius: "50%",
-          background: brand.accent, color: "#fff",
-          border: "none", fontSize: 22, cursor: "pointer",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}
-      >
-        ☎︎
-      </button>
     </div>
   );
 }

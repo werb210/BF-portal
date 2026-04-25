@@ -1,0 +1,18 @@
+/* Backstop: every input / textarea / select that doesn't explicitly
+   opt out renders white-on-black. This covers any inline-styled
+   field that was accidentally inheriting the dark surface palette. */
+
+input:not([data-dark="true"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea:not([data-dark="true"]),
+select:not([data-dark="true"]) {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #cbd6e2 !important;
+  border-radius: 4px !important;
+}
+
+input:not([data-dark="true"])::placeholder,
+textarea:not([data-dark="true"])::placeholder {
+  color: #7c98b6 !important;
+  opacity: 1;
+}

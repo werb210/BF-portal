@@ -278,15 +278,23 @@ const ProfileSettings = () => {
             "Mail.Send.Shared",
             "Calendars.ReadWrite",
             "Tasks.ReadWrite",
+            "offline_access",
           ],
           account: accounts[0],
         });
         if (cancelled) return;
         if (result?.accessToken) {
-          await api.patch("/api/users/me/o365-token", { access_token: result.accessToken });
+          await api.post("/api/users/me/o365-tokens", {
+            access_token: result.accessToken,
+            refresh_token: (result as any)?.refreshToken ?? null,
+            expires_in: result.expiresOn
+              ? Math.max(0, Math.floor((result.expiresOn.getTime() - Date.now()) / 1000))
+              : null,
+            account_id: accounts[0]?.homeAccountId ?? null,
+          });
         }
       } catch {
-        // silent — user will be prompted to reconnect on next manual action
+        // silent — server-side refresh endpoint will be tried on next API failure
       }
     })();
     return () => {

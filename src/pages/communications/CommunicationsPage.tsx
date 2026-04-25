@@ -11,7 +11,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "issues", label: "Issues" },
 ];
 
-type Contact = { id: string; name: string; phone: string | null };
+type Contact = { id: string; name: string; phone: string | null; contactId?: string | null };
 type Message = {
   id: string;
   direction: "inbound" | "outbound";
@@ -112,14 +112,16 @@ function SmsTab() {
       })
   }, []);
 
-  const loadMessages = useCallback((contactId: string) => {
+  const loadMessages = useCallback((contactId: string, phone?: string | null) => {
+    const params: Record<string, string> = {};
+    if (contactId) params.contactId = contactId;
+    else if (phone) params.phone = phone;
+
     Promise.resolve(
-      api<{ messages: Message[] }>(
-        `/api/communications/messages?contact_id=${contactId}`
-      )
+      api<{ data?: Message[] } | Message[]>("/api/communications/sms/thread", { params })
     )
       .then((r) => {
-        const msgs = Array.isArray(r?.messages) ? r.messages : [];
+        const msgs = Array.isArray(r) ? r : (r?.data ?? []);
         setThreads((prev) => ({
           ...prev,
           [contactId]: mergeMessages(prev[contactId] ?? [], msgs),
@@ -136,8 +138,8 @@ function SmsTab() {
 
   useEffect(() => {
     if (!selected) return;
-    loadMessages(selected.id);
-    pollRef.current = setInterval(() => loadMessages(selected.id), 5000);
+    loadMessages(selected.id, selected.phone);
+    pollRef.current = setInterval(() => loadMessages(selected.id, selected.phone), 5000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
@@ -158,7 +160,7 @@ function SmsTab() {
         contactId: selected.id,
       });
       setDraft("");
-      loadMessages(selected.id);
+      loadMessages(selected.id, selected.phone);
       setTimeout(() => inputRef.current?.focus(), 50);
     } catch (error) {
       if (isBadRequest(error)) return;
@@ -545,27 +547,26 @@ function SmsTab() {
 // ── Messages tab ──────────────────────────────────────────────────────────────
 function MessagesTab() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [selectedContactId, setSelectedContactId] = useState("");
+  const [crmContacts, setCrmContacts] = useState<Array<{
+    id: string; name: string; phone?: string; email?: string;
+  }>>([]);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null }> }>("/api/communications/sms")
-      .then((r) => {
-        const convo = Array.isArray(r.conversations) ? r.conversations : [];
-        const mapped = convo
-          .map((row) => ({
-            id: row.contact_id ?? "",
-            name: row.contact_name ?? row.contact_phone ?? "Unknown",
-            phone: row.contact_phone ?? null,
-          }))
-          .filter((c) => c.id);
-        setContacts(mapped as Contact[]);
-      })
-      .catch((error) => {
-        if (isBadRequest(error)) return;
-      })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api<{ data?: any[] } | any[]>("/api/crm/contacts");
+        const list = Array.isArray(r) ? r : (r?.data ?? []);
+        if (!cancelled) setCrmContacts(list);
+      } catch {
+        if (!cancelled) setCrmContacts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -589,15 +590,13 @@ function MessagesTab() {
       <h3 style={{ margin: "0 0 16px", fontSize: 17, fontWeight: 700, color: "#0f172a" }}>Client Messages</h3>
       <div style={{ marginBottom: 16 }}>
         <select
-          value={selectedContactId}
-          onChange={(e) => setSelectedContactId(e.target.value)}
-          style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d5db", minWidth: 240 }}
+          value={selectedContactId ?? ""}
+          onChange={(e) => setSelectedContactId(e.target.value || null)}
+          style={{ width: "100%", padding: 8, maxWidth: 360 }}
         >
-          <option value="">Select a contact</option>
-          {contacts.map((contact) => (
-            <option key={contact.id} value={contact.id}>
-              {contact.name}
-            </option>
+          <option value="">Select a contact…</option>
+          {crmContacts.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}{c.phone ? ` — ${c.phone}` : ""}</option>
           ))}
         </select>
       </div>

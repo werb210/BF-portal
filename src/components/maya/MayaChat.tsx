@@ -6,7 +6,6 @@ type Msg = { role: "user" | "maya"; text: string; ts: number };
 const GREETING = "👋 Hi, I'm Maya. How can I help you today?";
 
 export default function MayaChat() {
-  const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([{ role: "maya", text: GREETING, ts: Date.now() }]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -18,7 +17,7 @@ export default function MayaChat() {
     if (scrollRef.current && typeof scrollRef.current.scrollTo === "function") {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
-  }, [msgs, open]);
+  }, [msgs]);
 
   async function send() {
     const userText = input.trim();
@@ -77,23 +76,10 @@ export default function MayaChat() {
     }
   }
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Open Maya"
-        style={fabStyle}
-      >
-        💬
-      </button>
-    );
-  }
-
   return (
     <div style={panelStyle} role="dialog" aria-label="Maya assistant">
       <div style={headerStyle}>
         <span style={{ fontWeight: 600 }}>Maya</span>
-        <button onClick={() => setOpen(false)} aria-label="Close" style={closeBtn}>×</button>
       </div>
 
       <div ref={scrollRef} style={listStyle}>
@@ -141,23 +127,16 @@ export default function MayaChat() {
   );
 }
 
-const fabStyle: CSSProperties = {
-  position: "fixed", bottom: 24, right: 24, width: 56, height: 56,
-  borderRadius: "50%", background: "#2563eb", color: "#fff", border: "none",
-  fontSize: 24, cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", zIndex: 1000,
-};
 const panelStyle: CSSProperties = {
-  position: "fixed", bottom: 24, right: 24, width: 360, height: 540,
+  width: "100%", maxWidth: 360, minHeight: 360, maxHeight: 520,
   background: "#fff", color: "#000", borderRadius: 12,
-  boxShadow: "0 16px 40px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column",
-  zIndex: 1000, border: "1px solid #e2e8f0",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+  display: "flex", flexDirection: "column",
+  border: "1px solid #e2e8f0",
 };
 const headerStyle: CSSProperties = {
   display: "flex", justifyContent: "space-between", alignItems: "center",
   padding: 12, borderBottom: "1px solid #e2e8f0",
-};
-const closeBtn: CSSProperties = {
-  background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: "#000", lineHeight: 1,
 };
 const listStyle: CSSProperties = {
   flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8,
