@@ -48,9 +48,9 @@ const localizer = dateFnsLocalizer({
 
 const inputStyle: CSSProperties = {
   width: "100%",
-  padding: "8px 10px",
-  border: "1px solid #cbd5e1",
-  borderRadius: 8,
+  padding: 8,
+  border: "1px solid #cbd6e2",
+  borderRadius: 4,
   marginTop: 6,
   marginBottom: 10,
   background: "#fff",

@@ -14,16 +14,11 @@ describe("MayaChat", () => {
     vi.clearAllMocks();
   });
 
-  it("starts collapsed and opens via FAB", async () => {
-    const user = userEvent.setup();
+  it("renders inline panel and no floating open button", () => {
     render(<MayaChat />);
 
-    expect(screen.getByRole("button", { name: "Open Maya" })).toBeInTheDocument();
-    expect(screen.queryByRole("dialog", { name: "Maya assistant" })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Open Maya" }));
-
-    expect(await screen.findByRole("dialog", { name: "Maya assistant" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Maya assistant" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open Maya" })).not.toBeInTheDocument();
     expect(screen.getByText("👋 Hi, I'm Maya. How can I help you today?")).toBeInTheDocument();
   });
 
@@ -31,7 +26,6 @@ describe("MayaChat", () => {
     const user = userEvent.setup();
     render(<MayaChat />);
 
-    await user.click(screen.getByRole("button", { name: "Open Maya" }));
     await user.click(screen.getByRole("button", { name: "Talk to Human" }));
 
     await waitFor(() => {
@@ -43,8 +37,6 @@ describe("MayaChat", () => {
     const user = userEvent.setup();
     render(<MayaChat />);
 
-    await user.click(screen.getByRole("button", { name: "Open Maya" }));
-    await screen.findByRole("dialog", { name: "Maya assistant" });
     await user.click(screen.getByRole("button", { name: "Report Issue" }));
     const reportBox = screen.getByPlaceholderText("Describe the issue…").closest("div");
     expect(reportBox).not.toBeNull();
@@ -62,8 +54,6 @@ describe("MayaChat", () => {
     const user = userEvent.setup();
     render(<MayaChat />);
 
-    await user.click(screen.getByRole("button", { name: "Open Maya" }));
-    await screen.findByRole("dialog", { name: "Maya assistant" });
     await user.type(screen.getByPlaceholderText("Ask Maya anything…"), "Need pipeline status");
     await user.click(screen.getByRole("button", { name: "Send" }));
 

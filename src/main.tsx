@@ -14,6 +14,7 @@ import { registerPortalSW } from "./pwa/registerSW";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import App from "./App";
 import "./index.css";
+import "./styles/light-inputs.css";
 
 (window as any).__SILO__ = getSilo();
 

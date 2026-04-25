@@ -21,7 +21,7 @@ vi.mock("@/api", () => ({
 }));
 
 describe("CommunicationsPage", () => {
-  it("uses contact_id in messages query string", async () => {
+  it("loads SMS thread messages from thread endpoint", async () => {
     Element.prototype.scrollIntoView = vi.fn();
     apiMock.mockResolvedValueOnce({
       conversations: [{ contact_id: "c-1", contact_name: "Jordan Lee", contact_phone: "+15551234567" }],
@@ -35,7 +35,7 @@ describe("CommunicationsPage", () => {
     fireEvent.click(await screen.findByText("Jordan Lee"));
 
     await waitFor(() => {
-      expect(apiMock).toHaveBeenCalledWith("/api/communications/messages?contact_id=c-1");
+      expect(apiMock).toHaveBeenCalledWith("/api/communications/sms/thread", { params: { contactId: "c-1" } });
     });
   });
 });
