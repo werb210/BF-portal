@@ -9,7 +9,7 @@ export default function CommissionReport() {
   }, []);
 
   async function load() {
-    setRows(await api("/api/bi/commissions"));
+    setRows(await api("/api/v1/bi/commissions"));
   }
 
   return (

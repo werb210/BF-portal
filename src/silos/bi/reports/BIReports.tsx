@@ -20,7 +20,7 @@ export default function BIReports() {
   }, []);
 
   async function load() {
-    const data = await api("/api/bi/reports/summary");
+    const data = await api("/api/v1/bi/reports/summary");
     setMetrics(data as ReportSummary);
   }
 
