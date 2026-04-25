@@ -1,15 +1,22 @@
-import { apiPost } from "@/api";
-import { ApiError } from "@/api/http";
+import { api } from "@/api";
 
 export async function sendMayaMessage(message: string) {
-  try {
-    return await apiPost("/api/ai/maya/message", {
-      message,
-    });
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 400) {
-      return null;
-    }
-    throw error;
-  }
+  return api.post<{ reply?: string; message?: string; response?: string }>(
+    "/api/ai/maya/message",
+    { message, source: "portal" },
+  );
+}
+
+export async function escalateToHuman(reason = "user_requested_human") {
+  return api.post("/api/maya/escalate", { reason });
+}
+
+export async function reportPortalIssue(payload: {
+  message: string;
+  screenshotBase64?: string;
+}) {
+  return api.post("/api/client/issues", {
+    message: payload.message,
+    screenshotBase64: payload.screenshotBase64 ?? null,
+  });
 }

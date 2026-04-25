@@ -1,0 +1,31 @@
+{
+  "$schema": "https://boreal.financial/schemas/codex-scopes-v1.json",
+  "default": "fullstack",
+  "scopes": {
+    "fullstack": {
+      "description": "Maintainer / cross-silo work. May touch anything.",
+      "deny": []
+    },
+    "BF": {
+      "description": "Boreal Financial work. Cannot modify BI or SLF silo code.",
+      "deny": [
+        "src/silos/bi/**",
+        "src/silos/slf/**"
+      ]
+    },
+    "BI": {
+      "description": "Boreal Insurance work. Cannot modify BF or SLF silo code.",
+      "deny": [
+        "src/silos/bf/**",
+        "src/silos/slf/**"
+      ]
+    },
+    "SLF": {
+      "description": "Site Level Financial work. Cannot modify BF or BI silo code.",
+      "deny": [
+        "src/silos/bf/**",
+        "src/silos/bi/**"
+      ]
+    }
+  }
+}
