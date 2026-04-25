@@ -1,4 +1,6 @@
 import { api } from "@/api";
+import { getMicrosoftAccessToken } from "@/auth/microsoftToken";
+import { msalClient } from "@/auth/msal";
 import { getAuthToken } from "@/lib/authToken";
 
 export type CalendarEvent = {
@@ -17,14 +19,30 @@ export type CalendarEvent = {
 
 export const fetchLocalEvents = async () => {
   if (!getAuthToken()) throw new Error("Not authenticated");
-  const res = await api.getList<CalendarEvent>("/api/calendar/events");
+  const msToken = await getMicrosoftAccessToken(msalClient);
+  const res = await api.getList<CalendarEvent>("/api/calendar/events", {
+    headers: msToken ? { "X-MS-Access-Token": msToken } : {},
+  });
   return res;
 };
 
-export const createLocalEvent = (event: Partial<CalendarEvent>) =>
-  api.post<CalendarEvent>("/api/calendar/events", event);
+export const createLocalEvent = async (event: Partial<CalendarEvent>) => {
+  const msToken = await getMicrosoftAccessToken(msalClient);
+  return api.post<CalendarEvent>("/api/calendar/events", event, {
+    headers: msToken ? { "X-MS-Access-Token": msToken } : {},
+  });
+};
 
-export const updateLocalEvent = (id: string, event: Partial<CalendarEvent>) =>
-  api.patch<CalendarEvent>(`/api/calendar/events/${id}`, event);
+export const updateLocalEvent = async (id: string, event: Partial<CalendarEvent>) => {
+  const msToken = await getMicrosoftAccessToken(msalClient);
+  return api.patch<CalendarEvent>(`/api/calendar/events/${id}`, event, {
+    headers: msToken ? { "X-MS-Access-Token": msToken } : {},
+  });
+};
 
-export const deleteLocalEvent = (id: string) => api.delete<void>(`/api/calendar/events/${id}`);
+export const deleteLocalEvent = async (id: string) => {
+  const msToken = await getMicrosoftAccessToken(msalClient);
+  return api.delete<void>(`/api/calendar/events/${id}`, {
+    headers: msToken ? { "X-MS-Access-Token": msToken } : {},
+  });
+};

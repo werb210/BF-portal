@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BrowserAuthError, PublicClientApplication } from "@azure/msal-browser";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BrowserAuthError } from "@azure/msal-browser";
 import api from "@/api";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { microsoftAuthConfig } from "@/config/microsoftAuth";
+import { initializeMsalClient, msalClient } from "@/auth/msal";
 import { useSettingsStore } from "@/state/settings.store";
 import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
@@ -99,28 +100,11 @@ const ProfileSettings = () => {
     };
   }, []);
 
-  const msalClient = useMemo(() => {
-    if (!microsoftAuthConfig?.clientId) return null;
-    const isIos = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
-    return new PublicClientApplication({
-      auth: {
-        clientId: microsoftAuthConfig.clientId,
-        authority: microsoftAuthConfig.authority,
-        redirectUri: microsoftAuthConfig.redirectUri
-      },
-      cache: {
-        cacheLocation: "sessionStorage",
-        storeAuthStateInCookie: isIos
-      }
-    });
-  }, []);
-
   // MSAL v3 requires explicit initialization before any API call
   useEffect(() => {
-    if (!msalClient) return;
+    if (!microsoftAuthConfig?.clientId) return;
     let cancelled = false;
-    msalClient
-      .initialize()
+    initializeMsalClient()
       .then(() => {
         if (!cancelled) setMsalReady(true);
       })
@@ -130,7 +114,7 @@ const ProfileSettings = () => {
     return () => {
       cancelled = true;
     };
-  }, [msalClient]);
+  }, []);
 
   const isMicrosoftConfigured = Boolean(microsoftAuthConfig?.clientId) && msalReady;
 
@@ -246,7 +230,7 @@ const ProfileSettings = () => {
   );
 
   useEffect(() => {
-    if (!msalClient || !msalReady) return;
+    if (!microsoftAuthConfig?.clientId || !msalReady) return;
     let isMounted = true;
     const handleRedirect = async () => {
       if (redirectHandledRef.current) return;
@@ -276,10 +260,10 @@ const ProfileSettings = () => {
     return () => {
       isMounted = false;
     };
-  }, [exchangeMicrosoftToken, msalClient, msalReady]);
+  }, [exchangeMicrosoftToken, msalReady]);
 
   const handleMicrosoftConnect = async () => {
-    if (!msalClient || !msalReady || isLinkingMicrosoft) return;
+    if (!microsoftAuthConfig?.clientId || !msalReady || isLinkingMicrosoft) return;
     setMicrosoftError(null);
     setIsLinkingMicrosoft(true);
     try {

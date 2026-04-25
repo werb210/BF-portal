@@ -19,6 +19,7 @@ export type AuthUser = {
   last_name?: string;
   lastName?: string;
   silo?: string;
+  silos?: string[];
 };
 
 export type AuthContextType = AuthContextValue;
@@ -85,11 +86,14 @@ export function resolveTokenUser(token: string | null): AuthUser | null {
     lastName?: string;
     last_name?: string;
     silo?: string;
+    silos?: string[];
   } | null;
   const role = normalizeRole(payload?.role ?? null);
   if (!role) return null;
   const firstName = payload?.firstName ?? payload?.first_name;
   const lastName = payload?.lastName ?? payload?.last_name;
+  const silos = Array.isArray(payload?.silos) ? payload.silos.filter((s) => typeof s === "string") : [];
+  const silo = payload?.silo ?? (silos[0] ?? undefined);
   return {
     id: payload?.sub ?? payload?.id ?? "unknown",
     role,
@@ -99,7 +103,8 @@ export function resolveTokenUser(token: string | null): AuthUser | null {
     first_name: firstName,
     lastName,
     last_name: lastName,
-    silo: payload?.silo,
+    silo,
+    silos,
   };
 }
 
@@ -120,6 +125,12 @@ export function resolveApiUser(payload: unknown): AuthUser | null {
     ?? (c.first_name as string | undefined);
   const lastName = (c.lastName as string | undefined)
     ?? (c.last_name as string | undefined);
+  const silos = Array.isArray(c.silos)
+    ? (c.silos as string[]).filter((s) => typeof s === "string")
+    : [];
+  const silo = typeof c.silo === "string"
+    ? c.silo
+    : (silos[0] ?? undefined);
 
   return {
     id: String(c.id ?? c.sub ?? "unknown"),
@@ -131,7 +142,8 @@ export function resolveApiUser(payload: unknown): AuthUser | null {
     first_name: firstName,
     lastName,
     last_name: lastName,
-    silo: typeof c.silo === "string" ? c.silo : undefined,
+    silo,
+    silos,
   };
 }
 

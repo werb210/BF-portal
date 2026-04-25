@@ -1,3 +1,7 @@
+import { api } from "@/api";
+import { getMicrosoftAccessToken } from "@/auth/microsoftToken";
+import { msalClient } from "@/auth/msal";
+
 export type EmailMessage = {
   id: string;
   contactId: string;
@@ -47,6 +51,21 @@ export const fetchEmailMessages = async (contactId: string, folder?: string, que
       resolve(byQuery);
     }, 10)
   );
+
+export type EmailPayload = {
+  to: string | string[];
+  subject: string;
+  body: string;
+  cc?: string[];
+  bcc?: string[];
+};
+
+export async function sendEmail(payload: EmailPayload) {
+  const msToken = await getMicrosoftAccessToken(msalClient);
+  return api.post("/api/email/send", payload, {
+    headers: msToken ? { "X-MS-Access-Token": msToken } : {},
+  });
+}
 
 export const fetchEmailMessage = async (messageId: string) =>
   new Promise<EmailMessage | undefined>((resolve) =>

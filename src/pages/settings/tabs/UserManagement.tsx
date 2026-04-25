@@ -25,7 +25,7 @@ const UserManagement = () => {
     email: string;
     phone: string;
     role: AdminUser["role"];
-    silo: string;
+    silos: string[];
   };
 
   const [userForm, setUserForm] = useState<UserFormState>({
@@ -34,7 +34,7 @@ const UserManagement = () => {
     email: "",
     phone: "",
     role: "Staff",
-    silo: "BF",
+    silos: ["BF"],
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -101,12 +101,18 @@ const UserManagement = () => {
           setFormError("Missing user id. Please refresh and try again.");
           return;
         }
-        await updateUser(editingUser.id, userForm);
+        await updateUser(editingUser.id, {
+          ...userForm,
+          silo: userForm.silos[0] ?? "BF",
+        });
       } else {
-        await addUser({ ...userForm });
+        await addUser({
+          ...userForm,
+          silo: userForm.silos[0] ?? "BF",
+        });
       }
       await fetchUsers();
-      setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff", silo: "BF" });
+      setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff", silos: ["BF"] });
       setEditingUser(null);
       setIsModalOpen(false);
     } catch (error) {
@@ -189,7 +195,7 @@ const UserManagement = () => {
           onClick={() => {
             setEditingUser(null);
             setFormErrors({});
-            setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff", silo: "BF" });
+            setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff", silos: ["BF"] });
             setIsModalOpen(true);
           }}
         >
@@ -253,7 +259,7 @@ const UserManagement = () => {
                       setUserForm({
                         firstName: user.firstName ?? user.first_name ?? fallbackName.firstName,
                         lastName: user.lastName ?? user.last_name ?? fallbackName.lastName,
-                        silo: (user as AdminUser & { silo?: string }).silo ?? "BF",
+                        silos: Array.isArray(user.silos) && user.silos.length > 0 ? user.silos : [(user.silo ?? "BF")],
                         email: user.email ?? "",
                         phone: user.phone ?? "",
                         role: roleValue
@@ -328,7 +334,7 @@ const UserManagement = () => {
                       setUserForm({
                         firstName: user.firstName ?? user.first_name ?? fallbackName.firstName,
                         lastName: user.lastName ?? user.last_name ?? fallbackName.lastName,
-                        silo: (user as AdminUser & { silo?: string }).silo ?? "BF",
+                        silos: Array.isArray(user.silos) && user.silos.length > 0 ? user.silos : [(user.silo ?? "BF")],
                         email: user.email ?? "",
                         phone: user.phone ?? "",
                         role: roleValue
@@ -363,12 +369,20 @@ const UserManagement = () => {
               <label className="ui-field__label">Silo access</label>
               <select
                 className="ui-field__input"
-                value={userForm.role === "Admin" ? "ALL" : userForm.silo}
+                multiple
+                value={userForm.role === "Admin" ? ["BF", "BI", "SLF"] : userForm.silos}
                 disabled={userForm.role === "Admin"}
-                onChange={(e) => setUserForm((prev) => ({ ...prev, silo: e.target.value }))}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions).map((option) => option.value);
+                  setUserForm((prev) => ({ ...prev, silos: selected.length > 0 ? selected : ["BF"] }));
+                }}
               >
                 {userForm.role === "Admin" ? (
-                  <option value="ALL">All silos (Admin)</option>
+                  <>
+                    <option value="BF">BF — Boreal Financial</option>
+                    <option value="BI">BI — Boreal Insurance</option>
+                    <option value="SLF">SLF — Site Level Financial</option>
+                  </>
                 ) : (
                   <>
                     <option value="BF">BF — Boreal Financial</option>
@@ -380,6 +394,11 @@ const UserManagement = () => {
               {userForm.role === "Admin" && (
                 <p style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 4 }}>
                   Admin users have access to all silos.
+                </p>
+              )}
+              {userForm.role !== "Admin" && (
+                <p style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 4 }}>
+                  Hold Ctrl (Windows) or Command (Mac) to select multiple silos.
                 </p>
               )}
             </div>
