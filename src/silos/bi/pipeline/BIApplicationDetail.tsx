@@ -43,7 +43,7 @@ export default function BIApplicationDetail() {
       return;
     }
 
-    await api(`/api/v1/bi/applications/${id}/stage`, {
+    await api(`/api/v1/bi/pipeline/${id}/stage`, {
       method: "PATCH",
       body: JSON.stringify({
         stage,
@@ -108,7 +108,7 @@ function CommissionTab({ applicationId }: { applicationId: string }) {
   }, [applicationId]);
 
   async function load() {
-    const data = await api<CommissionRow>(`/api/bi/commissions/by-application/${applicationId}`);
+    const data = await api<CommissionRow>(`/api/v1/bi/commissions/by-application/${applicationId}`);
     setRow(data);
   }
 

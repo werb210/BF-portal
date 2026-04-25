@@ -20,7 +20,7 @@ export default function ActivityTimeline({
   }, []);
 
   async function load() {
-    const data = await api<ActivityEvent[]>(`/api/bi/applications/${applicationId}/activity`);
+    const data = await api<ActivityEvent[]>(`/api/v1/bi/applications/${applicationId}/activity`);
     setEvents([...data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
   }
 

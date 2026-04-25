@@ -30,7 +30,7 @@ export default function BILenderPortal() {
   }, []);
 
   async function load() {
-    const data = await api<Application[]>("/api/bi/lender/applications");
+    const data = await api<Application[]>("/api/v1/bi/lender/applications");
     setApps(data);
   }
 
@@ -50,10 +50,12 @@ export default function BILenderPortal() {
         toast.error("File is too large. Max size is 25 MB.");
         return;
       }
+      const docType = file.type || "application/octet-stream";
       formData.append("files", file);
+      formData.append("doc_types", docType);
     }
 
-    await api(`/api/bi/application/${appId}/documents`, {
+    await api(`/api/v1/bi/applications/${appId}/documents`, {
       method: "POST",
       body: formData
     });
