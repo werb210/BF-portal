@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import api from "@/api";
-import type { UserRole } from "@/utils/roles";
 
 export type ProfileSettings = {
   firstName: string;
@@ -18,6 +17,8 @@ export type BrandingSettingsState = {
   logoWidth: number;
 };
 
+export type AdminUserRole = "Admin" | "Marketing" | "Staff";
+
 export type AdminUser = {
   id: string;
   name?: string;
@@ -27,7 +28,7 @@ export type AdminUser = {
   last_name?: string;
   email: string;
   phone?: string;
-  role: UserRole;
+  role: AdminUserRole;
   silo?: string;
   silos?: string[];
   disabled?: boolean;
@@ -60,7 +61,7 @@ export type SettingsState = {
   fetchUsers: () => Promise<void>;
   addUser: (user: Pick<AdminUser, "email" | "role" | "firstName" | "lastName" | "phone" | "silo" | "silos">) => Promise<void>;
   updateUser: (id: string, updates: Partial<AdminUser>) => Promise<void>;
-  updateUserRole: (id: string, role: UserRole) => Promise<void>;
+  updateUserRole: (id: string, role: AdminUserRole) => Promise<void>;
   setUserDisabled: (id: string, disabled: boolean) => Promise<void>;
   setMicrosoftConnection: (payload: { email?: string; connected: boolean }) => void;
   setStatusMessage: (message?: string) => void;

@@ -115,7 +115,7 @@ function SmsTab() {
   const loadMessages = useCallback((contactId: string) => {
     Promise.resolve(
       api<{ messages: Message[] }>(
-        `/api/communications/messages?contactId=${contactId}`
+        `/api/communications/messages?contact_id=${contactId}`
       )
     )
       .then((r) => {
@@ -369,14 +369,15 @@ function SmsTab() {
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                background: "#fff",
+                background: "var(--ui-card-bg)",
+                color: "var(--ui-text)",
                 flexShrink: 0,
               }}
             >
               <Avatar name={selected.name} size={36} />
               <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "#000" }}>{selected.name}</div>
-                {selected.phone && <div style={{ fontSize: 12, color: "#8e8e93" }}>{selected.phone}</div>}
+                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>{selected.name}</div>
+                {selected.phone && <div style={{ fontSize: 12, color: "var(--ui-text)" }}>{selected.phone}</div>}
               </div>
             </div>
 
@@ -574,7 +575,7 @@ function MessagesTab() {
     }
 
     setLoading(true);
-    api<{ messages: Message[] }>(`/api/communications/messages?contactId=${selectedContactId}`)
+    api<{ messages: Message[] }>(`/api/communications/messages?contact_id=${selectedContactId}`)
       .then((r) => setMessages(Array.isArray(r?.messages) ? r.messages : []))
       .catch((error) => {
         if (isBadRequest(error)) return;

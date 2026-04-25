@@ -352,6 +352,11 @@ function CreateProductModal({
 }) {
   useDocumentTypes();
   const alwaysRequiredDoc = { key: "business_banking_statements_6_months", label: "6 months business banking statements" };
+  const equipmentFinanceAlwaysRequiredDoc = {
+    key: "purchase_order_or_invoice",
+    label: "Purchase Order or Invoice of Equipment to finance",
+    category: "EQUIPMENT_FINANCE" as const,
+  };
   const coreTypes = [
     "3 years accountant prepared financials",
     "3 years business tax returns",
@@ -392,6 +397,9 @@ function CreateProductModal({
   });
   const [checkedDocs, setCheckedDocs] = useState<Set<string>>(() => {
     const initial = new Set<string>([alwaysRequiredDoc.key]);
+    if ((product as any)?.category === "EQUIPMENT_FINANCE") {
+      initial.add(equipmentFinanceAlwaysRequiredDoc.key);
+    }
     if (product?.requiredDocuments?.length) {
       product.requiredDocuments.forEach((doc) => initial.add(doc.category.toLowerCase().replace(/[^a-z0-9]+/g, "_")));
     }
@@ -407,13 +415,25 @@ function CreateProductModal({
   }
 
   function toggleDoc(id: string) {
-    if (id === alwaysRequiredDoc.key) return;
+    if (id === alwaysRequiredDoc.key || id === equipmentFinanceAlwaysRequiredDoc.key) return;
     setCheckedDocs((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   }
+
+  useEffect(() => {
+    setCheckedDocs((prev) => {
+      const next = new Set(prev);
+      if (form.category === "EQUIPMENT_FINANCE") {
+        next.add(equipmentFinanceAlwaysRequiredDoc.key);
+      } else {
+        next.delete(equipmentFinanceAlwaysRequiredDoc.key);
+      }
+      return next;
+    });
+  }, [form.category]);
 
   async function submit() {
     const next: Record<string, string> = {};
@@ -589,6 +609,9 @@ function CreateProductModal({
             <div style={{ ...sectionStyle, marginBottom: 10 }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
               <DocCheckbox id={alwaysRequiredDoc.key} label={alwaysRequiredDoc.label} locked />
+              {form.category === equipmentFinanceAlwaysRequiredDoc.category && (
+                <DocCheckbox id={equipmentFinanceAlwaysRequiredDoc.key} label={equipmentFinanceAlwaysRequiredDoc.label} locked />
+              )}
             </div>
 
             <div style={{ ...sectionStyle, marginBottom: 10 }}>
