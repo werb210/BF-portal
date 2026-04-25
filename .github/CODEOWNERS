@@ -1,0 +1,18 @@
+# Default — both teams review anything not otherwise matched.
+*                          @werb210
+
+# Silo-specific code: only that silo's team can approve.
+/src/silos/bf/             @werb210/bf-team
+/src/silos/bi/             @werb210/bi-team
+/src/silos/slf/            @werb210/slf-team
+
+# Shared shells — both BF and BI must approve changes here.
+/src/layouts/              @werb210/bf-team @werb210/bi-team
+/src/components/layout/    @werb210/bf-team @werb210/bi-team
+/src/api/                  @werb210/bf-team @werb210/bi-team
+/src/state/                @werb210/bf-team @werb210/bi-team
+
+# Scope config and guard script — admin only.
+/.codex/                   @werb210
+/scripts/enforce-silo-scope.mjs @werb210
+/.github/                  @werb210

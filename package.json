@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:ci": "vitest run",
-    "ci:verify": "npm run build && npm run test:ci"
+    "ci:verify": "npm run build && npm run test:ci",
+    "scope:check": "node scripts/enforce-silo-scope.mjs --base=origin/main"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
@@ -41,7 +42,8 @@
     "workbox-window": "^7.4.0",
     "ws": "^8.19.0",
     "zod": "^3.25.76",
-    "zustand": "^4.5.5"
+    "zustand": "^4.5.5",
+    "html2canvas": "^1.4.1"
   },
   "overrides": {
     "@remix-run/router": "^1.17.0"
@@ -83,6 +85,7 @@
     "vite": "^5.4.14",
     "vite-plugin-pwa": "^1.2.0",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.4",
+    "minimatch": "^9.0.3"
   }
 }
