@@ -21,22 +21,37 @@ export default function MayaChat() {
   }, [msgs, open]);
 
   async function send() {
-    const text = input.trim();
-    if (!text || sending) return;
+    const userText = input.trim();
+    if (!userText || sending) return;
     setInput("");
-    setMsgs((p) => [...p, { role: "user", text, ts: Date.now() }]);
+    setMsgs((p) => [...p, { role: "user", text: userText, ts: Date.now() }]);
     setSending(true);
     try {
-      const reply = await sendMayaMessage(text);
-      setMsgs((p) => [...p, { role: "maya", text: reply || "I'm here.", ts: Date.now() }]);
+      const result = (await sendMayaMessage(userText)) as unknown;
+      const replyText: string = extractReplyText(result);
+      setMsgs((p) => [...p, { role: "maya", text: replyText, ts: Date.now() }]);
     } catch {
       setMsgs((p) => [
         ...p,
-        { role: "maya", text: "I'm having trouble right now — want me to connect you to a human?", ts: Date.now() },
+        {
+          role: "maya",
+          text: "I'm having trouble right now — want me to connect you to a human?",
+          ts: Date.now(),
+        },
       ]);
     } finally {
       setSending(false);
     }
+  }
+
+  function extractReplyText(value: unknown): string {
+    if (typeof value === "string") return value || "I'm here.";
+    if (value && typeof value === "object") {
+      const v = value as Record<string, unknown>;
+      const candidate = v.reply ?? v.message ?? v.response ?? v.text;
+      if (typeof candidate === "string" && candidate.trim()) return candidate;
+    }
+    return "I'm here.";
   }
 
   async function escalate() {
