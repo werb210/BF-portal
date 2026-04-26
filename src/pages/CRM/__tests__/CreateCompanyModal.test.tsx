@@ -23,7 +23,10 @@ describe("CreateCompanyModal", () => {
   it("posts /api/companies with expected body shape", async () => {
     apiMock.post.mockResolvedValue({ id: "cmp-1", name: "Acme" });
     render(<CreateCompanyModal onClose={() => {}} />);
-    fireEvent.change(screen.getAllByRole("textbox")[0], { target: { value: "Acme" } });
+    const textboxes = screen.getAllByRole("textbox");
+    const companyNameInput = textboxes[0];
+    if (!companyNameInput) throw new Error("Expected company name input");
+    fireEvent.change(companyNameInput, { target: { value: "Acme" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith("/api/companies", expect.objectContaining({ name: "Acme", address_country: "CA" })));
   });
