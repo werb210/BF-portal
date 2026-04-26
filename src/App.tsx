@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { roleIn } from "@/auth/roles";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import IncomingCallModal from "@/components/IncomingCallModal";
+import InstallPromptBanner from "@/components/InstallPromptBanner";
 import { ActiveCallBanner } from "@/components/ActiveCallBanner";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import RequireRole from "@/components/auth/RequireRole";
@@ -130,6 +131,7 @@ const AppRoutes = () => {
 
   return (
     <>
+      <InstallPromptBanner />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/verify" element={<Verify />} />
