@@ -46,17 +46,6 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-const inputStyle: CSSProperties = {
-  width: "100%",
-  padding: 8,
-  border: "1px solid #cbd6e2",
-  borderRadius: 4,
-  marginTop: 6,
-  marginBottom: 10,
-  background: "#fff",
-  color: "#111827",
-};
-
 function groupTasks(tasks: CalendarTask[]) {
   const today = new Date();
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -97,7 +86,7 @@ function CalendarContent() {
   const [showEventForm, setShowEventForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [eventForm, setEventForm] = useState({ title: "", start: "", end: "", attendees: "", location: "", notes: "" });
-  const [taskForm, setTaskForm] = useState({ title: "", due_date: "", assigned_to: "" });
+  const [taskForm, setTaskForm] = useState({ title: "", due_date: "", priority: "normal", notes: "" });
   const queryClient = useQueryClient();
 
   const eventsQuery = useQuery({
@@ -124,7 +113,7 @@ function CalendarContent() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["calendar-tasks"] });
       setShowTaskForm(false);
-      setTaskForm({ title: "", due_date: "", assigned_to: "" });
+      setTaskForm({ title: "", due_date: "", priority: "normal", notes: "" });
     },
   });
 
@@ -231,12 +220,53 @@ function CalendarContent() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
           <div style={{ width: "min(560px, 90vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>Add Event</h3>
-            <label>Event Title<input style={inputStyle} value={eventForm.title} onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))} /></label>
-            <label>Start Date & Time<input style={inputStyle} type="datetime-local" value={eventForm.start} onChange={(e) => setEventForm((prev) => ({ ...prev, start: e.target.value }))} /></label>
-            <label>End Date & Time<input style={inputStyle} type="datetime-local" value={eventForm.end} onChange={(e) => setEventForm((prev) => ({ ...prev, end: e.target.value }))} /></label>
-            <label>Attendees<input style={{ ...inputStyle, background: "#fff", color: "#111827" }} value={eventForm.attendees} onChange={(e) => setEventForm((prev) => ({ ...prev, attendees: e.target.value }))} /></label>
-            <label>Location<input style={{ ...inputStyle, background: "#fff", color: "#111827" }} value={eventForm.location} onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))} /></label>
-            <label>Notes<textarea style={{ ...inputStyle, background: "#fff", color: "#111827" }} value={eventForm.notes} onChange={(e) => setEventForm((prev) => ({ ...prev, notes: e.target.value }))} /></label>
+            <label style={fieldRow}>
+              <span style={fieldLabel}>Title</span>
+              <input
+                type="text"
+                value={eventForm.title}
+                onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Event title"
+                style={calInputStyle}
+              />
+            </label>
+            <label style={fieldRow}>
+              <span style={fieldLabel}>Start</span>
+              <input
+                type="datetime-local"
+                value={eventForm.start}
+                onChange={(e) => setEventForm((prev) => ({ ...prev, start: e.target.value }))}
+                style={calInputStyle}
+              />
+            </label>
+            <label style={fieldRow}>
+              <span style={fieldLabel}>End</span>
+              <input
+                type="datetime-local"
+                value={eventForm.end}
+                onChange={(e) => setEventForm((prev) => ({ ...prev, end: e.target.value }))}
+                style={calInputStyle}
+              />
+            </label>
+            <label style={fieldRow}>
+              <span style={fieldLabel}>Location</span>
+              <input
+                type="text"
+                value={eventForm.location}
+                onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))}
+                placeholder="Location, Teams link, or address"
+                style={calInputStyle}
+              />
+            </label>
+            <label style={fieldRow}>
+              <span style={fieldLabel}>Notes</span>
+              <textarea
+                value={eventForm.notes}
+                onChange={(e) => setEventForm((prev) => ({ ...prev, notes: e.target.value }))}
+                rows={4}
+                style={calInputStyle}
+              />
+            </label>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => createEventMutation.mutate(eventForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2563eb", background: "#2563eb", color: "#fff" }}>Save</button>
               <button onClick={() => setShowEventForm(false)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}>Cancel</button>
@@ -249,9 +279,45 @@ function CalendarContent() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
           <div style={{ width: "min(560px, 90vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>Add Task</h3>
-            <label>Task Title<input style={inputStyle} value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} /></label>
-            <label>Due Date<input style={inputStyle} type="datetime-local" value={taskForm.due_date} onChange={(e) => setTaskForm((prev) => ({ ...prev, due_date: e.target.value }))} /></label>
-            <label>Assign To<input style={inputStyle} value={taskForm.assigned_to} onChange={(e) => setTaskForm((prev) => ({ ...prev, assigned_to: e.target.value }))} /></label>
+            <label style={fieldRow}>
+              <span style={fieldLabel}>Title</span>
+              <input
+                type="text"
+                value={taskForm.title}
+                onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))}
+                style={calInputStyle}
+              />
+            </label>
+            <label style={fieldRow}>
+              <span style={fieldLabel}>Due</span>
+              <input
+                type="datetime-local"
+                value={taskForm.due_date}
+                onChange={(e) => setTaskForm((prev) => ({ ...prev, due_date: e.target.value }))}
+                style={calInputStyle}
+              />
+            </label>
+            <label style={fieldRow}>
+              <span style={fieldLabel}>Priority</span>
+              <select
+                value={taskForm.priority}
+                onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))}
+                style={calInputStyle}
+              >
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <label style={fieldRow}>
+              <span style={fieldLabel}>Notes</span>
+              <textarea
+                value={taskForm.notes}
+                onChange={(e) => setTaskForm((prev) => ({ ...prev, notes: e.target.value }))}
+                rows={4}
+                style={calInputStyle}
+              />
+            </label>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => createTaskMutation.mutate(taskForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #0f766e", background: "#0f766e", color: "#fff" }}>Save</button>
               <button onClick={() => setShowTaskForm(false)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}>Cancel</button>
@@ -262,6 +328,16 @@ function CalendarContent() {
     </div>
   );
 }
+
+const fieldRow: CSSProperties = { display: "block", marginBottom: 12 };
+const fieldLabel: CSSProperties = {
+  display: "block", fontSize: 12, fontWeight: 600,
+  color: "#33475b", marginBottom: 4,
+};
+const calInputStyle: CSSProperties = {
+  width: "100%", padding: 8, border: "1px solid #cbd6e2",
+  borderRadius: 4, background: "#ffffff", color: "#000000", fontSize: 14,
+};
 
 const CalendarPage = () => (
   <RequireRole roles={["Admin", "Staff"]}>

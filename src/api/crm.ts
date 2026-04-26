@@ -2,6 +2,7 @@ import api from "@/api";
 import { requireAuth } from "@/utils/requireAuth";
 import { useCrmStore } from "@/state/crm.store";
 import type { CRMLead } from "@/types/crm";
+import { withO365Refresh } from "./o365Interceptor";
 
 type ApiLead = Record<string, unknown>;
 
@@ -296,11 +297,12 @@ export const crmApi = {
       bcc?: string[];
       subject: string;
       body_html: string;
-    }) => api.post<any>(`${root(s)}/emails`, body),
+    }) => withO365Refresh(() => api.post<any>(`${root(s)}/emails`, body)),
   },
   meetings: {
     list: (s: Scope) => api.get<any>(`${root(s)}/meetings`).then(unwrap<any[]>),
-    create: (s: Scope, body: Record<string, unknown>) => api.post<any>(`${root(s)}/meetings`, body),
+    create: (s: Scope, body: Record<string, unknown>) =>
+      withO365Refresh(() => api.post<any>(`${root(s)}/meetings`, body)),
   },
 
   // Shared mailbox + inbox
@@ -308,13 +310,17 @@ export const crmApi = {
     api.get<{ data?: SharedMailboxList } | SharedMailboxList>(`/api/crm/shared-mailboxes`).then(unwrap<SharedMailboxList>),
   inbox: {
     list: (mailbox?: string) =>
-      api.get<{ data?: InboxMessage[] } | InboxMessage[]>(
-        `/api/crm/inbox`, { params: mailbox ? { mailbox } : {} },
-      ).then(unwrap<InboxMessage[]>),
+      withO365Refresh(() =>
+        api.get<{ data?: InboxMessage[] } | InboxMessage[]>(
+          `/api/crm/inbox`, { params: mailbox ? { mailbox } : {} },
+        ).then(unwrap<InboxMessage[]>)
+      ),
     get: (id: string, mailbox?: string) =>
-      api.get<{ data?: InboxMessage } | InboxMessage>(
-        `/api/crm/inbox/${encodeURIComponent(id)}`,
-        { params: mailbox ? { mailbox } : {} },
-      ).then(unwrap<InboxMessage>),
+      withO365Refresh(() =>
+        api.get<{ data?: InboxMessage } | InboxMessage>(
+          `/api/crm/inbox/${encodeURIComponent(id)}`,
+          { params: mailbox ? { mailbox } : {} },
+        ).then(unwrap<InboxMessage>)
+      ),
   },
 };
