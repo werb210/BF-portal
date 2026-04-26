@@ -1,19 +1,20 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useDialerStore } from "@/state/dialer.store";
+import { getToken } from "@/auth/token";
 
 export default function GlobalDialerButton(): JSX.Element | null {
   const openDialer = useDialerStore((s) => s.openDialer);
   const [authed, setAuthed] = useState<boolean>(false);
 
   useEffect(() => {
-    try {
-      const hasToken =
-        Boolean(localStorage.getItem("bf_session")) ||
-        document.cookie.includes("bf_session=");
-      setAuthed(hasToken);
-    } catch {
-      setAuthed(true);
-    }
+    const check = () => setAuthed(Boolean(getToken()));
+    check();
+    // Re-check when token changes elsewhere (login/logout in another tab)
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key.includes("auth")) check();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   if (!authed) return null;
@@ -26,8 +27,8 @@ export default function GlobalDialerButton(): JSX.Element | null {
       title="Open dialer"
       style={fab}
     >
-      <span style={{ fontSize: 18, lineHeight: 1 }}>📞</span>
-      <span style={{ fontSize: 12, fontWeight: 600 }}>Dialer</span>
+      <span style={{ fontSize: 20, lineHeight: 1 }}>📞</span>
+      <span style={{ fontSize: 11, fontWeight: 600, marginTop: 2 }}>Dialer</span>
     </button>
   );
 }
@@ -41,7 +42,6 @@ const fab: CSSProperties = {
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: 2,
   width: 64,
   height: 64,
   borderRadius: 32,

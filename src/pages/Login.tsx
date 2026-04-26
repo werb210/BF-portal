@@ -25,6 +25,21 @@ export default function Login() {
     clearOtpFlowState();
   }, []);
 
+  // Auto-submit when the phone is fully entered and valid.
+  // Debounce by 350ms so the request doesn't fire mid-typing on
+  // pasted numbers or partial entries.
+  useEffect(() => {
+    if (!normalizedPhone || isSubmitting) return;
+    const t = window.setTimeout(() => {
+      // Re-check inside timeout in case the user kept typing.
+      if (!isSubmitting) {
+        const fakeEvent = { preventDefault: () => {} } as FormEvent<HTMLFormElement>;
+        void handleStartOTP(fakeEvent);
+      }
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [normalizedPhone]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const normalizedPhone = useMemo(() => normalizeNorthAmericanPhone(phone), [phone]);
 
   const handleStartOTP = async (event: FormEvent<HTMLFormElement>) => {
@@ -84,7 +99,7 @@ export default function Login() {
             disabled={!normalizedPhone || isSubmitting}
             className="w-72 rounded-md bg-blue-600 px-4 py-3 text-white disabled:cursor-not-allowed disabled:bg-blue-300"
           >
-            {isSubmitting ? "Sending..." : "Send code"}
+            {isSubmitting ? "Sending..." : normalizedPhone ? "Sending code…" : "Send code"}
           </button>
         </form>
 
