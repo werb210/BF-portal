@@ -11,7 +11,9 @@ import {
   type LenderProduct,
 } from "@/api/lenders";
 import { getErrorMessage } from "@/utils/errors";
+import { canDelete } from "@/auth/canDelete";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
+import { useAuth } from "@/hooks/useAuth";
 import { phoneInputHandler, formatDollar, formatRate, unformatDollar } from "@/utils/format";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -836,6 +838,9 @@ const PAGE_SIZE = 10;
 
 export default function LendersPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const showDelete = canDelete(user?.role as any);
+  void showDelete;
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Lender | null>(null);

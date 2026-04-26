@@ -12,7 +12,9 @@ import Select from "@/components/ui/Select";
 import { getErrorMessage } from "@/utils/errors";
 import { getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
 import { ApiError } from "@/api";
+import { canDelete } from "@/auth/canDelete";
 import { useAuthorization } from "@/hooks/useAuthorization";
+import { useAuth } from "@/hooks/useAuth";
 import {
   createLenderProduct,
   fetchLenderProducts,
@@ -182,6 +184,9 @@ const LenderProductsContent = () => {
   const [productsState, setProductsState] = useState<LenderProduct[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const showDelete = canDelete(user?.role as any);
+  void showDelete;
   const canManageProducts = useAuthorization({ roles: ["Admin", "Staff"] });
   const isNewRoute = location.pathname.endsWith("/new");
 
