@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import Input from "@/components/ui/Input";
+import ModalFooterWithDelete from "@/components/ModalFooterWithDelete";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
 import type { LenderProductCategory, RateType } from "@/types/lenderManagement.types";
@@ -40,6 +40,8 @@ type LenderProductModalProps = {
   onSubmit: () => void;
   onClose: () => void;
   onCancel: () => void;
+  onDelete?: () => Promise<void> | void;
+  isDeleting?: boolean;
   statusNote?: ReactNode;
 };
 
@@ -60,6 +62,8 @@ const LenderProductModal = ({
   onSubmit,
   onClose,
   onCancel,
+  onDelete,
+  isDeleting = false,
   statusNote
 }: LenderProductModalProps) => {
   if (!isOpen) return null;
@@ -242,14 +246,14 @@ const LenderProductModal = ({
           </div>
         </div>
 
-        <div className="management-actions">
-          <Button type="submit" disabled={isSaving || isSubmitDisabled}>
-            {isSaving ? "Saving..." : "Save product"}
-          </Button>
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={isSaving}>
-            Cancel
-          </Button>
-        </div>
+        <ModalFooterWithDelete
+          onCancel={onCancel}
+          onSave={onSubmit}
+          onDelete={onDelete}
+          saveDisabled={isSaving || isSubmitDisabled}
+          deleting={isDeleting}
+          saveLabel="Save product"
+        />
       </form>
     </Modal>
   );
