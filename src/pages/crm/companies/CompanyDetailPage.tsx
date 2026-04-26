@@ -49,6 +49,10 @@ export default function CompanyDetailPage() {
   return (
     <div style={layout}>
       <aside style={rail}>
+        <Link
+          to="/crm/contacts"
+          style={{ color: "#1d4ed8", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}
+        >← Back to contacts</Link>
         <h2 style={{ marginTop: 0 }}>{company.name}</h2>
         {company.industry && <div style={subtle}>{company.industry}</div>}
         {company.domain && (

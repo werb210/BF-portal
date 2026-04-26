@@ -4,6 +4,7 @@ import { crmApi, type CompanyRow } from "@/api/crm";
 import { canDelete } from "@/auth/canDelete";
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
+import CreateCompanyModal from "./CreateCompanyModal";
 
 type SortCol = "name" | "industry" | "owner_name" | "created_at";
 
@@ -16,6 +17,8 @@ export default function CompaniesPage() {
   const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>({ col: "created_at", dir: "desc" });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,7 +39,7 @@ export default function CompaniesPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [silo, q, sort.col, sort.dir]);
+  }, [silo, q, sort.col, sort.dir, refreshKey]);
 
   const onSort = (col: SortCol) =>
     setSort(s => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
@@ -71,6 +74,10 @@ export default function CompaniesPage() {
         />
         <button style={toolbarBtn}>Export</button>
         <button style={toolbarBtn}>Edit columns</button>
+        <button
+          onClick={() => setCreateOpen(true)}
+          style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}
+        >+ Create Company</button>
       </div>
 
       <table style={table}>
@@ -92,6 +99,12 @@ export default function CompaniesPage() {
           {!loading && !err && tableRows}
         </tbody>
       </table>
+      {createOpen && (
+        <CreateCompanyModal
+          onClose={() => setCreateOpen(false)}
+          onSaved={() => setRefreshKey((k) => k + 1)}
+        />
+      )}
     </div>
   );
 }

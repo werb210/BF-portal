@@ -86,7 +86,7 @@ function CalendarContent() {
   const [showEventForm, setShowEventForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [eventForm, setEventForm] = useState({ title: "", start: "", end: "", attendees: "", location: "", notes: "" });
-  const [taskForm, setTaskForm] = useState({ title: "", due_date: "", priority: "normal", notes: "" });
+  const [taskForm, setTaskForm] = useState({ title: "", dueAt: "", priority: "normal", notes: "" });
   const queryClient = useQueryClient();
 
   const eventsQuery = useQuery({
@@ -113,7 +113,7 @@ function CalendarContent() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["calendar-tasks"] });
       setShowTaskForm(false);
-      setTaskForm({ title: "", due_date: "", priority: "normal", notes: "" });
+      setTaskForm({ title: "", dueAt: "", priority: "normal", notes: "" });
     },
   });
 
@@ -292,8 +292,8 @@ function CalendarContent() {
               <span style={fieldLabel}>Due</span>
               <input
                 type="datetime-local"
-                value={taskForm.due_date}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, due_date: e.target.value }))}
+                value={taskForm.dueAt}
+                onChange={(e) => setTaskForm((prev) => ({ ...prev, dueAt: e.target.value }))}
                 style={calInputStyle}
               />
             </label>
@@ -320,7 +320,7 @@ function CalendarContent() {
             </label>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => createTaskMutation.mutate(taskForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #0f766e", background: "#0f766e", color: "#fff" }}>Save</button>
-              <button onClick={() => setShowTaskForm(false)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}>Cancel</button>
+              <button onClick={() => setShowTaskForm(false)} style={{ color: "#000", background: "#fff", border: "1px solid #d1d5db", padding: "8px 14px", borderRadius: 8, fontWeight: 500 }}>Cancel</button>
             </div>
           </div>
         </div>
