@@ -1,4 +1,4 @@
-import { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { api } from "@/api";
 import OfferUploader from "@/components/offers/OfferUploader";
 import ChatPanel from "@/components/chat/ChatPanel";
@@ -35,6 +35,7 @@ const ApplicationDetail = ({ applicationId: propId }: { applicationId?: string }
   const [activeTab, setActiveTab] = useState<TabName>("Application");
   const [selectedLenders, setSelectedLenders] = useState<Record<string, boolean>>({});
   const [uploadError, setUploadError] = useState<string>("");
+  const [contacts, setContacts] = useState<any[]>([]);
 
   const handleDocAction = async (status: "accepted" | "rejected") => {
     const reason = status === "rejected" ? window.prompt("Rejection reason") : "Accepted";
@@ -48,6 +49,24 @@ const ApplicationDetail = ({ applicationId: propId }: { applicationId?: string }
       .map(([lender]) => lender);
     await api.post("/api/lender-submissions", { applicationId, lenders });
   };
+
+
+
+  useEffect(() => {
+    if (!applicationId) return;
+    let cancelled = false;
+    api.get<any[]>(`/api/applications/${applicationId}/contacts`)
+      .then((r) => !cancelled && setContacts(Array.isArray(r) ? r : []))
+      .catch(() => !cancelled && setContacts([]));
+    return () => { cancelled = true; };
+  }, [applicationId]);
+
+  const contactsByRole = useMemo(() => ({
+    primary: contacts.filter((c) => c?.is_primary_applicant || String(c?.role ?? "").toLowerCase() === "applicant"),
+    partners: contacts.filter((c) => String(c?.role ?? "").toLowerCase() === "partner"),
+    guarantors: contacts.filter((c) => String(c?.role ?? "").toLowerCase() === "guarantor"),
+    other: contacts.filter((c) => !["applicant", "partner", "guarantor"].includes(String(c?.role ?? "").toLowerCase()) && !c?.is_primary_applicant),
+  }), [contacts]);
 
   const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -111,6 +130,26 @@ const ApplicationDetail = ({ applicationId: propId }: { applicationId?: string }
           <button type="button" onClick={() => void sendSelected()}>Send Selected</button>
         </div>
       ) : null}
+
+
+      <section style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 12 }}>
+        <h3 style={{ marginTop: 0 }}>Contacts</h3>
+        {[
+          ["Primary Applicant", contactsByRole.primary],
+          ["Partners", contactsByRole.partners],
+          ["Guarantors", contactsByRole.guarantors],
+          ["Other", contactsByRole.other],
+        ].map(([label, rows]) => (
+          <div key={String(label)} style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, textTransform: "uppercase", color: "#64748b", marginBottom: 4 }}>{String(label)}</div>
+            {(rows as any[]).length === 0 ? <div style={{ color: "#94a3b8", fontSize: 13 }}>—</div> : (rows as any[]).map((c) => (
+              <div key={c.id} style={{ fontSize: 14, marginBottom: 4 }}>
+                {c.name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim()} {c.email ? `• ${c.email}` : ""} {c.phone ? `• ${c.phone}` : ""}
+              </div>
+            ))}
+          </div>
+        ))}
+      </section>
 
       {activeTab === "Notes" ? <ChatPanel applicationId={applicationId} /> : null}
       {activeTab === "Financials" ? <OfferUploader applicationId={applicationId} /> : null}

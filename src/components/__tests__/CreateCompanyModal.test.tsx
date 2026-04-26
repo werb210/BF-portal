@@ -2,26 +2,22 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import CreateCompanyModal from "@/pages/crm/companies/CreateCompanyModal";
 
-const { apiMock } = vi.hoisted(() => {
-  const mock = { get: vi.fn(), post: vi.fn() };
-  return { apiMock: mock };
-});
-
+const { apiMock } = vi.hoisted(() => ({ apiMock: { get: vi.fn(), post: vi.fn() } }));
 vi.mock("@/api", () => ({ api: apiMock }));
 
 describe("CreateCompanyModal", () => {
-  it("shows required error for empty name", async () => {
-    apiMock.get.mockResolvedValue([]);
+  window.alert = vi.fn();
+
+  it("keeps save disabled when company name is empty", () => {
     render(<CreateCompanyModal onClose={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Company name is required")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
   it("posts expected body when valid", async () => {
-    apiMock.get.mockResolvedValue([]);
     apiMock.post.mockResolvedValue({});
     render(<CreateCompanyModal onClose={() => {}} />);
-    fireEvent.change(screen.getByLabelText("Company name"), { target: { value: "Acme" } });
+    const nameInput = screen.getAllByRole("textbox")[0];
+    fireEvent.change(nameInput, { target: { value: "Acme" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith("/api/companies", expect.objectContaining({ name: "Acme" })));
   });

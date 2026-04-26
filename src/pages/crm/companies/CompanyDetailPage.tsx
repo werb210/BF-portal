@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "@/api";
 import { crmApi, type CompanyRow, type ContactRow, type Scope } from "@/api/crm";
@@ -31,9 +31,7 @@ export default function CompanyDetailPage() {
     let cancelled = false;
     (async () => {
       try {
-        const r = await api.get<{ data?: ContactRow[] } | ContactRow[]>(
-          `/api/crm/contacts`, { params: { companyId: id } },
-        );
+        const r = await api.get<{ data?: ContactRow[] } | ContactRow[]>(`/api/crm/contacts`, { params: { companyId: id } });
         const list = Array.isArray(r) ? r : (r?.data ?? []);
         if (!cancelled) setContacts(list);
       } catch {
@@ -43,45 +41,35 @@ export default function CompanyDetailPage() {
     return () => { cancelled = true; };
   }, [id, refreshKey]);
 
+  const grouped = useMemo(() => {
+    const primary = contacts.filter((c) => c.is_primary_applicant || String(c.role ?? "").toLowerCase() === "applicant");
+    return {
+      primary,
+      partners: contacts.filter((c) => String(c.role ?? "").toLowerCase() === "partner"),
+      guarantors: contacts.filter((c) => String(c.role ?? "").toLowerCase() === "guarantor"),
+      other: contacts.filter((c) => !["applicant", "partner", "guarantor"].includes(String(c.role ?? "").toLowerCase()) && !c.is_primary_applicant),
+    };
+  }, [contacts]);
+
   if (err) return <div style={{ padding: 24, color: "#b00020" }}>{err}</div>;
   if (!company) return <div style={{ padding: 24 }}>Loading…</div>;
 
   return (
     <div style={layout}>
       <aside style={rail}>
-        <Link
-          to="/crm/contacts"
-          style={{ color: "#1d4ed8", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}
-        >← Back to contacts</Link>
+        <Link to="/crm/contacts" style={{ color: "#1d4ed8", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}>← Back to contacts</Link>
         <h2 style={{ marginTop: 0 }}>{company.name}</h2>
         {company.industry && <div style={subtle}>{company.industry}</div>}
-        {company.domain && (
-          <a href={`https://${company.domain}`} target="_blank" rel="noreferrer" style={{ color: "#0091ae" }}>
-            {company.domain}
-          </a>
-        )}
-        <ActionBar
-          scope={scope}
-          onChanged={() => setRefreshKey(k => k + 1)}
-        />
+        {company.domain && <a href={`https://${company.domain}`} target="_blank" rel="noreferrer" style={{ color: "#0091ae" }}>{company.domain}</a>}
+        <ActionBar scope={scope} onChanged={() => setRefreshKey(k => k + 1)} />
         <div style={fieldsBlock}>
           <Field label="Industry" value={company.industry ?? null} />
-          <Field label="Domain"   value={company.domain ?? null} />
-          <Field label="City"     value={company.city ?? null} />
-          <Field label="Region"   value={company.region ?? null} />
-          <Field label="Owner"    value={company.owner_name ?? null} />
-          <Field label="Created"  value={company.created_at ? new Date(company.created_at).toLocaleString() : null} />
+          <Field label="Domain" value={company.domain ?? null} />
+          <Field label="City" value={company.city ?? null} />
+          <Field label="Region" value={company.region ?? null} />
+          <Field label="Owner" value={company.owner_name ?? null} />
+          <Field label="Created" value={company.created_at ? new Date(company.created_at).toLocaleString() : null} />
         </div>
-        {company.types_of_financing && company.types_of_financing.length > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <div style={fieldLabel}>Types of financing</div>
-            <div style={{ marginTop: 4 }}>
-              {company.types_of_financing.map(t => (
-                <span key={t} style={tag}>{t}</span>
-              ))}
-            </div>
-          </div>
-        )}
       </aside>
 
       <main>
@@ -89,39 +77,39 @@ export default function CompanyDetailPage() {
       </main>
 
       <aside style={rail}>
-        <h3 style={{ marginTop: 0 }}>Contacts</h3>
-        {contacts.length === 0 && <div style={subtle}>No associated contacts.</div>}
-        {contacts.map(c => (
-          <div key={c.id} style={{ marginBottom: 8 }}>
-            <Link to={`/crm/contacts/${c.id}`} style={{ color: "#0091ae" }}>{c.name}</Link>
-            {c.email && <div style={{ fontSize: 12, color: "#7c98b6" }}>{c.email}</div>}
-          </div>
-        ))}
+        <h3 style={{ marginTop: 0 }}>People</h3>
+        <PeopleSection title="Primary Applicant" contacts={grouped.primary} />
+        <PeopleSection title="Partners" contacts={grouped.partners} />
+        <PeopleSection title="Guarantors" contacts={grouped.guarantors} />
+        <PeopleSection title="Other" contacts={grouped.other} />
       </aside>
     </div>
   );
 }
 
-function Field({ label, value }: { label: string; value: string | null }) {
+function PeopleSection({ title, contacts }: { title: string; contacts: ContactRow[] }) {
   return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={fieldLabel}>{label}</div>
-      <div style={{ color: "#000" }}>{value || "—"}</div>
-    </div>
+    <section style={{ marginBottom: 12 }}>
+      <div style={fieldLabel}>{title}</div>
+      {contacts.length === 0 && <div style={{ color: "#64748b", fontSize: 13 }}>—</div>}
+      {contacts.map((c) => (
+        <div key={c.id} style={{ marginTop: 6, borderBottom: "1px solid #eef2f7", paddingBottom: 6 }}>
+          <Link to={`/crm/contacts/${c.id}`} style={{ color: "#0091ae", fontWeight: 600 }}>{c.name}</Link>
+          {c.email ? <div style={{ fontSize: 12, color: "#334155" }}>{c.email}</div> : null}
+          {c.phone ? <div style={{ fontSize: 12, color: "#334155" }}>{c.phone}</div> : null}
+          {typeof c.ownership_percent === "number" ? <div style={{ fontSize: 12, color: "#334155" }}>Ownership: {c.ownership_percent}%</div> : null}
+        </div>
+      ))}
+    </section>
   );
 }
 
-const layout: CSSProperties = {
-  display: "grid", gridTemplateColumns: "320px 1fr 320px", gap: 16,
-  padding: 16, background: "#fff", color: "#000",
-};
-const rail: CSSProperties = {
-  background: "#fff", border: "1px solid #eaf0f6", borderRadius: 6, padding: 16,
-};
+function Field({ label, value }: { label: string; value: string | null }) {
+  return <div style={{ marginBottom: 8 }}><div style={fieldLabel}>{label}</div><div style={{ color: "#000" }}>{value || "—"}</div></div>;
+}
+
+const layout: CSSProperties = { display: "grid", gridTemplateColumns: "320px 1fr 320px", gap: 16, padding: 16, background: "#fff", color: "#000" };
+const rail: CSSProperties = { background: "#fff", border: "1px solid #eaf0f6", borderRadius: 6, padding: 16 };
 const subtle: CSSProperties = { color: "#516f90", fontSize: 13, marginBottom: 12 };
 const fieldsBlock: CSSProperties = { marginTop: 16, paddingTop: 16, borderTop: "1px solid #eaf0f6" };
 const fieldLabel: CSSProperties = { fontSize: 11, color: "#7c98b6", textTransform: "uppercase" };
-const tag: CSSProperties = {
-  display: "inline-block", background: "#cef7e6", color: "#0a6e57",
-  padding: "2px 8px", borderRadius: 12, fontSize: 12, marginRight: 4, marginBottom: 4,
-};
