@@ -302,6 +302,13 @@ const ProfileSettings = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void api.post("/api/users/me/o365-refresh", {}).catch(() => {});
+    }, 30 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
   const handleMicrosoftConnect = async () => {
     if (!microsoftAuthConfig?.clientId || !msalReady || isLinkingMicrosoft) return;
     setMicrosoftError(null);

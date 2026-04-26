@@ -68,6 +68,14 @@ function SmsTab() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [threads, setThreads] = useState<Record<string, Message[]>>({});
   const [selected, setSelected] = useState<Contact | null>(null);
+  const [threadMessages, setThreadMessages] = useState<Array<{
+    id: string;
+    direction: "inbound" | "outbound";
+    body: string;
+    created_at: string;
+    from_number?: string;
+    to_number?: string;
+  }>>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
@@ -112,6 +120,29 @@ function SmsTab() {
       })
   }, []);
 
+  useEffect(() => {
+    if (!selected) {
+      setThreadMessages([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api<{ data?: Message[] } | Message[]>(
+          "/api/communications/sms/thread",
+          { params: { contactId: String(selected.id ?? "") } },
+        );
+        const list = Array.isArray(r) ? r : (r?.data ?? []);
+        if (!cancelled) setThreadMessages(list);
+      } catch {
+        if (!cancelled) setThreadMessages([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selected?.id]);
+
   const loadMessages = useCallback((contactId: string, phone?: string | null) => {
     const params: Record<string, string> = {};
     if (contactId) params.contactId = contactId;
@@ -122,10 +153,14 @@ function SmsTab() {
     )
       .then((r) => {
         const msgs = Array.isArray(r) ? r : (r?.data ?? []);
-        setThreads((prev) => ({
-          ...prev,
-          [contactId]: mergeMessages(prev[contactId] ?? [], msgs),
-        }));
+        setThreads((prev) => {
+          const merged = mergeMessages(prev[contactId] ?? [], msgs);
+          if (selected?.id === contactId) setThreadMessages(merged);
+          return {
+            ...prev,
+            [contactId]: merged,
+          };
+        });
       })
       .catch((error) => {
         if (isBadRequest(error)) return;
@@ -133,8 +168,9 @@ function SmsTab() {
           ...prev,
           [contactId]: [],
         }));
+        if (selected?.id === contactId) setThreadMessages([]);
       });
-  }, [mergeMessages]);
+  }, [mergeMessages, selected?.id]);
 
   useEffect(() => {
     if (!selected) return;
@@ -187,7 +223,7 @@ function SmsTab() {
     return c.name?.toLowerCase().includes(q) || c.phone?.includes(q);
   });
 
-  const messages = selected ? (threads[selected.id] ?? []) : [];
+  const messages = selected ? threadMessages : [];
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0, height: "100%", overflow: "hidden", background: "#f5f5f7" }}>
@@ -255,7 +291,8 @@ function SmsTab() {
               <button
                 onClick={() => {
                   if (!newThreadPhone.trim()) return;
-                  const fake: Contact = { id: `new-${newThreadPhone}`, name: newThreadPhone, phone: newThreadPhone };
+                  const digits = newThreadPhone.replace(/\D/g, "");
+                  const fake: Contact = { id: `new-${digits}`, name: newThreadPhone, phone: newThreadPhone };
                   setSelected(fake);
                   setShowNewThread(false);
                   setNewThreadPhone("");
