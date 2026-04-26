@@ -58,6 +58,7 @@ import { SiloProvider } from "@/context/SiloContext";
 import AppLayout from "@/layouts/AppLayout";
 import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
 import PortalDialer from "./telephony/components/PortalDialer";
+import GlobalDialerButton from "./components/GlobalDialerButton";
 import DialerButton from "./components/DialerButton";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import { queryClient } from "@/lib/queryClient";
@@ -106,6 +107,7 @@ function AppShell() {
       <IncomingCallModal />
       <DialerButton />
       <PortalDialer />
+      <GlobalDialerButton />
       <IncomingCallOverlay />
       <AppLayout />
     </>
