@@ -11,7 +11,7 @@ import LenderProductModal, { type ProductFormValues } from "@/components/LenderP
 import Select from "@/components/ui/Select";
 import { getErrorMessage } from "@/utils/errors";
 import { getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
-import { ApiError } from "@/api";
+import { api, ApiError } from "@/api";
 import { canDelete } from "@/auth/canDelete";
 import { useAuthorization } from "@/hooks/useAuthorization";
 import { useAuth } from "@/hooks/useAuth";
@@ -516,6 +516,19 @@ const LenderProductsContent = () => {
     createMutation.mutate(payload);
   };
 
+  const handleDelete = async (): Promise<void> => {
+    if (!editingProduct?.id) return;
+    setSubmitError(null);
+    try {
+      await api.delete(`/api/portal/lender-products/${editingProduct.id}`);
+      await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+      await refetchProducts();
+      closeModal();
+    } catch (error) {
+      setSubmitError(getErrorMessage(error, "Delete failed."));
+    }
+  };
+
   if (lendersLoading || productsLoading) return <AppLoading />;
   if (lendersError || productsError) {
     return (
@@ -668,6 +681,8 @@ const LenderProductsContent = () => {
         onSubmit={handleSubmit}
         onClose={closeModal}
         onCancel={closeModal}
+        onDelete={editingProduct?.id ? handleDelete : undefined}
+        isDeleting={mutationLoading}
         statusNote={
           submitError ? (
             <Button type="button" variant="secondary" onClick={handleSubmit} disabled={mutationLoading}>

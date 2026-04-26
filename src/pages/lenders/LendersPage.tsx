@@ -11,9 +11,9 @@ import {
   type LenderProduct,
 } from "@/api/lenders";
 import { getErrorMessage } from "@/utils/errors";
-import { canDelete } from "@/auth/canDelete";
+import { api } from "@/api";
+import ModalFooterWithDelete from "@/components/ModalFooterWithDelete";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
-import { useAuth } from "@/hooks/useAuth";
 import { phoneInputHandler, formatDollar, formatRate, unformatDollar } from "@/utils/format";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -139,6 +139,7 @@ function CreateLenderModal({
   onCreated: (lender: Lender) => void;
   lender?: Lender | null;
 }) {
+  const queryClient = useQueryClient();
   const [form, setForm] = useState({
     name: lender?.name ?? "",
     street: lender?.address?.street ?? "",
@@ -160,6 +161,21 @@ function CreateLenderModal({
   function set(key: string, value: string) {
     setForm((p) => ({ ...p, [key]: value }));
     setErrors((p) => { const n = { ...p }; delete n[key]; return n; });
+  }
+
+  async function handleDelete(): Promise<void> {
+    if (!lender?.id) return;
+    setSaving(true);
+    setServerError(null);
+    try {
+      await api.delete(`/api/portal/lenders/${lender.id}`);
+      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
+      onClose();
+    } catch (err) {
+      setServerError(getErrorMessage(err, "Delete failed."));
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function submit() {
@@ -323,16 +339,14 @@ function CreateLenderModal({
           )}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 28 }}>
-          <button onClick={onClose} disabled={saving}
-            style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", fontSize: 14, fontWeight: 600, color: "#374151", cursor: "pointer" }}>
-            Cancel
-          </button>
-          <button onClick={() => void submit()} disabled={saving}
-            style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#2563eb", fontSize: 14, fontWeight: 600, color: "#fff", cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}>
-            {saving ? "Saving..." : lender ? "Save Changes" : "Create Lender"}
-          </button>
-        </div>
+        <ModalFooterWithDelete
+          onCancel={onClose}
+          onSave={() => void submit()}
+          onDelete={lender?.id ? handleDelete : undefined}
+          saveDisabled={saving}
+          deleting={saving}
+          saveLabel={lender ? "Save Changes" : "Create Lender"}
+        />
       </div>
     </div>
   );
@@ -353,6 +367,7 @@ function CreateProductModal({
   product?: LenderProduct | null;
 }) {
   useDocumentTypes();
+  const queryClient = useQueryClient();
   const alwaysRequiredDoc = { key: "business_banking_statements_6_months", label: "6 months business banking statements" };
   const equipmentFinanceAlwaysRequiredDoc = {
     key: "purchase_order_or_invoice",
@@ -414,6 +429,21 @@ function CreateProductModal({
   function set(key: string, value: string | boolean) {
     setForm((p) => ({ ...p, [key]: value }));
     setErrors((p) => { const n = { ...p }; delete n[key]; return n; });
+  }
+
+  async function handleDelete(): Promise<void> {
+    if (!product?.id) return;
+    setSaving(true);
+    setServerError(null);
+    try {
+      await api.delete(`/api/portal/lender-products/${product.id}`);
+      await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+      onClose();
+    } catch (err) {
+      setServerError(getErrorMessage(err, "Delete failed."));
+    } finally {
+      setSaving(false);
+    }
   }
 
   function toggleDoc(id: string) {
@@ -654,16 +684,14 @@ function CreateProductModal({
           </label>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 28 }}>
-          <button onClick={onClose} disabled={saving}
-            style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", fontSize: 14, fontWeight: 600, color: "#374151", cursor: "pointer" }}>
-            Cancel
-          </button>
-          <button onClick={() => void submit()} disabled={saving}
-            style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#2563eb", fontSize: 14, fontWeight: 600, color: "#fff", cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}>
-            {saving ? "Saving..." : product ? "Save Changes" : "Save Product"}
-          </button>
-        </div>
+        <ModalFooterWithDelete
+          onCancel={onClose}
+          onSave={() => void submit()}
+          onDelete={product?.id ? handleDelete : undefined}
+          saveDisabled={saving}
+          deleting={saving}
+          saveLabel={product ? "Save Changes" : "Save Product"}
+        />
       </div>
     </div>
   );
@@ -838,9 +866,6 @@ const PAGE_SIZE = 10;
 
 export default function LendersPage() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const showDelete = canDelete(user?.role as any);
-  void showDelete;
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Lender | null>(null);

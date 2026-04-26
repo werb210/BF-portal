@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
+import ModalFooterWithDelete from "@/components/ModalFooterWithDelete";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
+import { api } from "@/api";
 import { useSettingsStore, type AdminUser, type AdminUserRole } from "@/state/settings.store";
 import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
@@ -88,8 +90,7 @@ const UserManagement = () => {
     });
   };
 
-  const onSubmitUser = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const onSaveUser = async () => {
     setFormError(null);
     const errors = validateUserForm();
     setFormErrors(errors);
@@ -120,6 +121,11 @@ const UserManagement = () => {
     } finally {
       setIsSavingUser(false);
     }
+  };
+
+  const onSubmitUser = async (event: React.FormEvent) => {
+    event.preventDefault();
+    await onSaveUser();
   };
 
   const onLoadUsers = async () => {
@@ -163,6 +169,22 @@ const UserManagement = () => {
       setFormError(getErrorMessage(error, "Unable to update user status."));
     } finally {
       setUserPending(id, false);
+    }
+  };
+
+  const onDeleteUser = async (): Promise<void> => {
+    if (!editingUser?.id) return;
+    setFormError(null);
+    setIsSavingUser(true);
+    try {
+      await api.delete(`/api/users/${editingUser.id}`);
+      await fetchUsers();
+      setIsModalOpen(false);
+      setEditingUser(null);
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Delete failed."));
+    } finally {
+      setIsSavingUser(false);
     }
   };
 
@@ -415,18 +437,14 @@ const UserManagement = () => {
                 { value: "Staff", label: "Staff" }
               ]}
             />
-            <div className="settings-actions">
-              <Button
-                type="submit"
-                disabled={isLoadingUsers || isSavingUser}
-                title={isSavingUser || isLoadingUsers ? "Saving user." : undefined}
-              >
-                {isSavingUser || isLoadingUsers ? "Saving..." : editingUser ? "Save changes" : "Add user"}
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
-                Cancel
-              </Button>
-            </div>
+            <ModalFooterWithDelete
+              onCancel={() => setIsModalOpen(false)}
+              onSave={() => void onSaveUser()}
+              onDelete={editingUser?.id ? onDeleteUser : undefined}
+              saveDisabled={isLoadingUsers || isSavingUser}
+              deleting={isSavingUser}
+              saveLabel={editingUser ? "Save changes" : "Add user"}
+            />
           </form>
         </Modal>
       )}
