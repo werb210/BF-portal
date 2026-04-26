@@ -1,10 +1,11 @@
 import { api } from "@/api";
 
-export async function sendMayaMessage(message: string) {
-  return api.post<{ reply?: string; message?: string; response?: string }>(
-    "/api/ai/maya/message",
-    { message, source: "portal" },
-  );
+export async function sendMayaMessage(text: string): Promise<unknown> {
+  return api.post("/api/maya/message", {
+    message: text,
+    surface: "staff_portal",
+    pathname: typeof window !== "undefined" ? window.location.pathname : null,
+  });
 }
 
 export async function escalateToHuman(reason = "user_requested_human") {

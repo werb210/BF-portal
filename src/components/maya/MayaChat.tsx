@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { sendMayaMessage, escalateToHuman, reportPortalIssue } from "@/api/maya";
+import { sendMayaMessage } from "@/api/maya";
 
 type Msg = { role: "user" | "maya"; text: string; ts: number };
 
@@ -9,8 +9,6 @@ export default function MayaChat() {
   const [msgs, setMsgs] = useState<Msg[]>([{ role: "maya", text: GREETING, ts: Date.now() }]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
-  const [reportText, setReportText] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -53,29 +51,6 @@ export default function MayaChat() {
     return "I'm here.";
   }
 
-  async function escalate() {
-    try {
-      await escalateToHuman();
-      setMsgs((p) => [...p, { role: "maya", text: "✓ A team member has been notified.", ts: Date.now() }]);
-    } catch {
-      setMsgs((p) => [...p, { role: "maya", text: "Couldn't reach the team. Please try again.", ts: Date.now() }]);
-    }
-  }
-
-  async function report() {
-    const message = reportText.trim();
-    if (!message) return;
-    try {
-      await reportPortalIssue({ message });
-      setMsgs((p) => [...p, { role: "maya", text: "✓ Thanks — we got your report.", ts: Date.now() }]);
-    } catch {
-      setMsgs((p) => [...p, { role: "maya", text: "Report failed. Please try again.", ts: Date.now() }]);
-    } finally {
-      setReportOpen(false);
-      setReportText("");
-    }
-  }
-
   return (
     <div style={panelStyle} role="dialog" aria-label="Maya assistant">
       <div style={headerStyle}>
@@ -88,23 +63,8 @@ export default function MayaChat() {
         ))}
       </div>
 
-      {reportOpen && (
-        <div style={reportBoxStyle}>
-          <textarea
-            value={reportText}
-            onChange={(e) => setReportText(e.target.value)}
-            rows={3}
-            placeholder="Describe the issue…"
-            style={textareaStyle}
-          />
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-            <button onClick={() => setReportOpen(false)} style={ghostBtn}>Cancel</button>
-            <button onClick={report} disabled={!reportText.trim()} style={primaryBtn}>Send</button>
-          </div>
-        </div>
-      )}
-
       <div style={composerStyle}>
+
         <div style={{ display: "flex", gap: 8 }}>
           <input
             value={input}
@@ -117,10 +77,6 @@ export default function MayaChat() {
           <button onClick={() => void send()} disabled={!input.trim() || sending} style={primaryBtn}>
             {sending ? "…" : "Send"}
           </button>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
-          <button onClick={escalate} style={ghostBtnBlue}>Talk to Human</button>
-          <button onClick={() => setReportOpen((p) => !p)} style={ghostBtnRed}>Report Issue</button>
         </div>
       </div>
     </div>
@@ -151,23 +107,7 @@ const composerStyle: CSSProperties = { padding: 12, borderTop: "1px solid #e2e8f
 const inputStyle: CSSProperties = {
   flex: 1, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, color: "#000", background: "#fff",
 };
-const textareaStyle: CSSProperties = {
-  width: "100%", padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, color: "#000", background: "#fff",
-};
 const primaryBtn: CSSProperties = {
   background: "#2563eb", color: "#fff", border: "none",
   padding: "8px 16px", borderRadius: 4, cursor: "pointer",
 };
-const ghostBtn: CSSProperties = {
-  background: "#fff", color: "#000", border: "1px solid #cbd6e2",
-  padding: "8px 16px", borderRadius: 4, cursor: "pointer",
-};
-const ghostBtnBlue: CSSProperties = {
-  background: "#fff", color: "#2563eb", border: "1px solid #2563eb",
-  padding: "8px", borderRadius: 4, cursor: "pointer",
-};
-const ghostBtnRed: CSSProperties = {
-  background: "#fff", color: "#dc2626", border: "1px solid #dc2626",
-  padding: "8px", borderRadius: 4, cursor: "pointer",
-};
-const reportBoxStyle: CSSProperties = { padding: 12, borderTop: "1px solid #e2e8f0" };
