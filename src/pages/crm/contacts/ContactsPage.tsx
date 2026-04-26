@@ -2,13 +2,17 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { crmApi, type ContactRow } from "@/api/crm";
+import { canDelete } from "@/auth/canDelete";
 import { useSilo } from "@/hooks/useSilo";
+import { useAuth } from "@/hooks/useAuth";
 import { useCrmStore } from "@/state/crm.store";
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
 
 export default function ContactsPage() {
   const { silo } = useSilo();
+  const { user } = useAuth();
+  const showDelete = canDelete(user?.role as any);
   const [rows, setRows] = useState<ContactRow[]>([]);
   const [q, setQ] = useState("");
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);

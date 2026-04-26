@@ -446,6 +446,34 @@ const ProfileSettings = () => {
         </div>
       </div>
 
+      <section style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #eaf0f6" }}>
+        <h3 style={{ marginTop: 0 }}>Push notifications</h3>
+        <p style={{ color: "#516f90", fontSize: 13, marginBottom: 12 }}>
+          Get notified about new SMS, application updates, and Maya escalations.
+        </p>
+        <button
+          type="button"
+          onClick={async () => {
+            if (!("Notification" in window)) {
+              alert("This browser does not support notifications.");
+              return;
+            }
+            const result = await Notification.requestPermission();
+            if (result === "granted") {
+              alert("Notifications enabled.");
+            } else {
+              alert("Notifications were not enabled.");
+            }
+          }}
+          style={{
+            padding: "8px 16px", background: "#2563eb", color: "#fff",
+            border: "none", borderRadius: 4, cursor: "pointer",
+          }}
+        >
+          Enable notifications
+        </button>
+      </section>
+
       <div className="settings-actions">
         <Button
           type="button"
