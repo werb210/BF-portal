@@ -64,7 +64,7 @@ function Avatar({ name, size = 38 }: { name: string; size?: number }) {
 }
 
 // ── SMS Tab — iPhone Messages style ──────────────────────────────────────────
-function SmsTab() {
+function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact | null; onContactSelected?: (c: Contact) => void }) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [threads, setThreads] = useState<Record<string, Message[]>>({});
   const [selected, setSelected] = useState<Contact | null>(null);
@@ -128,11 +128,11 @@ function SmsTab() {
     let cancelled = false;
     (async () => {
       try {
-        const r = await api<{ data?: Message[] } | Message[]>(
+        const r = await api<{ messages?: Message[]; data?: Message[] } | Message[]>(
           "/api/communications/sms/thread",
           { params: { contactId: String(selected.id ?? "") } },
         );
-        const list = Array.isArray(r) ? r : (r?.data ?? []);
+        const list = Array.isArray(r) ? r : (r?.messages ?? r?.data ?? []);
         if (!cancelled) setThreadMessages(list);
       } catch {
         if (!cancelled) setThreadMessages([]);
@@ -149,10 +149,10 @@ function SmsTab() {
     else if (phone) params.phone = phone;
 
     Promise.resolve(
-      api<{ data?: Message[] } | Message[]>("/api/communications/sms/thread", { params })
+      api<{ messages?: Message[]; data?: Message[] } | Message[]>("/api/communications/sms/thread", { params })
     )
       .then((r) => {
-        const msgs = Array.isArray(r) ? r : (r?.data ?? []);
+        const msgs = Array.isArray(r) ? r : (r?.messages ?? r?.data ?? []);
         setThreads((prev) => {
           const merged = mergeMessages(prev[contactId] ?? [], msgs);
           if (selected?.id === contactId) setThreadMessages(merged);
@@ -190,7 +190,13 @@ function SmsTab() {
     setSending(true);
     const pendingBody = draft.trim();
     try {
-      await api.post("/api/communications/sms", {
+      setThreadMessages((prev) => [...prev, {
+        id: `tmp-${Date.now()}`,
+        body: pendingBody,
+        direction: "outbound",
+        created_at: new Date().toISOString(),
+      }]);
+      await api.post("/api/sms/send", {
         to: selected.phone,
         body: pendingBody,
         contactId: selected.id,
@@ -224,6 +230,11 @@ function SmsTab() {
   });
 
   const messages = selected ? threadMessages : [];
+
+
+  useEffect(() => {
+    if (forcedContact?.id) setSelected(forcedContact);
+  }, [forcedContact?.id]);
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0, height: "100%", overflow: "hidden", background: "#f5f5f7" }}>
@@ -340,7 +351,10 @@ function SmsTab() {
             return (
               <div
                 key={c.id}
-                onClick={() => setSelected(c)}
+                onClick={() => {
+                  setSelected(c);
+                  onContactSelected?.(c);
+                }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -582,83 +596,53 @@ function SmsTab() {
 }
 
 // ── Messages tab ──────────────────────────────────────────────────────────────
-function MessagesTab() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [crmContacts, setCrmContacts] = useState<Array<{
-    id: string; name: string; phone?: string; email?: string;
-  }>>([]);
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+function MessagesTab({ onStartConversation }: { onStartConversation: (contact: Contact) => void }) {
+  const [open, setOpen] = useState(false);
+  const [to, setTo] = useState("");
+  const [body, setBody] = useState("");
+  const [contacts, setContacts] = useState<Contact[]>([]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await api<{ data?: any[] } | any[]>("/api/crm/contacts");
-        const list = Array.isArray(r) ? r : (r?.data ?? []);
-        if (!cancelled) setCrmContacts(list);
-      } catch {
-        if (!cancelled) setCrmContacts([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null }> }>("/api/communications/messages")
+      .then((r) => {
+        const list = Array.isArray(r.conversations) ? r.conversations : [];
+        setContacts(list.map((c) => ({ id: c.contact_id ?? "", name: c.contact_name ?? c.contact_phone ?? "Unknown", phone: c.contact_phone ?? null })).filter((c) => c.id));
+      })
+      .catch(() => setContacts([]));
   }, []);
 
-  useEffect(() => {
-    if (!selectedContactId) {
-      setMessages([]);
-      return;
-    }
-
-    setLoading(true);
-    api<{ messages: Message[] }>(`/api/communications/messages?contact_id=${selectedContactId}`)
-      .then((r) => setMessages(Array.isArray(r?.messages) ? r.messages : []))
-      .catch((error) => {
-        if (isBadRequest(error)) return;
-        setMessages([]);
-      })
-      .finally(() => setLoading(false));
-  }, [selectedContactId]);
-
   return (
-    <div style={{ padding: 24, flex: 1, overflowY: "auto" }}>
-      <h3 style={{ margin: "0 0 16px", fontSize: 17, fontWeight: 700, color: "#0f172a" }}>Client Messages</h3>
-      <div style={{ marginBottom: 16 }}>
-        <select
-          value={selectedContactId ?? ""}
-          onChange={(e) => setSelectedContactId(e.target.value || null)}
-          style={{ width: "100%", padding: 8, maxWidth: 360 }}
-        >
-          <option value="">Select a contact…</option>
-          {crmContacts.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}{c.phone ? ` — ${c.phone}` : ""}</option>
-          ))}
-        </select>
+    <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0 }}>
+      <div style={{ borderRight: "1px solid #e2e8f0", padding: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <h3 style={{ margin: 0 }}>Messages</h3>
+          <button onClick={() => setOpen(true)} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px", fontWeight: 600 }}>+ Start new conversation</button>
+        </div>
+        {contacts.map((c) => <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid #eef2f7" }}>{c.name} {c.phone ? `— ${c.phone}` : ""}</div>)}
+        {contacts.length === 0 && <div style={{ color: "#8e8e93" }}>No client messages yet…</div>}
       </div>
-      {loading && <div style={{ color: "#8e8e93" }}>Loading…</div>}
-      {!loading && !selectedContactId && <div style={{ color: "#8e8e93" }}>Select a contact to load messages.</div>}
-      {!loading && messages.length === 0 && (
-        <div style={{ color: "#8e8e93", fontSize: 14 }}>
-          No client messages yet. Messages from the client portal "Talk to a Human" button will appear here.
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#8e8e93" }}>Choose or start a conversation.</div>
+      {open && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 70 }}>
+          <div style={{ width: "min(560px, 92vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
+            <h3 style={{ marginTop: 0 }}>New Conversation</h3>
+            <label style={{ display: "block", marginBottom: 8 }}>Phone<input value={to} onChange={(e) => setTo(e.target.value)} style={{ width: "100%", padding: 8 }} /></label>
+            <label style={{ display: "block", marginBottom: 8 }}>Message<textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} style={{ width: "100%", padding: 8 }} /></label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={async () => {
+                if (!to.trim() || !body.trim()) return;
+                await api.post("/api/sms/send", { to: to.trim(), body: body.trim() });
+                const c: Contact = { id: `new-${to.replace(/\D/g,"")}`, name: to.trim(), phone: to.trim() };
+                onStartConversation(c);
+                setOpen(false);
+                setTo("");
+                setBody("");
+              }} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px" }}>Send</button>
+              <button onClick={() => setOpen(false)} style={{ color: "#000", background: "#fff", border: "1px solid #d1d5db", padding: "8px 14px", borderRadius: 8, fontWeight: 500 }}>Cancel</button>
+            </div>
+          </div>
         </div>
       )}
-      {messages.map((m) => (
-        <div
-          key={m.id}
-          style={{
-            background: "#fff",
-            borderRadius: 12,
-            border: "1px solid #e2e8f0",
-            padding: "12px 16px",
-            marginBottom: 10,
-          }}
-        >
-          <div style={{ fontSize: 14, color: "#1e293b", marginBottom: 6 }}>{m.body}</div>
-          <div style={{ fontSize: 11, color: "#8e8e93" }}>{new Date(m.created_at).toLocaleString()}</div>
-        </div>
-      ))}
     </div>
   );
 }
@@ -916,6 +900,7 @@ function IssuesTab() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function CommunicationsPage() {
   const [tab, setTab] = useState<Tab>("sms");
+  const [forcedSmsContact, setForcedSmsContact] = useState<Contact | null>(null);
 
   return (
     <div
@@ -961,8 +946,8 @@ export default function CommunicationsPage() {
 
       {/* Content */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {tab === "sms" && <SmsTab />}
-        {tab === "messages" && <MessagesTab />}
+        {tab === "sms" && <SmsTab forcedContact={forcedSmsContact} onContactSelected={setForcedSmsContact} />}
+        {tab === "messages" && <MessagesTab onStartConversation={(contact) => { setForcedSmsContact(contact); setTab("sms"); }} />}
         {tab === "inbox" && <InboxTab />}
         {tab === "issues" && <IssuesTab />}
       </div>

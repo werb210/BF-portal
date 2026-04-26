@@ -9,10 +9,11 @@ import { MeetingPopup } from "./popups/MeetingPopup";
 
 type Action = "note" | "email" | "call" | "sms" | "task" | "meeting";
 
-export function ActionBar({ scope, contactEmail, contactPhone, onChanged }: {
+export function ActionBar({ scope, contactEmail, contactPhone, contactName, onChanged }: {
   scope: Scope;
   contactEmail?: string;
   contactPhone?: string;
+  contactName?: string;
   onChanged: () => void;
 }): JSX.Element {
   const [open, setOpen] = useState<Action | null>(null);
@@ -23,7 +24,26 @@ export function ActionBar({ scope, contactEmail, contactPhone, onChanged }: {
       <div style={row}>
         <ActionBtn label="Note" onClick={() => setOpen("note")} />
         <ActionBtn label="Email" onClick={() => setOpen("email")} />
-        <ActionBtn label="Call" onClick={() => setOpen("call")} />
+        <ActionBtn
+          label="Call"
+          onClick={() => {
+            if (scope.kind === "contact") {
+              if (!contactPhone) {
+                window.alert("No phone number on this contact");
+                return;
+              }
+              window.dispatchEvent(new CustomEvent("bf:dialer-call", {
+                detail: {
+                  phone: contactPhone,
+                  contactId: scope.id,
+                  contactName: contactName || contactPhone,
+                },
+              }));
+              return;
+            }
+            setOpen("call");
+          }}
+        />
         {scope.kind === "contact" && (
           <ActionBtn label="SMS" onClick={() => setOpen("sms")} />
         )}
@@ -37,7 +57,7 @@ export function ActionBar({ scope, contactEmail, contactPhone, onChanged }: {
       {open === "email" && (
         <EmailPopup scope={scope} defaultTo={contactEmail} onClose={close} onSent={onChanged} />
       )}
-      {open === "call" && (
+      {open === "call" && scope.kind !== "contact" && (
         <CallPopup scope={scope} defaultPhone={contactPhone} onClose={close} onLogged={onChanged} />
       )}
       {open === "sms" && scope.kind === "contact" && (

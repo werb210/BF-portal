@@ -31,6 +31,10 @@ export default function ContactDetailPage() {
   return (
     <div style={layout}>
       <aside style={rail}>
+        <Link
+          to="/crm/contacts"
+          style={{ color: "#1d4ed8", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}
+        >← Back to contacts</Link>
         <h2 style={{ marginTop: 0 }}>{contact.name}</h2>
         {contact.job_title && <div style={subtle}>{contact.job_title}</div>}
         {contact.email && (
@@ -40,6 +44,7 @@ export default function ContactDetailPage() {
           scope={scope}
           contactEmail={contact.email}
           contactPhone={contact.phone}
+          contactName={contact.name}
           onChanged={() => setRefreshKey(k => k + 1)}
         />
         <div style={fieldsBlock}>
