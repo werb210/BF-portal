@@ -32,8 +32,12 @@ describe("CreateContactModal", () => {
     apiMock.post.mockResolvedValue({});
     render(<CreateContactModal onClose={() => {}} />);
     const textboxes = screen.getAllByRole("textbox");
-    fireEvent.change(textboxes[0], { target: { value: "Jane" } });
-    fireEvent.change(textboxes[1], { target: { value: "Doe" } });
+    const firstNameInput = textboxes[0];
+    if (!firstNameInput) throw new Error("Expected first name input");
+    const lastNameInput = textboxes[1];
+    if (!lastNameInput) throw new Error("Expected last name input");
+    fireEvent.change(firstNameInput, { target: { value: "Jane" } });
+    fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith("/api/crm/contacts", expect.objectContaining({ first_name: "Jane", last_name: "Doe", role: "unknown" })));
   });
