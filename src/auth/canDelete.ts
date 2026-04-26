@@ -1,5 +1,5 @@
-import type { UserRole } from "./roles";
+import type { Role } from "./roles";
 
-export function canDelete(role: UserRole | null | undefined): boolean {
+export function canDelete(role: Role | null | undefined): boolean {
   return role === "Admin";
 }
