@@ -73,6 +73,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "jsdom": "^24.0.0",
     "madge": "^8.0.0",
+    "minimatch": "^9.0.3",
     "msw": "^2.12.13",
     "npm-check-updates": "^19.3.2",
     "playwright": "^1.58.2",
@@ -86,6 +87,11 @@
     "vite-plugin-pwa": "^1.2.0",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.4",
-    "minimatch": "^9.0.3"
+    "workbox-cacheable-response": "^7.3.0",
+    "workbox-core": "^7.3.0",
+    "workbox-expiration": "^7.3.0",
+    "workbox-precaching": "^7.3.0",
+    "workbox-routing": "^7.3.0",
+    "workbox-strategies": "^7.3.0"
   }
 }
