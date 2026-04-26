@@ -1,6 +1,7 @@
 import { useContext, useState, type CSSProperties } from "react";
 import { AuthContext } from "@/auth/AuthContext";
 import { canDelete } from "@/auth/canDelete";
+import SecondaryButton from "@/components/forms/SecondaryButton";
 
 interface Props {
   onCancel: () => void;
@@ -47,16 +48,12 @@ export default function ModalFooterWithDelete({
             >
               {deleting ? "Deleting…" : "Yes, delete"}
             </button>
-            <button type="button" onClick={() => setConfirming(false)} style={ghostBtn}>
-              No
-            </button>
+            <SecondaryButton onClick={() => setConfirming(false)}>No</SecondaryButton>
           </div>
         )}
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button type="button" onClick={onCancel} style={ghostBtn}>
-          Cancel
-        </button>
+        <SecondaryButton onClick={onCancel}>Cancel</SecondaryButton>
         <button type="button" onClick={onSave} disabled={saveDisabled} style={primaryBtn}>
           {saveLabel}
         </button>
@@ -72,14 +69,6 @@ const footer: CSSProperties = {
   padding: "12px 16px",
   borderTop: "1px solid #eaf0f6",
   marginTop: 16,
-};
-const ghostBtn: CSSProperties = {
-  padding: "8px 16px",
-  background: "#fff",
-  color: "#374151",
-  border: "1px solid #d1d5db",
-  borderRadius: 4,
-  cursor: "pointer",
 };
 const primaryBtn: CSSProperties = {
   padding: "8px 16px",

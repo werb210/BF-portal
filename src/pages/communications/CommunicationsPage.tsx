@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/api";
 import { ApiError } from "@/api/http";
+import SecondaryButton from "@/components/forms/SecondaryButton";
 
 type Tab = "messages" | "sms" | "inbox" | "issues";
 
@@ -626,8 +627,8 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 70 }}>
           <div style={{ width: "min(560px, 92vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>New Conversation</h3>
-            <label style={{ display: "block", marginBottom: 8 }}>Phone<input value={to} onChange={(e) => setTo(e.target.value)} style={{ width: "100%", padding: 8 }} /></label>
-            <label style={{ display: "block", marginBottom: 8 }}>Message<textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} style={{ width: "100%", padding: 8 }} /></label>
+            <label style={{ display: "block", marginBottom: 8 }}>Phone<textarea value={to} onChange={(e) => setTo(e.target.value)} rows={2} style={{ background: "#fff", color: "#000", border: "1px solid #d1d5db", padding: 10, borderRadius: 8, fontSize: 14, width: "100%", minHeight: 80 }} /></label>
+            <label style={{ display: "block", marginBottom: 8 }}>Message<textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} style={{ background: "#fff", color: "#000", border: "1px solid #d1d5db", padding: 10, borderRadius: 8, fontSize: 14, width: "100%", minHeight: 80 }} /></label>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={async () => {
                 if (!to.trim() || !body.trim()) return;
@@ -638,7 +639,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 setTo("");
                 setBody("");
               }} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px" }}>Send</button>
-              <button onClick={() => setOpen(false)} style={{ color: "#000", background: "#fff", border: "1px solid #d1d5db", padding: "8px 14px", borderRadius: 8, fontWeight: 500 }}>Cancel</button>
+              <SecondaryButton onClick={() => setOpen(false)}>Cancel</SecondaryButton>
             </div>
           </div>
         </div>

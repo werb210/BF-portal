@@ -6,6 +6,7 @@ import { canDelete } from "@/auth/canDelete";
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
 import { useCrmStore } from "@/state/crm.store";
+import CreateContactModal from "./CreateContactModal";
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
 
@@ -20,6 +21,8 @@ export default function ContactsPage() {
   const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>({ col: "created_at", dir: "desc" });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +60,7 @@ export default function ContactsPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [silo, q, sort.col, sort.dir, ownerId]);
+  }, [silo, q, sort.col, sort.dir, ownerId, refreshKey]);
 
   const onSort = (col: SortCol) =>
     setSort(s => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
@@ -106,6 +109,7 @@ export default function ContactsPage() {
         </select>
         <button style={toolbarBtn}>Export</button>
         <button style={toolbarBtn}>Edit columns</button>
+        <button onClick={() => setCreateOpen(true)} style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
       </div>
 
       <table style={table}>
@@ -127,6 +131,13 @@ export default function ContactsPage() {
           {!loading && !err && tableRows}
         </tbody>
       </table>
+      {createOpen && (
+        <CreateContactModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onSaved={() => setRefreshKey((k) => k + 1)}
+        />
+      )}
     </div>
   );
 }

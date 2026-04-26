@@ -6,6 +6,7 @@ import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { api } from "@/api";
 import RequireRole from "@/components/auth/RequireRole";
+import SecondaryButton from "@/components/forms/SecondaryButton";
 
 type ApiCalendarEvent = {
   id?: string;
@@ -268,8 +269,10 @@ function CalendarContent() {
               />
             </label>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => createEventMutation.mutate(eventForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2563eb", background: "#2563eb", color: "#fff" }}>Save</button>
-              <button onClick={() => setShowEventForm(false)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}>Cancel</button>
+              {eventForm.title.trim() && eventForm.start && eventForm.end ? (
+                <button onClick={() => createEventMutation.mutate(eventForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2563eb", background: "#2563eb", color: "#fff" }}>Save</button>
+              ) : null}
+              <SecondaryButton onClick={() => setShowEventForm(false)}>Cancel</SecondaryButton>
             </div>
           </div>
         </div>
@@ -319,8 +322,10 @@ function CalendarContent() {
               />
             </label>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => createTaskMutation.mutate(taskForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #0f766e", background: "#0f766e", color: "#fff" }}>Save</button>
-              <button onClick={() => setShowTaskForm(false)} style={{ color: "#000", background: "#fff", border: "1px solid #d1d5db", padding: "8px 14px", borderRadius: 8, fontWeight: 500 }}>Cancel</button>
+              {taskForm.title.trim() ? (
+                <button onClick={() => createTaskMutation.mutate(taskForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #0f766e", background: "#0f766e", color: "#fff" }}>Save</button>
+              ) : null}
+              <SecondaryButton onClick={() => setShowTaskForm(false)}>Cancel</SecondaryButton>
             </div>
           </div>
         </div>
@@ -335,8 +340,14 @@ const fieldLabel: CSSProperties = {
   color: "#33475b", marginBottom: 4,
 };
 const calInputStyle: CSSProperties = {
-  width: "100%", padding: 8, border: "1px solid #cbd6e2",
-  borderRadius: 4, background: "#ffffff", color: "#000000", fontSize: 14,
+  width: "100%",
+  border: "1px solid #d1d5db",
+  padding: "8px 10px",
+  borderRadius: 8,
+  background: "#fff",
+  color: "#000",
+  colorScheme: "light",
+  fontSize: 14,
 };
 
 const CalendarPage = () => (

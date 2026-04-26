@@ -35,7 +35,7 @@ export default function ContactDetailPage() {
           to="/crm/contacts"
           style={{ color: "#1d4ed8", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}
         >← Back to contacts</Link>
-        <h2 style={{ marginTop: 0 }}>{contact.name}</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><h2 style={{ marginTop: 0, marginBottom: 0 }}>{contact.name}</h2><span style={roleBadge}>{formatRole(contact.role)}</span></div>
         {contact.job_title && <div style={subtle}>{contact.job_title}</div>}
         {contact.email && (
           <a href={`mailto:${contact.email}`} style={{ color: "#0091ae" }}>{contact.email}</a>
@@ -94,3 +94,13 @@ const rail: CSSProperties = {
 const subtle: CSSProperties = { color: "#516f90", fontSize: 13, marginBottom: 12 };
 const fieldsBlock: CSSProperties = { marginTop: 16, paddingTop: 16, borderTop: "1px solid #eaf0f6" };
 const fieldLabel: CSSProperties = { fontSize: 11, color: "#7c98b6", textTransform: "uppercase" };
+const roleBadge: CSSProperties = { background: "#e5e7eb", color: "#111827", padding: "2px 8px", borderRadius: 999, fontSize: 12, fontWeight: 600 };
+
+function formatRole(role?: string | null) {
+  const value = String(role ?? "unknown").toLowerCase();
+  if (value === "applicant") return "Applicant";
+  if (value === "partner") return "Partner";
+  if (value === "guarantor") return "Guarantor";
+  if (value === "other") return "Other";
+  return "Unknown";
+}

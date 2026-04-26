@@ -213,6 +213,9 @@ export type ContactRow = {
   lifecycle_stage?: string | null;
   owner_id?: string | null;
   owner_name?: string | null;
+  role?: string | null;
+  ownership_percent?: number | null;
+  is_primary_applicant?: boolean | null;
   created_at: string;
 };
 
@@ -226,6 +229,9 @@ export type CompanyRow = {
   types_of_financing?: string[];
   owner_id?: string | null;
   owner_name?: string | null;
+  role?: string | null;
+  ownership_percent?: number | null;
+  is_primary_applicant?: boolean | null;
   created_at: string;
 };
 
