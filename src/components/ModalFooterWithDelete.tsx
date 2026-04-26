@@ -1,6 +1,6 @@
-import { useState, type CSSProperties } from "react";
+import { useContext, useState, type CSSProperties } from "react";
+import { AuthContext } from "@/auth/AuthContext";
 import { canDelete } from "@/auth/canDelete";
-import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   onCancel: () => void;
@@ -21,8 +21,9 @@ export default function ModalFooterWithDelete({
   saveDisabled,
   deleting,
 }: Props): JSX.Element {
-  const { user } = useAuth();
-  const showDelete = Boolean(onDelete) && canDelete(user?.role as any);
+  const ctx = useContext(AuthContext);
+  const isAdmin = ctx?.user ? canDelete(ctx.user.role) : false;
+  const showDelete = Boolean(onDelete) && isAdmin;
   const [confirming, setConfirming] = useState(false);
 
   return (
