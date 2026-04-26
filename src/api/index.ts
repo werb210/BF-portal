@@ -3,6 +3,7 @@ import { ApiError } from "@/api/http";
 import { setApiStatus } from "@/state/apiStatus";
 import { API_ERROR } from "@/lib/errors";
 import { getApiBase, getActiveSilo } from "@/config/api";
+import { shouldLogoutOn401 } from "@/lib/apiAuth";
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -107,6 +108,12 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
 export async function apiFetch<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
   const res = await rawApiFetch(path, options);
   if (!res.ok) {
+    const url = res.url || buildUrl(withQuery(path, options.params));
+    if (res.status === 401 && !shouldLogoutOn401(url)) {
+      setApiStatus("degraded");
+      console.warn("[api] non-session 401 from", url, "— not logging out");
+    }
+
     let message = API_ERROR;
     let code: string | undefined;
     let details: unknown;
