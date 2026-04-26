@@ -11,7 +11,7 @@ export const msalClient = new PublicClientApplication({
     redirectUri: microsoftAuthConfig.redirectUri,
   },
   cache: {
-    cacheLocation: "sessionStorage",
+    cacheLocation: "localStorage",
     storeAuthStateInCookie: isIos,
   },
 });
