@@ -29,23 +29,32 @@ export default function Login() {
   // Debounce by 350ms so the request doesn't fire mid-typing on
   // pasted numbers or partial entries.
   useEffect(() => {
-    if (!normalizedPhone || isSubmitting) return;
+    // Compute inline to avoid TDZ on any later-declared `normalizedPhone` const.
+    const digits = (phone || "").replace(/\D/g, "");
+    const normalized =
+      digits.length === 11 && digits.startsWith("1")
+        ? `+${digits}`
+        : digits.length === 10
+          ? `+1${digits}`
+          : "";
+    if (!normalized) return;
+    if (isSubmitting) return;
     const t = window.setTimeout(() => {
-      // Re-check inside timeout in case the user kept typing.
-      if (!isSubmitting) {
-        const fakeEvent = { preventDefault: () => {} } as FormEvent<HTMLFormElement>;
-        void handleStartOTP(fakeEvent);
-      }
+      void handleStartOTP(undefined, normalized);
     }, 350);
     return () => window.clearTimeout(t);
-  }, [normalizedPhone]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phone, isSubmitting]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const normalizedPhone = useMemo(() => normalizeNorthAmericanPhone(phone), [phone]);
 
-  const handleStartOTP = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleStartOTP = async (
+    event?: FormEvent<HTMLFormElement>,
+    explicitPhone?: string,
+  ) => {
+    event?.preventDefault();
+    const targetPhone = explicitPhone ?? normalizedPhone;
 
-    if (!normalizedPhone || isSubmitting) {
+    if (!targetPhone || isSubmitting) {
       return;
     }
 
@@ -58,15 +67,15 @@ export default function Login() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ phone: normalizedPhone }),
+        body: JSON.stringify({ phone: targetPhone }),
       });
 
       if (!res.ok) {
         throw new Error("OTP start failed");
       }
 
-      localStorage.setItem("auth_phone", normalizedPhone);
-      setOtpStartSucceeded(normalizedPhone);
+      localStorage.setItem("auth_phone", targetPhone);
+      setOtpStartSucceeded(targetPhone);
       navigate("/verify");
     } catch {
       clearOtpFlowState();
