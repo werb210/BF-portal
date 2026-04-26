@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { clearReloadGuardIfStale, triggerSafeReload } from "@/utils/reloadGuard";
+import { clearReloadGuardIfStale } from "@/utils/reloadGuard";
+import { applyPortalSWUpdate } from "@/pwa/registerSW";
 
 type UpdateDetail = {
   registration?: ServiceWorkerRegistration;
@@ -14,6 +15,7 @@ export const useServiceWorkerUpdate = () => {
   useEffect(() => {
     if (!isBrowser) return;
     clearReloadGuardIfStale();
+
     const handleUpdate = (event: Event) => {
       const detail = (event as CustomEvent<UpdateDetail>).detail;
       if (detail?.registration) {
@@ -21,34 +23,32 @@ export const useServiceWorkerUpdate = () => {
       }
       setUpdateAvailable(true);
     };
-    const handleControllerChange = () => {
-      triggerSafeReload("service-worker-controller-change");
+
+    const handleUpdateAvailable = () => {
+      setUpdateAvailable(true);
     };
+
     window.addEventListener("sw:update", handleUpdate);
-    navigator.serviceWorker?.addEventListener("controllerchange", handleControllerChange);
+    window.addEventListener("bf:sw-update-available", handleUpdateAvailable);
+
     return () => {
       window.removeEventListener("sw:update", handleUpdate);
-      navigator.serviceWorker?.removeEventListener("controllerchange", handleControllerChange);
+      window.removeEventListener("bf:sw-update-available", handleUpdateAvailable);
     };
   }, []);
 
   const applyUpdate = useCallback(async () => {
-    if (!registration) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       setUpdateAvailable(false);
       return;
     }
-    if (registration.waiting) {
+
+    if (registration?.waiting) {
       registration.waiting.postMessage({ type: "SKIP_WAITING" });
-      setUpdateAvailable(false);
-      return;
     }
-    try {
-      await registration.update();
-      setUpdateAvailable(false);
-    } catch {
-      setUpdateAvailable(false);
-    }
+
+    applyPortalSWUpdate();
+    setUpdateAvailable(false);
   }, [registration]);
 
   const dismiss = useCallback(() => setUpdateAvailable(false), []);
