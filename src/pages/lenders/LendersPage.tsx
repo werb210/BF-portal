@@ -505,13 +505,13 @@ function CreateProductModal({
         requiredDocuments,
         signnowTemplateId: form.signnowTemplateId || null,
       } as any;
-      console.log("[lender-product] PATCH outgoing", { id: product?.id ?? null, body: payload }); // BF_PRODUCT_SAVE_DIAG_v28
+      console.log("[lender-product] PATCH outgoing JSON:", JSON.stringify({ id: product?.id ?? null, body: payload })); // BF_PRODUCT_DIAG_JSON_v30
       if (product?.id) {
         const result = await updateLenderProduct(product.id, payload);
-        console.log("[lender-product] PATCH result", result); // BF_PRODUCT_SAVE_DIAG_v28
+        console.log("[lender-product] PATCH result JSON:", JSON.stringify(result)); // BF_PRODUCT_DIAG_JSON_v30
       } else {
         const result = await createLenderProduct(payload);
-        console.log("[lender-product] PATCH result", result); // BF_PRODUCT_SAVE_DIAG_v28
+        console.log("[lender-product] PATCH result JSON:", JSON.stringify(result)); // BF_PRODUCT_DIAG_JSON_v30
       }
       onCreated();
     } catch (err) {
@@ -875,7 +875,7 @@ function EditProductModal({ product, lenders, onClose, onSaved }: { product: Len
     (async () => {
       try {
         const raw = await fetchLenderProductById(product.id);
-        console.log("[lender-product] GET raw response", raw); // BF_PRODUCT_PREFILL_v28
+        console.log("[lender-product] GET raw response JSON:", JSON.stringify(raw)); // BF_PRODUCT_DIAG_JSON_v30
         const source: any = (raw as any)?.product ?? (raw as any)?.data ?? raw ?? {};
         const pick = (...keys: string[]) => {
           for (const key of keys) {
@@ -903,7 +903,7 @@ function EditProductModal({ product, lenders, onClose, onSaved }: { product: Len
           termLength: source?.termLength ?? source?.term_length ?? product.termLength,
         } as LenderProduct;
         if (!cancelled) {
-          console.log("[lender-product] seeded form values", seeded); // BF_PRODUCT_PREFILL_v28
+          console.log("[lender-product] seeded form values JSON:", JSON.stringify(seeded)); // BF_PRODUCT_DIAG_JSON_v30
           setHydrated(seeded);
         }
       } catch (error) {

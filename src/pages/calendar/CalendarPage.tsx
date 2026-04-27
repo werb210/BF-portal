@@ -97,11 +97,20 @@ function CalendarContent() {
 
   const tasksQuery = useQuery({
     queryKey: ["calendar-tasks"],
-    queryFn: () => api.get<CalendarTask[]>("/api/calendar/tasks"),
+    queryFn: async () => {
+      const response = await api.get<CalendarTask[]>("/api/calendar/tasks");
+      console.log("[tasks.diag] GET /api/calendar/tasks response JSON:", JSON.stringify(response)); // BF_TASKS_DIAG_v30
+      return response;
+    },
   });
 
   const createEventMutation = useMutation({
-    mutationFn: (payload: Record<string, unknown>) => api.post("/api/calendar/events", payload),
+    mutationFn: async (payload: Record<string, unknown>) => {
+      console.log("[calendar.diag] POST /api/calendar/events body JSON:", JSON.stringify(payload)); // BF_CALENDAR_DIAG_v30
+      const response = await api.post("/api/calendar/events", payload);
+      console.log("[calendar.diag] POST /api/calendar/events response JSON:", JSON.stringify(response)); // BF_CALENDAR_DIAG_v30
+      return response;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
       setShowEventForm(false);
@@ -110,7 +119,12 @@ function CalendarContent() {
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: (payload: Record<string, unknown>) => api.post("/api/calendar/tasks", payload),
+    mutationFn: async (payload: Record<string, unknown>) => {
+      console.log("[tasks.diag] POST /api/calendar/tasks body JSON:", JSON.stringify(payload)); // BF_TASKS_DIAG_v30
+      const response = await api.post("/api/calendar/tasks", payload);
+      console.log("[tasks.diag] POST /api/calendar/tasks response JSON:", JSON.stringify(response)); // BF_TASKS_DIAG_v30
+      return response;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["calendar-tasks"] });
       setShowTaskForm(false);
