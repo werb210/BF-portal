@@ -72,6 +72,9 @@ const ProfileSettings = () => {
     };
   }, [fetchProfile]);
 
+  // BF_MSAL_TOKENS_SAVED_EVENT_v34 — listen for the post-silent-acquire event
+  // emitted by bfAcquireSilentO365Tokens so the Connect/Connected indicator
+  // updates without requiring a reload.
   useEffect(() => {
     let isMounted = true;
 
@@ -94,10 +97,20 @@ const ProfileSettings = () => {
       }
     };
 
+    const onTokensSaved = () => {
+      if (isMounted) void loadNameFields();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("bf-msal-tokens-saved", onTokensSaved as EventListener);
+    }
+
     void loadNameFields();
 
     return () => {
       isMounted = false;
+      if (typeof window !== "undefined") {
+        window.removeEventListener("bf-msal-tokens-saved", onTokensSaved as EventListener);
+      }
     };
   }, []);
 

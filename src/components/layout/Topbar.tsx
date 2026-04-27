@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getAuthToken } from "@/lib/authToken";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotificationsStore } from "@/state/notifications.store";
@@ -49,16 +50,25 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
       .catch(() => setProductionStatus("degraded"));
   }, []);
 
+  // BF_HEARTBEAT_AUTH_GUARD_v34 — skip heartbeat when no JWT is present.
+  // Without this, the 30s interval keeps firing after JWT expiry and the
+  // console floods with `non-session 401 from .../presence/heartbeat`.
   useEffect(() => {
-    const setAvailable = () => api.post("/api/telephony/presence", { status: "available" }).catch(() => {});
+    const hasAuth = () => Boolean(getAuthToken());
+    const setAvailable = () => {
+      if (!hasAuth()) return;
+      api.post("/api/telephony/presence", { status: "available" }).catch(() => {});
+    };
 
     setAvailable();
     const interval = setInterval(() => {
+      if (!hasAuth()) return;
       api.post("/api/telephony/presence/heartbeat", {}).catch(() => {});
     }, 30_000);
 
     return () => {
       clearInterval(interval);
+      if (!hasAuth()) return;
       api.post("/api/telephony/presence", { status: "offline" }).catch(() => {});
     };
   }, []);

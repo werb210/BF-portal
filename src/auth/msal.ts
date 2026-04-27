@@ -95,6 +95,13 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null): Promise
           }),
         });
         console.log("[msal.silent] server.notified", { status: response.status });
+        // BF_MSAL_TOKENS_SAVED_EVENT_v34 — fire window event so UI components
+        // (ProfileSettings) can re-fetch /api/users/me without a reload.
+        if (response.status >= 200 && response.status < 300 && typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("bf-msal-tokens-saved", {
+            detail: { email: account.username ?? null }
+          }));
+        }
       } catch (postError) {
         console.warn("[msal.silent] server notify failed", postError);
       }
