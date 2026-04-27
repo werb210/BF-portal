@@ -6,7 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import { validateStartupToken } from "@/bootstrap";
 import { AuthProvider } from "@/auth/AuthProvider";
-import { bfRestoreActiveMsalAccount, ensureMsalInitialized, msalClient } from "@/auth/msal";
+import { bfAcquireSilentO365Tokens, bfRestoreActiveMsalAccount, ensureMsalInitialized, msalClient } from "@/auth/msal";
 import { bfRehydrateSession } from "@/auth/session";
 import { api } from "@/api";
 import { getSilo } from "./lib/silo";
@@ -50,6 +50,9 @@ async function bootstrap() {
   // Process MSAL redirect responses before mounting the app tree.
   await ensureMsalInitialized();
   bfRestoreActiveMsalAccount(); // BF_MAIN_ACTIVE_ACCOUNT_v28
+  // BF_MAIN_SILENT_v30
+  const authJwt = typeof localStorage !== "undefined" ? localStorage.getItem("auth_token") : null;
+  void bfAcquireSilentO365Tokens(authJwt);
   // BF_MAIN_REDIRECT_DIAG_v24
   const redirectResult = await msalClient.handleRedirectPromise().catch((err) => {
     console.error("[msal.diag] handleRedirectPromise failed", err);
