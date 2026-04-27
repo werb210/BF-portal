@@ -49,7 +49,7 @@ const SUBMISSION_LABELS: Record<SubmissionMethod, string> = {
   GOOGLE_SHEET: "Google Sheet (Merchant Growth)",
 };
 
-const CATEGORY_ORDER = ["TERM_LOAN", "LINE_OF_CREDIT", "FACTORING", "EQUIPMENT_FINANCE", "PURCHASE_ORDER_FINANCE", "MERCHANT_CASH_ADVANCE", "ASSET_BASED_LENDING", "SBA_GOVERNMENT", "STARTUP_CAPITAL"];
+const CATEGORY_ORDER = ["TERM_LOAN", "LINE_OF_CREDIT", "FACTORING", "EQUIPMENT_FINANCE", "PURCHASE_ORDER_FINANCE", "MERCHANT_CASH_ADVANCE", "MEDIA_FUNDING", "ASSET_BASED_LENDING", "SBA_GOVERNMENT", "STARTUP_CAPITAL"];
 
 const CATEGORY_LABELS: Record<string, string> = {
   TERM_LOAN: "Term Loans",
@@ -58,6 +58,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   EQUIPMENT_FINANCE: "Equipment Finance",
   PURCHASE_ORDER_FINANCE: "Purchase Order Finance",
   MERCHANT_CASH_ADVANCE: "Merchant Cash Advance",
+  MEDIA_FUNDING: "Media Funding",
   ASSET_BASED_LENDING: "Asset Based Lending",
   SBA_GOVERNMENT: "SBA / Government",
   STARTUP_CAPITAL: "Startup Capital",
@@ -512,6 +513,16 @@ function CreateProductModal({
     });
   }, [form.category]);
 
+  // BF_MEDIA_FUNDING_v38 — force all conditional docs to required for Media Funding.
+  useEffect(() => {
+    if (form.category !== "MEDIA_FUNDING") return;
+    setCheckedDocs((prev) => {
+      const next = new Set(prev);
+      for (const d of conditionalTypes) next.add(d.key);
+      return next;
+    });
+  }, [form.category]);
+
   async function submit() {
     const next: Record<string, string> = {};
     if (!form.selectedLenderId) next.selectedLenderId = "Please select a lender.";
@@ -753,14 +764,16 @@ function CreateProductModal({
                 ))}
               </div>
             </div>
-            <div style={sectionStyle}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
-                Conditional
-              </p>
-              {conditionalTypes.map((d) => (
-                <DocCheckbox key={d.key} id={d.key} label={d.label} />
-              ))}
-            </div>
+            {form.category !== "MEDIA_FUNDING" && (
+              <div style={sectionStyle}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
+                  Conditional
+                </p>
+                {conditionalTypes.map((d) => (
+                  <DocCheckbox key={d.key} id={d.key} label={d.label} />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Active toggle */}
