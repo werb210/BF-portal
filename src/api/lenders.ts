@@ -458,7 +458,38 @@ const normalizeLenderProduct = (raw: unknown): LenderProduct | null => {
     requiredDocuments,
     signnowTemplateId:
       typeof raw.signnowTemplateId === "string" ? raw.signnowTemplateId :
-      typeof raw.signnow_template_id === "string" ? raw.signnow_template_id : null
+      typeof raw.signnow_template_id === "string" ? raw.signnow_template_id : null,
+    // BF_LP_FORM_FIELDS_v36
+    commission:
+      raw.commission != null
+        ? Number(raw.commission)
+        : raw.commissionPercent != null
+          ? Number(raw.commissionPercent)
+          : null,
+    commissionPercent:
+      raw.commission != null
+        ? Number(raw.commission)
+        : raw.commissionPercent != null
+          ? Number(raw.commissionPercent)
+          : null,
+    minCreditScore:
+      raw.min_credit_score != null
+        ? Number(raw.min_credit_score)
+        : raw.minCreditScore != null
+          ? Number(raw.minCreditScore)
+          : null,
+    termMin:
+      raw.term_min != null
+        ? Number(raw.term_min)
+        : raw.termMin != null
+          ? Number(raw.termMin)
+          : null,
+    termMax:
+      raw.term_max != null
+        ? Number(raw.term_max)
+        : raw.termMax != null
+          ? Number(raw.termMax)
+          : null
   } as LenderProduct;
 };
 

@@ -17,6 +17,29 @@ import ModalFooterWithDelete from "@/components/ModalFooterWithDelete";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { phoneInputHandler, formatDollar, formatRate, unformatDollar } from "@/utils/format";
 
+// BF_LP_FORM_FIELDS_v36 — Block 36 — credit score bands shared between
+// lender product min and applicant Step 4 dropdown.
+const CREDIT_SCORE_BANDS = [
+  { label: "Under 560", lower: 0 },
+  { label: "561 to 600", lower: 561 },
+  { label: "600 to 660", lower: 600 },
+  { label: "661 to 720", lower: 661 },
+  { label: "Over 720", lower: 720 },
+] as const;
+
+function bfBandFromMin(min: number | null | undefined): string {
+  if (min == null) return "";
+  const exact = CREDIT_SCORE_BANDS.find((b) => b.lower === min);
+  if (exact) return exact.label;
+  const below = [...CREDIT_SCORE_BANDS].reverse().find((b) => b.lower <= min);
+  return below?.label ?? "";
+}
+
+function bfMinFromBand(label: string): number | null {
+  const found = CREDIT_SCORE_BANDS.find((b) => b.label === label);
+  return found ? found.lower : null;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 type SubmissionMethod = "EMAIL" | "API" | "GOOGLE_SHEET";
 
@@ -414,7 +437,21 @@ function CreateProductModal({
     maxAmount: product?.maxAmount != null && product.maxAmount > 0 ? formatDollar(product.maxAmount) : "",
     minRate: product?.interestRateMin != null && Number(product.interestRateMin) > 0 ? String(product.interestRateMin) : "",
     maxRate: product?.interestRateMax != null && Number(product.interestRateMax) > 0 ? String(product.interestRateMax) : "",
-    term: (product as any)?.termLength?.max != null && (product as any).termLength.max > 0 ? String((product as any).termLength.max) : "",
+    // BF_LP_FORM_FIELDS_v36 — split term into min and max, add commission and credit band.
+    termMin: (product as any)?.termMin != null
+      ? String((product as any).termMin)
+      : (product as any)?.termLength?.min != null && (product as any)?.termLength?.min > 0
+        ? String((product as any).termLength.min)
+        : "",
+    termMax: (product as any)?.termMax != null
+      ? String((product as any).termMax)
+      : (product as any)?.termLength?.max != null && (product as any)?.termLength?.max > 0
+        ? String((product as any).termLength.max)
+        : "",
+    commission: (product as any)?.commission != null && (product as any).commission > 0
+      ? String((product as any).commission)
+      : "",
+    creditBand: bfBandFromMin((product as any)?.minCreditScore ?? (product as any)?.minimumCreditScore ?? null),
     eligibilityNotes: product?.eligibilityRules ?? "",
     signnowTemplateId: (product as any)?.signnowTemplateId ?? "",
     active: product?.active ?? true,
@@ -502,7 +539,18 @@ function CreateProductModal({
         interestRateMin: form.minRate ? Number(form.minRate) : null,
         interestRateMax: form.maxRate ? Number(form.maxRate) : null,
         rateType: "fixed",
-        termLength: form.term ? { min: 0, max: parseInt(form.term) || 0, unit: "months" } : undefined,
+        // BF_LP_FORM_FIELDS_v36 — send termMin/termMax explicitly + legacy termLength.
+        termMin: form.termMin ? Number(form.termMin) : null,
+        termMax: form.termMax ? Number(form.termMax) : null,
+        termLength: (form.termMin || form.termMax)
+          ? {
+              min: form.termMin ? parseInt(form.termMin) || 0 : 0,
+              max: form.termMax ? parseInt(form.termMax) || 0 : 0,
+              unit: "months"
+            }
+          : undefined,
+        commission: form.commission ? Number(form.commission) : null,
+        minCreditScore: bfMinFromBand(form.creditBand),
         eligibilityRules: form.eligibilityNotes || null,
         requiredDocuments,
         signnowTemplateId: form.signnowTemplateId || null,
@@ -623,11 +671,51 @@ function CreateProductModal({
             </div>
           </div>
 
-          {/* Term */}
+          {/* BF_LP_FORM_FIELDS_v36 — Term Min + Max, Commission, Min Credit Score */}
           <div>
-            <label style={labelStyle}>Term <span style={{ color: "#6b7280", fontWeight: 400 }}>(Optional)</span></label>
-            <input placeholder="Months, e.g., 12 - 60" value={form.term} onChange={(e) => set("term", e.target.value)}
-              style={inputStyle()} />
+            <label style={labelStyle}>Term <span style={{ color: "#9ca3af", fontWeight: 400 }}>(months)</span></label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, alignItems: "center" }}>
+              <input
+                placeholder="e.g. 6"
+                inputMode="numeric"
+                value={form.termMin}
+                onChange={(e) => set("termMin", e.target.value.replace(/[^0-9]/g, ""))}
+                style={inputStyle()}
+              />
+              <span style={{ color: "#6b7280" }}>—</span>
+              <input
+                placeholder="e.g. 24"
+                inputMode="numeric"
+                value={form.termMax}
+                onChange={(e) => set("termMax", e.target.value.replace(/[^0-9]/g, ""))}
+                style={inputStyle()}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Commission <span style={{ color: "#9ca3af", fontWeight: 400 }}>(%, internal)</span></label>
+            <input
+              placeholder="e.g. 1.5"
+              inputMode="decimal"
+              value={form.commission}
+              onChange={(e) => set("commission", e.target.value.replace(/[^0-9.]/g, ""))}
+              style={inputStyle()}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Minimum Credit Score</label>
+            <select
+              value={form.creditBand}
+              onChange={(e) => set("creditBand", e.target.value)}
+              style={inputStyle()}
+            >
+              <option value="">No minimum</option>
+              {CREDIT_SCORE_BANDS.map((b) => (
+                <option key={b.label} value={b.label}>{b.label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Eligibility Notes */}
