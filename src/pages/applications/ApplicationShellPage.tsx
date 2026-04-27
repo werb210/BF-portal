@@ -27,7 +27,7 @@ type ApplicationOverviewRecord = {
 };
 
 const APPLICATION_TABS: DrawerTab[] = [
-  { id: "overview", label: "Overview" },
+  // BF_NO_OVERVIEW_v38 — Block 38-C — overview tab removed (was screenshotted by accident)
   { id: "application", label: "Application" },
   { id: "banking", label: "Banking Analysis" },
   { id: "financials", label: "Financials" },

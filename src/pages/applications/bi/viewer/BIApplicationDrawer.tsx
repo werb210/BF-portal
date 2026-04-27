@@ -6,7 +6,7 @@ import { useSilo } from "@/hooks/useSilo";
 import { biPipelineApi } from "../bi.pipeline.api";
 
 const TABS = [
-  { id: "overview", label: "Overview" },
+  // BF_NO_OVERVIEW_v38 — Block 38-C — overview tab removed (was screenshotted by accident)
   { id: "application", label: "Application" },
   { id: "documents", label: "Documents" },
   { id: "requirements", label: "Requirements" },
@@ -33,7 +33,7 @@ const dayDiff = (dateString: string) => Math.max(0, Math.floor((Date.now() - new
 
 const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProps) => {
   const { silo } = useSilo();
-  const [tab, setTab] = useState<BIDrawerTab>("overview");
+  const [tab, setTab] = useState<BIDrawerTab>("application");
   const requirementsEnabled = FEATURE_FLAGS.BI_REQUIREMENTS;
 
   const detailQuery = useQuery({
@@ -109,29 +109,6 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
         </div>
 
         <div className="application-drawer__content">
-          {tab === "overview" ? (
-            <div className="space-y-3">
-              <div>Stage badge: {detail?.stage ?? "—"}</div>
-              <div>CORE score: {detail?.core_score ?? "—"}</div>
-              {detail?.pgi_external_id ? <div>PGI external ID: {detail.pgi_external_id}</div> : null}
-              {detail?.quote_summary ? (
-                <div>
-                  Quote summary:
-                  <ul>
-                    {Object.entries(detail.quote_summary).map(([key, value]) => (
-                      <li key={key}>{key}: {quoteSummaryValue(value)}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {detail?.quote_expiry_at ? <div>Quote expiry: {detail.quote_expiry_at}</div> : null}
-              {detail?.underwriter_ref ? <div>Underwriter ref: {detail.underwriter_ref}</div> : null}
-              {detail?.coverage_amount != null ? <div>Coverage amount: {detail.coverage_amount}</div> : null}
-              <div>Days in stage: {detail?.updated_at ? dayDiff(detail.updated_at) : "—"}</div>
-              <div>Quick actions: Request docs · Escalate · Contact broker</div>
-            </div>
-          ) : null}
-
           {tab === "application" ? <pre>{JSON.stringify(detail?.submitted_data ?? {}, null, 2)}</pre> : null}
 
           {tab === "documents" ? (
