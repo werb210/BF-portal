@@ -29,3 +29,21 @@ export function ensureMsalInitialized(): Promise<void> {
 }
 
 export const initializeMsalClient = ensureMsalInitialized;
+
+// BF_MSAL_ACTIVE_ACCOUNT_v28 — Block 28
+// Restore active account from cache after initialize() so MSAL state mirrors
+// the already rehydrated server session on hard reload.
+export function bfRestoreActiveMsalAccount(): void {
+  try {
+    const existing = msalClient.getActiveAccount();
+    if (existing) return;
+    const accounts = msalClient.getAllAccounts();
+    const cachedAccount = accounts[0] ?? null;
+    if (cachedAccount) {
+      msalClient.setActiveAccount(cachedAccount);
+      console.log("[msal.diag] active-account.restored", { username: cachedAccount.username ?? null });
+    }
+  } catch (error) {
+    console.warn("[msal.diag] active-account.restore.failed", error);
+  }
+}
