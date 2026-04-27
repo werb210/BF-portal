@@ -4,6 +4,7 @@ import { crmApi, type ContactRow, type Scope } from "@/api/crm";
 import { api } from "@/api";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
+import { EntityEditModal } from "@/components/EntityEditModal";
 
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
@@ -12,6 +13,7 @@ export default function ContactDetailPage() {
   const [contact, setContact] = useState<ContactRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [err, setErr] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +33,8 @@ export default function ContactDetailPage() {
   if (!contact) return <div style={{ padding: 24 }}>Loading…</div>;
 
   return (
-    <div style={layout}>
+    <>
+      <div style={layout}>
       <aside style={rail}>
         <Link
           to="/crm/contacts"
@@ -43,7 +46,7 @@ export default function ContactDetailPage() {
           <a href={`mailto:${contact.email}`} style={{ color: "#0091ae" }}>{contact.email}</a>
         )}
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button type="button" onClick={() => navigate(`/crm/contacts/${id}?edit=1`)} style={actionBtn}>Edit</button>
+          <button type="button" onClick={() => setEditOpen(true)} style={actionBtn}>Edit</button>
           <button
             type="button"
             onClick={async () => {
@@ -91,7 +94,35 @@ export default function ContactDetailPage() {
           <div style={subtle}>No associated company.</div>
         )}
       </aside>
-    </div>
+      </div>
+
+      {/* BF_CONTACT_EDIT_v24 */}
+      <EntityEditModal
+        open={editOpen}
+        title="Edit contact"
+        initial={{
+          name: contact.name ?? "",
+          email: contact.email ?? "",
+          phone: contact.phone ?? "",
+          lead_status: contact.lead_status ?? "",
+          lifecycle_stage: contact.lifecycle_stage ?? "",
+          job_title: contact.job_title ?? "",
+        }}
+        fields={[
+          { key: "name", label: "Name", required: true },
+          { key: "email", label: "Email", type: "email" },
+          { key: "phone", label: "Phone", type: "tel" },
+          { key: "job_title", label: "Job title" },
+          { key: "lead_status", label: "Status" },
+          { key: "lifecycle_stage", label: "Stage" },
+        ]}
+        onClose={() => setEditOpen(false)}
+        onSave={async (data) => {
+          await api.patch(`/api/crm/contacts/${id}`, data);
+          setRefreshKey((value) => value + 1);
+        }}
+      />
+    </>
   );
 }
 

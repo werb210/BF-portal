@@ -7,6 +7,12 @@ export function getToken() {
 
 export function setToken(token: string) {
   if (typeof window === "undefined") return;
+  // BF_MSAL_DIAG_v24
+  console.log("[msal.diag] auth_token.write", {
+    ts: new Date().toISOString(),
+    storageKey: STORAGE_KEY,
+    tokenLength: token?.length ?? 0
+  });
   localStorage.setItem(STORAGE_KEY, token);
 }
 

@@ -6,6 +6,7 @@ import {
   createLenderProduct,
   updateLender,
   updateLenderProduct,
+  fetchLenderProductById,
   fetchLenderProducts,
   type Lender,
   type LenderProduct,
@@ -38,6 +39,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   SBA_GOVERNMENT: "SBA / Government",
   STARTUP_CAPITAL: "Startup Capital",
 };
+
+// BF_LENDER_ROW_EDIT_v24
+async function bfSaveLender(lenderId: string, payload: Parameters<typeof updateLender>[1]) {
+  return updateLender(lenderId, payload);
+}
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ active, status }: { active?: boolean; status?: string }) {
@@ -214,7 +220,7 @@ function CreateLenderModal({
         active: true,
         status: "ACTIVE",
       } as any;
-      const saved = lender?.id ? await updateLender(lender.id, payload) : await createLender(payload);
+      const saved = lender?.id ? await bfSaveLender(lender.id, payload) : await createLender(payload);
       onCreated(saved);
     } catch (err) {
       setServerError(getErrorMessage(err, "Failed to create lender."));
@@ -857,8 +863,30 @@ function EditLenderModal({ lender, onClose, onSaved }: { lender: Lender | null; 
 }
 
 function EditProductModal({ product, lenders, onClose, onSaved }: { product: LenderProduct | null; lenders: Lender[]; onClose: () => void; onSaved: () => void }) {
+  // BF_PRODUCT_PREFILL_v24
+  const [hydrated, setHydrated] = useState<LenderProduct | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setHydrated(product);
+    if (!product?.id) return () => { cancelled = true; };
+    (async () => {
+      try {
+        const fullProduct = await fetchLenderProductById(product.id);
+        if (!cancelled) {
+          console.log("[lender-product.prefill] fetched", { id: product.id });
+          setHydrated(fullProduct);
+        }
+      } catch (error) {
+        console.error("[lender-product.prefill] failed", { id: product.id, error });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [product]);
+
   if (!product) return null;
-  return <CreateProductModal product={product} defaultLenderId={product.lenderId} lenders={lenders} onClose={onClose} onCreated={onSaved} />;
+  return <CreateProductModal product={hydrated ?? product} defaultLenderId={product.lenderId} lenders={lenders} onClose={onClose} onCreated={onSaved} />;
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────

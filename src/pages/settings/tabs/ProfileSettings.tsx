@@ -10,7 +10,7 @@ import { useSettingsStore } from "@/state/settings.store";
 import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
 import { logger } from "@/utils/logger";
-import { pickLoginStrategy } from "@/auth/msalLoginStrategy";
+import { bfLogMsalPhase, pickLoginStrategy } from "@/auth/msalLoginStrategy";
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_DIMENSION = 256;
@@ -216,7 +216,9 @@ const ProfileSettings = () => {
         accessToken,
         accountEmail: accountEmail ?? undefined
       };
+      bfLogMsalPhase("exchange.start", { accountEmail: accountEmail ?? null });
       const exchange = await api.post<{ email?: string; connected?: boolean }>("/api/auth/microsoft", payload);
+      bfLogMsalPhase("exchange.result", { connected: exchange?.connected ?? true, email: exchange?.email ?? accountEmail ?? null });
       const connectedEmail = exchange?.email ?? accountEmail ?? "";
       setMicrosoftConnection({ connected: true, email: connectedEmail });
       await fetchProfile();
@@ -231,7 +233,9 @@ const ProfileSettings = () => {
       if (redirectHandledRef.current) return;
       redirectHandledRef.current = true;
       try {
+        bfLogMsalPhase("handleRedirectPromise.start");
         const response = await msalClient.handleRedirectPromise();
+        bfLogMsalPhase("handleRedirectPromise.result", { hadResult: Boolean(response), account: response?.account?.username ?? null });
         if (!response) return;
         if (!isMounted) return;
         setIsLinkingMicrosoft(true);
@@ -242,8 +246,13 @@ const ProfileSettings = () => {
               account: response.account ?? undefined
             });
         await exchangeMicrosoftToken(tokenResponse.accessToken, response.account?.username);
+        bfLogMsalPhase("exchange.completed", {
+          account: response.account?.username ?? null,
+          authTokenPresent: typeof localStorage !== "undefined" ? Boolean(localStorage.getItem("auth_token")) : null
+        });
       } catch (error) {
         if (!isMounted) return;
+        bfLogMsalPhase("handleRedirectPromise.error", { message: (error as Error)?.message ?? "unknown" });
         setMicrosoftError(getErrorMessage(error as Error, "Microsoft sign-in failed."));
       } finally {
         if (isMounted) {
@@ -310,12 +319,14 @@ const ProfileSettings = () => {
     setIsLinkingMicrosoft(true);
     try {
       if (pickLoginStrategy() === "redirect") {
+        bfLogMsalPhase("loginRedirect.start", { source: "profile-settings" });
         await msalClient.loginRedirect({
           scopes: microsoftAuthConfig.scopes
         });
         return;
       }
 
+      bfLogMsalPhase("loginPopup.start", { source: "profile-settings" });
       const response = await msalClient.loginPopup({
         scopes: microsoftAuthConfig.scopes
       });
