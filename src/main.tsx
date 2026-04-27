@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import { validateStartupToken } from "@/bootstrap";
 import { AuthProvider } from "@/auth/AuthProvider";
+import { msalClient } from "@/auth/msal";
 import { api } from "@/api";
 import { getSilo } from "./lib/silo";
 import { API_BASE } from "@/config/api";
@@ -44,6 +45,12 @@ async function bootstrap() {
   if (!(await validateStartupToken())) return;
 
   await assertBackend();
+
+  // Process MSAL redirect responses before mounting the app tree.
+  await msalClient.handleRedirectPromise().catch((err) => {
+    console.error("[msal] handleRedirectPromise failed", err);
+    return null;
+  });
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>

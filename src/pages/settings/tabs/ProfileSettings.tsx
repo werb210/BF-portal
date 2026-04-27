@@ -10,6 +10,7 @@ import { useSettingsStore } from "@/state/settings.store";
 import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
 import { logger } from "@/utils/logger";
+import { pickLoginStrategy } from "@/auth/msalLoginStrategy";
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_DIMENSION = 256;
@@ -209,12 +210,6 @@ const ProfileSettings = () => {
     }
   };
 
-  const preferRedirect =
-    typeof window !== "undefined" &&
-    (window.matchMedia?.("(display-mode: standalone)").matches ||
-      (navigator as { standalone?: boolean }).standalone ||
-      /iphone|ipad|ipod/i.test(navigator.userAgent));
-
   const exchangeMicrosoftToken = useCallback(
     async (accessToken: string, accountEmail?: string | null) => {
       const payload = {
@@ -314,12 +309,13 @@ const ProfileSettings = () => {
     setMicrosoftError(null);
     setIsLinkingMicrosoft(true);
     try {
-      if (preferRedirect) {
+      if (pickLoginStrategy() === "redirect") {
         await msalClient.loginRedirect({
           scopes: microsoftAuthConfig.scopes
         });
         return;
       }
+
       const response = await msalClient.loginPopup({
         scopes: microsoftAuthConfig.scopes
       });
@@ -337,7 +333,7 @@ const ProfileSettings = () => {
         ["popup_window_error", "empty_window_error", "monitor_window_timeout"].includes(error.errorCode);
       if (isSilentFailure) {
         setHideMicrosoftButton(true);
-        if (preferRedirect) {
+        if (pickLoginStrategy() === "redirect") {
           try {
             await msalClient.loginRedirect({ scopes: microsoftAuthConfig.scopes });
             return;
