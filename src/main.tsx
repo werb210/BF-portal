@@ -7,6 +7,7 @@ import { BrowserRouter } from "react-router-dom";
 import { validateStartupToken } from "@/bootstrap";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { ensureMsalInitialized, msalClient } from "@/auth/msal";
+import { bfRehydrateSession } from "@/auth/session";
 import { api } from "@/api";
 import { getSilo } from "./lib/silo";
 import { API_BASE } from "@/config/api";
@@ -59,6 +60,7 @@ async function bootstrap() {
     idTokenClaims: redirectResult?.idTokenClaims ? "present" : "absent",
     authTokenPresent: typeof localStorage !== "undefined" ? Boolean(localStorage.getItem("auth_token")) : null,
   });
+  await bfRehydrateSession();
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>

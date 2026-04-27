@@ -5,6 +5,32 @@ import { useSilo } from "@/hooks/useSilo";
 import { fetchTwilioToken } from "@/services/twilioVoice";
 import { api } from "@/api";
 
+async function bfPlaceOutboundCall(toNumber: string) {
+  console.log("[dialer.diag] call.button.click", { to: toNumber, ts: new Date().toISOString() });
+  const base = import.meta.env.VITE_API_URL || "https://server.boreal.financial";
+  const token = typeof window !== "undefined"
+    ? (localStorage.getItem("auth_token") || localStorage.getItem("bf_jwt_token") || "")
+    : "";
+  const url = `${base}/api/telephony/outbound-call`;
+  console.log("[dialer.diag] outbound-call.fetch.start", { url, to: toNumber });
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    credentials: "include",
+    body: JSON.stringify({ To: toNumber }),
+  });
+  const body = await response.json().catch(() => ({}));
+  console.log("[dialer.diag] outbound-call.fetch.result", { status: response.status, body });
+  if (!response.ok) {
+    throw new Error(typeof body === "string" ? body : JSON.stringify(body));
+  }
+  return body;
+}
+
 // BF_DIALER_DIAG_v24
 function bfLogDialerPhase(phase: string, extra?: Record<string, unknown>) {
   console.log("[dialer.diag]", phase, { ts: new Date().toISOString(), ...(extra ?? {}) });
@@ -287,7 +313,22 @@ export default function DialerPanel() {
 
       {!inProgress && (
         <div style={{ padding: "8px 16px 24px" }}>
-          <button onClick={() => void handleDial()} disabled={!number.trim()} style={{ width: "100%", padding: 14, background: number.trim() ? "#22c55e" : "#374151", border: "none", borderRadius: 12, color: "#fff", fontSize: 16, cursor: number.trim() ? "pointer" : "default", fontWeight: 700 }}>📞 Call</button>
+          <button
+            onClick={async () => {
+              if (!number.trim()) return;
+              try {
+                await bfPlaceOutboundCall(number.trim());
+              } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                alert(`Call failed: ${message}`);
+              }
+              await handleDial();
+            }}
+            disabled={!number.trim()}
+            style={{ width: "100%", padding: 14, background: number.trim() ? "#22c55e" : "#374151", border: "none", borderRadius: 12, color: "#fff", fontSize: 16, cursor: number.trim() ? "pointer" : "default", fontWeight: 700 }}
+          >
+            📞 Call
+          </button>
         </div>
       )}
     </div>
