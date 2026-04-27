@@ -405,14 +405,16 @@ function CreateProductModal({
     "Minimum guarantees / presales",
   ].map((label) => ({ key: label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label }));
 
+  // BF_LP_FORM_INIT_v32 — null-check, NOT truthy-check. Without this, a stored
+  // value of 0 (or any falsy literal) was rendering as blank.
   const [form, setForm] = useState({
     selectedLenderId: product?.lenderId ?? defaultLenderId,
     productName: (product as any)?.productName ?? (product as any)?.name ?? "",
-    minAmount: product?.minAmount ? formatDollar(product.minAmount) : "",
-    maxAmount: product?.maxAmount ? formatDollar(product.maxAmount) : "",
-    minRate: product?.interestRateMin ? String(product.interestRateMin) : "",
-    maxRate: product?.interestRateMax ? String(product.interestRateMax) : "",
-    term: (product as any)?.termLength?.max ? String((product as any).termLength.max) : "",
+    minAmount: product?.minAmount != null && product.minAmount > 0 ? formatDollar(product.minAmount) : "",
+    maxAmount: product?.maxAmount != null && product.maxAmount > 0 ? formatDollar(product.maxAmount) : "",
+    minRate: product?.interestRateMin != null && Number(product.interestRateMin) > 0 ? String(product.interestRateMin) : "",
+    maxRate: product?.interestRateMax != null && Number(product.interestRateMax) > 0 ? String(product.interestRateMax) : "",
+    term: (product as any)?.termLength?.max != null && (product as any).termLength.max > 0 ? String((product as any).termLength.max) : "",
     eligibilityNotes: product?.eligibilityRules ?? "",
     signnowTemplateId: (product as any)?.signnowTemplateId ?? "",
     active: product?.active ?? true,

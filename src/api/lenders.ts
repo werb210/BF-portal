@@ -386,20 +386,27 @@ const normalizeLenderProduct = (raw: unknown): LenderProduct | null => {
           ? "USD"
           : "CAD/USD";
   const rateType = normalizeRateType(raw.rateType ?? raw.rate_type ?? raw.interest_type);
-  const minAmount = typeof raw.minAmount === "number" ? raw.minAmount : Number(raw.min_amount ?? raw.minAmount ?? 0);
-  const maxAmount = typeof raw.maxAmount === "number" ? raw.maxAmount : Number(raw.max_amount ?? raw.maxAmount ?? 0);
-  const interestRateMin = normalizeInterestValue(rateType, raw.interestRateMin ?? raw.interest_min);
-  const interestRateMax = normalizeInterestValue(rateType, raw.interestRateMax ?? raw.interest_max);
+  // BF_LP_NORMALIZE_v32 — server returns snake_case columns directly from
+  // Postgres (amount_min/amount_max/interest_min/interest_max/term_min/term_max/term_unit)
+  // plus a BF_LP_FIELDS_v32 camelCase decoration layer. Read both, in that order.
+  const minAmount = typeof raw.minAmount === "number"
+    ? raw.minAmount
+    : Number(raw.amount_min ?? raw.min_amount ?? raw.amountMin ?? 0);
+  const maxAmount = typeof raw.maxAmount === "number"
+    ? raw.maxAmount
+    : Number(raw.amount_max ?? raw.max_amount ?? raw.amountMax ?? 0);
+  const interestRateMin = normalizeInterestValue(rateType, raw.interestRateMin ?? raw.interest_min ?? raw.interestMin);
+  const interestRateMax = normalizeInterestValue(rateType, raw.interestRateMax ?? raw.interest_max ?? raw.interestMax);
   const termLength = isRecord(raw.termLength)
     ? {
         min: typeof raw.termLength.min === "number" ? raw.termLength.min : Number(raw.termLength.min ?? 0),
         max: typeof raw.termLength.max === "number" ? raw.termLength.max : Number(raw.termLength.max ?? 0),
-        unit: typeof raw.termLength.unit === "string" ? raw.termLength.unit : "months"
+        unit: typeof raw.termLength.unit === "string" ? raw.termLength.unit.toLowerCase() : "months"
       }
     : {
-        min: Number(raw.term_min_months ?? raw.termMin ?? 0),
-        max: Number(raw.term_max_months ?? raw.termMax ?? 0),
-        unit: "months"
+        min: Number(raw.term_min ?? raw.termMin ?? raw.term_min_months ?? 0),
+        max: Number(raw.term_max ?? raw.termMax ?? raw.term_max_months ?? 0),
+        unit: typeof raw.term_unit === "string" ? String(raw.term_unit).toLowerCase() : "months"
       };
   const eligibilityFlags = isRecord(raw.eligibilityFlags)
     ? {
@@ -442,10 +449,17 @@ const normalizeLenderProduct = (raw: unknown): LenderProduct | null => {
     fees: typeof raw.fees === "string" ? raw.fees : null,
     minimumCreditScore: typeof raw.minimumCreditScore === "number" ? raw.minimumCreditScore : null,
     ltv: typeof raw.ltv === "number" ? raw.ltv : null,
-    eligibilityRules: typeof raw.eligibilityRules === "string" ? raw.eligibilityRules : null,
+    // BF_LP_NORMALIZE_v32 — read snake_case fallbacks for fields the server stores raw.
+    eligibilityRules:
+      typeof raw.eligibilityRules === "string" ? raw.eligibilityRules :
+      typeof raw.eligibility_notes === "string" ? raw.eligibility_notes :
+      typeof raw.eligibilityNotes === "string" ? raw.eligibilityNotes : null,
     eligibilityFlags,
-    requiredDocuments
-  };
+    requiredDocuments,
+    signnowTemplateId:
+      typeof raw.signnowTemplateId === "string" ? raw.signnowTemplateId :
+      typeof raw.signnow_template_id === "string" ? raw.signnow_template_id : null
+  } as LenderProduct;
 };
 
 export const fetchLenders = async (options?: RequestOptions) => {
