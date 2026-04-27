@@ -5,6 +5,7 @@ import FormField from "@/components/forms/FormField";
 import PhoneInput from "@/components/forms/PhoneInput";
 import RegionSelect from "@/components/forms/RegionSelect";
 import CreateCompanyModal from "@/pages/crm/companies/CreateCompanyModal";
+import { bfNormalizePhoneInput } from "@/utils/phoneFormat";
 
 type Props = {
   open?: boolean;
@@ -135,7 +136,7 @@ export default function CreateContactModal({ open = true, onClose, onSaved }: Pr
           <FormField label="First Name" required error={errors.first_name}><input value={form.first_name} onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))} style={input} /></FormField>
           <FormField label="Last Name" required error={errors.last_name}><input value={form.last_name} onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))} style={input} /></FormField>
           <FormField label="Email" error={errors.email}><input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} style={input} /></FormField>
-          <FormField label="Phone" error={errors.phone}><PhoneInput country={form.address_country} value={form.phone} onChange={(next) => setForm((p) => ({ ...p, phone: next }))} /></FormField>
+          <FormField label="Phone" error={errors.phone}><PhoneInput country={form.address_country} value={form.phone} onChange={(next) => setForm((p) => ({ ...p, phone: bfNormalizePhoneInput(next) })) /* BF_CONTACT_PHONE_FMT_v28 */} /></FormField>
           <FormField label="Street Address" error={errors.address_street}><input value={form.address_street} onChange={(e) => setForm((p) => ({ ...p, address_street: e.target.value }))} style={input} /></FormField>
           <FormField label="City" error={errors.address_city}><input value={form.address_city} onChange={(e) => setForm((p) => ({ ...p, address_city: e.target.value }))} style={input} /></FormField>
           <FormField label="Country" error={errors.address_country}><select value={form.address_country} onChange={(e) => setForm((p) => ({ ...p, address_country: e.target.value as "CA" | "US", address_state: "" }))} style={input}><option value="CA">Canada</option><option value="US">United States</option></select></FormField>

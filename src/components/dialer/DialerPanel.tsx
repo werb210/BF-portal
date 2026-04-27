@@ -31,6 +31,17 @@ async function bfPlaceOutboundCall(toNumber: string) {
   return body;
 }
 
+// BF_DIALER_CALL_DEBUG_v28
+function bfDebugPickToValue(candidates: Record<string, unknown>): string {
+  console.log("[dialer.diag] candidate-to-values", candidates);
+  for (const value of Object.values(candidates)) {
+    if (typeof value === "string" && value.replace(/\D+/g, "").length >= 7) {
+      return value;
+    }
+  }
+  return "";
+}
+
 // BF_DIALER_DIAG_v24
 function bfLogDialerPhase(phase: string, extra?: Record<string, unknown>) {
   console.log("[dialer.diag]", phase, { ts: new Date().toISOString(), ...(extra ?? {}) });
@@ -315,14 +326,19 @@ export default function DialerPanel() {
         <div style={{ padding: "8px 16px 24px" }}>
           <button
             onClick={async () => {
-              if (!number.trim()) return;
+              const callTo = bfDebugPickToValue({
+                number,
+                contextPhone: context.phone,
+                addInput,
+              });
+              if (!callTo.trim()) return;
               try {
-                await bfPlaceOutboundCall(number.trim());
+                await bfPlaceOutboundCall(callTo.trim());
               } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
                 alert(`Call failed: ${message}`);
               }
-              await handleDial();
+              await handleDial(callTo);
             }}
             disabled={!number.trim()}
             style={{ width: "100%", padding: 14, background: number.trim() ? "#22c55e" : "#374151", border: "none", borderRadius: 12, color: "#fff", fontSize: 16, cursor: number.trim() ? "pointer" : "default", fontWeight: 700 }}

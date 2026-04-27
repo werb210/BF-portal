@@ -505,10 +505,13 @@ function CreateProductModal({
         requiredDocuments,
         signnowTemplateId: form.signnowTemplateId || null,
       } as any;
+      console.log("[lender-product] PATCH outgoing", { id: product?.id ?? null, body: payload }); // BF_PRODUCT_SAVE_DIAG_v28
       if (product?.id) {
-        await updateLenderProduct(product.id, payload);
+        const result = await updateLenderProduct(product.id, payload);
+        console.log("[lender-product] PATCH result", result); // BF_PRODUCT_SAVE_DIAG_v28
       } else {
-        await createLenderProduct(payload);
+        const result = await createLenderProduct(payload);
+        console.log("[lender-product] PATCH result", result); // BF_PRODUCT_SAVE_DIAG_v28
       }
       onCreated();
     } catch (err) {
@@ -863,7 +866,7 @@ function EditLenderModal({ lender, onClose, onSaved }: { lender: Lender | null; 
 }
 
 function EditProductModal({ product, lenders, onClose, onSaved }: { product: LenderProduct | null; lenders: Lender[]; onClose: () => void; onSaved: () => void }) {
-  // BF_PRODUCT_PREFILL_v24
+  // BF_PRODUCT_PREFILL_v28
   const [hydrated, setHydrated] = useState<LenderProduct | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -871,10 +874,37 @@ function EditProductModal({ product, lenders, onClose, onSaved }: { product: Len
     if (!product?.id) return () => { cancelled = true; };
     (async () => {
       try {
-        const fullProduct = await fetchLenderProductById(product.id);
+        const raw = await fetchLenderProductById(product.id);
+        console.log("[lender-product] GET raw response", raw); // BF_PRODUCT_PREFILL_v28
+        const source: any = (raw as any)?.product ?? (raw as any)?.data ?? raw ?? {};
+        const pick = (...keys: string[]) => {
+          for (const key of keys) {
+            const val = source?.[key];
+            if (val !== undefined && val !== null && val !== "") return val;
+          }
+          return undefined;
+        };
+        const seeded = {
+          ...(product as any),
+          ...(source as any),
+          id: String(pick("id") ?? product.id),
+          lenderId: String(pick("lenderId", "lender_id") ?? product.lenderId ?? ""),
+          productName: String(pick("productName", "product_name", "name") ?? ""),
+          name: String(pick("name", "productName", "product_name") ?? ""),
+          category: String(pick("category", "category_name", "categoryName") ?? "TERM_LOAN"),
+          minAmount: Number(pick("minAmount", "amount_min", "min_amount", "amountMin") ?? 0) || 0,
+          maxAmount: Number(pick("maxAmount", "amount_max", "max_amount", "amountMax") ?? 0) || 0,
+          interestRateMin: Number(pick("interestRateMin", "rate_min", "min_rate", "rateMin") ?? 0) || 0,
+          interestRateMax: Number(pick("interestRateMax", "rate_max", "max_rate", "rateMax") ?? 0) || 0,
+          eligibilityRules: String(pick("eligibilityRules", "eligibility_notes", "eligibilityNotes", "notes") ?? ""),
+          signnowTemplateId: pick("signnowTemplateId", "signnow_template_id", "signnowTemplateID") ?? null,
+          requiredDocuments: pick("requiredDocuments", "required_documents", "documents", "docs") ?? [],
+          active: Boolean(pick("active", "is_active", "isActive") ?? true),
+          termLength: source?.termLength ?? source?.term_length ?? product.termLength,
+        } as LenderProduct;
         if (!cancelled) {
-          console.log("[lender-product.prefill] fetched", { id: product.id });
-          setHydrated(fullProduct);
+          console.log("[lender-product] seeded form values", seeded); // BF_PRODUCT_PREFILL_v28
+          setHydrated(seeded);
         }
       } catch (error) {
         console.error("[lender-product.prefill] failed", { id: product.id, error });
