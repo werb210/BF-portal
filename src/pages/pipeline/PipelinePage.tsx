@@ -41,6 +41,8 @@ function isDraftLikeApplication(card: Card): boolean {
 }
 
 export default function PipelinePage() {
+  // BF_PIPELINE_SHOW_DRAFTS_v24
+  const [showDrafts, setShowDrafts] = useState(false);
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
@@ -48,11 +50,15 @@ export default function PipelinePage() {
   const navigate = useNavigate();
 
   const load = useCallback(() => {
-    api<{ items: Card[] }>("/api/portal/applications")
-      .then(({ items }) => setCards(Array.isArray(items) ? items.filter((card) => !isDraftLikeApplication(card)) : []))
+    api<{ items: Card[] }>("/api/portal/applications", {
+      params: showDrafts ? { include_drafts: 1 } : undefined,
+    })
+      .then(({ items }) => setCards(
+        Array.isArray(items) ? items.filter((card) => showDrafts || !isDraftLikeApplication(card)) : []
+      ))
       .catch(() => setCards([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [showDrafts]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -88,7 +94,13 @@ export default function PipelinePage() {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: 0 }}>Sales Pipeline</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: 0 }}>Sales Pipeline</h1>
+          <label style={{ fontSize: 13, color: "#334155", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <input type="checkbox" checked={showDrafts} onChange={(event) => setShowDrafts(event.target.checked)} />
+            Show drafts
+          </label>
+        </div>
         <span style={{ fontSize: 13, color: "#64748b" }}>{cards.length} applications</span>
       </div>
       <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 16, alignItems: "flex-start" }}>

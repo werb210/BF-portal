@@ -39,6 +39,22 @@ export function isStandalonePWA(): boolean {
 
 export type LoginStrategy = "popup" | "redirect";
 
+// BF_MSAL_DIAG_v24
+export function bfLogMsalPhase(phase: string, extra?: Record<string, unknown>): void {
+  try {
+    console.log("[msal.diag]", phase, {
+      ts: new Date().toISOString(),
+      ua: typeof navigator !== "undefined" ? navigator.userAgent : "",
+      standalone: typeof navigator !== "undefined" ? (navigator as any).standalone === true : false,
+      ...(extra ?? {}),
+    });
+  } catch {
+    // no-op
+  }
+}
+
 export function pickLoginStrategy(): LoginStrategy {
-  return isIOSSafari() ? "redirect" : "popup";
+  const strategy = isIOSSafari() ? "redirect" : "popup";
+  bfLogMsalPhase("pickLoginStrategy", { strategy, isIOSSafari: isIOSSafari(), isStandalone: isStandalonePWA() });
+  return strategy;
 }

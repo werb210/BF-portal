@@ -48,9 +48,16 @@ async function bootstrap() {
 
   // Process MSAL redirect responses before mounting the app tree.
   await ensureMsalInitialized();
-  await msalClient.handleRedirectPromise().catch((err) => {
-    console.error("[msal] handleRedirectPromise failed", err);
+  // BF_MAIN_REDIRECT_DIAG_v24
+  const redirectResult = await msalClient.handleRedirectPromise().catch((err) => {
+    console.error("[msal.diag] handleRedirectPromise failed", err);
     return null;
+  });
+  console.log("[msal.diag] handleRedirectPromise.result", {
+    hadResult: Boolean(redirectResult),
+    account: redirectResult?.account?.username ?? null,
+    idTokenClaims: redirectResult?.idTokenClaims ? "present" : "absent",
+    authTokenPresent: typeof localStorage !== "undefined" ? Boolean(localStorage.getItem("auth_token")) : null,
   });
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

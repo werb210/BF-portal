@@ -5,6 +5,11 @@ import { useSilo } from "@/hooks/useSilo";
 import { fetchTwilioToken } from "@/services/twilioVoice";
 import { api } from "@/api";
 
+// BF_DIALER_DIAG_v24
+function bfLogDialerPhase(phase: string, extra?: Record<string, unknown>) {
+  console.log("[dialer.diag]", phase, { ts: new Date().toISOString(), ...(extra ?? {}) });
+}
+
 const DTMF_KEYS = [
   ["1", "2", "3"],
   ["4", "5", "6"],
@@ -82,29 +87,37 @@ export default function DialerPanel() {
 
   async function initDevice() {
     if (deviceRef.current) return deviceRef.current;
+    bfLogDialerPhase("device.init.start");
     const token = await fetchTwilioToken();
     const device = new Device(token, { logLevel: "warn" });
     await device.register();
+    bfLogDialerPhase("device.registered");
     deviceRef.current = device;
-    device.on("incoming", (call: Call) => { callRef.current = call; setStatus("ringing"); });
+    device.on("incoming", (call: Call) => { bfLogDialerPhase("device.on.incoming"); callRef.current = call; setStatus("ringing"); });
+    device.on("error", (error: Error) => bfLogDialerPhase("device.on.error", { message: error.message }));
+    device.on("cancel", () => bfLogDialerPhase("device.on.cancel"));
+    device.on("unregistered", () => bfLogDialerPhase("device.on.unregistered"));
     return device;
   }
 
   async function handleDial(overrideNumber?: string) {
     const target = (overrideNumber ?? number).trim();
+    bfLogDialerPhase("call.button.click", { target });
     if (!target || inProgress) return;
     setError(null);
     try {
       const device = await initDevice();
+      bfLogDialerPhase("outbound-call.start", { target, applicationId: context.applicationId ?? null });
       const call = await device.connect({ params: { To: target, applicationId: context.applicationId ?? "" } });
       callRef.current = call;
       startCall();
-      call.on("ringing", () => setStatus("ringing"));
-      call.on("accept", () => setStatus("connected"));
-      call.on("disconnect", () => handleEndCall("completed"));
-      call.on("cancel", () => handleEndCall("canceled"));
-      call.on("error", (e: Error) => { setError(e.message); handleEndCall("failed"); });
+      call.on("ringing", () => { bfLogDialerPhase("call.on.ringing"); setStatus("ringing"); });
+      call.on("accept", () => { bfLogDialerPhase("call.on.accept"); setStatus("connected"); });
+      call.on("disconnect", () => { bfLogDialerPhase("call.on.disconnect"); handleEndCall("completed"); });
+      call.on("cancel", () => { bfLogDialerPhase("call.on.cancel"); handleEndCall("canceled"); });
+      call.on("error", (e: Error) => { bfLogDialerPhase("call.on.error", { message: e.message }); setError(e.message); handleEndCall("failed"); });
     } catch (e: any) {
+      bfLogDialerPhase("outbound-call.error", { message: e?.message ?? "unknown" });
       setError(e.message ?? "Call failed");
       setStatus("failed");
     }
