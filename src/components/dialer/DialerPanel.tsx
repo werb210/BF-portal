@@ -5,14 +5,29 @@ import { useSilo } from "@/hooks/useSilo";
 import { fetchTwilioToken } from "@/services/twilioVoice";
 import { api } from "@/api";
 
+// BF_DIALER_TO_E164_v32 — server reads `to` (lowercase) and Twilio requires
+// E.164 ("+1XXXXXXXXXX"). The previous body shape ({ To }) plus a 10-digit
+// number triggered "to is required" 400s in the production console.
+function bfNormalizeToE164(raw: string): string {
+  if (!raw) return "";
+  if (/^\+\d{8,15}$/.test(raw)) return raw;
+  const digits = raw.replace(/\D+/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length >= 8 && digits.length <= 15) return `+${digits}`;
+  return "";
+}
+
 async function bfPlaceOutboundCall(toNumber: string) {
-  console.log("[dialer.diag] call.button.click", { to: toNumber, ts: new Date().toISOString() });
+  const e164 = bfNormalizeToE164(toNumber);
+  console.log("[dialer.diag] call.button.click", { rawTo: toNumber, to: e164, ts: new Date().toISOString() });
+  if (!e164) throw new Error("Phone number must be at least 7 digits");
   const base = import.meta.env.VITE_API_URL || "https://server.boreal.financial";
   const token = typeof window !== "undefined"
     ? (localStorage.getItem("auth_token") || localStorage.getItem("bf_jwt_token") || "")
     : "";
   const url = `${base}/api/telephony/outbound-call`;
-  console.log("[dialer.diag] outbound-call.fetch.start", { url, to: toNumber });
+  console.log("[dialer.diag] outbound-call.fetch.start", { url, to: e164 });
 
   const response = await fetch(url, {
     method: "POST",
@@ -21,7 +36,7 @@ async function bfPlaceOutboundCall(toNumber: string) {
       Authorization: `Bearer ${token}`,
     },
     credentials: "include",
-    body: JSON.stringify({ To: toNumber }),
+    body: JSON.stringify({ to: e164 }),
   });
   const body = await response.json().catch(() => ({}));
   console.log("[dialer.diag] outbound-call.fetch.result", { status: response.status, body });
