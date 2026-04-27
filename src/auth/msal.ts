@@ -18,9 +18,14 @@ export const msalClient = new PublicClientApplication({
 
 let initPromise: Promise<void> | null = null;
 
-export function initializeMsalClient() {
+export function ensureMsalInitialized(): Promise<void> {
   if (!initPromise) {
-    initPromise = msalClient.initialize();
+    initPromise = msalClient.initialize().catch((error) => {
+      initPromise = null;
+      throw error;
+    });
   }
   return initPromise;
 }
+
+export const initializeMsalClient = ensureMsalInitialized;

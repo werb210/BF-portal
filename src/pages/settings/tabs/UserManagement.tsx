@@ -13,8 +13,6 @@ import UserDetailsFields from "../components/UserDetailsFields";
 const UserManagement = () => {
   const {
     users,
-    addUser,
-    updateUser,
     updateUserRole,
     setUserDisabled,
     statusMessage,
@@ -78,6 +76,29 @@ const UserManagement = () => {
     return errors;
   };
 
+
+  const normalizeUserPayloadForApi = (raw: Record<string, unknown>) => {
+    const cleaned = Object.fromEntries(
+      Object.entries(raw).filter(([, value]) => {
+        if (value === null || value === undefined) return false;
+        if (typeof value === "string") return value.trim().length > 0;
+        if (Array.isArray(value)) return value.length > 0;
+        return true;
+      })
+    ) as Record<string, unknown>;
+
+    const silos = (Array.isArray(cleaned.silos) ? cleaned.silos : []) as string[];
+    const siloAccess = silos.map((silo) => silo.toLowerCase());
+
+    return {
+      ...cleaned,
+      role: String(cleaned.role ?? "staff").toLowerCase(),
+      silos,
+      silo: (silos[0] ?? "BF").toUpperCase(),
+      silo_access: siloAccess,
+    };
+  };
+
   const setUserPending = (id: string, pending: boolean) => {
     setPendingUserIds((prev) => {
       const next = new Set(prev);
@@ -97,27 +118,36 @@ const UserManagement = () => {
     if (Object.keys(errors).length > 0) return;
     setIsSavingUser(true);
     try {
+      const payload = normalizeUserPayloadForApi({
+        first_name: userForm.firstName,
+        last_name: userForm.lastName,
+        firstName: userForm.firstName,
+        lastName: userForm.lastName,
+        email: userForm.email,
+        phone: userForm.phone,
+        role: userForm.role,
+        silos: userForm.silos,
+      });
+      console.info("[UserManagement] outgoing user payload", payload);
+
       if (editingUser) {
         if (!editingUser.id) {
           setFormError("Missing user id. Please refresh and try again.");
           return;
         }
-        await updateUser(editingUser.id, {
-          ...userForm,
-          silo: userForm.silos[0] ?? "BF",
-        });
+        await api.patch(`/api/users/${editingUser.id}`, payload);
       } else {
-        await addUser({
-          ...userForm,
-          silo: userForm.silos[0] ?? "BF",
-        });
+        await api.post(`/api/users`, payload);
       }
       await fetchUsers();
       setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff", silos: ["BF"] });
       setEditingUser(null);
       setIsModalOpen(false);
-    } catch (error) {
-      setFormError(getErrorMessage(error, "Unable to save user."));
+    } catch (error: any) {
+      const serverMessage = typeof error?.message === "string" && error.message.trim().length > 0
+        ? error.message
+        : getErrorMessage(error, "Unable to save user.");
+      setFormError(serverMessage);
     } finally {
       setIsSavingUser(false);
     }

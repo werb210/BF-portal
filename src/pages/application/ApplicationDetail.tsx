@@ -1,160 +1,100 @@
-import { type ChangeEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { api } from "@/api";
-import OfferUploader from "@/components/offers/OfferUploader";
-import ChatPanel from "@/components/chat/ChatPanel";
-import { useParams } from "react-router-dom";
+import OverviewTab from "@/pages/applications/tabs/OverviewTab";
+import ApplicationTab from "@/pages/applications/tabs/ApplicationTab";
+import BankingAnalysisTab from "@/pages/applications/tabs/BankingAnalysisTab";
+import FinancialsTab from "@/pages/applications/tabs/FinancialsTab";
+import DocumentsTab from "@/pages/applications/tabs/DocumentsTab";
+import CreditSummaryTab from "@/pages/applications/tabs/CreditSummaryTab";
+import NotesTab from "@/pages/applications/tabs/NotesTab";
+import LendersTab from "@/pages/applications/tabs/LendersTab";
 
-const API_PREFIX = "";
-const tabs = ["Application", "Banking Analysis", "Financials", "Documents", "Credit Summary", "Notes", "Lenders"] as const;
+const TABS = [
+  { key: "overview", label: "Overview" },
+  { key: "application", label: "Application" },
+  { key: "banking-analysis", label: "Banking Analysis" },
+  { key: "financials", label: "Financials" },
+  { key: "documents", label: "Documents" },
+  { key: "credit-summary", label: "Credit Summary" },
+  { key: "notes", label: "Notes" },
+  { key: "lenders", label: "Lenders" },
+] as const;
 
-type TabName = (typeof tabs)[number];
+type TabKey = (typeof TABS)[number]["key"];
 
-type LenderMatch = {
-  lender: string;
-  likelihood: number;
-  termSheet?: string;
-};
+function activeTabFromPath(pathname: string): TabKey {
+  const segment = pathname.split("/").filter(Boolean).at(-1) ?? "overview";
+  return (TABS.find((tab) => tab.key === segment)?.key ?? "overview") as TabKey;
+}
 
-const defaultMatches: LenderMatch[] = [
-  { lender: "Lender A", likelihood: 84 },
-  { lender: "Lender B", likelihood: 72 }
-];
-
-const ALLOWED_FILE_TYPES = new Set([
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "image/png",
-  "image/jpeg"
-]);
-const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
-
-const ApplicationDetail = ({ applicationId: propId }: { applicationId?: string }) => {
-  const { id: paramId } = useParams<{ id: string }>();
-  const applicationId = propId ?? paramId ?? "";
-  const [activeTab, setActiveTab] = useState<TabName>("Application");
-  const [selectedLenders, setSelectedLenders] = useState<Record<string, boolean>>({});
-  const [uploadError, setUploadError] = useState<string>("");
-  const [contacts, setContacts] = useState<any[]>([]);
-
-  const handleDocAction = async (status: "accepted" | "rejected") => {
-    const reason = status === "rejected" ? window.prompt("Rejection reason") : "Accepted";
-    if (!reason) return;
-    await api.post(`${API_PREFIX}/applications/${applicationId}/documents/review`, { status, reason, notifyChannels: ["sms", "portal"] });
-  };
-
-  const sendSelected = async () => {
-    const lenders = Object.entries(selectedLenders)
-      .filter(([, selected]) => selected)
-      .map(([lender]) => lender);
-    await api.post("/api/lender-submissions", { applicationId, lenders });
-  };
-
-
+export default function ApplicationDetail({ applicationId: propId }: { applicationId?: string }) {
+  const { id: routeId } = useParams<{ id: string }>();
+  const applicationId = propId ?? routeId ?? "";
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [application, setApplication] = useState<Record<string, any> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const activeTab = activeTabFromPath(location.pathname);
 
   useEffect(() => {
     if (!applicationId) return;
-    let cancelled = false;
-    api.get<any[]>(`/api/applications/${applicationId}/contacts`)
-      .then((r) => !cancelled && setContacts(Array.isArray(r) ? r : []))
-      .catch(() => !cancelled && setContacts([]));
-    return () => { cancelled = true; };
+    setError(null);
+    api
+      .get(`/api/applications/${applicationId}`)
+      .then((payload: any) => setApplication(payload?.application ?? payload?.data ?? payload ?? null))
+      .catch((err: any) => setError(err?.message ?? "Could not load application."));
   }, [applicationId]);
 
-  const contactsByRole = useMemo(() => ({
-    primary: contacts.filter((c) => c?.is_primary_applicant || String(c?.role ?? "").toLowerCase() === "applicant"),
-    partners: contacts.filter((c) => String(c?.role ?? "").toLowerCase() === "partner"),
-    guarantors: contacts.filter((c) => String(c?.role ?? "").toLowerCase() === "guarantor"),
-    other: contacts.filter((c) => !["applicant", "partner", "guarantor"].includes(String(c?.role ?? "").toLowerCase()) && !c?.is_primary_applicant),
-  }), [contacts]);
+  const title = useMemo(
+    () => String(application?.business_legal_name ?? application?.business_name ?? application?.name ?? "Application"),
+    [application],
+  );
 
-  const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!ALLOWED_FILE_TYPES.has(file.type)) {
-      setUploadError("Invalid file type. Allowed: PDF, DOCX, XLSX, PNG, JPG.");
-      event.target.value = "";
-      return;
-    }
-    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-      setUploadError("File is too large. Max size is 25 MB.");
-      event.target.value = "";
-      return;
-    }
-    setUploadError("");
-  };
+  const tabBody = {
+    overview: <OverviewTab application={application} />,
+    application: <ApplicationTab application={application} />,
+    "banking-analysis": <BankingAnalysisTab />,
+    financials: <FinancialsTab />,
+    documents: <DocumentsTab />,
+    "credit-summary": <CreditSummaryTab />,
+    notes: <NotesTab />,
+    lenders: <LendersTab />,
+  }[activeTab];
 
   return (
-    <div className="space-y-3">
-      <div className="flex gap-2 overflow-auto">
-        {tabs.map((tab) => (
-          <button key={tab} type="button" onClick={() => setActiveTab(tab)}>
-            {tab}
-          </button>
-        ))}
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <header style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb", background: "#fff" }}>
+        <h1 style={{ margin: 0 }}>{title}</h1>
+        {error && <p style={{ margin: "8px 0 0", color: "#b91c1c" }}>{error}</p>}
+      </header>
 
-      {activeTab === "Documents" ? (
-        <div className="space-x-2">
-          <button type="button">View</button>
-          <button type="button">Download</button>
-          <button type="button" onClick={() => void handleDocAction("accepted")}>Accept</button>
-          <button type="button" onClick={() => void handleDocAction("rejected")}>Reject</button>
-        </div>
-      ) : null}
+      <nav style={{ display: "flex", gap: 16, padding: "12px 20px", borderBottom: "1px solid #e5e7eb", overflowX: "auto" }}>
+        {TABS.map((tab) => {
+          const active = tab.key === activeTab;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => navigate(`/applications/${applicationId}/${tab.key}`)}
+              style={{
+                border: 0,
+                borderBottom: active ? "2px solid #2563eb" : "2px solid transparent",
+                background: "transparent",
+                color: active ? "#2563eb" : "#334155",
+                fontWeight: active ? 700 : 500,
+                paddingBottom: 8,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
 
-      {activeTab === "Lenders" ? (
-        <div className="space-y-2">
-          <table>
-            <thead>
-              <tr><th>Likelihood %</th><th>Lender</th><th>Send</th><th>Upload Term Sheet</th></tr>
-            </thead>
-            <tbody>
-              {defaultMatches.map((match) => (
-                <tr key={match.lender}>
-                  <td>{match.likelihood}%</td>
-                  <td>{match.lender}</td>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(selectedLenders[match.lender])}
-                      onChange={(event) => setSelectedLenders((prev) => ({ ...prev, [match.lender]: event.target.checked }))}
-                    />
-                  </td>
-                  <td><input type="file" onChange={handleFileSelection} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {uploadError ? <div role="alert">{uploadError}</div> : null}
-          <button type="button" onClick={() => void sendSelected()}>Send Selected</button>
-        </div>
-      ) : null}
-
-
-      <section style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 12 }}>
-        <h3 style={{ marginTop: 0 }}>Contacts</h3>
-        {[
-          ["Primary Applicant", contactsByRole.primary],
-          ["Partners", contactsByRole.partners],
-          ["Guarantors", contactsByRole.guarantors],
-          ["Other", contactsByRole.other],
-        ].map(([label, rows]) => (
-          <div key={String(label)} style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 12, textTransform: "uppercase", color: "#64748b", marginBottom: 4 }}>{String(label)}</div>
-            {(rows as any[]).length === 0 ? <div style={{ color: "#94a3b8", fontSize: 13 }}>—</div> : (rows as any[]).map((c) => (
-              <div key={c.id} style={{ fontSize: 14, marginBottom: 4 }}>
-                {c.name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim()} {c.email ? `• ${c.email}` : ""} {c.phone ? `• ${c.phone}` : ""}
-              </div>
-            ))}
-          </div>
-        ))}
-      </section>
-
-      {activeTab === "Notes" ? <ChatPanel applicationId={applicationId} /> : null}
-      {activeTab === "Financials" ? <OfferUploader applicationId={applicationId} /> : null}
+      <section style={{ padding: 20 }}>{tabBody}</section>
     </div>
   );
-};
-
-export default ApplicationDetail;
+}

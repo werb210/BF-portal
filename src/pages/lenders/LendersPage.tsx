@@ -711,8 +711,8 @@ function ProductsPanel({
   const [search, setSearch] = useState("");
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ["lender-products", lender?.id ?? "all"],
-    queryFn: () => fetchLenderProducts(lender?.id ?? ""),
+    queryKey: ["lender-products", "all"],
+    queryFn: () => fetchLenderProducts(""),
     staleTime: 30_000,
   });
 
@@ -768,7 +768,7 @@ function ProductsPanel({
       <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid #e2e8f0", background: "#fff" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>
-            Lender Products{lender ? ` — ${lender.name}` : ""}
+            Lender Products{lender ? ` (selected: ${lender.name})` : ""}
           </h2>
           <button onClick={onAddProduct}
             style={{ padding: "8px 16px", background: "#2563eb", border: "none", borderRadius: 8,
@@ -904,7 +904,7 @@ export default function LendersPage() {
 
   const handleProductCreated = useCallback(() => {
     if (selected) {
-      void queryClient.invalidateQueries({ queryKey: ["lender-products", selected.id] });
+      void queryClient.invalidateQueries({ queryKey: ["lender-products"] });
     }
     setShowCreateProduct(false);
   }, [queryClient, selected]);

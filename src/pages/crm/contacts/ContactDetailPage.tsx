@@ -1,11 +1,13 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { crmApi, type ContactRow, type Scope } from "@/api/crm";
+import { api } from "@/api";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
 
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const scope: Scope = { kind: "contact", id };
   const [contact, setContact] = useState<ContactRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -40,6 +42,24 @@ export default function ContactDetailPage() {
         {contact.email && (
           <a href={`mailto:${contact.email}`} style={{ color: "#0091ae" }}>{contact.email}</a>
         )}
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button type="button" onClick={() => navigate(`/crm/contacts/${id}?edit=1`)} style={actionBtn}>Edit</button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!window.confirm("Delete this contact? This cannot be undone.")) return;
+              try {
+                await api.delete(`/api/crm/contacts/${id}`);
+                navigate("/crm/contacts");
+              } catch (error: any) {
+                setErr(error?.message ?? "Could not delete contact.");
+              }
+            }}
+            style={{ ...actionBtn, borderColor: "#fecaca", color: "#b91c1c" }}
+          >
+            Delete
+          </button>
+        </div>
         <ActionBar
           scope={scope}
           contactEmail={contact.email}
@@ -104,3 +124,5 @@ function formatRole(role?: string | null) {
   if (value === "other") return "Other";
   return "Unknown";
 }
+
+const actionBtn: CSSProperties = { border: "1px solid #cbd5e1", background: "#fff", color: "#0f172a", borderRadius: 6, padding: "6px 12px", fontSize: 13, cursor: "pointer" };
