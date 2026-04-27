@@ -112,7 +112,10 @@ export default function DialerPanel() {
   const [isRecording, setIsRecording] = useState(false);
   const [showKeypad, setShowKeypad] = useState(false);
 
-  const isActive = status === "connected";
+  // BF_DIALER_INCALL_PROGRESS_v34 — show in-call controls during dialing
+  // and ringing as well, so the user can hang up without waiting for the
+  // (sometimes-flaky) accept event.
+  const isActive = status === "connected" || status === "dialing" || status === "ringing";
   const inProgress = ["dialing", "ringing", "connected"].includes(status);
 
   useEffect(() => {
@@ -149,6 +152,20 @@ export default function DialerPanel() {
     device.on("error", (error: Error) => bfLogDialerPhase("device.on.error", { message: error.message }));
     device.on("cancel", () => bfLogDialerPhase("device.on.cancel"));
     device.on("unregistered", () => bfLogDialerPhase("device.on.unregistered"));
+    // BF_DIALER_TOKEN_REFRESH_v34 — Twilio Voice SDK fires tokenWillExpire
+    // ~5min before TTL. Re-fetch from /api/telephony/token and update the
+    // device. Without this, in-progress calls hit AccessTokenExpired
+    // (error 20104) and disconnect immediately.
+    device.on("tokenWillExpire", async () => {
+      try {
+        bfLogDialerPhase("device.on.tokenWillExpire.start");
+        const fresh = await fetchTwilioToken();
+        await device.updateToken(fresh);
+        bfLogDialerPhase("device.on.tokenWillExpire.refreshed");
+      } catch (e: any) {
+        bfLogDialerPhase("device.on.tokenWillExpire.failed", { message: e?.message ?? "unknown" });
+      }
+    });
     return device;
   }
 
