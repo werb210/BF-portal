@@ -4,6 +4,8 @@ import { getToken } from "@/auth/token";
 
 export default function GlobalDialerButton(): JSX.Element | null {
   const openDialer = useDialerStore((s) => s.openDialer);
+  const closeDialer = useDialerStore((s) => s.closeDialer);
+  const isOpen = useDialerStore((s) => s.isOpen);
   const [authed, setAuthed] = useState<boolean>(false);
 
   useEffect(() => {
@@ -22,9 +24,9 @@ export default function GlobalDialerButton(): JSX.Element | null {
   return (
     <button
       type="button"
-      onClick={() => openDialer({ source: "global" })}
-      aria-label="Open dialer"
-      title="Open dialer"
+      onClick={() => (isOpen ? closeDialer() : openDialer({ source: "global" }))}
+      aria-label={isOpen ? "Close dialer" : "Open dialer"}
+      title={isOpen ? "Close dialer" : "Open dialer"}
       style={fab}
     >
       <span style={{ fontSize: 20, lineHeight: 1 }}>📞</span>

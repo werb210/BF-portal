@@ -16,7 +16,6 @@ import Verify from "@/pages/Verify";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/lenders/LendersPage";
 import PipelinePage from "@/pages/pipeline/PipelinePage";
-import ApplicationDetail from "@/pages/application/ApplicationDetail";
 import MayaPage from "@/pages/MayaPage";
 import ApplyPage from "@/pages/ApplyPage";
 import CRMPage from "@/pages/crm/CRMPage";
@@ -63,6 +62,7 @@ import PortalDialer from "./telephony/components/PortalDialer";
 import GlobalDialerButton from "./components/GlobalDialerButton";
 import DialerButton from "./components/DialerButton";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
+import { applicationDetailElement } from "@/pages/applications/applicationDetailRoute";
 import { queryClient } from "@/lib/queryClient";
 import { sanitizeOtpFlowStateOnBoot } from "@/auth/otpFlow";
 import { getAuthToken } from "@/lib/authToken";
@@ -165,7 +165,7 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
+        <Route path="/applications/:id/*" element={<ProtectedRoute>{applicationDetailElement}</ProtectedRoute>} />
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Ops"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />

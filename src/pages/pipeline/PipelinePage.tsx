@@ -30,20 +30,44 @@ type Card = {
   created_at: string;
 };
 
+function isDraftLikeApplication(card: Card): boolean {
+  if (!card) return false;
+  const name = String(card.business_legal_name ?? card.name ?? "").trim().toLowerCase();
+  if (!name || name === "draft" || name === "draft application") return true;
+  const dateMs = new Date(card.created_at).getTime();
+  const invalidDate = Number.isNaN(dateMs);
+  const state = String(card.pipeline_state ?? "").toLowerCase();
+  return invalidDate && (state === "received" || state === "draft" || state === "new");
+}
+
 export default function PipelinePage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const load = useCallback(() => {
     api<{ items: Card[] }>("/api/portal/applications")
-      .then(({ items }) => setCards(Array.isArray(items) ? items : []))
+      .then(({ items }) => setCards(Array.isArray(items) ? items.filter((card) => !isDraftLikeApplication(card)) : []))
       .catch(() => setCards([]))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  async function removeCard(cardId: string) {
+    if (!window.confirm("Delete this application card? This cannot be undone.")) return;
+    setDeleting(cardId);
+    try {
+      await api.delete(`/api/portal/applications/${cardId}`);
+      setCards((prev) => prev.filter((card) => card.id !== cardId));
+    } catch {
+      window.alert("Delete failed. Please try again.");
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   async function move(cardId: string, toStage: string) {
     setActing(cardId);
@@ -83,9 +107,10 @@ export default function PipelinePage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {col.map((card) => (
                   <PipeCard key={card.id} card={card} stage={stage}
-                    busy={acting === card.id}
+                    busy={acting === card.id || deleting === card.id}
                     onOpen={() => navigate(`/applications/${card.id}`)}
-                    onMove={move} />
+                    onMove={move}
+                    onDelete={removeCard} />
                 ))}
                 {col.length === 0 && (
                   <div style={{ fontSize: 12, color: "#475569", textAlign: "center", padding: "14px 0" }}>
@@ -101,10 +126,11 @@ export default function PipelinePage() {
   );
 }
 
-function PipeCard({ card, stage, busy, onOpen, onMove }: {
+function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
   card: Card; stage: Stage; busy: boolean;
   onOpen: () => void;
   onMove: (id: string, to: string) => void;
+  onDelete: (id: string) => void;
 }) {
   const name = card.business_legal_name ?? card.name ?? "Unnamed";
   const amount = card.requested_amount
@@ -124,7 +150,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove }: {
 
       {/* Click anywhere on the card header to open */}
       <div onClick={onOpen} style={{ cursor: "pointer", marginBottom: 8 }}>
-        <div style={{ fontWeight: 600, fontSize: 13, color: "#f1f5f9", marginBottom: 3 }}>{name}</div>
+<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 3 }}><div style={{ fontWeight: 600, fontSize: 13, color: "#f1f5f9" }}>{name}</div><button type="button" aria-label="Delete card" onClick={(e) => { e.stopPropagation(); onDelete(card.id); }} style={{ border: 0, background: "transparent", color: "#94a3b8", cursor: busy ? "default" : "pointer", fontSize: 18, lineHeight: 1 }} disabled={busy}>×</button></div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#94a3b8" }}>
           {amount && <span>{amount}</span>}
           <span>{date}</span>
