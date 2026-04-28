@@ -57,7 +57,9 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     documents: <DocumentsTab />,
     "credit-summary": <CreditSummaryTab />,
     notes: <NotesTab />,
-    lenders: <LendersTab />,
+    // BF_LENDERS_TAB_PROP_v42 — Block 42-B — pass applicationId so the
+    // route-rendered LendersTab works without the legacy drawer store.
+    lenders: <LendersTab applicationId={applicationId} />,
   }[activeTab];
 
   return (

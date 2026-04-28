@@ -548,8 +548,9 @@ export const updateLenderProduct = async (productId: string, payload: Partial<Le
   return ensureEntityHasId(normalized ?? (product as LenderProduct), "lender product", productId);
 };
 
+// BF_LENDERS_API_PATH_v42 — Block 42-B — was missing /api/ prefix; never hit server.
 export const fetchLenderMatches = (applicationId: string, options?: RequestOptions) =>
-  api.get<LenderMatch[]>(`/applications/${applicationId}/lenders`, options);
+  api.get<LenderMatch[]>(`/api/applications/${applicationId}/lenders`, options);
 
 export const createLenderSubmission = (applicationId: string, lenderProductIds: string[]) =>
   api.post(`/api/portal/lender-submissions`, { applicationId, lenderProductIds });
