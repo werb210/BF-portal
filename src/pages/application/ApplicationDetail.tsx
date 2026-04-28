@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { api } from "@/api";
-import OverviewTab from "@/pages/applications/tabs/OverviewTab";
+// BF_NO_OVERVIEW_v41 — Block 41-C — Overview tab removed from drawer.
 import ApplicationTab from "@/pages/applications/tabs/ApplicationTab";
 import BankingAnalysisTab from "@/pages/applications/tabs/BankingAnalysisTab";
 import FinancialsTab from "@/pages/applications/tabs/FinancialsTab";
@@ -11,7 +11,6 @@ import NotesTab from "@/pages/applications/tabs/NotesTab";
 import LendersTab from "@/pages/applications/tabs/LendersTab";
 
 const TABS = [
-  { key: "overview", label: "Overview" },
   { key: "application", label: "Application" },
   { key: "banking-analysis", label: "Banking Analysis" },
   { key: "financials", label: "Financials" },
@@ -24,8 +23,8 @@ const TABS = [
 type TabKey = (typeof TABS)[number]["key"];
 
 function activeTabFromPath(pathname: string): TabKey {
-  const segment = pathname.split("/").filter(Boolean).at(-1) ?? "overview";
-  return (TABS.find((tab) => tab.key === segment)?.key ?? "overview") as TabKey;
+  const segment = pathname.split("/").filter(Boolean).at(-1) ?? "application";
+  return (TABS.find((tab) => tab.key === segment)?.key ?? "application") as TabKey;
 }
 
 export default function ApplicationDetail({ applicationId: propId }: { applicationId?: string }) {
@@ -52,7 +51,6 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
   );
 
   const tabBody = {
-    overview: <OverviewTab application={application} />,
     application: <ApplicationTab application={application} />,
     "banking-analysis": <BankingAnalysisTab />,
     financials: <FinancialsTab />,
