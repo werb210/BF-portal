@@ -52,7 +52,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
 
   const tabBody = {
     application: <ApplicationTab application={application} />,
-    "banking-analysis": <BankingAnalysisTab />,
+    "banking-analysis": <BankingAnalysisTab applicationId={applicationId} />,
     financials: <FinancialsTab />,
     documents: <DocumentsTab />,
     // BF_CREDIT_SUMMARY_UI_v46 — pass applicationId so the route-rendered
