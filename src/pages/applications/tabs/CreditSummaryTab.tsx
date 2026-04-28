@@ -1,11 +1,14 @@
-import AwaitingBackendPanel from "./AwaitingBackendPanel";
+// BF_CREDIT_SUMMARY_UI_v46 — route-based shell. Takes applicationId as a prop
+// per BF_LENDERS_TAB_PROP_v42 to avoid coupling to the drawer store.
+import CreditSummaryEditor from "@/pages/applications/_shared/CreditSummaryEditor";
 
-export default function CreditSummaryTab() {
-  return (
-    <AwaitingBackendPanel
-      tab="CreditSummary"
-      description="Awaiting backend wiring (Block 23)."
-      expectedShape={JSON.stringify({ tab: "CreditSummary", status: "awaiting_backend_wiring_block_23" }, null, 2)}
-    />
-  );
+interface Props {
+  applicationId?: string;
+}
+
+export default function CreditSummaryTab({ applicationId }: Props) {
+  if (!applicationId) {
+    return <div className="ui-empty">Select an application to view credit summary.</div>;
+  }
+  return <CreditSummaryEditor applicationId={applicationId} />;
 }
