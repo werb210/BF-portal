@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { api } from "@/api";
 import ActivityTimeline from "../components/ActivityTimeline";
 import BIDocumentList from "./BIDocumentList";
+// BI_NOTES_UI_v47
+import BINotesList from "./BINotesList";
 
 type BIApplicationDetailData = {
   stage: string;
@@ -18,7 +20,8 @@ type CommissionRow = {
   status: string;
 };
 
-type TabName = "application" | "documents" | "timeline" | "commission";
+// BI_NOTES_UI_v47 — Notes tab added per ruling 1 (BI silo has Notes tab).
+type TabName = "application" | "documents" | "notes" | "timeline" | "commission";
 
 export default function BIApplicationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -68,6 +71,8 @@ export default function BIApplicationDetail() {
       <div className="flex flex-wrap gap-3 mb-6">
         <button className="bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-5 font-medium" type="button" onClick={() => setTab("application")}>Application</button>
         <button className="bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-5 font-medium" type="button" onClick={() => setTab("documents")}>Documents</button>
+        {/* BI_NOTES_UI_v47 */}
+        <button className="bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-5 font-medium" type="button" onClick={() => setTab("notes")}>Notes</button>
         <button className="bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-5 font-medium" type="button" onClick={() => setTab("timeline")}>Timeline</button>
         <button className="bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-5 font-medium" type="button" onClick={() => setTab("commission")}>Commission</button>
       </div>
@@ -92,6 +97,9 @@ export default function BIApplicationDetail() {
       )}
 
       {tab === "documents" && <BIDocumentList applicationId={id} />}
+
+      {/* BI_NOTES_UI_v47 */}
+      {tab === "notes" && <BINotesList applicationId={id} />}
 
       {tab === "timeline" && <ActivityTimeline applicationId={id} />}
 
