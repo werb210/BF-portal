@@ -756,15 +756,21 @@ function CreateProductModal({
               )}
             </div>
 
-            <div style={{ ...sectionStyle, marginBottom: 10 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Core Underwriting Pack</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
-                {coreTypes.map((d) => (
-                  <DocCheckbox key={d.key} id={d.key} label={d.label} />
-                ))}
-              </div>
-            </div>
+            {/* BF_LP_MEDIA_FUNDING_GATE_v41 — Block 41-C — Core Pack hidden when
+                MEDIA_FUNDING is selected. For MEDIA_FUNDING the only required
+                docs are Always-Required + Conditional. For every other category
+                the Core pack is shown and Conditional is hidden. */}
             {form.category !== "MEDIA_FUNDING" && (
+              <div style={{ ...sectionStyle, marginBottom: 10 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Core Underwriting Pack</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
+                  {coreTypes.map((d) => (
+                    <DocCheckbox key={d.key} id={d.key} label={d.label} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {form.category === "MEDIA_FUNDING" && (
               <div style={sectionStyle}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
                   Conditional
