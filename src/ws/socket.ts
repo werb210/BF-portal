@@ -1,4 +1,6 @@
-import { API_BASE } from "@/config/api";
+// BF_SILO_API_ROUTING_v43 — Block 43 — sockets are BF-only today
+import { __apiBaseUrls } from "@/config/api";
+const API_BASE = __apiBaseUrls.bf;
 import { getToken } from "@/lib/authStore";
 
 const SOCKET_URL = API_BASE.replace(/^http/, "ws");
