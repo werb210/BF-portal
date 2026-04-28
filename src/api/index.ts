@@ -2,7 +2,8 @@ import { getAuthToken } from "@/lib/authToken";
 import { ApiError } from "@/api/http";
 import { setApiStatus } from "@/state/apiStatus";
 import { API_ERROR } from "@/lib/errors";
-import { getApiBase, getActiveSilo } from "@/config/api";
+// BF_SILO_API_ROUTING_v43 — Block 43 — use resolveApiBase so /api/v1/* hits BI-Server
+import { resolveApiBase, getActiveSilo } from "@/config/api";
 import { shouldLogoutOn401 } from "@/lib/apiAuth";
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
@@ -31,7 +32,8 @@ function requiresAuth(path: string) {
 
 function withQuery(path: string, params?: RequestOptions["params"]) {
   if (!params) return path;
-  const url = new URL(path, getApiBase());
+  // BF_SILO_API_ROUTING_v43 — Block 43 — base depends on path
+  const url = new URL(path, resolveApiBase(path));
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       url.searchParams.set(key, String(value));
@@ -42,8 +44,11 @@ function withQuery(path: string, params?: RequestOptions["params"]) {
 
 
 function buildUrl(path: string): string {
-  const base = getApiBase();
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  // BF_SILO_API_ROUTING_v43 — Block 43 — path-based base resolution.
+  // /api/v1/* -> BI-Server; everything else -> BF-Server.
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const base = resolveApiBase(normalized);
+  return `${base}${normalized}`;
 }
 
 
