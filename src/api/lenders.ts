@@ -22,15 +22,20 @@ export type { Lender, LenderPayload, LenderProduct, LenderProductPayload, Lender
 export type LenderMatch = {
   id: string;
   lenderName: string;
+  productName?: string;
   matchPercent?: number | string | null;
   matchPercentage?: number | string | null;
   matchScore?: number | string | null;
-  productCategory?: string;
+  productCategory?: string | null;
   terms?: string;
   requiredDocsStatus?: string;
   submissionMethod?: string | null;
   submission_method?: string | null;
   submissionConfig?: { method?: string | null };
+  // BF_LENDERS_TAB_FIX_v55_PORTAL — funding range from
+  // /api/applications/:id/lenders (BF-Server lenderMatchEngine).
+  amountMin?: number | null;
+  amountMax?: number | null;
 };
 
 export type LenderSubmissionStatus = "sent" | "failed" | "pending_manual";

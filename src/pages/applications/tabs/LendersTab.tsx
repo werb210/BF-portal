@@ -17,6 +17,18 @@ import { canWrite } from "@/auth/can";
 
 type Props = { applicationId?: string | null };
 
+function formatAmount(n: number | null | undefined): string {
+  if (n === null || n === undefined) return "—";
+  return `$${Math.round(n).toLocaleString()}`;
+}
+
+function formatRange(match: LenderMatch): string {
+  const lo = (match as any).amountMin ?? null;
+  const hi = (match as any).amountMax ?? null;
+  if (lo === null && hi === null) return "—";
+  return `${formatAmount(lo)} – ${formatAmount(hi)}`;
+}
+
 function formatLikelihood(match: LenderMatch): string {
   const raw =
     (match as any).matchPercent ??
@@ -106,7 +118,8 @@ export default function LendersTab({ applicationId }: Props) {
                   borderRadius: 8,
                   padding: "12px 16px",
                   display: "grid",
-                  gridTemplateColumns: "1fr auto auto auto",
+                  // BF_LENDERS_TAB_FIX_v55_PORTAL — added funding-range column
+                  gridTemplateColumns: "1.5fr 1fr 1fr auto auto auto",
                   gap: 16,
                   alignItems: "center",
                 }}
@@ -115,10 +128,15 @@ export default function LendersTab({ applicationId }: Props) {
                   <strong>{(m as any).lenderName ?? "Unknown lender"}</strong>
                   <span style={{ fontSize: 12, color: "#64748b" }}>
                     {(m as any).productName ?? ""}
-                    {(m as any).productCategory ? ` · ${(m as any).productCategory}` : ""}
                   </span>
                 </div>
-                <div style={{ fontWeight: 600 }}>Likelihood: {formatLikelihood(m)}</div>
+                <div style={{ fontSize: 13, color: "#334155" }}>
+                  {(m as any).productCategory ?? "—"}
+                </div>
+                <div style={{ fontSize: 13, color: "#334155" }}>
+                  {formatRange(m)}
+                </div>
+                <div style={{ fontWeight: 600 }}>{formatLikelihood(m)}</div>
                 <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <input
                     type="checkbox"
