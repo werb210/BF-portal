@@ -147,7 +147,25 @@ export async function apiFetch<T = any>(path: string, options: RequestOptions = 
     });
   }
 
-  const json = await res.json();
+  // BF_PORTAL_REFRESH_AND_PARSE_v55_PORTAL — DELETE/PATCH handlers may
+  // return 204 No Content or an empty 200 body. Calling res.json() on an
+  // empty body throws "Unexpected end of JSON input", which surfaces in
+  // the UI as a generic API error and prevents React Query cache
+  // invalidation from running in the calling code's then-branch.
+  if (res.status === 204) {
+    return undefined as T;
+  }
+  const text = await res.text();
+  if (!text) {
+    return undefined as T;
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    // Server returned non-JSON (e.g., plain text 200 OK). Treat as empty.
+    return undefined as T;
+  }
   return parsePayload<T>(json);
 }
 
