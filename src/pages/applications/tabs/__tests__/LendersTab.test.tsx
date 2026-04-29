@@ -48,7 +48,12 @@ describe("LendersTab", () => {
 
     await screen.findByText("Alpha");
     expect(screen.getByText("Beta")).toBeInTheDocument();
-    expect(screen.getByText("Likelihood: 87%")).toBeInTheDocument();
+    // BF_PORTAL_V55_FIX_FOLLOWUP_v55a — likelihood is now rendered in its
+    // own column without the literal "Likelihood:" prefix.
+    expect(screen.getByText("87%")).toBeInTheDocument();
+    expect(screen.getByText("64%")).toBeInTheDocument();
+    expect(screen.getByText("TERM_LOAN")).toBeInTheDocument();
+    expect(screen.getByText("LINE_OF_CREDIT")).toBeInTheDocument();
     expect(screen.getAllByText(/upload term sheet/i)).toHaveLength(2);
 
     const sendCheckbox = screen.getByLabelText(/Send to Alpha/i);
