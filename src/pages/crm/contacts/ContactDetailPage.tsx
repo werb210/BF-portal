@@ -5,6 +5,8 @@ import { api } from "@/api";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
 import { EntityEditModal } from "@/components/EntityEditModal";
+import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
+import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
 
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
@@ -42,6 +44,7 @@ export default function ContactDetailPage() {
         >← Back to contacts</Link>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}><h2 style={{ marginTop: 0, marginBottom: 0 }}>{contact.name}</h2><span style={roleBadge}>{formatRole(contact.role)}</span></div>
         {contact.job_title && <div style={subtle}>{contact.job_title}</div>}
+        <MarketingHeader contactId={id} />
         {contact.email && (
           <a href={`mailto:${contact.email}`} style={{ color: "#0091ae" }}>{contact.email}</a>
         )}
@@ -82,6 +85,7 @@ export default function ContactDetailPage() {
 
       <main>
         <ActivityTimeline scope={scope} refreshKey={refreshKey} />
+        <div style={{ marginTop: 16, border: "1px solid #eaf0f6", borderRadius: 6, padding: 16 }}><MarketingTab contactId={id} /></div>
       </main>
 
       <aside style={rail}>
