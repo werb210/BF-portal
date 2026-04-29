@@ -1,3 +1,10 @@
+// BF_PORTAL_BI_SILO_NAV_v56 — BI silo nav matches its operating model.
+// BI staff don't run a sales pipeline (they're insurance underwriters,
+// not loan brokers), they don't use staff-side Communications or
+// Calendar (those flows live in BF), and they DO need Pipeline +
+// Lenders so they can track underwriting workload and the panel of
+// insurers they place with. Communications + Calendar removed; Pipeline
+// + Lenders added. BF and SLF nav definitions are unchanged.
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
@@ -23,9 +30,9 @@ const BF_NAV: NavItem[] = [
 
 const BI_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",          roles: ["Admin", "Staff", "Ops"] },
+  { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
-  { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
-  { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
+  { label: "Lenders",        path: "/lenders",         roles: ["Admin", "Staff"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
   { label: "Settings",       path: "/settings",        roles: ["Admin", "Staff", "Ops"] },
 ];
@@ -177,3 +184,5 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
     </div>
   );
 }
+
+// BF_PORTAL_BI_SILO_NAV_v56_APPLAYOUT_ANCHOR
