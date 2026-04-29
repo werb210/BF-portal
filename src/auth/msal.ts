@@ -1,4 +1,4 @@
-import { PublicClientApplication } from "@azure/msal-browser";
+import { BrowserAuthError, PublicClientApplication } from "@azure/msal-browser";
 
 import { microsoftAuthConfig } from "@/config/microsoftAuth";
 
@@ -111,9 +111,44 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null): Promise
   } catch (error: any) {
     const name = error?.name || "";
     const message = error?.message || String(error);
+
     if (name === "InteractionRequiredAuthError" || /interaction_required|consent_required|login_required/i.test(message)) {
       console.log("[msal.silent] interaction required — user must click Connect Microsoft 365", { name, message });
       return false;
+    }
+
+    // BF_PORTAL_O365_REDIRECT_v55 — when silent acquisition fails because
+    // the MSAL iframe is blocked (third-party cookies disabled / Safari
+    // ITP / Chrome's incremental tightening), fall back to a full-page
+    // acquireTokenRedirect. The redirect path doesn't rely on iframes
+    // and survives modern browser cookie policy. We only do this once
+    // per page load to avoid redirect loops.
+    const isIframeBlocked =
+      error instanceof BrowserAuthError &&
+      ["monitor_window_timeout", "empty_window_error", "popup_window_error", "block_iframe_reload"].includes(error.errorCode);
+
+    if (isIframeBlocked) {
+      const REDIRECT_GUARD_KEY = "bf_msal_redirect_attempted";
+      const alreadyTried = typeof sessionStorage !== "undefined" && sessionStorage.getItem(REDIRECT_GUARD_KEY) === "1";
+      if (alreadyTried) {
+        console.warn("[msal.silent] iframe blocked AND redirect already attempted this session — giving up", { name, message });
+        return false;
+      }
+      try {
+        if (typeof sessionStorage !== "undefined") sessionStorage.setItem(REDIRECT_GUARD_KEY, "1");
+        const scopesEnv = import.meta.env.VITE_MSAL_SCOPES || "User.Read,Mail.Send,Calendars.ReadWrite,Tasks.ReadWrite";
+        const scopes = String(scopesEnv).split(",").map((scope) => scope.trim()).filter(Boolean);
+        const account = msalClient.getActiveAccount() ?? msalClient.getAllAccounts()[0] ?? null;
+        console.log("[msal.silent] iframe blocked — falling back to acquireTokenRedirect", { name });
+        await msalClient.acquireTokenRedirect({ scopes, account: account ?? undefined });
+        // acquireTokenRedirect navigates away; the line below is unreachable.
+        return false;
+      } catch (redirectError: any) {
+        console.warn("[msal.silent] redirect fallback failed", {
+          name: redirectError?.name, message: redirectError?.message,
+        });
+        return false;
+      }
     }
 
     console.warn("[msal.silent] acquire failed", { name, message });

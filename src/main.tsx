@@ -64,6 +64,11 @@ async function bootstrap() {
     idTokenClaims: redirectResult?.idTokenClaims ? "present" : "absent",
     authTokenPresent: typeof localStorage !== "undefined" ? Boolean(localStorage.getItem("auth_token")) : null,
   });
+  // BF_PORTAL_O365_REDIRECT_v55 — clear the once-per-session guard after
+  // a successful redirect so subsequent silent failures can retry.
+  if (redirectResult && typeof sessionStorage !== "undefined") {
+    sessionStorage.removeItem("bf_msal_redirect_attempted");
+  }
   await bfRehydrateSession();
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
