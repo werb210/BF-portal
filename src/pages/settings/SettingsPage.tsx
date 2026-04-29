@@ -1,8 +1,14 @@
+// BF_PORTAL_BI_SILO_NAV_v56 — BI silo Settings deliberately scopes to
+// "My Profile" only. User Management, AI Knowledge, and Runtime
+// Verification all live in BF; BI inherits the user table from BF and
+// has no per-silo admin surface, so showing those tabs in BI just
+// confuses staff. BF and SLF Settings are unchanged.
 import { useEffect, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import RequireRole from "@/components/auth/RequireRole";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
+import { useSilo } from "@/hooks/useSilo";
 import KnowledgeManager from "@/features/ai/KnowledgeManager";
 import SettingsSectionLayout from "./components/SettingsSectionLayout";
 import ProfileSettings from "./tabs/ProfileSettings";
@@ -15,16 +21,18 @@ const SettingsPage = () => {
   const { tab: tabParam } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { silo } = useSilo();
   const isAdmin = user?.role === "Admin";
+  const isBI = String(silo ?? "").toUpperCase() === "BI";
 
   const tabs = useMemo(
     () => [
-      { id: "users", label: "User Management", visible: isAdmin, content: <UserManagement /> },
-      { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin, content: isAdmin ? <KnowledgeManager /> : null },
+      { id: "users", label: "User Management", visible: isAdmin && !isBI, content: <UserManagement /> },
+      { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin && !isBI, content: isAdmin ? <KnowledgeManager /> : null },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
-      { id: "runtime", label: "Runtime Verification", visible: true, content: <RuntimeSettings /> },
+      { id: "runtime", label: "Runtime Verification", visible: !isBI, content: <RuntimeSettings /> },
     ],
-    [isAdmin]
+    [isAdmin, isBI]
   );
 
   const safeTabs = Array.isArray(tabs) ? tabs : [];
@@ -85,3 +93,5 @@ const SettingsPage = () => {
 };
 
 export default SettingsPage;
+
+// BF_PORTAL_BI_SILO_NAV_v56_SETTINGS_ANCHOR
