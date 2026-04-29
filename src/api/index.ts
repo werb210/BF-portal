@@ -147,24 +147,40 @@ export async function apiFetch<T = any>(path: string, options: RequestOptions = 
     });
   }
 
-  // BF_PORTAL_REFRESH_AND_PARSE_v55_PORTAL — DELETE/PATCH handlers may
-  // return 204 No Content or an empty 200 body. Calling res.json() on an
-  // empty body throws "Unexpected end of JSON input", which surfaces in
-  // the UI as a generic API error and prevents React Query cache
-  // invalidation from running in the calling code's then-branch.
+  // BF_PORTAL_V55_FIX_FOLLOWUP_v55a — handle empty bodies (204 / 200 with
+  // no content) without throwing, while still surfacing real parse errors.
+  // Order:
+  //   1) If status is 204, return undefined immediately (no body to read).
+  //   2) Try res.json() first — this is the common path and works for all
+  //      Response-shaped objects, including the ones used in tests that
+  //      mock { ok, json: async () => ... }.
+  //   3) If res.json() throws, the body is either empty or non-JSON. Use
+  //      res.text() (when available) to distinguish: empty → undefined;
+  //      non-empty → re-throw the original parse error.
   if (res.status === 204) {
     return undefined as T;
   }
-  const text = await res.text();
-  if (!text) {
-    return undefined as T;
-  }
+  const textProbe = typeof res.clone === "function" ? res.clone() : null;
   let json: unknown;
   try {
-    json = JSON.parse(text);
-  } catch {
-    // Server returned non-JSON (e.g., plain text 200 OK). Treat as empty.
-    return undefined as T;
+    json = await res.json();
+  } catch (parseError) {
+    // .text() may not exist on test mocks. If it doesn't, treat the empty
+    // body as the cause and return undefined.
+    if (!textProbe || typeof textProbe.text !== "function") {
+      return undefined as T;
+    }
+    let text: string;
+    try {
+      text = await textProbe.text();
+    } catch {
+      return undefined as T;
+    }
+    if (!text || !text.trim()) {
+      return undefined as T;
+    }
+    // Non-empty unparseable body — surface the original error.
+    throw parseError;
   }
   return parsePayload<T>(json);
 }

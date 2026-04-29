@@ -53,11 +53,15 @@ describe("auth and api hard pipeline e2e requirements", () => {
     await expect(api("https://evil.com/api/test", { method: "GET" })).rejects.toThrow("API_ERROR");
   });
 
-  it("TEST 6: 204 response throws", async () => {
+  it("TEST 6: 204 response resolves to undefined (BF_PORTAL_REFRESH_AND_PARSE_v55)", async () => {
     setToken("valid-token");
     globalThis.fetch = vi.fn().mockResolvedValueOnce(new Response(null, { status: 204 })) as typeof fetch;
 
-    await expect(api("/api/test", { method: "DELETE" })).rejects.toThrow();
+    // Contract change in v55: DELETE/PATCH handlers may return 204 No Content,
+    // and apiFetch resolves to undefined rather than throwing on the empty
+    // body. This unblocks React Query cache invalidation in mutation
+    // onSuccess handlers.
+    await expect(api("/api/test", { method: "DELETE" })).resolves.toBeUndefined();
   });
 
   it("TEST 7: empty response returns empty object", async () => {
