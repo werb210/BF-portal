@@ -12,8 +12,13 @@ describe("MessageThread", () => {
     render(<MessageThread messages={messages} />);
     const rows = document.querySelectorAll(".msg-row");
     expect(rows.length).toBe(2);
-    expect(rows[0].classList.contains("msg-row--left")).toBe(true);
-    expect(rows[1].classList.contains("msg-row--right")).toBe(true);
+    // BF_PORTAL_v67_BLOCK_2_1_FIX — narrow NodeList items for strict TS
+    const firstRow = rows.item(0);
+    const secondRow = rows.item(1);
+    expect(firstRow).not.toBeNull();
+    expect(secondRow).not.toBeNull();
+    expect(firstRow!.classList.contains("msg-row--left")).toBe(true);
+    expect(secondRow!.classList.contains("msg-row--right")).toBe(true);
   });
 
   it("renders #hashtag as a tappable button and fires onHashtagClick", () => {
