@@ -13,15 +13,15 @@ import CallHistoryTab from "./tab-call-history/CallHistoryTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/core/engines/pipeline/pipeline.store";
 
-const tabContentMap: Partial<Record<DrawerTabId, JSX.Element>> = {
-  application: <ApplicationTab />,
-  banking: <BankingTab />,
-  financials: <FinancialTab />,
-  "credit-summary": <CreditSummaryTab />,
-  documents: <DocumentsTab />,
-  "call-history": <CallHistoryTab />,
-  notes: <NotesTab />,
-  lenders: <LendersTab />
+const tabContentMap: Partial<Record<DrawerTabId, (applicationId: string) => JSX.Element>> = {
+  application: () => <ApplicationTab />,
+  banking: () => <BankingTab />,
+  financials: (applicationId) => <FinancialTab applicationId={applicationId} />,
+  "credit-summary": () => <CreditSummaryTab />,
+  documents: () => <DocumentsTab />,
+  "call-history": () => <CallHistoryTab />,
+  notes: () => <NotesTab />,
+  lenders: () => <LendersTab />
 };
 
 const ApplicationDrawer = () => {
@@ -87,7 +87,7 @@ const ApplicationDrawer = () => {
           onClose={closeDrawer}
         />
         <ApplicationCard tabs={visibleTabs} selectedTab={activeTab ?? selectedTab} onSelect={handleTabChange}>
-          <div className="application-drawer__content">{activeTab ? tabContentMap[activeTab] ?? null : null}</div>
+          <div className="application-drawer__content">{activeTab ? tabContentMap[activeTab]?.(selectedApplicationId) ?? null : null}</div>
         </ApplicationCard>
       </div>
     </div>
