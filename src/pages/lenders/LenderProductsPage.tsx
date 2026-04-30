@@ -455,9 +455,18 @@ const LenderProductsContent = () => {
     const minTerm = Number(values.minTerm);
     const maxTerm = Number(values.maxTerm);
     const resolvedCurrency = deriveCurrency(resolvedCountry, existing?.currency ?? null);
+    // BF_PORTAL_v66_LENDER_PRODUCT_NAME_BC — emit both `name` and
+    // `productName`. The current server reads body.name and 400s when
+    // it's missing; portal historically only sent productName, so every
+    // save was failing with a generic "name is required" toast. Sending
+    // both keeps the portal compatible with the current server AND a
+    // future server that prefers productName.
+    const __resolvedProductName_v66 =
+      values.productName.trim() || existing?.productName || deriveProductName(values.category);
     return {
       lenderId: values.lenderId,
-      productName: values.productName.trim() || existing?.productName || deriveProductName(values.category),
+      productName: __resolvedProductName_v66,
+      name: __resolvedProductName_v66,
       active: values.active,
       category: values.category,
       country: resolvedCountry,

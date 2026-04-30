@@ -120,6 +120,7 @@ export type LenderProduct = {
 };
 
 export type LenderProductPayload = Omit<LenderProduct, "id" | "requiredDocuments"> & {
+  name?: string;
   required_documents?: ProductDocumentRequirement[];
 };
 
