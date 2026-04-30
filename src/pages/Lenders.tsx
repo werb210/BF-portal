@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchClientLenders } from "@/api/lenders";
+import CreateLenderModal from "@/pages/lenders/components/CreateLenderModal";
 
 export default function Lenders() {
   const [rows, setRows] = useState<{ id: string; name: string }[]>([]);
@@ -7,6 +8,7 @@ export default function Lenders() {
   const [loading, setLoading] = useState(false);
   const [activeMap, setActiveMap] = useState<Record<string, boolean>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const loadLenders = async () => {
     setLoading(true);
@@ -44,6 +46,17 @@ export default function Lenders() {
       <button type="button" onClick={loadLenders} disabled={loading}>
         {loading ? "Loading..." : "Refresh"}
       </button>
+      <button type="button" onClick={() => setShowCreateModal(true)} style={{ marginLeft: 8 }}>
+        + Create New Lender
+      </button>
+      <CreateLenderModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => {
+          setShowCreateModal(false);
+          void loadLenders();
+        }}
+      />
       {!hasRows && !loading && <p>No lenders available.</p>}
       {hasRows && (
         <ul>
