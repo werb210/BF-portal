@@ -21,7 +21,7 @@ const tabContentMap: Partial<Record<DrawerTabId, (applicationId: string) => JSX.
   documents: () => <DocumentsTab />,
   "call-history": () => <CallHistoryTab />,
   notes: () => <NotesTab />,
-  lenders: () => <LendersTab />
+  lenders: (applicationId) => <LendersTab applicationId={applicationId} />
 };
 
 const ApplicationDrawer = () => {
