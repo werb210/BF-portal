@@ -6,12 +6,21 @@ import BIDocumentList from "./BIDocumentList";
 // BI_NOTES_UI_v47
 import BINotesList from "./BINotesList";
 
+// BI_PGI_ALIGNMENT_v56
 type BIApplicationDetailData = {
   stage: string;
+  source_type?: "public" | "lender";
   bankruptcy_flag?: boolean;
-  premium_calc?: {
-    annualPremium?: number;
+  premium_calc?: { annualPremium?: number };
+  data?: {
+    business_name?: string; lender_name?: string;
+    country?: string; naics_code?: string; formation_date?: string;
+    loan_amount?: number; pgi_limit?: number;
+    annual_revenue?: number; ebitda?: number; total_debt?: number;
+    monthly_debt_service?: number; collateral_value?: number; enterprise_value?: number;
+    bankruptcy_history?: boolean; insolvency_history?: boolean; judgment_history?: boolean;
   };
+  guarantor_name?: string; guarantor_email?: string;
 };
 
 type CommissionRow = {
@@ -39,6 +48,23 @@ export default function BIApplicationDetail() {
 
     const data = await api<BIApplicationDetailData>(`/api/v1/bi/applications/${id}`);
     setApp(data);
+  }
+
+  async function submitToCarrier() {
+    if (!id) return;
+    if (!confirm("Submit this application to the carrier? This will lock the application.")) return;
+    try {
+      const res = await fetch(`/api/v1/bi/applications/${id}/submit-to-carrier`, { method: "POST", credentials: "include" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        alert(`Submit failed: ${body?.error ?? res.status}`);
+        return;
+      }
+      await load();
+      alert("Submitted to carrier.");
+    } catch (e) {
+      alert(`Submit failed: ${e instanceof Error ? e.message : "unknown"}`);
+    }
   }
 
   async function changeStage(stage: string) {
@@ -93,6 +119,42 @@ export default function BIApplicationDetail() {
             <option value="bound">Bound</option>
             <option value="declined">Declined</option>
           </select>
+
+          <div className="mt-6 border-t border-white/10 pt-4">
+            <h3 className="text-lg font-semibold mb-3">PGI Application Data</h3>
+            <div className="grid gap-2 md:grid-cols-2 text-sm">
+              <Row k="Business" v={app.data?.business_name} />
+              <Row k="Lender" v={app.data?.lender_name} />
+              <Row k="Guarantor" v={app.guarantor_name} />
+              <Row k="Guarantor email" v={app.guarantor_email} />
+              <Row k="Country" v={app.data?.country} />
+              <Row k="NAICS" v={app.data?.naics_code} />
+              <Row k="Formation date" v={app.data?.formation_date} />
+              <Row k="Loan amount" v={app.data?.loan_amount} />
+              <Row k="PGI limit" v={app.data?.pgi_limit} />
+              <Row k="Annual revenue" v={app.data?.annual_revenue} />
+              <Row k="EBITDA" v={app.data?.ebitda} />
+              <Row k="Total debt" v={app.data?.total_debt} />
+              <Row k="Monthly debt service" v={app.data?.monthly_debt_service} />
+              <Row k="Collateral value" v={app.data?.collateral_value} />
+              <Row k="Enterprise value" v={app.data?.enterprise_value} />
+              <Row k="Bankruptcy history" v={app.data?.bankruptcy_history} />
+              <Row k="Insolvency history" v={app.data?.insolvency_history} />
+              <Row k="Judgment history" v={app.data?.judgment_history} />
+            </div>
+            {app.source_type === "public" && app.stage === "under_review" && (
+              <button
+                type="button"
+                onClick={() => void submitToCarrier()}
+                className="mt-6 rounded bg-emerald-600 hover:bg-emerald-700 px-6 py-3 font-semibold text-white"
+              >
+                Submit to Carrier
+              </button>
+            )}
+            {app.source_type === "lender" && (
+              <p className="mt-4 text-sm text-white/60">This application was submitted by a lender and forwarded directly to PGI.</p>
+            )}
+          </div>
         </>
       )}
 
@@ -106,6 +168,10 @@ export default function BIApplicationDetail() {
       {tab === "commission" && <CommissionTab applicationId={id} />}
     </div>
   );
+}
+
+function Row({ k, v }: { k: string; v: unknown }) {
+  return <div><span className="text-white/60">{k}: </span><span className="font-mono">{v == null || v === "" ? "–" : String(v)}</span></div>;
 }
 
 function CommissionTab({ applicationId }: { applicationId: string }) {
@@ -131,4 +197,6 @@ function CommissionTab({ applicationId }: { applicationId: string }) {
       <p>Status: {row.status}</p>
     </div>
   );
+
+
 }
