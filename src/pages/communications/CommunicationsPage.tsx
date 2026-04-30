@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/api";
 import { ApiError } from "@/api/http";
 import SecondaryButton from "@/components/forms/SecondaryButton";
+import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
 
 type Tab = "messages" | "sms" | "inbox" | "issues";
 
@@ -448,73 +449,17 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 minHeight: 0,
               }}
             >
-              {messages.length === 0 && (
-                <div style={{ textAlign: "center", color: "#8e8e93", fontSize: 14, marginTop: 40 }}>
-                  No messages yet. Send the first one.
-                </div>
-              )}
-              {messages.map((m, i) => {
-                const currentDay = new Date(m.created_at).toDateString();
-                const prevDay = i > 0 ? new Date(messages[i - 1]!.created_at).toDateString() : null;
-                const showDayBreak = currentDay !== prevDay;
-                const isOut = m.direction === "outbound";
-                const prevSameSide = i > 0 && messages[i - 1]?.direction === m.direction;
-                return (
-                  <>
-                  {showDayBreak && (
-                    <div style={{ alignSelf: "center", fontSize: 11, color: "#94a3b8", margin: "8px 0" }}>{new Date(m.created_at).toLocaleDateString()}</div>
-                  )}
-                  <div
-                    key={m.id}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: isOut ? "flex-end" : "flex-start",
-                      marginTop: prevSameSide ? 2 : 8,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#6b7280",
-                        marginBottom: 2,
-                        marginRight: isOut ? 4 : 0,
-                        marginLeft: isOut ? 0 : 4,
-                      }}
-                    >
-                      {isOut ? "You" : selected.name}
-                    </div>
-                    <div
-                      style={{
-                        maxWidth: "70%",
-                        background: isOut ? "#007aff" : "#e5e5ea",
-                        color: isOut ? "#fff" : "#000",
-                        padding: "9px 14px",
-                        borderRadius: isOut ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                        fontSize: 15,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {m.body}
-                    </div>
-                    {(!messages[i + 1] || messages[i + 1]?.direction !== m.direction) && (
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: "#8e8e93",
-                          marginTop: 3,
-                          paddingLeft: isOut ? 0 : 4,
-                          paddingRight: isOut ? 4 : 0,
-                        }}
-                      >
-                        {timeLabel(m.created_at)}
-                      </div>
-                    )}
-                  </div>
-                  </>
-                );
-              })}
+              <CommunicationsThread
+                messages={messages.map((m) => ({
+                  id: m.id,
+                  body: m.body,
+                  direction: m.direction,
+                  authorRole: m.direction === "outbound" ? "self" : "other",
+                  authorName: m.direction === "outbound" ? "You" : selected.name,
+                  created_at: m.created_at,
+                }))}
+                emptyText="No messages yet. Send the first one."
+              />
               <div ref={bottomRef} />
             </div>
 
