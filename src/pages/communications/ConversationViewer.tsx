@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import Button from "@/components/ui/Button";
 import type { CommunicationConversation, CommunicationMessage } from "@/api/communications";
-import MessageBubble from "./MessageBubble";
+import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
 import MessageComposer from "./MessageComposer";
 
 interface ConversationViewerProps {
@@ -66,12 +66,16 @@ const ConversationViewer = ({ conversation, onSend, onAcknowledgeIssue }: Conver
           className="mb-3 max-h-44 rounded border"
         />
       )}
-        {conversation.messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
-        {!conversation.messages.length && (
-          <div className="text-sm text-slate-500">No messages yet. Start the conversation below.</div>
-        )}
+        <CommunicationsThread
+          messages={conversation.messages.map((message) => ({
+            id: message.id,
+            message: message.message,
+            direction: message.direction === "out" ? "out" : "in",
+            authorName: message.direction === "out" ? "You" : (conversation.contactName || "Contact"),
+            createdAt: message.createdAt,
+          }))}
+          emptyText="No messages yet. Start the conversation below."
+        />
       </div>
       <MessageComposer conversation={conversation} onSend={(body, channel) => onSend(body, channel)} />
     </div>
