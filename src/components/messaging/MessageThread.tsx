@@ -34,9 +34,13 @@ function formatTimestamp(iso: string): string {
 function initials(name?: string): string {
   if (!name) return "··";
   const parts = name.trim().split(/\s+/);
-  const a = parts[0]?.[0] ?? "";
-  const b = parts[1]?.[0] ?? "";
-  return (a + b).toUpperCase() || name.slice(0, 2).toUpperCase();
+  // BF_PORTAL_v67_BLOCK_2_1_FIX — explicit string narrowing
+  const first: string = parts[0] ?? "";
+  const second: string = parts[1] ?? "";
+  const a: string = first.length > 0 ? first.charAt(0) : "";
+  const b: string = second.length > 0 ? second.charAt(0) : "";
+  const combo = (a + b).toUpperCase();
+  return combo || name.slice(0, 2).toUpperCase();
 }
 
 function renderBody(
@@ -48,10 +52,14 @@ function renderBody(
   let m: RegExpExecArray | null;
   HASHTAG_RE.lastIndex = 0;
   while ((m = HASHTAG_RE.exec(body)) !== null) {
-    const before = body.slice(lastIdx, m.index + m[1].length);
+    // BF_PORTAL_v67_BLOCK_2_1_FIX — narrow regex group accesses for strict TS
+    const lead = m[1] ?? "";
+    const word = m[2] ?? "";
+    if (!word) { lastIdx = m.index + m[0].length; continue; }
+    const before = body.slice(lastIdx, m.index + lead.length);
     if (before) out.push(before);
-    const tag = `#${m[2]}`;
-    const label = m[2].replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const tag = `#${word}`;
+    const label = word.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     out.push(
       <button
         key={`${m.index}-${tag}`}
