@@ -10,6 +10,15 @@ import { PIPELINE_STAGE_LABELS, normalizeStageId } from "@/core/engines/pipeline
 import { fetchPortalApplication, openPortalApplication } from "@/api/applications";
 import ApplicationOverviewTab from "@/pages/applications/drawer/tab-overview/ApplicationOverviewTab";
 
+// BF_PORTAL_BLOCK_1_28A_SHELL_DISPATCH — wire each tab id to its real component.
+import ApplicationTab from "@/pages/applications/tabs/ApplicationTab";
+import BankingAnalysisTab from "@/pages/applications/tabs/BankingAnalysisTab";
+import FinancialsTab from "@/pages/applications/tabs/FinancialsTab";
+import DocumentsTab from "@/pages/applications/tabs/DocumentsTab";
+import CreditSummaryTab from "@/pages/applications/tabs/CreditSummaryTab";
+import NotesTab from "@/pages/applications/tabs/NotesTab";
+import LendersTab from "@/pages/applications/tabs/LendersTab";
+import CallHistoryTab from "@/pages/applications/drawer/tab-call-history/CallHistoryTab";
 type PortalApplicationShell = {
   id: string;
   businessName: string;
@@ -146,9 +155,15 @@ const ApplicationShellPage = () => {
         </div>
         <ApplicationCard tabs={APPLICATION_TABS} selectedTab={selectedTab} onSelect={setSelectedTab}>
           {selectedTab === "overview" && <ApplicationOverviewTab application={parseOverviewRecord(applicationQuery.data, application.id)} />}
-          {selectedTab !== "overview" && (
-            <div className="application-shell__placeholder">Coming in next block.</div>
-          )}
+          {/* BF_PORTAL_BLOCK_1_28A_SHELL_DISPATCH — real components per tab id. */}
+          {selectedTab === "application" && <ApplicationTab application={applicationQuery.data as Record<string, any> | null} />}
+          {selectedTab === "banking" && <BankingAnalysisTab applicationId={application.id} />}
+          {selectedTab === "financials" && <FinancialsTab />}
+          {selectedTab === "documents" && <DocumentsTab />}
+          {selectedTab === "credit-summary" && <CreditSummaryTab applicationId={application.id} />}
+          {selectedTab === "notes" && <NotesTab applicationId={application.id} />}
+          {selectedTab === "lenders" && <LendersTab applicationId={application.id} />}
+          {selectedTab === "call-history" && <CallHistoryTab />}
         </ApplicationCard>
       </Card>
     </div>
