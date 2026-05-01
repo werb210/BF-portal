@@ -12,14 +12,7 @@ type Application = {
   };
 };
 
-const ALLOWED_FILE_TYPES = new Set([
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "image/png",
-  "image/jpeg"
-]);
-const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
+const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
 
 export default function BILenderPortal() {
   const [apps, setApps] = useState<Application[]>([]);
@@ -42,12 +35,8 @@ export default function BILenderPortal() {
     for (let i = 0; i < files.length; i++) {
       const file = files.item(i);
       if (!file) continue;
-      if (!ALLOWED_FILE_TYPES.has(file.type)) {
-        toast.error("Invalid file type. Allowed: PDF, DOCX, XLSX, PNG, JPG.");
-        return;
-      }
       if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-        toast.error("File is too large. Max size is 25 MB.");
+        toast.error(`File too large: "${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB. Max 5 MB per file.`);
         return;
       }
       const docType = file.type || "application/octet-stream";
@@ -93,7 +82,7 @@ export default function BILenderPortal() {
               <p>Premium: ${selected.premium_calc?.annualPremium?.toLocaleString() || "-"}</p>
 
               <h4 className="mt-4 mb-2">Upload Additional Documents</h4>
-              <input type="file" multiple onChange={(e) => void uploadDocs(selected.id, e.target.files)} />
+              <input type="file" multiple accept="image/png,image/jpeg,application/pdf,.pdf,.docx,.doc,.xlsx,.xls,.csv,.txt,.md" onChange={(e) => void uploadDocs(selected.id, e.target.files)} />
 
               <div className="mt-6">
                 <ActivityTimeline applicationId={selected.id} />
