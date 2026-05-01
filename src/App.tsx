@@ -15,7 +15,8 @@ import Login from "@/pages/Login";
 import Verify from "@/pages/Verify";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/lenders/LendersPage";
-import PipelinePage from "@/pages/pipeline/PipelinePage";
+// BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE
+import PipelineRouter from "@/pages/pipeline/PipelineRouter";
 import MayaPage from "@/pages/MayaPage";
 import ApplyPage from "@/pages/ApplyPage";
 import CRMPage from "@/pages/crm/CRMPage";
@@ -160,7 +161,8 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <RequireRole roles={["Admin", "Staff", "Ops"]}>
-                <PipelinePage />
+                {/* BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE — picks BI vs BF page based on active silo */}
+                <PipelineRouter />
               </RequireRole>
             </ProtectedRoute>
           }

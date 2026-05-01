@@ -1,4 +1,4 @@
-import { createContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthContext";
 import { triggerSafeReload } from "@/utils/reloadGuard";
 import type { BusinessUnit } from "@/types/businessUnit";
@@ -96,3 +96,16 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
 };
 
 export default BusinessUnitContext;
+
+
+export const useBusinessUnit = (): BusinessUnitContextValue => {
+  const ctx = useContext(BusinessUnitContext);
+  if (!ctx) {
+    return {
+      activeBusinessUnit: getActiveBusinessUnit(),
+      businessUnits: [getActiveBusinessUnit()],
+      setActiveBusinessUnit: () => undefined
+    };
+  }
+  return ctx;
+};
