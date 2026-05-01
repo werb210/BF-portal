@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createApi } from "@/apiFactory";
+import { apiForSilo } from "@/api";
 import { useAuth } from "../auth/AuthContext";
 import Skeleton from "../components/Skeleton";
 
@@ -14,8 +14,8 @@ type ActivityEvent = {
 
 export default function AdminActivity() {
   const { token } = useAuth();
-  const biApi = useMemo(() => createApi("bi", token ?? ""), [token]);
-  const slfApi = useMemo(() => createApi("slf", token ?? ""), [token]);
+  const biApi = useMemo(() => apiForSilo("BI"), []);
+  const slfApi = useMemo(() => apiForSilo("SLF"), []);
   const [events, setEvents] = useState<ActivityEvent[] | null>(null);
 
   useEffect(() => {

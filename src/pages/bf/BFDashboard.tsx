@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import SiloSelector from "../../components/SiloSelector";
-import { createApi } from "@/apiFactory";
+import { api } from "@/api";
+import { __apiBaseUrls } from "@/config/api";
 import { useSilo } from "../../context/SiloContext";
 import { useAuth } from "../../auth/AuthContext";
 
 export default function BFDashboard() {
   const { silo } = useSilo();
   const { token } = useAuth();
-  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
+  // BF_PORTAL_BLOCK_1_19 — active-silo api directly from @/api.
   const [status, setStatus] = useState("Idle");
 
   return (
@@ -17,7 +18,7 @@ export default function BFDashboard() {
       <p>Current silo: {silo.toUpperCase()}</p>
       <button
         onClick={() => {
-          setStatus(`API base: ${api.defaults.baseURL ?? "unknown"}`);
+          setStatus(`API base: ${__apiBaseUrls.bf}`);
         }}
       >
         Show API Base

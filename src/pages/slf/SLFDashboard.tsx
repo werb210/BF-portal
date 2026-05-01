@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
-import { createApi } from "@/apiFactory";
+import { api } from "@/api";
 import { useAuth } from "../../auth/AuthContext";
 import type { SLFDeal } from "../../types/slf";
 
 export default function SLFDashboard() {
   const { silo } = useSilo();
   const { token } = useAuth();
-  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
+  // BF_PORTAL_BLOCK_1_19 — active-silo api directly from @/api.
 
   const [deals, setDeals] = useState<SLFDeal[]>([]);
 

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
-import { createApi } from "@/apiFactory";
+import { api } from "@/api";
 import { useAuth } from "../../auth/AuthContext";
 
 export default function BIDashboard() {
   const { silo } = useSilo();
   const { token } = useAuth();
-  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
+  // BF_PORTAL_BLOCK_1_19 — active-silo api directly from @/api.
 
   const [applications, setApplications] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);

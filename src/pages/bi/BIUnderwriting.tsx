@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
 import { useAuth } from "../../auth/AuthContext";
-import { createApi } from "@/apiFactory";
+import { api } from "@/api";
 
 type UnderwritingApplication = {
   id: string;
@@ -12,7 +12,7 @@ export default function BIUnderwriting() {
   const { silo } = useSilo();
   const { token } = useAuth();
 
-  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
+  // BF_PORTAL_BLOCK_1_19 — active-silo api directly from @/api.
   const [apps, setApps] = useState<UnderwritingApplication[]>([]);
 
   useEffect(() => {
