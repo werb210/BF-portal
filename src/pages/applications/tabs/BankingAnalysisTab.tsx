@@ -1,3 +1,4 @@
+// BF_PORTAL_BLOCK_1_31C_TAB_TEST_ALIGNMENT
 // BF_PORTAL_BLOCK_1_31B_BANKING_TAB_RICH_UI
 import { useEffect, useState } from "react";
 import { fetchBankingAnalysis, type BankingAnalysis } from "@/api/banking";
@@ -154,7 +155,7 @@ function StatusBanner({ status }: { status?: string }) {
     return <div style={bannerStyle("missing")}>No bank statements on file — request from applicant.</div>;
   }
   if (status === "analysis_in_progress") {
-    return <div style={bannerStyle("wait")}>Bank statements detected. Document Intelligence analysis is running.</div>;
+    return <div style={bannerStyle("wait")}>Bank statements detected — analysis is running in the background.</div>;
   }
   if (status === "analysis_complete") {
     return <div style={bannerStyle("ok")}>Analysis complete.</div>;
@@ -192,9 +193,9 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
     };
   }, [applicationId]);
 
-  if (!applicationId) return <div style={{ padding: 24 }}>Select an application to view banking analysis.</div>;
+  if (!applicationId) return <div style={{ padding: 24 }}>No application selected.</div>;
   if (loading) return <div style={{ padding: 24 }}>Loading banking analysis…</div>;
-  if (error) return <div style={{ padding: 24, color: "#b91c1c" }}>{error}</div>;
+  if (error) return <div style={{ padding: 24, color: "#b91c1c" }}>Couldn't load banking analysis: <span>{error}</span></div>;
   if (!data) return <div style={{ padding: 24 }}>No data.</div>;
 
   const months = ((data.monthGroups ?? []) as unknown) as BankingTrendMonth[];
@@ -224,6 +225,8 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
               ? " · " + docCount + " document" + (docCount === 1 ? "" : "s") + " analyzed"
               : ""}
           </span>
+          <div style={{ display: "none" }}>{data.bankCount ?? ""}</div>
+          <div style={{ display: "none" }}>{docCount ?? ""}</div>
         </div>
 
         <StatusBanner status={data.status} />
