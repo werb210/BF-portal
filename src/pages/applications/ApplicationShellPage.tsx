@@ -158,8 +158,8 @@ const ApplicationShellPage = () => {
           {/* BF_PORTAL_BLOCK_1_28A_SHELL_DISPATCH — real components per tab id. */}
           {selectedTab === "application" && <ApplicationTab application={applicationQuery.data as Record<string, any> | null} />}
           {selectedTab === "banking" && <BankingAnalysisTab applicationId={application.id} />}
-          {selectedTab === "financials" && <FinancialsTab />}
-          {selectedTab === "documents" && <DocumentsTab />}
+          {selectedTab === "financials" && <FinancialsTab applicationId={application.id} />}
+          {selectedTab === "documents" && <DocumentsTab applicationId={application.id} />}
           {selectedTab === "credit-summary" && <CreditSummaryTab applicationId={application.id} />}
           {selectedTab === "notes" && <NotesTab applicationId={application.id} />}
           {selectedTab === "lenders" && <LendersTab applicationId={application.id} />}
