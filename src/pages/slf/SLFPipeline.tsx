@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
 import { useAuth } from "../../auth/AuthContext";
-import { createApi } from "@/apiFactory";
+import { api } from "@/api";
 import type { SLFDeal } from "../../types/slf";
 import { usePolling } from "../../hooks/usePolling";
 import Skeleton from "../../components/Skeleton";
@@ -18,7 +18,7 @@ type SLFDealDetail = {
 export default function SLFPipeline() {
   const { silo } = useSilo();
   const { token } = useAuth();
-  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
+  // BF_PORTAL_BLOCK_1_19 — active-silo api directly from @/api.
 
   const [deals, setDeals] = useState<SLFDeal[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<SLFDealDetail | null>(null);

@@ -9,7 +9,7 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { bfAcquireSilentO365Tokens, bfRestoreActiveMsalAccount, ensureMsalInitialized, msalClient } from "@/auth/msal";
 import { bfRehydrateSession } from "@/auth/session";
 import { api } from "@/api";
-import { getSilo } from "./lib/silo";
+import { getActiveSilo } from "@/config/api";
 import { API_BASE } from "@/config/api";
 import { registerPortalSW } from "./pwa/registerSW";
 
@@ -18,7 +18,7 @@ import App from "./App";
 import "./index.css";
 import "./styles/light-inputs.css";
 
-(window as any).__SILO__ = getSilo();
+(window as any).__SILO__ = getActiveSilo();
 
 window.addEventListener("unhandledrejection", (e) => {
   console.error("❌ UNHANDLED PROMISE:", e.reason);

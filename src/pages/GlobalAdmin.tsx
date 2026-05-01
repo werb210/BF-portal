@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createApi } from "@/apiFactory";
+import { apiForSilo } from "@/api";
 import { useAuth } from "../auth/AuthContext";
 
 type CountState = {
@@ -10,9 +10,9 @@ type CountState = {
 
 export default function GlobalAdmin() {
   const { token } = useAuth();
-  const bfApi = useMemo(() => createApi("bf", token ?? ""), [token]);
-  const biApi = useMemo(() => createApi("bi", token ?? ""), [token]);
-  const slfApi = useMemo(() => createApi("slf", token ?? ""), [token]);
+  const bfApi = useMemo(() => apiForSilo("BF"), []);
+  const biApi = useMemo(() => apiForSilo("BI"), []);
+  const slfApi = useMemo(() => apiForSilo("SLF"), []);
   const [counts, setCounts] = useState<CountState>({ bfApplications: 0, biApplications: 0, slfDeals: 0 });
 
   useEffect(() => {

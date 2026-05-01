@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { createApi } from "@/apiFactory";
+import { apiForSilo } from "@/api";
 import { useAuth } from "../auth/AuthContext";
 import Skeleton from "../components/Skeleton";
 
@@ -26,7 +26,7 @@ type CommissionDetailResponse = {
 export default function CommissionDetail() {
   const { policyId } = useParams<{ policyId: string }>();
   const { token } = useAuth();
-  const biApi = useMemo(() => createApi("bi", token ?? ""), [token]);
+  const biApi = useMemo(() => apiForSilo("BI"), []);
   const [detail, setDetail] = useState<CommissionDetailResponse | null>(null);
 
   useEffect(() => {

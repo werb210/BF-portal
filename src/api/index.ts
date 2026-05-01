@@ -3,7 +3,7 @@ import { ApiError } from "@/api/http";
 import { setApiStatus } from "@/state/apiStatus";
 import { API_ERROR } from "@/lib/errors";
 // BF_SILO_API_ROUTING_v43 — Block 43 — use resolveApiBase so /api/v1/* hits BI-Server
-import { resolveApiBase, getActiveSilo } from "@/config/api";
+import { resolveApiBase, getActiveSilo, __apiBaseUrls } from "@/config/api";
 import { shouldLogoutOn401 } from "@/lib/apiAuth";
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
@@ -43,11 +43,15 @@ function withQuery(path: string, params?: RequestOptions["params"]) {
 }
 
 
-function buildUrl(path: string): string {
-  // BF_SILO_API_ROUTING_v43 — Block 43 — path-based base resolution.
-  // /api/v1/* -> BI-Server; everything else -> BF-Server.
+function buildUrl(path: string, explicitSilo?: "BF" | "BI" | "SLF"): string {
+  // BF_PORTAL_BLOCK_1_19_BI_SILO_HARD_ISOLATION — when an explicit silo is
+  // passed, use the matching server URL directly (BI -> BI-Server,
+  // BF/SLF -> BF-Server). Otherwise fall back to the active silo from
+  // sessionStorage via resolveApiBase().
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  const base = resolveApiBase(normalized);
+  const base = explicitSilo
+    ? __apiBaseUrls[explicitSilo === "BI" ? "bi" : "bf"]
+    : resolveApiBase(normalized);
   return `${base}${normalized}`;
 }
 
@@ -213,6 +217,108 @@ apiImpl.delete = <T = any>(path: string, options: RequestOptions = {}) =>
   apiFetch<T>(path, { ...options, method: "DELETE" });
 
 export const api = apiImpl;
+
+// BF_PORTAL_BLOCK_1_19_BI_SILO_HARD_ISOLATION — explicit-silo helper for
+// pages that fan out across silos (GlobalAdmin, AdminActivity, AuditLogs,
+// CommissionDetail). Most callers should use the default `api` which
+// follows the active silo. Use this only when you genuinely need to call a
+// specific silo's server regardless of which silo the user is currently
+// viewing.
+export function apiForSilo(silo: "BF" | "BI" | "SLF"): ApiFn {
+  const wrap = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
+    const requestPath = withQuery(path, options.params);
+    const fullUrl = buildUrl(requestPath, silo);
+    const token = getAuthToken();
+
+    if (!token && requiresAuth(path)) {
+      throw new Error(API_ERROR);
+    }
+
+    const headers: Record<string, string> = {
+      "X-Silo": silo,
+      ...(options.headers as Record<string, string> | undefined),
+    };
+
+    if (!(options.body instanceof FormData)) {
+      headers["Content-Type"] = headers["Content-Type"] || "application/json";
+    }
+
+    if (token && !headers.Authorization) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const body =
+      options.body && !(options.body instanceof FormData)
+        ? typeof options.body === "string"
+          ? options.body
+          : JSON.stringify(options.body)
+        : (options.body as BodyInit | null | undefined);
+
+    const res = await fetch(fullUrl, {
+      ...options,
+      headers,
+      credentials: "include",
+      body,
+    });
+
+    if (!res.ok) {
+      const url = res.url || fullUrl;
+      if (res.status === 401 && !shouldLogoutOn401(url)) {
+        setApiStatus("degraded");
+      }
+
+      let message = API_ERROR;
+      let code: string | undefined;
+      let details: unknown;
+      try {
+        const payload = await res.json();
+        if (payload && typeof payload === "object") {
+          const maybeMessage = (payload as { message?: unknown; error?: unknown }).message
+            ?? (payload as { message?: unknown; error?: unknown }).error;
+          if (typeof maybeMessage === "string" && maybeMessage.trim()) {
+            message = maybeMessage;
+          }
+          if (typeof (payload as { code?: unknown }).code === "string") {
+            code = (payload as { code?: string }).code;
+          }
+          details = payload;
+        }
+      } catch {
+        // ignore
+      }
+      throw new ApiError({
+        status: res.status,
+        message,
+        code,
+        details,
+        requestId: res.headers.get("x-request-id") ?? undefined,
+      });
+    }
+
+    if (res.status === 204) return undefined as T;
+    const textProbe = typeof res.clone === "function" ? res.clone() : null;
+    let json: unknown;
+    try {
+      json = await res.json();
+    } catch (parseError) {
+      if (!textProbe || typeof textProbe.text !== "function") return undefined as T;
+      const text = await textProbe.text().catch(() => "");
+      if (!text || !text.trim()) return undefined as T;
+      throw parseError;
+    }
+    return parsePayload<T>(json);
+  };
+
+  const fn = ((path: string, options?: RequestOptions) => wrap(path, options)) as ApiFn;
+  fn.get = (path, options = {}) => wrap(path, { ...options, method: "GET" });
+  fn.getList = <T = any>(path: string, options: RequestOptions = {}) =>
+    wrap<T[]>(path, { ...options, method: "GET" });
+  fn.post = (path, body, options = {}) => wrap(path, { ...options, method: "POST", body });
+  fn.patch = (path, body, options = {}) => wrap(path, { ...options, method: "PATCH", body });
+  fn.put = (path, body, options = {}) => wrap(path, { ...options, method: "PUT", body });
+  fn.delete = (path, options = {}) => wrap(path, { ...options, method: "DELETE" });
+  return fn;
+}
 export const http = apiImpl;
 export const apiPost = apiImpl.post;
 

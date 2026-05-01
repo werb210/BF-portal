@@ -1,7 +1,7 @@
-import { getSilo } from "./silo";
+import { getActiveSilo } from "@/config/api";
 
 export function assertSilo(data: unknown): void {
-  const silo = getSilo();
+  const silo = getActiveSilo();
 
   if (!data) return;
 
