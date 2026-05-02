@@ -6,6 +6,7 @@ import { useSilo } from "@/hooks/useSilo";
 import RequireRole from "@/components/auth/RequireRole";
 import { canDelete } from "@/auth/canDelete";
 import { useAuth } from "@/hooks/useAuth";
+import { SILOS } from "@/types/silo";
 
 const ApplicationsContent = () => {
   const { silo } = useSilo();
@@ -13,7 +14,7 @@ const ApplicationsContent = () => {
   const showDelete = canDelete(user?.role as any);
   void showDelete;
 
-  if (silo === "SLF") {
+  if (silo === SILOS.SLF) {
     return (
       <PipelineEngineProvider
         config={{

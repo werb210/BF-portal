@@ -18,7 +18,7 @@ export default function SiloSelector() {
 
   return (
     <div style={{ display: "flex", gap: 12 }}>
-      {SILOS.map((s) => (
+      {Object.values(SILOS).map((s) => (
         <button
           key={s}
           onClick={() => {
