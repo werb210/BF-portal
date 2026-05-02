@@ -1,3 +1,8 @@
-export const SILOS = ["bf", "bi", "slf", "admin"] as const;
+export type Silo = "admin" | "bf" | "bi" | "slf";
 
-export type Silo = typeof SILOS[number];
+export const SILOS = {
+  ADMIN: "admin",
+  BF: "bf",
+  BI: "bi",
+  SLF: "slf",
+} as const;

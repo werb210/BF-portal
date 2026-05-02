@@ -8,6 +8,7 @@ import SLFPipelineCard from "./SLFPipelineCard";
 import { SLF_PIPELINE_STAGES, type SLFPipelineApplication, type SLFStageId } from "./slf.pipeline.types";
 import { slfPipelineApi } from "./slf.pipeline.api";
 import SLFApplicationDrawer from "./viewer/SLFApplicationDrawer";
+import { SILOS } from "@/types/silo";
 
 const NoPipelineAvailable = ({ silo }: { silo: string }) => (
   <div className="pipeline-empty">Pipeline is not available for the {silo} silo.</div>
@@ -46,7 +47,7 @@ const SLFPipelinePage = () => {
     [queryClient]
   );
 
-  if (silo !== "SLF") {
+  if (silo !== SILOS.SLF) {
     return <NoPipelineAvailable silo={silo} />;
   }
 
