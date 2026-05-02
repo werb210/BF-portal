@@ -47,13 +47,21 @@ export const getActiveBusinessUnit = (): BusinessUnit => {
 export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }) => {
   const { authStatus, user } = useAuth();
   const storedBusinessUnit = readStoredBusinessUnit();
-  const userBusinessUnits = ((user as { businessUnits?: BusinessUnit[] } | null)?.businessUnits ?? [
-    DEFAULT_BUSINESS_UNIT
-  ]).filter(isBusinessUnit);
-  const normalizedBusinessUnits = userBusinessUnits.length ? userBusinessUnits : [DEFAULT_BUSINESS_UNIT];
+  // BF_PORTAL_BLOCK_BI_SILO_SYNC_v1 — read user.silos (JWT field). Admins
+  // get the full allowlist so they can switch into any silo.
+  const userRole = (user as { role?: string } | null)?.role?.toLowerCase();
+  const isAdmin = userRole === "admin";
+  const rawSilos = (user as { silos?: string[] } | null)?.silos ?? [];
+  const userBusinessUnits: BusinessUnit[] = rawSilos
+    .map((s) => String(s).toUpperCase())
+    .filter(isBusinessUnit);
+  const normalizedBusinessUnits: BusinessUnit[] = isAdmin
+    ? ["BF", "BI", "SLF"]
+    : (userBusinessUnits.length ? userBusinessUnits : [DEFAULT_BUSINESS_UNIT]);
   const fallbackBusinessUnit = normalizedBusinessUnits[0] ?? DEFAULT_BUSINESS_UNIT;
-  const preferredUserBusinessUnit = (user as { activeBusinessUnit?: BusinessUnit; silo?: BusinessUnit } | null)
-    ?.activeBusinessUnit ?? (user as { activeBusinessUnit?: BusinessUnit; silo?: BusinessUnit } | null)?.silo;
+  const preferredUserBusinessUnit = ((user as { silo?: string } | null)?.silo
+    ? String((user as { silo?: string }).silo).toUpperCase()
+    : undefined) as BusinessUnit | undefined;
   const initialBusinessUnit =
     (storedBusinessUnit && normalizedBusinessUnits.includes(storedBusinessUnit) && storedBusinessUnit) ||
     (preferredUserBusinessUnit && normalizedBusinessUnits.includes(preferredUserBusinessUnit)

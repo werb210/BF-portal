@@ -13,18 +13,13 @@ import { biPipelineApi } from "./bi.pipeline.api";
 import { BI_PIPELINE_STAGES, type BIPipelineApplication, type BIStageId } from "./bi.pipeline.types";
 
 const BIPipelinePage = () => {
-  const { silo, setSilo } = useSilo() as { silo: Silo; setSilo: (next: Silo) => void };
+  const { silo } = useSilo() as { silo: Silo; setSilo: (next: Silo) => void };
   const queryClient = useQueryClient();
   const [activeCard, setActiveCard] = useState<BIPipelineApplication | null>(null);
   const [activeStage, setActiveStage] = useState<BIStageId | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(() => biPipelineApi.hasToken());
 
-  useEffect(() => {
-    if (silo !== "bi") {
-      setSilo("bi");
-    }
-  }, [setSilo, silo]);
 
   useEffect(() => {
     const onExpired = () => {

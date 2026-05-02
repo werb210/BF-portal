@@ -1,33 +1,49 @@
-import { createContext, useContext, useEffect, useState } from "react";
+// BF_PORTAL_BLOCK_BI_SILO_SYNC_v1
+// Legacy SiloContext used to hold its own React state ("bf"|"bi"|"slf"),
+// independent of BusinessUnitContext. That created a split-brain: the
+// dropdown wrote here, sessionStorage was driven by BusinessUnitContext,
+// resolveApiBase() read sessionStorage. BI silo selection never reached
+// API routing → all calls went to BF-Server.
+//
+// Now: SiloProvider is a thin pass-through over useBusinessUnit. The
+// stored silo is uppercase BusinessUnit; the "silo" surface remains
+// lowercase for the legacy callers that expect "bf"|"bi"|"slf".
+import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
-import { useAuth } from "@/auth/AuthContext";
+import { useBusinessUnit } from "@/hooks/useBusinessUnit";
+import type { BusinessUnit } from "@/types/businessUnit";
 import type { Silo } from "../types/silo";
 
 interface SiloContextType {
   silo: Silo;
-  setSilo: (s: Silo) => void;
+  setSilo: (s: Silo | BusinessUnit) => void;
 }
+
+const businessUnitToSilo = (bu: BusinessUnit): Silo =>
+  bu.toLowerCase() as Silo;
+
+const siloOrBusinessUnitToBusinessUnit = (input: Silo | BusinessUnit): BusinessUnit => {
+  const upper = String(input).toUpperCase();
+  if (upper === "BF" || upper === "BI" || upper === "SLF") {
+    return upper as BusinessUnit;
+  }
+  return "BF";
+};
 
 const SiloContext = createContext<SiloContextType | undefined>(undefined);
 
 export function SiloProvider({ children }: { children: ReactNode }) {
-  const [silo, setSilo] = useState<Silo>("bf");
-  const auth = useAuth() as unknown as {
-    allowedSilos?: Silo[];
-    canAccessSilo?: (s: Silo) => boolean;
-  };
-  const allowedSilos = auth.allowedSilos ?? [];
-  const canAccessSilo = auth.canAccessSilo ?? (() => true);
+  const { activeBusinessUnit, setActiveBusinessUnit } = useBusinessUnit();
 
-  useEffect(() => {
-    if (!allowedSilos.length) return;
-    if (!canAccessSilo(silo)) {
-      const nextSilo = allowedSilos[0];
-      if (nextSilo) setSilo(nextSilo);
-    }
-  }, [allowedSilos, canAccessSilo, silo]);
+  const value = useMemo<SiloContextType>(
+    () => ({
+      silo: businessUnitToSilo(activeBusinessUnit),
+      setSilo: (s) => setActiveBusinessUnit(siloOrBusinessUnitToBusinessUnit(s)),
+    }),
+    [activeBusinessUnit, setActiveBusinessUnit],
+  );
 
-  return <SiloContext.Provider value={{ silo, setSilo }}>{children}</SiloContext.Provider>;
+  return <SiloContext.Provider value={value}>{children}</SiloContext.Provider>;
 }
 
 export function useSilo() {
