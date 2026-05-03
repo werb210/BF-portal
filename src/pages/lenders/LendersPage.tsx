@@ -49,7 +49,7 @@ const SUBMISSION_LABELS: Record<SubmissionMethod, string> = {
   GOOGLE_SHEET: "Google Sheet (Merchant Growth)",
 };
 
-const CATEGORY_ORDER = ["TERM_LOAN", "LINE_OF_CREDIT", "FACTORING", "EQUIPMENT_FINANCE", "PURCHASE_ORDER_FINANCE", "MERCHANT_CASH_ADVANCE", "MEDIA_FUNDING", "ASSET_BASED_LENDING", "SBA_GOVERNMENT", "STARTUP_CAPITAL"];
+const CATEGORY_ORDER = ["TERM_LOAN", "LINE_OF_CREDIT", "FACTORING", "EQUIPMENT_FINANCE", "PURCHASE_ORDER_FINANCE", "MERCHANT_CASH_ADVANCE", "MEDIA", "ASSET_BASED_LENDING", "SBA_GOVERNMENT", "STARTUP_CAPITAL"];
 
 const CATEGORY_LABELS: Record<string, string> = {
   TERM_LOAN: "Term Loans",
@@ -58,7 +58,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   EQUIPMENT_FINANCE: "Equipment Finance",
   PURCHASE_ORDER_FINANCE: "Purchase Order Finance",
   MERCHANT_CASH_ADVANCE: "Merchant Cash Advance",
-  MEDIA_FUNDING: "Media Funding",
+  MEDIA: "Media / Film Finance",
   ASSET_BASED_LENDING: "Asset Based Lending",
   SBA_GOVERNMENT: "SBA / Government",
   STARTUP_CAPITAL: "Startup Capital",

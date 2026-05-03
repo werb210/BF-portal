@@ -1,3 +1,4 @@
+// BF_PORTAL_BLOCK_v87_ALL_TEN_CATEGORIES_v1
 export const LENDER_PRODUCT_CATEGORIES = [
   "TERM_LOAN",
   "LINE_OF_CREDIT",
@@ -5,6 +6,7 @@ export const LENDER_PRODUCT_CATEGORIES = [
   "EQUIPMENT_FINANCE",
   "PURCHASE_ORDER_FINANCE",
   "MERCHANT_CASH_ADVANCE",
+  "MEDIA",
   "ASSET_BASED_LENDING",
   "SBA_GOVERNMENT",
   "STARTUP_CAPITAL"
@@ -19,6 +21,7 @@ export const LENDER_PRODUCT_CATEGORY_LABELS: Record<LenderProductCategory, strin
   EQUIPMENT_FINANCE: "Equipment finance",
   PURCHASE_ORDER_FINANCE: "Purchase order finance",
   MERCHANT_CASH_ADVANCE: "Merchant cash advance",
+  MEDIA: "Media / Film finance",
   ASSET_BASED_LENDING: "Asset based lending",
   SBA_GOVERNMENT: "SBA / Government",
   STARTUP_CAPITAL: "Startup capital (Not live)"

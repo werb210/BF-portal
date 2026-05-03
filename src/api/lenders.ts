@@ -391,7 +391,7 @@ const normalizeLenderProduct = (raw: unknown): LenderProduct | null => {
     ABL: "ASSET_BASED_LENDING",
     SBA: "SBA_GOVERNMENT",
     STARTUP: "STARTUP_CAPITAL",
-    MEDIA: "TERM_LOAN", // no portal category yet — surface as Term Loan
+    MEDIA: "MEDIA",
   };
   const rawCategory =
     typeof raw.category === "string"
