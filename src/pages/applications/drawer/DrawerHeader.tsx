@@ -23,10 +23,11 @@ const DrawerHeader = ({
 
   const title = useMemo(() => data?.applicant ?? "Application", [data]);
   const status = data?.status ?? "";
+  // BF_PORTAL_BLOCK_v95_LINKED_FIELD_NAME_FIX_v1
   const parentApplicationId =
-    (data as { parent_application_id?: string | null; metadata?: { parent_application_id?: string | null } } | null)
-      ?.parent_application_id ??
-    (data as { metadata?: { parent_application_id?: string | null } } | null)?.metadata?.parent_application_id ??
+    (data as any)?.parentApplicationId ??
+    (data as any)?.parent_application_id ??
+    (data as any)?.metadata?.parent_application_id ??
     null;
   const { data: linked } = useQuery<LinkedApplicationSummary[]>({
     queryKey: ["applications", applicationId, "linked", parentApplicationId],
