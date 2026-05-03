@@ -457,6 +457,8 @@ function CreateProductModal({
     signnowTemplateId: (product as any)?.signnowTemplateId ?? "",
     active: product?.active ?? true,
     category: (product as any)?.category ?? "TERM_LOAN",
+    // BF_PORTAL_BLOCK_v97_LENDER_PRODUCT_COUNTRY_PICKER_v1
+    country: ((product as any)?.country as string | undefined) ?? "BOTH",
   });
   const [checkedDocs, setCheckedDocs] = useState<Set<string>>(() => {
     const initial = new Set<string>([alwaysRequiredDoc.key]);
@@ -543,7 +545,8 @@ function CreateProductModal({
         productName: form.productName.trim(),
         name: form.productName.trim(),
         category: form.category as any,
-        country: "CA",
+        // BF_PORTAL_BLOCK_v97_LENDER_PRODUCT_COUNTRY_PICKER_v1
+        country: form.country,
         active: form.active,
         minAmount: unformatDollar(form.minAmount),
         maxAmount: unformatDollar(form.maxAmount),
@@ -654,6 +657,20 @@ function CreateProductModal({
               {CATEGORY_ORDER.map((c) => (
                 <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
               ))}
+            </select>
+          </div>
+
+          {/* BF_PORTAL_BLOCK_v97_LENDER_PRODUCT_COUNTRY_PICKER_v1 — Country */}
+          <div>
+            <label style={labelStyle}>Country <span style={{ color: "#ef4444" }}>*</span></label>
+            <select
+              value={form.country}
+              onChange={(e) => set("country", e.target.value)}
+              style={{ ...inputStyle(), appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", backgroundSize: 18 }}
+            >
+              <option value="CA">Canada</option>
+              <option value="US">United States</option>
+              <option value="BOTH">Both (Canada &amp; US)</option>
             </select>
           </div>
 
