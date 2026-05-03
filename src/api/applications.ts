@@ -73,13 +73,15 @@ export async function fetchLinkedApplications(
       const rows: any[] = Array.isArray(json) ? json : json?.applications ?? json?.data ?? [];
       for (const r of rows) {
         if (r && r.id && r.id !== applicationId) {
+          // BF_PORTAL_BLOCK_v95_LINKED_FIELD_NAME_FIX_v1
+          // Portal endpoint returns camelCase; read both for resilience.
           results.push({
             id: r.id,
-            name: r.name ?? null,
-            product_category: r.product_category ?? null,
-            requested_amount: r.requested_amount ?? null,
+            name: r.name ?? r.businessName ?? null,
+            product_category: r.productCategory ?? r.product_category ?? null,
+            requested_amount: r.requestedAmount ?? r.requested_amount ?? null,
             source: r.source ?? null,
-            pipeline_state: r.pipeline_state ?? null
+            pipeline_state: r.stage ?? r.pipeline_state ?? null,
           });
         }
       }
@@ -98,13 +100,14 @@ export async function fetchLinkedApplications(
       if (parentRes.ok) {
         const r: any = await parentRes.json();
         if (r && r.id && r.id !== applicationId && !results.find((x) => x.id === r.id)) {
+          // BF_PORTAL_BLOCK_v95_LINKED_FIELD_NAME_FIX_v1
           results.push({
             id: r.id,
-            name: r.name ?? null,
-            product_category: r.product_category ?? null,
-            requested_amount: r.requested_amount ?? null,
+            name: r.name ?? r.businessName ?? null,
+            product_category: r.productCategory ?? r.product_category ?? null,
+            requested_amount: r.requestedAmount ?? r.requested_amount ?? null,
             source: r.source ?? null,
-            pipeline_state: r.pipeline_state ?? null
+            pipeline_state: r.stage ?? r.pipeline_state ?? null,
           });
         }
       }
