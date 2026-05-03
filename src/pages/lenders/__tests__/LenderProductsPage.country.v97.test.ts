@@ -1,8 +1,6 @@
 // BF_PORTAL_BLOCK_v97_LENDER_PRODUCT_COUNTRY_PICKER_v1
 import { describe, expect, it } from "vitest";
 
-// Pure-data assertion: the payload builder pulls country from
-// form state and accepts the three values the DB CHECK allows.
 function buildCountryField(form: { country: string }) {
   return form.country;
 }
