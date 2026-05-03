@@ -53,10 +53,15 @@ const CATEGORY_DISPLAY_ORDER = [
   "TERM_LOAN",
   "EQUIPMENT_FINANCE",
   "FACTORING",
-  "PURCHASE_ORDER_FINANCE"
- ] as const satisfies LenderProductCategory[];
+  "PURCHASE_ORDER_FINANCE",
+  "MERCHANT_CASH_ADVANCE",
+  "MEDIA",
+  "ASSET_BASED_LENDING",
+  "SBA_GOVERNMENT",
+  "STARTUP_CAPITAL"
+] as const satisfies LenderProductCategory[];
 
-type PortalProductCategory = (typeof CATEGORY_DISPLAY_ORDER)[number] | "STARTUP_CAPITAL";
+type PortalProductCategory = (typeof CATEGORY_DISPLAY_ORDER)[number];
 
 const PORTAL_PRODUCT_CATEGORY_LABELS: Record<PortalProductCategory, string> = {
   LINE_OF_CREDIT: "Line of Credit",
@@ -64,6 +69,10 @@ const PORTAL_PRODUCT_CATEGORY_LABELS: Record<PortalProductCategory, string> = {
   EQUIPMENT_FINANCE: "Equipment Financing",
   FACTORING: "Factoring",
   PURCHASE_ORDER_FINANCE: "Purchase Order Financing",
+  MERCHANT_CASH_ADVANCE: "Merchant Cash Advance",
+  MEDIA: "Media / Film Finance",
+  ASSET_BASED_LENDING: "Asset Based Lending",
+  SBA_GOVERNMENT: "SBA / Government",
   STARTUP_CAPITAL: "Startup Financing"
 };
 
