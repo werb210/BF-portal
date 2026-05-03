@@ -35,8 +35,18 @@ export const createApplication = (payload: unknown) =>
     body: payload as Record<string, unknown>,
   });
 
+// BF_PORTAL_BLOCK_v86_ROUTING_DRAWER_CATEGORIES_TOPBAR_v1
+// /api/applications/:id returns {application, documents} where wizard
+// fields live at application.metadata.business / .applicant / .kyc and
+// at application.metadata.formData.*. The drawer's normalizeFormState()
+// looked for those keys at the root and always read empty.
+// /api/applications/:id/details promotes business / businessDetails /
+// applicantInfo / kyc / financialProfile to the root (per server
+// BF_DETAILS_FORMDATA_FALLBACK_v33) and is the canonical drawer-shaped
+// read. Without this fix the Application tab is empty after every
+// successful submission.
 export function fetchPortalApplication<T = Application>(id: string, options?: ApplicationRequestOptions) {
-  const requestUrl = withParams(`/api/applications/${id}`, options?.params);
+  const requestUrl = withParams(`/api/applications/${id}/details`, options?.params);
   return api<T>(requestUrl, { signal: options?.signal });
 }
 

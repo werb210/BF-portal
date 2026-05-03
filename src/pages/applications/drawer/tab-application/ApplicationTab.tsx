@@ -93,6 +93,17 @@ const readValue = (records: Array<Record<string, unknown> | null>, keys: string[
 
 const normalizeFormState = (data: PortalApplicationRecord | null | undefined): ApplicationFormState => {
   if (!data || !isRecord(data)) return { ...EMPTY_FORM_STATE };
+  // BF_PORTAL_BLOCK_v86_ROUTING_DRAWER_CATEGORIES_TOPBAR_v1
+  // Defensive: if a legacy caller passed { application, documents }
+  // (the unflat shape from GET /api/applications/:id), unwrap it once
+  // so the readValue helpers see a flat record. Canonical path is
+  // GET /api/applications/:id/details which already returns flat.
+  if (
+    isRecord((data as any).application) &&
+    !pickRecord(data, ["business", "businessDetails", "business_details"])
+  ) {
+    return normalizeFormState((data as any).application as PortalApplicationRecord);
+  }
   const businessRecord =
     pickRecord(data, ["business", "businessDetails", "business_details", "businessInfo", "business_info"]) ?? null;
   const operationsRecord =

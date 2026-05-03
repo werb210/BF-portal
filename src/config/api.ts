@@ -1,22 +1,13 @@
-/**
- * BI_HARD_ISOLATION_v59 — silo-based routing.
- *
- * Old (BF_SILO_API_ROUTING_v43): `/api/v1/*` paths went to BI-Server, all
- * other paths went to BF-Server. The path prefix decided.
- *
- * Now: the active silo decides. Every API call made while the user is in
- * the BI silo goes to BI-Server. Every call made while in BF or SLF goes
- * to BF-Server. URL path is irrelevant.
- *
- * Why: shared shell widgets (topbar, floating chat, telephony presence,
- * /api/users/me, etc.) used to call BF-Server even while the user was on
- * /bi/pipeline — silent cross-silo bleed. Silo-based routing closes that.
- *
- * Consequence: shared shell widgets that don't yet have a BI-Server
- * equivalent will receive 404s in BI silo. That's the architecture
- * surfacing itself — we either build BI counterparts on BI-Server, or
- * hide those widgets in BI silo. Either choice is a follow-up PR.
- */
+// BF_PORTAL_BLOCK_v86_ROUTING_DRAWER_CATEGORIES_TOPBAR_v1
+// Reverts BI_HARD_ISOLATION_v59 (silo-based routing). Architecture:
+// BF-Server is the shared backend for BF/BI/SLF silos with ?silo= query
+// param. Only paths under /api/v1/bi/* or /api/v1/pgi/* go to BI-Server.
+// The previous "send everything to BI-Server when in BI silo" change
+// broke auth, CRM, users, telephony, lender management for any user
+// switching to BI silo because BI-Server doesn't mount those routes
+// (only /api/v1/*). iPad screenshot evidence:
+//   FetchEvent.respondWith received an error: no-response ::
+//   https://bi-server.../api/crm/contacts?silo=bi
 import { getActiveBusinessUnit } from "@/context/BusinessUnitContext";
 
 const BF_SERVER_URL =
@@ -28,26 +19,31 @@ const BI_SERVER_URL =
   import.meta.env.VITE_BI_API_URL ||
   "https://bi-server-cse0apamgkheb9d5.canadacentral-01.azurewebsites.net";
 
-/**
- * Resolve the server base URL for the current request.
- *
- * BI silo  → BI-Server (always)
- * BF silo  → BF-Server (always)
- * SLF silo → BF-Server (always — BF and SLF share one server)
- *
- * The `path` argument is accepted for API compatibility with prior callers
- * but is intentionally not used. Path prefix no longer routes.
- */
-export function resolveApiBase(_path?: string): string {
-  return getActiveBusinessUnit() === "BI" ? BI_SERVER_URL : BF_SERVER_URL;
+// Path prefixes that ONLY exist on BI-Server. Everything else is BF-Server.
+const BI_SERVER_PATH_PREFIXES = [
+  "/api/v1/bi/",
+  "/api/v1/pgi/",
+  "/api/v1/bi-",
+];
+
+function isBiServerPath(path?: string): boolean {
+  if (!path) return false;
+  return BI_SERVER_PATH_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
 /**
- * @deprecated Prior callers used this when they didn't have a path yet.
- * Returns the silo-correct base for the current active silo.
+ * Resolve the server base URL for a given path.
+ * - /api/v1/bi/* | /api/v1/pgi/* | /api/v1/bi-* → BI-Server
+ * - anything else → BF-Server (regardless of active silo)
  */
+export function resolveApiBase(path?: string): string {
+  if (isBiServerPath(path)) return BI_SERVER_URL;
+  return BF_SERVER_URL;
+}
+
+/** @deprecated retained for legacy callers without a path. */
 export function getApiBase(): string {
-  return resolveApiBase();
+  return BF_SERVER_URL;
 }
 
 export function getActiveSilo(): string {
@@ -57,7 +53,6 @@ export function getActiveSilo(): string {
 /** @deprecated retained for legacy callers; prefer resolveApiBase(). */
 export const API_BASE = BF_SERVER_URL;
 
-/** Build a full URL for a path, routing to the silo-correct server. */
 export const buildApiUrl = (path: string): string => {
   if (!path.startsWith("/")) {
     throw new Error(`Invalid API path: "${path}" — must start with /`);
@@ -65,7 +60,6 @@ export const buildApiUrl = (path: string): string => {
   return `${resolveApiBase(path)}${path}`;
 };
 
-/** Exposed for tests and the WebSocket layer. */
 export const __apiBaseUrls = {
   bf: BF_SERVER_URL,
   bi: BI_SERVER_URL,
