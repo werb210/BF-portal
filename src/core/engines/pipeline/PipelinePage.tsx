@@ -55,7 +55,14 @@ const PipelinePage = () => {
   const config = useContext(PipelineEngineContext);
   if (!config) throw new Error("PipelineEngineProvider missing");
 
-  const silo = useSilo();
+  // BF_PORTAL_BLOCK_v86b_PIPELINEPAGE_USESILO_DESTRUCTURE_v2
+  // useSilo() now returns { silo, setSilo } via the BusinessUnitContext
+  // facade. Inner silo is lowercase ("bf"|"bi"|"slf"); pipelineStages
+  // is keyed by uppercase Silo ("BF"|"BI"|"SLF"). Mirror the case-up
+  // pattern from AppLayout.tsx so pipelineStages indexing type-checks
+  // and the downstream (stage) callback infers `string` instead of any.
+  const { silo: rawSilo } = useSilo();
+  const silo = (rawSilo ?? "bf").toUpperCase() as "BF" | "BI" | "SLF";
   const stages = pipelineStages[silo];
   const navigate = useNavigate();
   const filters = usePipelineStore((state) => state.currentFilters);
