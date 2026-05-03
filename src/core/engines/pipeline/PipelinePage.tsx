@@ -14,7 +14,15 @@ import {
 } from "./pipeline.types";
 import { normalizeStageId } from "./pipeline.types";
 import { usePipelineStore } from "./pipeline.store";
-import { useSilo } from "@/core/SiloContext";
+// BF_PORTAL_BLOCK_v86_ROUTING_DRAWER_CATEGORIES_TOPBAR_v1
+// @/core/SiloContext reads from window.location.host via getSiloFromHost().
+// It is NOT updated when the user changes silo in the topbar. The new
+// BusinessUnitContext + @/context/SiloContext facade is the canonical
+// silo state. PipelinePage was the last consumer of the legacy host-based
+// hook and was the source of the iPad-reported "topbar shows BF, left
+// rail shows BI" mismatch. Note: useSilo() from @/hooks/useSilo returns
+// the new shape { silo, setSilo } — make sure usages destructure it.
+import { useSilo } from "@/hooks/useSilo";
 import { pipelineStages } from "@/pipeline/stages";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";

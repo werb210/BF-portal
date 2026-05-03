@@ -374,13 +374,36 @@ const normalizeLenderProduct = (raw: unknown): LenderProduct | null => {
           ? raw.name
           : "";
   const active = typeof raw.active === "boolean" ? raw.active : true;
+  // BF_PORTAL_BLOCK_v86_ROUTING_DRAWER_CATEGORIES_TOPBAR_v1
+  // Server stores SHORT categories per migration
+  // 2026_05_03_lender_categories_and_closing_costs.sql:
+  //   TERM, LOC, EQUIPMENT, FACTORING, PO, MCA, MEDIA, ABL, SBA, STARTUP
+  // Portal LENDER_PRODUCT_CATEGORIES uses LONG forms. Without this map
+  // every product fell back to LENDER_PRODUCT_CATEGORIES[0] = TERM_LOAN
+  // and the LenderProductsPage rendered every product under "Term Loan".
+  const SERVER_CATEGORY_TO_PORTAL: Record<string, string> = {
+    TERM: "TERM_LOAN",
+    LOC: "LINE_OF_CREDIT",
+    EQUIPMENT: "EQUIPMENT_FINANCE",
+    FACTORING: "FACTORING",
+    PO: "PURCHASE_ORDER_FINANCE",
+    MCA: "MERCHANT_CASH_ADVANCE",
+    ABL: "ASSET_BASED_LENDING",
+    SBA: "SBA_GOVERNMENT",
+    STARTUP: "STARTUP_CAPITAL",
+    MEDIA: "TERM_LOAN", // no portal category yet — surface as Term Loan
+  };
   const rawCategory =
     typeof raw.category === "string"
       ? raw.category
       : typeof raw.product_category === "string"
         ? raw.product_category
         : "";
-  const category = isLenderProductCategory(rawCategory) ? rawCategory : LENDER_PRODUCT_CATEGORIES[0];
+  const upperCategory = rawCategory.trim().toUpperCase();
+  const mappedCategory = SERVER_CATEGORY_TO_PORTAL[upperCategory] ?? upperCategory;
+  const category = isLenderProductCategory(mappedCategory)
+    ? mappedCategory
+    : LENDER_PRODUCT_CATEGORIES[0];
   const country = normalizeLenderCountry(typeof raw.country === "string" ? raw.country : "") as LenderProduct["country"];
   const currency =
     typeof raw.currency === "string"
