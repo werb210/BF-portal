@@ -45,6 +45,77 @@ export const createApplication = (payload: unknown) =>
 // BF_DETAILS_FORMDATA_FALLBACK_v33) and is the canonical drawer-shaped
 // read. Without this fix the Application tab is empty after every
 // successful submission.
+
+export type LinkedApplicationSummary = {
+  id: string;
+  name: string | null;
+  product_category: string | null;
+  requested_amount: number | null;
+  source: string | null;
+  pipeline_state: string | null;
+};
+
+export async function fetchLinkedApplications(
+  applicationId: string,
+  parentApplicationId: string | null | undefined,
+  options?: { signal?: AbortSignal }
+): Promise<LinkedApplicationSummary[]> {
+  const results: LinkedApplicationSummary[] = [];
+
+  try {
+    const childrenRes = await fetch(
+      `/api/applications?parent_application_id=${encodeURIComponent(applicationId)}`,
+      { signal: options?.signal, credentials: "include" }
+    );
+
+    if (childrenRes.ok) {
+      const json = await childrenRes.json();
+      const rows: any[] = Array.isArray(json) ? json : json?.applications ?? json?.data ?? [];
+      for (const r of rows) {
+        if (r && r.id && r.id !== applicationId) {
+          results.push({
+            id: r.id,
+            name: r.name ?? null,
+            product_category: r.product_category ?? null,
+            requested_amount: r.requested_amount ?? null,
+            source: r.source ?? null,
+            pipeline_state: r.pipeline_state ?? null
+          });
+        }
+      }
+    }
+  } catch {
+    // Ignore linked-children fetch failures and render without chips.
+  }
+
+  if (parentApplicationId) {
+    try {
+      const parentRes = await fetch(`/api/applications/${encodeURIComponent(parentApplicationId)}/details`, {
+        signal: options?.signal,
+        credentials: "include"
+      });
+
+      if (parentRes.ok) {
+        const r: any = await parentRes.json();
+        if (r && r.id && r.id !== applicationId && !results.find((x) => x.id === r.id)) {
+          results.push({
+            id: r.id,
+            name: r.name ?? null,
+            product_category: r.product_category ?? null,
+            requested_amount: r.requested_amount ?? null,
+            source: r.source ?? null,
+            pipeline_state: r.pipeline_state ?? null
+          });
+        }
+      }
+    } catch {
+      // Ignore parent fetch failures and render any discovered children only.
+    }
+  }
+
+  return results;
+}
+
 export function fetchPortalApplication<T = Application>(id: string, options?: ApplicationRequestOptions) {
   const requestUrl = withParams(`/api/applications/${id}/details`, options?.params);
   return api<T>(requestUrl, { signal: options?.signal });
