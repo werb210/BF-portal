@@ -517,7 +517,8 @@ function CreateProductModal({
 
   // BF_MEDIA_FUNDING_v38 — force all conditional docs to required for Media Funding.
   useEffect(() => {
-    if (form.category !== "MEDIA_FUNDING") return;
+    // BF_PORTAL_BLOCK_v98_v3 — short canonical code is "MEDIA" (CATEGORY_ORDER:52)
+    if (form.category !== "MEDIA") return;
     setCheckedDocs((prev) => {
       const next = new Set(prev);
       for (const d of conditionalTypes) next.add(d.key);
@@ -765,19 +766,27 @@ function CreateProductModal({
           <div>
             <label style={{ ...labelStyle, marginBottom: 10 }}>Required Documents</label>
 
-            <div style={{ ...sectionStyle, marginBottom: 10 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
-              <DocCheckbox id={alwaysRequiredDoc.key} label={alwaysRequiredDoc.label} locked />
-              {form.category === equipmentFinanceAlwaysRequiredDoc.category && (
-                <DocCheckbox id={equipmentFinanceAlwaysRequiredDoc.key} label={equipmentFinanceAlwaysRequiredDoc.label} locked />
-              )}
-            </div>
+            {/* BF_PORTAL_BLOCK_v98_v3_ALWAYS_REQUIRED_MEDIA_GATE
+                MEDIA / Film Finance products require ONLY the 5 conditional
+                docs (Budget, Finance plan, Tax credit status, Production
+                schedule, Minimum guarantees / presales). No bank statements,
+                no photo ID. Hide the entire Always-Required block for MEDIA. */}
+            {form.category !== "MEDIA" && (
+              <div style={{ ...sectionStyle, marginBottom: 10 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
+                <DocCheckbox id={alwaysRequiredDoc.key} label={alwaysRequiredDoc.label} locked />
+                {form.category === equipmentFinanceAlwaysRequiredDoc.category && (
+                  <DocCheckbox id={equipmentFinanceAlwaysRequiredDoc.key} label={equipmentFinanceAlwaysRequiredDoc.label} locked />
+                )}
+              </div>
+            )}
 
             {/* BF_LP_MEDIA_FUNDING_GATE_v41 — Block 41-C — Core Pack hidden when
                 MEDIA_FUNDING is selected. For MEDIA_FUNDING the only required
                 docs are Always-Required + Conditional. For every other category
                 the Core pack is shown and Conditional is hidden. */}
-            {form.category !== "MEDIA_FUNDING" && (
+            {/* BF_PORTAL_BLOCK_v98_v3 — short canonical code "MEDIA" */}
+            {form.category !== "MEDIA" && (
               <div style={{ ...sectionStyle, marginBottom: 10 }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Core Underwriting Pack</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
@@ -787,7 +796,8 @@ function CreateProductModal({
                 </div>
               </div>
             )}
-            {form.category === "MEDIA_FUNDING" && (
+            {/* BF_PORTAL_BLOCK_v98_v3 — short canonical code "MEDIA" */}
+            {form.category === "MEDIA" && (
               <div style={sectionStyle}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
                   Conditional
