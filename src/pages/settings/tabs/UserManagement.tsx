@@ -92,7 +92,8 @@ const UserManagement = () => {
 
     return {
       ...cleaned,
-      role: String(cleaned.role ?? "staff").toLowerCase(),
+      // BF_PORTAL_BLOCK_v92_USER_ROLE_CASE_FIX_v1 — server enum is PascalCase
+      role: String(cleaned.role ?? "Staff"),
       silos,
       silo: (silos[0] ?? "BF").toUpperCase(),
       silo_access: siloAccess,
