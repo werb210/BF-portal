@@ -1,3 +1,4 @@
+import BiLendersPage from "@/pages/BiLendersPage";
 // BF_PORTAL_BLOCK_v90_REVERT_LENDER_SPA_v1
 import React, { Suspense, lazy, useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -169,6 +170,8 @@ const AppRoutes = () => {
           }
         />
         <Route path="/applications/:id/*" element={<ProtectedRoute>{applicationDetailElement}</ProtectedRoute>} />
+        {/* BF_PORTAL_BLOCK_v91_BI_LENDERS_PAGE_v1 */}
+        <Route path="/bi-lenders" element={<ProtectedRoute><BiLendersPage /></ProtectedRoute>} />
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Ops"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
