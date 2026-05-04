@@ -32,7 +32,7 @@ const BI_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",          roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
-  { label: "Lenders",        path: "/lenders",         roles: ["Admin", "Staff"] },
+  { label: "Lenders",        path: "/bi-lenders",         roles: ["Admin", "Staff"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
   { label: "Settings",       path: "/settings",        roles: ["Admin", "Staff", "Ops"] },
 ];
