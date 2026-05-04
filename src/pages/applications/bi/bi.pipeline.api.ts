@@ -30,7 +30,15 @@ const clearBiTokens = () => {
   localStorage.removeItem(BI_REFRESH_TOKEN_KEY);
 };
 
-const getBiToken = () => localStorage.getItem(BI_TOKEN_KEY);
+// BF_PORTAL_BLOCK_v87_SILO_CASING_AND_BI_PIPELINE_v1 — fall back to the
+// shared BF JWT when no BI-specific token is set. Per the locked rulings,
+// BF-Server and BI-Server share JWT_SECRET, so a token issued by BF-Server
+// validates on BI-Server. Without this, every newly-logged-in staff user
+// hit the legacy "BI Login" panel on the BI Pipeline page even though they
+// were already authenticated.
+const BF_AUTH_TOKEN_KEY = (import.meta as any).env?.VITE_JWT_STORAGE_KEY || "auth_token";
+const getBiToken = () =>
+  localStorage.getItem(BI_TOKEN_KEY) || localStorage.getItem(BF_AUTH_TOKEN_KEY);
 
 const parsePayload = async <T>(response: Response): Promise<T> => {
   const body = await response.json();

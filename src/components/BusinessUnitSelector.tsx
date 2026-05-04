@@ -44,9 +44,15 @@ const BusinessUnitSelector = () => {
     );
   }
 
+  // BF_PORTAL_BLOCK_v87_SILO_CASING_AND_BI_PIPELINE_v1 — uppercase value
+  // so the Select options (which use uppercase BF/BI/SLF) actually match
+  // the lowercase string useSilo() returns. Without this, switching silo
+  // looked broken because the dropdown reverted to the first option visually
+  // even though the active silo was correct.
+  const selectedValue = ((silo as string | null | undefined) ?? "BF").toUpperCase();
   return (
     <Select
-      value={silo}
+      value={selectedValue}
       onChange={(event) =>
         (setSilo as (v: BusinessUnit) => void)(
           normalizeBusinessUnit(
