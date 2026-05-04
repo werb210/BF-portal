@@ -1,5 +1,3 @@
-// BF_PORTAL_BLOCK_v88_BI_LENDER_USER_MGMT_v1
-import LenderUsersPanel from "@/pages/lenders/LenderUsersPanel";
 import { useEffect, useMemo, useState } from "react";
 import { fetchClientLenders } from "@/api/lenders";
 import CreateLenderModal from "@/pages/lenders/components/CreateLenderModal";
@@ -86,13 +84,3 @@ export default function Lenders() {
   );
 }
 
-/* BF_PORTAL_BLOCK_v88_BI_LENDER_USER_MGMT_v1
- *
- * To surface the Lender Users panel inline on a selected lender row, mount:
- *
- *   {selectedLender && (
- *     <LenderUsersPanel lenderId={selectedLender.id} lenderName={selectedLender.name} />
- *   )}
- *
- * The component is self-fetching and styled.
- */

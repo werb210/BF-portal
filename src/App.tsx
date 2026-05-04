@@ -1,3 +1,4 @@
+// BF_PORTAL_BLOCK_v90_REVERT_LENDER_SPA_v1
 import React, { Suspense, lazy, useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, Route, Routes } from "react-router-dom";
@@ -51,11 +52,6 @@ import CreditReadiness from "@/pages/CreditReadiness";
 import ReferrerPortalLayout from "@/pages/referrer/ReferrerPortalLayout";
 import ReferrerLoginPage from "@/pages/referrer/ReferrerLoginPage";
 import LenderPortalPage from "@/pages/lender/LenderPortalPage";
-// BF_PORTAL_BLOCK_v89_LENDER_SPA_v1
-import LenderLayout from "@/layouts/LenderLayout";
-import LenderDashboardPage from "@/pages/lender/LenderDashboardPage";
-import LenderApplicationsPage from "@/pages/lender/LenderApplicationsPage";
-import LenderApplicationDetailPage from "@/pages/lender/LenderApplicationDetailPage";
 import LenderLoginPage from "@/pages/lender/LenderLoginPage";
 import LenderProfilePage from "@/pages/lender/LenderProfilePage";
 import { useAuth } from "@/auth/AuthContext";
@@ -145,18 +141,11 @@ const AppRoutes = () => {
         <Route path="/verify" element={<Verify />} />
         <Route path="/referrer/login" element={<ReferrerLoginPage />} />
         <Route path="/referrer/*" element={<ReferrerPortalLayout />} />
-        {/* BF_PORTAL_BLOCK_v89_LENDER_SPA_v1 — layout-wrapped lender routes */}
         <Route path="/lender-portal/login" element={<LenderLoginPage />} />
-        <Route path="/lender-portal" element={<LenderLayout />}>
-          <Route index element={<LenderDashboardPage />} />
-          <Route path="dashboard" element={<LenderDashboardPage />} />
-          <Route path="applications" element={<LenderApplicationsPage />} />
-          <Route path="applications/:id" element={<LenderApplicationDetailPage />} />
-          <Route path="profile" element={<LenderProfilePage />} />
-          <Route path="deals" element={<LenderPortalPage />} />
-          <Route path="deals/:id" element={<LenderPortalPage />} />
-          <Route path="products" element={<LenderPortalPage />} />
-        </Route>
+        <Route path="/lender-portal/profile" element={<LenderProfilePage />} />
+        <Route path="/lender-portal/deals" element={<LenderPortalPage />} />
+        <Route path="/lender-portal/deals/:id" element={<LenderPortalPage />} />
+        <Route path="/lender-portal/products" element={<LenderPortalPage />} />
         <Route element={token ? <AuthenticatedShell /> : <Navigate to="/login" replace />}>
           <Route path="/" element={<Navigate to="/portal" replace />} />
         <Route path="/applications" element={<Navigate to="/pipeline" replace />} />
