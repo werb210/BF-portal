@@ -1,3 +1,4 @@
+// BF_PORTAL_BLOCK_v123a_REMOVE_CALLS_TAB_v1
 import type { ReactNode } from "react";
 import clsx from "clsx";
 
@@ -12,7 +13,7 @@ export type DrawerTabId =
   | "notes"
   | "offers"
   | "lenders"
-  | "call-history";
+  ;
 
 export type DrawerTab = {
   id: DrawerTabId;
@@ -28,8 +29,7 @@ export const TABS: DrawerTab[] = [
   { id: "documents", label: "Documents" },
   { id: "credit-summary", label: "Credit Summary" },
   { id: "notes", label: "Notes" },
-  { id: "lenders", label: "Lenders" },
-  { id: "call-history", label: "Calls" }
+  { id: "lenders", label: "Lenders" }
 ];
 
 type DrawerTabsProps = {

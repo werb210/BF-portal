@@ -18,7 +18,7 @@ import DocumentsTab from "@/pages/applications/tabs/DocumentsTab";
 import CreditSummaryTab from "@/pages/applications/tabs/CreditSummaryTab";
 import NotesTab from "@/pages/applications/tabs/NotesTab";
 import LendersTab from "@/pages/applications/tabs/LendersTab";
-import CallHistoryTab from "@/pages/applications/drawer/tab-call-history/CallHistoryTab";
+// BF_PORTAL_BLOCK_v123a_REMOVE_CALLS_TAB_v1 — CallHistoryTab removed
 type PortalApplicationShell = {
   id: string;
   businessName: string;
@@ -43,8 +43,7 @@ const APPLICATION_TABS: DrawerTab[] = [
   { id: "documents", label: "Documents" },
   { id: "credit-summary", label: "Credit Summary" },
   { id: "notes", label: "Notes" },
-  { id: "lenders", label: "Lenders" },
-  { id: "call-history", label: "Calls" }
+  { id: "lenders", label: "Lenders" }
 ];
 
 const OPENED_APPLICATIONS_KEY = "portal.applications.opened";
@@ -163,7 +162,6 @@ const ApplicationShellPage = () => {
           {selectedTab === "credit-summary" && <CreditSummaryTab applicationId={application.id} />}
           {selectedTab === "notes" && <NotesTab applicationId={application.id} />}
           {selectedTab === "lenders" && <LendersTab applicationId={application.id} />}
-          {selectedTab === "call-history" && <CallHistoryTab />}
         </ApplicationCard>
       </Card>
     </div>

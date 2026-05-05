@@ -9,7 +9,7 @@ import CreditSummaryTab from "./tab-credit-summary/CreditSummaryTab";
 import DocumentsTab from "./tab-documents/DocumentsTab";
 import NotesTab from "./tab-notes/NotesTab";
 import LendersTab from "./tab-lenders/LendersTab";
-import CallHistoryTab from "./tab-call-history/CallHistoryTab";
+// BF_PORTAL_BLOCK_v123a_REMOVE_CALLS_TAB_v1 — CallHistoryTab removed
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/core/engines/pipeline/pipeline.store";
 
@@ -19,7 +19,6 @@ const tabContentMap: Partial<Record<DrawerTabId, (applicationId: string) => JSX.
   financials: (applicationId) => <FinancialTab applicationId={applicationId} />,
   "credit-summary": () => <CreditSummaryTab />,
   documents: () => <DocumentsTab />,
-  "call-history": () => <CallHistoryTab />,
   notes: () => <NotesTab />,
   lenders: (applicationId) => <LendersTab applicationId={applicationId} />
 };
