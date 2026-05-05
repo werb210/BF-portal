@@ -23,6 +23,15 @@ const DrawerHeader = ({
 
   const title = useMemo(() => data?.applicant ?? "Application", [data]);
   const status = data?.status ?? "";
+  // BF_PORTAL_BLOCK_v123b_CALL_CLIENT_AND_APP_TAB_v1
+  const applicantPhone = (() => {
+    const info = (data as any)?.applicantInfo ?? (data as any)?.applicantDetails ?? null;
+    if (info && typeof info === "object") {
+      const raw = info.phone ?? info.phone_number ?? info.phoneNumber ?? null;
+      if (typeof raw === "string" && raw.trim()) return raw.trim();
+    }
+    return null;
+  })();
   // BF_PORTAL_BLOCK_v95_LINKED_FIELD_NAME_FIX_v1
   const parentApplicationId =
     (data as any)?.parentApplicationId ??
@@ -57,6 +66,25 @@ const DrawerHeader = ({
           </button>
         ) : null}
         <div className="application-drawer__title">{title}</div>
+        {applicantPhone ? (
+          <a
+            href={`tel:${applicantPhone}`}
+            style={{
+              display: "inline-block",
+              marginLeft: 8,
+              fontSize: 12,
+              padding: "4px 10px",
+              borderRadius: 6,
+              textDecoration: "none",
+              background: "#2563eb",
+              color: "#ffffff",
+              fontWeight: 600,
+            }}
+            data-testid="drawer-call-client"
+          >
+            📞 Call client
+          </a>
+        ) : null}
         {status ? <div className="application-drawer__subtitle">Status: {status}</div> : null}
         {processingStatus ? (
           <div className="application-drawer__subtitle">{processingStatus.headerLabel}</div>
