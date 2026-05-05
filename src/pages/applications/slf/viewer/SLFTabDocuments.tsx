@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api";
 
-const API_PREFIX = "";
+// BF_PORTAL_BLOCK_v154_SLF_API_PREFIX_FIX_v1 — was empty, dropped /api prefix
+const API_PREFIX = "/api";
 type SLFDocument = {
   id: string;
   type: string;
