@@ -23,6 +23,7 @@ const DrawerHeader = ({
 
   const title = useMemo(() => data?.applicant ?? "Application", [data]);
   const status = data?.status ?? "";
+  const pendingAcceptanceOfferId = (data as { pending_acceptance_offer_id?: string | null } | null)?.pending_acceptance_offer_id ?? null;
   // BF_PORTAL_BLOCK_v123b_CALL_CLIENT_AND_APP_TAB_v1
   const applicantPhone = (() => {
     const info = (data as any)?.applicantInfo ?? (data as any)?.applicantDetails ?? null;
@@ -86,6 +87,12 @@ const DrawerHeader = ({
           </a>
         ) : null}
         {status ? <div className="application-drawer__subtitle">Status: {status}</div> : null}
+        {/* BF_PORTAL_BLOCK_v151_PENDING_ACCEPTANCE_SURFACE_v1 */}
+        {pendingAcceptanceOfferId ? (
+          <div className="application-drawer__subtitle">
+            <span className="pipeline-card__pill pipeline-card__pill--warning">Pending Accept</span>
+          </div>
+        ) : null}
         {processingStatus ? (
           <div className="application-drawer__subtitle">{processingStatus.headerLabel}</div>
         ) : null}
