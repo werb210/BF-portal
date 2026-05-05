@@ -1,3 +1,4 @@
+// BF_PORTAL_BLOCK_v124b_PORTAL_NETWORK_FIXES_v1 — biLenders paths now correctly include /bi/ segment
 // BF_PORTAL_BLOCK_v91_BI_LENDERS_PAGE_v1
 import { rawApiFetch } from "@/api";
 
@@ -50,17 +51,17 @@ export type BiNewKeySecret = {
 };
 
 export const biLendersApi = {
-  list:        () => biFetch<{ lenders: BiLender[] }>("/api/v1/admin/lenders"),
+  list:        () => biFetch<{ lenders: BiLender[] }>("/api/v1/bi/admin/lenders"),
   create:      (b: Partial<BiLender>) =>
-    biFetch<{ id: string }>("/api/v1/admin/lenders", { method: "POST", body: JSON.stringify(b) }),
+    biFetch<{ id: string }>("/api/v1/bi/admin/lenders", { method: "POST", body: JSON.stringify(b) }),
   update:      (id: string, b: Partial<BiLender>) =>
-    biFetch<{ updated: boolean }>(`/api/v1/admin/lenders/${id}`, { method: "PATCH", body: JSON.stringify(b) }),
+    biFetch<{ updated: boolean }>(`/api/v1/bi/admin/lenders/${id}`, { method: "PATCH", body: JSON.stringify(b) }),
   deactivate:  (id: string) =>
-    biFetch<{ deactivated: boolean }>(`/api/v1/admin/lenders/${id}`, { method: "DELETE" }),
+    biFetch<{ deactivated: boolean }>(`/api/v1/bi/admin/lenders/${id}`, { method: "DELETE" }),
   listKeys:    (id: string) =>
-    biFetch<{ items: BiApiKey[] }>(`/api/v1/admin/lenders/${id}/api-keys`),
+    biFetch<{ items: BiApiKey[] }>(`/api/v1/bi/admin/lenders/${id}/api-keys`),
   mintKey:     (id: string) =>
-    biFetch<BiNewKeySecret>(`/api/v1/admin/lenders/${id}/api-keys`, { method: "POST", body: "{}" }),
+    biFetch<BiNewKeySecret>(`/api/v1/bi/admin/lenders/${id}/api-keys`, { method: "POST", body: "{}" }),
   revokeKey:   (id: string, keyId: string) =>
-    biFetch<{ revoked: boolean }>(`/api/v1/admin/lenders/${id}/api-keys/${keyId}/revoke`, { method: "POST", body: "{}" }),
+    biFetch<{ revoked: boolean }>(`/api/v1/bi/admin/lenders/${id}/api-keys/${keyId}/revoke`, { method: "POST", body: "{}" }),
 };
