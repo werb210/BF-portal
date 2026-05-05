@@ -52,6 +52,8 @@ export type PipelineFilters = {
 };
 
 export type PipelineApplication = {
+  // BF_PORTAL_BLOCK_v151_PENDING_ACCEPTANCE_SURFACE_v1
+  pending_acceptance_offer_id?: string | null;
   id: string;
   businessName?: string;
   contactName?: string;

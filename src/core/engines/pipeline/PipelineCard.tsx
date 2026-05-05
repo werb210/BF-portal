@@ -86,6 +86,12 @@ const PipelineCard = ({ card, stageId, onClick, isSelected, selectable, onSelect
         </div>
         <div className="pipeline-card__amount">{formatAmount(card.requestedAmount)}</div>
       </div>
+      {/* BF_PORTAL_BLOCK_v151_PENDING_ACCEPTANCE_SURFACE_v1 */}
+      {card.pending_acceptance_offer_id ? (
+        <span className="pipeline-card__pill pipeline-card__pill--warning" title="Client clicked Accept — staff confirmation required">
+          Pending Accept
+        </span>
+      ) : null}
       <div className="pipeline-card__meta">
         {shouldShowPrimaryStagePill ? <span className="pipeline-card__pill">{stageLabel}</span> : null}
         {showDocumentWarning ? (
