@@ -131,7 +131,10 @@ export default function CreateLenderModal({ open, onClose, onCreated }: Props) {
       if (form.submissionMethod === "google_sheet") {
         payload.google_sheet_id = form.googleSheetId.trim();
       }
-      const resp = await api.post<{ id: string }>("/api/lenders", payload);
+      // BF_PORTAL_BLOCK_v148_CREATE_LENDER_AND_MSAL_v1 — server has no
+      // /api/lenders route. Portal lender CRUD lives at /api/portal/lenders
+      // (routes/portalLenders.ts). The previous URL 404'd every Create click.
+      const resp = await api.post<{ id: string }>("/api/portal/lenders", payload);
       onCreated?.(resp?.id ?? "");
       setForm(EMPTY);
       onClose();

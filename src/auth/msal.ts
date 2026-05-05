@@ -57,7 +57,11 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null): Promise
       return false;
     }
 
-    const scopesEnv = import.meta.env.VITE_MSAL_SCOPES || "User.Read,Mail.Send,Calendars.ReadWrite,Tasks.ReadWrite";
+    // BF_PORTAL_BLOCK_v148_CREATE_LENDER_AND_MSAL_v1 — include offline_access
+    // so MSAL can mint a refresh token. Without it, silent acquisition
+    // relies on the iframe re-auth path which modern browsers block.
+    // Aligns with config/microsoftAuth.ts which already had it.
+    const scopesEnv = import.meta.env.VITE_MSAL_SCOPES || "User.Read,Mail.Send,Calendars.ReadWrite,Tasks.ReadWrite,offline_access";
     const scopes = String(scopesEnv)
       .split(",")
       .map((scope) => scope.trim())
