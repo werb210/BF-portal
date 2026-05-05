@@ -1930,6 +1930,13 @@ a,
   padding: 12px 16px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
   overflow-x: auto;
+  /* BF_PORTAL_BLOCK_v124c_DRAWER_TAB_CLIPPING_v1
+     flex-shrink: 0 prevents the tab row from being squeezed vertically
+     when .application-card__content runs long and scrolls. Without it
+     the tabs would lose padding under tall content.
+     min-width: 0 lets overflow-x: auto actually engage. */
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .application-drawer__tab {
@@ -1967,6 +1974,38 @@ a,
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* BF_PORTAL_BLOCK_v124c_DRAWER_TAB_CLIPPING_v1
+   .application-card and __content classNames are rendered by
+   src/pages/applications/ApplicationCard.tsx but had NO CSS rules
+   defined anywhere in the codebase. The card was therefore taking
+   its intrinsic min-width (the tab strip's natural width, ~640px),
+   pushing past the 560px drawer's right edge, and getting clipped
+   by .application-drawer's "overflow: hidden". With these rules:
+     - flex: 1 1 auto + min-width: 0 -> card respects drawer width
+     - overflow: hidden            -> contained by drawer
+     - column flex                 -> tabs stack above content
+   the tabs row's own overflow-x: auto then engages and provides
+   the horizontal scrollbar the v123a removal of the Calls tab
+   intended to make unnecessary on the wide cases — but which is
+   still required when the drawer is narrower than the tab strip. */
+.application-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.application-card__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .application-shell {
