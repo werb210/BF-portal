@@ -78,7 +78,10 @@ describe("CreateLenderModal", () => {
     fireEvent.click(screen.getByTestId("create-lender-submit"));
     await waitFor(() => expect((api.post as any).mock.calls.length).toBe(1));
     const [path, body] = (api.post as any).mock.calls[0];
-    expect(path).toBe("/api/lenders");
+    // BF_PORTAL_BLOCK_v150_CREATELENDER_TEST_FIX_v1 — v148 corrected the
+    // POST URL from /api/lenders (no handler, 404s) to /api/portal/lenders
+    // (real endpoint). Update the assertion to match.
+    expect(path).toBe("/api/portal/lenders");
     expect(body).toEqual(expect.objectContaining({
       name: "ABC Bank",
       submission_method: "email",
