@@ -29,8 +29,11 @@ const BankingSkeleton = () => (
   </div>
 );
 
-const BankingTab = () => {
-  const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
+// BF_PORTAL_BLOCK_v171 — accept applicationId via prop, fall back to store.
+type BankingTabProps = { applicationId?: string | null };
+const BankingTab = ({ applicationId: propAppId }: BankingTabProps = {}) => {
+  const storeAppId = useApplicationDrawerStore((state) => state.selectedApplicationId);
+  const applicationId = propAppId ?? storeAppId;
   const { data: applicationDetails } = useApplicationDetails();
   const { data: analysis, isLoading, error } = useQuery<BankingAnalysis>({
     queryKey: ["banking", applicationId, "analysis"],
