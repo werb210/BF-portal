@@ -81,7 +81,8 @@ const PipelineCard = ({ card, stageId, onClick, isSelected, selectable, onSelect
       ) : null}
       <div className="pipeline-card__header">
         <div>
-          <div className="pipeline-card__title">{card.businessName ?? "Unknown business"}</div>
+          {/* BF_PORTAL_BLOCK_v162_CARD_FALLBACK_COPY_v1 — match server COALESCE fallback */}
+          <div className="pipeline-card__title">{card.businessName ?? "Unnamed application"}</div>
           <div className="pipeline-card__subtitle">{card.productCategory ?? "Unspecified"}</div>
         </div>
         <div className="pipeline-card__amount">{formatAmount(card.requestedAmount)}</div>
