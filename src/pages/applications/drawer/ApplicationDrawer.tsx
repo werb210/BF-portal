@@ -12,15 +12,56 @@ import LendersTab from "./tab-lenders/LendersTab";
 // BF_PORTAL_BLOCK_v123a_REMOVE_CALLS_TAB_v1 — CallHistoryTab removed
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/core/engines/pipeline/pipeline.store";
+// BF_PORTAL_BLOCK_v171_DRAWER_TABS_PROP_AND_BOUNDARY_v1
+import TabErrorBoundary from "./TabErrorBoundary";
 
+// BF_PORTAL_BLOCK_v171_DRAWER_TABS_PROP_AND_BOUNDARY_v1
+// All tabs now receive applicationId synchronously via prop. Previously
+// 5 of 7 tabs (application, banking, credit-summary, documents, notes)
+// dropped the parameter and read from useApplicationDrawerStore — a
+// store that only got populated by a useEffect AFTER the first render
+// of <ApplicationDrawer>. The first render saw selectedApplicationId=null,
+// the useQuery/useEffect bailed, and on some renders the subsequent
+// store update did not retrigger a re-fetch. Symptom: "tab opens but
+// is empty" for the staff user. Each tab is also wrapped in
+// TabErrorBoundary so render crashes show the actual error inline
+// instead of going blank.
 const tabContentMap: Partial<Record<DrawerTabId, (applicationId: string) => JSX.Element>> = {
-  application: () => <ApplicationTab />,
-  banking: () => <BankingTab />,
-  financials: (applicationId) => <FinancialTab applicationId={applicationId} />,
-  "credit-summary": () => <CreditSummaryTab />,
-  documents: () => <DocumentsTab />,
-  notes: () => <NotesTab />,
-  lenders: (applicationId) => <LendersTab applicationId={applicationId} />
+  application: (applicationId) => (
+    <TabErrorBoundary tabId="application">
+      <ApplicationTab applicationId={applicationId} />
+    </TabErrorBoundary>
+  ),
+  banking: (applicationId) => (
+    <TabErrorBoundary tabId="banking">
+      <BankingTab applicationId={applicationId} />
+    </TabErrorBoundary>
+  ),
+  financials: (applicationId) => (
+    <TabErrorBoundary tabId="financials">
+      <FinancialTab applicationId={applicationId} />
+    </TabErrorBoundary>
+  ),
+  "credit-summary": (applicationId) => (
+    <TabErrorBoundary tabId="credit-summary">
+      <CreditSummaryTab applicationId={applicationId} />
+    </TabErrorBoundary>
+  ),
+  documents: (applicationId) => (
+    <TabErrorBoundary tabId="documents">
+      <DocumentsTab applicationId={applicationId} />
+    </TabErrorBoundary>
+  ),
+  notes: (applicationId) => (
+    <TabErrorBoundary tabId="notes">
+      <NotesTab applicationId={applicationId} />
+    </TabErrorBoundary>
+  ),
+  lenders: (applicationId) => (
+    <TabErrorBoundary tabId="lenders">
+      <LendersTab applicationId={applicationId} />
+    </TabErrorBoundary>
+  ),
 };
 
 const ApplicationDrawer = () => {

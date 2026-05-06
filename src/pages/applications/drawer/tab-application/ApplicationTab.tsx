@@ -121,8 +121,11 @@ function Section({ title, rows }: { title: string; rows: Row[] }) {
   );
 }
 
-function ApplicationTab(): ReactNode {
-  const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
+// BF_PORTAL_BLOCK_v171 — accept applicationId via prop, fall back to store.
+type ApplicationTabProps = { applicationId?: string | null };
+function ApplicationTab({ applicationId: propAppId }: ApplicationTabProps = {}): ReactNode {
+  const storeAppId = useApplicationDrawerStore((state) => state.selectedApplicationId);
+  const applicationId = propAppId ?? storeAppId;
   const { data, isLoading, error } = useQuery<PortalApplicationRecord>({
     queryKey: ["portal-application", applicationId],
     queryFn: ({ signal }) => fetchPortalApplication<PortalApplicationRecord>(applicationId ?? "", { signal }),
