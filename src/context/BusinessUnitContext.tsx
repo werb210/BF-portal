@@ -56,7 +56,8 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
     .map((s) => String(s).toUpperCase())
     .filter(isBusinessUnit);
   const normalizedBusinessUnits: BusinessUnit[] = isAdmin
-    ? ["BF", "BI", "SLF"]
+    // BF_PORTAL_BLOCK_v165_HIDE_SLF_FROM_SELECTOR_v1 — SLF dropped
+    ? ["BF", "BI"]
     : (userBusinessUnits.length ? userBusinessUnits : [DEFAULT_BUSINESS_UNIT]);
   const fallbackBusinessUnit = normalizedBusinessUnits[0] ?? DEFAULT_BUSINESS_UNIT;
   const preferredUserBusinessUnit = ((user as { silo?: string } | null)?.silo
