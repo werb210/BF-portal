@@ -7,7 +7,7 @@ import Select from "@/components/ui/Select";
 import type { Contact } from "@/api/crm";
 import { fetchSmsThread, sendSms } from "@/api/communications";
 import SMSThread from "./SMSThread";
-import { useCrmStore } from "@/state/crm.store";
+import { useSilo } from "@/hooks/useSilo";
 
 const siloNumbers: Record<string, string> = {
   BF: "+1-800-BF",
@@ -23,7 +23,7 @@ interface SMSComposerProps {
 
 const SMSComposer = ({ visible, contact, onClose }: SMSComposerProps) => {
   const queryClient = useQueryClient();
-  const { silo } = useCrmStore();
+  const { silo } = useSilo();
   const [body, setBody] = useState("");
   const { data: messages = [] } = useQuery({
     queryKey: ["sms", contact.id],

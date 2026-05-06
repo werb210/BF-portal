@@ -9,7 +9,7 @@ import ProfileSettings from "@/pages/settings/tabs/ProfileSettings";
 import RuntimeSettings from "@/pages/settings/tabs/RuntimeSettings";
 import { useCrmStore } from "@/state/crm.store";
 import { useSettingsStore } from "@/state/settings.store";
-import { fetchContacts } from "@/api/crm";
+import { crmApi } from "@/api/crm";
 
 const { apiMock } = vi.hoisted(() => {
   const mock = vi.fn() as unknown as {
@@ -77,7 +77,6 @@ describe("CRM owner dropdown", () => {
     vi.clearAllMocks();
     Element.prototype.scrollIntoView = vi.fn();
     useCrmStore.setState({
-      silo: "BF",
       filters: { search: "", owner: null, hasActiveApplication: false },
     });
   });
@@ -123,17 +122,16 @@ describe("CRM filters API params", () => {
 
   it("sends owner_id and has_applications when active application filter is enabled", async () => {
     useCrmStore.setState({
-      silo: "BF",
       filters: { search: "", owner: "owner-7", hasActiveApplication: true },
     });
 
     apiMock.get.mockResolvedValueOnce([]);
 
-    await fetchContacts();
+    await crmApi.listContacts({ silo: "BF", owner_id: "owner-7", has_applications: "true" });
 
-    expect(apiMock.get).toHaveBeenCalledWith(
-      "/api/crm/contacts?silo=BF&owner_id=owner-7&has_applications=true",
-    );
+    expect(apiMock.get).toHaveBeenCalledWith("/api/crm/contacts", {
+      params: { silo: "BF", owner_id: "owner-7", has_applications: "true" },
+    });
   });
 });
 

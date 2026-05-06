@@ -1,6 +1,5 @@
 import api from "@/api";
 import { requireAuth } from "@/utils/requireAuth";
-import { useCrmStore } from "@/state/crm.store";
 import type { CRMLead } from "@/types/crm";
 import { withO365Refresh } from "./o365Interceptor";
 
@@ -92,22 +91,11 @@ export type TimelineEvent = {
   };
 };
 
-export const fetchContacts = async () => {
-  const { silo, filters } = useCrmStore.getState();
-  const params = new URLSearchParams({ silo });
+// BF_PORTAL_BLOCK_v158_DEAD_SILO_STORE_CLEANUP_v1 — fetchContacts removed (dead).
+// Real callers use crmApi.listContacts(...) which takes silo as a parameter.
 
-  if (filters.search) params.set("search", filters.search);
-  if (filters.owner) params.set("owner_id", filters.owner);
-  if (filters.hasActiveApplication) params.set("has_applications", "true");
-
-  return requestJson<Contact[]>(`/api/crm/contacts?${params.toString()}`);
-};
-
-export const fetchCompanies = async () => {
-  const { silo } = useCrmStore.getState();
-  const params = new URLSearchParams({ silo });
-  return requestJson<Company[]>(`/api/crm/companies?${params.toString()}`);
-};
+// BF_PORTAL_BLOCK_v158_DEAD_SILO_STORE_CLEANUP_v1 — fetchCompanies removed (dead).
+// Real callers use crmApi.listCompanies(...) which takes silo as a parameter.
 
 export const fetchTimeline = async (entityType: "contact" | "company", entityId: string) => {
   const params = new URLSearchParams({ entityType, entityId });
