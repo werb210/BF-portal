@@ -44,7 +44,7 @@ export const resetAuthState = async () => {
     true
   );
   useCrmStore.setState(
-    { silo: "BF", filters: { search: "", owner: null, hasActiveApplication: false } },
+    { filters: { search: "", owner: null, hasActiveApplication: false } },
     true
   );
   useMarketingStore.setState(

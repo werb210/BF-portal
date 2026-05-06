@@ -1,6 +1,9 @@
+// BF_PORTAL_BLOCK_v158_DEAD_SILO_STORE_CLEANUP_v1
+// Removed `silo` field. The active silo lives in BusinessUnitContext
+// (SiloContext is a facade over it). Multiple sources of truth led
+// to stale-value bugs where the CRM store stayed at "BF" after a
+// silo switch and dead-code helpers fetched the wrong silo's data.
 import { create } from "zustand";
-
-type Silo = "BF" | "BI" | "SLF";
 
 type CrmFilters = {
   search: string;
@@ -9,9 +12,7 @@ type CrmFilters = {
 };
 
 type CrmState = {
-  silo: Silo;
   filters: CrmFilters;
-  setSilo: (silo: Silo) => void;
   setFilters: (filters: Partial<CrmFilters>) => void;
   resetFilters: () => void;
 };
@@ -23,12 +24,10 @@ const defaultFilters: CrmFilters = {
 };
 
 export const useCrmStore = create<CrmState>((set) => ({
-  silo: "BF",
   filters: defaultFilters,
-  setSilo: (silo) => set({ silo }),
   setFilters: (filters) =>
     set((state) => ({ filters: { ...state.filters, ...filters } })),
   resetFilters: () => set({ filters: defaultFilters })
 }));
 
-export type { CrmFilters, CrmState, Silo };
+export type { CrmFilters, CrmState };
