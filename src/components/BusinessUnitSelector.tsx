@@ -13,7 +13,10 @@ const unitLabels: Record<BusinessUnit, string> = {
   SLF: "Site Level Financial",
 };
 
-const ALL_UNITS: BusinessUnit[] = ["BF", "BI", "SLF"];
+// BF_PORTAL_BLOCK_v165_HIDE_SLF_FROM_SELECTOR_v1
+// SLF removed from visible options. Code surface remains under
+// src/silos/slf/* + src/pages/slf/* until the full purge.
+const ALL_UNITS: BusinessUnit[] = ["BF", "BI"];
 
 const isBusinessUnit = (value: unknown): value is BusinessUnit =>
   value === "BF" || value === "BI" || value === "SLF";
