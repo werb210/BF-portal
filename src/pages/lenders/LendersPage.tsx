@@ -533,8 +533,17 @@ function CreateProductModal({
     if (!form.minAmount.trim() && !form.maxAmount.trim()) next.amount = "Amount range is required.";
     if (Object.keys(next).length) { setErrors(next); return; }
 
+    // BF_PORTAL_BLOCK_v170_CREATE_PRODUCT_PO_DOC_LABEL_v1
+    // equipmentFinanceAlwaysRequiredDoc was missing from the lookup spread,
+    // so when category=EQUIPMENT_FINANCE the locked "Purchase Order or
+    // Invoice of Equipment to finance" tile was in checkedDocs (added at
+    // line ~466 by the initial-state setter) but `found` was undefined, and
+    // the payload fell through to `id` (the snake_case "purchase_order_or_invoice"
+    // key), which BF-Server's PORTAL_FORM_DOC_LABELS guard then rejected
+    // with the screenshot error. Add it to the spread so the canonical
+    // human-readable label flows out.
     const requiredDocuments = Array.from(checkedDocs).map((id) => {
-      const found = [...coreTypes, ...conditionalTypes, alwaysRequiredDoc].find((d) => d.key === id);
+      const found = [...coreTypes, ...conditionalTypes, alwaysRequiredDoc, equipmentFinanceAlwaysRequiredDoc].find((d) => d.key === id);
       return { category: found?.label ?? id, required: true, description: null };
     });
 
