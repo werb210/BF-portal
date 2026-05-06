@@ -16,10 +16,18 @@ import {
   type FetchResponse,
 } from "@/api/credit";
 import { getErrorMessage } from "@/utils/errors";
+import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 
 interface Props {
   applicationId: string;
 }
+
+
+const formatLockDate = (completedAt: string): string => {
+  const parsed = new Date(completedAt);
+  if (Number.isNaN(parsed.getTime())) return completedAt;
+  return parsed.toLocaleString();
+};
 
 const fmtMoney = (n: number | null | undefined): string =>
   n === null || n === undefined || !Number.isFinite(Number(n))
@@ -132,6 +140,8 @@ export default function CreditSummaryEditor({ applicationId }: Props) {
     enabled: Boolean(applicationId),
   });
 
+  const { data: applicationDetails } = useApplicationDetails();
+
   const [draft, setDraft] = useState<CreditSummarySections | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
@@ -188,6 +198,9 @@ export default function CreditSummaryEditor({ applicationId }: Props) {
   const saving = save.isPending;
   const regenerating = regenerate.isPending;
   const status = data.credit_summary.status;
+  const creditSummaryCompletedAt =
+    (applicationDetails as { credit_summary_completed_at?: string | null } | null)?.credit_summary_completed_at ?? null;
+  const isLocked = Boolean(creditSummaryCompletedAt);
 
   const updateNarrative = (
     section: "transaction" | "business_overview" | "financial_overview" | "banking_analysis" | "recommendation",
@@ -224,7 +237,7 @@ export default function CreditSummaryEditor({ applicationId }: Props) {
           <Button
             variant="ghost"
             onClick={() => regenerate.mutate()}
-            disabled={regenerating || saving || submitting}
+            disabled={isLocked || regenerating || saving || submitting}
             data-testid="regenerate-btn"
           >
             {regenerating ? "Regenerating…" : "Regenerate"}
@@ -232,20 +245,30 @@ export default function CreditSummaryEditor({ applicationId }: Props) {
           <Button
             variant="secondary"
             onClick={() => save.mutate()}
-            disabled={regenerating || saving || submitting}
+            disabled={isLocked || regenerating || saving || submitting}
             data-testid="save-draft-btn"
           >
             {saving ? "Saving…" : "Save Draft"}
           </Button>
           <Button
             onClick={() => submitMut.mutate()}
-            disabled={regenerating || saving || submitting}
+            disabled={isLocked || regenerating || saving || submitting}
             data-testid="submit-btn"
           >
             {submitting ? "Submitting…" : "Submit"}
           </Button>
         </div>
       </div>
+
+      {isLocked ? (
+        <div
+          role="status"
+          className="rounded border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900"
+          data-testid="credit-summary-locked-banner"
+        >
+          Locked — submitted on {creditSummaryCompletedAt ? formatLockDate(creditSummaryCompletedAt) : "Unknown"}.
+        </div>
+      ) : null}
 
       {statusMsg && <div className="text-sm text-gray-700" data-testid="credit-summary-status-msg">{statusMsg}</div>}
 
@@ -259,6 +282,7 @@ export default function CreditSummaryEditor({ applicationId }: Props) {
           value={draft.transaction.narrative}
           onChange={(e) => updateNarrative("transaction", e.target.value)}
           data-testid="transaction-narrative"
+          disabled={isLocked}
         />
       </Card>
 
@@ -268,6 +292,7 @@ export default function CreditSummaryEditor({ applicationId }: Props) {
           value={draft.business_overview.narrative}
           onChange={(e) => updateNarrative("business_overview", e.target.value)}
           data-testid="business-overview-narrative"
+          disabled={isLocked}
         />
       </Card>
 
@@ -277,6 +302,7 @@ export default function CreditSummaryEditor({ applicationId }: Props) {
           value={draft.financial_overview.narrative}
           onChange={(e) => updateNarrative("financial_overview", e.target.value)}
           data-testid="financial-overview-narrative"
+          disabled={isLocked}
         />
         <FinancialTableView table={draft.financial_overview.table} />
       </Card>
@@ -287,6 +313,7 @@ export default function CreditSummaryEditor({ applicationId }: Props) {
           value={draft.banking_analysis.narrative}
           onChange={(e) => updateNarrative("banking_analysis", e.target.value)}
           data-testid="banking-analysis-narrative"
+          disabled={isLocked}
         />
         <BankingMetricsView metrics={draft.banking_analysis.metrics} />
       </Card>
@@ -300,6 +327,7 @@ export default function CreditSummaryEditor({ applicationId }: Props) {
           value={draft.recommendation.narrative}
           onChange={(e) => updateNarrative("recommendation", e.target.value)}
           data-testid="recommendation-narrative"
+          disabled={isLocked}
         />
       </Card>
     </div>
