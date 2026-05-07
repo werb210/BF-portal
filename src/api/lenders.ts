@@ -580,6 +580,21 @@ export const updateLenderProduct = async (productId: string, payload: Partial<Le
 export const fetchLenderMatches = (applicationId: string, options?: RequestOptions) =>
   api.get<LenderMatch[]>(`/api/applications/${applicationId}/lenders`, options);
 
+// BF_PORTAL_BLOCK_v179_LENDERS_TAB_GATING_ROUTED_v1
+export type LenderEnvelopeStatus = "locked" | "stale" | "ready";
+export type LenderEnvelope = {
+  status: LenderEnvelopeStatus;
+  outstanding: string[];
+  computed_at: string | null;
+  matches: LenderMatch[];
+};
+
+export const fetchLenderEnvelope = (applicationId: string, options?: RequestOptions) =>
+  api.get<LenderEnvelope>(`/api/applications/${applicationId}/lenders/envelope`, options);
+
+export const recalculateLenderMatches = (applicationId: string) =>
+  api.post<LenderEnvelope>(`/api/applications/${applicationId}/lenders/recalculate`, {});
+
 export const createLenderSubmission = (applicationId: string, lenderProductIds: string[]) =>
   api.post(`/api/portal/lender-submissions`, { applicationId, lenderProductIds });
 
