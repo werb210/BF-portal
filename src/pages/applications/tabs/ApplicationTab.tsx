@@ -99,6 +99,19 @@ export default function ApplicationTab({ application }: Props) {
     business.legalName ?? business.name ?? application.applicant ?? "Unknown business"
   );
 
+  // BF_PORTAL_BLOCK_v177_MULTI_LEG_BANNER_v1
+  // Detect whether this application is a child leg in a multi-leg structure.
+  // capital_and_equipment_leg flag set by the submit-time fan-out (BLOCK_v85).
+  // closing_cost_companion / kind=closing_costs set by the Step-2 modal flow
+  // (BLOCK_v125a). Both copy parent_application_id into metadata.
+  const legParentId = typeof raw.parent_application_id === "string" ? raw.parent_application_id : null;
+  const legInfo: { kind: "equipment" | "closing_costs"; parentId: string | null } | null =
+    raw.capital_and_equipment_leg === true || raw.leg_category === "EQUIPMENT"
+      ? { kind: "equipment", parentId: legParentId }
+      : raw.closing_cost_companion === true || raw.kind === "closing_costs"
+      ? { kind: "closing_costs", parentId: legParentId }
+      : null;
+
   // DBA: only show if it's a meaningfully different value than the legal name.
   const dbaCandidate =
     business.dba ?? business.dbaName ?? business.operatingName ?? business.companyName ?? business.businessName ?? null;
@@ -125,6 +138,7 @@ export default function ApplicationTab({ application }: Props) {
 
   return (
     <div style={styles.page}>
+      {legInfo && <LegBanner kind={legInfo.kind} parentId={legInfo.parentId} />}
       <div style={styles.headerRow}>
         <div style={{ minWidth: 0 }}>
           <h2 style={styles.title}>{businessName}</h2>
@@ -348,6 +362,28 @@ function Anchor({ href }: { href: string }) {
   return <a href={safe} target="_blank" rel="noreferrer" style={styles.link}>{display}</a>;
 }
 
+// BF_PORTAL_BLOCK_v177_MULTI_LEG_BANNER_v1
+function LegBanner({ kind, parentId }: { kind: "equipment" | "closing_costs"; parentId: string | null }) {
+  const isEquipment = kind === "equipment";
+  const label = isEquipment ? "Equipment leg" : "Closing-costs add-on";
+  const subtitle = isEquipment ? "Linked to capital application" : "Linked to primary application";
+  const bannerStyle = isEquipment ? styles.legBannerEquipment : styles.legBannerClosingCosts;
+  return (
+    <div style={bannerStyle}>
+      <span style={styles.legBannerIcon} aria-hidden="true">↗</span>
+      <span style={styles.legBannerLabel}>{label}</span>
+      <span style={styles.legBannerSep}>·</span>
+      <span style={styles.legBannerSubtitle}>{subtitle}</span>
+      <span style={{ flex: 1 }} />
+      {parentId && (
+        <a href={`/applications/${parentId}/application`} style={styles.legBannerLink}>
+          View primary →
+        </a>
+      )}
+    </div>
+  );
+}
+
 const styles: Record<string, CSSProperties> = {
   page: { color: "#0f172a", maxWidth: 1200 },
   loading: { padding: 40, textAlign: "center", color: "#64748b" },
@@ -459,5 +495,40 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     cursor: "not-allowed",
     fontFamily: "inherit",
+  },
+  // BF_PORTAL_BLOCK_v177_MULTI_LEG_BANNER_v1
+  legBannerEquipment: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    background: "#dbeafe",
+    color: "#1e3a8a",
+    border: "1px solid #93c5fd",
+    borderRadius: 8,
+    padding: "10px 14px",
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  legBannerClosingCosts: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    background: "#fef3c7",
+    color: "#78350f",
+    border: "1px solid #fcd34d",
+    borderRadius: 8,
+    padding: "10px 14px",
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  legBannerIcon: { fontWeight: 700, fontSize: 14 },
+  legBannerLabel: { fontWeight: 700 },
+  legBannerSep: { opacity: 0.5 },
+  legBannerSubtitle: { fontWeight: 500 },
+  legBannerLink: {
+    color: "inherit",
+    textDecoration: "underline",
+    fontWeight: 600,
+    fontSize: 13,
   },
 };
