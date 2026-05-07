@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { api } from "@/api";
 // BF_NO_OVERVIEW_v41 — Block 41-C — Overview tab removed from drawer.
@@ -27,6 +27,21 @@ function activeTabFromPath(pathname: string): TabKey {
   return (TABS.find((tab) => tab.key === segment)?.key ?? "application") as TabKey;
 }
 
+// BF_PORTAL_BLOCK_v173_TAB_STRIP_OVERLAP_v1
+// Layout fix for tab labels appearing visually cut by content rising up
+// into the tab nav region. Two root causes addressed:
+//   1. The previous outer <header> with <h1>{title}</h1> rendered even
+//      when the application had not yet loaded, consuming unaccounted
+//      vertical space in a flex column that already had height: 100%.
+//      Each tab body (ApplicationTab, BankingAnalysisTab, etc.) renders
+//      its own h2 title, so the outer header was redundant. Removed.
+//   2. The flex column lacked `min-height: 0` on its children, which in
+//      Chromium can cause the section's content to spill into the nav
+//      when total intrinsic height exceeds the container. The new layout
+//      pins the nav with `flex-shrink: 0` so it can never compress, and
+//      gives the body section `flex: 1; min-height: 0; overflow-y: auto`
+//      so it scrolls inside its own region. This also fixes the mobile
+//      tap-target issue — the buttons are no longer occluded.
 export default function ApplicationDetail({ applicationId: propId }: { applicationId?: string }) {
   const { id: routeId } = useParams<{ id: string }>();
   const applicationId = propId ?? routeId ?? "";
@@ -45,11 +60,6 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
       .catch((err: any) => setError(err?.message ?? "Could not load application."));
   }, [applicationId]);
 
-  const title = useMemo(
-    () => String(application?.business_legal_name ?? application?.business_name ?? application?.name ?? "Application"),
-    [application],
-  );
-
   const tabBody = {
     application: <ApplicationTab application={application} />,
     "banking-analysis": <BankingAnalysisTab applicationId={applicationId} />,
@@ -66,13 +76,42 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
   }[activeTab];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <header style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb", background: "#fff" }}>
-        <h1 style={{ margin: 0 }}>{title}</h1>
-        {error && <p style={{ margin: "8px 0 0", color: "#b91c1c" }}>{error}</p>}
-      </header>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0,
+      }}
+    >
+      {error && (
+        <div
+          style={{
+            margin: 0,
+            padding: "10px 20px",
+            color: "#b91c1c",
+            background: "#fef2f2",
+            borderBottom: "1px solid #fecaca",
+            fontSize: 14,
+            flexShrink: 0,
+          }}
+        >
+          {error}
+        </div>
+      )}
 
-      <nav style={{ display: "flex", gap: 16, padding: "12px 20px", borderBottom: "1px solid #e5e7eb", overflowX: "auto" }}>
+      <nav
+        style={{
+          display: "flex",
+          gap: 16,
+          padding: "12px 20px",
+          borderBottom: "1px solid #e5e7eb",
+          overflowX: "auto",
+          background: "#fff",
+          flexShrink: 0,
+          alignItems: "stretch",
+        }}
+      >
         {TABS.map((tab) => {
           const active = tab.key === activeTab;
           return (
@@ -86,9 +125,15 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
                 background: "transparent",
                 color: active ? "#2563eb" : "#334155",
                 fontWeight: active ? 700 : 500,
+                paddingTop: 6,
                 paddingBottom: 8,
+                paddingLeft: 4,
+                paddingRight: 4,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
+                fontSize: 14,
+                lineHeight: 1.4,
+                fontFamily: "inherit",
               }}
             >
               {tab.label}
@@ -97,7 +142,16 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
         })}
       </nav>
 
-      <section style={{ padding: 20 }}>{tabBody}</section>
+      <section
+        style={{
+          flex: 1,
+          minHeight: 0,
+          padding: 20,
+          overflowY: "auto",
+        }}
+      >
+        {tabBody}
+      </section>
     </div>
   );
 }
