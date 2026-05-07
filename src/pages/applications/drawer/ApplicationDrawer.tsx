@@ -28,37 +28,37 @@ import TabErrorBoundary from "./TabErrorBoundary";
 // instead of going blank.
 const tabContentMap: Partial<Record<DrawerTabId, (applicationId: string) => JSX.Element>> = {
   application: (applicationId) => (
-    <TabErrorBoundary tabId="application">
+    <TabErrorBoundary tabId="application" applicationId={applicationId}>
       <ApplicationTab applicationId={applicationId} />
     </TabErrorBoundary>
   ),
   banking: (applicationId) => (
-    <TabErrorBoundary tabId="banking">
+    <TabErrorBoundary tabId="banking" applicationId={applicationId}>
       <BankingTab applicationId={applicationId} />
     </TabErrorBoundary>
   ),
   financials: (applicationId) => (
-    <TabErrorBoundary tabId="financials">
+    <TabErrorBoundary tabId="financials" applicationId={applicationId}>
       <FinancialTab applicationId={applicationId} />
     </TabErrorBoundary>
   ),
   "credit-summary": (applicationId) => (
-    <TabErrorBoundary tabId="credit-summary">
+    <TabErrorBoundary tabId="credit-summary" applicationId={applicationId}>
       <CreditSummaryTab applicationId={applicationId} />
     </TabErrorBoundary>
   ),
   documents: (applicationId) => (
-    <TabErrorBoundary tabId="documents">
+    <TabErrorBoundary tabId="documents" applicationId={applicationId}>
       <DocumentsTab applicationId={applicationId} />
     </TabErrorBoundary>
   ),
   notes: (applicationId) => (
-    <TabErrorBoundary tabId="notes">
+    <TabErrorBoundary tabId="notes" applicationId={applicationId}>
       <NotesTab applicationId={applicationId} />
     </TabErrorBoundary>
   ),
   lenders: (applicationId) => (
-    <TabErrorBoundary tabId="lenders">
+    <TabErrorBoundary tabId="lenders" applicationId={applicationId}>
       <LendersTab applicationId={applicationId} />
     </TabErrorBoundary>
   ),

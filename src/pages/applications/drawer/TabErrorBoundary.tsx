@@ -7,7 +7,14 @@
 // the component stack so we can actually see what's wrong.
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
-type Props = { tabId: string; children: ReactNode };
+// BF_PORTAL_BLOCK_v172_TAB_BOUNDARY_RESET_ON_APP_CHANGE_v1
+// applicationId is part of the reset key so opening a different
+// application on the same tab clears the boundary's stuck error
+// state. Without it, a render crash on application A would poison
+// tab T for every application opened afterwards until the staff
+// switched tabs and back. tabId is still part of the key for the
+// original tab-switch reset.
+type Props = { tabId: string; applicationId?: string | null; children: ReactNode };
 type State = { error: Error | null; info: ErrorInfo | null };
 
 export class TabErrorBoundary extends Component<Props, State> {
@@ -19,13 +26,22 @@ export class TabErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     // eslint-disable-next-line no-console
-    console.error(`[drawer-tab:${this.props.tabId}] render crash`, error, info);
+    console.error(
+      `[drawer-tab:${this.props.tabId}:app=${this.props.applicationId ?? "none"}] render crash`,
+      error,
+      info,
+    );
     this.setState({ error, info });
   }
 
   componentDidUpdate(prevProps: Props) {
-    // Reset on tab switch so a crash in tab A doesn't poison tab B.
-    if (prevProps.tabId !== this.props.tabId && this.state.error) {
+    if (!this.state.error) return;
+    // Reset on either tab switch OR application change so a crash on
+    // application A's financials doesn't keep showing the red panel
+    // when staff opens application B and clicks the same tab.
+    const tabChanged = prevProps.tabId !== this.props.tabId;
+    const appChanged = prevProps.applicationId !== this.props.applicationId;
+    if (tabChanged || appChanged) {
       this.setState({ error: null, info: null });
     }
   }
