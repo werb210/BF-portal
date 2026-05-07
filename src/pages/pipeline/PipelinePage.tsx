@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { useNavigate } from "react-router-dom";
+// BF_PORTAL_BLOCK_v175_CALL_CLIENT_BUTTON_v1
+import { useDialerStore } from "@/state/dialer.store";
 
 const STAGES = [
   "Received", "In Review", "Documents Required",
@@ -144,7 +146,39 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
   onMove: (id: string, to: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const name = card.business_legal_name ?? card.name ?? "Unnamed";
+  // BF_PORTAL_BLOCK_v175_CALL_CLIENT_BUTTON_v1
+  // The pipeline card payload doesn't include phone (Card type only carries
+  // id/name/state/amount/created_at). On Call click we fetch the application
+  // details to pull applicantDetails.phone, then open the dialer pre-filled.
+  const openDialer = useDialerStore((st) => st.openDialer);
+  const [callBusy, setCallBusy] = useState(false);
+  const cardName = card.business_legal_name ?? card.name ?? "Unnamed";
+  async function handleCall() {
+    if (callBusy) return;
+    setCallBusy(true);
+    try {
+      const payload: any = await api.get(`/api/applications/${card.id}/details`);
+      const details = payload?.data ?? payload?.application ?? payload ?? null;
+      const a = details?.applicantDetails ?? details?.applicantInfo ?? {};
+      const phone = a?.phone ?? a?.phoneNumber ?? null;
+      if (!phone) {
+        window.alert("No phone number on file for this applicant.");
+        return;
+      }
+      openDialer({
+        applicationId: card.id,
+        applicationName: cardName,
+        phone: String(phone),
+        contactName: [a?.firstName, a?.lastName].filter(Boolean).join(" ") || cardName,
+        source: "pipeline",
+      });
+    } catch (err: any) {
+      window.alert(`Could not look up phone: ${err?.message ?? "unknown error"}`);
+    } finally {
+      setCallBusy(false);
+    }
+  }
+  const name = cardName;
   const amount = card.requested_amount
     ? `$${Number(card.requested_amount).toLocaleString()}` : null;
   const date = new Date(card.created_at).toLocaleDateString("en-CA",
@@ -162,7 +196,25 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
 
       {/* Click anywhere on the card header to open */}
       <div onClick={onOpen} style={{ cursor: "pointer", marginBottom: 8 }}>
-<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 3 }}><div style={{ fontWeight: 600, fontSize: 13, color: "#f1f5f9" }}>{name}</div><button type="button" aria-label="Delete card" onClick={(e) => { e.stopPropagation(); onDelete(card.id); }} style={{ border: 0, background: "transparent", color: "#94a3b8", cursor: busy ? "default" : "pointer", fontSize: 18, lineHeight: 1 }} disabled={busy}>×</button></div>
+<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 3 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, color: "#f1f5f9" }}>{name}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          {/* BF_PORTAL_BLOCK_v175_CALL_CLIENT_BUTTON_v1 — pipeline card call trigger */}
+          <button
+            type="button"
+            aria-label="Call client"
+            title={callBusy ? "Looking up phone…" : "Call client"}
+            onClick={(e) => { e.stopPropagation(); void handleCall(); }}
+            disabled={busy || callBusy}
+            style={{ border: 0, background: "transparent", color: callBusy ? "#475569" : "#94a3b8", cursor: (busy || callBusy) ? "default" : "pointer", padding: "4px 6px", display: "inline-flex", alignItems: "center", borderRadius: 4 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+            </svg>
+          </button>
+          <button type="button" aria-label="Delete card" onClick={(e) => { e.stopPropagation(); onDelete(card.id); }} style={{ border: 0, background: "transparent", color: "#94a3b8", cursor: busy ? "default" : "pointer", fontSize: 18, lineHeight: 1 }} disabled={busy}>×</button>
+        </div>
+      </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#94a3b8" }}>
           {amount && <span>{amount}</span>}
           <span>{date}</span>
