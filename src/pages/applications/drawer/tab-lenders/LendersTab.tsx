@@ -5,6 +5,15 @@ import { api } from "@/api";
 type SubmissionMethod = "email" | "api" | "google_sheet" | null;
 type Likelihood = "high" | "medium" | "low" | null;
 
+// BF_PORTAL_BLOCK_v178_LENDERS_TAB_GATING_v1
+type EnvelopeStatus = "locked" | "stale" | "ready";
+type LenderEnvelope = {
+  status: EnvelopeStatus;
+  outstanding: string[];
+  computed_at: string | null;
+  matches: any[];
+};
+
 type LenderRow = {
   id: string;
   name: string;
@@ -62,6 +71,29 @@ function LikelihoodPill({ l }: { l: Likelihood }) {
 
 export default function LendersTab({ applicationId }: Props) {
   const [rows, setRows] = useState<LenderRow[]>([]);
+  // BF_PORTAL_BLOCK_v178_LENDERS_TAB_GATING_v1
+  const [envelopeStatus, setEnvelopeStatus] = useState<EnvelopeStatus>("locked");
+  const [outstanding, setOutstanding] = useState<string[]>([]);
+  const [computedAt, setComputedAt] = useState<string | null>(null);
+  const [recalculating, setRecalculating] = useState(false);
+  async function handleRecalculate() {
+    if (recalculating) return;
+    setRecalculating(true);
+    try {
+      const env = await api.post<LenderEnvelope>(
+        `/api/applications/${encodeURIComponent(applicationId)}/lenders/recalculate`,
+        {}
+      );
+      setEnvelopeStatus(env.status);
+      setOutstanding(env.outstanding ?? []);
+      setComputedAt(env.computed_at);
+      setRows(Array.isArray(env.matches) ? (env.matches as LenderRow[]) : []);
+    } catch (e) {
+      console.warn("[lenders] recalculate failed", e);
+    } finally {
+      setRecalculating(false);
+    }
+  }
   const [pending, setPending] = useState<PendingOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,12 +110,21 @@ export default function LendersTab({ applicationId }: Props) {
     setError(null);
     void (async () => {
       try {
-        const [lenders, offers] = await Promise.all([
-          api.get<{ items?: LenderRow[] } | LenderRow[]>(`/api/applications/${encodeURIComponent(applicationId)}/lenders`),
+        // BF_PORTAL_BLOCK_v178_LENDERS_TAB_GATING_v1
+        // Switched to /envelope — returns {status, outstanding, computed_at, matches}.
+        // Handles locked (required docs not all accepted), stale (cache flagged
+        // after a reject), and ready (fresh cache) states.
+        const [envelope, offers] = await Promise.all([
+          api.get<LenderEnvelope>(`/api/applications/${encodeURIComponent(applicationId)}/lenders/envelope`),
           api.get<{ items?: PendingOffer[] } | PendingOffer[]>(`/api/applications/${encodeURIComponent(applicationId)}/offers?status=pending_acceptance`).catch(() => []),
         ]);
         if (!active) return;
-        const list = Array.isArray(lenders) ? lenders : lenders?.items ?? [];
+        // v178: read matches + status from envelope
+        const env = envelope ?? { status: "locked" as const, outstanding: [], computed_at: null, matches: [] };
+        const list = Array.isArray(env.matches) ? (env.matches as LenderRow[]) : [];
+        setEnvelopeStatus(env.status);
+        setOutstanding(env.outstanding ?? []);
+        setComputedAt(env.computed_at);
         const pendList = Array.isArray(offers) ? offers : offers?.items ?? [];
         setRows(list);
         setPending(pendList);
@@ -152,8 +193,12 @@ export default function LendersTab({ applicationId }: Props) {
     try {
       await api.post(`/api/applications/${encodeURIComponent(applicationId)}/lenders/${encodeURIComponent(lenderId)}/files`, form);
       // Refetch lender list so files dropdown updates
-      const lenders = await api.get<{ items?: LenderRow[] } | LenderRow[]>(`/api/applications/${encodeURIComponent(applicationId)}/lenders`);
-      setRows(Array.isArray(lenders) ? lenders : lenders?.items ?? []);
+      // v178: refetch via envelope; matches may be empty when locked/stale.
+      const env2 = await api.get<LenderEnvelope>(`/api/applications/${encodeURIComponent(applicationId)}/lenders/envelope`);
+      setEnvelopeStatus(env2.status);
+      setOutstanding(env2.outstanding ?? []);
+      setComputedAt(env2.computed_at);
+      setRows(Array.isArray(env2.matches) ? (env2.matches as LenderRow[]) : []);
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error("upload_term_sheet_failed", e);
@@ -163,8 +208,84 @@ export default function LendersTab({ applicationId }: Props) {
   if (loading) return <div data-testid="lenders-loading">Loading lenders…</div>;
   if (error)   return <div data-testid="lenders-error" style={{ color: "#b91c1c" }}>{error}</div>;
 
+  // BF_PORTAL_BLOCK_v178_LENDERS_TAB_GATING_v1
+  if (envelopeStatus === "locked") {
+    return (
+      <div data-testid="lenders-locked" style={{ padding: 24 }}>
+        <div style={{
+          background: "#f1f5f9",
+          border: "1px solid #cbd5e1",
+          borderRadius: 12,
+          padding: "20px 24px",
+          maxWidth: 640,
+        }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>
+            Lender matching is locked
+          </div>
+          <div style={{ fontSize: 13, color: "#475569", marginBottom: 16, lineHeight: 1.5 }}>
+            Lender matches are computed once all required documents are accepted. Until
+            then the inputs aren\'t stable enough to recommend lenders.
+          </div>
+          {outstanding.length > 0 ? (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", marginBottom: 8 }}>
+                Outstanding ({outstanding.length})
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "#0f172a" }}>
+                {outstanding.map((c) => <li key={c} style={{ marginBottom: 4 }}>{c}</li>)}
+              </ul>
+            </div>
+          ) : (
+            <div style={{ fontSize: 13, color: "#64748b", fontStyle: "italic" }}>
+              Awaiting required-document list.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  const isStale = envelopeStatus === "stale";
+
   return (
     <div data-testid="lenders-tab">
+      {/* BF_PORTAL_BLOCK_v178_LENDERS_TAB_GATING_v1 */}
+      {isStale && (
+        <div style={{
+          background: "#fef3c7",
+          border: "1px solid #fcd34d",
+          color: "#78350f",
+          borderRadius: 8,
+          padding: "10px 14px",
+          marginBottom: 12,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          fontSize: 13,
+        }}>
+          <span style={{ fontWeight: 700 }}>⚠ Matches are stale</span>
+          <span style={{ flex: 1 }}>
+            A document was rejected after the last computation. Recalculate to refresh.
+            {computedAt && <span style={{ opacity: 0.7, marginLeft: 8 }}>Last computed: {new Date(computedAt).toLocaleString()}</span>}
+          </span>
+          <button
+            type="button"
+            onClick={handleRecalculate}
+            disabled={recalculating}
+            style={{
+              background: recalculating ? "#fbbf24" : "#f59e0b",
+              color: "#fff",
+              border: 0,
+              borderRadius: 6,
+              padding: "6px 12px",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: recalculating ? "default" : "pointer",
+            }}
+          >
+            {recalculating ? "Recalculating…" : "Recalculate"}
+          </button>
+        </div>
+      )}
       {pending.length > 0 ? (
         <div data-testid="pending-acceptance-banner" style={{ background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 8, padding: 14, marginBottom: 12 }}>
           <strong>⏳ Pending Acceptance</strong>
