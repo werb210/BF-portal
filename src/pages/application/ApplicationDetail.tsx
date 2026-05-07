@@ -28,20 +28,16 @@ function activeTabFromPath(pathname: string): TabKey {
 }
 
 // BF_PORTAL_BLOCK_v173_TAB_STRIP_OVERLAP_v1
-// Layout fix for tab labels appearing visually cut by content rising up
-// into the tab nav region. Two root causes addressed:
-//   1. The previous outer <header> with <h1>{title}</h1> rendered even
-//      when the application had not yet loaded, consuming unaccounted
-//      vertical space in a flex column that already had height: 100%.
-//      Each tab body (ApplicationTab, BankingAnalysisTab, etc.) renders
-//      its own h2 title, so the outer header was redundant. Removed.
-//   2. The flex column lacked `min-height: 0` on its children, which in
-//      Chromium can cause the section's content to spill into the nav
-//      when total intrinsic height exceeds the container. The new layout
-//      pins the nav with `flex-shrink: 0` so it can never compress, and
-//      gives the body section `flex: 1; min-height: 0; overflow-y: auto`
-//      so it scrolls inside its own region. This also fixes the mobile
-//      tap-target issue — the buttons are no longer occluded.
+// BF_PORTAL_BLOCK_v174_APPLICATION_TAB_SEMANTIC_GROUPS_v1
+// Layout fix (v173): drop redundant <header>; pin nav with flex-shrink: 0;
+// give body section flex: 1, min-height: 0, overflow-y: auto so it scrolls
+// in its own region without bleeding into the nav strip.
+// Data wiring (v174): switched to /api/applications/:id/details — that
+// handler flattens metadata into {overview, businessDetails, applicantDetails,
+// owners, financialProfile, rawPayload, ...} which is the shape the new
+// ApplicationTab consumes. The legacy /:id endpoint returned the raw DB row
+// where businessDetails/applicantDetails/etc. don't exist, so the old tab
+// rendered "—" for nearly every field.
 export default function ApplicationDetail({ applicationId: propId }: { applicationId?: string }) {
   const { id: routeId } = useParams<{ id: string }>();
   const applicationId = propId ?? routeId ?? "";
@@ -55,8 +51,8 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     if (!applicationId) return;
     setError(null);
     api
-      .get(`/api/applications/${applicationId}`)
-      .then((payload: any) => setApplication(payload?.application ?? payload?.data ?? payload ?? null))
+      .get(`/api/applications/${applicationId}/details`)
+      .then((payload: any) => setApplication(payload?.data ?? payload?.application ?? payload ?? null))
       .catch((err: any) => setError(err?.message ?? "Could not load application."));
   }, [applicationId]);
 
@@ -65,13 +61,8 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     "banking-analysis": <BankingAnalysisTab applicationId={applicationId} />,
     financials: <FinancialsTab />,
     documents: <DocumentsTab />,
-    // BF_CREDIT_SUMMARY_UI_v46 — pass applicationId so the route-rendered
-    // CreditSummaryTab works without the legacy drawer store.
     "credit-summary": <CreditSummaryTab applicationId={applicationId} />,
-    // BF_NOTES_UI_v49 — pass applicationId so the route-rendered NotesTab works.
     notes: <NotesTab applicationId={applicationId} />,
-    // BF_LENDERS_TAB_PROP_v42 — Block 42-B — pass applicationId so the
-    // route-rendered LendersTab works without the legacy drawer store.
     lenders: <LendersTab applicationId={applicationId} />,
   }[activeTab];
 
