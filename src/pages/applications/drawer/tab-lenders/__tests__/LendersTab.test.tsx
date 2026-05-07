@@ -1,4 +1,9 @@
 // BF_PORTAL_v72_BLOCK_2_6
+// BF_PORTAL_BLOCK_v180_LENDERS_TAB_TESTS_ENVELOPE_v1
+// v178 changed drawer LendersTab to fetch /lenders/envelope and expect
+// {status, outstanding, computed_at, matches}. URL match for /lenders/envelope
+// must come BEFORE the bare /lenders check (the latter is a substring of
+// the former).
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
@@ -23,6 +28,13 @@ const lenders = [
 ];
 const pending = [{ id: "OFFER1", lenderName: "XYZ Capital" }];
 
+const readyEnvelope = {
+  status: "ready" as const,
+  outstanding: [] as string[],
+  computed_at: new Date().toISOString(),
+  matches: lenders,
+};
+
 beforeEach(() => {
   mockGet.mockReset();
   mockPost.mockReset();
@@ -32,7 +44,7 @@ beforeEach(() => {
 describe("LendersTab", () => {
   it("renders rows with badges and pending banner", async () => {
     mockGet.mockImplementation((url: string) => {
-      if (url.includes("/lenders")) return Promise.resolve(lenders);
+      if (url.includes("/lenders/envelope")) return Promise.resolve(readyEnvelope);
       if (url.includes("/offers")) return Promise.resolve(pending);
       return Promise.resolve([]);
     });
@@ -45,7 +57,7 @@ describe("LendersTab", () => {
 
   it("filters by search", async () => {
     mockGet.mockImplementation((url: string) => {
-      if (url.includes("/lenders")) return Promise.resolve(lenders);
+      if (url.includes("/lenders/envelope")) return Promise.resolve(readyEnvelope);
       return Promise.resolve([]);
     });
     render(<LendersTab applicationId="app-1" />);
@@ -57,7 +69,7 @@ describe("LendersTab", () => {
 
   it("send-to-selected calls POST with selected ids", async () => {
     mockGet.mockImplementation((url: string) => {
-      if (url.includes("/lenders")) return Promise.resolve(lenders);
+      if (url.includes("/lenders/envelope")) return Promise.resolve(readyEnvelope);
       return Promise.resolve([]);
     });
     mockPost.mockResolvedValueOnce({});
@@ -74,7 +86,7 @@ describe("LendersTab", () => {
 
   it("confirm acceptance posts and removes the row", async () => {
     mockGet.mockImplementation((url: string) => {
-      if (url.includes("/lenders")) return Promise.resolve(lenders);
+      if (url.includes("/lenders/envelope")) return Promise.resolve(readyEnvelope);
       if (url.includes("/offers")) return Promise.resolve(pending);
       return Promise.resolve([]);
     });
