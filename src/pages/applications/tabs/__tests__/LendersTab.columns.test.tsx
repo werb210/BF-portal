@@ -1,4 +1,5 @@
 // BF_LENDERS_TAB_FIX_v55_PORTAL — render funding range + category columns.
+// BF_PORTAL_BLOCK_v180_LENDERS_TAB_TESTS_ENVELOPE_v1
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,13 +9,15 @@ vi.mock("@/api/lenders", async () => {
   return {
     ...actual,
     fetchLenderMatches: vi.fn(),
+    fetchLenderEnvelope: vi.fn(),
+    recalculateLenderMatches: vi.fn(),
     createLenderSubmission: vi.fn(),
   };
 });
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { role: "Admin" } }) }));
 vi.mock("@/auth/can", () => ({ canWrite: () => true }));
 
-import { fetchLenderMatches } from "@/api/lenders";
+import { fetchLenderEnvelope } from "@/api/lenders";
 import LendersTab from "../LendersTab";
 
 function wrap(ui: React.ReactNode) {
@@ -24,13 +27,18 @@ function wrap(ui: React.ReactNode) {
 
 describe("BF_LENDERS_TAB_FIX_v55_PORTAL", () => {
   beforeEach(() => {
-    vi.mocked(fetchLenderMatches).mockResolvedValue([
-      {
-        id: "p-1", lenderName: "Acme Capital",
-        productName: "Term Loan A", productCategory: "TERM_LOAN",
-        matchPercent: 0.82, amountMin: 25000, amountMax: 250000,
-      } as any,
-    ]);
+    vi.mocked(fetchLenderEnvelope).mockResolvedValue({
+      status: "ready",
+      outstanding: [],
+      computed_at: new Date().toISOString(),
+      matches: [
+        {
+          id: "p-1", lenderName: "Acme Capital",
+          productName: "Term Loan A", productCategory: "TERM_LOAN",
+          matchPercent: 0.82, amountMin: 25000, amountMax: 250000,
+        } as any,
+      ],
+    });
   });
 
   it("renders lender name, category, funding range, and likelihood as columns", async () => {
@@ -43,10 +51,15 @@ describe("BF_LENDERS_TAB_FIX_v55_PORTAL", () => {
   });
 
   it("renders em-dash when funding range is missing", async () => {
-    vi.mocked(fetchLenderMatches).mockResolvedValueOnce([
-      { id: "p-2", lenderName: "Beta", productCategory: "LINE_OF_CREDIT",
-        matchPercent: 0.7, amountMin: null, amountMax: null } as any,
-    ]);
+    vi.mocked(fetchLenderEnvelope).mockResolvedValueOnce({
+      status: "ready",
+      outstanding: [],
+      computed_at: new Date().toISOString(),
+      matches: [
+        { id: "p-2", lenderName: "Beta", productCategory: "LINE_OF_CREDIT",
+          matchPercent: 0.7, amountMin: null, amountMax: null } as any,
+      ],
+    });
     render(wrap(<LendersTab applicationId="app-2" />));
     await waitFor(() => expect(screen.getByText("Beta")).toBeTruthy());
     expect(screen.getByText("LINE_OF_CREDIT")).toBeTruthy();
