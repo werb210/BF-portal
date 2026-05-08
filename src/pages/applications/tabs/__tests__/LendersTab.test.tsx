@@ -13,6 +13,7 @@ vi.mock("@/api/lenders", () => ({
   fetchLenderEnvelope: vi.fn(),
   recalculateLenderMatches: vi.fn(),
   createLenderSubmission: vi.fn(),
+  uploadLenderTermSheet: vi.fn(),
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { role: "Admin", id: "u1" } }) }));
 vi.mock("@/components/auth/AccessRestricted", () => ({
@@ -22,7 +23,7 @@ vi.mock("@/auth/can", () => ({ canWrite: () => true }));
 vi.mock("@/utils/errors", () => ({ getErrorMessage: (e: any, fb: string) => e?.message ?? fb }));
 
 import LendersTab from "../LendersTab";
-import { fetchLenderEnvelope, recalculateLenderMatches, createLenderSubmission } from "@/api/lenders";
+import { fetchLenderEnvelope, recalculateLenderMatches, createLenderSubmission, uploadLenderTermSheet } from "@/api/lenders";
 
 function withClient(node: React.ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -138,5 +139,32 @@ describe("LendersTab gating states", () => {
     await waitFor(() => {
       expect(recalculateLenderMatches).toHaveBeenCalledWith("app-recalc");
     });
+  });
+});
+
+
+// BF_PORTAL_BLOCK_v186_LENDERS_TAB_POLISH_v1
+describe("LendersTab v186 polish", () => {
+  beforeEach(() => {
+    (uploadLenderTermSheet as any).mockReset();
+    (fetchLenderEnvelope as any).mockResolvedValue({ status: "ready", outstanding: [], computed_at: new Date().toISOString(), matches: [{ id: "p1", lenderName: "Alpha", productName: "Term", productCategory: "TERM_LOAN", matchPercent: 87, files: [] }] });
+  });
+
+  it("renders files button and upload input", async () => {
+    render(withClient(<LendersTab applicationId="app-files" />));
+    await screen.findByTestId("lender-files-p1");
+    fireEvent.click(screen.getByTestId("lender-files-p1"));
+    expect(screen.getByTestId("lender-files-menu-p1")).toBeInTheDocument();
+    expect(screen.getByTestId("upload-term-sheet-p1")).toBeInTheDocument();
+  });
+
+  it("upload input calls uploadLenderTermSheet", async () => {
+    (uploadLenderTermSheet as any).mockResolvedValue({ ok: true });
+    render(withClient(<LendersTab applicationId="app-up" />));
+    await screen.findByText("Alpha");
+    fireEvent.click(screen.getByTestId("lender-files-p1"));
+    const file = new File(["hello"], "ts.pdf", { type: "application/pdf" });
+    fireEvent.change(screen.getByTestId("upload-term-sheet-p1"), { target: { files: [file] } });
+    await waitFor(() => expect(uploadLenderTermSheet).toHaveBeenCalledWith("app-up", "p1", file));
   });
 });

@@ -36,6 +36,8 @@ export type LenderMatch = {
   // /api/applications/:id/lenders (BF-Server lenderMatchEngine).
   amountMin?: number | null;
   amountMax?: number | null;
+  // BF_PORTAL_BLOCK_v186_LENDERS_TAB_POLISH_v1 — files — present once server enriches per-lender docs.
+  files?: Array<{ id: string; filename: string; url?: string | null }>;
 };
 
 export type LenderSubmissionStatus = "sent" | "failed" | "pending_manual";
@@ -694,3 +696,13 @@ export const updateLenderProductRequirement = async (
 
 export const deleteLenderProductRequirement = (productId: string, requirementId: string) =>
   api.delete(`/api/portal/lender-products/${productId}/requirements/${requirementId}`);
+
+// BF_PORTAL_BLOCK_v186_LENDERS_TAB_POLISH_v1 — uploadLenderTermSheet
+export const uploadLenderTermSheet = (applicationId: string, lenderId: string, file: File) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("kind", "term_sheet");
+  fd.append("filename", file.name);
+  fd.append("size", String(file.size));
+  return api.post<{ ok: boolean; documentId?: string }>(`/api/applications/${encodeURIComponent(applicationId)}/lenders/${encodeURIComponent(lenderId)}/files`, fd);
+};
