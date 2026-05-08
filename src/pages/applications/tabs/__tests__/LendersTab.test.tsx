@@ -22,7 +22,7 @@ vi.mock("@/auth/can", () => ({ canWrite: () => true }));
 vi.mock("@/utils/errors", () => ({ getErrorMessage: (e: any, fb: string) => e?.message ?? fb }));
 
 import LendersTab from "../LendersTab";
-import { fetchLenderEnvelope, createLenderSubmission } from "@/api/lenders";
+import { fetchLenderEnvelope, recalculateLenderMatches, createLenderSubmission } from "@/api/lenders";
 
 function withClient(node: React.ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -31,6 +31,7 @@ function withClient(node: React.ReactNode) {
 
 beforeEach(() => {
   (fetchLenderEnvelope as any).mockReset();
+  (recalculateLenderMatches as any).mockReset();
   (createLenderSubmission as any).mockReset();
 });
 
@@ -71,6 +72,71 @@ describe("LendersTab", () => {
 
     await waitFor(() => {
       expect(createLenderSubmission).toHaveBeenCalledWith("app-123", ["p1"]);
+    });
+  });
+});
+
+// BF_PORTAL_BLOCK_v181_LENDERS_TAB_GATING_TESTS_v1
+describe("LendersTab gating states", () => {
+  it("renders locked panel with outstanding docs when status is locked", async () => {
+    (fetchLenderEnvelope as any).mockResolvedValue({
+      status: "locked",
+      outstanding: ["Bank Statement", "Tax Return"],
+      computed_at: null,
+      matches: [],
+    });
+
+    render(withClient(<LendersTab applicationId="app-locked" />));
+
+    await screen.findByTestId("lenders-locked");
+    expect(screen.getByText(/Lender matching is locked/i)).toBeInTheDocument();
+    expect(screen.getByText("Bank Statement")).toBeInTheDocument();
+    expect(screen.getByText("Tax Return")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Send \(/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Upload Term Sheet/i)).not.toBeInTheDocument();
+  });
+
+  it("renders stale banner + Recalculate button + cached matches when status is stale", async () => {
+    const computedAt = new Date("2026-05-01T10:00:00Z").toISOString();
+    (fetchLenderEnvelope as any).mockResolvedValue({
+      status: "stale",
+      outstanding: [],
+      computed_at: computedAt,
+      matches: [
+        { id: "p1", lenderName: "Alpha", productName: "Term", productCategory: "TERM_LOAN", matchPercent: 87 },
+      ],
+    });
+
+    render(withClient(<LendersTab applicationId="app-stale" />));
+
+    await screen.findByText(/Matches are stale/i);
+    expect(screen.getByRole("button", { name: /Recalculate/i })).toBeInTheDocument();
+    expect(screen.getByText("Alpha")).toBeInTheDocument();
+    const sendBtn = screen.getByRole("button", { name: /Send \(0\)/ });
+    expect(sendBtn).toBeDisabled();
+  });
+
+  it("clicking Recalculate calls recalculateLenderMatches with the application id", async () => {
+    (fetchLenderEnvelope as any).mockResolvedValue({
+      status: "stale",
+      outstanding: [],
+      computed_at: new Date().toISOString(),
+      matches: [],
+    });
+    (recalculateLenderMatches as any).mockResolvedValue({
+      status: "ready",
+      outstanding: [],
+      computed_at: new Date().toISOString(),
+      matches: [],
+    });
+
+    render(withClient(<LendersTab applicationId="app-recalc" />));
+
+    const btn = await screen.findByRole("button", { name: /Recalculate/i });
+    fireEvent.click(btn);
+
+    await waitFor(() => {
+      expect(recalculateLenderMatches).toHaveBeenCalledWith("app-recalc");
     });
   });
 });

@@ -99,3 +99,65 @@ describe("LendersTab", () => {
     ));
   });
 });
+
+// BF_PORTAL_BLOCK_v181_LENDERS_TAB_GATING_TESTS_v1
+describe("LendersTab gating states", () => {
+  it("renders locked panel with outstanding docs when status is locked", async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url.includes("/lenders/envelope")) return Promise.resolve({
+        status: "locked",
+        outstanding: ["Bank Statement", "P&L Statement"],
+        computed_at: null,
+        matches: [],
+      });
+      return Promise.resolve([]);
+    });
+    render(<LendersTab applicationId="app-locked" />);
+    await waitFor(() => screen.getByTestId("lenders-locked"));
+    expect(screen.getByText(/Lender matching is locked/i)).toBeTruthy();
+    expect(screen.getByText("Bank Statement")).toBeTruthy();
+    expect(screen.getByText("P&L Statement")).toBeTruthy();
+    expect(screen.queryByTestId("lenders-tab")).toBeNull();
+  });
+
+  it("renders stale banner + Recalculate button when status is stale", async () => {
+    const computedAt = new Date("2026-05-01T10:00:00Z").toISOString();
+    mockGet.mockImplementation((url: string) => {
+      if (url.includes("/lenders/envelope")) return Promise.resolve({
+        status: "stale",
+        outstanding: [],
+        computed_at: computedAt,
+        matches: lenders,
+      });
+      return Promise.resolve([]);
+    });
+    render(<LendersTab applicationId="app-stale" />);
+    await waitFor(() => screen.getByText(/Matches are stale/i));
+    expect(screen.getByRole("button", { name: /Recalculate/i })).toBeTruthy();
+    expect(screen.getByTestId("lender-row-L1")).toBeTruthy();
+  });
+
+  it("clicking Recalculate POSTs to /lenders/recalculate with the application id", async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url.includes("/lenders/envelope")) return Promise.resolve({
+        status: "stale",
+        outstanding: [],
+        computed_at: new Date().toISOString(),
+        matches: [],
+      });
+      return Promise.resolve([]);
+    });
+    mockPost.mockResolvedValueOnce({
+      status: "ready",
+      outstanding: [],
+      computed_at: new Date().toISOString(),
+      matches: [],
+    });
+    render(<LendersTab applicationId="app-recalc" />);
+    const btn = await waitFor(() => screen.getByRole("button", { name: /Recalculate/i }));
+    fireEvent.click(btn);
+    await waitFor(() => expect(mockPost).toHaveBeenCalled());
+    const [path] = mockPost.mock.calls[0]!;
+    expect(path).toContain("/applications/app-recalc/lenders/recalculate");
+  });
+});
