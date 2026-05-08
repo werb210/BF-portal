@@ -92,6 +92,33 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
         </div>
       )}
 
+      {/* BF_PORTAL_BLOCK_v188_PIPELINE_NAV_AND_AUTO_REVIEW_v1 — back to pipeline */}
+      <div
+        style={{
+          padding: "10px 20px",
+          borderBottom: "1px solid #e5e7eb",
+          background: "#fff",
+          flexShrink: 0,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => navigate("/pipeline")}
+          style={{
+            border: 0,
+            background: "transparent",
+            color: "#2563eb",
+            fontSize: 13,
+            cursor: "pointer",
+            padding: 0,
+            fontFamily: "inherit",
+            fontWeight: 500,
+          }}
+        >
+          ← Back to pipeline
+        </button>
+      </div>
+
       <nav
         style={{
           display: "flex",

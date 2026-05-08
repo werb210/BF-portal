@@ -122,7 +122,16 @@ export default function PipelinePage() {
                 {col.map((card) => (
                   <PipeCard key={card.id} card={card} stage={stage}
                     busy={acting === card.id || deleting === card.id}
-                    onOpen={() => navigate(`/applications/${card.id}`)}
+                    // BF_PORTAL_BLOCK_v188_PIPELINE_NAV_AND_AUTO_REVIEW_v1 — fire /open, optimistic-advance if Received, then navigate
+                    onOpen={() => {
+                      void api.post(`/api/portal/applications/${card.id}/open`, {}).catch(() => {});
+                      if (card.pipeline_state === "Received") {
+                        setCards((prev) =>
+                          prev.map((c) => (c.id === card.id ? { ...c, pipeline_state: "In Review" } : c))
+                        );
+                      }
+                      navigate(`/applications/${card.id}`);
+                    }}
                     onMove={move}
                     onDelete={removeCard} />
                 ))}
