@@ -178,13 +178,10 @@ export default function ApplicationTab({ application }: Props) {
             fmt(fp.lookingFor ?? fp.fundingType ?? raw.fundingType ?? fdApplicant.lookingFor)
           }
         />
+        {/* BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — Product Category lifted from removed PRODUCT section */}
+        <Field label="Product Category" value={fmt(overview.productCategory ?? application.productCategory ?? raw.product_category)} />
         <Field label="Stage" value={fmt(application.stage)} />
         <Field label="Submitted" value={fmtDate(application.submittedAt)} />
-      </SectionGroup>
-
-      <SectionGroup title="Product">
-        <Field label="Product Category" value={fmt(overview.productCategory ?? application.productCategory ?? raw.product_category)} />
-        <Field label="Product Type" value={fmt(overview.productType ?? raw.selected_product_type)} />
       </SectionGroup>
 
       <SectionGroup title="Business">

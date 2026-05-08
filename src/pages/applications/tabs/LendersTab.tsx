@@ -1,10 +1,8 @@
-// BF_LENDERS_TAB_REAL_v42 — Block 42-B
-// BF_LENDERS_TAB_FIX_v55_PORTAL — funding-range column
-// BF_PORTAL_BLOCK_v179_LENDERS_TAB_GATING_ROUTED_v1 — envelope-based gating.
-// BF_PORTAL_BLOCK_v186_LENDERS_TAB_POLISH_v1 — drawer-parity polish.
-// BF_PORTAL_BLOCK_v186b_LENDERS_TAB_RESTORE_v1 — restore full visible content
-//   that was stripped during v186 apply (locked outstanding list, stale banner,
-//   per-row lender name/category/range/likelihood, empty placeholder).
+// BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — Lenders tab: real table view.
+// Reads /api/applications/:id/lenders/envelope, which returns one of:
+//   { status: "locked", outstanding, matches: [], computed_at: null }
+//   { status: "stale",  outstanding: [], matches: [...], computed_at }
+//   { status: "ready",  outstanding: [], matches: [...], computed_at }
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -22,26 +20,60 @@ import { canWrite } from "@/auth/can";
 
 type Props = { applicationId?: string | null };
 
+const styles = {
+  page: { padding: 20, paddingBottom: 100 } as const,
+  header: { fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" } as const,
+  subhead: { fontSize: 13, color: "#64748b", marginBottom: 16 } as const,
+  banner: { padding: "10px 14px", borderRadius: 6, fontSize: 13, marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 } as const,
+  bannerStale: { background: "#fffbeb", border: "1px solid #fde68a", color: "#92400e" } as const,
+  bannerError: { background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c" } as const,
+  table: { width: "100%", borderCollapse: "collapse" as const, background: "#fff", borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" } as const,
+  th: { textAlign: "left" as const, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: "#475569", background: "#f8fafc", borderBottom: "1px solid #e5e7eb" } as const,
+  td: { padding: "12px 14px", fontSize: 13, color: "#0f172a", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" as const } as const,
+  pill: { display: "inline-block", padding: "2px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600 } as const,
+  btn: { border: "1px solid #cbd5e1", background: "#fff", padding: "6px 12px", borderRadius: 6, fontSize: 13, cursor: "pointer", color: "#0f172a", fontFamily: "inherit" } as const,
+  btnPrimary: { border: 0, background: "#2563eb", color: "#fff", padding: "10px 16px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" } as const,
+  btnPrimaryDisabled: { border: 0, background: "#cbd5e1", color: "#fff", padding: "10px 16px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" } as const,
+  filesMenu: { position: "absolute" as const, top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", padding: 8, minWidth: 220, zIndex: 10 } as const,
+  filesMenuItem: { display: "block", padding: "6px 8px", fontSize: 13, color: "#0f172a", textDecoration: "none", borderRadius: 4 } as const,
+  empty: { padding: 32, textAlign: "center" as const, fontSize: 14, color: "#64748b", background: "#f8fafc", borderRadius: 8, border: "1px dashed #cbd5e1" } as const,
+  lockedCard: { padding: 20, background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 8 } as const,
+  lockedTitle: { fontWeight: 700, color: "#0f172a", fontSize: 15, marginBottom: 6 } as const,
+  lockedHint: { fontSize: 13, color: "#64748b", marginBottom: 12 } as const,
+  lockedItem: { fontSize: 13, color: "#0f172a", padding: "6px 0", borderBottom: "1px dashed #e5e7eb" } as const,
+  footer: { position: "sticky" as const, bottom: 0, marginTop: 16, padding: "12px 20px", background: "#fff", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", gap: 8 } as const,
+};
+
 function formatAmount(n: number | null | undefined): string {
   if (n === null || n === undefined) return "—";
   return `$${Math.round(n).toLocaleString()}`;
 }
+
 function formatRange(match: LenderMatch): string {
   const lo = (match as any).amountMin ?? null;
   const hi = (match as any).amountMax ?? null;
   if (lo === null && hi === null) return "—";
   return `${formatAmount(lo)} – ${formatAmount(hi)}`;
 }
-function formatLikelihood(match: LenderMatch): string {
+
+function getLikelihoodPercent(match: LenderMatch): number | null {
   const raw = (match as any).matchPercent ?? (match as any).matchPercentage ?? (match as any).matchScore ?? null;
-  if (raw === null || raw === undefined || raw === "") return "—";
-  const n = typeof raw === "number" ? raw : Number(raw);
-  if (Number.isFinite(n)) {
-    const rounded = n > 1 ? Math.round(n) : Math.round(n * 100);
-    return `${rounded}%`;
-  }
-  const trimmed = String(raw).trim();
-  return trimmed.endsWith("%") ? trimmed : `${trimmed}%`;
+  if (raw === null || raw === undefined || raw === "") return null;
+  const n = typeof raw === "number" ? raw : Number(String(raw).replace("%", ""));
+  if (!Number.isFinite(n)) return null;
+  return n > 1 ? Math.round(n) : Math.round(n * 100);
+}
+
+function formatLikelihood(match: LenderMatch): string {
+  const pct = getLikelihoodPercent(match);
+  return pct === null ? "—" : `${pct}%`;
+}
+
+function likelihoodColors(pct: number | null): { bg: string; fg: string } {
+  if (pct === null) return { bg: "#f1f5f9", fg: "#475569" };
+  if (pct >= 80) return { bg: "#dcfce7", fg: "#166534" };
+  if (pct >= 60) return { bg: "#fef3c7", fg: "#92400e" };
+  return { bg: "#fee2e2", fg: "#991b1b" };
 }
 
 export default function LendersTab({ applicationId }: Props) {
@@ -73,70 +105,91 @@ export default function LendersTab({ applicationId }: Props) {
     if (!filesOpenFor) return;
     const onDocClick = (ev: MouseEvent) => {
       const root = filesRootRef.current;
-      if (root && ev.target instanceof Node && !root.contains(ev.target)) setFilesOpenFor(null);
+      if (root && ev.target instanceof Node && !root.contains(ev.target)) {
+        setFilesOpenFor(null);
+      }
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [filesOpenFor]);
 
-  const selectedIds = useMemo(() => selected.filter((s) => matches.some((m) => m.id === s)), [selected, matches]);
+  const selectedIds = useMemo(
+    () => selected.filter((s) => matches.some((m) => m.id === s)),
+    [selected, matches],
+  );
 
   const mutation = useMutation({
     mutationFn: (ids: string[]) => createLenderSubmission(id, ids),
-    onSuccess: () => { setSelected([]); queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] }); },
+    onSuccess: () => {
+      setSelected([]);
+      queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
+    },
   });
 
-  const toggle = (matchId: string) =>
-    setSelected((cur) => cur.includes(matchId) ? cur.filter((x) => x !== matchId) : [...cur, matchId]);
+  const toggle = (matchId: string) => {
+    setSelected((cur) => (cur.includes(matchId) ? cur.filter((x) => x !== matchId) : [...cur, matchId]));
+  };
 
   const handleSend = async () => {
     if (sending || selectedIds.length === 0) return;
-    setSending(true); setSendError(null);
-    try { await mutation.mutateAsync(selectedIds); }
-    catch (err) { setSendError(getErrorMessage(err, "Unable to send to lenders.")); }
-    finally { setSending(false); }
+    setSending(true);
+    setSendError(null);
+    try {
+      await mutation.mutateAsync(selectedIds);
+    } catch (err) {
+      setSendError(getErrorMessage(err, "Unable to send to lenders."));
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleRecalculate = async () => {
     if (recalculating) return;
-    setRecalculating(true); setRecalcError(null);
-    try { await recalculateLenderMatches(id); await queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] }); }
-    catch (err) { setRecalcError(getErrorMessage(err, "Recalculate failed.")); }
-    finally { setRecalculating(false); }
+    setRecalculating(true);
+    setRecalcError(null);
+    try {
+      await recalculateLenderMatches(id);
+      await queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
+    } catch (err) {
+      setRecalcError(getErrorMessage(err, "Recalculate failed."));
+    } finally {
+      setRecalculating(false);
+    }
   };
 
   const handleUploadTermSheet = async (matchId: string, file: File) => {
     if (!file || !id) return;
-    setUploadingFor(matchId); setUploadError(null);
-    try { await uploadLenderTermSheet(id, matchId, file); await queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] }); }
-    catch (err) { setUploadError(getErrorMessage(err, "Term sheet upload failed.")); }
-    finally { setUploadingFor(null); }
+    setUploadingFor(matchId);
+    setUploadError(null);
+    try {
+      await uploadLenderTermSheet(id, matchId, file);
+      await queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
+    } catch (err) {
+      setUploadError(getErrorMessage(err, "Term sheet upload failed."));
+    } finally {
+      setUploadingFor(null);
+    }
   };
 
-  if (!id)        return <div className="drawer-placeholder">Select an application to view lenders.</div>;
-  if (isLoading)  return <div className="drawer-placeholder">Loading lenders…</div>;
-  if (error)      return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load lenders.")}</div>;
+  if (!id) return <div style={styles.empty}>Select an application to view lenders.</div>;
+  if (isLoading) return <div style={styles.empty}>Loading lenders…</div>;
+  if (error) return <div style={styles.empty}>{getErrorMessage(error, "Unable to load lenders.")}</div>;
   if (!canManage) return <AccessRestricted message="You do not have permission to view lender submissions." />;
 
   if (envelope.status === "locked") {
     return (
-      <div data-testid="lenders-locked" style={{ padding: "16px 4px" }}>
-        <div style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 12, padding: "20px 24px", maxWidth: 640 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>Lender matching is locked</div>
-          <div style={{ fontSize: 13, color: "#475569", marginBottom: 16, lineHeight: 1.5 }}>
-            Lender matches are computed once all required documents are accepted.
-          </div>
-          {envelope.outstanding.length > 0 ? (
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", marginBottom: 8 }}>
-                Outstanding ({envelope.outstanding.length})
-              </div>
-              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "#0f172a" }}>
-                {envelope.outstanding.map((c) => <li key={c} style={{ marginBottom: 4 }}>{c}</li>)}
-              </ul>
-            </div>
+      <div style={styles.page}>
+        <h2 style={styles.header}>Lenders</h2>
+        <div style={styles.subhead}>Lender matching is locked until all required documents are accepted.</div>
+        <div style={styles.lockedCard} data-testid="lenders-locked">
+          <div style={styles.lockedTitle}>Outstanding required documents</div>
+          <div style={styles.lockedHint}>Upload and accept these to unlock lender matching.</div>
+          {(envelope.outstanding ?? []).length === 0 ? (
+            <div style={styles.lockedItem}>(no outstanding categories returned)</div>
           ) : (
-            <div style={{ fontSize: 13, color: "#64748b", fontStyle: "italic" }}>Awaiting required-document list.</div>
+            (envelope.outstanding ?? []).map((cat) => (
+              <div key={cat} style={styles.lockedItem}>{String(cat).replace(/_/g, " ")}</div>
+            ))
           )}
         </div>
       </div>
@@ -146,91 +199,138 @@ export default function LendersTab({ applicationId }: Props) {
   const isStale = envelope.status === "stale";
 
   return (
-    <div ref={filesRootRef} data-testid="lenders-tab" style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: 80 }}>
+    <div ref={filesRootRef} data-testid="lenders-tab" style={styles.page}>
+      <h2 style={styles.header}>Lenders</h2>
+      <div style={styles.subhead}>
+        {matches.length} match{matches.length === 1 ? "" : "es"}
+        {envelope.computed_at ? ` · last computed ${new Date(envelope.computed_at).toLocaleString()}` : ""}
+      </div>
+
       {isStale && (
-        <div style={{ background: "#fef3c7", border: "1px solid #fcd34d", color: "#78350f", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 12, fontSize: 13 }}>
-          <span style={{ fontWeight: 700 }}>⚠ Matches are stale</span>
-          <span style={{ flex: 1 }}>
-            A document was rejected after the last computation. Recalculate to refresh.
-            {envelope.computed_at && (
-              <span style={{ opacity: 0.7, marginLeft: 8 }}>
-                Last computed: {new Date(envelope.computed_at).toLocaleString()}
-              </span>
-            )}
-          </span>
-          <button type="button" onClick={handleRecalculate} disabled={recalculating}
-            style={{ background: recalculating ? "#fbbf24" : "#f59e0b", color: "#fff", border: 0, borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: recalculating ? "default" : "pointer" }}>
+        <div style={{ ...styles.banner, ...styles.bannerStale }}>
+          <span>Lender matches may be out of date. Inputs changed since the last calculation.</span>
+          <button type="button" onClick={handleRecalculate} disabled={recalculating} style={styles.btn}>
             {recalculating ? "Recalculating…" : "Recalculate"}
           </button>
         </div>
       )}
-      {recalcError && <div role="alert" style={{ color: "#b91c1c", padding: 8, background: "#fef2f2", borderRadius: 6 }}>{recalcError}</div>}
-      {sendError && <div role="alert" style={{ color: "#b91c1c", padding: 8, background: "#fef2f2", borderRadius: 6 }}>{sendError}</div>}
-      {uploadError && <div role="alert" style={{ color: "#b91c1c", padding: 8, background: "#fef2f2", borderRadius: 6 }}>{uploadError}</div>}
+
+      {recalcError && <div style={{ ...styles.banner, ...styles.bannerError }}>{recalcError}</div>}
+      {sendError && <div style={{ ...styles.banner, ...styles.bannerError }}>{sendError}</div>}
+      {uploadError && <div style={{ ...styles.banner, ...styles.bannerError }}>{uploadError}</div>}
 
       {matches.length === 0 ? (
-        <div className="drawer-placeholder">
-          {isStale ? "No cached matches available — click Recalculate to compute." : "No lender products match this application yet."}
-        </div>
+        <div style={styles.empty}>No lender matches yet. Try Recalculate or check the application's amounts and category.</div>
       ) : (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isStale ? 0.7 : 1 }} aria-label="Lender list">
-          {matches.map((m) => {
-            const checked = selected.includes(m.id);
-            const files = (m as any).files as Array<{ id: string; filename: string; url?: string | null }> | undefined;
-            const fileCount = files?.length ?? 0;
-            const filesOpen = filesOpenFor === m.id;
-            const isUploading = uploadingFor === m.id;
-            return (
-              <li key={m.id} style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "12px 16px", display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr auto auto auto", gap: 16, alignItems: "center" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <strong>{(m as any).lenderName ?? "Unknown lender"}</strong>
-                  <span style={{ fontSize: 12, color: "#64748b" }}>{(m as any).productName ?? ""}</span>
-                </div>
-                <div style={{ fontSize: 13, color: "#334155" }}>{(m as any).productCategory ?? "—"}</div>
-                <div style={{ fontSize: 13, color: "#334155" }}>{formatRange(m)}</div>
-                <div style={{ fontWeight: 600 }}>{formatLikelihood(m)}</div>
-                <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <input type="checkbox" checked={checked} onChange={() => toggle(m.id)} disabled={sending || isStale} aria-label={`Send to ${(m as any).lenderName ?? "lender"}`} />
-                  Send
-                </label>
-                <div style={{ position: "relative" }}>
-                  <button type="button" data-testid={`lender-files-${m.id}`} onClick={() => setFilesOpenFor(filesOpen ? null : m.id)} disabled={isStale}
-                    style={{ padding: "6px 12px", border: "1px solid #d1d5db", background: "#fff", borderRadius: 6, fontSize: 12, cursor: isStale ? "not-allowed" : "pointer", opacity: isStale ? 0.6 : 1 }}>
-                    {fileCount} file{fileCount === 1 ? "" : "s"} ▾
-                  </button>
-                  {filesOpen ? (
-                    <div role="menu" data-testid={`lender-files-menu-${m.id}`}
-                      style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 10, minWidth: 240, padding: 8 }}>
-                      {fileCount === 0 ? (
-                        <div style={{ color: "#9ca3af", fontSize: 12, padding: "4px 6px" }}>No files yet.</div>
-                      ) : (
-                        (files ?? []).map((f) => (
-                          <a key={f.id} href={f.url ?? "#"} target="_blank" rel="noopener noreferrer"
-                            style={{ display: "block", padding: "4px 6px", color: "#111", textDecoration: "none", fontSize: 12 }}>
-                            {f.filename}
-                          </a>
-                        ))
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th} aria-label="Select" />
+              <th style={styles.th}>Lender</th>
+              <th style={styles.th}>Category</th>
+              <th style={styles.th}>Funding Range</th>
+              <th style={styles.th}>Likelihood</th>
+              <th style={styles.th}>Files</th>
+              <th style={styles.th}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {matches.map((m) => {
+              const checked = selected.includes(m.id);
+              const files = (m as any).files as Array<{ id: string; filename: string; url?: string | null }> | undefined;
+              const fileCount = files?.length ?? 0;
+              const filesOpen = filesOpenFor === m.id;
+              const isUploading = uploadingFor === m.id;
+              const pct = getLikelihoodPercent(m);
+              const pctColors = likelihoodColors(pct);
+
+              return (
+                <tr key={m.id}>
+                  <td style={styles.td}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggle(m.id)}
+                      disabled={sending || isStale}
+                      aria-label={`Select ${m.lenderName ?? "lender"}`}
+                    />
+                  </td>
+                  <td style={styles.td}><strong>{m.lenderName ?? "—"}</strong></td>
+                  <td style={styles.td}>{m.productCategory ?? "—"}</td>
+                  <td style={styles.td}>{formatRange(m)}</td>
+                  <td style={styles.td}>
+                    <span style={{ ...styles.pill, background: pctColors.bg, color: pctColors.fg }}>
+                      {formatLikelihood(m)}
+                    </span>
+                  </td>
+                  <td style={styles.td}>
+                    <div style={{ position: "relative" }}>
+                      <button
+                        type="button"
+                        data-testid={`lender-files-${m.id}`}
+                        onClick={() => setFilesOpenFor(filesOpen ? null : m.id)}
+                        disabled={isStale}
+                        style={styles.btn}
+                      >
+                        {fileCount} file{fileCount === 1 ? "" : "s"} ▾
+                      </button>
+                      {filesOpen && (
+                        <div role="menu" data-testid={`lender-files-menu-${m.id}`} style={styles.filesMenu}>
+                          {fileCount === 0 ? (
+                            <div style={{ ...styles.filesMenuItem, color: "#94a3b8" }}>No files yet.</div>
+                          ) : (
+                            (files ?? []).map((f) => (
+                              <a key={f.id} href={f.url ?? "#"} target="_blank" rel="noopener noreferrer" style={styles.filesMenuItem}>
+                                {f.filename}
+                              </a>
+                            ))
+                          )}
+                          <label style={{ ...styles.filesMenuItem, cursor: "pointer", color: "#2563eb", marginTop: 6, borderTop: "1px solid #f1f5f9", paddingTop: 8 }}>
+                            {isUploading ? "Uploading…" : "⬆ Upload Term Sheet"}
+                            <input
+                              type="file"
+                              data-testid={`upload-term-sheet-${m.id}`}
+                              disabled={isUploading || isStale}
+                              style={{ display: "none" }}
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) void handleUploadTermSheet(m.id, f);
+                                e.currentTarget.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
                       )}
-                      <label style={{ display: "block", padding: "6px", borderTop: "1px solid #f3f4f6", marginTop: 6, color: isUploading ? "#9ca3af" : "#2563eb", cursor: isUploading ? "default" : "pointer", fontSize: 12 }}>
-                        {isUploading ? "Uploading…" : "⬆ Upload Term Sheet"}
-                        <input type="file" data-testid={`upload-term-sheet-${m.id}`} disabled={isUploading || isStale} style={{ display: "none" }}
-                          onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleUploadTermSheet(m.id, f); e.currentTarget.value = ""; }} />
-                      </label>
                     </div>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                  </td>
+                  <td style={styles.td}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const inp = document.querySelector(`[data-testid="upload-term-sheet-${m.id}"]`) as HTMLInputElement | null;
+                        inp?.click();
+                      }}
+                      disabled={isUploading || isStale}
+                      style={styles.btn}
+                    >
+                      {isUploading ? "Uploading…" : "Upload Term Sheet"}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
 
-      <div data-testid="lenders-send-footer"
-        style={{ position: "sticky", bottom: 0, marginLeft: -16, marginRight: -16, padding: "12px 16px", background: "rgba(255,255,255,0.96)", backdropFilter: "blur(4px)", borderTop: "1px solid #e5e7eb", boxShadow: "0 -2px 8px rgba(15,23,42,0.04)", display: "flex", justifyContent: "flex-end", gap: 8, alignItems: "center", zIndex: 5 }}>
-        {selectedIds.length > 0 && !isStale ? (<span style={{ fontSize: 12, color: "#475569" }}>{selectedIds.length} lender{selectedIds.length === 1 ? "" : "s"} selected</span>) : null}
-        <button type="button" onClick={handleSend} disabled={sending || selectedIds.length === 0 || isStale} title={isStale ? "Recalculate before sending — matches are stale." : undefined}
-          style={{ padding: "8px 18px", background: selectedIds.length === 0 || isStale ? "#9ca3af" : "#2563eb", color: "#fff", border: 0, borderRadius: 6, cursor: selectedIds.length === 0 || isStale ? "not-allowed" : "pointer", fontWeight: 600 }}>
-          {sending ? "Sending…" : `Send (${selectedIds.length})`}
+      <div data-testid="lenders-send-footer" style={styles.footer}>
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={sending || selectedIds.length === 0 || isStale}
+          style={(sending || selectedIds.length === 0 || isStale) ? styles.btnPrimaryDisabled : styles.btnPrimary}
+        >
+          {sending ? "Sending…" : `Send to selected (${selectedIds.length})`}
         </button>
       </div>
     </div>

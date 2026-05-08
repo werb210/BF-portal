@@ -16,7 +16,8 @@
 //   "no fields"    = extraction ran but found nothing of value — manual review
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { api } from "@/utils/api";
+// BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
+import { api } from "@/api";
 
 interface Props { applicationId?: string }
 
@@ -65,7 +66,7 @@ export default function FinancialsTab({ applicationId }: Props) {
   useEffect(() => {
     if (!applicationId) { setLoading(false); return; }
     setLoading(true);
-    api<Response>(`/api/portal/applications/${applicationId}/financials`)
+    api.get<Response>(`/api/portal/applications/${applicationId}/financials`)
       .then((r) => { setData(r ?? { documents: [], fields: [] }); setError(null); })
       .catch((e) => setError(e instanceof Error ? e.message : "Unable to load financials"))
       .finally(() => setLoading(false));
