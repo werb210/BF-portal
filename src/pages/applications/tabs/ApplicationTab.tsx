@@ -166,7 +166,18 @@ export default function ApplicationTab({ application }: Props) {
       <SectionGroup title="Funding">
         <Field label="Requested Amount" value={fmtMoney(overview.requestedAmount ?? fundingRequest.amount ?? fp.fundingAmount)} highlight />
         <Field label="Use of Funds" value={fmt(fp.purposeOfFunds ?? fp.purpose ?? fundingRequest.purpose ?? raw.purposeOfFunds)} />
-        <Field label="Looking For" value={fmt(fp.lookingFor ?? fp.fundingType ?? raw.fundingType ?? fdApplicant.lookingFor)} />
+        {/* BF_PORTAL_BLOCK_v185_LEG_LOOKING_FOR_OVERRIDE_v1
+            Equipment legs and closing-cost companions inherit metadata.kyc.lookingFor
+            from the parent (often "BOTH"), which contradicts the leg banner above.
+            Override the displayed value when legInfo is set. */}
+        <Field
+          label="Looking For"
+          value={
+            legInfo?.kind === "equipment"      ? "Equipment Financing" :
+            legInfo?.kind === "closing_costs"  ? "Closing-Costs Financing" :
+            fmt(fp.lookingFor ?? fp.fundingType ?? raw.fundingType ?? fdApplicant.lookingFor)
+          }
+        />
         <Field label="Stage" value={fmt(application.stage)} />
         <Field label="Submitted" value={fmtDate(application.submittedAt)} />
       </SectionGroup>
