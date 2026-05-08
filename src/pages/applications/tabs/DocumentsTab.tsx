@@ -12,7 +12,9 @@
 // <a href> to the URL.
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { api, apiBlob } from "@/utils/api";
+// BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
+import { api } from "@/api";
+import { apiBlob } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
 
@@ -93,7 +95,7 @@ export default function DocumentsTab({ applicationId }: Props) {
     if (!applicationId) { setLoading(false); return; }
     setLoading(true);
     try {
-      const r = await api<PortalApplicationResponse>(`/api/portal/applications/${applicationId}`);
+      const r = await api.get<PortalApplicationResponse>(`/api/portal/applications/${applicationId}`);
       setDocs(Array.isArray(r?.documents) ? r.documents : []);
       setError(null);
     } catch (e) {
@@ -110,7 +112,7 @@ export default function DocumentsTab({ applicationId }: Props) {
     setWorking((w) => ({ ...w, [docId]: "accept" }));
     setActionError(null);
     try {
-      await api(`/api/portal/documents/${docId}/accept`, { method: "POST" });
+      await api.post(`/api/portal/documents/${docId}/accept`, {});
       await reload();
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Accept failed");
@@ -126,7 +128,7 @@ export default function DocumentsTab({ applicationId }: Props) {
     setWorking((w) => ({ ...w, [docId]: "reject" }));
     setActionError(null);
     try {
-      await api(`/api/portal/documents/${docId}/reject`, { method: "POST", body: JSON.stringify({ reason }) });
+      await api.post(`/api/portal/documents/${docId}/reject`, { reason });
       setRejectOpen((r) => ({ ...r, [docId]: false }));
       setRejectDraft((r) => ({ ...r, [docId]: "" }));
       await reload();
