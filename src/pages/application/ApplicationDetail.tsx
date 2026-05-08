@@ -56,11 +56,12 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
       .catch((err: any) => setError(err?.message ?? "Could not load application."));
   }, [applicationId]);
 
+  // BF_PORTAL_BLOCK_v187_TABS_PROP_WIRING_v1 — pass applicationId to FinancialsTab and DocumentsTab
   const tabBody = {
     application: <ApplicationTab application={application} />,
     "banking-analysis": <BankingAnalysisTab applicationId={applicationId} />,
-    financials: <FinancialsTab />,
-    documents: <DocumentsTab />,
+    financials: <FinancialsTab applicationId={applicationId} />,
+    documents: <DocumentsTab applicationId={applicationId} />,
     "credit-summary": <CreditSummaryTab applicationId={applicationId} />,
     notes: <NotesTab applicationId={applicationId} />,
     lenders: <LendersTab applicationId={applicationId} />,
