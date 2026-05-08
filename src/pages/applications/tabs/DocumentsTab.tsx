@@ -12,7 +12,7 @@
 // <a href> to the URL.
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { api } from "@/utils/api";
+import { api, apiBlob } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
 
@@ -56,6 +56,38 @@ export default function DocumentsTab({ applicationId }: Props) {
   const [rejectDraft, setRejectDraft] = useState<Record<string, string>>({});
   const [rejectOpen, setRejectOpen] = useState<Record<string, boolean>>({});
   const [actionError, setActionError] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v184_DOC_PREVIEW_WIRE_UP_v1
+  const [previewing, setPreviewing] = useState<Record<string, boolean>>({});
+
+  async function handlePreview(docId: string, filename: string | null) {
+    if (previewing[docId]) return;
+    setPreviewing((p) => ({ ...p, [docId]: true }));
+    setActionError(null);
+    let objectUrl: string | null = null;
+    try {
+      const blob = await apiBlob(`/api/portal/documents/${docId}/file`);
+      objectUrl = URL.createObjectURL(blob);
+      const win = window.open(objectUrl, "_blank", "noopener,noreferrer");
+      if (!win) {
+        // Popup blocked — fall back to download
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = filename ?? `document-${docId}`;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      // Revoke after a delay so the new tab can finish loading
+      const urlToRevoke = objectUrl;
+      setTimeout(() => URL.revokeObjectURL(urlToRevoke), 60_000);
+    } catch (e) {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setActionError(e instanceof Error ? e.message : "Preview failed");
+    } finally {
+      setPreviewing((p) => ({ ...p, [docId]: false }));
+    }
+  }
 
   const reload = useCallback(async () => {
     if (!applicationId) { setLoading(false); return; }
@@ -147,8 +179,10 @@ export default function DocumentsTab({ applicationId }: Props) {
                   doc={doc}
                   canManage={canManage}
                   working={working[doc.documentId]}
+                  previewing={!!previewing[doc.documentId]}
                   rejectOpen={!!rejectOpen[doc.documentId]}
                   rejectDraft={rejectDraft[doc.documentId] ?? ""}
+                  onPreview={() => handlePreview(doc.documentId, doc.filename)}
                   onAccept={() => handleAccept(doc.documentId)}
                   onRejectOpen={() => setRejectOpen((r) => ({ ...r, [doc.documentId]: true }))}
                   onRejectCancel={() => {
@@ -171,15 +205,17 @@ function DocRow(props: {
   doc: DocumentRow;
   canManage: boolean;
   working: "accept" | "reject" | undefined;
+  previewing: boolean;
   rejectOpen: boolean;
   rejectDraft: string;
+  onPreview: () => void;
   onAccept: () => void;
   onRejectOpen: () => void;
   onRejectCancel: () => void;
   onRejectChange: (v: string) => void;
   onRejectSubmit: () => void;
 }) {
-  const { doc, canManage, working, rejectOpen, rejectDraft } = props;
+  const { doc, canManage, working, previewing, rejectOpen, rejectDraft } = props;
   const status = (doc.status ?? "pending").toLowerCase() as DocStatus;
   const isRejected = status === "rejected";
   const isAccepted = status === "accepted";
@@ -204,8 +240,14 @@ function DocRow(props: {
       </div>
 
       <div style={styles.docActions}>
-        <button type="button" disabled title="Preview coming soon" style={styles.previewButtonDisabled}>
-          Preview
+        <button
+          type="button"
+          onClick={props.onPreview}
+          disabled={previewing}
+          title={previewing ? "Opening…" : "Open document in a new tab"}
+          style={previewing ? styles.previewButtonLoading : styles.previewButton}
+        >
+          {previewing ? "Opening…" : "Preview"}
         </button>
         {canManage && !rejectOpen && (
           <>
@@ -385,6 +427,9 @@ const styles: Record<string, CSSProperties> = {
 
   docActions: { display: "flex", gap: 6, alignItems: "center" },
   previewButtonDisabled: { padding: "5px 10px", background: "#f1f5f9", color: "#94a3b8", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" },
+  // BF_PORTAL_BLOCK_v184_DOC_PREVIEW_WIRE_UP_v1
+  previewButton: { padding: "5px 10px", background: "#fff", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
+  previewButtonLoading: { padding: "5px 10px", background: "#dbeafe", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "wait", fontFamily: "inherit" },
   acceptButton: { padding: "5px 10px", background: "#16a34a", color: "#fff", border: 0, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
   acceptButtonDone: { padding: "5px 10px", background: "#dcfce7", color: "#166534", border: "1px solid #86efac", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "default", fontFamily: "inherit" },
   rejectButton: { padding: "5px 10px", background: "#fff", color: "#b91c1c", border: "1px solid #fecaca", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
