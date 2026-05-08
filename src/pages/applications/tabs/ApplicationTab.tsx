@@ -165,7 +165,7 @@ export default function ApplicationTab({ application }: Props) {
 
       <SectionGroup title="Funding">
         <Field label="Requested Amount" value={fmtMoney(overview.requestedAmount ?? fundingRequest.amount ?? fp.fundingAmount)} highlight />
-        <Field label="Use of Funds" value={fmt(fp.purposeOfFunds ?? fp.purpose ?? fundingRequest.purpose ?? raw.purposeOfFunds)} />
+        <Field label="Use of Funds" value={prettyEnum(fp.purposeOfFunds ?? fp.purpose ?? fundingRequest.purpose ?? raw.purposeOfFunds)} />
         {/* BF_PORTAL_BLOCK_v185_LEG_LOOKING_FOR_OVERRIDE_v1
             Equipment legs and closing-cost companions inherit metadata.kyc.lookingFor
             from the parent (often "BOTH"), which contradicts the leg banner above.
@@ -175,11 +175,11 @@ export default function ApplicationTab({ application }: Props) {
           value={
             legInfo?.kind === "equipment"      ? "Equipment Financing" :
             legInfo?.kind === "closing_costs"  ? "Closing-Costs Financing" :
-            fmt(fp.lookingFor ?? fp.fundingType ?? raw.fundingType ?? fdApplicant.lookingFor)
+            prettyEnum(fp.lookingFor ?? fp.fundingType ?? raw.fundingType ?? fdApplicant.lookingFor)
           }
         />
         {/* BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — Product Category lifted from removed PRODUCT section */}
-        <Field label="Product Category" value={fmt(overview.productCategory ?? application.productCategory ?? raw.product_category)} />
+        <Field label="Product Category" value={prettyEnum(overview.productCategory ?? application.productCategory ?? raw.product_category)} />
         <Field label="Stage" value={fmt(application.stage)} />
         <Field label="Submitted" value={fmtDate(application.submittedAt)} />
       </SectionGroup>
@@ -195,7 +195,7 @@ export default function ApplicationTab({ application }: Props) {
         <Field label="Email" value={business.email ? <Email value={String(business.email)} /> : "—"} />
         <Field label="Website" value={business.website ? <Anchor href={String(business.website)} /> : "—"} />
         <Field label="Industry" value={fmt(business.industry ?? fp.industry)} />
-        <Field label="Entity Type" value={fmt(business.businessStructure ?? business.entityType ?? business.businessType)} />
+        <Field label="Entity Type" value={prettyEnum(business.businessStructure ?? business.entityType ?? business.businessType)} />
         <Field label="Start Date" value={fmtDate(business.startDate)} />
         <Field label="Time in Business" value={fmt(business.timeInBusiness ?? fp.yearsInBusiness ?? fp.salesHistory)} />
         <Field label="Number of Employees" value={fmt(business.numberOfEmployees ?? business.employees)} />
@@ -290,6 +290,25 @@ function fmt(v: unknown, fallback = "—"): string {
   if (v === null || v === undefined || v === "") return fallback;
   return String(v);
 }
+
+// BF_PORTAL_BLOCK_v190_APP_TAB_PRETTY_ENUMS_v1
+// Convert UPPER_SNAKE_CASE enum strings to "Title Case With Spaces" for display.
+// Leaves already-mixed-case strings (e.g. "Construction") alone.
+function prettyEnum(value: unknown, fallback: string = "\u2014"): string {
+  if (value === null || value === undefined || value === "") return fallback;
+  const s = String(value).trim();
+  if (!s) return fallback;
+  // If already mixed case, return as-is (preserves human-typed input).
+  if (s !== s.toUpperCase() && s !== s.toLowerCase()) return s;
+  // Otherwise treat as UPPER_SNAKE / lower_snake / kebab-case → Title Case.
+  return s
+    .toLowerCase()
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 
 function fmtMoney(v: unknown, fallback = "—"): string {
   let n = NaN;
