@@ -1,4 +1,7 @@
 // BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — Lenders tab: real table view.
+// BF_PORTAL_BLOCK_v189a_LENDERS_TAB_TEST_CONFORMANCE_v1 — align Send button label,
+// stale-banner copy, checkbox aria-label, and productName subtitle to the v186
+// test contract that LendersTab.test.tsx + LendersTab.columns.test.tsx assert.
 // Reads /api/applications/:id/lenders/envelope, which returns one of:
 //   { status: "locked", outstanding, matches: [], computed_at: null }
 //   { status: "stale",  outstanding: [], matches: [...], computed_at }
@@ -208,7 +211,7 @@ export default function LendersTab({ applicationId }: Props) {
 
       {isStale && (
         <div style={{ ...styles.banner, ...styles.bannerStale }}>
-          <span>Lender matches may be out of date. Inputs changed since the last calculation.</span>
+          <span>Matches are stale. Inputs changed since the last calculation.</span>
           <button type="button" onClick={handleRecalculate} disabled={recalculating} style={styles.btn}>
             {recalculating ? "Recalculating…" : "Recalculate"}
           </button>
@@ -252,10 +255,13 @@ export default function LendersTab({ applicationId }: Props) {
                       checked={checked}
                       onChange={() => toggle(m.id)}
                       disabled={sending || isStale}
-                      aria-label={`Select ${m.lenderName ?? "lender"}`}
+                      aria-label={`Send to ${m.lenderName ?? "lender"}`}
                     />
                   </td>
-                  <td style={styles.td}><strong>{m.lenderName ?? "—"}</strong></td>
+                  <td style={styles.td}>
+                    <div style={{ fontWeight: 700 }}>{m.lenderName ?? "—"}</div>
+                    {m.productName ? <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{m.productName}</div> : null}
+                  </td>
                   <td style={styles.td}>{m.productCategory ?? "—"}</td>
                   <td style={styles.td}>{formatRange(m)}</td>
                   <td style={styles.td}>
@@ -330,7 +336,7 @@ export default function LendersTab({ applicationId }: Props) {
           disabled={sending || selectedIds.length === 0 || isStale}
           style={(sending || selectedIds.length === 0 || isStale) ? styles.btnPrimaryDisabled : styles.btnPrimary}
         >
-          {sending ? "Sending…" : `Send to selected (${selectedIds.length})`}
+          {sending ? "Sending…" : `Send (${selectedIds.length})`}
         </button>
       </div>
     </div>
