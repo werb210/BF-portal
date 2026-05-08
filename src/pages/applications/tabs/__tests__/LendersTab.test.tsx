@@ -63,7 +63,11 @@ describe("LendersTab", () => {
     expect(screen.getByText("64%")).toBeInTheDocument();
     expect(screen.getByText("TERM_LOAN")).toBeInTheDocument();
     expect(screen.getByText("LINE_OF_CREDIT")).toBeInTheDocument();
-    expect(screen.getAllByText(/upload term sheet/i)).toHaveLength(2);
+    // BF_PORTAL_BLOCK_v186a_LENDERS_TAB_POLISH_TEST_FIXUP_v1
+    // v186 moved Upload Term Sheet inside a closed dropdown — assert the
+    // files-count buttons (one per match) instead.
+    expect(screen.getByTestId("lender-files-p1")).toBeInTheDocument();
+    expect(screen.getByTestId("lender-files-p2")).toBeInTheDocument();
 
     const sendCheckbox = screen.getByLabelText(/Send to Alpha/i);
     fireEvent.click(sendCheckbox);
