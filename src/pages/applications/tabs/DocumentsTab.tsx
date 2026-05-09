@@ -148,7 +148,8 @@ export default function DocumentsTab({ applicationId }: Props) {
 
   return (
     <div style={styles.page}>
-      <header style={styles.headerRow}>
+            <ReocrToolbar applicationId={applicationId} />
+<header style={styles.headerRow}>
         <div>
           <h2 style={styles.title}>Documents</h2>
           <div style={styles.subtitle}>
@@ -455,3 +456,65 @@ const styles: Record<string, CSSProperties> = {
   ocrRed:   { background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5" },
   ocrBlue:  { background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" },
 };
+
+// BF_PORTAL_BLOCK_v192_REOCR_BUTTON_v1
+// Re-enqueue OCR for every document on this application. Shown inline in the
+// Documents tab header. Uses the v210 server endpoint /reocr.
+export function ReocrToolbar({ applicationId }: { applicationId?: string | null }) {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  if (!applicationId) return null;
+
+  const onClick = async () => {
+    setBusy(true);
+    setResult(null);
+    try {
+      const data = await api.post<any>(
+        `/api/portal/applications/${applicationId}/reocr`,
+        {},
+      );
+      const total = Number(data?.totalDocs ?? 0);
+      const enq = Number(data?.enqueued ?? 0);
+      const failed = Number(data?.failed ?? 0);
+      if (failed > 0 && Array.isArray(data?.errors) && data.errors.length > 0) {
+        setResult(`Enqueued ${enq}/${total}, ${failed} failed: ${data.errors[0]?.error ?? "unknown"}`);
+      } else {
+        setResult(`Enqueued ${enq}/${total} documents. Watch Azure log stream for OCR results.`);
+      }
+    } catch (err: any) {
+      setResult(`Failed: ${(err && err.message) || String(err)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 12,
+      padding: "8px 12px", marginBottom: 12,
+      background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 6,
+    }}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={busy}
+        style={{
+          padding: "6px 12px", fontSize: 13, fontWeight: 500,
+          background: busy ? "#cbd5e1" : "#0ea5e9", color: "white",
+          border: "none", borderRadius: 4, cursor: busy ? "wait" : "pointer",
+        }}
+      >
+        {busy ? "Enqueueing…" : "Re-run OCR on all documents"}
+      </button>
+      {result ? (
+        <span style={{ fontSize: 12, color: "#475569" }}>{result}</span>
+      ) : (
+        <span style={{ fontSize: 12, color: "#94a3b8" }}>
+          Forces fresh OCR jobs for every document on this application.
+        </span>
+      )}
+    </div>
+  );
+}
+
