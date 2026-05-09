@@ -1,6 +1,8 @@
 // BF_PORTAL_BLOCK_1_31C_TAB_TEST_ALIGNMENT
 // BF_PORTAL_BLOCK_1_31B_BANKING_TAB_RICH_UI
 import { useEffect, useState } from "react";
+// BF_PORTAL_BLOCK_v191a_OCR_DIAGNOSTIC_PANEL_FIX_v1
+import { api } from "@/api";
 import { fetchBankingAnalysis, type BankingAnalysis } from "@/api/banking";
 import BankingTrendChart, {
   type BankingTrendMonth,
@@ -196,7 +198,7 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
   if (!applicationId) return <div style={{ padding: 24 }}>No application selected.</div>;
   if (loading) return <div style={{ padding: 24 }}>Loading banking analysis…</div>;
   if (error) return <div style={{ padding: 24, color: "#b91c1c" }}>Couldn't load banking analysis: <span>{error}</span></div>;
-  if (!data) return <div style={{ padding: 24 }}>No data.</div>;
+  if (!data) return <DiagnosticPanel applicationId={applicationId} />;
 
   const months = ((data.monthGroups ?? []) as unknown) as BankingTrendMonth[];
   const accounts = data.accounts ?? [];
@@ -414,3 +416,57 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
     </div>
   );
 }
+
+// BF_PORTAL_BLOCK_v191a_OCR_DIAGNOSTIC_PANEL_FIX_v1
+// Renders inside the Banking tab when there's no analysis data yet. Fetches
+// the server-side diagnostic and shows the human-readable diagnosis line.
+function DiagnosticPanel({ applicationId }: { applicationId?: string | null }) {
+  const [diag, setDiag] = useState<any>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    if (!applicationId) return;
+    let cancelled = false;
+    api
+      .get<any>(`/api/portal/applications/${applicationId}/ocr-diagnostic`)
+      .then((res) => { if (!cancelled) setDiag(res); })
+      .catch((e) => { if (!cancelled) setErr((e && e.message) || "diagnostic fetch failed"); });
+    return () => { cancelled = true; };
+  }, [applicationId]);
+
+  return (
+    <div style={{ padding: 24 }}>
+      <div style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>
+        Banking analysis: no data yet
+      </div>
+      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
+        Banking analysis runs after bank statements are uploaded and processed by OCR.
+        If this is taking too long, here is what is happening behind the scenes:
+      </div>
+      {err ? (
+        <div style={{ padding: 12, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, color: "#b91c1c", fontSize: 13 }}>
+          Could not fetch diagnostic: {err}
+        </div>
+      ) : !diag ? (
+        <div style={{ fontSize: 13, color: "#64748b" }}>Loading diagnostic…</div>
+      ) : (
+        <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 8, padding: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>
+            Diagnosis
+          </div>
+          <div style={{ fontSize: 13, color: "#0f172a", marginBottom: 16, padding: 10, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 4 }}>
+            {(diag && diag.diagnosis) || "(no diagnosis returned)"}
+          </div>
+          <details>
+            <summary style={{ cursor: "pointer", fontSize: 13, color: "#475569" }}>
+              Raw diagnostic data
+            </summary>
+            <pre style={{ marginTop: 8, padding: 12, background: "#0f172a", color: "#e2e8f0", borderRadius: 4, fontSize: 11, overflowX: "auto" }}>
+              {JSON.stringify(diag, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
+    </div>
+  );
+}
+
