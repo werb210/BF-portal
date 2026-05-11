@@ -4,6 +4,7 @@ import PipelinePage from "@/core/engines/pipeline/PipelinePage";
 import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
 import BICRM from "./crm/BICRM";
 import BILenderManagement from "./lender/BILenderManagement";
+import BILender from "./lender/BILender"; // BF_PORTAL_BLOCK_v125_BI_LENDER_APOLLO_PHASE1_v1
 import BIDashboard from "./dashboard/BIDashboard";
 import BIMarketing from "./marketing/BIMarketing";
 import BISettings from "./settings/BISettings";
@@ -36,7 +37,7 @@ export default function BISilo() {
           } />
           <Route path="pipeline/:id" element={<BIApplicationDetail />} />
           <Route path="crm" element={<BICRM />} />
-          <Route path="lender" element={<BILenderManagement />} />
+          <Route path="lender" element={<BILender />} /> {/* BF_PORTAL_BLOCK_v125_BI_LENDER_APOLLO_PHASE1_v1 */}
           <Route path="marketing" element={<BIMarketing />} />
           <Route path="settings" element={<BISettings />} />
         </Routes>
