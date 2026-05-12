@@ -9,6 +9,7 @@ type Lender = {
   postal_code?: string | null; country: string;
   contact_full_name?: string | null; contact_email?: string | null; contact_phone_e164?: string | null;
   is_active: boolean;
+  live_keys_enabled?: boolean | null; // BF_PORTAL_BLOCK_v195_LIVE_KEY_APPROVAL_v1
 };
 
 const empty = { company_name: "", website_url: "", address_line1: "", city: "", province: "", postal_code: "", country: "CA", contact_full_name: "", contact_email: "", contact_phone_e164: "" };
@@ -44,6 +45,21 @@ export default function BILenderManagement() {
     await load();
   }
 
+  // BF_PORTAL_BLOCK_v195_LIVE_KEY_APPROVAL_v1
+  async function approveLiveKeys(id: string, enabled: boolean) {
+    const msg = enabled
+      ? "Approve LIVE API key access? The lender will be SMS'd and can mint bk_live_* keys that hit the real carrier."
+      : "Revoke LIVE API key access? Existing live keys keep working until manually revoked; only further minting is blocked.";
+    if (!confirm(msg)) return;
+    try {
+      await api(`/api/v1/bi/admin/lenders/${id}/approve-live-keys`, { method: "POST", body: JSON.stringify({ enabled }) });
+      toast.success(enabled ? "Live keys approved + SMS sent" : "Live keys revoked");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -54,7 +70,7 @@ export default function BILenderManagement() {
       <table className="w-full text-sm">
         <thead className="text-left text-white/60">
           <tr>
-            <th className="py-2">Company</th><th>Contact</th><th>Phone</th><th>Email</th><th>Country</th><th>Status</th><th></th>
+            <th className="py-2">Company</th><th>Contact</th><th>Phone</th><th>Email</th><th>Country</th><th>Status</th><th>Live keys</th><th></th>
           </tr>
         </thead>
         <tbody>
@@ -69,7 +85,7 @@ export default function BILenderManagement() {
               <td>{l.contact_email}</td>
               <td>{l.country}</td>
               <td>{l.is_active ? <span className="text-emerald-300">Active</span> : <span className="text-white/40">Inactive</span>}</td>
-              <td>{l.is_active && <button className="text-xs text-red-300 hover:underline" onClick={() => deactivate(l.id)}>Deactivate</button>}</td>
+              <td>{l.live_keys_enabled === true ? (<div className="flex items-center gap-2"><span className="text-emerald-300 text-xs">Enabled</span><button className="text-[10px] text-white/40 hover:text-red-300" onClick={() => approveLiveKeys(l.id, false)}>revoke</button></div>) : (<button className="rounded border border-amber-500/40 px-2 py-0.5 text-[11px] text-amber-200 hover:bg-amber-500/10" onClick={() => approveLiveKeys(l.id, true)}>Approve</button>)}</td><td>{l.is_active && <button className="text-xs text-red-300 hover:underline" onClick={() => deactivate(l.id)}>Deactivate</button>}</td>
             </tr>
           ))}
         </tbody>
