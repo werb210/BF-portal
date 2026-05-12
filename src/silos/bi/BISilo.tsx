@@ -4,6 +4,7 @@ import PipelinePage from "@/core/engines/pipeline/PipelinePage";
 import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
 import BICRM from "./crm/BICRM";
 import BILenderManagement from "./lender/BILenderManagement";
+import BIReferrerManagement from "./referrer/BIReferrerManagement"; // BF_PORTAL_BLOCK_v198_REFERRER_MANAGEMENT_v1
 import BILender from "./lender/BILender"; // BF_PORTAL_BLOCK_v125_BI_LENDER_APOLLO_PHASE1_v1
 import BIDashboard from "./dashboard/BIDashboard";
 import BIMarketing from "./marketing/BIMarketing";
@@ -22,6 +23,7 @@ export default function BISilo() {
             <Link to="pipeline" className="hover:text-white">Pipeline</Link>
             <Link to="crm" className="hover:text-white">CRM</Link>
             <Link to="lender" className="hover:text-white">Lender</Link>
+            <Link to="referrer" className="hover:text-white">Referrer</Link> {/* BF_PORTAL_BLOCK_v198_REFERRER_MANAGEMENT_v1 */}
             <Link to="marketing" className="hover:text-white">Marketing</Link>
             <Link to="settings" className="hover:text-white">Settings</Link>
           </nav>
@@ -38,6 +40,7 @@ export default function BISilo() {
           <Route path="pipeline/:id" element={<BIApplicationDetail />} />
           <Route path="crm" element={<BICRM />} />
           <Route path="lender" element={<BILender />} /> {/* BF_PORTAL_BLOCK_v125_BI_LENDER_APOLLO_PHASE1_v1 */}
+          <Route path="referrer" element={<BIReferrerManagement />} /> {/* BF_PORTAL_BLOCK_v198_REFERRER_MANAGEMENT_v1 */}
           <Route path="marketing" element={<BIMarketing />} />
           <Route path="settings" element={<BISettings />} />
         </Routes>
