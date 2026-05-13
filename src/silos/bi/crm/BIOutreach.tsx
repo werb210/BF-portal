@@ -2,7 +2,7 @@
 // Outreach subtab. Filters → list → per-row inline activity logger
 // → activity timeline. Pairs with BI-Server v251 endpoints under
 // /api/v1/bi/crm/outreach/*.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/api";
 
 const STATUSES = [
@@ -72,6 +72,16 @@ export default function BIOutreach() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
+  // BF_PORTAL_BLOCK_v203_OUTREACH_IMPORT_AND_INVITE_v1
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    imported: number;
+    skipped: number;
+    total: number;
+    results?: Array<{ row: number; ok: boolean; error?: string }>;
+  } | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -141,6 +151,61 @@ export default function BIOutreach() {
     await load();
   }
 
+  // BF_PORTAL_BLOCK_v203_OUTREACH_IMPORT_AND_INVITE_v1
+  // The api wrapper detects FormData and skips Content-Type +
+  // JSON.stringify (see src/api/index.ts), so we just hand it a
+  // FormData and it does the right thing.
+  async function importFile(file: File) {
+    setImporting(true);
+    setImportError(null);
+    setImportResult(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r: any = await api(`/api/v1/bi/crm/outreach/import`, {
+        method: "POST",
+        body: fd,
+      } as any);
+      setImportResult({
+        imported: Number(r?.imported ?? 0),
+        skipped: Number(r?.skipped ?? 0),
+        total: Number(r?.total ?? 0),
+        results: Array.isArray(r?.results) ? r.results : [],
+      });
+      await load();
+    } catch (e: any) {
+      setImportError(e?.message ?? "Import failed.");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    // Clear the input so picking the same file twice still fires onChange.
+    e.target.value = "";
+    if (f) void importFile(f);
+  }
+
+  // BF_PORTAL_BLOCK_v203_OUTREACH_IMPORT_AND_INVITE_v1
+  // Send the demo invite SMS. Returns the server response so the
+  // caller can surface sid / error to the user.
+  async function sendDemoInvite(
+    contactId: string,
+    customMessage?: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await api(`/api/v1/bi/crm/outreach/contacts/${contactId}/demo-invite`, {
+        method: "POST",
+        body: customMessage ? { custom_message: customMessage } : {},
+      } as any);
+      await load();
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, error: e?.message ?? "send_failed" };
+    }
+  }
+
   const stats = useMemo(() => {
     const by: Record<string, number> = {};
     for (const c of contacts) {
@@ -198,13 +263,76 @@ export default function BIOutreach() {
 
         <button
           type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={importing}
+          className="ml-auto px-3 py-1 rounded-md text-sm bg-white/10 hover:bg-white/15 disabled:opacity-50"
+          aria-label="Import contacts from spreadsheet"
+        >
+          {importing ? "Importing…" : "Import"}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          className="sr-only"
+          onChange={onPickFile}
+          data-testid="bi-outreach-file-input"
+          aria-hidden="true"
+          tabIndex={-1}
+        />
+
+        <button
+          type="button"
           onClick={() => setProfileOpen((v) => !v)}
-          className="ml-auto px-3 py-1 rounded-md text-sm bg-white/5 hover:bg-white/10"
+          className="px-3 py-1 rounded-md text-sm bg-white/5 hover:bg-white/10"
           aria-expanded={profileOpen}
         >
           My profile
         </button>
       </div>
+
+      {(importResult || importError) && (
+        <div
+          className="bg-brand-surface border border-card rounded-xl p-3 text-sm"
+          data-testid="bi-outreach-import-banner"
+          role="status"
+        >
+          {importError && (
+            <p className="text-red-400">Import failed: {importError}</p>
+          )}
+          {importResult && (
+            <div className="space-y-1">
+              <p>
+                Imported <span className="text-white/90">{importResult.imported}</span>{" "}
+                · skipped <span className="text-white/90">{importResult.skipped}</span>{" "}
+                · total <span className="text-white/60">{importResult.total}</span>
+              </p>
+              {importResult.results && importResult.results.filter((r) => !r.ok).length > 0 && (
+                <details className="text-xs text-white/60">
+                  <summary>Show {importResult.results.filter((r) => !r.ok).length} skipped row(s)</summary>
+                  <ul className="mt-1 space-y-0.5">
+                    {importResult.results
+                      .filter((r) => !r.ok)
+                      .slice(0, 50)
+                      .map((r, i) => (
+                        <li key={i}>
+                          row {r.row}: {r.error}
+                        </li>
+                      ))}
+                  </ul>
+                </details>
+              )}
+              <button
+                type="button"
+                onClick={() => setImportResult(null)}
+                className="text-xs text-white/50 hover:text-white/80 underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {profileOpen && (
         <ProfilePanel
@@ -237,6 +365,7 @@ export default function BIOutreach() {
             onLog={(payload) => logActivity(c.id, payload)}
             onStatusChange={(s) => changeStatus(c.id, s)}
             bookingsUrl={profile?.bookings_url ?? null}
+            onInvite={(msg) => sendDemoInvite(c.id, msg)}
           />
         ))}
         {!loading && contacts.length === 0 && (
@@ -254,8 +383,9 @@ function ContactRow(props: {
   onLog: (payload: { event_type: EventType; outcome?: string; body?: string }) => Promise<void>;
   onStatusChange: (status: Status | "") => Promise<void>;
   bookingsUrl: string | null;
+  onInvite: (customMessage?: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
-  const { contact: c, expanded, onToggle, onLog, onStatusChange, bookingsUrl } = props;
+  const { contact: c, expanded, onToggle, onLog, onStatusChange, bookingsUrl, onInvite } = props;
   const [logging, setLogging] = useState(false);
   const [eventType, setEventType] = useState<EventType>("call");
   const [outcome, setOutcome] = useState<string>("");
@@ -307,14 +437,17 @@ function ContactRow(props: {
           ))}
         </select>
 
-        <button
-          type="button"
-          disabled={!bookingsUrl}
-          title={bookingsUrl ? "Send demo invite (lands in v252)" : "Set your MS Bookings URL in My profile first"}
-          className="px-2 py-1 rounded-md text-xs bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Send demo invite
-        </button>
+        <InviteButton
+          disabled={!bookingsUrl || !c.phone_e164}
+          disabledReason={
+            !bookingsUrl
+              ? "Set your MS Bookings URL in My profile first"
+              : !c.phone_e164
+                ? "Contact has no phone number"
+                : ""
+          }
+          onSend={(msg) => onInvite(msg)}
+        />
       </div>
 
       {expanded && (
@@ -412,6 +545,105 @@ function ActivityTimeline({ contactId }: { contactId: string }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+// BF_PORTAL_BLOCK_v203_OUTREACH_IMPORT_AND_INVITE_v1
+// Two-state button: a "Send demo invite" affordance that, when
+// clicked the first time, expands inline to take an optional
+// custom-message override before firing the POST. Keeps invites
+// one-click for the default case (Bookings link) and two-click
+// for the override case (custom + link). Disabled when the
+// contact has no phone or the staff member has no bookings_url.
+function InviteButton(props: {
+  disabled: boolean;
+  disabledReason: string;
+  onSend: (customMessage?: string) => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const { disabled, disabledReason, onSend } = props;
+  const [open, setOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [custom, setCustom] = useState("");
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  async function send(useCustom: boolean) {
+    setSending(true);
+    setFeedback(null);
+    try {
+      const r = await onSend(useCustom ? custom.trim() || undefined : undefined);
+      if (r.ok) {
+        setFeedback("Sent.");
+        setOpen(false);
+        setCustom("");
+      } else {
+        setFeedback(`Failed: ${r.error ?? "send_failed"}`);
+      }
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (disabled) {
+    return (
+      <button
+        type="button"
+        disabled
+        title={disabledReason}
+        className="px-2 py-1 rounded-md text-xs bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Send demo invite
+      </button>
+    );
+  }
+
+  if (!open) {
+    return (
+      <div className="flex items-center gap-2">
+        {feedback && (
+          <span className="text-xs text-white/60" role="status">{feedback}</span>
+        )}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="px-2 py-1 rounded-md text-xs bg-white/10 hover:bg-white/15"
+        >
+          Send demo invite
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="text"
+        value={custom}
+        onChange={(e) => setCustom(e.target.value)}
+        placeholder="Optional custom message (leave blank for default)"
+        className="bg-black/20 border border-card rounded-md px-2 py-1 text-xs w-72"
+        aria-label="Custom invite message"
+      />
+      <button
+        type="button"
+        disabled={sending}
+        onClick={() => void send(true)}
+        className="px-2 py-1 rounded-md text-xs bg-white/15 hover:bg-white/20 disabled:opacity-50"
+      >
+        {sending ? "Sending…" : "Send"}
+      </button>
+      <button
+        type="button"
+        disabled={sending}
+        onClick={() => {
+          setOpen(false);
+          setCustom("");
+          setFeedback(null);
+        }}
+        className="px-2 py-1 rounded-md text-xs text-white/60 hover:text-white"
+      >
+        Cancel
+      </button>
+    </div>
   );
 }
 
