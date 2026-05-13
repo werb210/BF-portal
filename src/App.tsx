@@ -52,6 +52,8 @@ import AiIssueReports from "@/pages/admin/AiIssueReports";
 import CreditReadiness from "@/pages/CreditReadiness";
 import ReferrerPortalLayout from "@/pages/referrer/ReferrerPortalLayout";
 import ReferrerLoginPage from "@/pages/referrer/ReferrerLoginPage";
+// BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
+import BISilo from "@/silos/bi/BISilo";
 import LenderPortalPage from "@/pages/lender/LenderPortalPage";
 import LenderLoginPage from "@/pages/lender/LenderLoginPage";
 import LenderProfilePage from "@/pages/lender/LenderProfilePage";
@@ -211,6 +213,20 @@ const AppRoutes = () => {
             <ProtectedRoute>
               <RequireRole roles={["Admin", "Staff"]}>
                 <BIReferrersPage />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
+        {/* BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 — mount BI silo shell.
+            BISilo has its own nested router (dashboard/pipeline/crm/lender/
+            referrer/marketing/settings). Without this route the v200 BI nav
+            links all 404. */}
+        <Route
+          path="/silo/bi/*"
+          element={
+            <ProtectedRoute>
+              <RequireRole roles={["Admin", "Staff", "Ops"]}>
+                <BISilo />
               </RequireRole>
             </ProtectedRoute>
           }

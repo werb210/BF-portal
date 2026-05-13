@@ -28,13 +28,17 @@ const BF_NAV: NavItem[] = [
   { label: "Settings",       path: "/settings",        roles: ["Admin", "Staff", "Ops"] },
 ];
 
+// BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 — repointed BI nav.
+// All entries resolve under the BISilo router mounted at /silo/bi/*.
+// Referrer is new in v200.
 const BI_NAV: NavItem[] = [
-  { label: "Dashboard",      path: "/portal",          roles: ["Admin", "Staff", "Ops"] },
-  { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
-  { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
-  { label: "Lenders",        path: "/bi-lenders",         roles: ["Admin", "Staff"] },
-  { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
-  { label: "Settings",       path: "/settings",        roles: ["Admin", "Staff", "Ops"] },
+  { label: "Dashboard",      path: "/silo/bi/dashboard", roles: ["Admin", "Staff", "Ops"] },
+  { label: "Pipeline",       path: "/silo/bi/pipeline",  roles: ["Admin", "Staff", "Ops"] },
+  { label: "Contacts",       path: "/silo/bi/crm",       roles: ["Admin", "Staff"] },
+  { label: "Lenders",        path: "/silo/bi/lender",    roles: ["Admin", "Staff"] },
+  { label: "Referrer",       path: "/silo/bi/referrer",  roles: ["Admin", "Staff"] },
+  { label: "Marketing",      path: "/silo/bi/marketing", roles: ["Admin"] },
+  { label: "Settings",       path: "/silo/bi/settings",  roles: ["Admin", "Staff", "Ops"] },
 ];
 
 const SLF_NAV: NavItem[] = [
@@ -69,16 +73,22 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const isMarketing = roleUpper === "MARKETING";
   const isStaff = roleUpper === "STAFF";
 
-  const canSee = (path: string) => {
-    const tab = path.replace(/^\//, "").toLowerCase();
+  // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
+  // canSee used to match `path.replace(/^\//,"")` against "lenders" /
+  // "marketing". With BI nav now pointing at /silo/bi/lender and
+  // /silo/bi/marketing the path-string match silently failed. Switch
+  // to label-based role gating so it works regardless of which silo
+  // the path lives under.
+  const canSee = (item: NavItem) => {
+    const label = item.label.toLowerCase();
     if (isAdmin) return true;
-    if (isMarketing) return tab !== "lenders";
-    if (isStaff) return tab !== "marketing";
+    if (isMarketing) return label !== "lenders";
+    if (isStaff) return label !== "marketing";
     return false;
   };
 
   const navItems = (SILO_NAV[activeSilo] ?? BF_NAV).filter((item) => {
-    if (isAdmin || isMarketing || isStaff) return canSee(item.path);
+    if (isAdmin || isMarketing || isStaff) return canSee(item);
     return item.roles.some((r) => r.toLowerCase() === role.toLowerCase());
   });
 
