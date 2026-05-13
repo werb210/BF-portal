@@ -32,7 +32,11 @@ describe("OTP auth flow", () => {
   it("visiting /login shows centered phone entry", () => {
     renderAuthRoutes("/login");
 
-    expect(screen.getByTestId("login-screen")).toHaveClass("items-center", "justify-center", "bg-white");
+    // BF_PORTAL_HOTFIX_v210a_OTP_AUTHFLOW_TEST_DRIFT_v1
+    // The bg color is locked elsewhere (v210 spec asserts bg-[#020817]
+    // via Login.otpConsistency.v210.test.tsx). This assertion captures
+    // layout intent only — that the login screen renders centered.
+    expect(screen.getByTestId("login-screen")).toHaveClass("items-center", "justify-center");
     expect(screen.getByTestId("phone-input")).toBeInTheDocument();
   });
 
