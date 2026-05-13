@@ -5,8 +5,11 @@
 // Edit modal + ActionBar + Delete are intentionally absent here;
 // they ship in v208 once the matching BI-Server endpoints (PATCH
 // contact, DELETE contact, send-email/sms staff actions) land.
-import { useEffect, useState, type CSSProperties } from "react";
-import { Link, useParams } from "react-router-dom";
+// BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
+// v207 baseline page extended with Edit / Delete / Send SMS
+// actions backed by BI-Server v255 endpoints.
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
 
 type BIContactDetail = {
@@ -41,10 +44,28 @@ type ActivityRow = {
 
 export default function BIContactDetailPage() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const [contact, setContact] = useState<BIContactDetail | null>(null);
   const [events, setEvents] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+
+  // BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [composing, setComposing] = useState(false);
+  const [smsBody, setSmsBody] = useState("");
+  const [smsSending, setSmsSending] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [form, setForm] = useState<{
+    full_name: string;
+    email: string;
+    phone_e164: string;
+    title: string;
+    notes: string;
+  }>({ full_name: "", email: "", phone_e164: "", title: "", notes: "" });
 
   useEffect(() => {
     let cancelled = false;
@@ -60,6 +81,18 @@ export default function BIContactDetailPage() {
         const cRaw = c as any;
         const contactRow: BIContactDetail | null = cRaw?.data ?? cRaw ?? null;
         setContact(contactRow);
+        // BF_PORTAL_BLOCK_v208 — seed the form whenever fresh
+        // contact data arrives so the inline editor reflects the
+        // current server state.
+        if (contactRow) {
+          setForm({
+            full_name: contactRow.full_name ?? "",
+            email: contactRow.email ?? "",
+            phone_e164: contactRow.phone_e164 ?? "",
+            title: contactRow.title ?? "",
+            notes: contactRow.notes ?? "",
+          });
+        }
         const tRaw = t as any;
         const evs: ActivityRow[] = Array.isArray(tRaw?.events) ? tRaw.events : [];
         setEvents(evs);
@@ -72,7 +105,74 @@ export default function BIContactDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, refreshKey]);
+
+  // BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+
+  async function saveEdit() {
+    if (!contact) return;
+    setSaving(true);
+    setActionError(null);
+    // Only send fields the user actually changed — skip unchanged
+    // ones so a stale-form edit can't accidentally clear values.
+    const patch: Record<string, unknown> = {};
+    if (form.full_name !== (contact.full_name ?? "")) patch.full_name = form.full_name || null;
+    if (form.email !== (contact.email ?? "")) patch.email = form.email || null;
+    if (form.phone_e164 !== (contact.phone_e164 ?? "")) patch.phone_e164 = form.phone_e164 || null;
+    if (form.title !== (contact.title ?? "")) patch.title = form.title || null;
+    if (form.notes !== (contact.notes ?? "")) patch.notes = form.notes || null;
+    if (Object.keys(patch).length === 0) {
+      setEditing(false);
+      setSaving(false);
+      return;
+    }
+    try {
+      await api(`/api/v1/bi/crm/contacts/${id}`, {
+        method: "PATCH",
+        body: patch,
+      } as any);
+      setEditing(false);
+      refresh();
+    } catch (e: any) {
+      setActionError(e?.message ?? "Save failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteContact() {
+    if (!window.confirm("Delete this contact? This cannot be undone.")) return;
+    setDeleting(true);
+    setActionError(null);
+    try {
+      await api(`/api/v1/bi/crm/contacts/${id}`, { method: "DELETE" } as any);
+      navigate("/silo/bi/crm");
+    } catch (e: any) {
+      setActionError(e?.message ?? "Delete failed.");
+      setDeleting(false);
+    }
+  }
+
+  async function sendSms() {
+    const body = smsBody.trim();
+    if (!body) return;
+    setSmsSending(true);
+    setActionError(null);
+    try {
+      await api(`/api/v1/bi/crm/contacts/${id}/sms`, {
+        method: "POST",
+        body: { body },
+      } as any);
+      setSmsBody("");
+      setComposing(false);
+      refresh();
+    } catch (e: any) {
+      setActionError(e?.message ?? "SMS failed.");
+    } finally {
+      setSmsSending(false);
+    }
+  }
 
   if (err)
     return (
@@ -99,44 +199,66 @@ export default function BIContactDetailPage() {
           </h2>
           <span style={roleBadge}>{formatStatus(role)}</span>
         </div>
-        {contact.title && <div style={subtle}>{contact.title}</div>}
-        {contact.email && (
+        {contact.title && !editing && <div style={subtle}>{contact.title}</div>}
+        {contact.email && !editing && (
           <a href={`mailto:${contact.email}`} style={{ color: "#0091ae" }}>
             {contact.email}
           </a>
         )}
-        <div style={fieldsBlock}>
-          <Field label="Email" value={contact.email} />
-          <Field label="Phone" value={contact.phone_e164} />
-          <Field
-            label="Outreach status"
-            value={contact.outreach_status ? contact.outreach_status.replace(/_/g, " ") : null}
-          />
-          <Field label="Owner" value={contact.outreach_owner_id} />
-          <Field
-            label="Last touched"
-            value={
-              contact.outreach_updated_at
-                ? new Date(contact.outreach_updated_at).toLocaleString()
-                : null
-            }
-          />
-          <Field
-            label="Created"
-            value={new Date(contact.created_at).toLocaleString()}
-          />
-        </div>
-        {contact.tags && contact.tags.length > 0 && (
-          <div style={fieldsBlock}>
-            <div style={fieldLabel}>Tags</div>
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
-              {contact.tags.map((t) => (
-                <span key={t} style={tagBadge}>
-                  {t}
-                </span>
-              ))}
+        {!editing && (
+          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => setEditing(true)} style={actionBtn} data-testid="bi-contact-edit-button">Edit</button>
+            <button type="button" onClick={() => deleteContact()} disabled={deleting} style={{ ...actionBtn, borderColor: "#fecaca", color: "#b91c1c" }} data-testid="bi-contact-delete-button">{deleting ? "Deleting…" : "Delete"}</button>
+            <button type="button" onClick={() => setComposing((v) => !v)} disabled={!contact.phone_e164} title={contact.phone_e164 ? "Send a free-text SMS" : "Contact has no phone number"} style={actionBtn} data-testid="bi-contact-sms-button">{composing ? "Cancel SMS" : "Send SMS"}</button>
+          </div>
+        )}
+        {actionError && <div style={{ marginTop: 8, color: "#b00020", fontSize: 12 }} role="status">{actionError}</div>}
+        {composing && !editing && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #eaf0f6" }} data-testid="bi-contact-sms-composer">
+            <div style={fieldLabel}>SMS to {contact.phone_e164}</div>
+            <textarea value={smsBody} onChange={(e) => setSmsBody(e.target.value)} rows={4} placeholder="Type your message…" style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000", fontSize: 13 }} aria-label="SMS body" />
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button type="button" onClick={() => void sendSms()} disabled={smsSending || !smsBody.trim()} style={{ ...actionBtn, background: "#0d9b6c", color: "#fff", borderColor: "#0d9b6c" }}>{smsSending ? "Sending…" : "Send"}</button>
+              <button type="button" onClick={() => { setComposing(false); setSmsBody(""); }} style={actionBtn}>Cancel</button>
             </div>
           </div>
+        )}
+        {editing ? (
+          <div style={fieldsBlock} data-testid="bi-contact-edit-form">
+            <FieldEdit label="Full name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
+            <FieldEdit label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+            <FieldEdit label="Phone" type="tel" value={form.phone_e164} onChange={(v) => setForm({ ...form, phone_e164: v })} />
+            <FieldEdit label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
+            <div style={{ marginBottom: 8 }}>
+              <div style={fieldLabel}>Notes</div>
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={4} style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000", fontSize: 13 }} aria-label="Notes" />
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button type="button" onClick={() => void saveEdit()} disabled={saving} style={{ ...actionBtn, background: "#0d9b6c", color: "#fff", borderColor: "#0d9b6c" }}>{saving ? "Saving…" : "Save"}</button>
+              <button type="button" onClick={() => { setEditing(false); setActionError(null); setForm({ full_name: contact.full_name ?? "", email: contact.email ?? "", phone_e164: contact.phone_e164 ?? "", title: contact.title ?? "", notes: contact.notes ?? "" }); }} disabled={saving} style={actionBtn}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={fieldsBlock}>
+              <Field label="Email" value={contact.email} />
+              <Field label="Phone" value={contact.phone_e164} />
+              <Field label="Outreach status" value={contact.outreach_status ? contact.outreach_status.replace(/_/g, " ") : null} />
+              <Field label="Owner" value={contact.outreach_owner_id} />
+              <Field label="Last touched" value={contact.outreach_updated_at ? new Date(contact.outreach_updated_at).toLocaleString() : null} />
+              <Field label="Created" value={new Date(contact.created_at).toLocaleString()} />
+            </div>
+            {contact.tags && contact.tags.length > 0 && (
+              <div style={fieldsBlock}>
+                <div style={fieldLabel}>Tags</div>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
+                  {contact.tags.map((t) => (
+                    <span key={t} style={tagBadge}>{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </aside>
 
@@ -234,6 +356,16 @@ function Field({ label, value }: { label: string; value: string | null }) {
   );
 }
 
+// BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
+function FieldEdit(props: { label: string; value: string; type?: string; onChange: (next: string) => void }) {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={fieldLabel}>{props.label}</div>
+      <input type={props.type ?? "text"} value={props.value} onChange={(e) => props.onChange(e.target.value)} style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000", fontSize: 13 }} aria-label={props.label} />
+    </div>
+  );
+}
+
 function formatStatus(value: string) {
   if (value === "unknown") return "Unknown";
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -307,6 +439,16 @@ const roleBadge: CSSProperties = {
   borderRadius: 999,
   fontSize: 12,
   fontWeight: 600,
+};
+// BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
+const actionBtn: CSSProperties = {
+  border: "1px solid #cbd5e1",
+  background: "#fff",
+  color: "#0f172a",
+  borderRadius: 6,
+  padding: "6px 12px",
+  fontSize: 13,
+  cursor: "pointer",
 };
 const tagBadge: CSSProperties = {
   background: "#f3f4f6",
