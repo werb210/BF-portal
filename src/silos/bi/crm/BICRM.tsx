@@ -1,15 +1,15 @@
 // BF_PORTAL_BLOCK_v202_OUTREACH_UI_v1
-// Tabbed BI CRM. New Outreach tab in addition to existing
-// Contacts / Referrers / Lenders views. The legacy single-page
-// layout is preserved by Tab "Overview".
+// BF_PORTAL_BLOCK_v206_BI_CONTACTS_LIST_v1 — added Contacts tab
+// (now default) backed by BI-Server v254 enhanced /crm/contacts.
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import BIOutreach from "./BIOutreach";
+import BIContactsList from "./contacts/BIContactsList";
 
-type TabKey = "outreach" | "overview";
+type TabKey = "contacts" | "outreach" | "overview";
 
 export default function BICRM() {
-  const [tab, setTab] = useState<TabKey>("outreach");
+  const [tab, setTab] = useState<TabKey>("contacts");
   const [contacts, setContacts] = useState<any[]>([]);
   const [referrers, setReferrers] = useState<any[]>([]);
   const [lenders, setLenders] = useState<any[]>([]);
@@ -59,11 +59,13 @@ export default function BICRM() {
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-semibold">BI CRM</h2>
         <div className="flex gap-2" role="tablist" aria-label="BI CRM tabs">
+          {tabBtn("contacts", "Contacts")}
           {tabBtn("outreach", "Outreach")}
           {tabBtn("overview", "Overview")}
         </div>
       </div>
 
+      {tab === "contacts" && <BIContactsList />}
       {tab === "outreach" && <BIOutreach />}
 
       {tab === "overview" && (
