@@ -4,6 +4,7 @@
 // dropdown so the active silo is visible at a glance.
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import {
   DEFAULT_BUSINESS_UNIT,
   normalizeBusinessUnit,
@@ -24,12 +25,20 @@ const unitAccents: Record<BusinessUnit, string> = {
 
 const ALL_UNITS: BusinessUnit[] = ["BF", "BI"];
 
+// BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
+const SILO_HOME: Record<BusinessUnit, string> = {
+  BF: "/portal",
+  BI: "/silo/bi/dashboard",
+  SLF: "/portal",
+};
+
 const isBusinessUnit = (value: unknown): value is BusinessUnit =>
   value === "BF" || value === "BI" || value === "SLF";
 
 const BusinessUnitSelector = () => {
   const { silo, setSilo } = useSilo();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const role = (user as { role?: string } | null)?.role?.toLowerCase();
   const userSilos = (user as { silos?: string[] } | null)?.silos ?? [];
@@ -80,11 +89,12 @@ const BusinessUnitSelector = () => {
           <button
             key={unit}
             type="button"
-            onClick={() =>
-              (setSilo as (v: BusinessUnit) => void)(
-                normalizeBusinessUnit(unit)
-              )
-            }
+            onClick={() => {
+              // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
+              const next = normalizeBusinessUnit(unit);
+              (setSilo as (v: BusinessUnit) => void)(next);
+              if (next !== selectedValue) navigate(SILO_HOME[next] ?? "/portal");
+            }}
             aria-pressed={isActive}
             title={label.full}
             style={{
