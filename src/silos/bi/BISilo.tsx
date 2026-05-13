@@ -4,6 +4,8 @@ import { Link, Navigate, Route, Routes } from "react-router-dom";
 import PipelinePage from "@/core/engines/pipeline/PipelinePage";
 import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
 import BICRM from "./crm/BICRM";
+// BF_PORTAL_BLOCK_v207_BI_CONTACT_DETAIL_v1
+import BIContactDetailPage from "./crm/contacts/BIContactDetailPage";
 import BILenderManagement from "./lender/BILenderManagement";
 import BIReferrerManagement from "./referrer/BIReferrerManagement"; // BF_PORTAL_BLOCK_v198_REFERRER_MANAGEMENT_v1
 import BILender from "./lender/BILender"; // BF_PORTAL_BLOCK_v125_BI_LENDER_APOLLO_PHASE1_v1
@@ -42,6 +44,8 @@ export default function BISilo() {
           } />
           <Route path="pipeline/:id" element={<BIApplicationDetail />} />
           <Route path="crm" element={<BICRM />} />
+      {/* BF_PORTAL_BLOCK_v207_BI_CONTACT_DETAIL_v1 */}
+      <Route path="crm/contacts/:id" element={<BIContactDetailPage />} />
           <Route path="lender" element={<BILender />} /> {/* BF_PORTAL_BLOCK_v125_BI_LENDER_APOLLO_PHASE1_v1 */}
           <Route path="referrer" element={<BIReferrerManagement />} /> {/* BF_PORTAL_BLOCK_v198_REFERRER_MANAGEMENT_v1 */}
           <Route path="marketing" element={<BIMarketing />} />
