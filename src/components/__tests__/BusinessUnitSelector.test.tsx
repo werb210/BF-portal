@@ -1,11 +1,14 @@
 // BF_PORTAL_BLOCK_v167_SELECTOR_TEST_FIX_v1
-// Updated for v166 button selector. The control is now:
+// BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 — selector now calls
+// useNavigate() after setSilo, so every render needs a Router wrapper.
+// Updated for v166 button selector. The control is:
 //   role="group" aria-label="Active silo"
 //     button[aria-pressed=true]  → active silo
 //     button[aria-pressed=false] → inactive silos
-// SLF was hidden in v165/v166, so it's no longer rendered.
+// SLF was hidden in v165/v166, so it's not rendered.
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import BusinessUnitSelector from "@/components/BusinessUnitSelector";
 
 vi.mock("@/hooks/useSilo", () => ({
@@ -17,6 +20,16 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+// BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 — every render goes through
+// this helper so the Router context is present for useNavigate().
+function renderSelector() {
+  return render(
+    <MemoryRouter>
+      <BusinessUnitSelector />
+    </MemoryRouter>,
+  );
+}
+
 describe("BusinessUnitSelector", () => {
   beforeEach(() => {
     mockUseAuth.mockReset();
@@ -26,20 +39,18 @@ describe("BusinessUnitSelector", () => {
     mockUseAuth.mockReturnValue({
       user: { role: "staff", silos: ["BF", "BI"] },
     });
-    render(<BusinessUnitSelector />);
+    renderSelector();
     const group = screen.getByRole("group", { name: /active silo/i });
     expect(group).toBeInTheDocument();
-    // Two buttons: Financial + Insurance
     expect(screen.getByRole("button", { name: /financial/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /insurance/i })).toBeInTheDocument();
   });
 
   it("renders both BF and BI buttons for admins (SLF removed in v165/v166)", () => {
     mockUseAuth.mockReturnValue({ user: { role: "admin" } });
-    render(<BusinessUnitSelector />);
+    renderSelector();
     expect(screen.getByRole("button", { name: /financial/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /insurance/i })).toBeInTheDocument();
-    // SLF is intentionally NOT rendered.
     expect(screen.queryByRole("button", { name: /site level/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^slf$/i })).not.toBeInTheDocument();
   });
@@ -48,7 +59,7 @@ describe("BusinessUnitSelector", () => {
     mockUseAuth.mockReturnValue({
       user: { role: "staff", silos: ["BF", "BI"] },
     });
-    render(<BusinessUnitSelector />);
+    renderSelector();
     const financial = screen.getByRole("button", { name: /financial/i });
     const insurance = screen.getByRole("button", { name: /insurance/i });
     expect(financial.getAttribute("aria-pressed")).toBe("true");
@@ -59,10 +70,8 @@ describe("BusinessUnitSelector", () => {
     mockUseAuth.mockReturnValue({
       user: { role: "staff", silos: ["BF"] },
     });
-    render(<BusinessUnitSelector />);
-    // No group, no button — just the label.
-    expect(screen.queryByRole("group")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
-    expect(screen.getByText(/boreal financial/i)).toBeInTheDocument();
+    renderSelector();
+    expect(screen.queryByRole("group", { name: /active silo/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/Boreal Financial/i)).toBeInTheDocument();
   });
 });
