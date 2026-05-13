@@ -68,4 +68,38 @@ describe("BF_PORTAL_BI_SILO_NAV_v56 — BI silo nav config", () => {
   });
 });
 
+describe("BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 — BI nav targets", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("Dashboard points at /silo/bi/dashboard (not /portal)", () => {
+    renderLayout("BI", "Admin");
+    expect(
+      screen.getByRole("link", { name: "Dashboard" }).getAttribute("href"),
+    ).toBe("/silo/bi/dashboard");
+  });
+
+  it("Lenders points at /silo/bi/lender (not legacy /bi-lenders)", () => {
+    renderLayout("BI", "Admin");
+    expect(
+      screen.getByRole("link", { name: "Lenders" }).getAttribute("href"),
+    ).toBe("/silo/bi/lender");
+  });
+
+  it("Marketing points at /silo/bi/marketing (not BF /marketing)", () => {
+    renderLayout("BI", "Admin");
+    expect(
+      screen.getByRole("link", { name: "Marketing" }).getAttribute("href"),
+    ).toBe("/silo/bi/marketing");
+  });
+
+  it("Referrer link added", () => {
+    renderLayout("BI", "Admin");
+    const link = screen.getByRole("link", { name: "Referrer" });
+    expect(link).toBeInTheDocument();
+    expect(link.getAttribute("href")).toBe("/silo/bi/referrer");
+  });
+});
+
 // BF_PORTAL_BI_SILO_NAV_v56_APPLAYOUT_TEST_ANCHOR

@@ -1,5 +1,6 @@
 // BI_PGI_ALIGNMENT_v56 — 6-tab BI silo nav: Dashboard, Pipeline, CRM, Lender, Marketing, Settings.
-import { Link, Route, Routes } from "react-router-dom";
+// BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import PipelinePage from "@/core/engines/pipeline/PipelinePage";
 import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
 import BICRM from "./crm/BICRM";
@@ -31,6 +32,8 @@ export default function BISilo() {
       </header>
       <main className="max-w-7xl mx-auto px-6 py-14 md:py-20">
         <Routes>
+          {/* BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 */}
+          <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<BIDashboard />} />
           <Route path="pipeline" element={
             <PipelineEngineProvider config={{ businessUnit: "BI", api: biPipelineAdapter }}>
