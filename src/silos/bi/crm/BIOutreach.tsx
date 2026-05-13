@@ -82,6 +82,8 @@ export default function BIOutreach() {
     results?: Array<{ row: number; ok: boolean; error?: string }>;
   } | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v205_OUTREACH_ENROLL_v1
+  const [sequences, setSequences] = useState<ReadonlyArray<{ id: string; name: string; is_active: boolean }>>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -105,6 +107,32 @@ export default function BIOutreach() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // BF_PORTAL_BLOCK_v205_OUTREACH_ENROLL_v1
+  // Fetch active Apollo sequences once when the Outreach tab mounts.
+  // Used by the per-row "Enroll in sequence" action. Errors are
+  // silent — if the endpoint isn't reachable, the action surfaces
+  // as a disabled button and staff can still log activity / send
+  // invites as before.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r: any = await api(`/api/v1/bi/apollo/sequences`);
+        if (cancelled) return;
+        const list: Array<{ id: string; name: string; is_active: boolean }> =
+          Array.isArray(r?.sequences)
+            ? r.sequences.filter((s: any) => s && s.is_active !== false)
+            : [];
+        setSequences(list);
+      } catch {
+        /* leave empty; row button degrades to disabled */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -203,6 +231,24 @@ export default function BIOutreach() {
       return { ok: true };
     } catch (e: any) {
       return { ok: false, error: e?.message ?? "send_failed" };
+    }
+  }
+
+  // BF_PORTAL_BLOCK_v205_OUTREACH_ENROLL_v1
+  // Enroll a contact into an Apollo sequence. Returns the server
+  // response so the caller can show "Enrolled (mock)" vs "Enrolled".
+  async function enrollInSequence(
+    contactId: string,
+    sequenceId: string,
+  ): Promise<{ ok: boolean; mock?: boolean; error?: string }> {
+    try {
+      const r: any = await api(
+        `/api/v1/bi/apollo/sequences/${sequenceId}/enroll/${contactId}`,
+        { method: "POST", body: {} } as any,
+      );
+      return { ok: true, mock: Boolean(r?.mock) };
+    } catch (e: any) {
+      return { ok: false, error: e?.message ?? "enroll_failed" };
     }
   }
 
@@ -366,6 +412,8 @@ export default function BIOutreach() {
             onStatusChange={(s) => changeStatus(c.id, s)}
             bookingsUrl={profile?.bookings_url ?? null}
             onInvite={(msg) => sendDemoInvite(c.id, msg)}
+            sequences={sequences}
+            onEnroll={(seqId) => enrollInSequence(c.id, seqId)}
           />
         ))}
         {!loading && contacts.length === 0 && (
@@ -384,8 +432,20 @@ function ContactRow(props: {
   onStatusChange: (status: Status | "") => Promise<void>;
   bookingsUrl: string | null;
   onInvite: (customMessage?: string) => Promise<{ ok: boolean; error?: string }>;
+  sequences: ReadonlyArray<{ id: string; name: string; is_active: boolean }>;
+  onEnroll: (sequenceId: string) => Promise<{ ok: boolean; mock?: boolean; error?: string }>;
 }) {
-  const { contact: c, expanded, onToggle, onLog, onStatusChange, bookingsUrl, onInvite } = props;
+  const {
+    contact: c,
+    expanded,
+    onToggle,
+    onLog,
+    onStatusChange,
+    bookingsUrl,
+    onInvite,
+    sequences,
+    onEnroll,
+  } = props;
   const [logging, setLogging] = useState(false);
   const [eventType, setEventType] = useState<EventType>("call");
   const [outcome, setOutcome] = useState<string>("");
@@ -448,6 +508,18 @@ function ContactRow(props: {
           }
           onSend={(msg) => onInvite(msg)}
         />
+        <EnrollButton
+          disabled={!c.email || sequences.length === 0}
+          disabledReason={
+            !c.email
+              ? "Contact has no email"
+              : sequences.length === 0
+                ? "No active Apollo sequences. Visit Marketing → Sync from Apollo."
+                : ""
+          }
+          sequences={sequences}
+          onEnroll={onEnroll}
+        />
       </div>
 
       {expanded && (
@@ -500,6 +572,112 @@ function ContactRow(props: {
           <ActivityTimeline contactId={c.id} />
         </div>
       )}
+    </div>
+  );
+}
+
+// BF_PORTAL_BLOCK_v205_OUTREACH_ENROLL_v1
+// Two-state button mirroring InviteButton: idle → inline sequence
+// picker. Sequences are passed in from BIOutreach so this component
+// does no fetching. After a successful enroll we show "Enrolled"
+// (or "Enrolled (mock)" if BI-Server is running in mock mode) and
+// collapse back to idle.
+function EnrollButton(props: {
+  disabled: boolean;
+  disabledReason: string;
+  sequences: ReadonlyArray<{ id: string; name: string; is_active: boolean }>;
+  onEnroll: (sequenceId: string) => Promise<{ ok: boolean; mock?: boolean; error?: string }>;
+}) {
+  const { disabled, disabledReason, sequences, onEnroll } = props;
+  const [open, setOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [picked, setPicked] = useState("");
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  async function submit() {
+    if (!picked) return;
+    setSending(true);
+    setFeedback(null);
+    try {
+      const r = await onEnroll(picked);
+      if (r.ok) {
+        setFeedback(r.mock ? "Enrolled (mock)" : "Enrolled");
+        setOpen(false);
+        setPicked("");
+      } else {
+        setFeedback(`Failed: ${r.error ?? "enroll_failed"}`);
+      }
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (disabled) {
+    return (
+      <button
+        type="button"
+        disabled
+        title={disabledReason}
+        className="px-2 py-1 rounded-md text-xs bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Enroll in sequence
+      </button>
+    );
+  }
+
+  if (!open) {
+    return (
+      <div className="flex items-center gap-2">
+        {feedback && (
+          <span className="text-xs text-white/60" role="status">{feedback}</span>
+        )}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="px-2 py-1 rounded-md text-xs bg-white/10 hover:bg-white/15"
+        >
+          Enroll in sequence
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {feedback && (
+        <span className="text-xs text-white/60" role="status">{feedback}</span>
+      )}
+      <select
+        value={picked}
+        onChange={(e) => setPicked(e.target.value)}
+        className="bg-black/20 border border-card rounded-md px-2 py-1 text-xs"
+        aria-label="Sequence"
+      >
+        <option value="">— pick a sequence —</option>
+        {sequences.map((s) => (
+          <option key={s.id} value={s.id}>{s.name}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        disabled={sending || !picked}
+        onClick={() => void submit()}
+        className="px-2 py-1 rounded-md text-xs bg-white/15 hover:bg-white/20 disabled:opacity-50"
+      >
+        {sending ? "Enrolling…" : "Enroll"}
+      </button>
+      <button
+        type="button"
+        disabled={sending}
+        onClick={() => {
+          setOpen(false);
+          setPicked("");
+          setFeedback(null);
+        }}
+        className="px-2 py-1 rounded-md text-xs text-white/60 hover:text-white"
+      >
+        Cancel
+      </button>
     </div>
   );
 }
