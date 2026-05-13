@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthContext";
-import { triggerSafeReload } from "@/utils/reloadGuard";
 import type { BusinessUnit } from "@/types/businessUnit";
 import { DEFAULT_BUSINESS_UNIT } from "@/types/businessUnit";
 
@@ -87,9 +86,13 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
     setActiveBusinessUnitState(fallbackBusinessUnit);
   }, [activeBusinessUnit, authStatus, fallbackBusinessUnit, normalizedBusinessUnits]);
 
+  // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 — pure state update; the
+  // previous triggerSafeReload caused a full page reload that the 30s
+  // reloadGuard silently suppressed on rapid second clicks (operator
+  // reported "have to click a couple times"). Navigation to the silo
+  // home page is now handled by BusinessUnitSelector.
   const setActiveBusinessUnit = (businessUnit: BusinessUnit) => {
     setActiveBusinessUnitState(businessUnit);
-    triggerSafeReload("business_unit_changed");
   };
 
   const value = useMemo(
