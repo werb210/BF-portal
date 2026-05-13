@@ -86,33 +86,61 @@ export default function Login() {
   };
 
   return (
-    <div data-testid="login-screen" className="h-screen w-screen flex items-center justify-center bg-white">
-      <div className="flex flex-col items-center gap-6">
-        <h1 className="text-2xl font-semibold text-black text-center">
+    // BF_PORTAL_BLOCK_v210_STAFF_LOGIN_OTP_CONSISTENCY_v1 — page bg + card
+    // pattern matches BF-Client PhoneOTPInline.tsx and BI-Website OTP screens
+    // (BI_WEBSITE_BLOCK_v171_OTP_CONSISTENCY_v1). Same dark navy bg, white card,
+    // amber CTA, helper line, "Mobile phone number" label.
+    <div
+      data-testid="login-screen"
+      className="min-h-screen w-screen flex items-center justify-center bg-[#020817] px-4 py-12"
+    >
+      <div className="w-full max-w-md flex flex-col items-center gap-6">
+        <h1 className="text-2xl font-semibold text-white text-center">
           Boreal Group of Companies Staff Portal
         </h1>
 
-        <form className="flex flex-col items-center gap-3" onSubmit={handleStartOTP}>
+        <form
+          className="w-full bg-white border border-slate-200 rounded-xl p-6 shadow-md"
+          onSubmit={handleStartOTP}
+        >
+          <label
+            htmlFor="staff-login-phone"
+            className="block text-sm text-slate-700 mb-1.5"
+          >
+            Mobile phone number
+          </label>
           <input
+            id="staff-login-phone"
             data-testid="phone-input"
             type="tel"
-            placeholder="Enter phone number"
+            inputMode="tel"
+            autoComplete="tel"
+            autoFocus
+            placeholder="(555) 000-0000"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="border border-gray-300 rounded-md px-4 py-3 text-lg w-72 text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3.5 py-3 text-base text-slate-900 bg-white border border-slate-300 rounded-lg mb-3 box-border focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
+
+          {error ? (
+            <p className="text-sm text-red-700 mb-2" role="alert">
+              {error}
+            </p>
+          ) : null}
 
           <button
             data-testid="start-otp-button"
             type="submit"
             disabled={!normalizedPhone || isSubmitting}
-            className="w-72 rounded-md bg-blue-600 px-4 py-3 text-white disabled:cursor-not-allowed disabled:bg-blue-300"
+            className="w-full py-3.5 px-5 text-[17px] font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? "Sending..." : normalizedPhone ? "Sending code…" : "Send code"}
+            {isSubmitting ? "Sending…" : "Send code →"}
           </button>
-        </form>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          <p className="text-xs text-slate-500 mt-2.5 mb-0 text-center">
+            We{"'"}ll text you a one-time code to verify.
+          </p>
+        </form>
       </div>
     </div>
   );
