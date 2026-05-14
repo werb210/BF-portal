@@ -66,6 +66,18 @@ export default function BICompanyDetailPage() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v280_COMPANIES_DELETE_BUTTON_v1
+  async function deleteCompany() {
+    if (!co?.id) return;
+    if (!confirm(`Delete ${co.legal_name}? This removes the company record. Linked applications and contacts stay but lose the company link.`)) return;
+    setActionError(null);
+    try {
+      await api(`/api/v1/bi/crm/companies/${co.id}`, { method: "DELETE" });
+      navigate("/silo/bi/crm");
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Delete failed");
+    }
+  }
   const [form, setForm] = useState<{
     legal_name: string;
     operating_name: string;
@@ -200,6 +212,15 @@ export default function BICompanyDetailPage() {
               data-testid="bi-company-edit-button"
             >
               Edit
+            </button>
+            {/* BF_PORTAL_BLOCK_v280_COMPANIES_DELETE_BUTTON_v1 */}
+            <button
+              type="button"
+              onClick={() => void deleteCompany()}
+              style={{ ...actionBtn, background: "#b00020", color: "white" }}
+              data-testid="bi-company-delete-button"
+            >
+              Delete
             </button>
           </div>
         )}
