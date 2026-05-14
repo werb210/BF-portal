@@ -141,7 +141,14 @@ export function fetchApplicationAudit<T = AuditEntry[]>(id: string, options?: Ap
   return api<T>(requestUrl, { signal: options?.signal });
 }
 
+// BF_PORTAL_BLOCK_v300_OPEN_APPLICATION_URL_v1
+// Server exposes the staff "I opened this card" signal at
+// POST /api/portal/applications/:id/open (see BF-Server v205 in
+// src/routes/portal.ts). The old URL /api/applications/:id/open is
+// 404 on the server, so the openApplicationForStaff transition
+// (Received -> In Review + first_opened_at stamp) silently failed
+// every time staff opened an application card from this route.
 export const openPortalApplication = (id: string) =>
-  api<Application>(`/api/applications/${id}/open`, {
+  api<Application>(`/api/portal/applications/${id}/open`, {
     method: "POST",
   });
