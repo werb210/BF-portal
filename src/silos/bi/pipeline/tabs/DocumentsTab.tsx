@@ -68,11 +68,11 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
     };
   }, []);
 
-  // BF_PORTAL_BLOCK_v211_BI_DOCUMENTS_TAB_FIX_v1
-  // BI-Server v260 returns stage='document_review' for public apps
-  // whose status has advanced past upload (the public flow writes
-  // `status` not the `stage` enum). Allow that value so the Accept
-  // button enables once docs are ready for staff review.
+  // BF_PORTAL_BLOCK_v212_BI_DOCUMENTS_TAB_FIX_v2
+  // BI-Server v261 returns stage='document_review' (passthrough of the
+  // status column) for public apps whose uploads have advanced past
+  // /submit. Allow that value so the Accept button enables once docs
+  // are ready for staff review.
   const reviewLocked =
     stage !== "under_review" &&
     stage !== "documents_pending" &&
@@ -81,13 +81,12 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
     .filter((d) => !d.if_startup || isStartup)
     .sort((a, b) => a.sort_order - b.sort_order);
 
-  // BF_PORTAL_BLOCK_v211_BI_DOCUMENTS_TAB_FIX_v1
-  // The previous URL returned 404 — BI-Server mounts biDocumentRoutes
-  // POST /:id/accept at /api/v1/bi/documents, not as a 4-segment
-  // child path of /applications. Use the working URL (same one
-  // BIDocumentList.tsx uses). applicationId is unused on the
-  // server-side (the handler looks up application_id from the
-  // doc row), so dropping it from the URL is safe.
+  // BF_PORTAL_BLOCK_v212_BI_DOCUMENTS_TAB_FIX_v2
+  // The previous URL was a 4-segment child path under /applications/...
+  // which doesn't match any BI-Server route. The doc-accept handler
+  // is mounted at /api/v1/bi/documents/:id/accept (already used
+  // correctly by BIDocumentList). applicationId stays in the prop for
+  // the docs list call but is dropped from the accept URL.
   async function accept(docId: string) {
     try {
       await api(`/api/v1/bi/documents/${docId}/accept`, { method: "POST" });
