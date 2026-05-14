@@ -163,7 +163,18 @@ export default function DocumentsTab({ applicationId }: Props) {
 
   const updateFileStatus = async (fileId: string, action: "accept" | "reject") => {
     try {
-      await api.post(`/api/documents/${encodeURIComponent(fileId)}/${action}`, {});
+      // BF_PORTAL_BLOCK_v311_DOCUMENTS_TAB_PORTAL_PREFIX_v1
+      // Pre-fix this POSTed to /api/documents/:id/${action}, which is the
+      // stripped-down stub in BF-Server src/routes/documents.ts (only updates
+      // documents.status with no side effects). The full workflow lives at
+      // /api/portal/documents/:id/${action} in src/routes/portal.ts:
+      //   - on accept: transitions pipeline_state to "Off to Lender" when all
+      //     docs are accepted, fires computeAndCacheLenderMatches.
+      //   - on reject: auto-SMS to applicant, marks lender_match_cache stale,
+      //     transitions pipeline_state to "Documents Required".
+      // The stub bypassed all of that and silently swallowed DB errors.
+      // v277 BI pattern (UI calling wrong prefix).
+      await api.post(`/api/portal/documents/${encodeURIComponent(fileId)}/${action}`, {});
       setCategories((cur) =>
         cur.map((c) => ({
           ...c,
