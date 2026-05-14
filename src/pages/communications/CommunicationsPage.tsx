@@ -198,7 +198,20 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
         direction: "outbound",
         created_at: new Date().toISOString(),
       }]);
-      await api.post("/api/sms/send", {
+      await api.post("/api/communications/sms", {
+        // BF_PORTAL_BLOCK_v320_COMMS_SMS_SEND_URL_v1
+        // Pre-fix this POSTed to /api/sms/send, which BF-Server src/app.ts:136
+        // mounts as a stub returning HTTP 501 not_implemented ("SMS send
+        // endpoint not yet wired"). Outbound SMS from the staff Communications
+        // page never actually sent — the optimistic UI update painted the
+        // message in the thread, the POST 501'd, the catch block swallowed
+        // anything except isBadRequest, and 5s later the poll refresh from
+        // /api/communications/sms/thread wiped the optimistic message because
+        // it was never persisted. The real Twilio send endpoint is
+        // /api/communications/sms (BF-Server src/routes/communications.ts:131)
+        // which sends via Twilio AND persists to communications_messages so
+        // the thread view stays consistent. Same v277 pattern as v300/v311
+        // (UI calling wrong URL prefix).
         to: selected.phone,
         body: pendingBody,
         contactId: selected.id,
@@ -577,7 +590,11 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={async () => {
                 if (!to.trim() || !body.trim()) return;
-                await api.post("/api/sms/send", { to: to.trim(), body: body.trim() });
+                // BF_PORTAL_BLOCK_v320_COMMS_SMS_SEND_URL_v1
+                // Same fix as the SMS-tab send() above — /api/sms/send is a
+                // stub returning HTTP 501. The real Twilio send endpoint is
+                // /api/communications/sms.
+                await api.post("/api/communications/sms", { to: to.trim(), body: body.trim() });
                 const c: Contact = { id: `new-${to.replace(/\D/g,"")}`, name: to.trim(), phone: to.trim() };
                 onStartConversation(c);
                 setOpen(false);
