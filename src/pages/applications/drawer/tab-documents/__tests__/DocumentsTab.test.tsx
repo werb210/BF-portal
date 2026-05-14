@@ -72,6 +72,10 @@ describe("DocumentsTab", () => {
     fireEvent.click(screen.getByTestId("doc-cat-bank_statements").querySelector("button") as HTMLButtonElement);
     fireEvent.click(screen.getByTestId("doc-actions-f1"));
     fireEvent.click(screen.getByTestId("doc-accept-f1"));
-    await waitFor(() => expect(mockPost).toHaveBeenCalledWith("/api/documents/f1/accept", {}));
+    // BF_PORTAL_BLOCK_v311_DOCUMENTS_TAB_PORTAL_PREFIX_v1
+    // The portal silo full workflow lives under /api/portal/documents/:id/...
+    // (see BF-Server src/routes/portal.ts). The bare /api/documents/:id/...
+    // path is the stub in src/routes/documents.ts which has no side effects.
+    await waitFor(() => expect(mockPost).toHaveBeenCalledWith("/api/portal/documents/f1/accept", {}));
   });
 });
