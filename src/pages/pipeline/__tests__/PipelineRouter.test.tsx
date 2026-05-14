@@ -1,13 +1,13 @@
-// BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE
+// BF_PORTAL_BLOCK_v213_CANONICAL_BI_PIPELINE_REDIRECT_v1 — superseded
+// BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE: BI no longer renders
+// BIPipelinePage in place; it redirects to /silo/bi/pipeline.
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import React from "react";
 
 vi.mock("@/pages/pipeline/PipelinePage", () => ({
   default: () => <div data-testid="bf-pipeline">BF Pipeline</div>,
-}));
-vi.mock("@/pages/applications/bi/BIPipelinePage", () => ({
-  default: () => <div data-testid="bi-pipeline">BI Pipeline</div>,
 }));
 
 function withSilo(silo: "BF" | "BI" | "SLF") {
@@ -21,13 +21,20 @@ function withSilo(silo: "BF" | "BI" | "SLF") {
   }));
 }
 
-describe("BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE", () => {
-  it("renders BIPipelinePage when active silo is BI", async () => {
+describe("BF_PORTAL_BLOCK_v213_CANONICAL_BI_PIPELINE_REDIRECT_v1", () => {
+  it("redirects to /silo/bi/pipeline when active silo is BI", async () => {
     vi.resetModules();
     withSilo("BI");
     const { default: PipelineRouter } = await import("../PipelineRouter");
-    render(<PipelineRouter />);
-    expect(screen.getByTestId("bi-pipeline")).toBeInTheDocument();
+    render(
+      <MemoryRouter initialEntries={["/pipeline"]}>
+        <Routes>
+          <Route path="/pipeline" element={<PipelineRouter />} />
+          <Route path="/silo/bi/pipeline" element={<div data-testid="bi-canonical">BI canonical</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(screen.getByTestId("bi-canonical")).toBeInTheDocument();
     expect(screen.queryByTestId("bf-pipeline")).not.toBeInTheDocument();
   });
 
@@ -35,16 +42,27 @@ describe("BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE", () => {
     vi.resetModules();
     withSilo("BF");
     const { default: PipelineRouter } = await import("../PipelineRouter");
-    render(<PipelineRouter />);
+    render(
+      <MemoryRouter initialEntries={["/pipeline"]}>
+        <Routes>
+          <Route path="/pipeline" element={<PipelineRouter />} />
+        </Routes>
+      </MemoryRouter>
+    );
     expect(screen.getByTestId("bf-pipeline")).toBeInTheDocument();
-    expect(screen.queryByTestId("bi-pipeline")).not.toBeInTheDocument();
   });
 
   it("renders BF PipelinePage when active silo is SLF (BF/SLF share the BF page for now)", async () => {
     vi.resetModules();
     withSilo("SLF");
     const { default: PipelineRouter } = await import("../PipelineRouter");
-    render(<PipelineRouter />);
+    render(
+      <MemoryRouter initialEntries={["/pipeline"]}>
+        <Routes>
+          <Route path="/pipeline" element={<PipelineRouter />} />
+        </Routes>
+      </MemoryRouter>
+    );
     expect(screen.getByTestId("bf-pipeline")).toBeInTheDocument();
   });
 });

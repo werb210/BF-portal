@@ -29,7 +29,9 @@ import MarketingPage from "@/pages/marketing/MarketingPage";
 import BIDashboardPage from "@/pages/bi/BIDashboardPage";
 import BICommissionDashboard from "@/pages/bi/BICommissionDashboard";
 import BIReferrersPage from "@/pages/bi/BIReferrersPage";
-import BIPipelinePage from "@/pages/applications/bi/BIPipelinePage";
+// BF_PORTAL_BLOCK_v213_CANONICAL_BI_PIPELINE_REDIRECT_v1 — import removed;
+// /bi/pipeline now redirects and PipelineRouter no longer renders it.
+// The orphan component is still exported in case test files reference it.
 import Leads from "@/pages/Leads";
 import IssueInboxPage from "@/pages/IssueInboxPage";
 import AiCommsPage from "@/pages/AiCommsPage";
@@ -187,16 +189,8 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/bi/pipeline"
-          element={
-            <ProtectedRoute>
-              <RequireRole roles={["Admin", "Staff", "Ops"]}>
-                <BIPipelinePage />
-              </RequireRole>
-            </ProtectedRoute>
-          }
-        />
+        {/* BF_PORTAL_BLOCK_v213_CANONICAL_BI_PIPELINE_REDIRECT_v1 — orphan /bi/pipeline redirects to canonical */}
+        <Route path="/bi/pipeline" element={<Navigate to="/silo/bi/pipeline" replace />} />
         <Route
           path="/bi/commissions"
           element={
