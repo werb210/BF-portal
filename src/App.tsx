@@ -135,6 +135,23 @@ const AppRoutes = () => {
   useEffect(() => {
     sanitizeOtpFlowStateOnBoot();
     void refreshO365TokenIfPossible();
+    // BF_PORTAL_BLOCK_v323_O365_PERIODIC_REFRESH_APP_LEVEL_v1
+    // Pre-fix the 30-min periodic /o365-refresh tick lived inside
+    // ProfileSettings.tsx (around line 322) — so it only fired while
+    // the user was viewing /settings. Navigate anywhere else and the
+    // setInterval cleanup ran, the timer stopped, and the stored access
+    // token expired (~1h) without ever being renewed. Move the timer
+    // to AppRoutes which stays mounted for the entire authed session,
+    // so refresh runs continuously regardless of which page the user
+    // is viewing. The 30-min cadence is well below the ~1h Microsoft
+    // access-token lifetime; refreshO365TokenIfPossible internally
+    // checks /o365-status first and only POSTs /o365-refresh when the
+    // server reports a refreshable token, so the call is a no-op for
+    // staff who never connected O365 in the first place.
+    const id = window.setInterval(() => {
+      void refreshO365TokenIfPossible();
+    }, 30 * 60 * 1000);
+    return () => window.clearInterval(id);
   }, []);
 
   return (
