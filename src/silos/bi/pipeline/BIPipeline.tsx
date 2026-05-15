@@ -1,21 +1,22 @@
 // BF_PORTAL_BLOCK_v193_BI_SILO_ALIGN_v1
+// BF_PORTAL_BLOCK_v47_BI_SILO_PIPELINE_v1
 // Pipeline view aligned with the columns BI-Server v233 actually returns
 // from /api/v1/bi/applications:
 //   business_name, company_name, guarantor_name, loan_amount, pgi_limit,
 //   lender_name, source, is_demo, application_code, public_id,
 //   carrier_received_at, carrier_last_event, pgi_application_id.
 //
-// Adds two top-level filters:
-//   - "Hide demo" toggle  → ?hide_demo=true
-//   - Lender dropdown     → ?lender_id=<uuid>
-//
-// Cards now show: business/company name, guarantor, lender, loan amount,
-// a TEST chip when is_demo, and a carrier chip when carrier_received_at
-// or carrier_last_event is set so staff can see at a glance which rows
-// have made it to the carrier.
+// v47 update: source the column list and labels from biStages.ts so the
+// pipeline stays aligned with the operator-locked 8-stage spec. Demo
+// rows are ALWAYS hidden from staff (operator-locked answer #1: staff
+// portal hides demo entirely). The reminder cadence fields
+// (docs_reminder_count, docs_reminder_escalated) surface as a small
+// chip on each card so staff see at a glance who's been pinged how
+// many times and who's escalated past the cron's reach.
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api";
+import { BI_VISIBLE_PIPELINE_STAGES, biStageLabel, biStageBadgeClass, type BiStageId } from "./biStages";
 
 type BIApplication = {
   id: string;
@@ -35,20 +36,24 @@ type BIApplication = {
   pgi_application_id?: string | null;
   bankruptcy_flag?: boolean;
   primary_contact_name?: string;
+  // BF_PORTAL_BLOCK_v47_BI_SILO_PIPELINE_v1 — reminder cadence fields
+  // populated from BI-Server v242 columns. Optional in the type because
+  // older BI-Server builds won't return them and we don't want to crash.
+  docs_reminder_count?: number | null;
+  docs_reminder_escalated?: boolean | null;
 };
 
 type Lender = { id: string; company_name: string; is_active?: boolean };
 
-const STAGES = [
-  { id: "new_application",    label: "New" },
-  { id: "in_progress",        label: "In Progress" },
-  { id: "document_review",    label: "Doc Review" },
-  { id: "submitted",          label: "Submitted" },
-  { id: "under_review",       label: "Under Review" },
-  { id: "approved",           label: "Approved" },
-  { id: "declined",           label: "Declined" },
-  { id: "policy_issued",      label: "Policy Issued" },
-];
+// BF_PORTAL_BLOCK_v47_BI_SILO_PIPELINE_v1 — use the operator-locked
+// 8-stage list from biStages.ts. The previous inline STAGES had
+// in_progress / document_review / approved / policy_issued which were
+// never real DB values; rows in those nonexistent stages would never
+// render, but the column headers would show as "empty" forever.
+const STAGES: { id: BiStageId; label: string }[] = BI_VISIBLE_PIPELINE_STAGES.map((id) => ({
+  id,
+  label: biStageLabel(id),
+}));
 
 function fmtMoney(n: number | null | undefined) {
   if (typeof n !== "number" || !Number.isFinite(n)) return null;
@@ -58,9 +63,10 @@ function fmtMoney(n: number | null | undefined) {
 export default function BIPipeline() {
   const [apps, setApps] = useState<BIApplication[]>([]);
   const [lenders, setLenders] = useState<Lender[]>([]);
-  const [hideDemo, setHideDemo] = useState<boolean>(() => {
-    try { return localStorage.getItem("bi.pipeline.hide_demo") === "1"; } catch { return false; }
-  });
+  // BF_PORTAL_BLOCK_v47_BI_SILO_PIPELINE_v1 — operator-locked answer #1:
+  // staff portal ALWAYS hides demo apps. The previous opt-in toggle is
+  // gone; the BI-Server still accepts the ?hide_demo=true query param
+  // for backwards compat, we just hardcode it on now.
   const [lenderId, setLenderId] = useState<string>("");
   const navigate = useNavigate();
 
@@ -71,7 +77,7 @@ export default function BIPipeline() {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hideDemo, lenderId]);
+  }, [lenderId]);
 
   async function loadLenders() {
     try {
@@ -84,21 +90,18 @@ export default function BIPipeline() {
 
   async function load() {
     const qs = new URLSearchParams();
-    if (hideDemo) qs.set("hide_demo", "true");
+    qs.set("hide_demo", "true");
     if (lenderId) qs.set("lender_id", lenderId);
-    const path = `/api/v1/bi/applications${qs.toString() ? `?${qs}` : ""}`;
+    const path = `/api/v1/bi/applications?${qs}`;
     try {
       const data = await api<BIApplication[] | { applications: BIApplication[] }>(path);
       const list = Array.isArray(data) ? data : data.applications || [];
-      setApps(list);
+      // Belt-and-suspenders: even if a future BI-Server build ignores
+      // hide_demo=true, filter client-side so staff never see TEST rows.
+      setApps(list.filter((a) => a.is_demo !== true));
     } catch {
       setApps([]);
     }
-  }
-
-  function onHideDemoChange(v: boolean) {
-    setHideDemo(v);
-    try { localStorage.setItem("bi.pipeline.hide_demo", v ? "1" : "0"); } catch {}
   }
 
   const counts = useMemo(() => {
@@ -112,14 +115,6 @@ export default function BIPipeline() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold">Pipeline</h2>
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <label className="flex items-center gap-2 text-white/70">
-            <input
-              type="checkbox"
-              checked={hideDemo}
-              onChange={(e) => onHideDemoChange(e.target.checked)}
-            />
-            Hide demo
-          </label>
           <select
             value={lenderId}
             onChange={(e) => setLenderId(e.target.value)}
@@ -177,6 +172,19 @@ export default function BIPipeline() {
                         {carrierChip && (
                           <span className="rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] text-blue-200 border border-blue-500/30">
                             carrier: {carrierChip}
+                          </span>
+                        )}
+                        {/* BF_PORTAL_BLOCK_v47_BI_SILO_PIPELINE_v1 -- reminder cadence chips */}
+                        {typeof app.docs_reminder_count === "number" && app.docs_reminder_count > 0 && (
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-[10px] border ${
+                              app.docs_reminder_escalated
+                                ? "bg-rose-500/20 text-rose-200 border-rose-500/40"
+                                : "bg-amber-500/15 text-amber-200 border-amber-500/30"
+                            }`}
+                            title={app.docs_reminder_escalated ? "Escalated to BI staff after 10 reminders" : "Daily SMS reminders sent to applicant"}
+                          >
+                            {app.docs_reminder_escalated ? "⚠ escalated" : `📨 ${app.docs_reminder_count}/10`}
                           </span>
                         )}
                         {app.bankruptcy_flag && (
