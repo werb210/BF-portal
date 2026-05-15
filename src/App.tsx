@@ -37,14 +37,19 @@ import IssueInboxPage from "@/pages/IssueInboxPage";
 import AiCommsPage from "@/pages/AiCommsPage";
 import AIChatDashboard from "@/pages/AIChatDashboard";
 import AIKnowledgeManager from "@/pages/admin/AIKnowledgeManager";
-import AIKnowledgeBasePage from "@/pages/admin/AIKnowledgeBasePage";
+// BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1
+// Five removed admin pages all call /api/admin/* endpoints that do not exist
+// on BF-Server (verified: /api/admin/ai-documents, /api/admin/issue-reports,
+// /api/admin/website-leads, /api/admin/live-chat-queue,
+// /api/admin/conversions all return 404). The pages render empty data
+// forever, no error UI, no loading state -- silent broken admin surface.
+// Sidebar/nav doesn't link to any of them so the only way to reach them is
+// by URL. Removing the imports + Route definitions eliminates the broken
+// surface. The page component files stay in src/pages/admin/ as orphans;
+// can be deleted in a follow-up cleanup pass.
 import GlobalAdmin from "@/pages/GlobalAdmin";
 import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
-import IssueReportsPage from "@/pages/admin/IssueReportsPage";
-import WebsiteLeadsPage from "@/pages/admin/WebsiteLeadsPage";
 import LeadsPage from "@/pages/admin/LeadsPage";
-import LiveChatQueuePage from "@/pages/admin/LiveChatQueuePage";
-import ConversionDashboardPage from "@/pages/admin/ConversionDashboardPage";
 import AiPolicyEditorPage from "@/pages/admin/AiPolicyEditorPage";
 import Operations from "@/pages/admin/Operations";
 import MayaIntelligence from "@/pages/admin/MayaIntelligence";
@@ -249,14 +254,14 @@ const AppRoutes = () => {
         <Route path="/ai-chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AIChatDashboard /></RequireRole></ProtectedRoute>} />
         <Route path="/ai-comms" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/ai" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AIKnowledgeManager /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/ai-knowledge" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AIKnowledgeBasePage /></RequireRole></ProtectedRoute>} />
+        {/* BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1 -- five routes
+            removed here (/admin/ai-knowledge, /admin/issue-reports,
+            /admin/website-leads, /admin/live-chat, /admin/conversions)
+            because their pages call /api/admin/* endpoints that don't
+            exist on BF-Server. See import block comment above. */}
         <Route path="/admin/support" element={<ProtectedRoute><RequireRole roles={["Admin"]}><GlobalAdmin /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/analytics" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AnalyticsDashboard /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/issue-reports" element={<ProtectedRoute><RequireRole roles={["Admin"]}><IssueReportsPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/website-leads" element={<ProtectedRoute><RequireRole roles={["Admin"]}><WebsiteLeadsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/leads" element={<ProtectedRoute><RequireRole roles={["Admin"]}><LeadsPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/live-chat" element={<ProtectedRoute><RequireRole roles={["Admin"]}><LiveChatQueuePage /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/conversions" element={<ProtectedRoute><RequireRole roles={["Admin"]}><ConversionDashboardPage /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/ai-policy" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AiPolicyEditorPage /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/operations" element={<ProtectedRoute><RequireRole roles={["Admin"]}><Operations /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/maya" element={<ProtectedRoute><RequireRole roles={["Admin"]}><MayaIntelligence /></RequireRole></ProtectedRoute>} />
