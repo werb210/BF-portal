@@ -65,6 +65,7 @@ const PipelinePage = () => {
   const silo = (rawSilo ?? "bf").toUpperCase() as "BF" | "BI" | "SLF";
   const stages = pipelineStages[silo];
   const navigate = useNavigate();
+  const engineConfig = useContext(PipelineEngineContext);
   const filters = usePipelineStore((state) => state.currentFilters);
   const selectedIds = usePipelineStore((state) => state.selectedApplicationIds);
   const resetPipeline = usePipelineStore((state) => state.resetPipeline);
@@ -131,6 +132,10 @@ const PipelinePage = () => {
 
 
   const handleCardClick = (id: string) => {
+    if (engineConfig?.businessUnit === "BI") {
+      navigate(`/silo/bi/pipeline/${id}`);
+      return;
+    }
     navigate(`/applications/${id}`);
   };
 

@@ -34,10 +34,9 @@ const BF_NAV: NavItem[] = [
 const BI_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/silo/bi/dashboard", roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/silo/bi/pipeline",  roles: ["Admin", "Staff", "Ops"] },
-  { label: "Contacts",       path: "/silo/bi/crm",       roles: ["Admin", "Staff"] },
-  { label: "Lenders",        path: "/silo/bi/lender",    roles: ["Admin", "Staff"] },
-  { label: "Referrer",       path: "/silo/bi/referrer",  roles: ["Admin", "Staff"] },
-  { label: "Marketing",      path: "/silo/bi/marketing", roles: ["Admin"] },
+  { label: "CRM",            path: "/silo/bi/crm",       roles: ["Admin", "Staff"] },
+  { label: "Lender",         path: "/silo/bi/lender",    roles: ["Admin", "Staff"] },
+    { label: "Marketing",      path: "/silo/bi/marketing", roles: ["Admin"] },
   { label: "Settings",       path: "/silo/bi/settings",  roles: ["Admin", "Staff", "Ops"] },
 ];
 
