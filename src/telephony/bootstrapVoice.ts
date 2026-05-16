@@ -119,7 +119,17 @@ export async function bootstrapVoice() {
   return bootstrapPromise;
 }
 
-export async function startPortalCall(to: string) {
+// BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1
+// Extended signature: optional opts.applicationId so server-side
+// telephony logging can correlate the call to the BI/BF application,
+// and returns the Call so callers (DialerPanel) can layer their own
+// handlers on top of bootstrap's bindCallHandlers without re-creating
+// a Device. Default Call.connect params keep the legacy "To" key
+// only; applicationId is added when supplied.
+export async function startPortalCall(
+  to: string,
+  opts?: { applicationId?: string },
+): Promise<Call> {
   const voiceDevice = device ?? (await bootstrapVoice());
   const normalizedDigits = to.replace(/\D/g, "");
 
@@ -137,15 +147,16 @@ export async function startPortalCall(to: string) {
   state.startOutgoingCall(normalizedTo);
 
   try {
-    const call = await voiceDevice.connect({
-      params: {
-        To: normalizedTo
-      }
-    });
+    const params: Record<string, string> = { To: normalizedTo };
+    if (opts?.applicationId) {
+      params.applicationId = opts.applicationId;
+    }
+    const call = await voiceDevice.connect({ params });
 
     activeCall = call;
     useCallState.getState().setCallInProgress(call);
     bindCallHandlers(call);
+    return call;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to start call.";
     setFailure(message);

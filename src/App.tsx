@@ -5,7 +5,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { roleIn } from "@/auth/roles";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
-import IncomingCallModal from "@/components/IncomingCallModal";
+// BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1 -- IncomingCallModal
+// is dormant after Phase 1 (no event source). Mount removed below; file
+// is kept on disk and deleted in Phase 3.
 import InstallPromptBanner from "@/components/InstallPromptBanner";
 import { IOSInstallBanner } from "@/components/IOSInstallBanner";
 import { ActiveCallBanner } from "@/components/ActiveCallBanner";
@@ -118,7 +120,9 @@ function AppShell() {
       <VoiceBootstrap />
       <ServerCallSyncBootstrap />
       <ActiveCallBanner />
-      <IncomingCallModal />
+      {/* BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1 --
+          <IncomingCallModal /> removed. IncomingCallOverlay below
+          is the single inbound UI. */}
       <DialerButton />
       <PortalDialer />
       <GlobalDialerButton />
