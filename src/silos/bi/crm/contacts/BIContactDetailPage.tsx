@@ -160,9 +160,15 @@ export default function BIContactDetailPage() {
     setSmsSending(true);
     setActionError(null);
     try {
+      // BF_PORTAL_BLOCK_BI_ROUND5_A_v1 -- explicit silo in the body
+      // even though /api/v1/bi/... is already silo-encoded by URL.
+      // When Block B lands and this call migrates to BF-Server's
+      // /api/communications/sms, the silo body field + the X-Silo
+      // header (auto-attached by api()) together route the activity
+      // to the BI timeline.
       await api(`/api/v1/bi/crm/contacts/${id}/sms`, {
         method: "POST",
-        body: { body },
+        body: { body, silo: "BI" },
       } as any);
       setSmsBody("");
       setComposing(false);
@@ -209,6 +215,44 @@ export default function BIContactDetailPage() {
           <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setEditing(true)} style={actionBtn} data-testid="bi-contact-edit-button">Edit</button>
             <button type="button" onClick={() => deleteContact()} disabled={deleting} style={{ ...actionBtn, borderColor: "#fecaca", color: "#b91c1c" }} data-testid="bi-contact-delete-button">{deleting ? "Deleting…" : "Delete"}</button>
+            {/* BF_PORTAL_BLOCK_BI_ROUND5_A_v1 -- BI silo Call + Email actions. Call dispatches the same bf:dialer-call CustomEvent that the BF silo uses; DialerPanel's listener opens the PortalDialer and runs startPortalCall (the consolidated singleton). Email uses mailto: for Phase 1. */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!contact.phone_e164) return;
+                window.dispatchEvent(
+                  new CustomEvent("bf:dialer-call", {
+                    detail: {
+                      phone: contact.phone_e164,
+                      contactId: contact.id,
+                      contactName: contact.full_name ?? undefined,
+                    },
+                  }),
+                );
+              }}
+              disabled={!contact.phone_e164}
+              title={contact.phone_e164 ? "Call this contact" : "Contact has no phone number"}
+              style={actionBtn}
+              data-testid="bi-contact-call-button"
+            >
+              Call
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!contact.email) return;
+                // Phase 1: open the OS mail handler. Phase 2 will
+                // replace this with an inline composer that POSTs
+                // through BF-Server's silo-aware O365 send.
+                window.location.href = `mailto:${contact.email}`;
+              }}
+              disabled={!contact.email}
+              title={contact.email ? "Compose email" : "Contact has no email address"}
+              style={actionBtn}
+              data-testid="bi-contact-email-button"
+            >
+              Email
+            </button>
             <button type="button" onClick={() => setComposing((v) => !v)} disabled={!contact.phone_e164} title={contact.phone_e164 ? "Send a free-text SMS" : "Contact has no phone number"} style={actionBtn} data-testid="bi-contact-sms-button">{composing ? "Cancel SMS" : "Send SMS"}</button>
           </div>
         )}

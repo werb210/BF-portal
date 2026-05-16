@@ -193,7 +193,7 @@ describe("BF_PORTAL_BLOCK_v208 — Send SMS", () => {
           init?.method === "POST",
       );
       expect(smsCall).toBeDefined();
-      expect(smsCall![1].body).toEqual({ body: "Reminder: demo at 2pm" });
+      expect(smsCall![1].body).toEqual({ body: "Reminder: demo at 2pm", silo: "BI" });
     });
   });
 
