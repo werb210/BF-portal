@@ -58,44 +58,44 @@ export type SmsMessage = {
 };
 
 export const fetchCommunicationThreads = (businessUnit?: string) =>
-  http.get<CommunicationConversation[]>(`/communications/threads${businessUnit ? `?businessUnit=${businessUnit}` : ""}`);
+  http.get<CommunicationConversation[]>(`/api/communications/threads${businessUnit ? `?businessUnit=${businessUnit}` : ""}`);
 
-export const fetchConversationById = (id: string) => http.get<CommunicationConversation>(`/communications/threads/${id}`);
-export const fetchCrmLeads = () => http.get<CrmLead[]>("/communications/leads");
+export const fetchConversationById = (id: string) => http.get<CommunicationConversation>(`/api/communications/threads/${id}`);
+export const fetchCrmLeads = () => http.get<CrmLead[]>("/api/communications/leads");
 
 export const sendCommunication = (conversationId: string, body: string, channel: CommunicationType = "chat") =>
-  http.post<CommunicationMessage>(`/communications/threads/${conversationId}/messages`, { body, channel });
+  http.post<CommunicationMessage>(`/api/communications/threads/${conversationId}/messages`, { body, channel });
 
 export const receiveInboundMessage = (conversationId: string, body: string, channel: CommunicationType, silo: string) =>
-  http.post<CommunicationMessage>(`/communications/threads/${conversationId}/inbound`, { body, channel, silo });
+  http.post<CommunicationMessage>(`/api/communications/threads/${conversationId}/inbound`, { body, channel, silo });
 
 export const createHumanEscalation = (payload: Record<string, unknown>) =>
-  http.post<CommunicationConversation>("/communications/escalations", payload);
+  http.post<CommunicationConversation>("/api/communications/escalations", payload);
 
 export const createIssueReport = (payload: Record<string, unknown>) =>
-  http.post<CommunicationConversation>("/communications/issues", payload);
+  http.post<CommunicationConversation>("/api/communications/issues", payload);
 
 export const acknowledgeIssue = (conversationId: string) =>
-  http.post<CommunicationConversation>(`/communications/issues/${conversationId}/acknowledge`);
+  http.post<CommunicationConversation>(`/api/communications/issues/${conversationId}/acknowledge`);
 
 export const archiveIssue = (conversationId: string) =>
-  http.post<CommunicationConversation>(`/communications/issues/${conversationId}/archive`);
+  http.post<CommunicationConversation>(`/api/communications/issues/${conversationId}/archive`);
 
-export const deleteIssue = (conversationId: string) => http.delete<{ success: boolean }>(`/communications/issues/${conversationId}`);
+export const deleteIssue = (conversationId: string) => http.delete<{ success: boolean }>(`/api/communications/issues/${conversationId}`);
 
 export const applyHumanActiveState = (conversationId: string) =>
-  http.post<CommunicationConversation>(`/communications/threads/${conversationId}/human-active`);
+  http.post<CommunicationConversation>(`/api/communications/threads/${conversationId}/human-active`);
 
 export const closeEscalatedChat = (conversationId: string, transcript?: string) =>
-  http.post<CommunicationConversation>(`/communications/threads/${conversationId}/close`, { transcript });
+  http.post<CommunicationConversation>(`/api/communications/threads/${conversationId}/close`, { transcript });
 
 export const attachTranscriptToLead = (conversationId: string, transcript: string) =>
-  http.post<{ success: boolean }>(`/communications/threads/${conversationId}/transcript`, { transcript });
+  http.post<{ success: boolean }>(`/api/communications/threads/${conversationId}/transcript`, { transcript });
 
-export const fetchSmsThread = (contactId: string) => http.get<SmsMessage[]>(`/communications/sms/${contactId}`);
+export const fetchSmsThread = (contactId: string) => http.get<SmsMessage[]>(`/api/communications/sms/${contactId}`);
 
 export const sendSms = (contact: Contact, body: string, fromNumber: string) =>
-  http.post<SmsMessage>(`/communications/sms`, { contactId: contact.id, body, fromNumber });
+  http.post<SmsMessage>(`/api/communications/sms`, { contactId: contact.id, body, fromNumber });
 
 export const logApplicationCallEvent = (payload: Record<string, unknown>) =>
-  http.post<{ success: boolean }>("/communications/call-events", payload);
+  http.post<{ success: boolean }>("/api/communications/call-events", payload);
