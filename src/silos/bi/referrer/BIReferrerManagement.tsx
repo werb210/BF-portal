@@ -123,7 +123,7 @@ export default function BIReferrerManagement() {
         <button onClick={() => void load()} className="rounded border border-card px-3 py-1 text-sm text-white/70 hover:text-white">Refresh</button>
       </div>
 
-      {error ? <div className="mb-4 rounded border border-amber-500/40 bg-amber-500/10 p-3 text-sm">{error}. BI-Server v239 will add the /admin/referrers endpoint.</div> : null}
+      {error ? <div className="mb-4 rounded border border-amber-500/40 bg-amber-500/10 p-3 text-sm">{error}. Click Refresh to retry; the referrers list endpoint is live.</div> : null}
 
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-5 mb-6">
         <Pill label="Referrers" value={totals.referrers} />
