@@ -8,7 +8,7 @@
 // BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
 // v207 baseline page extended with Edit / Delete / Send SMS
 // actions backed by BI-Server v255 endpoints.
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
 
@@ -42,6 +42,37 @@ type ActivityRow = {
   created_at: string;
 };
 
+// BF_PORTAL_BLOCK_BI_ROUND5_D_TIMELINE_v1 -- shape returned by
+// BF-Server's GET /api/communications/timeline (see Block 10).
+type BfTimelineEvent = {
+  id: string;
+  kind: "call" | "sms";
+  direction: "inbound" | "outbound" | null;
+  status: string | null;
+  body: string | null;
+  duration_seconds: number | null;
+  from_number: string | null;
+  to_number: string | null;
+  silo: string;
+  application_id: string | null;
+  twilio_sid: string | null;
+  staff_name: string | null;
+  staff_user_id: string | null;
+  created_at: string;
+};
+
+// BF_PORTAL_BLOCK_BI_ROUND5_D_TIMELINE_v1 -- normalized shape used by
+// the merged timeline. Both bi_contact_activity rows and BF-Server
+// timeline events collapse into this.
+type UnifiedEvent = {
+  uid: string;
+  source: "bi" | "bf";
+  label: string;
+  meta_parts: string[];
+  body: string | null;
+  created_at: string;
+};
+
 export default function BIContactDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -66,6 +97,10 @@ export default function BIContactDetailPage() {
     title: string;
     notes: string;
   }>({ full_name: "", email: "", phone_e164: "", title: "", notes: "" });
+
+  // BF_PORTAL_BLOCK_BI_ROUND5_D_TIMELINE_v1 -- BF-Server timeline
+  // (calls + SMS) merged into the contact's feed.
+  const [bfEvents, setBfEvents] = useState<BfTimelineEvent[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +141,88 @@ export default function BIContactDetailPage() {
       cancelled = true;
     };
   }, [id, refreshKey]);
+
+  // BF_PORTAL_BLOCK_BI_ROUND5_D_TIMELINE_v1
+  // Second-phase fetch: BF-Server timeline keyed on phone. Depends
+  // on the contact load having resolved phone_e164 (else there is
+  // nothing to filter by, and we skip the round-trip entirely).
+  // X-Silo header is auto-attached by the api() helper so the
+  // server-side resolveSiloFromRequest scopes to the active silo.
+  useEffect(() => {
+    const phone = contact?.phone_e164;
+    if (!phone) {
+      setBfEvents([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const r = await api<any>(
+          `/api/communications/timeline?phone=${encodeURIComponent(phone)}`,
+        );
+        if (cancelled) return;
+        const list: BfTimelineEvent[] = Array.isArray(r?.events)
+          ? r.events
+          : (Array.isArray(r?.data?.events) ? r.data.events : []);
+        setBfEvents(list);
+      } catch {
+        if (!cancelled) setBfEvents([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [contact?.phone_e164, refreshKey]);
+
+  // BF_PORTAL_BLOCK_BI_ROUND5_D_TIMELINE_v1
+  // Normalize both streams to UnifiedEvent and sort by created_at
+  // desc. BI rows render with their existing event_type / outcome /
+  // actor_name; BF rows compose meta from direction + duration +
+  // status + staff_name. uid is source-prefixed so the two id
+  // namespaces cannot collide.
+  const unifiedEvents = useMemo<UnifiedEvent[]>(() => {
+    const biRows: UnifiedEvent[] = events.map((e) => {
+      const metaParts: string[] = [];
+      if (e.outcome) metaParts.push(e.outcome);
+      if (e.actor_name) metaParts.push(e.actor_name);
+      return {
+        uid: `bi:${e.id}`,
+        source: "bi",
+        label: (e.event_type ?? "EVENT").toUpperCase(),
+        meta_parts: metaParts,
+        body: e.body,
+        created_at: e.created_at,
+      };
+    });
+
+    const bfRows: UnifiedEvent[] = bfEvents.map((e) => {
+      const metaParts: string[] = [];
+      if (e.direction) metaParts.push(e.direction);
+      if (e.kind === "call" && typeof e.duration_seconds === "number" && e.duration_seconds > 0) {
+        const total = Math.max(0, Math.floor(e.duration_seconds));
+        const mm = Math.floor(total / 60);
+        const ss = total % 60;
+        metaParts.push(`${mm}:${String(ss).padStart(2, "0")}`);
+      }
+      if (e.status) metaParts.push(e.status);
+      if (e.staff_name) metaParts.push(e.staff_name);
+      const dirSuffix = e.direction ? `_${e.direction.toUpperCase()}` : "";
+      return {
+        uid: `bf:${e.id}`,
+        source: "bf",
+        label: `${e.kind.toUpperCase()}${dirSuffix}`,
+        meta_parts: metaParts,
+        body: e.body,
+        created_at: e.created_at,
+      };
+    });
+
+    return [...biRows, ...bfRows].sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return tb - ta;
+    });
+  }, [events, bfEvents]);
 
   // BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
@@ -310,35 +427,34 @@ export default function BIContactDetailPage() {
         <div style={panel}>
           <div style={panelHeader}>
             <h3 style={{ margin: 0 }}>Activity</h3>
-            <span style={badge}>{contact.activity_count}</span>
+            {/* BF_PORTAL_BLOCK_BI_ROUND5_D_TIMELINE_v1 -- badge now
+                counts the merged feed (bi_contact_activity +
+                BF-Server timeline) instead of only BI-Server's
+                contact.activity_count, so the number matches the
+                rendered list. */}
+            <span style={badge}>{unifiedEvents.length}</span>
           </div>
-          {events.length === 0 ? (
+          {unifiedEvents.length === 0 ? (
             <p style={{ color: "#7c98b6", padding: 12 }}>No activity logged yet.</p>
           ) : (
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {events.map((e) => (
+              {unifiedEvents.map((e) => (
                 <li
-                  key={e.id}
+                  key={e.uid}
                   style={timelineRow}
                   data-testid="bi-contact-timeline-row"
+                  data-source={e.source}
                 >
                   <div style={timelineWhen}>
                     {new Date(e.created_at).toLocaleString()}
                   </div>
                   <div>
-                    <span style={timelineKind}>
-                      {e.event_type.toUpperCase()}
-                    </span>
-                    {e.outcome && (
-                      <span style={{ marginLeft: 8, color: "#516f90" }}>
-                        · {e.outcome}
+                    <span style={timelineKind}>{e.label}</span>
+                    {e.meta_parts.map((part, idx) => (
+                      <span key={idx} style={{ marginLeft: 8, color: "#516f90" }}>
+                        · {part}
                       </span>
-                    )}
-                    {e.actor_name && (
-                      <span style={{ marginLeft: 8, color: "#7c98b6" }}>
-                        · {e.actor_name}
-                      </span>
-                    )}
+                    ))}
                   </div>
                   {e.body && (
                     <div style={{ marginTop: 4, color: "#33475b" }}>{e.body}</div>
