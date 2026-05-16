@@ -13,8 +13,15 @@ import { describe, expect, it, vi } from "vitest";
 import DialerPanel from "@/components/dialer/DialerPanel";
 import { useDialerStore } from "@/state/dialer.store";
 
-vi.mock("@/services/twilioVoice", () => ({ fetchTwilioToken: vi.fn() }));
+// BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE3_v1
+// DialerPanel no longer imports from @/services/twilioVoice (Block 4
+// removed the local Device + fetchTwilioToken). DialerPanel now
+// imports startPortalCall from @/telephony/bootstrapVoice. Mock that
+// so render does not trip on bootstrap's module-level init.
+// The twilio voice-sdk mock stays: bootstrapVoice itself imports
+// Call + Device from it at module scope.
 vi.mock("@twilio/voice-sdk", () => ({ Device: vi.fn(), Call: vi.fn() }));
+vi.mock("@/telephony/bootstrapVoice", () => ({ startPortalCall: vi.fn() }));
 // BF_PORTAL_BLOCK_v86c — useSilo now throws without a provider; mock
 // it for unit tests that don't care about silo state.
 vi.mock("@/hooks/useSilo", () => ({
