@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Device, Call } from "@twilio/voice-sdk";
+import type { Call } from "@twilio/voice-sdk";
 import { useDialerStore } from "@/state/dialer.store";
 import { useSilo } from "@/hooks/useSilo";
-import { fetchTwilioToken } from "@/services/twilioVoice";
+// BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1
+// DialerPanel no longer owns a Twilio Device. Outbound calls go
+// through bootstrapVoice's shared singleton, which is the only
+// Device the portal registers.
+import { startPortalCall } from "@/telephony/bootstrapVoice";
 import { api } from "@/api";
 
 // BF_DIALER_TO_E164_v32 — server reads `to` (lowercase) and Twilio requires
@@ -104,7 +108,9 @@ export default function DialerPanel() {
   } = useDialerStore();
   const { silo } = useSilo();
 
-  const deviceRef = useRef<Device | null>(null);
+  // BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1 -- deviceRef
+  // removed; the shared singleton lives in bootstrapVoice and is
+  // accessed via startPortalCall.
   const callRef = useRef<Call | null>(null);
   const [transcript, setTranscript] = useState("");
   const [participants, setParticipants] = useState<{ number: string; duration: number }[]>([]);
@@ -134,50 +140,33 @@ export default function DialerPanel() {
     window.addEventListener("bf:dialer-call", onDialerCall as EventListener);
     return () => {
       window.removeEventListener("bf:dialer-call", onDialerCall as EventListener);
+      // Phase 2: only the active call is torn down here. The shared
+      // device is owned by VoiceBootstrap in App.tsx and persists
+      // across DialerPanel unmounts.
       callRef.current?.disconnect();
-      deviceRef.current?.destroy();
-      deviceRef.current = null;
     };
   }, [openDialer, setNumber, inProgress]);
 
-  async function initDevice() {
-    if (deviceRef.current) return deviceRef.current;
-    bfLogDialerPhase("device.init.start");
-    const token = await fetchTwilioToken();
-    const device = new Device(token, { logLevel: "warn" });
-    await device.register();
-    bfLogDialerPhase("device.registered");
-    deviceRef.current = device;
-    device.on("incoming", (call: Call) => { bfLogDialerPhase("device.on.incoming"); callRef.current = call; setStatus("ringing"); });
-    device.on("error", (error: Error) => bfLogDialerPhase("device.on.error", { message: error.message }));
-    device.on("cancel", () => bfLogDialerPhase("device.on.cancel"));
-    device.on("unregistered", () => bfLogDialerPhase("device.on.unregistered"));
-    // BF_DIALER_TOKEN_REFRESH_v34 — Twilio Voice SDK fires tokenWillExpire
-    // ~5min before TTL. Re-fetch from /api/telephony/token and update the
-    // device. Without this, in-progress calls hit AccessTokenExpired
-    // (error 20104) and disconnect immediately.
-    device.on("tokenWillExpire", async () => {
-      try {
-        bfLogDialerPhase("device.on.tokenWillExpire.start");
-        const fresh = await fetchTwilioToken();
-        await device.updateToken(fresh);
-        bfLogDialerPhase("device.on.tokenWillExpire.refreshed");
-      } catch (e: any) {
-        bfLogDialerPhase("device.on.tokenWillExpire.failed", { message: e?.message ?? "unknown" });
-      }
-    });
-    return device;
-  }
-
+  // BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1
+  // initDevice removed. Outbound calls go through bootstrapVoice's
+  // startPortalCall, which owns the shared Device + token refresh
+  // (the Voice SDK tokenWillExpire wiring belongs there once Phase 3
+  // formalises it). All existing dialer-side bookkeeping (callRef,
+  // useDialerStore status, error banner) is preserved by layering
+  // our handlers on top of the Call returned by startPortalCall --
+  // bootstrap's own bindCallHandlers fires on the same events and
+  // updates useCallState independently. The two stores cooperate
+  // without conflict.
   async function handleDial(overrideNumber?: string) {
     const target = (overrideNumber ?? number).trim();
     bfLogDialerPhase("call.button.click", { target });
     if (!target || inProgress) return;
     setError(null);
     try {
-      const device = await initDevice();
       bfLogDialerPhase("outbound-call.start", { target, applicationId: context.applicationId ?? null });
-      const call = await device.connect({ params: { To: target, applicationId: context.applicationId ?? "" } });
+      const call = await startPortalCall(target, {
+        applicationId: context.applicationId ?? undefined,
+      });
       callRef.current = call;
       startCall();
       call.on("ringing", () => { bfLogDialerPhase("call.on.ringing"); setStatus("ringing"); });
