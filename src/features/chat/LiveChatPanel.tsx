@@ -19,12 +19,12 @@ import {
   subscribeAiSocketConnection,
   type ConnectionEventName
 } from "@/services/aiSocket";
-// BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_CLOSE_v1 -- supplemental
-// import line. Adds closeChatSession (this block) and re-imports
-// sendStaffMessage so Block 21 runs standalone whether or not
-// Block 19's primary import additions have landed. TypeScript
-// merges duplicate named imports from the same module.
-import { closeChatSession, sendStaffMessage } from "@/services/aiSocket";
+// BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_CLOSE_v2 -- supplemental
+// import drops sendStaffMessage (already imported via the main
+// aiSocket import line added by Block 19) and keeps only
+// closeChatSession. Earlier v1 of this line caused TS2300
+// duplicate-identifier in CI.
+import { closeChatSession } from "@/services/aiSocket";
 import { useAuth } from "@/hooks/useAuth";
 
 type SessionStatus = "ai" | "human" | "closed";
