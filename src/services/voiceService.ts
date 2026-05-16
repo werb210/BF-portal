@@ -1,127 +1,60 @@
-import { Call, Device } from "@twilio/voice-sdk";
+// BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE1_v1
+// Phase 1 of dialer consolidation. This module no longer owns a
+// Twilio Device. It delegates to bootstrapVoice so the whole portal
+// shares one Device registered under the staff identity. Pre-Phase1
+// the portal registered two Devices (this one plus bootstrapVoice's)
+// which produced doubled inbound popups (IncomingCallModal +
+// IncomingCallOverlay) and the audio-routed-to-wrong-Device "no
+// sound" symptom captured in BI Issues 9.
+//
+// Public surface preserved so callers (MayaDialer, IncomingCallModal,
+// ContactDetailsDrawer) need no edits in this phase:
+//   initVoice, startOutboundCall, acceptIncoming, rejectIncoming,
+//   destroyVoice, initializeVoice, getDevice, makeCall.
+//
+// Notes for Phase 2:
+//   - destroyVoice no longer tears down the shared bootstrap device.
+//     It only hangs up the active call. The bootstrap device is
+//     destroyed on VoiceBootstrap unmount (App.tsx).
+//   - The "incoming-call" window event is no longer fired here.
+//     IncomingCallModal stays mounted but becomes inert.
+//     IncomingCallOverlay (bootstrap's UI) is now the single inbound
+//     surface.
+import type { Call } from "@twilio/voice-sdk";
 import { setCallStatus } from "@/dialer/callStore";
-import { getVoiceToken } from "@/telephony/getVoiceToken";
+import { bootstrapVoice, getVoiceDevice } from "@/telephony/bootstrapVoice";
 
-let device: Device | null = null;
 let activeCall: Call | null = null;
-let tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null;
-let registrationInProgress = false;
-let heartbeatInterval: number | null = null;
-let onlineRecoveryBound = false;
-
-const handleOnlineRecovery = () => {
-  if (!device) {
-    void initVoice();
-  }
-};
 
 export async function initVoice(_userId?: string): Promise<void> {
-  if (device || registrationInProgress) return;
-
-  registrationInProgress = true;
-
   try {
-    const token = await getVoiceToken();
-
-    if (!token) {
-      registrationInProgress = false;
-      return;
-    }
-
-    device = new Device(token, { logLevel: 1 });
-
-    device.on("registered", () => {
-      registrationInProgress = false;
-    });
-
-    device.on("incoming", (call: Call) => {
-      if (activeCall) {
-        call.reject();
-        return;
-      }
-
-      activeCall = call;
-      setCallStatus("incoming");
-      call.on("disconnect", () => {
-        if (activeCall === call) {
-          activeCall = null;
-          setCallStatus("ended");
-        }
-      });
-
-      window.dispatchEvent(new CustomEvent("incoming-call", { detail: call }));
-    });
-
-    device.on("error", () => {
-      registrationInProgress = false;
-    });
-
-    device.register();
-    scheduleTokenRefresh();
-    startPresenceHeartbeat();
-
-    if (!onlineRecoveryBound) {
-      window.addEventListener("online", handleOnlineRecovery);
-      onlineRecoveryBound = true;
-    }
+    await bootstrapVoice();
   } catch {
-    registrationInProgress = false;
+    // bootstrapVoice surfaces user-facing errors via useCallState.
   }
-}
-
-function scheduleTokenRefresh() {
-  if (tokenRefreshTimer) {
-    clearTimeout(tokenRefreshTimer);
-  }
-
-  tokenRefreshTimer = setTimeout(async () => {
-    try {
-      if (!device) return;
-
-      const token = await getVoiceToken();
-      if (!token) return;
-
-      device.updateToken(token);
-      scheduleTokenRefresh();
-    } catch {
-      // No-op: we'll retry on next refresh window.
-    }
-  }, 50 * 60 * 1000);
-}
-
-function startPresenceHeartbeat() {
-  if (heartbeatInterval) {
-    window.clearInterval(heartbeatInterval);
-  }
-
-  // Presence endpoint is intentionally disabled for MVP.
-  heartbeatInterval = window.setInterval(() => undefined, 15000);
 }
 
 export async function startOutboundCall(clientId: string) {
-  if (!device || activeCall) return;
-
-  setCallStatus("connecting");
-  activeCall = await device.connect({
-    params: { clientId }
-  });
-
-  activeCall.on("ringing", () => setCallStatus("ringing"));
-  activeCall.on("accept", () => setCallStatus("connected"));
-  activeCall.on("disconnect", () => {
+  if (activeCall) return;
+  try {
+    const device = await bootstrapVoice();
+    if (!device) return;
+    setCallStatus("connecting");
+    activeCall = await device.connect({ params: { clientId } });
+    activeCall.on("ringing", () => setCallStatus("ringing"));
+    activeCall.on("accept", () => setCallStatus("connected"));
+    activeCall.on("disconnect", () => {
+      activeCall = null;
+      setCallStatus("ended");
+    });
+  } catch {
     activeCall = null;
-    setCallStatus("ended");
-  });
+    setCallStatus("idle");
+  }
 }
 
 export async function acceptIncoming(call: Call): Promise<boolean> {
   if (activeCall && activeCall !== call) return false;
-
-  const callSid = call.parameters?.CallSid ?? call.parameters?.call_sid;
-
-  if (callSid) {
-    // /calls/:callSid/status is not part of MVP; skip lock check.
-  }
 
   activeCall = call;
   setCallStatus("connecting");
@@ -139,52 +72,30 @@ export async function acceptIncoming(call: Call): Promise<boolean> {
 
 export function rejectIncoming(call: Call) {
   call.reject();
-
   if (activeCall === call) {
     activeCall = null;
   }
-
   setCallStatus("missed");
 }
 
 export function destroyVoice() {
-  registrationInProgress = false;
-
-  if (tokenRefreshTimer) {
-    clearTimeout(tokenRefreshTimer);
-    tokenRefreshTimer = null;
-  }
-
-  if (heartbeatInterval) {
-    window.clearInterval(heartbeatInterval);
-    heartbeatInterval = null;
-  }
-
+  // Phase 1: hang up the active call only. The shared bootstrap
+  // device is owned by VoiceBootstrap in App.tsx and is destroyed
+  // there on unmount.
   if (activeCall) {
     activeCall.disconnect();
     activeCall = null;
   }
-
-  if (device) {
-    device.destroy();
-    device = null;
-  }
-
-  if (onlineRecoveryBound) {
-    window.removeEventListener("online", handleOnlineRecovery);
-    onlineRecoveryBound = false;
-  }
-
   setCallStatus("idle");
 }
 
-// Added compatibility APIs for the slide-in dialer component.
+// Compatibility shims for the slide-in dialer surface.
 export async function initializeVoice(identity: string): Promise<void> {
   await initVoice(identity);
 }
 
 export function getDevice() {
-  return device;
+  return getVoiceDevice();
 }
 
 export async function makeCall(to: string) {
