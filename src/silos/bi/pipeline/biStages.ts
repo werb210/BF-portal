@@ -1,95 +1,87 @@
-// BI_PIPELINE_ALIGN_v57 — BI pipeline stages aligned with PGI carrier API.
-// BF_PORTAL_BLOCK_v47_BI_SILO_PIPELINE_v1 — added 'docs_rejected' and
-// 'sent_to_pgi' to match the operator-locked 8-stage spec from BI Issues 5.
-//   submitted_no_docs (== new_application)  ← BI staff interactive
-//   docs_uploaded     (== documents_pending) ← BI staff interactive
-//   docs_in_review    (== under_review)      ← BI staff interactive (accept/reject docs)
-//   docs_rejected     (NEW)                  ← BI staff interactive (kicks back to applicant)
-//   sent_to_pgi       (NEW)                  ← read-only after this point
-//   quoted                                    ← PGI-driven webhook
-//   bound                                     ← PGI-driven webhook (terminal success)
-//   declined                                  ← PGI-driven webhook (terminal failure)
-// Lender-direct submissions skip new_application/documents_pending/
-// under_review/docs_rejected entirely and land directly in sent_to_pgi
-// with the carrier POST fired automatically.
+// BF_PORTAL_BLOCK_BI_ROUND8_STAGES_v1 -- 10-stage spec taxonomy
+// per BI_SUBMISSION_PIPELINE_V1.md sec 3, locked ruling 22, with
+// legacy 8-stage IDs kept as aliases that resolve to the new IDs.
+// During the BI-Server migration window some rows still carry the
+// legacy `new_application` / `documents_pending` / `under_review`
+// / `docs_rejected` / `sent_to_pgi` / `quoted` / `bound` values.
+// biStage() resolves either set to a label and badge.
 //
-// Lifecycle:
-//   new_application
-//     → documents_pending           (docs missing)
-//     → under_review                (staff reviewing docs)
-//       → submitted                 (Submit-to-Carrier — POST /applications/)
-//         → quoted                  (PGI webhook: application.quoted)
-//           → bound                 (PGI webhook: policy.bound) — terminal success
-//         → declined                (PGI webhook: application.declined) — terminal
-//   claim                           (PGI webhook: claim.* — separate track)
-//
-// Lender-direct submissions skip under_review and go straight to submitted.
-// Stages quoted/bound/declined/claim are PGI-driven and NEVER set manually.
+// Staff portal: 10 stages, including document_review (staff-only).
+// Lender + Referrer portals: 9 stages (no document_review).
 
 export type BiStageId =
-  | "new_application"
-  | "documents_pending"
-  | "under_review"
-  | "docs_rejected"
-  | "sent_to_pgi"
+  | "created"
+  | "in_progress"
+  | "document_review"
+  | "ready_for_submission"
   | "submitted"
-  | "quoted"
-  | "bound"
+  | "under_review"
+  | "information_required"
+  | "approved"
   | "declined"
-  | "claim";
+  | "policy_issued";
 
 export type BiStage = {
   id: BiStageId;
   label: string;
   description: string;
-  color: string;
   badgeClass: string;
+  color: string;
   order: number;
   isTerminal: boolean;
   isPgiDriven: boolean;
+  isStaffOnly: boolean;
 };
 
 export const BI_STAGES: readonly BiStage[] = [
-  { id: "new_application",   label: "Submitted (no docs)", description: "Applicant submitted without uploading documents",  color: "bg-slate-500/15 text-slate-200",     badgeClass: "bg-slate-500/20",     order: 1, isTerminal: false, isPgiDriven: false },
-  { id: "documents_pending", label: "Docs uploaded",       description: "Applicant has uploaded documents; awaiting staff review", color: "bg-amber-500/15 text-amber-200", badgeClass: "bg-amber-500/25",     order: 2, isTerminal: false, isPgiDriven: false },
-  { id: "under_review",      label: "Docs in review",      description: "Staff actively reviewing the documents",            color: "bg-blue-500/15 text-blue-200",       badgeClass: "bg-blue-500/25",      order: 3, isTerminal: false, isPgiDriven: false },
-  { id: "docs_rejected",     label: "Docs rejected",       description: "Staff rejected one or more documents; applicant must re-upload", color: "bg-rose-500/15 text-rose-200", badgeClass: "bg-rose-500/25",  order: 4, isTerminal: false, isPgiDriven: false },
-  { id: "sent_to_pgi",       label: "Sent to PGI",         description: "Forwarded to carrier; awaiting underwriter response", color: "bg-indigo-500/15 text-indigo-200", badgeClass: "bg-indigo-500/25",  order: 5, isTerminal: false, isPgiDriven: false },
-  // Retained for legacy data only — pre-v47 rows used `submitted` for what
-  // is now `sent_to_pgi`. Hidden from the visible pipeline columns by
-  // BIPipeline.tsx but kept here so old rows still have a valid label.
-  { id: "submitted",         label: "Submitted to Carrier",description: "(legacy) Sent to PGI",                              color: "bg-indigo-500/15 text-indigo-200",   badgeClass: "bg-indigo-500/25",    order: 5, isTerminal: false, isPgiDriven: false },
-  { id: "quoted",            label: "Quoted",              description: "PGI quoted; awaiting acceptance",                   color: "bg-purple-500/15 text-purple-200",   badgeClass: "bg-purple-500/25",    order: 6, isTerminal: false, isPgiDriven: true  },
-  { id: "bound",             label: "Bound",               description: "Policy bound — complete",                           color: "bg-emerald-500/15 text-emerald-200", badgeClass: "bg-emerald-500/25",   order: 7, isTerminal: true,  isPgiDriven: true  },
-  { id: "declined",          label: "Declined",            description: "PGI declined — terminal",                           color: "bg-rose-500/15 text-rose-200",       badgeClass: "bg-rose-500/25",      order: 8, isTerminal: true,  isPgiDriven: true  },
-  { id: "claim",             label: "Claim",               description: "Active claim",                                      color: "bg-orange-500/15 text-orange-200",   badgeClass: "bg-orange-500/25",    order: 9, isTerminal: false, isPgiDriven: true  },
+  { id: "created",              label: "New",                    description: "Score pass; full application not started",                            badgeClass: "bg-slate-500/20 text-slate-200",     color: "slate", order: 1,  isTerminal: false, isPgiDriven: false, isStaffOnly: false },
+  { id: "in_progress",          label: "In progress",            description: "Applicant working through the 45-question form",                       badgeClass: "bg-sky-500/20 text-sky-200",         color: "sky", order: 2,  isTerminal: false, isPgiDriven: false, isStaffOnly: false },
+  { id: "document_review",      label: "Doc review",             description: "Staff accept/reject docs; public source only",                         badgeClass: "bg-amber-500/25 text-amber-200",     color: "amber", order: 3,  isTerminal: false, isPgiDriven: false, isStaffOnly: true  },
+  { id: "ready_for_submission", label: "Ready for carrier",      description: "All docs accepted; auto-forwards or staff sends",                     badgeClass: "bg-cyan-500/25 text-cyan-200",       color: "cyan", order: 4,  isTerminal: false, isPgiDriven: false, isStaffOnly: false },
+  { id: "submitted",            label: "Submitted to carrier",   description: "Forwarded to PGI; awaiting webhook",                                  badgeClass: "bg-indigo-500/25 text-indigo-200",   color: "indigo", order: 5,  isTerminal: false, isPgiDriven: false, isStaffOnly: false },
+  { id: "under_review",         label: "Under review",           description: "PGI quoted; quote on file but not yet bound",                         badgeClass: "bg-purple-500/25 text-purple-200",   color: "purple", order: 6,  isTerminal: false, isPgiDriven: true,  isStaffOnly: false },
+  { id: "information_required", label: "Info required",          description: "PGI requested additional information",                                badgeClass: "bg-orange-500/25 text-orange-200",   color: "orange", order: 7,  isTerminal: false, isPgiDriven: true,  isStaffOnly: false },
+  { id: "approved",             label: "Approved",               description: "Reserved; carrier policy.bound lands directly in policy_issued",       badgeClass: "bg-emerald-500/20 text-emerald-200", color: "emerald", order: 8,  isTerminal: false, isPgiDriven: true,  isStaffOnly: false },
+  { id: "declined",             label: "Declined",               description: "PGI declined -- terminal",                                            badgeClass: "bg-rose-500/25 text-rose-200",       color: "rose", order: 9,  isTerminal: true,  isPgiDriven: true,  isStaffOnly: false },
+  { id: "policy_issued",        label: "Policy issued",          description: "policy.bound webhook -- terminal success",                            badgeClass: "bg-emerald-500/30 text-emerald-200", color: "emerald", order: 10, isTerminal: true,  isPgiDriven: true,  isStaffOnly: false },
 ] as const;
 
-// BF_PORTAL_BLOCK_v47_BI_SILO_PIPELINE_v1 — operator-locked spec: BI
-// staff only interact with the first 4 stages. Stages 5+ (sent_to_pgi
-// and beyond) are read-only in the staff UI. This constant drives
-// column visibility in BIPipeline.tsx and the accept/reject button
-// gating in BIDocumentList.tsx.
-export const BI_STAFF_INTERACTIVE_STAGES: readonly BiStageId[] = [
-  "new_application",
-  "documents_pending",
-  "under_review",
-  "docs_rejected",
-] as const;
+// Legacy 8-stage IDs the failing BI-Server migration is supposed
+// to map. Until the migration succeeds, rows may still carry these
+// values; resolve them to the new IDs so labels render correctly.
+const LEGACY_ALIASES: Record<string, BiStageId> = {
+  new_application:     "created",
+  documents_pending:   "document_review",
+  requires_docs:       "document_review",
+  internal_review:     "ready_for_submission",
+  submitted_to_insurer:"submitted",
+  sent_to_pgi:         "submitted",
+  docs_rejected:       "document_review",
+  quoted:              "under_review",
+  bound:               "policy_issued",
+  claim:               "policy_issued",
+};
 
-// The 8 columns the operator wants visible in the pipeline view (in
-// order). `submitted` and `claim` are legacy/parallel-track and not
-// shown as columns; rows landing in those stages still render via the
-// stage label, just under a different visual treatment.
+// Staff view = all 10. Lender + Referrer = 9 (no document_review).
 export const BI_VISIBLE_PIPELINE_STAGES: readonly BiStageId[] = [
-  "new_application",
-  "documents_pending",
-  "under_review",
-  "docs_rejected",
-  "sent_to_pgi",
-  "quoted",
-  "bound",
-  "declined",
+  "created","in_progress","document_review","ready_for_submission",
+  "submitted","under_review","information_required",
+  "approved","declined","policy_issued",
+] as const;
+
+export const BI_LENDER_VISIBLE_STAGES: readonly BiStageId[] = [
+  "created","in_progress","ready_for_submission",
+  "submitted","under_review","information_required",
+  "approved","declined","policy_issued",
+] as const;
+
+// Stages where staff actively act. Outside this set the application
+// is either pre-staff (created/in_progress), already submitted, or
+// driven by carrier webhooks.
+export const BI_STAFF_INTERACTIVE_STAGES: readonly BiStageId[] = [
+  "document_review",
+  "ready_for_submission",
+  "information_required",
 ] as const;
 
 const BY_ID = (() => {
@@ -98,32 +90,43 @@ const BY_ID = (() => {
   return m;
 })();
 
-export function biStage(id: BiStageId | string): BiStage | undefined {
-  return BY_ID[id as BiStageId];
+export function resolveStageId(id: string | null | undefined): BiStageId | null {
+  if (!id) return null;
+  if (id in BY_ID) return id as BiStageId;
+  if (id in LEGACY_ALIASES) return LEGACY_ALIASES[id] as BiStageId;
+  return null;
 }
-export function biStageLabel(id: BiStageId | string | null | undefined): string {
+
+export function biStage(id: string | null | undefined): BiStage | undefined {
+  const resolved = resolveStageId(id);
+  return resolved ? BY_ID[resolved] : undefined;
+}
+
+export function biStageLabel(id: string | null | undefined): string {
   if (!id) return "—";
-  return BY_ID[id as BiStageId]?.label ?? id;
+  return biStage(id)?.label ?? String(id);
 }
-export function biStageBadgeClass(id: BiStageId | string | null | undefined): string {
-  if (!id) return "bg-white/10";
-  return BY_ID[id as BiStageId]?.badgeClass ?? "bg-white/10";
+
+export function biStageBadgeClass(id: string | null | undefined): string {
+  return biStage(id)?.badgeClass ?? "bg-white/10";
 }
 
 const MANUAL_TRANSITIONS: Record<BiStageId, BiStageId[]> = {
-  new_application:   ["documents_pending", "under_review"],
-  documents_pending: ["under_review"],
-  under_review:      ["documents_pending", "docs_rejected", "sent_to_pgi"],
-  docs_rejected:     ["documents_pending", "under_review"],
-  sent_to_pgi:       [],
-  submitted:         [],
-  quoted:            [],
-  bound:             [],
-  declined:          [],
-  claim:             [],
+  created:              ["in_progress"],
+  in_progress:          ["document_review", "ready_for_submission"],
+  document_review:      ["ready_for_submission"], // last-doc-accept auto-fires
+  ready_for_submission: ["submitted"],            // "Send to carrier"
+  submitted:            [],                       // webhooks own from here
+  under_review:         [],
+  information_required: [],
+  approved:             [],
+  declined:             [],
+  policy_issued:        [],
 };
 
-export function canTransitionManually(from: BiStageId | string, to: BiStageId | string): boolean {
-  const allowed = MANUAL_TRANSITIONS[from as BiStageId];
-  return Array.isArray(allowed) && allowed.includes(to as BiStageId);
+export function canTransitionManually(from: string, to: string): boolean {
+  const f = resolveStageId(from);
+  const t = resolveStageId(to);
+  if (!f || !t) return false;
+  return MANUAL_TRANSITIONS[f].includes(t);
 }
