@@ -6,12 +6,20 @@ import {
   sendCommunication,
   type CommunicationConversation
 } from "@/api/communications";
+// BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_WIRING_v1 -- the panel
+// now also uses joinChatSessionAsStaff (called when the active
+// thread changes) and sendStaffMessage (used by Block 21 for the
+// composer) in place of HTTP endpoints that do not exist on
+// BF-Server.
 import {
+  joinChatSessionAsStaff,
   reconnectAiSocket,
+  sendStaffMessage,
   subscribeAiSocket,
   subscribeAiSocketConnection,
   type ConnectionEventName
 } from "@/services/aiSocket";
+import { useAuth } from "@/hooks/useAuth";
 
 type SessionStatus = "ai" | "human" | "closed";
 
@@ -38,6 +46,11 @@ const sessionMetaLabel = (session: CommunicationConversation) => {
 };
 
 export default function LiveChatPanel() {
+  // BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_WIRING_v1 -- userId for
+  // the staff_join frame; falls back through email -> "staff" so a
+  // missing id doesn't block the join (the server only requires
+  // a non-empty userId string).
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<CommunicationConversation[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [draftMessage, setDraftMessage] = useState("");
@@ -49,6 +62,25 @@ export default function LiveChatPanel() {
     () => sessions.find((session) => session.id === activeSessionId) ?? null,
     [sessions, activeSessionId]
   );
+
+  // BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_WIRING_v1
+  // Send the staff_join WS frame whenever the active thread
+  // changes. Server (socket.server.ts:235-265) flips session
+  // status to HUMAN_ACTIVE and broadcasts staff_joined to the
+  // client widget -- that is the trigger the client widget
+  // listens for to render "Transferring you...". Re-fires if the
+  // active session changes, which is what a staff member doing
+  // round-robin across sessions actually wants. activeSession is
+  // a CommunicationConversation; the WS session id sits on
+  // sessionId (canonical) with a fallback to id for older threads
+  // that did not carry an explicit sessionId.
+  useEffect(() => {
+    if (!activeSession) return;
+    const wsSessionId = activeSession.sessionId ?? activeSession.id;
+    if (!wsSessionId) return;
+    const staffUserId = user?.id ?? user?.email ?? "staff";
+    joinChatSessionAsStaff(wsSessionId, staffUserId);
+  }, [activeSession?.id, activeSession?.sessionId, user?.id, user?.email]);
 
   const loadSessions = useCallback(async () => {
     setLoading(true);
