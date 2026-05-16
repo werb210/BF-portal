@@ -164,8 +164,15 @@ export default function DialerPanel() {
     setError(null);
     try {
       bfLogDialerPhase("outbound-call.start", { target, applicationId: context.applicationId ?? null });
+      // BF_PORTAL_BLOCK_BI_ROUND5_7BIS_v1 -- include silo so the
+      // resulting call_logs row (created on the Twilio TwiML
+      // webhook in Block 9) is tagged with the current silo. silo
+      // is the lowercase value from useSilo (bf/bi/slf); bootstrap
+      // normalizes to upper case before putting it on the Twilio
+      // call params.
       const call = await startPortalCall(target, {
         applicationId: context.applicationId ?? undefined,
+        silo,
       });
       callRef.current = call;
       startCall();
