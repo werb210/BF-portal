@@ -75,8 +75,7 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
   // are ready for staff review.
   const reviewLocked =
     stage !== "under_review" &&
-    stage !== "documents_pending" &&
-    (stage as string) !== "document_review";
+    stage !== "document_review";
   const visibleDocs = requiredDocs
     .filter((d) => !d.if_startup || isStartup)
     .sort((a, b) => a.sort_order - b.sort_order);

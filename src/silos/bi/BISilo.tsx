@@ -1,8 +1,10 @@
 // BI_PGI_ALIGNMENT_v56 — 6-tab BI silo nav: Dashboard, Pipeline, CRM, Lender, Marketing, Settings.
 // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
 import { Navigate, Route, Routes } from "react-router-dom";
-import PipelinePage from "@/core/engines/pipeline/PipelinePage";
-import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
+// BF_PORTAL_BLOCK_BI_ROUND8_PIPELINE_v1 -- replaced PipelinePage
+// with the BI-specific BIPipeline component. The shared
+// PipelinePage stays for BF + SLF; BI is now independent.
+import BIPipeline from "./pipeline/BIPipeline";
 import BICRM from "./crm/BICRM";
 // BF_PORTAL_BLOCK_v207_BI_CONTACT_DETAIL_v1
 import BIContactDetailPage from "./crm/contacts/BIContactDetailPage";
@@ -15,7 +17,10 @@ import BISettings from "./settings/BISettings";
 // BF_PORTAL_BLOCK_BI_SILO_TRIM_v1 -- Marketing tab consolidated into CRM > Outreach (BIMarketing kept on disk for future reuse).
 // BF_PORTAL_BLOCK_BI_SILO_TRIM_v1 -- Settings tab removed; sign-in lives in BF silo (design note 7).
 import BIApplicationDetail from "./pipeline/BIApplicationDetail";
-import { biPipelineAdapter } from "./bi.pipeline.adapter";
+// biPipelineAdapter import removed -- no longer needed after the
+// PipelinePage -> BIPipeline swap. The adapter file stays in case
+// any other surface still uses it; if nothing does the file can
+// be deleted in a follow-up cleanup block.
 
 export default function BISilo() {
   return (
@@ -30,11 +35,7 @@ export default function BISilo() {
           {/* BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 */}
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<BIDashboard />} />
-          <Route path="pipeline" element={
-            <PipelineEngineProvider config={{ businessUnit: "BI", api: biPipelineAdapter }}>
-              <PipelinePage />
-            </PipelineEngineProvider>
-          } />
+          <Route path="pipeline" element={<BIPipeline />} />
           <Route path="pipeline/:id" element={<BIApplicationDetail />} />
           <Route path="crm" element={<BICRM />} />
       {/* BF_PORTAL_BLOCK_v207_BI_CONTACT_DETAIL_v1 */}
