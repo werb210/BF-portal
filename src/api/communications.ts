@@ -60,6 +60,17 @@ export type SmsMessage = {
 export const fetchCommunicationThreads = (businessUnit?: string) =>
   http.get<CommunicationConversation[]>(`/api/communications/threads${businessUnit ? `?businessUnit=${businessUnit}` : ""}`);
 
+// BF_PORTAL_BLOCK_BI_ROUND6_THREADS_DETAIL_v1
+// Per-session detail loader. Server returns the same
+// CommunicationConversation shape as the list endpoint but with
+// the full messages array (sorted asc, capped at 500). Called
+// by LiveChatPanel when the active session changes so the message
+// area populates with history.
+export const fetchCommunicationThread = (id: string) =>
+  http.get<CommunicationConversation>(
+    `/api/communications/threads/${encodeURIComponent(id)}`
+  );
+
 export const fetchConversationById = (id: string) => http.get<CommunicationConversation>(`/api/communications/threads/${id}`);
 export const fetchCrmLeads = () => http.get<CrmLead[]>("/api/communications/leads");
 
