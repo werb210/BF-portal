@@ -1,60 +1,144 @@
+// BF_PORTAL_BLOCK_BI_ROUND8_STAGES_v1 -- test rewrite to match the
+// 10-stage spec from BI_SUBMISSION_PIPELINE_V1.md sec 3. Legacy
+// 8-stage IDs still resolve via LEGACY_ALIASES so production data
+// keeps rendering correctly during the BI-Server migration window;
+// these tests cover both the new canonical list and alias resolution.
 import { describe, it, expect } from "vitest";
-import { BI_STAGES, BI_VISIBLE_PIPELINE_STAGES, BI_STAFF_INTERACTIVE_STAGES, biStage, biStageLabel, canTransitionManually } from "../biStages";
+import {
+  BI_STAGES,
+  BI_VISIBLE_PIPELINE_STAGES,
+  BI_LENDER_VISIBLE_STAGES,
+  BI_STAFF_INTERACTIVE_STAGES,
+  biStage,
+  biStageLabel,
+  resolveStageId,
+  canTransitionManually,
+} from "../biStages";
 
-describe("BI_PIPELINE_ALIGN_v57 stages", () => {
-  // BF_PORTAL_BLOCK_v47_BI_SILO_PIPELINE_v1 — v47 added 'docs_rejected' and
-  // 'sent_to_pgi' to align with the operator-locked 8-stage BI Issues 5
-  // spec. The legacy 'submitted' value is retained for backwards compat
-  // with pre-v47 rows, so BI_STAGES now has 10 entries total. The 8
-  // operator-spec stages are exposed via BI_VISIBLE_PIPELINE_STAGES.
-  it("has the canonical stages aligned with PGI carrier API", () => {
+describe("BI 10-stage spec", () => {
+  it("has the canonical 10 stages aligned with PGI carrier API", () => {
     expect(BI_STAGES.map((s) => s.id)).toEqual([
-      "new_application", "documents_pending", "under_review",
-      "docs_rejected", "sent_to_pgi",
+      "created",
+      "in_progress",
+      "document_review",
+      "ready_for_submission",
       "submitted",
-      "quoted", "bound", "declined", "claim",
+      "under_review",
+      "information_required",
+      "approved",
+      "declined",
+      "policy_issued",
     ]);
   });
-  it("exposes the 8 operator-spec visible pipeline stages", () => {
+
+  it("exposes all 10 stages in the staff pipeline view", () => {
     expect([...BI_VISIBLE_PIPELINE_STAGES]).toEqual([
-      "new_application", "documents_pending", "under_review",
-      "docs_rejected", "sent_to_pgi", "quoted", "bound", "declined",
+      "created",
+      "in_progress",
+      "document_review",
+      "ready_for_submission",
+      "submitted",
+      "under_review",
+      "information_required",
+      "approved",
+      "declined",
+      "policy_issued",
     ]);
   });
-  it("marks the first 4 stages as BI-staff-interactive", () => {
+
+  it("exposes 9 stages in the lender/referrer pipeline (no document_review)", () => {
+    expect([...BI_LENDER_VISIBLE_STAGES]).toEqual([
+      "created",
+      "in_progress",
+      "ready_for_submission",
+      "submitted",
+      "under_review",
+      "information_required",
+      "approved",
+      "declined",
+      "policy_issued",
+    ]);
+    expect([...BI_LENDER_VISIBLE_STAGES]).not.toContain("document_review");
+  });
+
+  it("flags the stages where staff actively work", () => {
     expect([...BI_STAFF_INTERACTIVE_STAGES]).toEqual([
-      "new_application", "documents_pending", "under_review", "docs_rejected",
+      "document_review",
+      "ready_for_submission",
+      "information_required",
     ]);
   });
-  it("biStageLabel returns the human label", () => {
-    expect(biStageLabel("under_review")).toBe("Docs in review");
-    expect(biStageLabel("submitted")).toBe("Submitted to Carrier");
-    expect(biStageLabel("sent_to_pgi")).toBe("Sent to PGI");
-    expect(biStageLabel("docs_rejected")).toBe("Docs rejected");
+
+  it("biStageLabel returns the human label for the new IDs", () => {
+    expect(biStageLabel("created")).toBe("New");
+    expect(biStageLabel("in_progress")).toBe("In progress");
+    expect(biStageLabel("document_review")).toBe("Doc review");
+    expect(biStageLabel("submitted")).toBe("Submitted to carrier");
+    expect(biStageLabel("under_review")).toBe("Under review");
+    expect(biStageLabel("policy_issued")).toBe("Policy issued");
     expect(biStageLabel(null)).toBe("—");
   });
-  it("treats bound and declined as terminal", () => {
-    expect(biStage("bound")?.isTerminal).toBe(true);
+
+  it("resolves legacy 8-stage IDs to the new spec via LEGACY_ALIASES", () => {
+    expect(resolveStageId("new_application")).toBe("created");
+    expect(resolveStageId("documents_pending")).toBe("document_review");
+    expect(resolveStageId("requires_docs")).toBe("document_review");
+    expect(resolveStageId("internal_review")).toBe("ready_for_submission");
+    expect(resolveStageId("submitted_to_insurer")).toBe("submitted");
+    expect(resolveStageId("sent_to_pgi")).toBe("submitted");
+    expect(resolveStageId("docs_rejected")).toBe("document_review");
+    expect(resolveStageId("quoted")).toBe("under_review");
+    expect(resolveStageId("bound")).toBe("policy_issued");
+    expect(resolveStageId("claim")).toBe("policy_issued");
+  });
+
+  it("returns the new label even when given a legacy ID", () => {
+    expect(biStageLabel("new_application")).toBe("New");
+    expect(biStageLabel("documents_pending")).toBe("Doc review");
+    expect(biStageLabel("quoted")).toBe("Under review");
+    expect(biStageLabel("bound")).toBe("Policy issued");
+  });
+
+  it("treats declined and policy_issued as terminal", () => {
     expect(biStage("declined")?.isTerminal).toBe(true);
+    expect(biStage("policy_issued")?.isTerminal).toBe(true);
+    expect(biStage("submitted")?.isTerminal).toBe(false);
+    expect(biStage("under_review")?.isTerminal).toBe(false);
   });
-  it("flags PGI-driven stages", () => {
-    expect(biStage("quoted")?.isPgiDriven).toBe(true);
-    expect(biStage("bound")?.isPgiDriven).toBe(true);
-    expect(biStage("under_review")?.isPgiDriven).toBe(false);
-    expect(biStage("sent_to_pgi")?.isPgiDriven).toBe(false);
+
+  it("flags PGI-driven stages (carrier webhook owns them)", () => {
+    expect(biStage("under_review")?.isPgiDriven).toBe(true);
+    expect(biStage("information_required")?.isPgiDriven).toBe(true);
+    expect(biStage("approved")?.isPgiDriven).toBe(true);
+    expect(biStage("declined")?.isPgiDriven).toBe(true);
+    expect(biStage("policy_issued")?.isPgiDriven).toBe(true);
+    expect(biStage("submitted")?.isPgiDriven).toBe(false);
+    expect(biStage("ready_for_submission")?.isPgiDriven).toBe(false);
   });
-  it("rejects manual transitions to PGI-driven stages", () => {
-    expect(canTransitionManually("submitted", "quoted")).toBe(false);
-    expect(canTransitionManually("submitted", "bound")).toBe(false);
-    expect(canTransitionManually("under_review", "declined")).toBe(false);
-    expect(canTransitionManually("sent_to_pgi", "quoted")).toBe(false);
+
+  it("marks document_review as staff-only (lender/referrer skip it)", () => {
+    expect(biStage("document_review")?.isStaffOnly).toBe(true);
+    expect(biStage("ready_for_submission")?.isStaffOnly).toBe(false);
+    expect(biStage("submitted")?.isStaffOnly).toBe(false);
   });
-  it("allows under_review to transition to docs_rejected or sent_to_pgi", () => {
-    expect(canTransitionManually("under_review", "docs_rejected")).toBe(true);
-    expect(canTransitionManually("under_review", "sent_to_pgi")).toBe(true);
+
+  it("allows the canonical forward transitions per spec", () => {
+    expect(canTransitionManually("created", "in_progress")).toBe(true);
+    expect(canTransitionManually("in_progress", "document_review")).toBe(true);
+    expect(canTransitionManually("in_progress", "ready_for_submission")).toBe(true);
+    expect(canTransitionManually("document_review", "ready_for_submission")).toBe(true);
+    expect(canTransitionManually("ready_for_submission", "submitted")).toBe(true);
   });
-  it("allows docs_rejected to kick back to documents_pending or under_review", () => {
-    expect(canTransitionManually("docs_rejected", "documents_pending")).toBe(true);
-    expect(canTransitionManually("docs_rejected", "under_review")).toBe(true);
+
+  it("rejects manual transitions into PGI-driven stages", () => {
+    expect(canTransitionManually("submitted", "under_review")).toBe(false);
+    expect(canTransitionManually("submitted", "declined")).toBe(false);
+    expect(canTransitionManually("under_review", "policy_issued")).toBe(false);
+    expect(canTransitionManually("ready_for_submission", "policy_issued")).toBe(false);
+  });
+
+  it("rejects manual transitions from terminal stages", () => {
+    expect(canTransitionManually("declined", "submitted")).toBe(false);
+    expect(canTransitionManually("policy_issued", "submitted")).toBe(false);
   });
 });
