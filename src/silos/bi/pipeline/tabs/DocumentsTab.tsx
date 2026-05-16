@@ -38,7 +38,10 @@ function OcrStatusBadge({ status }: { status: string | null | undefined }) {
   return <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-white/70">{status}</span>;
 }
 
-export default function DocumentsTab({ applicationId, stage, onMutated, isStartup = false }: { applicationId: string; stage: BiStageId; onMutated: () => void; isStartup?: boolean }) {
+// BF_PORTAL_BLOCK_BI_ROUND8_DETAIL_v1 -- accept readOnly prop. When
+// true, accept/reject controls are hidden (lender + referrer apps
+// auto-forward to carrier and staff don't touch documents).
+export default function DocumentsTab({ applicationId, stage, onMutated, isStartup = false, readOnly = false }: { readOnly?: boolean; applicationId: string; stage: BiStageId; onMutated: () => void; isStartup?: boolean }) {
   const [docs, setDocs] = useState<Doc[]>([]);
   // BF_PORTAL_BLOCK_1_22_BI_DOC_UI — load required docs from server.
   const [requiredDocs, setRequiredDocs] = useState<BiRequiredDoc[]>([]);
@@ -127,9 +130,9 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
               {d.period_end && <span> • period ending {d.period_end}</span>}
             </div>
           </div>
-          <button disabled={reviewLocked} onClick={() => accept(d.id)} className="rounded bg-emerald-600/80 px-2">
+          {!readOnly && <button disabled={reviewLocked} onClick={() => accept(d.id)} className="rounded bg-emerald-600/80 px-2">
             Accept
-          </button>
+          </button>} 
         </div>
       ))}
     </div>
