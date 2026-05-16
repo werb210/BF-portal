@@ -92,7 +92,12 @@ export const closeEscalatedChat = (conversationId: string, transcript?: string) 
 export const attachTranscriptToLead = (conversationId: string, transcript: string) =>
   http.post<{ success: boolean }>(`/api/communications/threads/${conversationId}/transcript`, { transcript });
 
-export const fetchSmsThread = (contactId: string) => http.get<SmsMessage[]>(`/api/communications/sms/${contactId}`);
+// BF_PORTAL_BLOCK_BI_ROUND6_SMS_THREAD_PATH_v1 -- server provides
+// /api/communications/sms/thread?contactId=..., not the path-keyed
+// /api/communications/sms/<id>. Rewriting the client matches the
+// existing server contract without a server-side migration.
+export const fetchSmsThread = (contactId: string) =>
+  http.get<SmsMessage[]>(`/api/communications/sms/thread?contactId=${encodeURIComponent(contactId)}`);
 
 export const sendSms = (contact: Contact, body: string, fromNumber: string) =>
   http.post<SmsMessage>(`/api/communications/sms`, { contactId: contact.id, body, fromNumber });
