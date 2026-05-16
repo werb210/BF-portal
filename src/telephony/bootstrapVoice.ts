@@ -144,15 +144,15 @@ export async function bootstrapVoice() {
 }
 
 // BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1
-// Extended signature: optional opts.applicationId so server-side
-// telephony logging can correlate the call to the BI/BF application,
-// and returns the Call so callers (DialerPanel) can layer their own
-// handlers on top of bootstrap's bindCallHandlers without re-creating
-// a Device. Default Call.connect params keep the legacy "To" key
-// only; applicationId is added when supplied.
+// BF_PORTAL_BLOCK_BI_ROUND5_7BIS_v1 -- opts.silo added so Voice SDK
+// outbound calls can be tagged for the silo timeline. Block 9 picks
+// it up in /api/webhooks/twilio/voice/twiml on BF-Server to create
+// the call_logs row with the right silo. Silo is normalized to
+// upper-case (BF / BI / SLF) before going into the Twilio params --
+// the server-side resolveSiloFromRequest helper does the same.
 export async function startPortalCall(
   to: string,
-  opts?: { applicationId?: string },
+  opts?: { applicationId?: string; silo?: string },
 ): Promise<Call> {
   const voiceDevice = device ?? (await bootstrapVoice());
   const normalizedDigits = to.replace(/\D/g, "");
@@ -174,6 +174,9 @@ export async function startPortalCall(
     const params: Record<string, string> = { To: normalizedTo };
     if (opts?.applicationId) {
       params.applicationId = opts.applicationId;
+    }
+    if (opts?.silo) {
+      params.silo = String(opts.silo).toUpperCase();
     }
     const call = await voiceDevice.connect({ params });
 
