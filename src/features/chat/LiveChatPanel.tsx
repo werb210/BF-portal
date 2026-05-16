@@ -1,9 +1,12 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+// BF_PORTAL_BLOCK_BI_ROUND6_THREADS_DETAIL_v1 -- HTTP-side
+// imports trimmed. Legacy HTTP-only helpers were dead after
+// Blocks 19 + 21 moved the
+// staff side onto the WebSocket. fetchCommunicationThread (new
+// in this block) loads per-session message history.
 import {
-  applyHumanActiveState,
-  closeEscalatedChat,
+  fetchCommunicationThread,
   fetchCommunicationThreads,
-  sendCommunication,
   type CommunicationConversation
 } from "@/api/communications";
 // BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_WIRING_v1 -- the panel
@@ -88,6 +91,35 @@ export default function LiveChatPanel() {
     joinChatSessionAsStaff(wsSessionId, staffUserId);
   }, [activeSession?.id, activeSession?.sessionId, user?.id, user?.email]);
 
+  // BF_PORTAL_BLOCK_BI_ROUND6_THREADS_DETAIL_v1
+  // Load message history when activeSessionId changes. Replaces
+  // the matching session's messages array in state so the message
+  // pane renders the full history instead of the empty messages: []
+  // that the list endpoint returns. After this lands, the WS
+  // appendIncomingMessage handler keeps the array fresh for the
+  // duration of the session.
+  useEffect(() => {
+    if (!activeSessionId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const detail = await fetchCommunicationThread(activeSessionId);
+        if (cancelled) return;
+        setSessions((prev) =>
+          prev.map((session) =>
+            session.id === activeSessionId
+              ? { ...session, ...detail, messages: detail.messages ?? [] }
+              : session
+          )
+        );
+      } catch {
+        // Non-fatal; the message area stays empty for this session
+        // but the panel remains usable for sending new messages.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeSessionId]);
+
   const loadSessions = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -123,7 +155,53 @@ export default function LiveChatPanel() {
       void loadSessions();
     };
 
-    const unsubscribeNewMessage = subscribeAiSocket("new_chat_message", refreshSessions);
+    // BF_PORTAL_BLOCK_BI_ROUND6_THREADS_DETAIL_v1 -- new_chat_message
+    // payload shape (from BF-portal src/services/aiSocket.ts):
+    //   {type, sessionId, role, content, id?, created_at?}
+    // Append to the matching session's messages array in place
+    // rather than calling refreshSessions, which would hit the
+    // list endpoint (messages: []) and clobber the history we
+    // just loaded via fetchCommunicationThread.
+    const appendIncomingMessage = (payload: unknown) => {
+      if (!mounted) return;
+      const p = payload as {
+        sessionId?: string;
+        role?: string;
+        type?: string;
+        content?: string;
+        id?: string;
+        created_at?: string;
+      };
+      if (!p?.sessionId || !p?.content) return;
+      const role = String(p.role ?? p.type ?? "").toLowerCase();
+      const direction =
+        role === "user" || role === "user_message" ? "in" :
+        (role === "staff" || role === "ai" ||
+         role === "staff_message" || role === "ai_message") ? "out" :
+        "system";
+      const newMessage: CommunicationConversation["messages"][number] = {
+        id: p.id ?? `${p.sessionId}:${Date.now()}`,
+        conversationId: p.sessionId,
+        type: "chat",
+        direction: direction as "in" | "out" | "system",
+        message: p.content,
+        createdAt: p.created_at ?? new Date().toISOString(),
+      };
+      setSessions((prev) =>
+        prev.map((session) => {
+          const wsId = session.sessionId ?? session.id;
+          if (wsId !== p.sessionId) return session;
+          return {
+            ...session,
+            messages: [...session.messages, newMessage],
+            message: newMessage.message,
+            updatedAt: newMessage.createdAt,
+          };
+        })
+      );
+    };
+
+    const unsubscribeNewMessage = subscribeAiSocket("new_chat_message", appendIncomingMessage);
     const unsubscribeSessionTimeout = subscribeAiSocket("session_timeout", refreshSessions);
     const unsubscribeSessionClosed = subscribeAiSocket("session_closed", refreshSessions);
 
@@ -136,19 +214,8 @@ export default function LiveChatPanel() {
     };
   }, [loadSessions]);
 
-  const updateConversation = (updated: CommunicationConversation) => {
-    setSessions((current) => current.map((conversation) => (conversation.id === updated.id ? updated : conversation)));
-  };
-
-  const onJoinSession = async (conversation: CommunicationConversation) => {
-    try {
-      const updated = await applyHumanActiveState(conversation.id);
-      await sendCommunication(updated.id, "Transferring you…", "system");
-      await loadSessions();
-      setActiveSessionId(updated.id);
-    } catch {
-      setError("Unable to transfer session to staff right now.");
-    }
+  const onJoinSession = (conversation: CommunicationConversation) => {
+    setActiveSessionId(conversation.id);
   };
 
   // BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_CLOSE_v1 -- close goes
