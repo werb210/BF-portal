@@ -87,8 +87,8 @@ describe("BF_PORTAL_BLOCK_v207 — BIContactDetailPage", () => {
     });
     expect(screen.getByText("CALL")).toBeInTheDocument();
     expect(screen.getByText(/Demo booked for next week/)).toBeInTheDocument();
-    // activity_count badge
-    expect(screen.getByText("4")).toBeInTheDocument();
+    // merged-feed badge (BI activity + BF timeline). In this test only BI has one event.
+    expect(screen.getByText("1")).toBeInTheDocument();
   });
 
   it("shows empty-state when there are no events", async () => {
