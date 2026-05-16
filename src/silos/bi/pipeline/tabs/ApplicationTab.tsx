@@ -98,7 +98,8 @@ function DecisionBanner({ app }: { app: BiApplicationDetailData }) {
   return null;
 }
 
-export default function ApplicationTab({ app, onMutated }: { app: BiApplicationDetailData; onMutated: () => void }) {
+// BF_PORTAL_BLOCK_BI_ROUND8_DETAIL_v1 -- accept readOnly prop.
+export default function ApplicationTab({ app, onMutated, readOnly = false }: { readOnly?: boolean; app: BiApplicationDetailData; onMutated: () => void }) {
   const [submitting, setSubmitting] = useState(false);
   const d = app.data || {};
   const canSubmit =
@@ -122,7 +123,7 @@ export default function ApplicationTab({ app, onMutated }: { app: BiApplicationD
   return (
     <div className="space-y-6">
       <DecisionBanner app={app} />
-      {canSubmit && (
+      {!readOnly && canSubmit && (
         <button
           onClick={submitToCarrier}
           disabled={submitting}
