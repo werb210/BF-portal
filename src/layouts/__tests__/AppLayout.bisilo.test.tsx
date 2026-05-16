@@ -1,6 +1,10 @@
-// BF_PORTAL_BI_SILO_NAV_v56 — regression for the BI silo nav config.
-// Asserts BI users see Pipeline + Lenders, do NOT see Communications +
-// Calendar, and that BF nav is unchanged.
+// BF_PORTAL_BI_SILO_NAV_v56 -- regression for the BI silo nav config.
+// BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- updated for the 6-tab BI
+// sidebar per ruling 21: Dashboard / Pipeline / CRM / Lender /
+// Marketing / Settings. Referrer was removed from the sidebar and
+// now lives as a sub-tab inside the Lender page (?tab=referrer).
+// Lenders was renamed to Lender (singular) to match the route.
+// BF nav is unchanged.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
@@ -38,15 +42,15 @@ function renderLayout(silo: string, role: string) {
   );
 }
 
-describe("BF_PORTAL_BI_SILO_NAV_v56 — BI silo nav config", () => {
+describe("BF_PORTAL_BI_SILO_NAV_v56 -- BI silo nav config", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("BI silo Admin sees Pipeline and Lenders", () => {
+  it("BI silo Admin sees Pipeline and Lender (singular)", () => {
     renderLayout("BI", "Admin");
     expect(screen.getByRole("link", { name: "Pipeline" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Lenders" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lender" })).toBeInTheDocument();
   });
 
   it("BI silo Admin does not see Communications or Calendar", () => {
@@ -61,14 +65,14 @@ describe("BF_PORTAL_BI_SILO_NAV_v56 — BI silo nav config", () => {
     expect(screen.getByRole("link", { name: "Calendar" })).toBeInTheDocument();
   });
 
-  it("BF silo Admin still sees Pipeline + Lenders (unchanged)", () => {
+  it("BF silo Admin still sees Pipeline + Lenders (BF sidebar unchanged)", () => {
     renderLayout("BF", "Admin");
     expect(screen.getByRole("link", { name: "Pipeline" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Lenders" })).toBeInTheDocument();
   });
 });
 
-describe("BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 — BI nav targets", () => {
+describe("BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- 6-tab BI nav", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -80,11 +84,18 @@ describe("BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 — BI nav targets", () => {
     ).toBe("/silo/bi/dashboard");
   });
 
-  it("Lenders points at /silo/bi/lender (not legacy /bi-lenders)", () => {
+  it("Lender points at /silo/bi/lender (renamed from Lenders, not legacy /bi-lenders)", () => {
     renderLayout("BI", "Admin");
     expect(
-      screen.getByRole("link", { name: "Lenders" }).getAttribute("href"),
+      screen.getByRole("link", { name: "Lender" }).getAttribute("href"),
     ).toBe("/silo/bi/lender");
+  });
+
+  it("CRM link replaces the old Contacts link, points at /silo/bi/crm", () => {
+    renderLayout("BI", "Admin");
+    expect(
+      screen.getByRole("link", { name: "CRM" }).getAttribute("href"),
+    ).toBe("/silo/bi/crm");
   });
 
   it("Marketing points at /silo/bi/marketing (not BF /marketing)", () => {
@@ -94,11 +105,17 @@ describe("BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 — BI nav targets", () => {
     ).toBe("/silo/bi/marketing");
   });
 
-  it("Referrer link added", () => {
+  it("Referrer is NO LONGER in the BI sidebar (moved into Lender sub-tab)", () => {
     renderLayout("BI", "Admin");
-    const link = screen.getByRole("link", { name: "Referrer" });
-    expect(link).toBeInTheDocument();
-    expect(link.getAttribute("href")).toBe("/silo/bi/referrer");
+    expect(screen.queryByRole("link", { name: "Referrer" })).not.toBeInTheDocument();
+  });
+
+  it("BI sidebar has exactly 6 items (Dashboard, Pipeline, CRM, Lender, Marketing, Settings)", () => {
+    renderLayout("BI", "Admin");
+    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing", "Settings"];
+    for (const label of expectedLabels) {
+      expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
+    }
   });
 });
 
