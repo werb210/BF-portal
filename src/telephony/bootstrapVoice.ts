@@ -90,6 +90,30 @@ async function initializeDevice() {
     deviceInitialized = false;
   });
 
+  // BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE3_v1
+  // Twilio Voice SDK fires tokenWillExpire roughly 5 minutes before
+  // the access token's ~60-minute TTL. Without a handler, in-progress
+  // calls hit AccessTokenExpired (error 20104) at the 60-minute mark
+  // and the device unregisters. Pre-Block 4 this lived inside
+  // DialerPanel.initDevice (the now-removed local Device); the
+  // responsibility moved up to the singleton owner. Re-fetches via
+  // the same getVoiceToken() helper used at boot, then hands the
+  // fresh token to the live Device with updateToken -- the SDK swaps
+  // it transparently without interrupting an active call.
+  nextDevice.on("tokenWillExpire", async () => {
+    try {
+      const fresh = await getVoiceToken();
+      if (fresh) {
+        await nextDevice.updateToken(fresh);
+      }
+    } catch {
+      // Non-fatal here; if the current token does expire before the
+      // next attempt, the SDK will fire "unregistered" and the
+      // handler above surfaces the standard "Voice device
+      // disconnected" message, which prompts the user to retry.
+    }
+  });
+
   await nextDevice.register();
   device = nextDevice;
   return nextDevice;
