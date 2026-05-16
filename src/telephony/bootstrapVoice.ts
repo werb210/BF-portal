@@ -211,3 +211,11 @@ export async function destroyVoiceDevice() {
   bootstrapPromise = null;
   deviceInitialized = false;
 }
+
+// BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE1_v1
+// Sync getter so legacy callers (voiceService.getDevice) can return
+// the shared singleton without going async. Use sparingly; new code
+// should await bootstrapVoice() instead so it survives a cold mount.
+export function getVoiceDevice() {
+  return device;
+}
