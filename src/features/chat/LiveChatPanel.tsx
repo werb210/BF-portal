@@ -19,6 +19,12 @@ import {
   subscribeAiSocketConnection,
   type ConnectionEventName
 } from "@/services/aiSocket";
+// BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_CLOSE_v1 -- supplemental
+// import line. Adds closeChatSession (this block) and re-imports
+// sendStaffMessage so Block 21 runs standalone whether or not
+// Block 19's primary import additions have landed. TypeScript
+// merges duplicate named imports from the same module.
+import { closeChatSession, sendStaffMessage } from "@/services/aiSocket";
 import { useAuth } from "@/hooks/useAuth";
 
 type SessionStatus = "ai" | "human" | "closed";
@@ -145,25 +151,38 @@ export default function LiveChatPanel() {
     }
   };
 
-  const onCloseSession = async (conversation: CommunicationConversation) => {
-    try {
-      const transcript = conversation.messages.map((message) => `${message.direction}: ${message.message}`).join("\n");
-      const updated = await closeEscalatedChat(conversation.id, transcript);
-      updateConversation(updated);
-    } catch {
+  // BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_CLOSE_v1 -- close goes
+  // through the WS now. The server attaches the transcript on its
+  // side (attachTranscriptToCrm) and then broadcasts close_session,
+  // which the panel listens for via the existing
+  // subscribeAiSocket("session_closed", refreshSessions) wiring --
+  // so refreshSessions fires automatically and the list updates
+  // with the closed-status row. No local optimistic update needed.
+  const onCloseSession = (conversation: CommunicationConversation) => {
+    const wsSessionId = conversation.sessionId ?? conversation.id;
+    const sent = closeChatSession(wsSessionId);
+    if (!sent) {
       setError("Unable to close session right now.");
     }
   };
 
-  const onSendMessage = async (event: FormEvent) => {
+  // BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_SEND_v1 -- replace the
+  // 404'd HTTP send (/api/communications/threads/<id>/messages
+  // does not exist on BF-Server) with the WS frame. The server
+  // persists to chat_messages and broadcasts staff_message; the
+  // panel's existing subscribeAiSocket("new_chat_message",
+  // refreshSessions) listener then refreshes the session list so
+  // the preview updates. The composer clears optimistically on a
+  // successful send (socket OPEN); on a failure the error toast
+  // appears and the user retries.
+  const onSendMessage = (event: FormEvent) => {
     event.preventDefault();
     if (!activeSession || !draftMessage.trim() || toSessionStatus(activeSession) === "closed") return;
-
-    try {
-      await sendCommunication(activeSession.id, draftMessage.trim(), "human");
-      await loadSessions();
+    const wsSessionId = activeSession.sessionId ?? activeSession.id;
+    const sent = sendStaffMessage(wsSessionId, draftMessage.trim());
+    if (sent) {
       setDraftMessage("");
-    } catch {
+    } else {
       setError("Unable to send message right now.");
     }
   };

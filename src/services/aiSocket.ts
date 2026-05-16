@@ -252,3 +252,22 @@ export function subscribeAiSocketConnection(listener: Listener<ConnectionEventNa
 }
 
 export { WS_URL };
+
+// BF_PORTAL_BLOCK_BI_ROUND6_STAFF_SOCKET_CLOSE_v1
+// Send the close_session frame. Server handler (BF-Server
+// src/modules/ai/socket.server.ts:293-304) updates chat_sessions.
+// status to 'closed', calls attachTranscriptToCrm, and broadcasts
+// close_session to the presence set. LiveChatPanel listens for
+// "session_closed" via subscribeAiSocket so the panel refreshes
+// its session list automatically when this frame is acknowledged.
+export function closeChatSession(sessionId: string): boolean {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+  if (!sessionId) return false;
+  try {
+    socket.send(JSON.stringify({ type: "close_session", sessionId }));
+    activeSessionId = null;
+    return true;
+  } catch {
+    return false;
+  }
+}
