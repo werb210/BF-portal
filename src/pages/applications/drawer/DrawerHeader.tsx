@@ -1,8 +1,11 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApplicationDetails, fetchLinkedApplications, type LinkedApplicationSummary } from "@/api/applications";
 import type { ApplicationDetails } from "@/types/application.types";
 import { getProcessingStatus } from "@/pages/applications/utils/processingStatus";
+// BF_PORTAL_BLOCK_57R_CAL_DOCS_DELETE_REFERRER_COMMS_v2
+import { api } from "@/api";
+import { useAuth } from "@/hooks/useAuth";
 
 const DrawerHeader = ({
   applicationId,
@@ -126,11 +129,52 @@ const DrawerHeader = ({
           </div>
         ) : null}
       </div>
+      <AdminDeleteButton applicationId={applicationId} onDeleted={onClose} />
       <button className="application-drawer__close" onClick={onClose} aria-label="Close drawer" type="button">
         ×
       </button>
     </div>
   );
 };
+
+function AdminDeleteButton({ applicationId, onDeleted }: { applicationId: string; onDeleted: () => void }) {
+  // BF_PORTAL_BLOCK_57R_CAL_DOCS_DELETE_REFERRER_COMMS_v2
+  const queryClient = useQueryClient();
+  const { role } = useAuth();
+  const isAdmin = role === "Admin";
+  const del = useMutation({
+    mutationFn: () => api.delete(`/api/portal/applications/${encodeURIComponent(applicationId)}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["applications"] });
+      onDeleted();
+    },
+  });
+  if (!isAdmin) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (!window.confirm("Delete this application? This permanently removes the application, its documents, tasks, and selections. This cannot be undone.")) return;
+        del.mutate();
+      }}
+      disabled={del.isPending}
+      title="Admin only - permanently delete this application"
+      style={{
+        marginRight: 8,
+        padding: "6px 12px",
+        background: "#fee2e2",
+        color: "#991b1b",
+        border: "1px solid #fca5a5",
+        borderRadius: 6,
+        fontWeight: 600,
+        fontSize: 12,
+        cursor: del.isPending ? "wait" : "pointer",
+      }}
+      data-testid="drawer-admin-delete"
+    >
+      {del.isPending ? "Deleting..." : "Delete"}
+    </button>
+  );
+}
 
 export default DrawerHeader;

@@ -11,6 +11,7 @@ import BIContactDetailPage from "./crm/contacts/BIContactDetailPage";
 // BF_PORTAL_BLOCK_v211_BI_COMPANY_DETAIL_v1
 import BICompanyDetailPage from "./crm/companies/BICompanyDetailPage";
 import BILender from "./lender/BILender"; // BF_PORTAL_BLOCK_v125_BI_LENDER_APOLLO_PHASE1_v1
+import BIReferrerManagement from "./referrer/BIReferrerManagement"; // BF_PORTAL_BLOCK_57R_CAL_DOCS_DELETE_REFERRER_COMMS_v2
 import BIDashboard from "./dashboard/BIDashboard";
 import BIMarketing from "./marketing/BIMarketing";
 import BISettings from "./settings/BISettings";
@@ -43,7 +44,7 @@ export default function BISilo() {
       {/* BF_PORTAL_BLOCK_v211_BI_COMPANY_DETAIL_v1 */}
       <Route path="crm/companies/:id" element={<BICompanyDetailPage />} />
           <Route path="lender" element={<BILender />} /> {/* BF_PORTAL_BLOCK_v125_BI_LENDER_APOLLO_PHASE1_v1 */}
-          <Route path="referrer" element={<Navigate to="/silo/bi/lender?tab=referrer" replace />} />
+          <Route path="referrer" element={<BIReferrerManagement />} />
           {/* BF_PORTAL_BLOCK_BI_SILO_TRIM_v1 -- legacy paths redirect into the consolidated locations */}
           <Route path="marketing" element={<BIMarketing />} />
           <Route path="settings" element={<BISettings />} />

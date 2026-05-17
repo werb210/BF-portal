@@ -25,9 +25,13 @@ type CalendarTask = {
   title?: string;
   due_date?: string;
   dueDate?: string;
+  dueAt?: string | null;
   assigned_to?: string;
   assignedTo?: string;
   completed?: boolean;
+  completedAt?: string | null;
+  status?: "open" | "done";
+  priority?: "low" | "normal" | "high";
 };
 
 type CalendarEvent = {
@@ -133,7 +137,7 @@ function CalendarContent() {
   });
 
   const completeTaskMutation = useMutation({
-    mutationFn: (task: CalendarTask) => api.patch(`/api/calendar/tasks/${task.id}`, { completed: !task.completed }),
+    mutationFn: (task: CalendarTask) => api.patch(`/api/calendar/tasks/${task.id}`, { status: (task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed)) ? "open" : "done" }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["calendar-tasks"] }),
   });
 
@@ -198,11 +202,11 @@ function CalendarContent() {
             ) : (
               (items as CalendarTask[]).map((task) => (
                 <div key={task.id ?? `${task.title}-${task.due_date}`} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
-                  <input type="checkbox" checked={Boolean(task.completed)} onChange={() => task.id && completeTaskMutation.mutate(task)} />
+                  <input type="checkbox" checked={task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed)} onChange={() => task.id && completeTaskMutation.mutate(task)} />
                   <div>
                     <div style={{ fontWeight: 600 }}>{task.title ?? "Untitled task"}</div>
                     <div style={{ fontSize: 12, color: "#64748b" }}>
-                      Due: {task.due_date ?? task.dueDate ? new Date(task.due_date ?? task.dueDate ?? "").toLocaleString() : "—"}
+                      Due: {(task.dueAt ?? task.due_date ?? task.dueDate) ? new Date(task.dueAt ?? task.due_date ?? task.dueDate ?? "").toLocaleString() : "-"}
                     </div>
                     <div style={{ fontSize: 12, color: "#64748b" }}>Assigned to: {task.assigned_to ?? task.assignedTo ?? "—"}</div>
                   </div>
