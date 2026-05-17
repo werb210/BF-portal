@@ -10,10 +10,12 @@ import SuppressionsTab from "./tabs/SuppressionsTab";
 import ListsTab from "./tabs/ListsTab";
 import AnalyticsTab from "./tabs/AnalyticsTab";
 import MailboxHealthTab from "./tabs/MailboxHealthTab";
+import TemplatesTab from "./tabs/TemplatesTab";
 
-type TabKey = "sequences" | "enrollments" | "suppressions" | "lists" | "analytics" | "mailbox";
+type TabKey = "sequences" | "enrollments" | "suppressions" | "lists" | "analytics" | "mailbox" | "templates";
 
 const TABS: { key: TabKey; label: string }[] = [
+  { key: "templates", label: "Templates" },
   { key: "sequences",    label: "Sequences" },
   { key: "enrollments",  label: "Enrollments" },
   { key: "suppressions", label: "Suppressions" },
@@ -42,6 +44,7 @@ export default function BIMarketing() {
         </div>
       </div>
       {tab === "sequences"    && <SequencesTab />}
+      {tab === "templates"    && <TemplatesTab />}
       {tab === "enrollments"  && <EnrollmentsTab />}
       {tab === "suppressions" && <SuppressionsTab />}
       {tab === "lists"        && <ListsTab />}
