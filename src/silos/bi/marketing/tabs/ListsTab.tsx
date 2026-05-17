@@ -1,6 +1,7 @@
 // BF_PORTAL_BLOCK_BI_ROUND8_MARKETING_UI_v1
 import { useEffect, useState } from "react";
 import { api } from "@/api";
+import toast from "react-hot-toast";
 
 type ListRow = {
   id: string;
@@ -12,6 +13,81 @@ type ListRow = {
 type PreviewContact = { id: string; full_name: string; email: string | null };
 
 const DEFAULT_SPEC = '{\n  "has_email": true,\n  "lifecycle_stage": "lead"\n}';
+
+type ApolloList = { id: string; name: string; count: number | null; updated_at: string | null };
+type ImportResult = { ok: boolean; upserted: number; created: number; errors: number; elapsed_ms: number };
+
+function ApolloImportPanel() {
+  const [lists, setLists] = useState<ApolloList[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [results, setResults] = useState<Record<string, ImportResult>>({});
+
+  const loadLists = async () => {
+    setError(null);
+    try {
+      const r = await api<{ lists?: ApolloList[] }>("/api/v1/bi/admin/apollo/lists");
+      setLists(Array.isArray(r.lists) ? r.lists : []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load Apollo lists");
+      setLists([]);
+    }
+  };
+  useEffect(() => { void loadLists(); }, []);
+
+  const importList = async (id: string, name: string) => {
+    setBusyId(id);
+    const t = toast.loading("Importing " + name);
+    try {
+      const r = await api<ImportResult>("/api/v1/bi/admin/apollo/lists/" + encodeURIComponent(id) + "/import", { method: "POST" });
+      setResults((prev) => ({ ...prev, [id]: r }));
+      toast.success("Imported " + r.upserted + " contacts (" + r.created + " new)", { id: t });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Import failed", { id: t });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="bg-brand-bgAlt border border-card rounded-xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-white">Import from Apollo</h3>
+        <button onClick={() => void loadLists()} className="text-xs text-blue-300 hover:text-blue-200">Refresh</button>
+      </div>
+      <p className="text-[11px] text-white/50">Saved lists from your Apollo account. Import pulls contacts into BI CRM.</p>
+      {error && <div className="text-xs text-red-300">{error}</div>}
+      {lists === null && <div className="text-xs text-white/40 italic">Loading</div>}
+      {lists !== null && lists.length === 0 && !error && <div className="text-xs text-white/40 italic">No Apollo lists found.</div>}
+      {lists !== null && lists.length > 0 && (
+        <ul className="space-y-1.5">
+          {lists.map((l) => {
+            const r = results[l.id];
+            const isBusy = busyId === l.id;
+            return (
+              <li key={l.id} className="flex items-center justify-between gap-2 bg-brand-surface border border-card rounded px-3 py-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-white truncate">{l.name}</div>
+                  <div className="text-[10px] text-white/40">
+                    {l.count != null ? l.count + " members" : "count unavailable"}
+                    {r && <span className="ml-2 text-emerald-300">imported {r.upserted}</span>}
+                  </div>
+                </div>
+                <button
+                  onClick={() => void importList(l.id, l.name)}
+                  disabled={isBusy}
+                  className="rounded bg-blue-500/20 hover:bg-blue-500/30 disabled:opacity-40 px-3 py-1 text-xs text-blue-200 whitespace-nowrap"
+                >
+                  {isBusy ? "Importing" : r ? "Re-import" : "Import to CRM"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function ListsTab() {
   const [list, setList] = useState<ListRow[]>([]);
@@ -54,6 +130,7 @@ export default function ListsTab() {
 
   return (
     <div className="space-y-4">
+      <ApolloImportPanel />
       <h3 className="text-lg font-medium">Lists / Segments</h3>
       <div className="bg-brand-bgAlt border border-card rounded-xl p-4 space-y-2">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="List name" className="w-full rounded border border-card bg-brand-surface px-3 py-2 text-sm text-white" />
