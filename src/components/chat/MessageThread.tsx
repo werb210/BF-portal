@@ -21,9 +21,7 @@ const MessageThread = ({ messages }: { messages: MessageRecord[] }) => (
           <div className="note-message__body">
             <div className="note-message__author">{resolveSenderLabel(message)}</div>
             <div className="note-message__text">{message.body}</div>
-            {/* BF_PORTAL_BLOCK_45_v1 -- read-only CTA pill so staff
-                can see what action the applicant is being prompted
-                to take. Not interactive on the staff side. */}
+            {/* BF_PORTAL_BLOCK_45_v1 -- read-only CTA pill */}
             {message.ctaLabel ? (
               <div
                 style={{
