@@ -22,6 +22,11 @@ function bfNormalizeToE164(raw: string): string {
   return "";
 }
 
+// BF_PORTAL_BLOCK_52_v1 -- DEPRECATED. Do NOT reintroduce this in
+// the Call button onClick. The browser must use WebRTC
+// (handleDial -> device.connect) for outbound calls so audio
+// bridges through. The server REST endpoint is for non-browser
+// automation only.
 async function bfPlaceOutboundCall(toNumber: string) {
   const e164 = bfNormalizeToE164(toNumber);
   console.log("[dialer.diag] call.button.click", { rawTo: toNumber, to: e164, ts: new Date().toISOString() });
@@ -354,6 +359,24 @@ export default function DialerPanel() {
         <div style={{ padding: "8px 16px 24px" }}>
           <button
             onClick={async () => {
+              // BF_PORTAL_BLOCK_52_v1 -- calling root-cause fix.
+              // Previously this fired TWO calls in parallel:
+              // (1) bfPlaceOutboundCall -> server REST initiates a
+              //     phone-to-phone Twilio call. Browser is NOT in
+              //     the audio path -- it's a pure server-side dial.
+              // (2) handleDial -> browser WebRTC device.connect()
+              //     which IS the right path; bridges mic <-> target
+              //     via the TwiML voice app.
+              // Twilio rejects the duplicate concurrent call to the
+              // same destination from the same caller ID, both fail
+              // within ~10ms ("double ping no pickup"). Removing the
+              // REST call leaves only WebRTC, which works.
+              //
+              // The REST endpoint /api/telephony/outbound-call stays
+              // mounted on the server for non-browser callers
+              // (Maya callbacks, scheduled outreach) -- it is not
+              // deleted; it's just no longer invoked from this
+              // dialer button.
               const callTo = bfDebugPickToValue({
                 number,
                 contextPhone: context.phone,
@@ -361,12 +384,11 @@ export default function DialerPanel() {
               });
               if (!callTo.trim()) return;
               try {
-                await bfPlaceOutboundCall(callTo.trim());
+                await handleDial(callTo);
               } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
                 alert(`Call failed: ${message}`);
               }
-              await handleDial(callTo);
             }}
             disabled={!number.trim()}
             style={{ width: "100%", padding: 14, background: number.trim() ? "#22c55e" : "#374151", border: "none", borderRadius: 12, color: "#fff", fontSize: 16, cursor: number.trim() ? "pointer" : "default", fontWeight: 700 }}
