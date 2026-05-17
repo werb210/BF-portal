@@ -131,5 +131,5 @@ const fieldLabel: CSSProperties = { display: "block", fontSize: 13, color: "#334
 const input: CSSProperties = { width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, boxSizing: "border-box" };
 const errorStyle: CSSProperties = { background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca", borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 13 };
 const footer: CSSProperties = { marginTop: 16, display: "flex", justifyContent: "flex-end", gap: 8 };
-const secondaryBtn: CSSProperties = { border: "1px solid #cbd5e1", background: "#fff", borderRadius: 6, padding: "8px 12px", cursor: "pointer" };
+const secondaryBtn: CSSProperties = { border: "1px solid #cbd5e1", background: "#fff", color: "#111827", borderRadius: 6, padding: "8px 12px", cursor: "pointer" };
 const primaryBtn: CSSProperties = { border: 0, background: "#2563eb", color: "#fff", borderRadius: 6, padding: "8px 12px", cursor: "pointer" };
