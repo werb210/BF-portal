@@ -250,26 +250,7 @@ export default function ApplicationTab({ application }: Props) {
         </SectionGroup>
       )}
 
-      <SectionGroup title="Ownership">
-        {owners.length === 0 ? (
-          <div style={styles.empty}>No ownership records on file.</div>
-        ) : (
-          <div style={styles.ownerList}>
-            {owners.map((o, i) => (
-              <div key={i} style={styles.ownerCard}>
-                <div style={styles.ownerHeader}>{joinName(o) || `Owner ${i + 1}`}</div>
-                <div style={styles.ownerFields}>
-                  <CompactField label="Title" value={fmt(o.title)} />
-                  <CompactField label="Ownership %" value={fmtPercent(o.ownershipPercent ?? o.ownership)} />
-                  <CompactField label="Credit Score" value={fmt(o.creditScore)} />
-                  <CompactField label="DOB" value={maskDob(o.dateOfBirth ?? o.dob)} />
-                  <CompactField label="SSN / SIN" value={maskSsn(o.ssn ?? o.sin)} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionGroup>
+      {/* BF_PORTAL_BLOCK_54_BI_DETAIL_OWNERSHIP_DEMO_v1 — Ownership section removed per spec; data lives in Applicant/Partner. */}
 
       <div style={styles.footer}>
         Submitted by the applicant. Read-only — to amend, request the client update via the mini-portal.

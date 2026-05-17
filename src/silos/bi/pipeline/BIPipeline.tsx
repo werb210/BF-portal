@@ -50,9 +50,11 @@ type Filters = {
   from: string;
   to: string;
   sort: Sort;
+  // BF_PORTAL_BLOCK_54_BI_DETAIL_OWNERSHIP_DEMO_v1 — show_demo toggle. Default false (demo hidden).
+  show_demo: boolean;
 };
 
-const EMPTY: Filters = { q: "", stage: "", source: "", carrier: "", from: "", to: "", sort: "updated_desc" };
+const EMPTY: Filters = { q: "", stage: "", source: "", carrier: "", from: "", to: "", sort: "updated_desc", show_demo: false };
 
 function fmtMoney(n: number | null | undefined) {
   if (typeof n !== "number" || !Number.isFinite(n)) return null;
@@ -68,6 +70,8 @@ function readFiltersFromUrl(p: URLSearchParams): Filters {
     from: p.get("from") || "",
     to: p.get("to") || "",
     sort: (p.get("sort") as Sort | null) || "updated_desc",
+    // BF_PORTAL_BLOCK_54_BI_DETAIL_OWNERSHIP_DEMO_v1
+    show_demo: p.get("show_demo") === "1",
   };
 }
 
@@ -87,16 +91,23 @@ export default function BIPipeline() {
     if (filters.from)    next.set("from", filters.from);
     if (filters.to)      next.set("to", filters.to);
     if (filters.sort !== "updated_desc") next.set("sort", filters.sort);
+    if (filters.show_demo) next.set("show_demo", "1");
     if (next.toString() !== urlParams.toString()) setUrlParams(next, { replace: true });
   }, [filters, urlParams, setUrlParams]);
 
   useEffect(() => { void load(); }, []);
 
+  // BF_PORTAL_BLOCK_54_BI_DETAIL_OWNERSHIP_DEMO_v1 — refetch when toggle flips.
+  useEffect(() => { void load(); }, [filters.show_demo]);
+
   async function load() {
     try {
-      const data = await api<BIApplication[] | { applications: BIApplication[] }>("/api/v1/bi/applications?hide_demo=true");
+      const url = filters.show_demo
+        ? "/api/v1/bi/applications"
+        : "/api/v1/bi/applications?hide_demo=true";
+      const data = await api<BIApplication[] | { applications: BIApplication[] }>(url);
       const list = Array.isArray(data) ? data : data.applications || [];
-      setApps(list.filter((a) => a.is_demo !== true));
+      setApps(filters.show_demo ? list : list.filter((a) => a.is_demo !== true));
     } catch {
       setApps([]);
     }
@@ -219,7 +230,17 @@ export default function BIPipeline() {
           </select>
         </label>
       </div>
-      <div className="mb-5 flex justify-end">
+      {/* BF_PORTAL_BLOCK_54_BI_DETAIL_OWNERSHIP_DEMO_v1 — show-demo toggle. */}
+      <div className="mb-5 flex items-center justify-between">
+        <label className="flex items-center gap-2 text-xs text-white/70">
+          <input
+            type="checkbox"
+            checked={filters.show_demo}
+            onChange={(e) => set({ show_demo: e.target.checked })}
+            className="h-3.5 w-3.5"
+          />
+          Show demo applications
+        </label>
         <button onClick={reset} className="rounded border border-card px-3 py-1 text-xs text-white/70 hover:text-white">Reset filters</button>
       </div>
 
@@ -245,8 +266,8 @@ export default function BIPipeline() {
                       className="bg-brand-surface border border-card rounded-lg p-3 cursor-pointer hover:border-blue-400/40"
                     >
                       <div className="min-w-0">
-                        <strong className="text-sm truncate block">{company}</strong>
-                        {app.guarantor_name && <div className="text-xs text-white/60 truncate">{app.guarantor_name}</div>}
+                        <strong className="text-sm break-words block">{company}</strong>
+                        {app.guarantor_name && <div className="text-xs text-white/60 break-words">{app.guarantor_name}</div>}
                         <div className="text-[10px] text-white/40 mt-0.5">
                           {app.source === "lender" ? `Lender${app.lender_name ? ` (${app.lender_name})` : ""}` : app.source === "referrer" ? "Referrer" : "Public"}
                         </div>

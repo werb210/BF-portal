@@ -1,8 +1,28 @@
 // BF_PORTAL_BLOCK_v196_UNDERWRITING_BANNER_v1
+// BF_PORTAL_BLOCK_54_BI_DETAIL_OWNERSHIP_DEMO_v1 — structured renderer.
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { api } from "@/api";
 import type { BiApplicationDetailData } from "../BIApplicationDetail";
+
+function Field({ label, value }: { label: string; value: React.ReactNode }) {
+  if (value === null || value === undefined || value === "") return null;
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-widest text-white/40">{label}</div>
+      <div className="text-sm text-white">{value}</div>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-card bg-brand-surface p-4">
+      <div className="mb-3 text-xs uppercase tracking-widest text-white/60">{title}</div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+    </div>
+  );
+}
 
 function fmtMoney(n: number | string | null | undefined): string | null {
   const num = typeof n === "string" ? Number(n) : n;
@@ -132,7 +152,36 @@ export default function ApplicationTab({ app, onMutated, readOnly = false }: { r
           {submitting ? "Submitting…" : "Submit to Carrier"}
         </button>
       )}
-      <pre className="rounded bg-black/30 p-3 text-xs">{JSON.stringify(d, null, 2)}</pre>
+      <Section title="Applicant">
+        <Field label="Guarantor" value={app.guarantor_name} />
+        <Field label="Email" value={app.guarantor_email} />
+      </Section>
+
+      <Section title="Business">
+        <Field label="Legal name" value={app.business_name} />
+        <Field label="Country" value={(d as Record<string, unknown>).country as string} />
+        <Field label="NAICS" value={(d as Record<string, unknown>).naics_code as string} />
+        <Field label="Formation date" value={fmtDate((d as Record<string, unknown>).formation_date as string)} />
+      </Section>
+
+      <Section title="Coverage">
+        <Field label="Loan amount" value={fmtMoney((d as Record<string, unknown>).loan_amount as number)} />
+        <Field label="PGI limit" value={fmtMoney((d as Record<string, unknown>).pgi_limit as number)} />
+      </Section>
+
+      <Section title="Underwriting">
+        <Field label="Annual revenue" value={fmtMoney((d as Record<string, unknown>).annual_revenue as number)} />
+        <Field label="EBITDA" value={fmtMoney((d as Record<string, unknown>).ebitda as number)} />
+        <Field label="Total debt" value={fmtMoney((d as Record<string, unknown>).total_debt as number)} />
+        <Field label="Monthly debt service" value={fmtMoney((d as Record<string, unknown>).monthly_debt_service as number)} />
+        <Field label="Collateral value" value={fmtMoney((d as Record<string, unknown>).collateral_value as number)} />
+        <Field label="Enterprise value" value={fmtMoney((d as Record<string, unknown>).enterprise_value as number)} />
+      </Section>
+
+      <details className="rounded border border-white/10 p-2">
+        <summary className="cursor-pointer text-xs text-white/40 hover:text-white/70">Raw data (debug)</summary>
+        <pre className="mt-2 overflow-auto rounded bg-black/30 p-3 text-xs">{JSON.stringify(d, null, 2)}</pre>
+      </details>
     </div>
   );
 }

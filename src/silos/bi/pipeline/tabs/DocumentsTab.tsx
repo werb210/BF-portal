@@ -100,6 +100,42 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
     }
   }
 
+  // BF_PORTAL_BLOCK_54_BI_DETAIL_OWNERSHIP_DEMO_v1 — Reject + View handlers.
+  async function reject(docId: string) {
+    const reason = window.prompt("Reason for rejection (sent to applicant via SMS):");
+    if (!reason || !reason.trim()) return;
+    try {
+      await api(`/api/v1/bi/documents/${docId}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ reason: reason.trim() }),
+        headers: { "Content-Type": "application/json" },
+      });
+      toast.success("Rejected — applicant notified");
+      await load();
+      onMutated();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Reject failed");
+    }
+  }
+
+  async function view(docId: string, fileName: string) {
+    try {
+      const blob = await api<Blob>(`/api/v1/bi/documents/${docId}`, { responseType: "blob" } as never);
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, "_blank");
+      if (!win) {
+        // Popup blocked — fallback to direct download.
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "View failed");
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="rounded border border-white/10 p-3">
@@ -130,9 +166,24 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
               {d.period_end && <span> • period ending {d.period_end}</span>}
             </div>
           </div>
-          {!readOnly && <button disabled={reviewLocked} onClick={() => accept(d.id)} className="rounded bg-emerald-600/80 px-2">
-            Accept
-          </button>} 
+          {/* BF_PORTAL_BLOCK_54_BI_DETAIL_OWNERSHIP_DEMO_v1 — View always available; Accept/Reject staff-only. */}
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button onClick={() => view(d.id, d.file_name)} className="rounded border border-white/20 px-2 py-0.5 text-xs text-white/80 hover:bg-white/10">
+              View
+            </button>
+            {!readOnly && d.status !== "accepted" && (
+              <button disabled={reviewLocked} onClick={() => accept(d.id)} className="rounded bg-emerald-600/80 px-2 py-0.5 text-xs text-white disabled:opacity-40">
+                Accept
+              </button>
+            )}
+            {!readOnly && d.status !== "rejected" && (
+              <button disabled={reviewLocked} onClick={() => reject(d.id)} className="rounded bg-red-600/70 px-2 py-0.5 text-xs text-white disabled:opacity-40">
+                Reject
+              </button>
+            )}
+            {d.status === "accepted" && <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-200">Accepted</span>}
+            {d.status === "rejected" && <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-red-200">Rejected</span>}
+          </div>
         </div>
       ))}
     </div>
