@@ -52,8 +52,14 @@ export default function Verify() {
   }, [code, phone]);
 
   return (
-    <div data-testid="verify-screen" className="h-screen w-screen flex items-center justify-center bg-white">
-      <div className="flex flex-col items-center gap-2">
+    <div data-testid="verify-screen" className="min-h-screen w-screen flex items-center justify-center bg-[#020817] px-4 py-12">
+      <div className="w-full max-w-md flex flex-col items-center gap-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-white">Boreal Group of Companies</h1>
+          <p className="mt-1 text-sm font-medium text-white/70">Staff Portal</p>
+        </div>
+        <div className="w-full bg-white border border-slate-200 rounded-xl p-6 shadow-md">
+          <label htmlFor="staff-verify-code" className="block text-sm text-slate-700 mb-1.5">Verification code</label>
         <input
           data-testid="code-input"
           type="text"
@@ -62,7 +68,8 @@ export default function Verify() {
           onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
           maxLength={6}
           disabled={loading}
-          className="border border-gray-300 rounded-md px-4 py-3 text-lg w-48 text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500"
+          id="staff-verify-code"
+          className="w-full px-3.5 py-3 text-base text-slate-900 bg-white border border-slate-300 rounded-lg mb-3 box-border text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-60"
         />
         {error ? (
           <div className="flex flex-col items-center gap-1">
@@ -80,6 +87,7 @@ export default function Verify() {
             ) : null}
           </div>
         ) : null}
+        </div>
       </div>
     </div>
   );
