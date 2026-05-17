@@ -8,7 +8,7 @@ import type { Silo } from "@/types/silo";
 import BIPipelineCard from "./BIPipelineCard";
 import BIPipelineColumn from "./BIPipelineColumn";
 import BIPipelineLoginPanel from "./BIPipelineLoginPanel";
-import BIApplicationDrawer from "./viewer/BIApplicationDrawer";
+import { useNavigate } from "react-router-dom";
 import { biPipelineApi } from "./bi.pipeline.api";
 import { BI_PIPELINE_STAGES, type BIPipelineApplication, type BIStageId } from "./bi.pipeline.types";
 
@@ -19,7 +19,12 @@ const BIPipelinePage = () => {
   const [activeStage, setActiveStage] = useState<BIStageId | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(() => biPipelineApi.hasToken());
-
+  // BF_PORTAL_BLOCK_64R_KILL_BI_DRAWER_ORPHAN_v1 — canonical detail route replaces drawer.
+  const navigate = useNavigate();
+  const handleCardClick = (id: string) => {
+    setSelectedId(id);
+    navigate(`/silo/bi/pipeline/${id}`);
+  };
 
   useEffect(() => {
     const onExpired = () => {
@@ -89,16 +94,16 @@ const BIPipelinePage = () => {
         <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="pipeline-columns">
             {BI_PIPELINE_STAGES.map((stage) => (
-              <BIPipelineColumn key={stage.id} stage={stage} onCardClick={setSelectedId} activeCard={activeCard} />
+              <BIPipelineColumn key={stage.id} stage={stage} onCardClick={handleCardClick} activeCard={activeCard} />
             ))}
           </div>
           <DragOverlay>
-            {activeCard ? <BIPipelineCard card={activeCard} stageId={activeStage ?? activeCard.stage} onClick={setSelectedId} /> : null}
+            {activeCard ? <BIPipelineCard card={activeCard} stageId={activeStage ?? activeCard.stage} onClick={handleCardClick} /> : null}
           </DragOverlay>
         </DndContext>
       </Card>
 
-      <BIApplicationDrawer applicationId={selectedId} onClose={() => setSelectedId(null)} />
+      {/* BF_PORTAL_BLOCK_64R_KILL_BI_DRAWER_ORPHAN_v1 — drawer removed; clicks route to /silo/bi/pipeline/:id detail page. */}
     </div>
   );
 };
