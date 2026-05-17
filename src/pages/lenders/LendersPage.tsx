@@ -404,23 +404,30 @@ function CreateProductModal({
     label: "Purchase Order or Invoice of Equipment to finance",
     category: "EQUIPMENT_FINANCE" as const,
   };
+  // BF_PORTAL_BLOCK_TWO_STAGE_v1 -- coreTypes carries a default
+  // stage per doc. Removed the two aging-report duplicates (A/R
+  // and A/P cover the same thing). Added "Debt stack" -- new form
+  // doc (rendered as a fillable form in the client mini-portal,
+  // not an upload).
+  // hasForm = true means the doc renders as a digital form on the
+  // client side (PNW + Debt Stack today). Other docs render as
+  // upload widgets in Stage 2.
   const coreTypes = [
-    "3 years accountant prepared financials",
-    "3 years business tax returns",
-    "PnL – Interim financials",
-    "Balance Sheet – Interim financials",
-    "A/R",
-    "A/P",
-    "2 pieces of Government Issued ID",
-    "VOID cheque or PAD",
-    "Personal net worth statement",
-    "2 years personal tax returns (T1 generals)",
-    "Corporate structure / org chart",
-    "Business plan / projections",
-    "Lease agreement (if applicable)",
-    "Accounts receivable aging report",
-    "Accounts payable aging report",
-  ].map((label) => ({ key: label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label }));
+    { label: "3 years accountant prepared financials", defaultStage: 1 as 1 | 2 },
+    { label: "3 years business tax returns", defaultStage: 1 as 1 | 2 },
+    { label: "PnL – Interim financials", defaultStage: 1 as 1 | 2 },
+    { label: "Balance Sheet – Interim financials", defaultStage: 1 as 1 | 2 },
+    { label: "A/R", defaultStage: 1 as 1 | 2 },
+    { label: "A/P", defaultStage: 1 as 1 | 2 },
+    { label: "2 pieces of Government Issued ID", defaultStage: 2 as 1 | 2 },
+    { label: "VOID cheque or PAD", defaultStage: 2 as 1 | 2 },
+    { label: "Personal net worth statement", defaultStage: 2 as 1 | 2, hasForm: true },
+    { label: "2 years personal tax returns (T1 generals)", defaultStage: 2 as 1 | 2 },
+    { label: "Corporate structure / org chart", defaultStage: 2 as 1 | 2 },
+    { label: "Business plan / projections", defaultStage: 2 as 1 | 2 },
+    { label: "Lease agreement (if applicable)", defaultStage: 2 as 1 | 2 },
+    { label: "Debt stack", defaultStage: 2 as 1 | 2, hasForm: true },
+  ].map((d) => ({ key: d.label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label: d.label, defaultStage: d.defaultStage, hasForm: (d as any).hasForm ?? false }));
   const conditionalTypes = [
     "Budget",
     "Finance plan",
@@ -469,6 +476,30 @@ function CreateProductModal({
       product.requiredDocuments.forEach((doc) => initial.add(doc.category.toLowerCase().replace(/[^a-z0-9]+/g, "_")));
     }
     return initial;
+  });
+  // BF_PORTAL_BLOCK_TWO_STAGE_v1 -- per-doc stage selection.
+  // Initialized from the saved product if editing; otherwise from
+  // each doc's defaultStage. Always-required docs are always 1.
+  const [docStages, setDocStages] = useState<Map<string, 1 | 2>>(() => {
+    const map = new Map<string, 1 | 2>();
+    // Always-required: locked at stage 1
+    map.set(alwaysRequiredDoc.key, 1);
+    map.set(equipmentFinanceAlwaysRequiredDoc.key, 1);
+    // Defaults from coreTypes
+    for (const d of coreTypes) {
+      map.set(d.key, d.defaultStage);
+    }
+    // Override from saved product if present
+    if (product?.requiredDocuments?.length) {
+      for (const doc of product.requiredDocuments) {
+        const key = doc.category.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+        const savedStage = (doc as any).stage;
+        if (savedStage === 1 || savedStage === 2) {
+          map.set(key, savedStage);
+        }
+      }
+    }
+    return map;
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -544,7 +575,7 @@ function CreateProductModal({
     // human-readable label flows out.
     const requiredDocuments = Array.from(checkedDocs).map((id) => {
       const found = [...coreTypes, ...conditionalTypes, alwaysRequiredDoc, equipmentFinanceAlwaysRequiredDoc].find((d) => d.key === id);
-      return { category: found?.label ?? id, required: true, description: null };
+      return { category: found?.label ?? id, required: true, description: null, stage: (docStages.get(id) ?? 1) as 1 | 2 };
     });
 
     setSaving(true);
@@ -603,7 +634,17 @@ function CreateProductModal({
   const errorStyle: React.CSSProperties = { fontSize: 12, color: "#ef4444", marginTop: 3 };
   const sectionStyle: React.CSSProperties = { padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" };
 
-  function DocCheckbox({ id, label, locked }: { id: string; label: string; locked?: boolean }) {
+  // BF_PORTAL_BLOCK_TWO_STAGE_v1 -- DocCheckbox now optionally renders
+  // a Stage 1 / Stage 2 toggle when the doc is in coreTypes and
+  // currently checked. Always-required docs (locked=true) show a
+  // "Stage 1 (locked)" badge instead. The toggle updates docStages.
+  function DocCheckbox({ id, label, locked = false, showStageToggle = false, hasForm = false }: {
+    id: string;
+    label: string;
+    locked?: boolean;
+    showStageToggle?: boolean;
+    hasForm?: boolean;
+  }) {
     return (
       <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: locked ? "default" : "pointer", fontSize: 13, color: "#374151", padding: "3px 0" }}>
         <input
@@ -613,7 +654,42 @@ function CreateProductModal({
           onChange={() => toggleDoc(id)}
           style={{ width: 15, height: 15, marginTop: 1, flexShrink: 0, cursor: locked ? "default" : "pointer" }}
         />
-        <span style={{ opacity: locked ? 0.6 : 1 }}>{label}{locked && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 4 }}>(always required)</span>}</span>
+        <span style={{ opacity: locked ? 0.6 : 1, flex: 1 }}>
+          {label}
+          {hasForm && (
+            <span style={{ marginLeft: 6, padding: "1px 6px", fontSize: 10, fontWeight: 600, borderRadius: 3, background: "#dbeafe", color: "#1e40af" }}>
+              📝 form
+            </span>
+          )}
+        </span>
+        {showStageToggle && checkedDocs.has(id) && !locked && (
+          <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
+            {[1, 2].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setDocStages((m) => new Map(m).set(id, s as 1 | 2))}
+                style={{
+                  padding: "2px 8px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  borderRadius: 4,
+                  border: docStages.get(id) === s ? "1px solid #2563eb" : "1px solid #d1d5db",
+                  background: docStages.get(id) === s ? "#2563eb" : "#fff",
+                  color: docStages.get(id) === s ? "#fff" : "#6b7280",
+                  cursor: "pointer",
+                }}
+              >
+                Stage {s}
+              </button>
+            ))}
+          </div>
+        )}
+        {locked && (
+          <span style={{ marginLeft: 8, padding: "2px 6px", fontSize: 10, fontWeight: 600, borderRadius: 3, background: "#f3f4f6", color: "#6b7280" }}>
+            Stage 1 (locked)
+          </span>
+        )}
       </label>
     );
   }
@@ -800,7 +876,13 @@ function CreateProductModal({
                 <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Core Underwriting Pack</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
                   {coreTypes.map((d) => (
-                    <DocCheckbox key={d.key} id={d.key} label={d.label} />
+                    <DocCheckbox
+                      key={d.key}
+                      id={d.key}
+                      label={d.label}
+                      showStageToggle
+                      hasForm={(d as any).hasForm}
+                    />
                   ))}
                 </div>
               </div>
