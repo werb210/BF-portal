@@ -12,6 +12,51 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
 
+type EngagementEvent = { id: string; event_type: string; source: string; apollo_message_id: string | null; sequence_name: string | null; occurred_at: string; metadata: Record<string, unknown> };
+
+function EngagementSection({ contactId }: { contactId: string | undefined }) {
+  const [events, setEvents] = useState<EngagementEvent[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!contactId) { setEvents([]); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api<{ events: EngagementEvent[] }>("/api/v1/bi/crm/contacts/" + encodeURIComponent(contactId) + "/engagement");
+        if (!cancelled) setEvents(Array.isArray(r.events) ? r.events : []);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Failed to load engagement");
+          setEvents([]);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [contactId]);
+  const icon = (t: string) => t === "opened" ? "👁" : t === "clicked" ? "🖱" : t === "replied" ? "↩" : t === "bounced" ? "✕" : t === "delivered" ? "✓" : "•";
+  return (
+    <section style={{ marginTop: 16, padding: 12, border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff" }}>
+      <h3 style={{ margin: 0, marginBottom: 8, fontSize: 14 }}>Apollo engagement</h3>
+      {error && <div style={{ color: "#b91c1c", fontSize: 12 }}>{error}</div>}
+      {events === null && <div style={{ color: "#94a3b8", fontSize: 12 }}>Loading</div>}
+      {events !== null && events.length === 0 && <div style={{ color: "#94a3b8", fontSize: 12, fontStyle: "italic" }}>No engagement events yet.</div>}
+      {events !== null && events.length > 0 && (
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, maxHeight: 240, overflowY: "auto" }}>
+          {events.map((e) => (
+            <li key={e.id} style={{ padding: "6px 0", borderBottom: "1px solid #f1f5f9", fontSize: 12 }}>
+              <span style={{ marginRight: 6 }}>{icon(e.event_type)}</span>
+              <strong>{e.event_type}</strong>
+              {e.sequence_name && <span style={{ color: "#64748b" }}> · {e.sequence_name}</span>}
+              <span style={{ float: "right", color: "#94a3b8" }}>{new Date(e.occurred_at).toLocaleString()}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+
 type BIContactDetail = {
   id: string;
   full_name: string | null;
@@ -468,6 +513,7 @@ export default function BIContactDetailPage() {
         {contact.notes && (
           <div style={{ ...panel, marginTop: 16 }}>
             <div style={panelHeader}>
+              <EngagementSection contactId={contact?.id} />
               <h3 style={{ margin: 0 }}>Notes</h3>
             </div>
             <p
