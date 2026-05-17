@@ -69,7 +69,10 @@ describe("DocumentsTab", () => {
     mockPost.mockResolvedValueOnce({});
     render(<DocumentsTab applicationId="app-1" />);
     await waitFor(() => screen.getByTestId("documents-tab"));
-    fireEvent.click(screen.getByTestId("doc-cat-bank_statements").querySelector("button") as HTMLButtonElement);
+    // BF_PORTAL_BLOCK_57B_DOCS_TEST_REPAIR_v1 — categories default open after
+    // Block 57R, so the previous expand-click would now collapse the row and
+    // hide doc-actions-f1. Drop the toggle; assert openness as a precondition.
+    expect(screen.getByTestId("doc-actions-f1")).toBeTruthy();
     fireEvent.click(screen.getByTestId("doc-actions-f1"));
     fireEvent.click(screen.getByTestId("doc-accept-f1"));
     // BF_PORTAL_BLOCK_v311_DOCUMENTS_TAB_PORTAL_PREFIX_v1
