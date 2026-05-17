@@ -21,6 +21,25 @@ const MessageThread = ({ messages }: { messages: MessageRecord[] }) => (
           <div className="note-message__body">
             <div className="note-message__author">{resolveSenderLabel(message)}</div>
             <div className="note-message__text">{message.body}</div>
+            {/* BF_PORTAL_BLOCK_45_v1 -- read-only CTA pill so staff
+                can see what action the applicant is being prompted
+                to take. Not interactive on the staff side. */}
+            {message.ctaLabel ? (
+              <div
+                style={{
+                  display: "inline-block",
+                  marginTop: 6,
+                  padding: "4px 10px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  background: "#dbeafe",
+                  color: "#1e40af",
+                  borderRadius: 12,
+                }}
+              >
+                🔘 {message.ctaLabel}
+              </div>
+            ) : null}
             <div className="note-message__timestamp">
               {message.createdAt}
               {message.source ? ` · ${message.source}` : ""}
