@@ -1,9 +1,7 @@
 export type MessageSource = "client" | "staff" | "ai_escalation" | "system" | string;
 
-// BF_PORTAL_BLOCK_45_v1 -- cta_label + cta_action shown in client
-// mini-portal chat as a button under the bubble; staff sees them
-// as a label-only pill so they know what the applicant is being
-// prompted to do.
+// BF_PORTAL_BLOCK_45_v1 -- ctaLabel + ctaAction shown in client
+// mini-portal chat as a button; staff sees them as a read-only pill.
 export type MessageRecord = {
   id: string;
   body: string;
