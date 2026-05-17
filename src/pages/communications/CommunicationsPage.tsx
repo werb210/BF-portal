@@ -99,7 +99,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
 
   useEffect(() => {
     api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null; latest_message_at?: string; preview?: string }> }>("/api/communications/sms")
-      .then((r) => {
+      .then(async (r) => {
         const convo = Array.isArray(r.conversations) ? r.conversations : [];
         const mapped = convo.map((row) => ({
           id: row.contact_id ?? "",
@@ -112,9 +112,27 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
           setContacts(mapped as Contact[]);
           setHasSentMessages(true);
         } else {
+          // BF_PORTAL_BLOCK_57R_CAL_DOCS_DELETE_REFERRER_COMMS_v2
+          // Pre-fix: when /api/communications/sms returned 0 conversations
+          // AND no fallback `contacts` array, sidebar showed "No contacts.
+          // Add contacts in CRM first." even when CRM had rows. Now: pull
+          // CRM contacts (phone-bearing) as the baseline.
           const fallback = (r as { contacts?: Contact[] }).contacts;
-          setContacts(Array.isArray(fallback) ? fallback : []);
-          setHasSentMessages(Array.isArray(fallback) && fallback.length > 0);
+          if (Array.isArray(fallback) && fallback.length > 0) {
+            setContacts(fallback);
+            setHasSentMessages(true);
+          } else {
+            try {
+              const crm = await api<{ items?: Contact[] } | Contact[]>("/api/crm/contacts", { params: { pageSize: 500 } });
+              const list: Contact[] = Array.isArray(crm) ? (crm as Contact[]) : ((crm as { items?: Contact[] }).items ?? []);
+              const withPhone = list.filter((c) => c?.id && c?.phone);
+              setContacts(withPhone);
+              setHasSentMessages(false);
+            } catch {
+              setContacts([]);
+              setHasSentMessages(false);
+            }
+          }
         }
       })
       .catch((error) => {
@@ -153,7 +171,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     Promise.resolve(
       api<{ messages?: Message[]; data?: Message[] } | Message[]>("/api/communications/sms/thread", { params })
     )
-      .then((r) => {
+      .then(async (r) => {
         const msgs = Array.isArray(r) ? r : (r?.messages ?? r?.data ?? []);
         setThreads((prev) => {
           const merged = mergeMessages(prev[contactId] ?? [], msgs);
@@ -357,7 +375,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
         <div style={{ flex: 1, overflowY: "auto" }}>
           {filtered.length === 0 && (
             <div style={{ padding: "20px 16px", textAlign: "center", color: "#8e8e93", fontSize: 14 }}>
-              {hasSentMessages ? "No conversations yet" : "No contacts. Add contacts in CRM first."}
+              {contacts.length === 0 ? "No CRM contacts with phone numbers yet. Add a contact with a phone in CRM to start an SMS thread." : (hasSentMessages ? "No conversations match this filter." : "No conversations yet - click a contact to start one.")}
             </div>
           )}
           {filtered.map((c) => {
@@ -563,7 +581,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
 
   useEffect(() => {
     api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null }> }>("/api/communications/messages")
-      .then((r) => {
+      .then(async (r) => {
         const list = Array.isArray(r.conversations) ? r.conversations : [];
         setContacts(list.map((c) => ({ id: c.contact_id ?? "", name: c.contact_name ?? c.contact_phone ?? "Unknown", phone: c.contact_phone ?? null })).filter((c) => c.id));
       })

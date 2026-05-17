@@ -97,15 +97,8 @@ export default function DocumentsTab({ applicationId }: Props) {
         const list = Array.isArray(resp) ? resp : Array.isArray(resp?.categories) ? resp.categories : [];
         setCategories(list);
         // Default-open required-but-incomplete folders
-        const open = new Set<string>();
-        for (const c of list) {
-          if (c.required) {
-            const hasAcceptedOrPending = c.files.some(
-              (f) => f.status === "accepted" || f.status === "pending_review"
-            );
-            if (!hasAcceptedOrPending) open.add(c.key);
-          }
-        }
+        // BF_PORTAL_BLOCK_57R_CAL_DOCS_DELETE_REFERRER_COMMS_v2 - all open.
+        const open = new Set<string>(list.map((c) => c.key));
         setOpenKeys(open);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load documents.");
