@@ -199,6 +199,22 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
   if (loading) return <div style={{ padding: 24 }}>Loading banking analysis…</div>;
   if (error) return <div style={{ padding: 24, color: "#b91c1c" }}>Couldn't load banking analysis: <span>{error}</span></div>;
   if (!data) return <DiagnosticPanel applicationId={applicationId} />;
+  if ((data as any).status === "failed") {
+    const d: any = data;
+    const onRetry = () => {
+      api.post("/api/applications/" + applicationId + "/banking-analysis/retry", {})
+        .then(() => { window.location.reload(); })
+        .catch((e) => { window.alert("Retry failed: " + (e instanceof Error ? e.message : String(e))); });
+    };
+    return (
+      <div style={{ border: "1px solid #fecaca", background: "#fef2f2", color: "#7f1d1d", padding: 16, borderRadius: 8, margin: 16 }}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>Banking analysis failed.</div>
+        <div style={{ fontSize: 13, marginBottom: 8, fontFamily: "monospace", whiteSpace: "pre-wrap" }}>{d.lastError || "No error message recorded."}</div>
+        <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 12 }}>Attempts: {d.attemptCount || 0} of {d.maxAttempts || 3}</div>
+        <button onClick={onRetry} style={{ background: "#7f1d1d", color: "white", border: "none", padding: "8px 16px", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Retry analysis</button>
+      </div>
+    );
+  }
 
   const months = ((data.monthGroups ?? []) as unknown) as BankingTrendMonth[];
   const accounts = data.accounts ?? [];
