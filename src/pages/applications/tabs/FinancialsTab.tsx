@@ -163,42 +163,107 @@ function Section({
   docs: FinancialDoc[];
   fieldsByDoc: Map<string, FinancialField[]>;
 }) {
+  const sortedDocs = [...docs].sort((a, b) => {
+    const aTs = a.uploadedAt ? new Date(a.uploadedAt).getTime() : Number.POSITIVE_INFINITY;
+    const bTs = b.uploadedAt ? new Date(b.uploadedAt).getTime() : Number.POSITIVE_INFINITY;
+    return aTs - bTs;
+  });
+  const labels = new Set<string>();
+  const fieldMatrix = new Map<string, Map<string, FinancialField>>();
+  for (const doc of sortedDocs) {
+    const docFields = fieldsByDoc.get(doc.documentId) ?? [];
+    for (const field of docFields) {
+      const rowLabel = field.displayLabel;
+      labels.add(rowLabel);
+      if (!fieldMatrix.has(rowLabel)) fieldMatrix.set(rowLabel, new Map());
+      fieldMatrix.get(rowLabel)!.set(doc.documentId, field);
+    }
+  }
+  const sortedLabels = [...labels].sort((a, b) => a.localeCompare(b));
+  const anyPending = sortedDocs.some((doc) => {
+    const ocr = (doc.ocrStatus ?? "").toLowerCase();
+    return ocr === "pending" || ocr === "processing" || ocr === "queued";
+  });
+
   return (
     <section style={styles.section}>
       <h3 style={styles.sectionTitle}>
         {label}
         <span style={styles.sectionCount}>({docs.length} doc{docs.length === 1 ? "" : "s"})</span>
       </h3>
-      <div style={styles.docList}>
-        {docs.map((doc) => {
-          const docFields = fieldsByDoc.get(doc.documentId) ?? [];
-          const ocrLower = (doc.ocrStatus ?? "").toLowerCase();
-          const ocrPending = ocrLower === "pending" || ocrLower === "processing" || ocrLower === "queued" || (!ocrLower && docFields.length === 0);
-          const ocrFailed  = ocrLower === "failed";
-          return (
-            <div key={doc.documentId} style={styles.docCard}>
-              <div style={styles.docHeader}>
-                <span style={styles.filename}>{doc.filename ?? "(untitled)"}</span>
-                <DocStatusPill status={doc.status} />
-                <OcrStatusPill ocrStatus={doc.ocrStatus} hasFields={docFields.length > 0} />
-                <span style={styles.docMetaRight}>uploaded {fmtDate(doc.uploadedAt)}</span>
-              </div>
-              {docFields.length > 0 ? (
-                <FieldsTable fields={docFields} />
-              ) : ocrPending ? (
-                <div style={styles.docNote}>OCR processing — extracted fields will appear here when ready.</div>
-              ) : ocrFailed ? (
-                <div style={{ ...styles.docNote, color: "#b91c1c" }}>OCR failed — manual review required.</div>
-              ) : (
-                <div style={styles.docNote}>OCR completed but found no fields matching this category.</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {sortedLabels.length === 0 ? (
+        <div style={styles.docNote}>
+          {anyPending
+            ? "OCR processing - extracted fields will appear here when ready."
+            : "OCR completed but found no fields matching this category."}
+        </div>
+      ) : (
+        <div style={pivotStyles.wrapper}>
+          <table style={pivotStyles.table}>
+            <thead>
+              <tr>
+                <th style={{ ...pivotStyles.thBase, ...pivotStyles.fieldHeader }}>Field</th>
+                {sortedDocs.map((doc) => {
+                  const docFields = fieldsByDoc.get(doc.documentId) ?? [];
+                  return (
+                    <th key={doc.documentId} style={{ ...pivotStyles.thBase, ...pivotStyles.docHeader }}>
+                      <div style={pivotStyles.docHeaderName} title={doc.filename ?? "(untitled)"}>
+                        {doc.filename ?? "(untitled)"}
+                      </div>
+                      <div style={pivotStyles.docHeaderPills}>
+                        <DocStatusPill status={doc.status} />
+                        <OcrStatusPill ocrStatus={doc.ocrStatus} hasFields={docFields.length > 0} />
+                      </div>
+                      <div style={pivotStyles.docHeaderDate}>uploaded {fmtDate(doc.uploadedAt)}</div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {sortedLabels.map((fieldLabel) => (
+                <tr key={fieldLabel}>
+                  <th style={{ ...pivotStyles.tdBase, ...pivotStyles.fieldCell }}>{fieldLabel}</th>
+                  {sortedDocs.map((doc) => {
+                    const field = fieldMatrix.get(fieldLabel)?.get(doc.documentId);
+                    return (
+                      <td key={`${fieldLabel}-${doc.documentId}`} style={pivotStyles.tdBase}>
+                        {field ? (
+                          <div style={pivotStyles.valueWrap}>
+                            <span style={pivotStyles.valueText}>{field.value || "—"}</span>
+                            <ConfidencePill confidence={field.confidence} />
+                          </div>
+                        ) : (
+                          <span style={pivotStyles.emptyDash}>—</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }
+
+const pivotStyles: Record<string, CSSProperties> = {
+  wrapper: { overflowX: "auto", border: "1px solid rgba(148, 163, 184, 0.3)", borderRadius: 10, background: "rgba(15, 23, 42, 0.02)" },
+  table: { width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: 720 },
+  thBase: { background: "rgba(15, 23, 42, 0.95)", color: "rgba(248, 250, 252, 0.96)", borderBottom: "1px solid rgba(148, 163, 184, 0.45)", padding: "10px 12px", fontSize: 12, textAlign: "left" as const, verticalAlign: "top" as const },
+  tdBase: { background: "rgba(15, 23, 42, 0.03)", color: "#0f172a", borderBottom: "1px solid rgba(148, 163, 184, 0.2)", borderRight: "1px solid rgba(148, 163, 184, 0.2)", padding: "8px 12px", fontSize: 12, verticalAlign: "top" as const, minWidth: 200 },
+  fieldHeader: { position: "sticky" as const, left: 0, zIndex: 5, minWidth: 220, borderRight: "1px solid rgba(148, 163, 184, 0.45)" },
+  docHeader: { position: "sticky" as const, top: 0, zIndex: 4, minWidth: 220, borderRight: "1px solid rgba(148, 163, 184, 0.45)" },
+  fieldCell: { position: "sticky" as const, left: 0, zIndex: 3, fontWeight: 600, color: "rgba(15, 23, 42, 0.92)", background: "rgba(248, 250, 252, 0.97)", borderRight: "1px solid rgba(148, 163, 184, 0.3)" },
+  docHeaderName: { fontWeight: 700, fontSize: 12, whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220, marginBottom: 6 },
+  docHeaderPills: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const, marginBottom: 6 },
+  docHeaderDate: { color: "rgba(226, 232, 240, 0.9)", fontSize: 11 },
+  valueWrap: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  valueText: { color: "#0f172a", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const },
+  emptyDash: { color: "rgba(71, 85, 105, 0.85)" },
+};
 
 function FieldsTable({ fields }: { fields: FinancialField[] }) {
   // Stable sort: required-feeling fields first (revenue, net income, total assets etc.), then alpha.
