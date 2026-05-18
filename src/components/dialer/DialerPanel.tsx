@@ -183,7 +183,7 @@ export default function DialerPanel() {
           setOutboundCallerId(callerId);
         } else {
           setOutboundCallerId("Not configured");
-          setError((prev) => prev ?? "No outbound caller ID configured for this user");
+          if (!error) setError("No outbound caller ID configured for this user");
         }
       } catch (err: any) {
         if (canceled) return;
@@ -217,14 +217,14 @@ export default function DialerPanel() {
         const denied = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
         setMicStatus(denied ? "denied" : "error");
         setMicDetail(denied ? "Denied" : (err?.message ?? "Microphone check failed"));
-        if (denied) setError((prev) => prev ?? "Microphone access denied");
+        if (denied && !error) setError("Microphone access denied");
       }
     };
     void runDiagnostics();
     return () => {
       canceled = true;
     };
-  }, [isOpen, setError]);
+  }, [error, isOpen, setError]);
 
   // BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1
   // initDevice removed. Outbound calls go through bootstrapVoice's
