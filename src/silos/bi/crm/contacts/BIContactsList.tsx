@@ -21,6 +21,7 @@ type BIContactRow = {
   outreach_status: string | null;
   outreach_owner_id: string | null;
   outreach_updated_at: string | null;
+  tags: string[] | null;
   created_at: string;
 };
 
@@ -33,6 +34,8 @@ export default function BIContactsList() {
   });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isTagsOpen, setIsTagsOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +45,7 @@ export default function BIContactsList() {
       try {
         const params = new URLSearchParams();
         if (q.trim()) params.set("q", q.trim());
+        if (selectedTags.length > 0) params.set("tags", selectedTags.join(","));
         params.set("sort", `${sort.col}:${sort.dir}`);
         const r: any = await api(
           `/api/v1/bi/crm/contacts${params.toString() ? `?${params}` : ""}`,
@@ -63,7 +67,27 @@ export default function BIContactsList() {
     return () => {
       cancelled = true;
     };
-  }, [q, sort.col, sort.dir]);
+  }, [q, selectedTags, sort.col, sort.dir]);
+
+  const availableTags = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          rows.flatMap((row) =>
+            Array.isArray(row.tags)
+              ? row.tags.filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0)
+              : [],
+          ),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [rows],
+  );
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  };
 
   const onSort = (col: SortCol) =>
     setSort((s) => ({
@@ -105,6 +129,29 @@ export default function BIContactsList() {
           aria-label="Search contacts"
         />
         <span style={{ flex: 1 }} />
+        <div style={filterDropdownWrap}>
+          <button style={filterBtn} type="button" onClick={() => setIsTagsOpen((o) => !o)}>
+            Tags{selectedTags.length ? ` (${selectedTags.length})` : ""}
+          </button>
+          {isTagsOpen && (
+            <div style={dropdownMenu}>
+              {availableTags.length === 0 && <div style={dropdownEmpty}>No tags available.</div>}
+              {availableTags.map((tag) => {
+                const selected = selectedTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    style={{ ...tagChipBtn, ...(selected ? tagChipBtnActive : null) }}
+                    onClick={() => toggleTag(tag)}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         <button style={toolbarBtn} type="button" disabled title="Coming in v208">
           Export
         </button>
@@ -112,6 +159,16 @@ export default function BIContactsList() {
           Edit columns
         </button>
       </div>
+
+      {selectedTags.length > 0 && (
+        <div style={activeFilterRow}>
+          {selectedTags.map((tag) => (
+            <button key={tag} type="button" style={activeTagChip} onClick={() => toggleTag(tag)}>
+              {tag} ×
+            </button>
+          ))}
+        </div>
+      )}
 
       <table style={table}>
         <thead>
@@ -164,6 +221,12 @@ function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => 
 // identical (HubSpot light theme on a white card).
 const page: CSSProperties = { background: "#fff", color: "#000", padding: 24, borderRadius: 8 };
 const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16 };
+const activeFilterRow: CSSProperties = {
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap",
+  marginBottom: 12,
+};
 const searchInput: CSSProperties = {
   flex: 1,
   padding: 8,
@@ -171,6 +234,50 @@ const searchInput: CSSProperties = {
   borderRadius: 4,
   background: "#fff",
   color: "#000",
+};
+const filterDropdownWrap: CSSProperties = { position: "relative" };
+const filterBtn: CSSProperties = {
+  padding: "8px 12px",
+  border: "1px solid #cbd6e2",
+  borderRadius: 4,
+  background: "#fff",
+  color: "#33475b",
+  cursor: "pointer",
+};
+const dropdownMenu: CSSProperties = {
+  position: "absolute",
+  top: "calc(100% + 6px)",
+  right: 0,
+  minWidth: 240,
+  maxWidth: 320,
+  padding: 10,
+  border: "1px solid #cbd6e2",
+  borderRadius: 6,
+  background: "#fff",
+  boxShadow: "0 8px 16px rgba(0,0,0,0.08)",
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 8,
+  zIndex: 20,
+};
+const dropdownEmpty: CSSProperties = { color: "#7c98b6", fontSize: 13 };
+const tagChipBtn: CSSProperties = {
+  border: "1px solid #cbd6e2",
+  borderRadius: 999,
+  padding: "4px 10px",
+  background: "#fff",
+  color: "#33475b",
+  cursor: "pointer",
+  fontSize: 12,
+};
+const tagChipBtnActive: CSSProperties = {
+  background: "#e5f5f8",
+  borderColor: "#0091ae",
+  color: "#006d87",
+};
+const activeTagChip: CSSProperties = {
+  ...tagChipBtn,
+  ...tagChipBtnActive,
 };
 const toolbarBtn: CSSProperties = {
   padding: "8px 16px",
