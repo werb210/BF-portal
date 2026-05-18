@@ -774,6 +774,8 @@ function InboxTab() {
       </div>
       <O365ComposeModal
         open={composeOpen}
+        fromOptions={mailboxOptions}
+        defaultFrom={active}
         onClose={() => setComposeOpen(false)}
       />
     </div>
