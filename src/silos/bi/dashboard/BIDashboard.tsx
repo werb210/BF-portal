@@ -126,6 +126,8 @@ export default function BIDashboard() {
   }, [apps]);
 
   const total = apps.length;
+
+  const allDemoHidden = apps.length > 0 && apps.every((a) => a?.is_demo === true) && hideDemo;
   const healthStatus: string = String(health?.status ?? "");
   const healthTone: Tone =
     healthStatus === "healthy" ? "good" :
@@ -148,6 +150,16 @@ export default function BIDashboard() {
 
       {loading ? <div className="text-white/50 text-sm mb-4">Loading…</div> : null}
       {error ? <div className="mb-4 rounded border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{error}</div> : null}
+
+      {allDemoHidden ? (
+        <div className="mb-4 rounded border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-100">
+          All applications are currently demos. Toggle Hide Demo to populate dashboard.
+          <label className="ml-2 inline-flex items-center gap-2">
+            <input type="checkbox" checked={hideDemo} onChange={(e) => onHideDemoChange(e.target.checked)} />
+            Hide demo
+          </label>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 mb-6">
         <StatPill label="Total in pipeline" value={total} />
