@@ -6,14 +6,10 @@
 //   { documents: [...financial-category docs...],
 //     fields:    [...OCR-extracted fields with display labels resolved...] }
 //
-// We group by source category (income_statement / balance_sheet / cash_flow /
-// taxes) and render each as a section with the source documents and a
-// key/value table of extracted fields.
-//
-// Different empty states matter for underwriting trust:
-//   "no docs"      = applicant hasn't uploaded yet — don't read further
-//   "ocr pending"  = docs are there but extraction hasn't finished — wait
-//   "no fields"    = extraction ran but found nothing of value — manual review
+// Rendered as a single cross-document pivot table:
+// - columns = docs (oldest first)
+// - rows    = distinct display labels across all docs (case-insensitive dedupe)
+// - cell    = best value for that label in that doc (highest confidence, then first seen)
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 // BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
@@ -44,20 +40,6 @@ type Response = {
   fields: FinancialField[];
 };
 
-const SECTIONS: Array<{ id: string; label: string; matches: (cat: string) => boolean }> = [
-  { id: "income_statement", label: "Income Statement (P&L)", matches: (c) => /income|profit|loss|^p_?l$/i.test(c) },
-  { id: "balance_sheet",    label: "Balance Sheet",          matches: (c) => /balance|financial_statement/i.test(c) },
-  { id: "cash_flow",        label: "Cash Flow",              matches: (c) => /cash_?flow/i.test(c) },
-  { id: "taxes",            label: "Tax Returns",            matches: (c) => /^tax/i.test(c) },
-];
-
-const SECTION_BY_OCR_TYPE: Record<string, string> = {
-  income_statement: "income_statement",
-  balance_sheet:    "balance_sheet",
-  cash_flow:        "cash_flow",
-  taxes:            "taxes",
-};
-
 export default function FinancialsTab({ applicationId }: Props) {
   const [data, setData] = useState<Response | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,24 +54,37 @@ export default function FinancialsTab({ applicationId }: Props) {
       .finally(() => setLoading(false));
   }, [applicationId]);
 
-  const sectioned = useMemo(() => {
-    if (!data) return [];
-    return SECTIONS.map((sec) => {
-      const docs = data.documents.filter((d) => d.category && sec.matches(d.category));
-      const docIds = new Set(docs.map((d) => d.documentId));
-      const fields = data.fields.filter((f) => {
-        if (docIds.has(f.documentId)) return true;
-        const mapped = f.sourceDocumentType ? SECTION_BY_OCR_TYPE[f.sourceDocumentType] : null;
-        return mapped === sec.id;
-      });
-      // Group fields by document for display
-      const fieldsByDoc = new Map<string, FinancialField[]>();
-      for (const f of fields) {
-        if (!fieldsByDoc.has(f.documentId)) fieldsByDoc.set(f.documentId, []);
-        fieldsByDoc.get(f.documentId)!.push(f);
-      }
-      return { ...sec, docs, fieldsByDoc };
+  const pivot = useMemo(() => {
+    if (!data) return null;
+    const sortedDocs = [...data.documents].sort((a, b) => {
+      const aTs = a.uploadedAt ? new Date(a.uploadedAt).getTime() : Number.POSITIVE_INFINITY;
+      const bTs = b.uploadedAt ? new Date(b.uploadedAt).getTime() : Number.POSITIVE_INFINITY;
+      return aTs - bTs;
     });
+
+    const rowsByKey = new Map<string, string>();
+    const rowEntries: Array<{ key: string; label: string }> = [];
+    const matrix = new Map<string, Map<string, FinancialField>>();
+    for (const field of data.fields) {
+      const normalized = field.displayLabel.trim().toLocaleLowerCase();
+      if (!normalized) continue;
+      if (!rowsByKey.has(normalized)) {
+        rowsByKey.set(normalized, field.displayLabel.trim());
+        rowEntries.push({ key: normalized, label: field.displayLabel.trim() });
+      }
+      if (!matrix.has(normalized)) matrix.set(normalized, new Map());
+      const row = matrix.get(normalized)!;
+      const existing = row.get(field.documentId);
+      if (!existing) {
+        row.set(field.documentId, field);
+      } else {
+        const existingConfidence = Number.isFinite(existing.confidence) ? existing.confidence : Number.NEGATIVE_INFINITY;
+        const incomingConfidence = Number.isFinite(field.confidence) ? field.confidence : Number.NEGATIVE_INFINITY;
+        if (incomingConfidence > existingConfidence) row.set(field.documentId, field);
+      }
+    }
+    const sortedRows = rowEntries.sort((a, b) => a.label.localeCompare(b.label));
+    return { sortedDocs, sortedRows, matrix };
   }, [data]);
 
   if (!applicationId) return <div style={styles.placeholder}>Select an application to view financials.</div>;
@@ -112,14 +107,13 @@ export default function FinancialsTab({ applicationId }: Props) {
     );
   }
 
-  const sectionsWithDocs = sectioned.filter((s) => s.docs.length > 0);
-  const orphanFields = data
-    ? data.fields.filter((f) => {
-        // Fields whose source category doesn't match any section we render
-        const mapped = f.sourceDocumentType ? SECTION_BY_OCR_TYPE[f.sourceDocumentType] : null;
-        return !mapped && !sectionsWithDocs.some((s) => s.fieldsByDoc.has(f.documentId));
-      })
-    : [];
+  const sortedDocs = pivot?.sortedDocs ?? [];
+  const sortedRows = pivot?.sortedRows ?? [];
+  const matrix = pivot?.matrix ?? new Map<string, Map<string, FinancialField>>();
+  const anyPending = sortedDocs.some((doc) => {
+    const ocr = (doc.ocrStatus ?? "").toLowerCase();
+    return ocr === "pending" || ocr === "processing" || ocr === "queued";
+  });
 
   return (
     <div style={styles.page}>
@@ -130,122 +124,63 @@ export default function FinancialsTab({ applicationId }: Props) {
         </div>
       </header>
 
-      {sectionsWithDocs.map((sec) => (
-        <Section key={sec.id} label={sec.label} docs={sec.docs} fieldsByDoc={sec.fieldsByDoc} />
-      ))}
-
-      {sectionsWithDocs.length === 0 && (
-        <div style={styles.emptyAll}>
-          Documents are uploaded but none match standard financial categories
-          (P&L, Balance Sheet, Cash Flow, Tax Returns). Check the Documents tab.
-        </div>
-      )}
-
-      {orphanFields.length > 0 && (
-        <details style={styles.section}>
-          <summary style={styles.sectionTitle}>
-            Other extracted fields <span style={styles.sectionCount}>({orphanFields.length})</span>
-          </summary>
-          <p style={styles.subtitle}>
-            Fields extracted from documents that didn't match a standard financial section.
-          </p>
-          <FieldsTable fields={orphanFields} />
-        </details>
-      )}
-    </div>
-  );
-}
-
-function Section({
-  label, docs, fieldsByDoc,
-}: {
-  label: string;
-  docs: FinancialDoc[];
-  fieldsByDoc: Map<string, FinancialField[]>;
-}) {
-  const sortedDocs = [...docs].sort((a, b) => {
-    const aTs = a.uploadedAt ? new Date(a.uploadedAt).getTime() : Number.POSITIVE_INFINITY;
-    const bTs = b.uploadedAt ? new Date(b.uploadedAt).getTime() : Number.POSITIVE_INFINITY;
-    return aTs - bTs;
-  });
-  const labels = new Set<string>();
-  const fieldMatrix = new Map<string, Map<string, FinancialField>>();
-  for (const doc of sortedDocs) {
-    const docFields = fieldsByDoc.get(doc.documentId) ?? [];
-    for (const field of docFields) {
-      const rowLabel = field.displayLabel;
-      labels.add(rowLabel);
-      if (!fieldMatrix.has(rowLabel)) fieldMatrix.set(rowLabel, new Map());
-      fieldMatrix.get(rowLabel)!.set(doc.documentId, field);
-    }
-  }
-  const sortedLabels = [...labels].sort((a, b) => a.localeCompare(b));
-  const anyPending = sortedDocs.some((doc) => {
-    const ocr = (doc.ocrStatus ?? "").toLowerCase();
-    return ocr === "pending" || ocr === "processing" || ocr === "queued";
-  });
-
-  return (
-    <section style={styles.section}>
-      <h3 style={styles.sectionTitle}>
-        {label}
-        <span style={styles.sectionCount}>({docs.length} doc{docs.length === 1 ? "" : "s"})</span>
-      </h3>
-      {sortedLabels.length === 0 ? (
-        <div style={styles.docNote}>
-          {anyPending
-            ? "OCR processing - extracted fields will appear here when ready."
-            : "OCR completed but found no fields matching this category."}
-        </div>
-      ) : (
-        <div style={pivotStyles.wrapper}>
-          <table style={pivotStyles.table}>
-            <thead>
-              <tr>
-                <th style={{ ...pivotStyles.thBase, ...pivotStyles.fieldHeader }}>Field</th>
-                {sortedDocs.map((doc) => {
-                  const docFields = fieldsByDoc.get(doc.documentId) ?? [];
-                  return (
-                    <th key={doc.documentId} style={{ ...pivotStyles.thBase, ...pivotStyles.docHeader }}>
-                      <div style={pivotStyles.docHeaderName} title={doc.filename ?? "(untitled)"}>
-                        {doc.filename ?? "(untitled)"}
-                      </div>
-                      <div style={pivotStyles.docHeaderPills}>
-                        <DocStatusPill status={doc.status} />
-                        <OcrStatusPill ocrStatus={doc.ocrStatus} hasFields={docFields.length > 0} />
-                      </div>
-                      <div style={pivotStyles.docHeaderDate}>uploaded {fmtDate(doc.uploadedAt)}</div>
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedLabels.map((fieldLabel) => (
-                <tr key={fieldLabel}>
-                  <th style={{ ...pivotStyles.tdBase, ...pivotStyles.fieldCell }}>{fieldLabel}</th>
+      <section style={styles.section}>
+        {sortedRows.length === 0 ? (
+          <div style={styles.docNote}>
+            {anyPending
+              ? "OCR processing - extracted fields will appear here when ready."
+              : "OCR completed but found no fields matching this category."}
+          </div>
+        ) : (
+          <div style={{ ...pivotStyles.wrapper, overflowX: sortedDocs.length > 4 ? "auto" : "visible" }}>
+            <table style={{ ...pivotStyles.table, minWidth: sortedDocs.length > 4 ? 720 : "100%" }}>
+              <thead>
+                <tr>
+                  <th style={{ ...pivotStyles.thBase, ...pivotStyles.fieldHeader }}>Field</th>
                   {sortedDocs.map((doc) => {
-                    const field = fieldMatrix.get(fieldLabel)?.get(doc.documentId);
+                    const hasFields = data?.fields.some((f) => f.documentId === doc.documentId) ?? false;
                     return (
-                      <td key={`${fieldLabel}-${doc.documentId}`} style={pivotStyles.tdBase}>
-                        {field ? (
-                          <div style={pivotStyles.valueWrap}>
-                            <span style={pivotStyles.valueText}>{field.value || "—"}</span>
-                            <ConfidencePill confidence={field.confidence} />
-                          </div>
-                        ) : (
-                          <span style={pivotStyles.emptyDash}>—</span>
-                        )}
-                      </td>
+                      <th key={doc.documentId} style={{ ...pivotStyles.thBase, ...pivotStyles.docHeader }}>
+                        <div style={pivotStyles.docHeaderName} title={doc.filename ?? "(untitled)"}>
+                          {doc.filename ?? "(untitled)"}
+                        </div>
+                        <div style={pivotStyles.docHeaderPills}>
+                          <DocStatusPill status={doc.status} />
+                          <OcrStatusPill ocrStatus={doc.ocrStatus} hasFields={hasFields} />
+                        </div>
+                        <div style={pivotStyles.docHeaderDate}>uploaded {fmtDate(doc.uploadedAt)}</div>
+                      </th>
                     );
                   })}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
+              </thead>
+              <tbody>
+                {sortedRows.map((row) => (
+                  <tr key={row.key}>
+                    <th style={{ ...pivotStyles.tdBase, ...pivotStyles.fieldCell }}>{row.label}</th>
+                    {sortedDocs.map((doc) => {
+                      const field = matrix.get(row.key)?.get(doc.documentId);
+                      return (
+                        <td key={`${row.key}-${doc.documentId}`} style={pivotStyles.tdBase}>
+                          {field ? (
+                            <div style={pivotStyles.valueWrap}>
+                              <span style={pivotStyles.valueText}>{field.value || "—"}</span>
+                              <ConfidencePill confidence={field.confidence} />
+                            </div>
+                          ) : (
+                            <span style={pivotStyles.emptyDash}>—</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 
@@ -265,21 +200,6 @@ const pivotStyles: Record<string, CSSProperties> = {
   emptyDash: { color: "rgba(71, 85, 105, 0.85)" },
 };
 
-function FieldsTable({ fields }: { fields: FinancialField[] }) {
-  // Stable sort: required-feeling fields first (revenue, net income, total assets etc.), then alpha.
-  const sorted = [...fields].sort((a, b) => a.displayLabel.localeCompare(b.displayLabel));
-  return (
-    <div style={styles.fieldsTable}>
-      {sorted.map((f, i) => (
-        <div key={`${f.documentId}-${f.fieldKey}-${i}`} style={styles.fieldRow}>
-          <div style={styles.fieldLabel}>{f.displayLabel}</div>
-          <div style={styles.fieldValue}>{f.value || "—"}</div>
-          <ConfidencePill confidence={f.confidence} />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function DocStatusPill({ status }: { status: string | null }) {
   if (!status) return null;
