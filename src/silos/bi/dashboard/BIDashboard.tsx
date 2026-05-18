@@ -6,17 +6,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
+import { BI_VISIBLE_PIPELINE_STAGES, biStageLabel, resolveStageId } from "@/silos/bi/pipeline/biStages";
 
-const STAGES: Array<[string, string]> = [
-  ["new_application",    "New"],
-  ["in_progress",        "In Progress"],
-  ["document_review",    "Doc Review"],
-  ["submitted",          "Submitted"],
-  ["under_review",       "Under Review"],
-  ["approved",           "Approved"],
-  ["declined",           "Declined"],
-  ["policy_issued",      "Policy Issued"],
-];
+const STAGES: Array<[string, string]> = BI_VISIBLE_PIPELINE_STAGES.map((stageId) => [stageId, biStageLabel(stageId)]);
+
+function extractListResponse(payload: unknown): any[] {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  const p = payload as Record<string, unknown>;
+  const candidates = [p.items, p.applications, p.data];
+  for (const c of candidates) {
+    if (Array.isArray(c)) return c;
+    if (c && typeof c === "object" && Array.isArray((c as Record<string, unknown>).items)) {
+      return (c as Record<string, unknown>).items as any[];
+    }
+  }
+  return [];
+}
 
 function relativeFromNow(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -50,6 +56,7 @@ export default function BIDashboard() {
   const [apps, setApps] = useState<any[]>([]);
   const [health, setHealth] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [hideDemo, setHideDemo] = useState<boolean>(() => {
     try { return localStorage.getItem("bi.dashboard.hide_demo") === "1"; } catch { return false; }
   });
@@ -58,15 +65,20 @@ export default function BIDashboard() {
 
   async function load() {
     setLoading(true);
+    setError(null);
     try {
       const qs = hideDemo ? "?hide_demo=true" : "";
-      const appList: any = await api<any>(`/api/v1/bi/applications${qs}`).catch(() => []);
-      const hData: any = await api<any>("/api/v1/bi/carrier-health").catch(() => null);
-      const list: any[] = Array.isArray(appList)
-        ? appList
-        : (appList && Array.isArray(appList.applications) ? appList.applications : []);
+      const [appList, hData] = await Promise.all([
+        api<any>(`/api/v1/bi/applications${qs}`),
+        api<any>("/api/v1/bi/carrier-health"),
+      ]);
+      const list: any[] = extractListResponse(appList);
       setApps(list);
       setHealth(hData);
+    } catch {
+      setApps([]);
+      setHealth(null);
+      setError("Failed to load BI dashboard data. Please refresh.");
     } finally {
       setLoading(false);
     }
@@ -80,7 +92,7 @@ export default function BIDashboard() {
   const stageCounts: Record<string, number> = useMemo(() => {
     const out: Record<string, number> = {};
     for (const a of apps) {
-      const s = String(a?.stage ?? "");
+      const s = resolveStageId(a?.stage) ?? String(a?.stage ?? "");
       out[s] = (out[s] || 0) + 1;
     }
     return out;
@@ -135,6 +147,7 @@ export default function BIDashboard() {
       </div>
 
       {loading ? <div className="text-white/50 text-sm mb-4">Loading…</div> : null}
+      {error ? <div className="mb-4 rounded border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{error}</div> : null}
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 mb-6">
         <StatPill label="Total in pipeline" value={total} />
@@ -181,7 +194,8 @@ export default function BIDashboard() {
           <div className="p-4 text-sm text-white/40">No recent updates.</div>
         ) : recent.map((a) => {
           const name = a?.business_name || a?.company_name || "Untitled";
-          const stageMeta = STAGES.find((row) => row[0] === a?.stage);
+          const resolvedStage = resolveStageId(a?.stage) ?? a?.stage;
+          const stageMeta = STAGES.find((row) => row[0] === resolvedStage);
           return (
             <Link key={a.id} to={`/silo/bi/pipeline/${a.id}`} className="flex items-center justify-between gap-3 border-b border-white/5 p-3 hover:bg-white/5 last:border-b-0">
               <div className="min-w-0 flex-1">
@@ -200,7 +214,7 @@ export default function BIDashboard() {
                 </div>
               </div>
               <div className="text-right text-xs text-white/60 shrink-0">
-                <div>{stageMeta ? stageMeta[1] : String(a?.stage ?? "")}</div>
+                <div>{stageMeta ? stageMeta[1] : biStageLabel(a?.stage)}</div>
                 <div className="text-white/40">{relativeFromNow(a?.updated_at)}</div>
               </div>
             </Link>
