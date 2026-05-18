@@ -454,16 +454,7 @@ export default function BIContactDetailPage() {
               <Field label="Last touched" value={contact.outreach_updated_at ? new Date(contact.outreach_updated_at).toLocaleString() : null} />
               <Field label="Created" value={new Date(contact.created_at).toLocaleString()} />
             </div>
-            {contact.tags && contact.tags.length > 0 && (
-              <div style={fieldsBlock}>
-                <div style={fieldLabel}>Tags</div>
-                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
-                  {contact.tags.map((t) => (
-                    <span key={t} style={tagBadge}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            )}
+            <TagEditor contact={contact} onSaved={refresh} />
           </>
         )}
       </aside>
@@ -568,6 +559,87 @@ function FieldEdit(props: { label: string; value: string; type?: string; onChang
     <div style={{ marginBottom: 8 }}>
       <div style={fieldLabel}>{props.label}</div>
       <input type={props.type ?? "text"} value={props.value} onChange={(e) => props.onChange(e.target.value)} style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000", fontSize: 13 }} aria-label={props.label} />
+    </div>
+  );
+}
+
+function TagEditor({ contact, onSaved }: { contact: { id: string; tags: string[] | null }; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const startEdit = () => {
+    setText((contact.tags ?? []).join(", "));
+    setError(null);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setText((contact.tags ?? []).join(", "));
+    setError(null);
+  };
+
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const parsed = text.split(",").map((part) => part.trim()).filter(Boolean);
+      await api(`/api/v1/bi/crm/contacts/${encodeURIComponent(contact.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ tags: parsed.length > 0 ? parsed : null }),
+      });
+      setEditing(false);
+      onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save tags");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={fieldsBlock}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <div style={fieldLabel}>Tags</div>
+        <button type="button" onClick={startEdit} disabled={saving || editing} style={actionBtn}>Edit</button>
+      </div>
+      {editing ? (
+        <>
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void save();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                cancelEdit();
+              }
+            }}
+            placeholder="vip, warm lead, do not call"
+            style={{ width: "100%", marginTop: 6, padding: 8, border: "1px solid rgba(148, 163, 184, 0.55)", borderRadius: 4, background: "rgba(15, 23, 42, 0.6)", color: "#e2e8f0", fontSize: 13 }}
+            aria-label="Edit tags"
+          />
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button type="button" onClick={() => void save()} disabled={saving} style={{ ...actionBtn, background: "#1d4ed8", color: "#fff", borderColor: "#1d4ed8" }}>{saving ? "Saving…" : "Save"}</button>
+            <button type="button" onClick={cancelEdit} disabled={saving} style={actionBtn}>Cancel</button>
+          </div>
+          {error && <div style={{ marginTop: 8, color: "#f87171", fontSize: 12 }}>{error}</div>}
+        </>
+      ) : contact.tags && contact.tags.length > 0 ? (
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
+          {contact.tags.map((t) => (
+            <span key={t} style={tagBadge}>{t}</span>
+          ))}
+        </div>
+      ) : (
+        <div style={{ marginTop: 4, color: "#94a3b8", fontSize: 12 }}>No tags</div>
+      )}
     </div>
   );
 }
