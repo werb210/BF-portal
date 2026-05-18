@@ -7,6 +7,8 @@ import { api } from "@/api";
 type Referrer = {
   id: string;
   full_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
   company_name?: string | null;
   email?: string | null;
   phone_e164?: string | null;
@@ -159,20 +161,15 @@ export default function BIReferrerManagement() {
                 className={`border-t border-white/5 cursor-pointer hover:bg-white/5 ${selected === r.id ? "bg-white/5" : ""}`}
               >
                 <td className="px-4 py-2">
-                  {/* BF_PORTAL_BLOCK_49_v1 -- display fallback chain.
-                      When full_name is empty but the referrer has
-                      filled in phone/email, show those instead of
-                      a generic "(profile pending)" stub. */}
                   <div className="font-medium">
-                    {r.full_name && r.full_name !== "(pending)"
-                      ? r.full_name
-                      : (r as any).email
-                        ? (r as any).email
-                        : (r as any).phone
-                          ? (r as any).phone
-                          : <span className="text-white/40 italic">(profile pending)</span>}
+                    {r.full_name
+                      || [r.first_name, r.last_name].filter(Boolean).join(" ")
+                      || r.company_name
+                      || r.email
+                      || "(unnamed)"}
                   </div>
-                  {!r.profile_completed_at && !r.full_name ? (
+                  {r.email ? <div className="text-xs text-white/60">{r.email}</div> : null}
+                  {!r.profile_completed_at && !r.full_name && !r.first_name && !r.last_name ? (
                     <div className="text-[10px] text-amber-300">awaiting profile</div>
                   ) : null}
                 </td>
