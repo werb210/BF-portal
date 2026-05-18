@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import CalendarPage from "@/pages/calendar/CalendarPage";
 
@@ -15,7 +16,11 @@ vi.mock("react-big-calendar", () => ({
 
 describe("Add Event modal", () => {
   it("uses datetime-local inputs with readable black text", () => {
-    render(<CalendarPage />);
+    render(
+      <MemoryRouter initialEntries={["/calendar"]}>
+        <CalendarPage />
+      </MemoryRouter>,
+    );
     fireEvent.click(screen.getByRole("button", { name: /Add Event/i }));
     const start = screen.getByLabelText(/Start/i);
     const end = screen.getByLabelText(/End/i);
