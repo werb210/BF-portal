@@ -190,9 +190,11 @@ function CalendarContent() {
           resource: { source: "task" as const, taskId: task.id, taskState },
         } satisfies CalendarEvent;
       })
-      .filter((event): event is CalendarEvent => Boolean(event));
+      .filter((event): event is NonNullable<typeof event> => event !== null);
 
-    return [...calendarEvents, ...taskEvents];
+    return [...calendarEvents, ...taskEvents]
+      .filter((event): event is NonNullable<typeof event> => event !== null)
+      .map((event) => ({ ...event, id: event.id ?? `cal-${crypto.randomUUID()}` }));
   }, [eventsQuery.data, tasksQuery.data]);
 
   return (

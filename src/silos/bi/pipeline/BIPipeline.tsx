@@ -265,7 +265,7 @@ export default function BIPipeline() {
             : staffOnly
               ? <span className="text-[9px] uppercase tracking-wider rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 px-1.5 py-0.5">STAFF</span>
               : null;
-          const actionChip = stageId === "documents"
+          const actionChip = stageId === "document_review"
             ? <span className="text-[9px] uppercase tracking-wider rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 px-1.5 py-0.5">Staff action</span>
             : <span className="text-[9px] uppercase tracking-wider rounded bg-blue-500/20 text-blue-200 border border-blue-500/40 px-1.5 py-0.5">Carrier</span>;
           return (

@@ -3,6 +3,7 @@ import { api } from "@/api";
 import { ApiError } from "@/api/http";
 import SecondaryButton from "@/components/forms/SecondaryButton";
 import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
+import O365ComposeModal from "@/components/communications/O365ComposeModal";
 
 type Tab = "messages" | "sms" | "inbox" | "issues";
 
@@ -597,8 +598,9 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
           .filter((c) => c.id)
           .sort((a, b) => new Date(b.latest).getTime() - new Date(a.latest).getTime());
         setContacts(mapped as Contact[]);
-        if (mapped.length > 0) {
-          setSelected({ id: mapped[0].id, name: mapped[0].name, phone: mapped[0].phone });
+        const first = mapped[0];
+        if (first) {
+          setSelected({ id: first.id, name: first.name, phone: first.phone });
         }
       })
       .catch(() => setContacts([]));
