@@ -72,7 +72,7 @@ describe("BF_PORTAL_BI_SILO_NAV_v56 -- BI silo nav config", () => {
   });
 });
 
-describe("BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- 6-tab BI nav", () => {
+describe("BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- 5-tab BI nav", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -110,9 +110,9 @@ describe("BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- 6-tab BI nav", () => {
     expect(screen.queryByRole("link", { name: "Referrer" })).not.toBeInTheDocument();
   });
 
-  it("BI sidebar has exactly 6 items (Dashboard, Pipeline, CRM, Lender, Marketing, Settings)", () => {
+  it("BI sidebar has exactly 5 items (Dashboard, Pipeline, CRM, Lender, Marketing)", () => {
     renderLayout("BI", "Admin");
-    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing", "Settings"];
+    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing"];
     for (const label of expectedLabels) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
