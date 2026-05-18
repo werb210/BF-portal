@@ -445,18 +445,16 @@ export default function BIContactDetailPage() {
             </div>
           </div>
         ) : (
-          <>
-            <div style={fieldsBlock}>
-              <Field label="Email" value={contact.email} />
-              <Field label="Phone" value={contact.phone_e164} />
-              <Field label="Outreach status" value={contact.outreach_status ? contact.outreach_status.replace(/_/g, " ") : null} />
-              <Field label="Owner" value={contact.outreach_owner_id} />
-              <Field label="Last touched" value={contact.outreach_updated_at ? new Date(contact.outreach_updated_at).toLocaleString() : null} />
-              <Field label="Created" value={new Date(contact.created_at).toLocaleString()} />
-            </div>
-            <TagEditor contact={contact} onSaved={refresh} />
-          </>
+          <div style={fieldsBlock}>
+            <Field label="Email" value={contact.email} />
+            <Field label="Phone" value={contact.phone_e164} />
+            <Field label="Outreach status" value={contact.outreach_status ? contact.outreach_status.replace(/_/g, " ") : null} />
+            <Field label="Owner" value={contact.outreach_owner_id} />
+            <Field label="Last touched" value={contact.outreach_updated_at ? new Date(contact.outreach_updated_at).toLocaleString() : null} />
+            <Field label="Created" value={new Date(contact.created_at).toLocaleString()} />
+          </div>
         )}
+        <TagEditor contact={contact} onSaved={refresh} />
       </aside>
 
       <main style={mainCol} data-testid="bi-contact-main">
