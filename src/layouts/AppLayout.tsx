@@ -36,6 +36,8 @@ const BI_NAV: NavItem[] = [
   { label: "Pipeline",       path: "/silo/bi/pipeline",  roles: ["Admin", "Staff", "Ops"] },
   { label: "CRM",            path: "/silo/bi/crm",       roles: ["Admin", "Staff"] },
   { label: "Lender",         path: "/silo/bi/lender",    roles: ["Admin", "Staff"] },
+  // BF_PORTAL_BLOCK_79_BI_NAV_REFERRER_RESTORE_v1 - nav entry was dropped; route + page still exist.
+  { label: "Referrer",       path: "/silo/bi/referrer",  roles: ["Admin", "Staff"] },
     { label: "Marketing",      path: "/silo/bi/marketing", roles: ["Admin"] },
   { label: "Settings",       path: "/silo/bi/settings",  roles: ["Admin", "Staff", "Ops"] },
 ];
