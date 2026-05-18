@@ -1,10 +1,9 @@
-// BF_PORTAL_BLOCK_84_LENDER_REFERRER_SUBTABS_v3
+// BF_PORTAL_BLOCK_84_LENDER_REFERRER_SUBTABS_v4
 // Lender page is a tabbed container: Lenders | Referrers.
 // Test AppLayout.bisilo.test.tsx:110 locks in that the BI sidebar
 // has exactly 6 items and Referrer is NOT one of them. This is the
 // canonical location for Referrer access. The /silo/bi/referrer
 // direct-URL route stays defined in BISilo.tsx for back-compat.
-// Tab state lives in ?tab so deep links work.
 import { useSearchParams } from "react-router-dom";
 import BILenderManagement from "./BILenderManagement";
 import BIReferrerManagement from "../referrer/BIReferrerManagement";

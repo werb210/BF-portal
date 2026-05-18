@@ -31,12 +31,9 @@ describe("BI 10-stage spec", () => {
     ]);
   });
 
-  it("exposes all 10 stages in the staff pipeline view", () => {
+  it("exposes the staff pipeline view (Block 82: 7 columns, Documents leftmost)", () => {
     expect([...BI_VISIBLE_PIPELINE_STAGES]).toEqual([
-      "created",
-      "in_progress",
       "document_review",
-      "ready_for_submission",
       "submitted",
       "under_review",
       "information_required",
@@ -72,7 +69,7 @@ describe("BI 10-stage spec", () => {
   it("biStageLabel returns the human label for the new IDs", () => {
     expect(biStageLabel("created")).toBe("New");
     expect(biStageLabel("in_progress")).toBe("In progress");
-    expect(biStageLabel("document_review")).toBe("Doc review");
+    expect(biStageLabel("document_review")).toBe("Documents");
     expect(biStageLabel("submitted")).toBe("Submitted to carrier");
     expect(biStageLabel("under_review")).toBe("Under review");
     expect(biStageLabel("policy_issued")).toBe("Policy issued");
@@ -94,7 +91,7 @@ describe("BI 10-stage spec", () => {
 
   it("returns the new label even when given a legacy ID", () => {
     expect(biStageLabel("new_application")).toBe("New");
-    expect(biStageLabel("documents_pending")).toBe("Doc review");
+    expect(biStageLabel("documents_pending")).toBe("Documents");
     expect(biStageLabel("quoted")).toBe("Under review");
     expect(biStageLabel("bound")).toBe("Policy issued");
   });
