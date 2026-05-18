@@ -12,6 +12,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "@/api";
 import {
   BI_VISIBLE_PIPELINE_STAGES,
+  biStage,
   biStageLabel,
   resolveStageId,
   type BiStageId,
@@ -244,13 +245,33 @@ export default function BIPipeline() {
         <button onClick={reset} className="rounded border border-card px-3 py-1 text-xs text-white/70 hover:text-white">Reset filters</button>
       </div>
 
-      {/* 10 stage columns per spec. Demo apps already filtered out. */}
+      {/* BF_PORTAL_BLOCK_78_PGI_VS_STAFF_STAGE_LABELS_v1 -
+          tint per-column chrome by ownership: PGI-driven stages get a
+          purple top border + "PGI" chip; staff-only stage gets an amber
+          top border + "STAFF" chip; mixed stages get default chrome. */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-10">
-        {BI_VISIBLE_PIPELINE_STAGES.map((stageId) => (
-          <div key={stageId} className="bg-brand-bgAlt border border-card rounded-xl p-3">
-            <div className="flex items-baseline justify-between mb-3">
+        {BI_VISIBLE_PIPELINE_STAGES.map((stageId) => {
+          const meta = biStage(stageId);
+          const pgi = !!meta?.isPgiDriven;
+          const staffOnly = !!meta?.isStaffOnly;
+          const ownerClass = pgi
+            ? "border-t-2 border-t-purple-400/70"
+            : staffOnly
+              ? "border-t-2 border-t-amber-400/70"
+              : "";
+          const chip = pgi
+            ? <span className="text-[9px] uppercase tracking-wider rounded bg-purple-500/20 text-purple-200 border border-purple-500/40 px-1.5 py-0.5">PGI</span>
+            : staffOnly
+              ? <span className="text-[9px] uppercase tracking-wider rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 px-1.5 py-0.5">STAFF</span>
+              : null;
+          return (
+          <div key={stageId} className={`bg-brand-bgAlt border border-card rounded-xl p-3 ${ownerClass}`}>
+            <div className="flex items-baseline justify-between mb-3 gap-2">
               <h3 className="text-xs uppercase tracking-widest text-white/70">{biStageLabel(stageId)}</h3>
-              <span className="text-xs text-white/40">{counts[stageId] || 0}</span>
+              <div className="flex items-center gap-1.5">
+                {chip}
+                <span className="text-xs text-white/40">{counts[stageId] || 0}</span>
+              </div>
             </div>
             <div className="space-y-2">
               {visible
@@ -288,7 +309,8 @@ export default function BIPipeline() {
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
