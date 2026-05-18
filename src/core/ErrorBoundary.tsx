@@ -6,18 +6,19 @@ type ErrorBoundaryProps = {
 
 type ErrorBoundaryState = {
   hasError: boolean;
+  errorMessage: string | null;
 };
 
 export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false };
+  state: ErrorBoundaryState = { hasError: false, errorMessage: null };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown) {
+    return { hasError: true, errorMessage: error instanceof Error ? error.message : String(error ?? "Unknown error") };
   }
 
   render() {
     if (this.state.hasError) {
-      return <div>System error logged.</div>;
+      return <div role="alert">System error logged: {this.state.errorMessage ?? "Unknown error"}</div>;
     }
 
     return this.props.children;
