@@ -30,9 +30,9 @@ vi.mock("@/components/maya/MayaChat", () => ({
 
 import AppLayout from "@/layouts/AppLayout";
 
-function renderLayout(silo: string, role: string) {
+function renderLayout(silo: string, role: string, capabilities: string[] = []) {
   useSiloMock.mockReturnValue({ silo });
-  useAuthMock.mockReturnValue({ user: { role } });
+  useAuthMock.mockReturnValue({ user: { role, capabilities } });
   return render(
     <MemoryRouter>
       <AppLayout>
@@ -120,3 +120,22 @@ describe("BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- 5-tab BI nav", () => {
 });
 
 // BF_PORTAL_BI_SILO_NAV_v56_APPLAYOUT_TEST_ANCHOR
+
+
+describe("capability-gated BI sidebar", () => {
+  it("Andrew sees Dashboard + CRM + Marketing", () => {
+    renderLayout("BI", "Staff", ["marketing:outreach", "crm:read"]);
+    expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "CRM" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Marketing" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Pipeline" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Lender" })).not.toBeInTheDocument();
+  });
+
+  it("Todd sees Dashboard + Pipeline + CRM + Lender + Marketing", () => {
+    renderLayout("BI", "Admin", ["crm:read", "pipeline:manage", "application:read", "lender:submit", "marketing:admin", "marketing:outreach"]);
+    ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing"].forEach((label) => {
+      expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
+    });
+  });
+});

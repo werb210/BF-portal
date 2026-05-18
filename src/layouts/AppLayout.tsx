@@ -15,7 +15,7 @@ import MayaChat from "@/components/maya/MayaChat";
 
 const TOPBAR_HEIGHT = 68;
 
-type NavItem = { label: string; path: string; roles: string[] };
+type NavItem = { label: string; path: string; roles: string[]; capability?: string };
 
 const BF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",         roles: ["Admin", "Staff", "Ops"] },
@@ -32,11 +32,12 @@ const BF_NAV: NavItem[] = [
 // All entries resolve under the BISilo router mounted at /silo/bi/*.
 // Referrer is new in v200.
 const BI_NAV: NavItem[] = [
-  { label: "Dashboard",      path: "/silo/bi/dashboard", roles: ["Admin", "Staff", "Ops"] },
-  { label: "Pipeline",       path: "/silo/bi/pipeline",  roles: ["Admin", "Staff", "Ops"] },
-  { label: "CRM",            path: "/silo/bi/crm",       roles: ["Admin", "Staff"] },
-  { label: "Lender",         path: "/silo/bi/lender",    roles: ["Admin", "Staff"] },
-    { label: "Marketing",      path: "/silo/bi/marketing", roles: ["Admin"] },
+  { label: "Dashboard", path: "/silo/bi/dashboard", roles: ["Admin", "Staff", "Ops"] },
+  { label: "Pipeline", path: "/silo/bi/pipeline", roles: ["Admin", "Staff", "Ops"] },
+  { label: "CRM", path: "/silo/bi/crm", roles: ["Admin", "Staff"] },
+  { label: "Lender", path: "/silo/bi/lender", roles: ["Admin", "Staff"] },
+  { label: "Marketing", path: "/silo/bi/marketing", roles: ["Admin"] },
+  { label: "Settings", path: "/silo/bi/settings", roles: ["Admin"] },
 ];
 
 const SLF_NAV: NavItem[] = [
@@ -63,6 +64,8 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const { user } = useAuth();
   const { silo } = useSilo();
   const role = (user as { role?: string } | null)?.role ?? "";
+  const capabilities = (((user as { capabilities?: string[] } | null)?.capabilities) ?? []) as string[];
+  const hasCap = (cap: string) => capabilities.includes(cap);
 
   const activeSilo = (silo ?? "BF").toUpperCase() as "BF" | "BI" | "SLF";
   const brand = SILO_BRAND[activeSilo] ?? SILO_BRAND.BF!;
@@ -86,6 +89,14 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   };
 
   const navItems = (SILO_NAV[activeSilo] ?? BF_NAV).filter((item) => {
+    if (activeSilo === "BI" && capabilities.length > 0) {
+      if (item.label === "Dashboard") return capabilities.length > 0;
+      if (item.label === "CRM") return hasCap("crm:read");
+      if (item.label === "Pipeline") return hasCap("pipeline:manage") || hasCap("application:read");
+      if (item.label === "Lender") return hasCap("lender:submit") || hasCap("marketing:admin");
+      if (item.label === "Marketing") return hasCap("marketing:outreach");
+      if (item.label === "Settings") return hasCap("marketing:admin");
+    }
     if (isAdmin || isMarketing || isStaff) return canSee(item);
     return item.roles.some((r) => r.toLowerCase() === role.toLowerCase());
   });

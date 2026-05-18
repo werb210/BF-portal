@@ -74,7 +74,7 @@ function groupTasks(tasks: CalendarTask[]) {
   };
 
   tasks.forEach((task) => {
-    const due = task.due_date ?? task.dueDate;
+    const due = task.due_date ?? task.dueAt ?? task.dueDate;
     if (!due) {
       grouped.noDueDate.push(task);
       return;
@@ -266,13 +266,7 @@ function CalendarContent() {
                     <div style={{ fontSize: 12, color: "#64748b" }}>Assigned to: {(() => {
                       const assigneeName = task.assignee_name ?? task.assigneeName;
                       const assigneeEmail = task.assignee_email ?? task.assigneeEmail;
-                      const legacyAssigned = task.assigned_to ?? task.assignedTo;
-                      const assigneeId = task.assignee_id ?? task.assigneeId;
-                      if (assigneeName) return assigneeName;
-                      if (assigneeEmail) return assigneeEmail;
-                      if (legacyAssigned) return legacyAssigned;
-                      if (assigneeId) return `Server data needed (assignee_name/email missing for user ${assigneeId})`;
-                      return "-";
+                      return assigneeName || assigneeEmail || "-";
                     })()}</div>
                   </div>
                 </div>
