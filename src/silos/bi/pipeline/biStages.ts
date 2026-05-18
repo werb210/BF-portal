@@ -36,7 +36,8 @@ export type BiStage = {
 export const BI_STAGES: readonly BiStage[] = [
   { id: "created",              label: "New",                    description: "Score pass; full application not started",                            badgeClass: "bg-slate-500/20 text-slate-200",     color: "slate", order: 1,  isTerminal: false, isPgiDriven: false, isStaffOnly: false },
   { id: "in_progress",          label: "In progress",            description: "Applicant working through the 45-question form",                       badgeClass: "bg-sky-500/20 text-sky-200",         color: "sky", order: 2,  isTerminal: false, isPgiDriven: false, isStaffOnly: false },
-  { id: "document_review",      label: "Doc review",             description: "Staff accept/reject docs; public source only",                         badgeClass: "bg-amber-500/25 text-amber-200",     color: "amber", order: 3,  isTerminal: false, isPgiDriven: false, isStaffOnly: true  },
+  // BF_PORTAL_BLOCK_82_PIPELINE_SIMPLIFY_v1 - relabel; this is the only column staff touches on public apps.
+  { id: "document_review",      label: "Documents",              description: "Staff accept/reject docs; public source only",                         badgeClass: "bg-amber-500/25 text-amber-200",     color: "amber", order: 3,  isTerminal: false, isPgiDriven: false, isStaffOnly: true  },
   { id: "ready_for_submission", label: "Ready for carrier",      description: "All docs accepted; auto-forwards or staff sends",                     badgeClass: "bg-cyan-500/25 text-cyan-200",       color: "cyan", order: 4,  isTerminal: false, isPgiDriven: false, isStaffOnly: false },
   { id: "submitted",            label: "Submitted to carrier",   description: "Forwarded to PGI; awaiting webhook",                                  badgeClass: "bg-indigo-500/25 text-indigo-200",   color: "indigo", order: 5,  isTerminal: false, isPgiDriven: false, isStaffOnly: false },
   { id: "under_review",         label: "Under review",           description: "PGI quoted; quote on file but not yet bound",                         badgeClass: "bg-purple-500/25 text-purple-200",   color: "purple", order: 6,  isTerminal: false, isPgiDriven: true,  isStaffOnly: false },
@@ -62,11 +63,18 @@ const LEGACY_ALIASES: Record<string, BiStageId> = {
   claim:               "policy_issued",
 };
 
-// Staff view = all 10. Lender + Referrer = 9 (no document_review).
+// BF_PORTAL_BLOCK_82_PIPELINE_SIMPLIFY_v1 - staff pipeline = one staff
+// action column (Documents) + 6 carrier columns. created/in_progress/
+// ready_for_submission are hidden: applicant-side or transient. Order
+// matters: Documents leftmost.
 export const BI_VISIBLE_PIPELINE_STAGES: readonly BiStageId[] = [
-  "created","in_progress","document_review","ready_for_submission",
-  "submitted","under_review","information_required",
-  "approved","declined","policy_issued",
+  "document_review",
+  "submitted",
+  "under_review",
+  "information_required",
+  "approved",
+  "declined",
+  "policy_issued",
 ] as const;
 
 export const BI_LENDER_VISIBLE_STAGES: readonly BiStageId[] = [
