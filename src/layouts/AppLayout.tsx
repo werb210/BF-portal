@@ -37,7 +37,6 @@ const BI_NAV: NavItem[] = [
   { label: "CRM",            path: "/silo/bi/crm",       roles: ["Admin", "Staff"] },
   { label: "Lender",         path: "/silo/bi/lender",    roles: ["Admin", "Staff"] },
     { label: "Marketing",      path: "/silo/bi/marketing", roles: ["Admin"] },
-  { label: "Settings",       path: "/silo/bi/settings",  roles: ["Admin", "Staff", "Ops"] },
 ];
 
 const SLF_NAV: NavItem[] = [
