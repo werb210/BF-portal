@@ -1,4 +1,5 @@
 import { useMemo, useState, type CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, getDay, parse, startOfWeek } from "date-fns";
@@ -26,8 +27,14 @@ type CalendarTask = {
   due_date?: string;
   dueDate?: string;
   dueAt?: string | null;
-  assigned_to?: string;
-  assignedTo?: string;
+  assigned_to?: string | null;
+  assignedTo?: string | null;
+  assignee_id?: string | null;
+  assigneeId?: string | null;
+  assignee_name?: string | null;
+  assigneeName?: string | null;
+  assignee_email?: string | null;
+  assigneeEmail?: string | null;
   completed?: boolean;
   completedAt?: string | null;
   status?: "open" | "done";
@@ -35,10 +42,12 @@ type CalendarTask = {
 };
 
 type CalendarEvent = {
+  id?: string;
   title: string;
   start: Date;
   end: Date;
-  resource: ApiCalendarEvent;
+  allDay?: boolean;
+  resource: ApiCalendarEvent & { source?: "calendar" | "task"; taskId?: string; taskState?: "overdue" | "dueToday" | "upcoming" };
 };
 
 const locales = { "en-US": enUS };
@@ -86,7 +95,8 @@ function groupTasks(tasks: CalendarTask[]) {
 }
 
 function CalendarContent() {
-  const [view, setView] = useState<View>("week");
+  const navigate = useNavigate();
+  const [view, setView] = useState<View>("month");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -141,19 +151,49 @@ function CalendarContent() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["calendar-tasks"] }),
   });
 
+  const groupedTasks = useMemo(() => groupTasks(Array.isArray(tasksQuery.data) ? tasksQuery.data : []), [tasksQuery.data]);
+
   const events = useMemo<CalendarEvent[]>(() => {
     const list = Array.isArray(eventsQuery.data) ? eventsQuery.data : [];
-    return list
+    const calendarEvents = list
       .filter((event) => event.start && event.end)
       .map((event) => ({
+        id: event.id,
         title: event.title ?? "Untitled",
         start: new Date(event.start as string),
         end: new Date(event.end as string),
-        resource: event,
+        resource: { ...event, source: "calendar" as const },
       }));
-  }, [eventsQuery.data]);
 
-  const groupedTasks = useMemo(() => groupTasks(Array.isArray(tasksQuery.data) ? tasksQuery.data : []), [tasksQuery.data]);
+    const tasks = Array.isArray(tasksQuery.data) ? tasksQuery.data : [];
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    const taskEvents = tasks
+      .map((task) => {
+        const due = task.due_date ?? task.dueDate ?? task.dueAt;
+        if (!due) return null;
+        const dueDate = new Date(due);
+        if (Number.isNaN(dueDate.getTime())) return null;
+        const dayStart = new Date(dueDate);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setDate(dayEnd.getDate() + 1);
+        const taskState: "overdue" | "dueToday" | "upcoming" = dayStart < start ? "overdue" : dayStart < end ? "dueToday" : "upcoming";
+        return {
+          id: `task-${task.id ?? task.title}`,
+          title: task.title ?? "Untitled task",
+          start: dayStart,
+          end: dayEnd,
+          allDay: true,
+          resource: { source: "task" as const, taskId: task.id, taskState },
+        } satisfies CalendarEvent;
+      })
+      .filter((event): event is CalendarEvent => Boolean(event));
+
+    return [...calendarEvents, ...taskEvents];
+  }, [eventsQuery.data, tasksQuery.data]);
 
   return (
     <div className="page" style={{ display: "grid", gridTemplateColumns: "65% 35%", gap: 16, minHeight: "calc(100vh - 160px)" }}>
@@ -172,8 +212,21 @@ function CalendarContent() {
             views={["month", "week", "day"]}
             view={view}
             onView={(nextView: View) => setView(nextView)}
-            defaultView="week"
-            onSelectEvent={(event: CalendarEvent) => setSelectedEvent(event)}
+            defaultView="month"
+            dayLayoutAlgorithm="no-overlap"
+            allDayMaxRows={2}
+            onSelectEvent={(event: CalendarEvent) => {
+              if (event.resource.source === "task" && event.resource.taskId) {
+                navigate(`/tasks?taskId=${event.resource.taskId}`);
+                return;
+              }
+              setSelectedEvent(event);
+            }}
+            eventPropGetter={(event: CalendarEvent) => {
+              if (event.resource.source !== "task") return { style: {} };
+              const backgroundColor = event.resource.taskState === "overdue" ? "#dc2626" : event.resource.taskState === "dueToday" ? "#f97316" : "#0f766e";
+              return { style: { backgroundColor, borderColor: backgroundColor, color: "#fff" } };
+            }}
             popup
           />
         </div>
@@ -208,7 +261,17 @@ function CalendarContent() {
                     <div style={{ fontSize: 12, color: "#64748b" }}>
                       Due: {(task.dueAt ?? task.due_date ?? task.dueDate) ? new Date(task.dueAt ?? task.due_date ?? task.dueDate ?? "").toLocaleString() : "-"}
                     </div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>Assigned to: {task.assigned_to ?? task.assignedTo ?? "—"}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>Assigned to: {(() => {
+                      const assigneeName = task.assignee_name ?? task.assigneeName;
+                      const assigneeEmail = task.assignee_email ?? task.assigneeEmail;
+                      const legacyAssigned = task.assigned_to ?? task.assignedTo;
+                      const assigneeId = task.assignee_id ?? task.assigneeId;
+                      if (assigneeName) return assigneeName;
+                      if (assigneeEmail) return assigneeEmail;
+                      if (legacyAssigned) return legacyAssigned;
+                      if (assigneeId) return `Server data needed (assignee_name/email missing for user ${assigneeId})`;
+                      return "-";
+                    })()}</div>
                   </div>
                 </div>
               ))
