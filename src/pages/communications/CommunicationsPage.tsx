@@ -584,7 +584,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   const [loadingThread, setLoadingThread] = useState(false);
 
   useEffect(() => {
-    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null; latest_message_at?: string; preview?: string }> }>("/api/communications/messages-list")
+    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null; latest_message_at?: string; preview?: string }> }>("/api/communications/messages-list?types=maya_handoff,client_portal_chat")
       .then(async (r) => {
         const list = Array.isArray(r.conversations) ? r.conversations : [];
         const mapped = list
@@ -657,7 +657,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
             {c.phone && <div style={{ fontSize: 12, color: "#64748b" }}>{c.phone}</div>}
           </button>
         ))}
-        {contacts.length === 0 && <div style={{ color: "#8e8e93" }}>No client messages yet…</div>}
+        {contacts.length === 0 && <div style={{ color: "#8e8e93" }}>No active conversations. Maya handoffs and client mini-portal chats will appear here.</div>}
       </div>
       <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, height: "100%", overflow: "hidden", background: "#fff" }}>
         {!selected && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#8e8e93", flex: 1 }}>Choose or start a conversation.</div>}

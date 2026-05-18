@@ -12,6 +12,8 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
+import toast from "react-hot-toast";
+import { openDialer } from "@/stores/dialerStore";
 
 type EngagementEvent = { id: string; event_type: string; source: string; apollo_message_id: string | null; sequence_name: string | null; occurred_at: string; metadata: Record<string, unknown> };
 
@@ -357,10 +359,11 @@ export default function BIContactDetailPage() {
       // /api/communications/sms, the silo body field + the X-Silo
       // header (auto-attached by api()) together route the activity
       // to the BI timeline.
-      await api(`/api/v1/bi/crm/contacts/${id}/sms`, {
+      await api(`/api/communications/sms`, {
         method: "POST",
-        body: { body, silo: "BI" },
+        body: { to: contact?.phone_e164, body, contact_id: id, silo: "BI" },
       } as any);
+      toast.success("Sent");
       setSmsBody("");
       setComposing(false);
       refresh();
@@ -413,18 +416,7 @@ export default function BIContactDetailPage() {
             {/* BF_PORTAL_BLOCK_BI_ROUND5_A_v1 -- BI silo Call + Email actions. Call dispatches the same bf:dialer-call CustomEvent that the BF silo uses; DialerPanel's listener opens the PortalDialer and runs startPortalCall (the consolidated singleton). Email opens the shared M365 compose modal with the contact prefilled. */}
             <button
               type="button"
-              onClick={() => {
-                if (!contact.phone_e164) return;
-                window.dispatchEvent(
-                  new CustomEvent("bf:dialer-call", {
-                    detail: {
-                      phone: contact.phone_e164,
-                      contactId: contact.id,
-                      contactName: contact.full_name ?? undefined,
-                    },
-                  }),
-                );
-              }}
+              onClick={() => openDialer({ to: contact.phone_e164, contactId: contact.id, contactName: contact.full_name ?? undefined })}
               disabled={!contact.phone_e164}
               title={contact.phone_e164 ? "Call this contact" : "Contact has no phone number"}
               style={actionBtn}
@@ -568,6 +560,12 @@ export default function BIContactDetailPage() {
           <div style={subtle}>No associated company.</div>
         )}
       </aside>
+      <O365ComposeModal
+        open={emailComposeOpen}
+        initialTo={contact.email ?? ""}
+        onClose={() => setEmailComposeOpen(false)}
+        onSent={() => { toast.success("Sent"); refresh(); }}
+      />
     </div>
   );
 }

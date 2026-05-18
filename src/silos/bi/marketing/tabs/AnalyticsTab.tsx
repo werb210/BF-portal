@@ -18,7 +18,7 @@ type Sequence = { id: string; name: string };
 
 const pct = (num: number, den: number) => (den > 0 ? `${Math.round((num / den) * 100)}%` : "-");
 
-export default function AnalyticsTab() {
+export default function AnalyticsTab(_props: { viewAs?: "todd" | "andrew"; owner?: string; capabilities?: string[] } = {}) {
   const [seqs, setSeqs] = useState<Sequence[]>([]);
   const [seqId, setSeqId] = useState<string>("");
   const [data, setData] = useState<Analytics | null>(null);

@@ -6,6 +6,7 @@ import { format, getDay, parse, startOfWeek } from "date-fns";
 import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { api } from "@/api";
+import { useAuth } from "@/hooks/useAuth";
 import RequireRole from "@/components/auth/RequireRole";
 import SecondaryButton from "@/components/forms/SecondaryButton";
 
@@ -20,6 +21,8 @@ type ApiCalendarEvent = {
   teamsLink?: string;
   notes?: string;
 };
+
+type StaffUser = { id: string; name?: string | null; email?: string | null; first_name?: string | null; last_name?: string | null };
 
 type CalendarTask = {
   id?: string;
@@ -96,17 +99,26 @@ function groupTasks(tasks: CalendarTask[]) {
 
 function CalendarContent() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [view, setView] = useState<View>("month");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [eventForm, setEventForm] = useState({ title: "", start: "", end: "", attendees: "", location: "", notes: "" });
-  const [taskForm, setTaskForm] = useState({ title: "", dueAt: "", priority: "normal", notes: "" });
+  const [taskForm, setTaskForm] = useState({ title: "", dueAt: "", priority: "normal", assignee_user_id: (user as { id?: string } | null)?.id ?? "", notes: "" });
   const queryClient = useQueryClient();
 
   const eventsQuery = useQuery({
     queryKey: ["calendar-events"],
     queryFn: () => api.get<ApiCalendarEvent[]>("/api/calendar/events"),
+  });
+
+  const usersQuery = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: async () => {
+      const response = await api.get<StaffUser[] | { users?: StaffUser[] }>("/api/admin/users");
+      return Array.isArray(response) ? response : response.users ?? [];
+    },
   });
 
   const tasksQuery = useQuery({
@@ -142,7 +154,7 @@ function CalendarContent() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["calendar-tasks"] });
       setShowTaskForm(false);
-      setTaskForm({ title: "", dueAt: "", priority: "normal", notes: "" });
+      setTaskForm({ title: "", dueAt: "", priority: "normal", assignee_user_id: (user as { id?: string } | null)?.id ?? "", notes: "" });
     },
   });
 
@@ -387,6 +399,23 @@ function CalendarContent() {
                 <option value="low">Low</option>
                 <option value="normal">Normal</option>
                 <option value="high">High</option>
+              </select>
+            </label>
+            <label style={fieldRow}>
+              <span style={fieldLabel}>Assignee</span>
+              <select
+                value={taskForm.assignee_user_id}
+                onChange={(e) => setTaskForm((prev) => ({ ...prev, assignee_user_id: e.target.value }))}
+                style={calInputStyle}
+              >
+                {(((usersQuery.data as StaffUser[] | undefined) ?? [])).map((staff) => (
+                  <option key={staff.id} value={staff.id}>
+                    {staff.name || `${staff.first_name ?? ""} ${staff.last_name ?? ""}`.trim() || staff.email || staff.id}
+                  </option>
+                ))}
+                {(!usersQuery.data || (usersQuery.data as StaffUser[]).length === 0) && taskForm.assignee_user_id && (
+                  <option value={taskForm.assignee_user_id}>Current user</option>
+                )}
               </select>
             </label>
             <label style={fieldRow}>

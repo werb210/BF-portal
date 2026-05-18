@@ -37,7 +37,6 @@ const BI_NAV: NavItem[] = [
   { label: "CRM", path: "/silo/bi/crm", roles: ["Admin", "Staff"] },
   { label: "Lender", path: "/silo/bi/lender", roles: ["Admin", "Staff"] },
   { label: "Marketing", path: "/silo/bi/marketing", roles: ["Admin"] },
-  { label: "Settings", path: "/silo/bi/settings", roles: ["Admin"] },
 ];
 
 const SLF_NAV: NavItem[] = [
@@ -95,7 +94,6 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
       if (item.label === "Pipeline") return hasCap("pipeline:manage") || hasCap("application:read");
       if (item.label === "Lender") return hasCap("lender:submit") || hasCap("marketing:admin");
       if (item.label === "Marketing") return hasCap("marketing:outreach");
-      if (item.label === "Settings") return hasCap("marketing:admin");
     }
     if (isAdmin || isMarketing || isStaff) return canSee(item);
     return item.roles.some((r) => r.toLowerCase() === role.toLowerCase());

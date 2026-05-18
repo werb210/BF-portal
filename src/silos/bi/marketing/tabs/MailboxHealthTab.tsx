@@ -70,7 +70,7 @@ function ApolloMailboxesSection() {
   );
 }
 
-export default function MailboxHealthTab() {
+export default function MailboxHealthTab(_props: { viewAs?: "todd" | "andrew"; owner?: string; capabilities?: string[] } = {}) {
   return (
     <div>
       <ApolloMailboxesSection />
