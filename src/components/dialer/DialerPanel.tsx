@@ -7,6 +7,7 @@ import { useSilo } from "@/hooks/useSilo";
 // through bootstrapVoice's shared singleton, which is the only
 // Device the portal registers.
 import { startPortalCall } from "@/telephony/bootstrapVoice";
+import { getTelephonyDiagnostics } from "@/telephony/getVoiceToken";
 import { api } from "@/api";
 
 // BF_DIALER_TO_E164_v32 — server reads `to` (lowercase) and Twilio requires
@@ -122,6 +123,11 @@ export default function DialerPanel() {
   const [addInput, setAddInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [showKeypad, setShowKeypad] = useState(false);
+  const [tokenStatus, setTokenStatus] = useState<"checking" | "ready" | "error">("checking");
+  const [tokenDetail, setTokenDetail] = useState("Checking token…");
+  const [micStatus, setMicStatus] = useState<"checking" | "granted" | "denied" | "error">("checking");
+  const [micDetail, setMicDetail] = useState("Checking microphone…");
+  const [outboundCallerId, setOutboundCallerId] = useState<string>("Unknown");
 
   // BF_DIALER_INCALL_PROGRESS_v34 — show in-call controls during dialing
   // and ringing as well, so the user can hang up without waiting for the
@@ -151,6 +157,74 @@ export default function DialerPanel() {
       callRef.current?.disconnect();
     };
   }, [openDialer, setNumber, inProgress]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let canceled = false;
+    const runDiagnostics = async () => {
+      setTokenStatus("checking");
+      setTokenDetail("Checking token…");
+      try {
+        const diagnostics = await getTelephonyDiagnostics();
+        if (canceled) return;
+        if (!diagnostics?.token) {
+          const envMessage = diagnostics?.missingEnvVar
+            ? `Missing server env var: ${diagnostics.missingEnvVar}`
+            : "Telephony token missing";
+          setTokenStatus("error");
+          setTokenDetail(envMessage);
+          setError(envMessage);
+        } else {
+          setTokenStatus("ready");
+          setTokenDetail("Ready");
+        }
+        const callerId = diagnostics?.outboundCallerId || diagnostics?.callerId || diagnostics?.from;
+        if (callerId) {
+          setOutboundCallerId(callerId);
+        } else {
+          setOutboundCallerId("Not configured");
+          setError((prev) => prev ?? "No outbound caller ID configured for this user");
+        }
+      } catch (err: any) {
+        if (canceled) return;
+        const message = err?.message ?? "Telephony token request failed";
+        setTokenStatus("error");
+        setTokenDetail(message);
+        setError(`Twilio token request failed (${message})`);
+      }
+
+      try {
+        const permissionsApi = navigator.permissions;
+        const status = permissionsApi ? await permissionsApi.query({ name: "microphone" as PermissionName }) : null;
+        if (canceled) return;
+        if (status?.state === "granted") {
+          setMicStatus("granted");
+          setMicDetail("Granted");
+          return;
+        }
+      } catch {
+        // Fall through to getUserMedia probe.
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+        if (canceled) return;
+        setMicStatus("granted");
+        setMicDetail("Granted");
+      } catch (err: any) {
+        if (canceled) return;
+        const denied = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
+        setMicStatus(denied ? "denied" : "error");
+        setMicDetail(denied ? "Denied" : (err?.message ?? "Microphone check failed"));
+        if (denied) setError((prev) => prev ?? "Microphone access denied");
+      }
+    };
+    void runDiagnostics();
+    return () => {
+      canceled = true;
+    };
+  }, [isOpen, setError]);
 
   // BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1
   // initDevice removed. Outbound calls go through bootstrapVoice's
@@ -293,6 +367,11 @@ export default function DialerPanel() {
         {number && !inProgress && <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4, color: "#e5e7eb" }}>{number}</div>}
         {inProgress && <div style={{ fontSize: 14, color: "#6b7280", marginTop: 2 }}>{number}</div>}
       </div>
+      <div style={{ margin: "8px 16px", padding: "8px 10px", borderRadius: 8, background: "#1f2937", border: "1px solid #374151", fontSize: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><span>Twilio token</span><span>{tokenStatus === "ready" ? "ready" : tokenDetail}</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4 }}><span>Microphone</span><span>{micStatus === "granted" ? "granted" : micDetail}</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4 }}><span>Outbound caller ID</span><span>{outboundCallerId}</span></div>
+      </div>
 
       {isActive && (
         <div style={{ padding: "8px 16px 4px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
@@ -387,7 +466,7 @@ export default function DialerPanel() {
                 await handleDial(callTo);
               } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
-                alert(`Call failed: ${message}`);
+                setError(`Call failed: ${message}`);
               }
             }}
             disabled={!number.trim()}
