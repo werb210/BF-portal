@@ -126,12 +126,18 @@ export default function BIDashboard() {
   }, [apps]);
 
   const total = apps.length;
+  const visibleStageTotal = STAGES.reduce((sum, [stage]) => sum + (stageCounts[stage] || 0), 0);
+  const prePipelineCount = Math.max(0, total - visibleStageTotal);
 
   const allDemoHidden = apps.length > 0 && apps.every((a) => a?.is_demo === true) && hideDemo;
-  const healthStatus: string = String(health?.status ?? "");
+  const rawHealthStatus: string = String(health?.status ?? "").toLowerCase();
+  const healthErrors = Number(health?.errors_24h ?? 0);
+  const hasCarrierActivity = Number(health?.submissions_24h ?? 0) > 0 || Number(health?.received_24h ?? 0) > 0;
+  const healthStatus = rawHealthStatus === "idle" || (!hasCarrierActivity && healthErrors === 0) ? "No activity (24h)" : (rawHealthStatus ? rawHealthStatus.toUpperCase() : "—");
   const healthTone: Tone =
-    healthStatus === "healthy" ? "good" :
-    healthStatus === "degraded" ? "warn" : "neutral";
+    healthErrors > 0 || rawHealthStatus === "error" || rawHealthStatus === "failed" ? "bad" :
+    rawHealthStatus === "healthy" || rawHealthStatus === "active" ? "good" :
+    rawHealthStatus === "degraded" ? "warn" : "neutral";
 
   return (
     <div className="text-white">
@@ -165,7 +171,7 @@ export default function BIDashboard() {
         <StatPill label="Total in pipeline" value={total} />
         <StatPill
           label="Carrier health"
-          value={healthStatus ? healthStatus.toUpperCase() : "—"}
+          value={healthStatus}
           tone={healthTone}
           hint={
             health
@@ -191,7 +197,7 @@ export default function BIDashboard() {
       </div>
 
       <h3 className="text-lg font-semibold mb-3 text-white/80">Pipeline stages</h3>
-      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 mb-6">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 mb-2">
         {STAGES.map(([stage, label]) => (
           <Link key={stage} to={`/silo/bi/pipeline?stage=${stage}`} className="rounded-lg border border-card bg-brand-surface p-3 hover:bg-white/5">
             <div className="text-[10px] uppercase tracking-widest text-white/60">{label}</div>
@@ -199,6 +205,11 @@ export default function BIDashboard() {
           </Link>
         ))}
       </div>
+      {prePipelineCount > 0 ? (
+        <p className="mb-6 text-xs text-white/50">
+          Note: {prePipelineCount} applications are in pre-pipeline stages (created, in_progress, ready_for_submission) not shown above.
+        </p>
+      ) : <div className="mb-6" />}
 
       <h3 className="text-lg font-semibold mb-3 text-white/80">Recent updates</h3>
       <div className="rounded-xl border border-card bg-brand-surface overflow-hidden">

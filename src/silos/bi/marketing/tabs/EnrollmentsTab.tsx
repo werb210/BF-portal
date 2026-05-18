@@ -21,12 +21,15 @@ const STATUS_CLASS: Record<Enrollment["status"], string> = {
   stopped:   "bg-slate-500/20 text-slate-300",
 };
 
-export default function EnrollmentsTab() {
+export default function EnrollmentsTab({ owner }: { viewAs?: "todd" | "andrew"; owner?: string; capabilities?: string[] } = {}) {
   const [list, setList] = useState<Enrollment[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
 
   const load = async () => {
-    const qs = statusFilter ? `?status=${statusFilter}` : "";
+    const params = new URLSearchParams();
+    if (statusFilter) params.set("status", statusFilter);
+    if (owner) params.set("owner", owner);
+    const qs = params.toString() ? `?${params.toString()}` : "";
     try {
       const r = await api<{ enrollments: Enrollment[] }>(`/api/v1/bi/marketing/enrollments${qs}`);
       setList(r.enrollments || []);
@@ -34,7 +37,7 @@ export default function EnrollmentsTab() {
       setList([]);
     }
   };
-  useEffect(() => { void load(); }, [statusFilter]);
+  useEffect(() => { void load(); }, [statusFilter, owner]);
 
   const stop = async (id: string) => {
     if (!confirm("Stop this enrollment? Cannot be resumed.")) return;

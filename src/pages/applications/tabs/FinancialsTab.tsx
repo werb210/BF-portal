@@ -11,7 +11,7 @@
 // - rows    = distinct display labels across all docs (case-insensitive dedupe)
 // - cell    = best value for that label in that doc (highest confidence, then first seen)
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 // BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
 import { api } from "@/api";
 
@@ -39,6 +39,31 @@ type Response = {
   documents: FinancialDoc[];
   fields: FinancialField[];
 };
+
+const NUMERIC_FIELD_LABELS = new Set([
+  "accounts_payable", "accounts_receivable", "cash_on_hand", "current_assets", "current_liabilities",
+  "total_assets", "total_liabilities", "depreciation_and_amortization", "net_income", "gross_income",
+  "total_revenue", "equipment_value", "cost_of_sales", "general_and_admin_costs", "ebitda",
+]);
+
+const NUMERIC_TOKEN_RE = /^[$\-]?[\d,.\s]+%?$/;
+
+function normalizeFieldLabel(label: string): string {
+  return label.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+function renderFinancialValue(labelKey: string, rawValue: string): ReactNode {
+  if (!NUMERIC_FIELD_LABELS.has(normalizeFieldLabel(labelKey))) return rawValue || "—";
+  const value = rawValue || "";
+  const nonNumericTokens = value.split(/\s+/).filter(Boolean).filter((token) => !NUMERIC_TOKEN_RE.test(token)).length;
+  if (nonNumericTokens <= 3) return rawValue || "—";
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <span title={rawValue} style={{ color: "#9ca3af" }}>—</span>
+      <span style={pivotStyles.ocrUncertainBadge}>OCR uncertain</span>
+    </span>
+  );
+}
 
 export default function FinancialsTab({ applicationId }: Props) {
   const [data, setData] = useState<Response | null>(null);
@@ -132,7 +157,7 @@ export default function FinancialsTab({ applicationId }: Props) {
               : "OCR completed but found no fields matching this category."}
           </div>
         ) : (
-          <div style={{ ...pivotStyles.wrapper, overflowX: sortedDocs.length > 4 ? "auto" : "visible" }}>
+          <div style={pivotStyles.wrapper}>
             <table style={{ ...pivotStyles.table, minWidth: sortedDocs.length > 4 ? 720 : "100%" }}>
               <thead>
                 <tr>
@@ -164,7 +189,7 @@ export default function FinancialsTab({ applicationId }: Props) {
                         <td key={`${row.key}-${doc.documentId}`} style={pivotStyles.tdBase}>
                           {field ? (
                             <div style={pivotStyles.valueWrap}>
-                              <span style={pivotStyles.valueText}>{field.value || "—"}</span>
+                              <span style={pivotStyles.valueText}>{renderFinancialValue(row.key, field.value)}</span>
                               <ConfidencePill confidence={field.confidence} />
                             </div>
                           ) : (
@@ -187,10 +212,10 @@ export default function FinancialsTab({ applicationId }: Props) {
 const pivotStyles: Record<string, CSSProperties> = {
   wrapper: { overflowX: "auto", border: "1px solid rgba(148, 163, 184, 0.3)", borderRadius: 10, background: "rgba(15, 23, 42, 0.02)" },
   table: { width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: 720 },
-  thBase: { background: "rgba(15, 23, 42, 0.95)", color: "rgba(248, 250, 252, 0.96)", borderBottom: "1px solid rgba(148, 163, 184, 0.45)", padding: "10px 12px", fontSize: 12, textAlign: "left" as const, verticalAlign: "top" as const },
-  tdBase: { background: "rgba(15, 23, 42, 0.03)", color: "#0f172a", borderBottom: "1px solid rgba(148, 163, 184, 0.2)", borderRight: "1px solid rgba(148, 163, 184, 0.2)", padding: "8px 12px", fontSize: 12, verticalAlign: "top" as const, minWidth: 200 },
+  thBase: { background: "rgba(15, 23, 42, 0.95)", color: "rgba(248, 250, 252, 0.96)", borderBottom: "1px solid rgba(148, 163, 184, 0.45)", padding: "8px 12px", fontSize: 12, textAlign: "left" as const, verticalAlign: "top" as const },
+  tdBase: { background: "rgba(15, 23, 42, 0.03)", color: "#0f172a", borderBottom: "1px solid rgba(148, 163, 184, 0.2)", borderRight: "1px solid rgba(148, 163, 184, 0.2)", padding: "8px 12px", fontSize: 12, verticalAlign: "top" as const, minWidth: 200, maxWidth: 260, width: 240, wordBreak: "break-word" as const },
   fieldHeader: { position: "sticky" as const, left: 0, zIndex: 5, minWidth: 220, borderRight: "1px solid rgba(148, 163, 184, 0.45)" },
-  docHeader: { position: "sticky" as const, top: 0, zIndex: 4, minWidth: 220, borderRight: "1px solid rgba(148, 163, 184, 0.45)" },
+  docHeader: { position: "sticky" as const, top: 0, zIndex: 4, minWidth: 200, maxWidth: 260, width: 240, padding: "8px 12px", verticalAlign: "top" as const, borderRight: "1px solid rgba(148, 163, 184, 0.45)" },
   fieldCell: { position: "sticky" as const, left: 0, zIndex: 3, fontWeight: 600, color: "rgba(15, 23, 42, 0.92)", background: "rgba(248, 250, 252, 0.97)", borderRight: "1px solid rgba(148, 163, 184, 0.3)" },
   docHeaderName: { fontWeight: 700, fontSize: 12, whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220, marginBottom: 6 },
   docHeaderPills: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const, marginBottom: 6 },
@@ -198,6 +223,7 @@ const pivotStyles: Record<string, CSSProperties> = {
   valueWrap: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
   valueText: { color: "#0f172a", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const },
   emptyDash: { color: "rgba(71, 85, 105, 0.85)" },
+  ocrUncertainBadge: { borderRadius: 999, background: "rgba(156, 163, 175, 0.16)", color: "#6b7280", padding: "1px 5px", fontSize: 10, fontWeight: 700 },
 };
 
 

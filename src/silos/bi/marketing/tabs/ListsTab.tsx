@@ -89,7 +89,7 @@ function ApolloImportPanel() {
   );
 }
 
-export default function ListsTab() {
+export default function ListsTab(_props: { viewAs?: "todd" | "andrew"; owner?: string; capabilities?: string[] } = {}) {
   const [list, setList] = useState<ListRow[]>([]);
   const [name, setName] = useState("");
   const [spec, setSpec] = useState(DEFAULT_SPEC);

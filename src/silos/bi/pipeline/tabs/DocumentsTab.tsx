@@ -91,7 +91,7 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
   // the docs list call but is dropped from the accept URL.
   async function accept(docId: string) {
     try {
-      await api(`/api/v1/bi/documents/${docId}/accept`, { method: "POST" });
+      await api(`/api/v1/bi/documents/${docId}`, { method: "PATCH", body: { status: "accepted" } });
       toast.success("Accepted");
       await load();
       onMutated();
@@ -104,7 +104,7 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
     const reason = window.prompt("Reason for rejection (sent to applicant via SMS):");
     if (!reason || !reason.trim()) return;
     try {
-      await api(`/api/v1/bi/documents/${docId}/reject`, { method: "POST", body: { reason: reason.trim() } });
+      await api(`/api/v1/bi/documents/${docId}`, { method: "PATCH", body: { status: "rejected", rejection_reason: reason.trim() } });
       toast.success("Rejected");
       await load();
       onMutated();
@@ -113,8 +113,13 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
     }
   }
 
-  function view(docId: string) {
-    window.open(`/api/v1/bi/documents/${docId}/download`, "_blank", "noopener,noreferrer");
+  async function view(docId: string) {
+    try {
+      const r = await api<{ url?: string; signed_url?: string; download_url?: string }>(`/api/v1/bi/documents/${docId}/download`);
+      window.open(r.url ?? r.signed_url ?? r.download_url ?? `/api/v1/bi/documents/${docId}/download`, "_blank", "noopener,noreferrer");
+    } catch {
+      window.open(`/api/v1/bi/documents/${docId}/download`, "_blank", "noopener,noreferrer");
+    }
   }
 
   async function del(docId: string) {
@@ -161,7 +166,7 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
           </div>
           {!readOnly && (
             <div className="flex shrink-0 gap-1">
-              <button onClick={() => view(d.id)} className="rounded bg-white/10 px-2 text-xs">View</button>
+              <button onClick={() => void view(d.id)} className="rounded bg-white/10 px-2 text-xs">View</button>
               <button disabled={reviewLocked} onClick={() => accept(d.id)} className="rounded bg-emerald-600/80 px-2 text-xs disabled:opacity-50">Accept</button>
               <button disabled={reviewLocked} onClick={() => reject(d.id)} className="rounded bg-amber-600/80 px-2 text-xs disabled:opacity-50">Reject</button>
               <button onClick={() => del(d.id)} className="rounded bg-red-600/80 px-2 text-xs">Delete</button>

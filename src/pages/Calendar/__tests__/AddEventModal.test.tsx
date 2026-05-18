@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import CalendarPage from "@/pages/calendar/CalendarPage";
 
 vi.mock("@/components/auth/RequireRole", () => ({ default: ({ children }: any) => children }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1", name: "Current User" } }) }));
+vi.mock("@/api", () => ({ api: { get: vi.fn() } }));
 vi.mock("@tanstack/react-query", () => ({
   useQuery: () => ({ data: [], isLoading: false }),
   useMutation: () => ({ mutate: vi.fn() }),
@@ -27,5 +29,19 @@ describe("Add Event modal", () => {
     expect(start).toHaveAttribute("type", "datetime-local");
     expect(end).toHaveAttribute("type", "datetime-local");
     expect((start as HTMLInputElement).style.color).toBe("rgb(0, 0, 0)");
+  });
+});
+
+
+describe("Add Task modal", () => {
+  it("renders Assignee dropdown", () => {
+    render(
+      <MemoryRouter initialEntries={["/calendar"]}>
+        <CalendarPage />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Add Task/i }));
+    expect(screen.getByText("Assignee")).toBeInTheDocument();
+    expect(screen.getAllByRole("combobox").length).toBeGreaterThanOrEqual(2);
   });
 });

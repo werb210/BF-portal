@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "@/api";
+import { useAuth } from "@/hooks/useAuth";
 import {
   BI_VISIBLE_PIPELINE_STAGES,
   biStage,
@@ -78,9 +79,12 @@ function readFiltersFromUrl(p: URLSearchParams): Filters {
 
 export default function BIPipeline() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [urlParams, setUrlParams] = useSearchParams();
   const [filters, setFilters] = useState<Filters>(() => readFiltersFromUrl(urlParams));
   const [apps, setApps] = useState<BIApplication[]>([]);
+  const capabilities = (((user as { capabilities?: string[] } | null)?.capabilities) ?? []) as string[];
+  const canManagePipeline = capabilities.includes("pipeline:manage") || String((user as { role?: string } | null)?.role ?? "").toLowerCase() === "admin";
 
   // Sync URL <-> filter state for deep-linkable filtered views.
   useEffect(() => {
@@ -100,6 +104,16 @@ export default function BIPipeline() {
 
   // BF_PORTAL_BLOCK_54_BI_DETAIL_OWNERSHIP_DEMO_v1 — refetch when toggle flips.
   useEffect(() => { void load(); }, [filters.show_demo]);
+
+  async function deleteApplication(app: BIApplication) {
+    if (!window.confirm("Delete this application? This cannot be undone.")) return;
+    try {
+      await api(`/api/v1/bi/applications/${app.id}`, { method: "DELETE" });
+      await load();
+    } catch {
+      window.alert("Delete failed");
+    }
+  }
 
   async function load() {
     try {
@@ -289,8 +303,19 @@ export default function BIPipeline() {
                     <div
                       key={app.id}
                       onClick={() => navigate(`/silo/bi/pipeline/${app.id}`)}
-                      className="bg-brand-surface border border-card rounded-lg p-3 cursor-pointer hover:border-blue-400/40"
+                      className="relative bg-brand-surface border border-card rounded-lg p-3 cursor-pointer hover:border-blue-400/40"
                     >
+                      {(app.is_demo === true || canManagePipeline) && (
+                        <button
+                          type="button"
+                          aria-label="Delete application"
+                          title="Delete application"
+                          onClick={(e) => { e.stopPropagation(); void deleteApplication(app); }}
+                          className="absolute right-2 top-2 rounded bg-red-500/15 px-1.5 py-0.5 text-xs text-red-200 hover:bg-red-500/25"
+                        >
+                          🗑
+                        </button>
+                      )}
                       <div className="min-w-0">
                         <strong className="text-sm break-words block">{company}</strong>
                         {app.guarantor_name && <div className="text-xs text-white/60 break-words">{app.guarantor_name}</div>}

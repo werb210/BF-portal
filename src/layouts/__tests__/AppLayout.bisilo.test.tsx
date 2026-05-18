@@ -116,6 +116,7 @@ describe("BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- 5-tab BI nav", () => {
     for (const label of expectedLabels) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
+    expect(screen.getAllByRole("link")).toHaveLength(5);
   });
 });
 

@@ -20,20 +20,20 @@ type StepDraft = {
   variant?: string;
 };
 
-export default function SequencesTab() {
+export default function SequencesTab({ owner }: { viewAs?: "todd" | "andrew"; owner?: string; capabilities?: string[] } = {}) {
   const [list, setList] = useState<Sequence[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = async () => {
     try {
-      const r = await api<{ sequences: Sequence[] }>("/api/v1/bi/marketing/sequences");
+      const r = await api<{ sequences: Sequence[] }>(`/api/v1/bi/marketing/sequences${owner ? `?owner=${encodeURIComponent(owner)}` : ""}`);
       setList(r.sequences || []);
     } catch {
       setList([]);
     }
   };
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [owner]);
 
   const act = async (id: string, action: "start" | "pause") => {
     setBusy(id);

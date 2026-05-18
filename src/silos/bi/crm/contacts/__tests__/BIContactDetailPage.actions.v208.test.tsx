@@ -4,9 +4,12 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 const apiMock = vi.fn();
+const openDialerMock = vi.fn();
 vi.mock("@/api", () => ({
   api: (...args: unknown[]) => apiMock(...args),
 }));
+vi.mock("@/stores/dialerStore", () => ({ openDialer: (...args: unknown[]) => openDialerMock(...args) }));
+vi.mock("react-hot-toast", () => ({ default: { success: vi.fn(), error: vi.fn() } }));
 
 import BIContactDetailPage from "@/silos/bi/crm/contacts/BIContactDetailPage";
 
@@ -36,7 +39,7 @@ function makeApi(opts: { contact?: any; smsResult?: any; patchResult?: any; thro
     if (pathStr.endsWith("/activity")) return { events: [] };
     if (init?.method === "PATCH") return opts.patchResult ?? { ok: true };
     if (init?.method === "DELETE") return { ok: true };
-    if (init?.method === "POST" && pathStr.endsWith("/sms"))
+    if (init?.method === "POST" && (pathStr.endsWith("/sms") || pathStr === "/api/communications/sms"))
       return opts.smsResult ?? { ok: true, sid: "SM123" };
     return opts.contact ?? baseContact;
   };
@@ -54,7 +57,7 @@ function renderAtId(id: string) {
 }
 
 describe("BF_PORTAL_BLOCK_v208 — Edit", () => {
-  beforeEach(() => apiMock.mockReset());
+  beforeEach(() => { apiMock.mockReset(); openDialerMock.mockReset(); });
 
   it("clicking Edit shows the form, clicking Cancel hides it", async () => {
     apiMock.mockImplementation(makeApi());
@@ -153,8 +156,20 @@ describe("BF_PORTAL_BLOCK_v208 — Delete", () => {
   });
 });
 
+describe("BF_PORTAL_BLOCK_v208 — Contact actions", () => {
+  beforeEach(() => { apiMock.mockReset(); openDialerMock.mockReset(); });
+
+  it("clicking Call invokes openDialer with the contact phone", async () => {
+    apiMock.mockImplementation(makeApi());
+    renderAtId("c1");
+    await waitFor(() => screen.getByText("Jane Doe"));
+    fireEvent.click(screen.getByTestId("bi-contact-call-button"));
+    expect(openDialerMock).toHaveBeenCalledWith({ to: "+14165551234", contactId: "c1", contactName: "Jane Doe" });
+  });
+});
+
 describe("BF_PORTAL_BLOCK_v208 — Send SMS", () => {
-  beforeEach(() => apiMock.mockReset());
+  beforeEach(() => { apiMock.mockReset(); openDialerMock.mockReset(); });
 
   it("composer toggles open/closed", async () => {
     apiMock.mockImplementation(makeApi());
@@ -189,11 +204,11 @@ describe("BF_PORTAL_BLOCK_v208 — Send SMS", () => {
       const smsCall = apiMock.mock.calls.find(
         ([path, init]) =>
           typeof path === "string" &&
-          path.endsWith("/sms") &&
+          path === "/api/communications/sms" &&
           init?.method === "POST",
       );
       expect(smsCall).toBeDefined();
-      expect(smsCall![1].body).toEqual({ body: "Reminder: demo at 2pm", silo: "BI" });
+      expect(smsCall![1].body).toEqual({ to: "+14165551234", body: "Reminder: demo at 2pm", contact_id: "c1", silo: "BI" });
     });
   });
 

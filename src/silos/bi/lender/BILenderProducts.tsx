@@ -1,20 +1,36 @@
 // BF_PORTAL_BLOCK_BI_LENDER_PRODUCTS_TAB_v1
-// Stub for the BI silo Lender Products sub-tab. Mirrors the BF silo
-// LenderProductsPage shape (fetch lender products keyed by lender id,
-// render a table per lender) but the BI-Server side does not yet
-// expose /api/v1/bi/lender-products. Until that endpoint exists this
-// renders a holding card so the tab is not empty. Fetch wiring stays
-// commented out so a later block can drop it in without touching the
-// surrounding structure.
 import { useEffect, useState } from "react";
+import { api } from "@/api";
 
-type BiLender = {
+type BiLenderProduct = {
   id: string;
-  company_name?: string | null;
+  product_name?: string | null;
+  name?: string | null;
+  lender_name?: string | null;
+  lender_company_name?: string | null;
+  amount_low?: number | string | null;
+  amount_high?: number | string | null;
+  interest_rate?: number | string | null;
+  rate?: number | string | null;
+  active?: boolean | null;
+  is_active?: boolean | null;
 };
 
+function money(value: BiLenderProduct["amount_low"]) {
+  if (value === null || value === undefined || value === "") return "—";
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(n);
+}
+
+function rate(value: BiLenderProduct["interest_rate"]) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "string") return value;
+  return `${value}%`;
+}
+
 export default function BILenderProducts() {
-  const [lenders, setLenders] = useState<BiLender[]>([]);
+  const [products, setProducts] = useState<BiLenderProduct[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -22,14 +38,10 @@ export default function BILenderProducts() {
     void (async () => {
       setLoading(true);
       try {
-        // Re-uses the existing admin lender list so the table can
-        // start showing rows the moment a Products endpoint ships.
-        const r = await fetch("/api/v1/bi/admin/lenders", { credentials: "include" });
-        if (!r.ok) throw new Error(String(r.status));
-        const j = await r.json();
-        if (!cancelled) setLenders(Array.isArray(j?.lenders) ? j.lenders : []);
+        const r = await api<{ products?: BiLenderProduct[]; lender_products?: BiLenderProduct[] }>("/api/v1/bi/lender-products?include_lender=true");
+        if (!cancelled) setProducts(Array.isArray(r.products) ? r.products : Array.isArray(r.lender_products) ? r.lender_products : []);
       } catch {
-        if (!cancelled) setLenders([]);
+        if (!cancelled) setProducts([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -42,27 +54,35 @@ export default function BILenderProducts() {
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-xl font-semibold">Lender Products</h3>
       </div>
-      <div className="rounded-lg border border-card bg-brand-surface p-6">
-        <p className="text-sm text-white/70">
-          Per-lender product catalog. The product surface here will mirror
-          BF silo's Lender Products page once the BI server exposes
-          /api/v1/bi/lender-products. For now you can see which lenders
-          are eligible to receive products.
-        </p>
-        {loading ? (
-          <div className="mt-4 text-sm text-white/40">Loading lenders...</div>
-        ) : lenders.length === 0 ? (
-          <div className="mt-4 text-sm text-white/40">No lenders provisioned yet. Create one under the Lenders tab.</div>
-        ) : (
-          <ul className="mt-4 divide-y divide-white/10 text-sm">
-            {lenders.map((l) => (
-              <li key={l.id} className="py-2 flex items-center justify-between">
-                <span className="text-white">{l.company_name || l.id}</span>
-                <span className="text-xs text-white/40">products: coming soon</span>
-              </li>
+      <div className="overflow-x-auto rounded-lg border border-card bg-brand-surface">
+        <table className="w-full text-sm">
+          <thead className="text-left text-xs uppercase tracking-wider text-white/50">
+            <tr>
+              <th className="px-3 py-2">Product name</th>
+              <th className="px-3 py-2">Lender name</th>
+              <th className="px-3 py-2">Amount Low</th>
+              <th className="px-3 py-2">Amount High</th>
+              <th className="px-3 py-2">Interest rate</th>
+              <th className="px-3 py-2">Active</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td className="px-3 py-4 text-white/40" colSpan={6}>Loading products...</td></tr>
+            ) : products.length === 0 ? (
+              <tr><td className="px-3 py-4 text-white/40" colSpan={6}>No lender products found.</td></tr>
+            ) : products.map((p) => (
+              <tr key={p.id} className="border-t border-white/10">
+                <td className="px-3 py-2">{p.product_name ?? p.name ?? "—"}</td>
+                <td className="px-3 py-2">{p.lender_name ?? p.lender_company_name ?? "—"}</td>
+                <td className="px-3 py-2">{money(p.amount_low)}</td>
+                <td className="px-3 py-2">{money(p.amount_high)}</td>
+                <td className="px-3 py-2">{rate(p.interest_rate ?? p.rate)}</td>
+                <td className="px-3 py-2">{(p.active ?? p.is_active) === false ? "No" : "Yes"}</td>
+              </tr>
             ))}
-          </ul>
-        )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
