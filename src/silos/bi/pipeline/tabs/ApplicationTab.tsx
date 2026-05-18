@@ -37,6 +37,16 @@ function fmtDate(iso: string | null | undefined): string | null {
   return d.toLocaleDateString();
 }
 
+// BF_PORTAL_BLOCK_82_45_FIELDS_v1 - boolean renderer for yes/no fields.
+// Treats null/undefined as "not answered" (hidden). Strings "true"/"false"
+// and actual booleans both map.
+function fmtBool(v: unknown): string | null {
+  if (v === null || v === undefined || v === "") return null;
+  if (v === true || v === "true" || v === "yes" || v === 1 || v === "1") return "Yes";
+  if (v === false || v === "false" || v === "no" || v === 0 || v === "0") return "No";
+  return String(v);
+}
+
 function DecisionBanner({ app }: { app: BiApplicationDetailData }) {
   const stage = String(app.stage || "");
   const premium = fmtMoney(app.annual_premium ?? null);
@@ -119,9 +129,21 @@ function DecisionBanner({ app }: { app: BiApplicationDetailData }) {
 }
 
 // BF_PORTAL_BLOCK_BI_ROUND8_DETAIL_v1 -- accept readOnly prop.
+// BF_PORTAL_BLOCK_82_APPDATA_DRILL_v1 - app.data is {core_inputs:{...}}
+// after server-side BLOCK_v258 schema fix. Read core_inputs as primary,
+// fall back to flat top-level for legacy rows that never got migrated.
 export default function ApplicationTab({ app, onMutated, readOnly = false }: { readOnly?: boolean; app: BiApplicationDetailData; onMutated: () => void }) {
   const [submitting, setSubmitting] = useState(false);
-  const d = app.data || {};
+  const rawData = (app.data || {}) as Record<string, unknown>;
+  const core = (rawData.core_inputs as Record<string, unknown> | undefined) ?? {};
+  const ext = (rawData.extended as Record<string, unknown> | undefined) ?? {};
+  const consents = (rawData.consents as Record<string, unknown> | undefined) ?? {};
+  // Single lookup: prefer core_inputs, then extended, then top-level legacy.
+  const d = new Proxy({} as Record<string, unknown>, {
+    get(_t, key: string) {
+      return (core as any)[key] ?? (ext as any)[key] ?? (rawData as any)[key];
+    },
+  });
   const canSubmit =
     app.source_type === "public" &&
     (app.stage as string) === "document_review" &&
@@ -152,30 +174,71 @@ export default function ApplicationTab({ app, onMutated, readOnly = false }: { r
           {submitting ? "Submitting…" : "Submit to Carrier"}
         </button>
       )}
-      <Section title="Applicant">
-        <Field label="Guarantor" value={app.guarantor_name} />
-        <Field label="Email" value={app.guarantor_email} />
+      {/* BF_PORTAL_BLOCK_82_45_FIELDS_v1 - full 45-question render per
+          BOREAL_FINANCIAL_SYSTEM sec 7. Six sections matching the
+          applicant intake. Field hides itself when value is null/empty,
+          so partial intakes still look clean. */}
+      <Section title="1. Policy Holder Information">
+        <Field label="Guarantor name" value={app.guarantor_name ?? (d.guarantor_name as string)} />
+        <Field label="Date of birth" value={fmtDate(d.guarantor_dob as string)} />
+        <Field label="Address" value={d.guarantor_address as string} />
+        <Field label="Email" value={app.guarantor_email ?? (d.guarantor_email as string)} />
+        <Field label="Phone" value={d.guarantor_phone as string} />
       </Section>
 
-      <Section title="Business">
-        <Field label="Legal name" value={app.business_name} />
-        <Field label="Country" value={(d as Record<string, unknown>).country as string} />
-        <Field label="NAICS" value={(d as Record<string, unknown>).naics_code as string} />
-        <Field label="Formation date" value={fmtDate((d as Record<string, unknown>).formation_date as string)} />
+      <Section title="2. Business Information">
+        <Field label="Country" value={d.country as string} />
+        <Field label="Legal name" value={app.business_name ?? (d.business_name as string)} />
+        <Field label="Address" value={d.business_address as string} />
+        <Field label="Website" value={d.business_website as string} />
+        <Field label="Entity type" value={d.entity_type as string} />
+        <Field label="Business number" value={d.business_number as string} />
+        <Field label="NAICS" value={d.naics_code as string} />
+        <Field label="Revenue start month" value={d.revenue_start_month as string} />
       </Section>
 
-      <Section title="Coverage">
-        <Field label="Loan amount" value={fmtMoney((d as Record<string, unknown>).loan_amount as number)} />
-        <Field label="PGI limit" value={fmtMoney((d as Record<string, unknown>).pgi_limit as number)} />
+      <Section title="3. Loan & Guarantee Details">
+        <Field label="Loan amount" value={fmtMoney(d.loan_amount as number)} />
+        <Field label="CSBFP backed" value={fmtBool(d.csbfp_backed)} />
+        <Field label="Loan has guaranteed cap" value={fmtBool(d.loan_has_guaranteed_cap)} />
+        <Field label="PGI limit" value={fmtMoney(d.pgi_limit as number)} />
+        <Field label="Lender name" value={d.lender_name as string} />
+        <Field label="Loan funding date" value={fmtDate(d.loan_funding_date as string)} />
+        <Field label="Loan purpose" value={d.loan_purpose as string} />
+        <Field label="Personally guaranteeing" value={fmtBool(d.personally_guaranteeing)} />
+        <Field label="Has other guarantors" value={fmtBool(d.has_other_guarantors)} />
+        <Field label="Policy start date" value={fmtDate(d.policy_start_date as string)} />
       </Section>
 
-      <Section title="Underwriting">
-        <Field label="Annual revenue" value={fmtMoney((d as Record<string, unknown>).annual_revenue as number)} />
-        <Field label="EBITDA" value={fmtMoney((d as Record<string, unknown>).ebitda as number)} />
-        <Field label="Total debt" value={fmtMoney((d as Record<string, unknown>).total_debt as number)} />
-        <Field label="Monthly debt service" value={fmtMoney((d as Record<string, unknown>).monthly_debt_service as number)} />
-        <Field label="Collateral value" value={fmtMoney((d as Record<string, unknown>).collateral_value as number)} />
-        <Field label="Enterprise value" value={fmtMoney((d as Record<string, unknown>).enterprise_value as number)} />
+      <Section title="4. Financial Information">
+        <Field label="Annual revenue" value={fmtMoney(d.annual_revenue as number)} />
+        <Field label="EBITDA" value={fmtMoney(d.ebitda as number)} />
+        <Field label="Total debt" value={fmtMoney(d.total_debt as number)} />
+        <Field label="Monthly debt service" value={fmtMoney(d.monthly_debt_service as number)} />
+        <Field label="Collateral value" value={fmtMoney(d.collateral_value as number)} />
+        <Field label="Enterprise value" value={fmtMoney(d.enterprise_value as number)} />
+      </Section>
+
+      <Section title="5. Risk & Compliance">
+        <Field label="Payables threatening" value={fmtBool(d.payables_threatening)} />
+        <Field label="Upcoming adverse events" value={fmtBool(d.upcoming_adverse_events)} />
+        <Field label="Bankruptcy history" value={fmtBool(d.bankruptcy_history)} />
+        <Field label="Insolvency history" value={fmtBool(d.insolvency_history)} />
+        <Field label="Personal investigations" value={fmtBool(d.personal_investigations)} />
+        <Field label="Business investigations" value={fmtBool(d.business_investigations)} />
+        <Field label="Property insurance in force" value={fmtBool(d.property_insurance_in_force)} />
+        <Field label="Personal judgments" value={fmtBool(d.personal_judgments)} />
+        <Field label="Business judgments" value={fmtBool(d.business_judgments)} />
+      </Section>
+
+      <Section title="6. Consents">
+        <Field label="Electronic signature" value={fmtBool((consents as any).consent_electronic_signature ?? d.consent_electronic_signature)} />
+        <Field label="Info accurate" value={fmtBool((consents as any).consent_info_accurate ?? d.consent_info_accurate ?? (consents as any).info_accurate)} />
+        <Field label="Business solvent" value={fmtBool((consents as any).consent_business_solvent ?? d.consent_business_solvent)} />
+        <Field label="No undisclosed events" value={fmtBool((consents as any).consent_no_undisclosed_events ?? d.consent_no_undisclosed_events)} />
+        <Field label="Data use" value={fmtBool((consents as any).consent_data_use ?? d.consent_data_use ?? (consents as any).data_use)} />
+        <Field label="Credit pull" value={fmtBool((consents as any).consent_credit_pull ?? d.consent_credit_pull ?? (consents as any).credit_pull)} />
+        <Field label="Coverage understood" value={fmtBool((consents as any).consent_coverage_understood ?? d.consent_coverage_understood)} />
       </Section>
 
       <details className="rounded border border-white/10 p-2">
