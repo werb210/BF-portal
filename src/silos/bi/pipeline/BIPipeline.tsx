@@ -249,7 +249,8 @@ export default function BIPipeline() {
           tint per-column chrome by ownership: PGI-driven stages get a
           purple top border + "PGI" chip; staff-only stage gets an amber
           top border + "STAFF" chip; mixed stages get default chrome. */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-10">
+      <div className="overflow-x-auto pb-2">
+        <div className="grid gap-4 [grid-template-columns:repeat(7,minmax(200px,1fr))] min-w-[1400px]">
         {BI_VISIBLE_PIPELINE_STAGES.map((stageId) => {
           const meta = biStage(stageId);
           const pgi = !!meta?.isPgiDriven;
@@ -264,12 +265,16 @@ export default function BIPipeline() {
             : staffOnly
               ? <span className="text-[9px] uppercase tracking-wider rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 px-1.5 py-0.5">STAFF</span>
               : null;
+          const actionChip = stageId === "documents"
+            ? <span className="text-[9px] uppercase tracking-wider rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 px-1.5 py-0.5">Staff action</span>
+            : <span className="text-[9px] uppercase tracking-wider rounded bg-blue-500/20 text-blue-200 border border-blue-500/40 px-1.5 py-0.5">Carrier</span>;
           return (
           <div key={stageId} className={`bg-brand-bgAlt border border-card rounded-xl p-3 ${ownerClass}`}>
             <div className="flex items-baseline justify-between mb-3 gap-2">
               <h3 className="text-xs uppercase tracking-widest text-white/70">{biStageLabel(stageId)}</h3>
               <div className="flex items-center gap-1.5">
                 {chip}
+                {actionChip}
                 <span className="text-xs text-white/40">{counts[stageId] || 0}</span>
               </div>
             </div>
@@ -311,6 +316,7 @@ export default function BIPipeline() {
           </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
