@@ -578,15 +578,55 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   const [to, setTo] = useState("");
   const [body, setBody] = useState("");
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [selected, setSelected] = useState<Contact | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingThread, setLoadingThread] = useState(false);
 
   useEffect(() => {
-    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null }> }>("/api/communications/messages")
+    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null; latest_message_at?: string; preview?: string }> }>("/api/communications/messages-list")
       .then(async (r) => {
         const list = Array.isArray(r.conversations) ? r.conversations : [];
-        setContacts(list.map((c) => ({ id: c.contact_id ?? "", name: c.contact_name ?? c.contact_phone ?? "Unknown", phone: c.contact_phone ?? null })).filter((c) => c.id));
+        const mapped = list
+          .map((c) => ({
+            id: c.contact_id ?? "",
+            name: c.contact_name ?? c.contact_phone ?? "Unknown",
+            phone: c.contact_phone ?? null,
+            latest: c.latest_message_at ?? "",
+            preview: c.preview ?? "",
+          }))
+          .filter((c) => c.id)
+          .sort((a, b) => new Date(b.latest).getTime() - new Date(a.latest).getTime());
+        setContacts(mapped as Contact[]);
+        if (mapped.length > 0) {
+          setSelected({ id: mapped[0].id, name: mapped[0].name, phone: mapped[0].phone });
+        }
       })
       .catch(() => setContacts([]));
   }, []);
+
+  useEffect(() => {
+    if (!selected?.id) {
+      setMessages([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingThread(true);
+    api<{ messages?: Message[]; data?: Message[] } | Message[]>("/api/communications/messages", { params: { contact_id: selected.id } })
+      .then((r) => {
+        if (cancelled) return;
+        const list = Array.isArray(r) ? r : (r?.messages ?? r?.data ?? []);
+        setMessages(list);
+      })
+      .catch(() => {
+        if (!cancelled) setMessages([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingThread(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected?.id]);
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0 }}>
@@ -595,10 +635,56 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
           <h3 style={{ margin: 0 }}>Messages</h3>
           <button onClick={() => setOpen(true)} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px", fontWeight: 600 }}>+ Start new conversation</button>
         </div>
-        {contacts.map((c) => <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid #eef2f7" }}>{c.name} {c.phone ? `— ${c.phone}` : ""}</div>)}
+        {contacts.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => setSelected(c)}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              border: 0,
+              background: selected?.id === c.id ? "#f0f9ff" : "transparent",
+              padding: "10px 8px",
+              borderBottom: "1px solid #eef2f7",
+              cursor: "pointer",
+              color: "#000",
+            }}
+          >
+            <div style={{ fontWeight: 600 }}>{c.name}</div>
+            {c.phone && <div style={{ fontSize: 12, color: "#64748b" }}>{c.phone}</div>}
+          </button>
+        ))}
         {contacts.length === 0 && <div style={{ color: "#8e8e93" }}>No client messages yet…</div>}
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#8e8e93" }}>Choose or start a conversation.</div>
+      <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, height: "100%", overflow: "hidden", background: "#fff" }}>
+        {!selected && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#8e8e93", flex: 1 }}>Choose or start a conversation.</div>}
+        {selected && (
+          <>
+            <div style={{ padding: "12px 20px", borderBottom: "1px solid #f0f0f5", background: "#f5f5f7" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "#000" }}>{selected.name}</div>
+              {selected.phone && <div style={{ fontSize: 12, color: "#3c3c43" }}>{selected.phone}</div>}
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", minHeight: 0 }}>
+              {loadingThread ? (
+                <div style={{ color: "#8e8e93" }}>Loading…</div>
+              ) : (
+                <CommunicationsThread
+                  messages={messages.map((m) => ({
+                    id: m.id,
+                    body: m.body,
+                    direction: m.direction,
+                    authorRole: m.direction === "outbound" ? "self" : "other",
+                    authorName: m.direction === "outbound" ? "You" : selected.name,
+                    created_at: m.created_at,
+                  }))}
+                  emptyText="No messages yet."
+                />
+              )}
+            </div>
+          </>
+        )}
+      </div>
       {open && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 70 }}>
           <div style={{ width: "min(560px, 92vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
