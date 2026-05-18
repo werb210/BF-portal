@@ -630,42 +630,8 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
 
 // ── Inbox tab ─────────────────────────────────────────────────────────────────
 function InboxTab() {
-  // BF_PORTAL_BLOCK_77_INBOX_COMPOSE_v1 - Compose modal state.
   const [composeOpen, setComposeOpen] = useState(false);
-  const [composeTo, setComposeTo] = useState("");
-  const [composeSubject, setComposeSubject] = useState("");
-  const [composeBody, setComposeBody] = useState("");
-  const [composeSending, setComposeSending] = useState(false);
-  const [composeError, setComposeError] = useState<string | null>(null);
 
-  async function sendComposed() {
-    const to = composeTo.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);
-    if (to.length === 0) { setComposeError("Recipient required."); return; }
-    if (!composeSubject.trim()) { setComposeError("Subject required."); return; }
-    setComposeSending(true);
-    setComposeError(null);
-    try {
-      await api("/api/o365/mail/send", {
-        method: "POST",
-        body: {
-          message: {
-            subject: composeSubject.trim(),
-            body: { contentType: "Text", content: composeBody },
-            toRecipients: to.map(addr => ({ emailAddress: { address: addr } })),
-          },
-          saveToSentItems: true,
-        },
-      });
-      setComposeOpen(false);
-      setComposeTo("");
-      setComposeSubject("");
-      setComposeBody("");
-    } catch (e: any) {
-      setComposeError(e?.message ?? "Send failed.");
-    } finally {
-      setComposeSending(false);
-    }
-  }
   const [mailboxes, setMailboxes] = useState<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>({ mine: null, shared: [] });
   const [active, setActive] = useState<string>("");
   const [messages, setMessages] = useState<Array<{ id: string; subject: string; bodyPreview?: string; from?: { emailAddress?: { address: string; name?: string } }; receivedDateTime?: string; isRead?: boolean }>>([]);
@@ -806,56 +772,10 @@ function InboxTab() {
           </article>
         )}
       </div>
-      {/* BF_PORTAL_BLOCK_77_INBOX_COMPOSE_v1 - modal overlay. */}
-      {composeOpen && (
-        <div
-          onClick={() => !composeSending && setComposeOpen(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ background: "#fff", borderRadius: 8, padding: 20, width: "min(640px, 92vw)", maxHeight: "92vh", overflow: "auto", color: "#000", display: "flex", flexDirection: "column", gap: 12 }}
-          >
-            <h3 style={{ margin: 0, fontSize: 18 }}>New message</h3>
-            <input
-              type="text"
-              placeholder="To (comma-separated)"
-              value={composeTo}
-              onChange={(e) => setComposeTo(e.target.value)}
-              style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14 }}
-            />
-            <input
-              type="text"
-              placeholder="Subject"
-              value={composeSubject}
-              onChange={(e) => setComposeSubject(e.target.value)}
-              style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14 }}
-            />
-            <textarea
-              placeholder="Message"
-              value={composeBody}
-              onChange={(e) => setComposeBody(e.target.value)}
-              rows={10}
-              style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14, resize: "vertical", fontFamily: "inherit" }}
-            />
-            {composeError && <div style={{ color: "#b00020", fontSize: 13 }}>{composeError}</div>}
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button
-                type="button"
-                onClick={() => setComposeOpen(false)}
-                disabled={composeSending}
-                style={{ padding: "8px 14px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: composeSending ? "default" : "pointer" }}
-              >Cancel</button>
-              <button
-                type="button"
-                onClick={() => void sendComposed()}
-                disabled={composeSending}
-                style={{ padding: "8px 14px", border: "none", borderRadius: 4, background: "#0066cc", color: "#fff", fontWeight: 600, cursor: composeSending ? "default" : "pointer" }}
-              >{composeSending ? "Sending..." : "Send"}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <O365ComposeModal
+        open={composeOpen}
+        onClose={() => setComposeOpen(false)}
+      />
     </div>
   );
 }
