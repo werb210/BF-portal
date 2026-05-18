@@ -119,6 +119,33 @@ type UnifiedEvent = {
   created_at: string;
 };
 
+
+function normalizeContact(raw: any): BIContactDetail | null {
+  if (!raw || typeof raw !== "object") return null;
+  const tagsRaw = (raw as { tags?: unknown }).tags;
+  const tags = Array.isArray(tagsRaw)
+    ? tagsRaw.filter((tag): tag is string => typeof tag === "string")
+    : null;
+  return {
+    id: String(raw.id ?? ""),
+    full_name: typeof raw.full_name === "string" ? raw.full_name : null,
+    email: typeof raw.email === "string" ? raw.email : null,
+    phone_e164: typeof raw.phone_e164 === "string" ? raw.phone_e164 : null,
+    title: typeof raw.title === "string" ? raw.title : null,
+    tags,
+    notes: typeof raw.notes === "string" ? raw.notes : null,
+    outreach_status: typeof raw.outreach_status === "string" ? raw.outreach_status : null,
+    outreach_owner_id: typeof raw.outreach_owner_id === "string" ? raw.outreach_owner_id : null,
+    outreach_updated_at: typeof raw.outreach_updated_at === "string" ? raw.outreach_updated_at : null,
+    company_id: typeof raw.company_id === "string" ? raw.company_id : null,
+    company_name: typeof raw.company_name === "string" ? raw.company_name : null,
+    company_operating_name: typeof raw.company_operating_name === "string" ? raw.company_operating_name : null,
+    created_at: typeof raw.created_at === "string" ? raw.created_at : new Date(0).toISOString(),
+    updated_at: typeof raw.updated_at === "string" ? raw.updated_at : new Date(0).toISOString(),
+    activity_count: typeof raw.activity_count === "number" ? raw.activity_count : 0,
+  };
+}
+
 export default function BIContactDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -161,7 +188,7 @@ export default function BIContactDetailPage() {
         ]);
         if (cancelled) return;
         const cRaw = c as any;
-        const contactRow: BIContactDetail | null = cRaw?.data ?? cRaw ?? null;
+        const contactRow: BIContactDetail | null = normalizeContact(cRaw?.data ?? cRaw ?? null);
         setContact(contactRow);
         // BF_PORTAL_BLOCK_v208 — seed the form whenever fresh
         // contact data arrives so the inline editor reflects the
