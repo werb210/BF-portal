@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
+import O365ComposeModal from "@/components/communications/O365ComposeModal";
 
 type EngagementEvent = { id: string; event_type: string; source: string; apollo_message_id: string | null; sequence_name: string | null; occurred_at: string; metadata: Record<string, unknown> };
 
@@ -134,6 +135,7 @@ export default function BIContactDetailPage() {
   const [composing, setComposing] = useState(false);
   const [smsBody, setSmsBody] = useState("");
   const [smsSending, setSmsSending] = useState(false);
+  const [emailComposeOpen, setEmailComposeOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [form, setForm] = useState<{
     full_name: string;
@@ -369,15 +371,19 @@ export default function BIContactDetailPage() {
         </div>
         {contact.title && !editing && <div style={subtle}>{contact.title}</div>}
         {contact.email && !editing && (
-          <a href={`mailto:${contact.email}`} style={{ color: "#0091ae" }}>
+          <button
+            type="button"
+            onClick={() => setEmailComposeOpen(true)}
+            style={{ color: "#0091ae", background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer" }}
+          >
             {contact.email}
-          </a>
+          </button>
         )}
         {!editing && (
           <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setEditing(true)} style={actionBtn} data-testid="bi-contact-edit-button">Edit</button>
             <button type="button" onClick={() => deleteContact()} disabled={deleting} style={{ ...actionBtn, borderColor: "#fecaca", color: "#b91c1c" }} data-testid="bi-contact-delete-button">{deleting ? "Deleting…" : "Delete"}</button>
-            {/* BF_PORTAL_BLOCK_BI_ROUND5_A_v1 -- BI silo Call + Email actions. Call dispatches the same bf:dialer-call CustomEvent that the BF silo uses; DialerPanel's listener opens the PortalDialer and runs startPortalCall (the consolidated singleton). Email uses mailto: for Phase 1. */}
+            {/* BF_PORTAL_BLOCK_BI_ROUND5_A_v1 -- BI silo Call + Email actions. Call dispatches the same bf:dialer-call CustomEvent that the BF silo uses; DialerPanel's listener opens the PortalDialer and runs startPortalCall (the consolidated singleton). Email opens the shared M365 compose modal with the contact prefilled. */}
             <button
               type="button"
               onClick={() => {
@@ -403,10 +409,7 @@ export default function BIContactDetailPage() {
               type="button"
               onClick={() => {
                 if (!contact.email) return;
-                // Phase 1: open the OS mail handler. Phase 2 will
-                // replace this with an inline composer that POSTs
-                // through BF-Server's silo-aware O365 send.
-                window.location.href = `mailto:${contact.email}`;
+                setEmailComposeOpen(true);
               }}
               disabled={!contact.email}
               title={contact.email ? "Compose email" : "Contact has no email address"}
