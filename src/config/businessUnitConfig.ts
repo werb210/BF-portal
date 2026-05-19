@@ -6,6 +6,7 @@ export const BUSINESS_UNIT_CONFIG: Record<
     allowClientComms: boolean;
     allowLenderSend: boolean;
     showCommissionModule: boolean;
+    showSettings: boolean;
     name: string;
     logoUrl: string;
   }
@@ -14,6 +15,7 @@ export const BUSINESS_UNIT_CONFIG: Record<
     allowClientComms: true,
     allowLenderSend: true,
     showCommissionModule: true,
+    showSettings: true,
     name: "Boreal Financial",
     logoUrl: "/images/Header.png"
   },
@@ -21,6 +23,7 @@ export const BUSINESS_UNIT_CONFIG: Record<
     allowClientComms: true,
     allowLenderSend: true,
     showCommissionModule: true,
+    showSettings: false,
     name: "Boreal Insurance",
     logoUrl: "/images/Header.png"
   },
@@ -28,6 +31,7 @@ export const BUSINESS_UNIT_CONFIG: Record<
     allowClientComms: false,
     allowLenderSend: false,
     showCommissionModule: true,
+    showSettings: true,
     name: "Site Level Financial",
     logoUrl: "/images/Header.png"
   }
