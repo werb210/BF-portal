@@ -14,7 +14,23 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "issues", label: "Issues" },
 ];
 
-type Contact = { id: string; name: string; phone: string | null; contactId?: string | null };
+type Contact = {
+  id: string;
+  name: string;
+  phone: string | null;
+  phone_e164?: string | null;
+  mobile?: string | null;
+  contactId?: string | null;
+};
+
+// BF_PORTAL_BLOCK_v305_SMS_EMPTY_STATE_DEFENSIVE_FILTER_v1 — accept
+// any phone-like column. Some CRM endpoints return `phone`, others
+// return `phone_e164` (BI silo) or `mobile`. Trim before truthy check
+// so whitespace-only strings don't slip through.
+function hasUsablePhone(c: Contact): boolean {
+  const cand = (c.phone ?? c.phone_e164 ?? c.mobile ?? "").trim();
+  return cand.length > 0;
+}
 type Message = {
   id: string;
   direction: "inbound" | "outbound";
@@ -126,7 +142,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
             try {
               const crm = await api<{ items?: Contact[] } | Contact[]>("/api/crm/contacts", { params: { pageSize: 500 } });
               const list: Contact[] = Array.isArray(crm) ? (crm as Contact[]) : ((crm as { items?: Contact[] }).items ?? []);
-              const withPhone = list.filter((c) => c?.id && c?.phone);
+              const withPhone = list.filter((c) => c?.id && hasUsablePhone(c));
               setContacts(withPhone);
               setHasSentMessages(false);
             } catch {
@@ -207,7 +223,9 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
   }, [threads, selected]);
 
   async function send() {
-    if (!draft.trim() || !selected?.phone || sending) return;
+    const selectedContact = selected;
+    const selectedPhone = selectedContact?.phone ?? selectedContact?.phone_e164 ?? selectedContact?.mobile ?? null;
+    if (!draft.trim() || !selectedContact || !selectedPhone || sending) return;
     setSending(true);
     const pendingBody = draft.trim();
     try {
@@ -231,12 +249,12 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
         // which sends via Twilio AND persists to communications_messages so
         // the thread view stays consistent. Same v277 pattern as v300/v311
         // (UI calling wrong URL prefix).
-        to: selected.phone,
+        to: selectedPhone,
         body: pendingBody,
-        contactId: selected.id,
+        contactId: selectedContact.id,
       });
       setDraft("");
-      loadMessages(selected.id, selected.phone);
+      loadMessages(selectedContact.id, selectedPhone);
       setTimeout(() => inputRef.current?.focus(), 50);
     } catch (error) {
       if (isBadRequest(error)) return;
