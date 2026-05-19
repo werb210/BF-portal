@@ -15,12 +15,12 @@ vi.mock("@/api", () => ({
 }));
 
 describe("BIDocumentList View button", () => {
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
   const openMock = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
+    globalThis.fetch = vi.fn();
     Object.defineProperty(window, "open", {
       writable: true,
       value: openMock
@@ -28,7 +28,7 @@ describe("BIDocumentList View button", () => {
   });
 
   afterAll(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   it("renders a View button for each document row", async () => {
@@ -38,7 +38,7 @@ describe("BIDocumentList View button", () => {
   });
 
   it("calls file-url endpoint and opens returned URL", async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: async () => ({ url: "https://example.com/signed-url" })
     });
@@ -47,7 +47,7 @@ describe("BIDocumentList View button", () => {
     fireEvent.click(await screen.findByRole("button", { name: "View" }));
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith("/api/v1/bi/documents/doc-1/file-url", {
+      expect(globalThis.fetch).toHaveBeenCalledWith("/api/v1/bi/documents/doc-1/file-url", {
         credentials: "include",
         headers: { Accept: "application/json" }
       });
@@ -56,7 +56,7 @@ describe("BIDocumentList View button", () => {
   });
 
   it("shows an error on non-OK response", async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: false,
       status: 500
     });
