@@ -36,6 +36,20 @@ function relativeFromNow(iso: string | null | undefined): string {
 }
 
 type Tone = "neutral" | "good" | "warn" | "bad";
+
+function appDisplayTitle(app: any): string {
+  const trim = (v: any) => (typeof v === "string" ? v.trim() : "");
+  const fullName = [trim(app?.applicant_first_name), trim(app?.applicant_last_name)].filter(Boolean).join(" ");
+  return (
+    trim(app?.title) ||
+    trim(app?.company_name) ||
+    trim(app?.applicant_company) ||
+    fullName ||
+    trim(app?.application_code) ||
+    (app?.id ? `Application ${String(app.id).slice(0, 8)}` : "Untitled")
+  );
+}
+
 function StatPill(props: { label: string; value: number | string; tone?: Tone; hint?: string }) {
   const { label, value, tone = "neutral" as Tone, hint } = props;
   const toneColor =
@@ -216,7 +230,20 @@ export default function BIDashboard() {
         {recent.length === 0 ? (
           <div className="p-4 text-sm text-white/40">No recent updates.</div>
         ) : recent.map((a) => {
-          const name = a?.business_name || a?.company_name || "Untitled";
+          const onDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!window.confirm(`Delete ${appDisplayTitle(a)}? This cannot be undone.`)) return;
+            try {
+              await api(`/api/v1/bi/applications/${a.id}`, { method: "DELETE" });
+              setApps((prev) => prev.filter((app) => app?.id !== a.id));
+              window.alert("Application deleted.");
+            } catch (error) {
+              console.error("Failed to delete BI application", error);
+              window.alert("Failed to delete application.");
+            }
+          };
+          const name = appDisplayTitle(a);
           const resolvedStage = resolveStageId(a?.stage) ?? a?.stage;
           const stageMeta = STAGES.find((row) => row[0] === resolvedStage);
           return (
@@ -236,9 +263,12 @@ export default function BIDashboard() {
                   {a?.lender_name ? <> · via {String(a.lender_name)}</> : null}
                 </div>
               </div>
-              <div className="text-right text-xs text-white/60 shrink-0">
+              <div className="flex items-center gap-3 shrink-0">
+                <button type="button" onClick={onDelete} className="rounded border border-red-500/40 px-2 py-1 text-xs text-red-200 hover:bg-red-500/10">Delete</button>
+                <div className="text-right text-xs text-white/60">
                 <div>{stageMeta ? stageMeta[1] : biStageLabel(a?.stage)}</div>
                 <div className="text-white/40">{relativeFromNow(a?.updated_at)}</div>
+              </div>
               </div>
             </Link>
           );

@@ -34,6 +34,7 @@ export default function BIContactsList() {
   });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isTagsOpen, setIsTagsOpen] = useState(false);
 
@@ -41,6 +42,7 @@ export default function BIContactsList() {
     let cancelled = false;
     setLoading(true);
     setErr(null);
+    setLoadFailed(false);
     (async () => {
       try {
         const params = new URLSearchParams();
@@ -57,7 +59,16 @@ export default function BIContactsList() {
           : Array.isArray(r?.data)
             ? r.data
             : [];
-        if (!cancelled) setRows(list);
+        if (!cancelled) {
+          const listItems: BIContactRow[] = Array.isArray(r)
+            ? r
+            : Array.isArray(r?.items)
+              ? r.items
+              : Array.isArray(r?.data)
+                ? r.data
+                : [];
+          setRows(listItems);
+        }
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "Could not load contacts.");
       } finally {
@@ -188,21 +199,21 @@ export default function BIContactsList() {
               </td>
             </tr>
           )}
-          {err && (
+          {loadFailed && (
             <tr>
               <td colSpan={5} style={{ ...emptyCell, color: "#b00020" }}>
-                {err}
+                Could not load contacts. Please refresh.
               </td>
             </tr>
           )}
-          {!loading && !err && rows.length === 0 && (
+          {!loading && !loadFailed && rows.length === 0 && (
             <tr>
               <td colSpan={5} style={emptyCell}>
-                No BI contacts.
+                No contacts yet. Contacts will appear here as leads come in.
               </td>
             </tr>
           )}
-          {!loading && !err && tableRows}
+          {!loading && !loadFailed && tableRows}
         </tbody>
       </table>
     </div>
