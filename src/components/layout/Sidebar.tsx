@@ -80,6 +80,9 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             if (!businessUnitConfig.allowClientComms && ["/communications", "/chat", "/ai-comms", "/ai-chat"].includes(item.path)) {
               return false;
             }
+            if (!businessUnitConfig.showSettings && item.path === "/settings") {
+              return false;
+            }
             return !item.roles || hasRequiredRole(role, item.roles);
           })
         }))

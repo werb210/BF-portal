@@ -63,11 +63,34 @@ export default function BIDocumentList({ applicationId }: { applicationId: strin
     }
   }
 
+  async function handleViewDocument(d: { id: string; original_filename: string }) {
+    try {
+      const res = await fetch(`/api/v1/bi/documents/${d.id}/file-url`, {
+        credentials: "include",
+        headers: { Accept: "application/json" }
+      });
+      if (!res.ok) {
+        setErr(`Could not load ${d.original_filename}: ${res.status}`);
+        return;
+      }
+      const json = (await res.json().catch(() => null)) as { url?: string } | null;
+      const url = json?.url;
+      if (!url) {
+        setErr(`No download URL returned for ${d.original_filename}.`);
+        return;
+      }
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      setErr(`Could not load ${d.original_filename}: ${e?.message ?? "unknown error"}`);
+    }
+  }
+
   if (loading) return <div>Loading documents…</div>;
 
   return (
     <div>
       <h3 className="text-lg font-semibold mb-3">Documents</h3>
+      {err && <p className="text-sm text-red-300 mb-2">{err}</p>}
       {docs.length === 0 && <div className="text-sm">No documents uploaded.</div>}
       {docs.map((d) => {
         const status = d.review_status || "pending";
@@ -90,6 +113,13 @@ export default function BIDocumentList({ applicationId }: { applicationId: strin
             </div>
             <div className="flex items-center gap-2">
               <span className={`doc-status doc-status--${status}`}>{status}</span>
+              <button
+                type="button"
+                className="border border-white/30 hover:bg-white/10 text-white rounded-full h-10 px-4 font-medium"
+                onClick={() => handleViewDocument(d)}
+              >
+                View
+              </button>
               <button
                 type="button"
                 className="bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-4 font-medium disabled:opacity-50"
