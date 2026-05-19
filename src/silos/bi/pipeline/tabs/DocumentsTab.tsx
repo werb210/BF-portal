@@ -41,7 +41,7 @@ function OcrStatusBadge({ status }: { status: string | null | undefined }) {
 // BF_PORTAL_BLOCK_BI_ROUND8_DETAIL_v1 -- accept readOnly prop. When
 // true, accept/reject controls are hidden (lender + referrer apps
 // auto-forward to carrier and staff don't touch documents).
-export default function DocumentsTab({ applicationId, stage, onMutated, isStartup = false, readOnly = false }: { readOnly?: boolean; applicationId: string; stage: BiStageId; onMutated: () => void; isStartup?: boolean }) {
+export default function DocumentsTab({ applicationId, stage: _stage, onMutated, isStartup = false, readOnly = false }: { readOnly?: boolean; applicationId: string; stage: BiStageId; onMutated: () => void; isStartup?: boolean }) {
   const [docs, setDocs] = useState<Doc[]>([]);
   // BF_PORTAL_BLOCK_1_22_BI_DOC_UI — load required docs from server.
   const [requiredDocs, setRequiredDocs] = useState<BiRequiredDoc[]>([]);
@@ -71,14 +71,6 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
     };
   }, []);
 
-  // BF_PORTAL_BLOCK_v212_BI_DOCUMENTS_TAB_FIX_v2
-  // BI-Server v261 returns stage='document_review' (passthrough of the
-  // status column) for public apps whose uploads have advanced past
-  // /submit. Allow that value so the Accept button enables once docs
-  // are ready for staff review.
-  const reviewLocked =
-    stage !== "under_review" &&
-    stage !== "document_review";
   const visibleDocs = requiredDocs
     .filter((d) => !d.if_startup || isStartup)
     .sort((a, b) => a.sort_order - b.sort_order);
@@ -171,8 +163,12 @@ export default function DocumentsTab({ applicationId, stage, onMutated, isStartu
           {!readOnly && (
             <div className="flex shrink-0 gap-1">
               <button onClick={() => void view(d.id)} className="rounded bg-white/10 px-2 text-xs">View</button>
-              <button disabled={reviewLocked || d.status === "accepted"} onClick={() => accept(d.id)} className="rounded bg-emerald-600/80 px-2 text-xs disabled:opacity-50">Accept</button>
-              <button disabled={reviewLocked || d.status === "rejected"} onClick={() => reject(d.id, d.file_name)} className="rounded bg-amber-600/80 px-2 text-xs disabled:opacity-50">Reject</button>
+              {/* BF_PORTAL_BLOCK_v309_BI_DOCS_UNLOCK_STAGE_v1 — operator
+                  directive: Accept/Reject enabled at every stage. Stage-based
+                  gating removed; per-doc status still gates the button for its
+                  own action (can't re-accept an already-accepted doc). */}
+              <button disabled={d.status === "accepted"} onClick={() => accept(d.id)} className="rounded bg-emerald-600/80 px-2 text-xs disabled:opacity-50">Accept</button>
+              <button disabled={d.status === "rejected"} onClick={() => reject(d.id, d.file_name)} className="rounded bg-amber-600/80 px-2 text-xs disabled:opacity-50">Reject</button>
               <button onClick={() => del(d.id)} className="rounded bg-red-600/80 px-2 text-xs">Delete</button>
             </div>
           )}
