@@ -70,7 +70,11 @@ export default function BIContactsList() {
           setRows(listItems);
         }
       } catch (e: any) {
-        if (!cancelled) setErr(e?.message ?? "Could not load contacts.");
+        if (!cancelled) {
+          const code = e?.message ?? "unknown_error";
+          setErr(`Could not load contacts. Please refresh. (${code})`);
+          setLoadFailed(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -202,14 +206,14 @@ export default function BIContactsList() {
           {loadFailed && (
             <tr>
               <td colSpan={5} style={{ ...emptyCell, color: "#b00020" }}>
-                Could not load contacts. Please refresh.
+                {err ?? "Could not load contacts. Please refresh."}
               </td>
             </tr>
           )}
           {!loading && !loadFailed && rows.length === 0 && (
             <tr>
               <td colSpan={5} style={emptyCell}>
-                No contacts yet. Contacts will appear here as leads come in.
+                No BI contacts yet. Contacts will appear here as leads come in.
               </td>
             </tr>
           )}
