@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/api";
+import { withO365Refresh } from "@/api/o365Interceptor";
 import { ApiError } from "@/api/http";
 import SecondaryButton from "@/components/forms/SecondaryButton";
 import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
@@ -746,22 +747,38 @@ function InboxTab() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // BF_PORTAL_BLOCK_v213_INBOX_RECONNECT_M365_v2
+  const [needsReconnect, setNeedsReconnect] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+
   // Load mailboxes once
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const r = await api<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>("/api/crm/shared-mailboxes");
+        const r = await withO365Refresh(() =>
+          api<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>("/api/crm/shared-mailboxes")
+        );
         if (cancelled) return;
         setMailboxes(r);
         // Default to personal mailbox if available, else first shared
         setActive(r.mine ? "" : (r.shared[0]?.address ?? ""));
-      } catch (e: any) {
-        if (!cancelled) setErr("Connect Microsoft 365 in Settings → My Profile to view inbox.");
+        setNeedsReconnect(false);
+      } catch (e: unknown) {
+        if (cancelled) return;
+        const status = (e as { status?: number; response?: { status?: number } })?.status
+          ?? (e as { response?: { status?: number } })?.response?.status;
+        if (status === 401) {
+          setNeedsReconnect(true);
+          setErr(null);
+        } else {
+          setErr("Could not load Microsoft 365 mailboxes.");
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [reconnectAttempts]);
 
   // Load messages whenever active mailbox changes
   useEffect(() => {
@@ -773,16 +790,29 @@ function InboxTab() {
     (async () => {
       try {
         const params = active ? { mailbox: active } : {};
-        const r = await api<typeof messages>("/api/crm/inbox", { params });
-        if (!cancelled) setMessages(Array.isArray(r) ? r : []);
-      } catch (e: any) {
-        if (!cancelled) setErr(e?.message ?? "Could not load inbox.");
+        const r = await withO365Refresh(() =>
+          api<typeof messages>("/api/crm/inbox", { params })
+        );
+        if (cancelled) return;
+        setMessages(Array.isArray(r) ? r : []);
+        setNeedsReconnect(false);
+      } catch (e: unknown) {
+        if (cancelled) return;
+        const status = (e as { status?: number; response?: { status?: number } })?.status
+          ?? (e as { response?: { status?: number } })?.response?.status;
+        if (status === 401) {
+          setNeedsReconnect(true);
+          setErr(null);
+        } else {
+          const message = e instanceof Error ? e.message : "Could not load inbox.";
+          setErr(message);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [active]);
+  }, [active, reconnectAttempts]);
 
   // Load body when a message is selected
   useEffect(() => {
@@ -791,7 +821,9 @@ function InboxTab() {
     (async () => {
       try {
         const params = active ? { mailbox: active } : {};
-        const r = await api<typeof selected>(`/api/crm/inbox/${encodeURIComponent(selectedId)}`, { params });
+        const r = await withO365Refresh(() =>
+          api<typeof selected>(`/api/crm/inbox/${encodeURIComponent(selectedId)}`, { params })
+        );
         if (!cancelled) setSelected(r);
       } catch {
         if (!cancelled) setSelected(null);
@@ -800,12 +832,94 @@ function InboxTab() {
     return () => { cancelled = true; };
   }, [selectedId, active]);
 
+  // BF_PORTAL_BLOCK_v213_INBOX_RECONNECT_M365_v2
+  // Reconnect Microsoft 365 in place — no navigation to Settings required.
+  const handleReconnect = async (): Promise<void> => {
+    if (reconnecting) return;
+    setReconnecting(true);
+    setErr(null);
+    try {
+      const msal = (window as unknown as { msalInstance?: {
+        getAllAccounts?: () => Array<{ homeAccountId?: string }>;
+        acquireTokenSilent: (req: unknown) => Promise<{ accessToken: string; refreshToken?: string; expiresOn?: Date }>;
+        acquireTokenPopup: (req: unknown) => Promise<{ accessToken: string; refreshToken?: string; expiresOn?: Date }>;
+      } }).msalInstance;
+      if (!msal) {
+        setErr("Microsoft 365 is not configured. Reload and try again.");
+        return;
+      }
+      const scopes = [
+        "User.Read", "Mail.Send", "Mail.ReadWrite", "Mail.Send.Shared",
+        "Calendars.ReadWrite", "Tasks.ReadWrite", "offline_access",
+      ];
+      const accounts = msal.getAllAccounts?.() ?? [];
+      let result: { accessToken: string; refreshToken?: string; expiresOn?: Date };
+      try {
+        if (!accounts.length) throw new Error("no_account");
+        result = await msal.acquireTokenSilent({ scopes, account: accounts[0] });
+      } catch {
+        result = await msal.acquireTokenPopup({ scopes });
+      }
+      if (!result?.accessToken) throw new Error("no_token");
+      await api.post("/api/users/me/o365-tokens", {
+        access_token: result.accessToken,
+        refresh_token: result.refreshToken ?? null,
+        expires_in: result.expiresOn
+          ? Math.max(0, Math.floor((result.expiresOn.getTime() - Date.now()) / 1000))
+          : null,
+        account_id: accounts[0]?.homeAccountId ?? null,
+      });
+      setNeedsReconnect(false);
+      setReconnectAttempts((n) => n + 1);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Reconnect failed.";
+      setErr(`Reconnect failed: ${message}. Open Settings → My Profile to reconnect manually.`);
+    } finally {
+      setReconnecting(false);
+    }
+  };
+
   const mailboxOptions: Array<{ value: string; label: string }> = [];
   if (mailboxes.mine) mailboxOptions.push({ value: "", label: `${mailboxes.mine.display_name} (mine)` });
   for (const m of mailboxes.shared) mailboxOptions.push({ value: m.address, label: m.display_name });
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, height: "100%", background: "#fff", color: "#000" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, height: "100%", background: "#fff", color: "#000", position: "relative" }}>
+      {/* BF_PORTAL_BLOCK_v213_INBOX_RECONNECT_M365_v2 — reconnect banner */}
+      {needsReconnect && (
+        <div style={{
+          gridColumn: "1 / -1",
+          padding: "12px 16px",
+          background: "#fef3c7",
+          borderBottom: "1px solid #fde68a",
+          color: "#78350f",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          fontSize: 14,
+        }}>
+          <span style={{ flex: 1 }}>
+            Microsoft 365 connection has expired. Reconnect to view your inbox.
+          </span>
+          <button
+            type="button"
+            onClick={() => void handleReconnect()}
+            disabled={reconnecting}
+            style={{
+              padding: "8px 14px",
+              border: "none",
+              borderRadius: 4,
+              background: reconnecting ? "#a78bfa" : "#0066cc",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: reconnecting ? "default" : "pointer",
+            }}
+          >
+            {reconnecting ? "Reconnecting…" : "Reconnect Microsoft 365"}
+          </button>
+        </div>
+      )}
       <div style={{ borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
         {/* BF_PORTAL_BLOCK_77_INBOX_COMPOSE_v1 - Compose button + modal. */}
         <div style={{ padding: 12, borderBottom: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 8 }}>
