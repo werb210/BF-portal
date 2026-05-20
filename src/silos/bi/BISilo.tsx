@@ -15,6 +15,7 @@ import BIReferrerManagement from "./referrer/BIReferrerManagement"; // BF_PORTAL
 import BIDashboard from "./dashboard/BIDashboard";
 import BIMarketing from "./marketing/BIMarketing";
 import BISettings from "./settings/BISettings";
+import BIOutreach from "./crm/BIOutreach";
 // BF_PORTAL_BLOCK_BI_SILO_TRIM_v1 -- Marketing tab consolidated into CRM > Outreach (BIMarketing kept on disk for future reuse).
 // BF_PORTAL_BLOCK_BI_SILO_TRIM_v1 -- Settings tab removed; sign-in lives in BF silo (design note 7).
 import BIApplicationDetail from "./pipeline/BIApplicationDetail";
@@ -47,6 +48,7 @@ export default function BISilo() {
           <Route path="referrer" element={<BIReferrerManagement />} />
           {/* BF_PORTAL_BLOCK_BI_SILO_TRIM_v1 -- legacy paths redirect into the consolidated locations */}
           <Route path="marketing" element={<BIMarketing />} />
+          <Route path="outreach" element={<BIOutreach />} /> {/* BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_v1 */}
           <Route path="settings" element={<BISettings />} />
         </Routes>
       </main>

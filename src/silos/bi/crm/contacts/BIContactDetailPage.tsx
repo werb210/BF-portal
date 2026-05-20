@@ -15,6 +15,32 @@ import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import toast from "react-hot-toast";
 import { openDialer } from "@/stores/dialerStore";
 
+// BF_PORTAL_BLOCK_v212_CONTACT_NAME_v1 — surface a clean display name when
+// the persisted full_name is the auto-generated placeholder shape
+// ("Applicant +14035551234" or "New applicant"). The v320 server backfill
+// already replaced placeholders with guarantor_name where possible; this
+// catches anything the backfill couldn't resolve so the page heading
+// never reads "Applicant +<phone>".
+function isPlaceholderName(name: string | null | undefined): boolean {
+  if (!name) return true;
+  const trimmed = name.trim();
+  if (!trimmed) return true;
+  if (/^Applicant\s*\+/i.test(trimmed)) return true;
+  if (/^New applicant/i.test(trimmed)) return true;
+  return false;
+}
+
+function displayContactName(contact: { full_name: string | null; email: string | null; phone_e164: string | null }): string {
+  if (!isPlaceholderName(contact.full_name)) return contact.full_name as string;
+  // Prefer email local-part next (often readable), then phone, else generic.
+  if (contact.email) {
+    const local = contact.email.split("@")[0];
+    if (local && local.length > 0) return local;
+  }
+  if (contact.phone_e164) return contact.phone_e164;
+  return "(no name)";
+}
+
 type EngagementEvent = { id: string; event_type: string; source: string; apollo_message_id: string | null; sequence_name: string | null; occurred_at: string; metadata: Record<string, unknown> };
 
 function EngagementSection({ contactId }: { contactId: string | undefined }) {
@@ -395,7 +421,7 @@ export default function BIContactDetailPage() {
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <h2 style={{ marginTop: 0, marginBottom: 0 }}>
-            {contact.full_name || "(no name)"}
+            {displayContactName(contact)}
           </h2>
           <span style={roleBadge}>{formatStatus(role)}</span>
         </div>
