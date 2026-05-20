@@ -1,11 +1,13 @@
 import { Call, Device } from "@twilio/voice-sdk";
 import { getVoiceToken } from "./getVoiceToken";
+import { api } from "@/api";
 import { useCallState } from "./state/callState";
 
 let device: Device | null = null;
 let bootstrapPromise: Promise<Device> | null = null;
 let activeCall: Call | null = null;
 let deviceInitialized = false;
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
 const activeStatuses = new Set(["connecting", "ringing", "in_call"]);
 
@@ -53,6 +55,27 @@ const bindCallHandlers = (call: Call) => {
   });
 };
 
+
+// BF_PORTAL_BLOCK_v211_DIALER_PRESENCE_HEARTBEAT_v1
+// Server filters routable staff with `last_heartbeat > now() - 5 minutes`,
+// so a 30s tick gives ~10x headroom against network blips. Fire-and-forget;
+// failures are non-fatal (next tick retries).
+function startPresenceHeartbeat() {
+  if (heartbeatTimer) return;
+  const tick = () => {
+    void api.post("/api/telephony/presence/heartbeat").catch(() => {});
+  };
+  tick(); // fire immediately so the row's heartbeat refreshes within seconds of register
+  heartbeatTimer = setInterval(tick, 30_000);
+}
+
+function stopPresenceHeartbeat() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+}
+
 async function initializeDevice() {
   if (deviceInitialized) {
     if (device) return device;
@@ -83,6 +106,7 @@ async function initializeDevice() {
   });
 
   nextDevice.on("unregistered", () => {
+    stopPresenceHeartbeat(); // BF_PORTAL_BLOCK_v211_DIALER_PRESENCE_HEARTBEAT_v1
     onCallDisconnected();
     setFailure("Voice device disconnected. Please try again.");
     device = null;
@@ -116,6 +140,7 @@ async function initializeDevice() {
 
   await nextDevice.register();
   device = nextDevice;
+  startPresenceHeartbeat(); // BF_PORTAL_BLOCK_v211_DIALER_PRESENCE_HEARTBEAT_v1
   return nextDevice;
 }
 
@@ -256,4 +281,15 @@ export async function destroyVoiceDevice() {
 // should await bootstrapVoice() instead so it survives a cold mount.
 export function getVoiceDevice() {
   return device;
+}
+
+
+// BF_PORTAL_BLOCK_v211_DIALER_PRESENCE_HEARTBEAT_v1
+// Stop the heartbeat on tab close so the server presence row ages out
+// and routing immediately falls to other available staff (instead of
+// ringing this dead browser for ~5 more minutes).
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    stopPresenceHeartbeat();
+  });
 }
