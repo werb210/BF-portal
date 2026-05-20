@@ -1,7 +1,7 @@
 // BI_PIPELINE_ALIGN_v57 — Documents tab with Accept/Reject actions.
 import { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
-import { api } from "@/api";
+import { api, apiForSilo } from "@/api";
 // BF_PORTAL_BLOCK_1_22_BI_DOC_UI — required-doc catalog.
 import { fetchRequiredDocs, type BiRequiredDoc } from "@/silos/bi/api/biRequiredDocs";
 import type { BiStageId } from "../biStages";
@@ -17,6 +17,15 @@ type Doc = {
   status: "pending" | "accepted" | "rejected";
   ocr_status?: string | null;
 };
+
+
+async function biReviewDocument(applicationId: string, docId: string, decision: "accepted" | "rejected", reason?: string) {
+  const biApi = apiForSilo("BI");
+  return biApi<{ ok: boolean }>(`/api/v1/bi/applications/${applicationId}/documents/${docId}/review`, {
+    method: "POST",
+    body: JSON.stringify({ decision, reason: reason ?? null }),
+  });
+}
 
 function OcrStatusBadge({ status }: { status: string | null | undefined }) {
   // BF_PORTAL_BLOCK_1_22_BI_DOC_UI — OCR status badge per document.
@@ -83,7 +92,7 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
   // the docs list call but is dropped from the accept URL.
   async function accept(docId: string) {
     try {
-      await api(`/api/v1/bi/documents/${docId}/accept`, { method: "POST" });
+      await biReviewDocument(applicationId, docId, "accepted");
       toast.success("Accepted");
       await load();
       onMutated();
@@ -96,7 +105,7 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
     const reason = window.prompt(`Reason for rejecting ${docName}?`);
     if (!reason || !reason.trim()) return;
     try {
-      await api(`/api/v1/bi/documents/${docId}/reject`, { method: "POST", body: { reason: reason.trim() } });
+      await biReviewDocument(applicationId, docId, "rejected", reason.trim());
       toast.success("Rejected");
       await load();
       onMutated();
