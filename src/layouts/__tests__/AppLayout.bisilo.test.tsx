@@ -1,9 +1,10 @@
 // BF_PORTAL_BI_SILO_NAV_v56 -- regression for the BI silo nav config.
-// BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- updated for the 6-tab BI
-// sidebar per ruling 21: Dashboard / Pipeline / CRM / Lender /
-// Marketing / Settings. Referrer was removed from the sidebar and
-// now lives as a sub-tab inside the Lender page (?tab=referrer).
-// Lenders was renamed to Lender (singular) to match the route.
+// BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- previously locked to 5-tab.
+// BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_AND_CONTACT_NAME_v1 -- BI sidebar now
+// has 6 tabs: Dashboard / Pipeline / CRM / Lender / Marketing / Outreach.
+// Outreach is the Andrew pipeline surface (existing 905-line BIOutreach.tsx),
+// wired into BISilo routes + the BI sidebar nav. Referrer remains absent
+// from the sidebar (lives as a sub-tab under Lender).
 // BF nav is unchanged.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
@@ -72,7 +73,7 @@ describe("BF_PORTAL_BI_SILO_NAV_v56 -- BI silo nav config", () => {
   });
 });
 
-describe("BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- 5-tab BI nav", () => {
+describe("BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_AND_CONTACT_NAME_v1 -- 6-tab BI nav", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -105,18 +106,25 @@ describe("BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- 5-tab BI nav", () => {
     ).toBe("/silo/bi/marketing");
   });
 
+  it("Outreach points at /silo/bi/outreach (Andrew pipeline surface)", () => {
+    renderLayout("BI", "Admin");
+    expect(
+      screen.getByRole("link", { name: "Outreach" }).getAttribute("href"),
+    ).toBe("/silo/bi/outreach");
+  });
+
   it("Referrer is NO LONGER in the BI sidebar (moved into Lender sub-tab)", () => {
     renderLayout("BI", "Admin");
     expect(screen.queryByRole("link", { name: "Referrer" })).not.toBeInTheDocument();
   });
 
-  it("BI sidebar has exactly 5 items (Dashboard, Pipeline, CRM, Lender, Marketing)", () => {
+  it("BI sidebar has exactly 6 items (Dashboard, Pipeline, CRM, Lender, Marketing, Outreach)", () => {
     renderLayout("BI", "Admin");
-    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing"];
+    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing", "Outreach"];
     for (const label of expectedLabels) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole("link")).toHaveLength(5);
+    expect(screen.getAllByRole("link")).toHaveLength(6);
   });
 });
 
@@ -124,18 +132,19 @@ describe("BF_PORTAL_BLOCK_BI_ROUND8_SIDEBAR_v1 -- 5-tab BI nav", () => {
 
 
 describe("capability-gated BI sidebar", () => {
-  it("Andrew sees Dashboard + CRM + Marketing", () => {
+  it("Andrew sees Dashboard + CRM + Marketing + Outreach", () => {
     renderLayout("BI", "Staff", ["marketing:outreach", "crm:read"]);
     expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "CRM" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Marketing" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Outreach" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Pipeline" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Lender" })).not.toBeInTheDocument();
   });
 
-  it("Todd sees Dashboard + Pipeline + CRM + Lender + Marketing", () => {
+  it("Todd sees Dashboard + Pipeline + CRM + Lender + Marketing + Outreach", () => {
     renderLayout("BI", "Admin", ["crm:read", "pipeline:manage", "application:read", "lender:submit", "marketing:admin", "marketing:outreach"]);
-    ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing"].forEach((label) => {
+    ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing", "Outreach"].forEach((label) => {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     });
   });
