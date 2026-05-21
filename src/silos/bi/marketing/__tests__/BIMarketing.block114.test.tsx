@@ -7,20 +7,26 @@ vi.mock("@/api", () => ({ api: vi.fn(async () => ({ sequences: [] })) }));
 
 import BIMarketing from "@/silos/bi/marketing/BIMarketing";
 
-describe("BIMarketing Block 114 view tabs", () => {
+describe("BIMarketing v215 toggle removed", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("Todd sees both Marketing view tabs", () => {
+  it("Todd does not see the deprecated Marketing T/A toggle", () => {
     useAuthMock.mockReturnValue({ user: { id: "todd", name: "Todd", role: "Admin", capabilities: ["marketing:admin", "marketing:outreach"] } });
     render(<BIMarketing />);
-    expect(screen.getByRole("button", { name: "Marketing — T" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Marketing — A" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Marketing — T" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Marketing — A" })).not.toBeInTheDocument();
   });
 
-  it("Andrew sees neither Todd testing tab nor toggle", () => {
+  it("Andrew does not see the deprecated Marketing T/A toggle", () => {
     useAuthMock.mockReturnValue({ user: { id: "andrew", name: "Andrew", role: "Staff", capabilities: ["marketing:outreach"] } });
     render(<BIMarketing />);
     expect(screen.queryByRole("button", { name: "Marketing — T" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Marketing — A" })).not.toBeInTheDocument();
+  });
+
+  it("BI Marketing heading still renders for Todd", () => {
+    useAuthMock.mockReturnValue({ user: { id: "todd", name: "Todd", role: "Admin", capabilities: ["marketing:admin", "marketing:outreach"] } });
+    render(<BIMarketing />);
+    expect(screen.getByRole("heading", { name: /BI Marketing/i })).toBeInTheDocument();
   });
 });
