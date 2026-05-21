@@ -39,13 +39,6 @@ export default function MarketingT() {
     <div className="max-w-7xl mx-auto px-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-3xl font-semibold">BI Marketing</h2>
-        {isTodd && (
-          <div className="flex gap-2" role="tablist" aria-label="Marketing view">
-            <button onClick={() => setViewAs("todd")} aria-pressed={effectiveViewAs === "todd"} className={"px-3 py-1.5 rounded-md text-sm " + (effectiveViewAs === "todd" ? "bg-blue-500/30 text-white" : "text-white/60 hover:text-white hover:bg-white/5")}>Marketing — T</button>
-            <button onClick={() => setViewAs("andrew")} aria-pressed={effectiveViewAs === "andrew"} className={"px-3 py-1.5 rounded-md text-sm " + (effectiveViewAs === "andrew" ? "bg-blue-500/30 text-white" : "text-white/60 hover:text-white hover:bg-white/5")}>Marketing — A</button>
-          </div>
-        )}
-        {!isTodd && <div className="text-sm text-white/50">Andrew outreach view</div>}
         <div className="flex gap-2 flex-wrap" role="tablist" aria-label="Marketing sections">
           {TABS.map((t) => (
             <button
