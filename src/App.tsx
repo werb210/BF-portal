@@ -81,6 +81,8 @@ function SessionGuard() {
 }
 
 import DialerProvider from "@/dialer/DialerProvider";
+import DialerPanel from "@/dialer/components/DialerPanel";
+import FloatingDialerButton from "@/dialer/components/FloatingDialerButton";
 
 // VoiceBootstrap removed in v225. The in-portal Twilio Voice SDK dialer
 // was ripped in v224; the no-op bootstrap stub had no remaining purpose.
@@ -91,6 +93,8 @@ function AppShell() {
     <>
       <SessionGuard />
       <DialerProvider />
+      <DialerPanel />
+      <FloatingDialerButton />
       {/* BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1 --
           <IncomingCallModal /> removed. IncomingCallOverlay below
           is the single inbound UI. */}
