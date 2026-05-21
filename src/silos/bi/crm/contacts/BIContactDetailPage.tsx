@@ -13,7 +13,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import toast from "react-hot-toast";
-import { openDialer } from "@/stores/dialerStore";
 
 // BF_PORTAL_BLOCK_v212_CONTACT_NAME_v1 — surface a clean display name when
 // the persisted full_name is the auto-generated placeholder shape
@@ -439,10 +438,11 @@ export default function BIContactDetailPage() {
           <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setEditing(true)} style={actionBtn} data-testid="bi-contact-edit-button">Edit</button>
             <button type="button" onClick={() => deleteContact()} disabled={deleting} style={{ ...actionBtn, borderColor: "#fecaca", color: "#b91c1c" }} data-testid="bi-contact-delete-button">{deleting ? "Deleting…" : "Delete"}</button>
-            {/* BF_PORTAL_BLOCK_BI_ROUND5_A_v1 -- BI silo Call + Email actions. Call dispatches the same bf:dialer-call CustomEvent that the BF silo uses; DialerPanel's listener opens the PortalDialer and runs startPortalCall (the consolidated singleton). Email opens the shared M365 compose modal with the contact prefilled. */}
+            {/* BF_PORTAL_BLOCK_v225_DIALER_CLEAN_SLATE_v1 -- BI silo
+                Call hands off to the OS dialer via tel:, matching BF silo. */}
             <button
               type="button"
-              onClick={() => openDialer({ to: contact.phone_e164, contactId: contact.id, contactName: contact.full_name ?? undefined })}
+              onClick={() => { if (contact.phone_e164) window.location.href = "tel:" + contact.phone_e164; }}
               disabled={!contact.phone_e164}
               title={contact.phone_e164 ? "Call this contact" : "Contact has no phone number"}
               style={actionBtn}

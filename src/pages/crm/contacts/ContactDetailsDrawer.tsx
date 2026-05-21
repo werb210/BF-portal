@@ -1,14 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/ui/Button";
 import type { Contact, Company, TimelineEvent } from "@/api/crm";
 import { createNote, fetchApplications, fetchContactCompanies, fetchTimeline } from "@/api/crm";
-import IncomingCallToast from "@/components/dialer/IncomingCallToast";
 import SMSComposer from "@/components/sms/SMSComposer";
 import EmailViewer from "@/components/email/EmailViewer";
 import TimelineFeed from "@/pages/crm/timeline/TimelineFeed";
-import { useDialerStore } from "@/state/dialer.store";
-import { startOutboundCall } from "@/services/voiceService";
 
 interface ContactDetailsDrawerProps {
   contact: Contact | null;
@@ -23,13 +20,8 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [showSms, setShowSms] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
-  const [incoming, setIncoming] = useState<string | null>(null);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [activeFilter, setActiveFilter] = useState<"all" | "notes" | "emails" | "calls" | "sms" | "tasks">("all");
-  const openDialer = useDialerStore((state) => state.openDialer);
-  const latestLog = useDialerStore((state) => state.logs[0]);
-  const lastLogId = useRef<string | null>(null);
-
   useEffect(() => {
     if (!contact) return;
     let isActive = true;
@@ -60,18 +52,6 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
       isActive = false;
     };
   }, [contact]);
-
-  useEffect(() => {
-    if (!contact || !latestLog) return;
-    if (latestLog.contactId !== contact.id) return;
-    if (lastLogId.current === latestLog.id) return;
-    if (latestLog.isPending || !latestLog.outcome || !latestLog.endedAt) return;
-
-    lastLogId.current = latestLog.id;
-    fetchTimeline("contact", contact.id).then((result) => {
-      setTimeline(result);
-    });
-  }, [contact, latestLog]);
 
   if (!contact) return null;
 
@@ -190,23 +170,6 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
         </section>
       </div>
 
-      {incoming && (
-        <IncomingCallToast
-          from={incoming}
-          onAccept={() => {
-            setIncoming(null);
-            openDialer({
-              contactId: contact.id,
-              contactName: contact.name,
-              applicationId: (contact.applicationIds ?? [])[0],
-              phone: contact.phone,
-              source: "crm"
-            });
-          }}
-          onViewRecord={() => undefined}
-          onDismiss={() => setIncoming(null)}
-        />
-      )}
       <SMSComposer visible={showSms} contact={contact} onClose={() => setShowSms(false)} />
       <EmailViewer visible={showEmail} contactId={contact.id} onClose={() => setShowEmail(false)} />
     </aside>

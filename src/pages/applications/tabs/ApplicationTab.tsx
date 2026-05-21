@@ -19,7 +19,6 @@
 //     (the wizard does NOT nest partner — submitNormalize.ts uses flat fields).
 //   - Ownership % for the applicant.
 import type { CSSProperties, ReactNode } from "react";
-import { useDialerStore } from "@/state/dialer.store";
 
 type AnyRecord = Record<string, any>;
 type Props = { application: AnyRecord | null };
@@ -119,21 +118,15 @@ export default function ApplicationTab({ application }: Props) {
     ? String(dbaCandidate)
     : null;
 
-  // Call Client button (v175)
-  const openDialer = useDialerStore((st) => st.openDialer);
+  // Call Client button (v225 -- tel: handoff to OS dialer)
   const applicantName = joinName(applicant) || businessName;
   const phoneRaw = applicant.phone ?? applicant.phoneNumber ?? null;
   const phone = phoneRaw ? String(phoneRaw).trim() : null;
   const applicationId = String(application.id ?? "");
+  void applicantName; void applicationId; // reserved for future re-introduction
   function callClient() {
     if (!phone) return;
-    openDialer({
-      applicationId,
-      applicationName: businessName,
-      contactName: applicantName,
-      phone,
-      source: "pipeline",
-    });
+    window.location.href = "tel:" + phone;
   }
 
   return (
