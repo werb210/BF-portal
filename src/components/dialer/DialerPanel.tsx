@@ -161,6 +161,51 @@ export default function DialerPanel() {
   useEffect(() => {
     if (!isOpen) return;
     let canceled = false;
+    // BF_PORTAL_BLOCK_v219_DIALER_TOKEN_ERROR_DIAG_v1
+    // Bare-fetch probe in parallel with diagnostics so we capture the
+    // actual failure mode when fetch() throws "Failed to fetch".
+    void (async () => {
+      const probeStart = Date.now();
+      const base = (import.meta as any).env?.VITE_BF_API_URL
+        || (import.meta as any).env?.VITE_API_URL
+        || "https://server.boreal.financial";
+      const authToken = (typeof window !== "undefined")
+        ? (window.localStorage.getItem("auth_token") || window.localStorage.getItem("bf_jwt_token") || "")
+        : "";
+      const url = `${base}/api/telephony/token`;
+      try {
+        const res = await fetch(url, {
+          method: "GET",
+          credentials: "include",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        });
+        const text = await res.text().catch(() => "<unreadable>");
+        // eslint-disable-next-line no-console
+        console.log("[dialer.v219.token-probe]", {
+          url,
+          status: res.status,
+          ok: res.ok,
+          contentType: res.headers.get("content-type"),
+          acao: res.headers.get("access-control-allow-origin"),
+          acac: res.headers.get("access-control-allow-credentials"),
+          bodySnippet: text.slice(0, 300),
+          elapsedMs: Date.now() - probeStart,
+          hasAuthToken: Boolean(authToken),
+        });
+      } catch (e: any) {
+        // eslint-disable-next-line no-console
+        console.log("[dialer.v219.token-probe] FETCH_THREW", {
+          url,
+          name: e?.name,
+          message: e?.message,
+          stack: (e?.stack ?? "").split("\n").slice(0, 5).join(" | "),
+          elapsedMs: Date.now() - probeStart,
+          hasAuthToken: Boolean(authToken),
+          online: typeof navigator !== "undefined" ? navigator.onLine : "?",
+        });
+      }
+    })();
+
     const runDiagnostics = async () => {
       setTokenStatus("checking");
       setTokenDetail("Checking token…");
