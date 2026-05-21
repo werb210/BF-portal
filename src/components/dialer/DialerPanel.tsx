@@ -23,12 +23,16 @@ function bfNormalizeToE164(raw: string): string {
   return "";
 }
 
-// v222: NOT deprecated. The REST endpoint places the phone leg
-// that actually rings the target number; the WebRTC device.connect
-// path bridges the staff browser audio into that same leg. Both
-// are required for a working staff outbound call. The previous
-// "DEPRECATED" warning here (added by commit 1b3d9975 on May 17)
-// was based on a misread of the Twilio Calls Log; see v222 block.
+// v223: DEPRECATED for the Call button — do NOT reintroduce this in
+// the dialer button onClick. The button must use handleDial only
+// (WebRTC SDK path). Calling bfPlaceOutboundCall in parallel with
+// handleDial creates TWO independent Twilio outbound calls from a
+// single click, which rings the target phone twice. The v222 theory
+// that the two paths were complementary was wrong; see Twilio
+// Calls Log 2026-05-21 12:29:29 + 12:29:36 for evidence.
+// The function stays defined because it's still used by non-button
+// automation (e.g. Maya callbacks, scheduled outreach) where a
+// browser WebRTC leg isn't available.
 async function bfPlaceOutboundCall(toNumber: string) {
   const e164 = bfNormalizeToE164(toNumber);
   console.log("[dialer.diag] call.button.click", { rawTo: toNumber, to: e164, ts: new Date().toISOString() });
@@ -513,16 +517,17 @@ export default function DialerPanel() {
         <div style={{ padding: "8px 16px 24px" }}>
           <button
             onClick={async () => {
-              // v222: restore the REST outbound call alongside handleDial.
-              // Commit 1b3d9975 removed bfPlaceOutboundCall on the theory
-              // that it was a duplicate of the SDK path. It was not. The
-              // REST endpoint places the phone-to-phone leg (the thing
-              // that actually rings the target); device.connect() bridges
-              // the browser mic into that same leg. Twilio Calls Log
-              // confirms every Completed call was "Outgoing API" type
-              // (REST) and every "Outgoing Dial" type (WebRTC alone) was
-              // short/No Answer. Restoring both restores the working
-              // pre-May-17 behavior.
+              // v223: SDK-only outbound. The v222 theory that REST and
+              // SDK were complementary was wrong — Twilio Calls Log
+              // from 2026-05-21 12:29 shows both paths placing real
+              // independent calls in parallel (Outgoing API 28s +
+              // Outgoing Dial 6s, same destination, same click), which
+              // rings the target phone twice. After the v218 NANPA
+              // normalization fix, the SDK path alone carries the full
+              // call: device.connect() in handleDial triggers the TwiML
+              // route, which returns <Dial callerId=...><Number>To</Number></Dial>,
+              // Twilio dials the target with the staff caller ID and
+              // bridges audio back through the SDK. One call. One ring.
               const callTo = bfDebugPickToValue({
                 number,
                 contextPhone: context.phone,
@@ -530,12 +535,11 @@ export default function DialerPanel() {
               });
               if (!callTo.trim()) return;
               try {
-                await bfPlaceOutboundCall(callTo.trim());
+                await handleDial(callTo);
               } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
                 setError(`Call failed: ${message}`);
               }
-              await handleDial(callTo);
             }}
             disabled={!number.trim()}
             style={{ width: "100%", padding: 14, background: number.trim() ? "#22c55e" : "#374151", border: "none", borderRadius: 12, color: "#fff", fontSize: 16, cursor: number.trim() ? "pointer" : "default", fontWeight: 700 }}
