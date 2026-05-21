@@ -180,13 +180,27 @@ export async function startPortalCall(
   opts?: { applicationId?: string; silo?: string },
 ): Promise<Call> {
   const voiceDevice = device ?? (await bootstrapVoice());
-  const normalizedDigits = to.replace(/\D/g, "");
-
-  if (!normalizedDigits) {
-    throw new Error("Enter a valid phone number.");
+  // BF_PORTAL_BLOCK_v214_DIALER_E164_NANPA_FIX_v1
+  // Previous code did `+${digits}` which turns 10-digit NANPA numbers
+  // like "5878881837" into "+5878881837" -- an invalid E.164 number
+  // (country code 5 = Brazil-ish). Twilio rejects the SDK connect
+  // params and disconnects within ~27ms with no error surfaced to the
+  // UI. Mirror bfNormalizeToE164 in DialerPanel.tsx exactly so the
+  // REST path and the SDK path agree on how to format numbers.
+  const raw = (to ?? "").trim();
+  let normalizedTo = "";
+  if (/^\+\d{8,15}$/.test(raw)) {
+    normalizedTo = raw;
+  } else {
+    const digits = raw.replace(/\D+/g, "");
+    if (digits.length === 11 && digits.startsWith("1")) normalizedTo = `+${digits}`;
+    else if (digits.length === 10) normalizedTo = `+1${digits}`;
+    else if (digits.length >= 8 && digits.length <= 15) normalizedTo = `+${digits}`;
   }
 
-  const normalizedTo = `+${normalizedDigits}`;
+  if (!normalizedTo) {
+    throw new Error("Enter a valid phone number.");
+  }
   const state = useCallState.getState();
 
   if (activeStatuses.has(state.callStatus)) {
