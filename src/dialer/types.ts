@@ -53,6 +53,7 @@ export type DialerCtx = {
   contactId?: string | null;
   contactName?: string | null;
   phone?: string | null;
+  source?: string | null;
 };
 
 export type DialerState = {
