@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { useNavigate } from "react-router-dom";
-// BF_PORTAL_BLOCK_v175_CALL_CLIENT_BUTTON_v1
-import { useDialerStore } from "@/state/dialer.store";
 
 const STAGES = [
   "Received", "In Review", "Documents Required",
@@ -159,9 +157,10 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
   // The pipeline card payload doesn't include phone (Card type only carries
   // id/name/state/amount/created_at). On Call click we fetch the application
   // details to pull applicantDetails.phone, then open the dialer pre-filled.
-  const openDialer = useDialerStore((st) => st.openDialer);
   const [callBusy, setCallBusy] = useState(false);
   const cardName = card.business_legal_name ?? card.name ?? "Unnamed";
+  // BF_PORTAL_BLOCK_v225_DIALER_CLEAN_SLATE_v1 -- look up phone via API,
+  // then hand off to the OS dialer with a tel: link.
   async function handleCall() {
     if (callBusy) return;
     setCallBusy(true);
@@ -174,13 +173,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
         window.alert("No phone number on file for this applicant.");
         return;
       }
-      openDialer({
-        applicationId: card.id,
-        applicationName: cardName,
-        phone: String(phone),
-        contactName: [a?.firstName, a?.lastName].filter(Boolean).join(" ") || cardName,
-        source: "pipeline",
-      });
+      window.location.href = "tel:" + String(phone);
     } catch (err: any) {
       window.alert(`Could not look up phone: ${err?.message ?? "unknown error"}`);
     } finally {

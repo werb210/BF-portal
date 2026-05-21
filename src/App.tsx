@@ -10,10 +10,8 @@ import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 // is kept on disk and deleted in Phase 3.
 import InstallPromptBanner from "@/components/InstallPromptBanner";
 import { IOSInstallBanner } from "@/components/IOSInstallBanner";
-import { ActiveCallBanner } from "@/components/ActiveCallBanner";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import RequireRole from "@/components/auth/RequireRole";
-import { useServerCallSync } from "@/dialer/useServerCallSync";
 import Login from "@/pages/Login";
 import Verify from "@/pages/Verify";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
@@ -82,30 +80,14 @@ function SessionGuard() {
   return null;
 }
 
-function VoiceBootstrap() {
-  // BF_PORTAL_BLOCK_v224_DIALER_RIP_OUT_v1 -- in-portal Twilio Voice
-  // SDK dialer removed. device.connect() was disconnecting client-side
-  // within ~19ms and never reaching Twilio; the prior dual-path only
-  // appeared to work because the REST leg placed the actual phone call.
-  // CRM "Call" buttons now use tel: links. BF-Server telephony routes,
-  // SMS, status callbacks, and the client: ring-all webhook are left
-  // intact; only the staff-portal FE entry points are removed.
-  return null;
-}
-
-function ServerCallSyncBootstrap() {
-  const { authenticated, authStatus } = useAuth();
-  useServerCallSync({ enabled: authenticated && authStatus === "authenticated" });
-  return null;
-}
+// VoiceBootstrap removed in v225. The in-portal Twilio Voice SDK dialer
+// was ripped in v224; the no-op bootstrap stub had no remaining purpose.
+// A future dialer should hang a new component here under a clear spec.
 
 function AppShell() {
   return (
     <>
       <SessionGuard />
-      <VoiceBootstrap />
-      <ServerCallSyncBootstrap />
-      <ActiveCallBanner />
       {/* BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1 --
           <IncomingCallModal /> removed. IncomingCallOverlay below
           is the single inbound UI. */}
