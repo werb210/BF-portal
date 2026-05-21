@@ -54,20 +54,51 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   // Without this, the 30s interval keeps firing after JWT expiry and the
   // console floods with `non-session 401 from .../presence/heartbeat`.
   useEffect(() => {
+    // v220 (B): if the topbar mounts before auth is in localStorage
+    // (refresh / cold login race), setAvailable's hasAuth check
+    // silently no-ops and the staff_presence row is never written
+    // for this session. The 30s heartbeat is UPDATE-only and won't
+    // create the row either. Retry whenever the auth_token storage
+    // event fires until we successfully POST status=available.
     const hasAuth = () => Boolean(getAuthToken());
-    const setAvailable = () => {
+    let presenceWritten = false;
+    const setAvailable = async () => {
+      if (presenceWritten) return;
       if (!hasAuth()) return;
-      api.post("/api/telephony/presence", { status: "available" }).catch(() => {});
+      try {
+        await api.post("/api/telephony/presence", { status: "available" });
+        presenceWritten = true;
+      } catch {
+        // non-fatal; storage listener or next mount may retry
+      }
     };
 
-    setAvailable();
+    void setAvailable();
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key === "auth_token" && ev.newValue) {
+        void setAvailable();
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", onStorage);
+    }
+
     const interval = setInterval(() => {
       if (!hasAuth()) return;
+      // If the presence row was never written, try the full upsert
+      // again rather than a no-op UPDATE heartbeat.
+      if (!presenceWritten) {
+        void setAvailable();
+        return;
+      }
       api.post("/api/telephony/presence/heartbeat", {}).catch(() => {});
     }, 30_000);
 
     return () => {
       clearInterval(interval);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", onStorage);
+      }
       if (!hasAuth()) return;
       api.post("/api/telephony/presence", { status: "offline" }).catch(() => {});
     };
