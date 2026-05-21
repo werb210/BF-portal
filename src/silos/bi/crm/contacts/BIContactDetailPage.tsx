@@ -438,11 +438,19 @@ export default function BIContactDetailPage() {
           <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setEditing(true)} style={actionBtn} data-testid="bi-contact-edit-button">Edit</button>
             <button type="button" onClick={() => deleteContact()} disabled={deleting} style={{ ...actionBtn, borderColor: "#fecaca", color: "#b91c1c" }} data-testid="bi-contact-delete-button">{deleting ? "Deleting…" : "Delete"}</button>
-            {/* BF_PORTAL_BLOCK_v225_DIALER_CLEAN_SLATE_v1 -- BI silo
-                Call hands off to the OS dialer via tel:, matching BF silo. */}
             <button
               type="button"
-              onClick={() => { if (contact.phone_e164) window.location.href = "tel:" + contact.phone_e164; }}
+              onClick={() => {
+                if (!contact.phone_e164) return;
+                import("@/dialer/store").then(({ useDialer }) => {
+                  useDialer.getState().open({
+                    contactId: contact.id,
+                    contactName: contact.full_name ?? undefined,
+                    phone: contact.phone_e164 ?? undefined,
+                    source: "bi-crm",
+                  });
+                });
+              }}
               disabled={!contact.phone_e164}
               title={contact.phone_e164 ? "Call this contact" : "Contact has no phone number"}
               style={actionBtn}

@@ -123,10 +123,14 @@ export default function ApplicationTab({ application }: Props) {
   const phoneRaw = applicant.phone ?? applicant.phoneNumber ?? null;
   const phone = phoneRaw ? String(phoneRaw).trim() : null;
   const applicationId = String(application.id ?? "");
-  void applicantName; void applicationId; // reserved for future re-introduction
   function callClient() {
     if (!phone) return;
-    window.location.href = "tel:" + phone;
+    import("@/dialer/store").then(({ useDialer }) => {
+      useDialer.getState().open({
+        applicationId, applicationName: businessName,
+        contactName: applicantName, phone, source: "application",
+      });
+    });
   }
 
   return (

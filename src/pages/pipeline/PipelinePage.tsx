@@ -173,7 +173,14 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
         window.alert("No phone number on file for this applicant.");
         return;
       }
-      window.location.href = "tel:" + String(phone);
+      const { useDialer } = await import("@/dialer/store");
+      useDialer.getState().open({
+        applicationId: card.id,
+        applicationName: cardName,
+        contactName: [a?.firstName, a?.lastName].filter(Boolean).join(" ") || cardName,
+        phone: String(phone),
+        source: "pipeline",
+      });
     } catch (err: any) {
       window.alert(`Could not look up phone: ${err?.message ?? "unknown error"}`);
     } finally {

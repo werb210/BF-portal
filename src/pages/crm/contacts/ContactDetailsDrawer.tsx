@@ -101,9 +101,14 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
 
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
             <Button onClick={() => {
-              // BF_PORTAL_BLOCK_v224_DIALER_RIP_OUT_v1 -- tel: handoff
               if (!contact.phone) { window.alert("No phone number on this contact"); return; }
-              window.location.href = "tel:" + contact.phone;
+              import("@/dialer/store").then(({ useDialer }) => {
+                useDialer.getState().open({
+                  contactId: contact.id, contactName: contact.name,
+                  applicationId: (contact.applicationIds ?? [])[0],
+                  phone: contact.phone, source: "crm",
+                });
+              });
             }}>Call</Button>
             <Button onClick={() => navigate(`/communications?tab=sms&contact_id=${contact.id}`)}>SMS</Button>
             <Button onClick={() => setShowEmail(true)}>Email</Button>
