@@ -209,6 +209,17 @@ export async function startPortalCall(
 
   state.startOutgoingCall(normalizedTo);
 
+  // BF_PORTAL_BLOCK_v218_DIALER_FORCE_REDEPLOY_VERIFY_v1
+  // Visible deploy marker. If you see "[dialer.v218]" in the console,
+  // the v214 NANPA fix is live in the deployed bundle.
+  // eslint-disable-next-line no-console
+  console.log("[dialer.v218] device.connect.invoke", {
+    rawInput: to,
+    normalizedTo,
+    digitsLen: normalizedTo.replace(/\D/g, "").length,
+    ts: new Date().toISOString(),
+  });
+
   try {
     const params: Record<string, string> = { To: normalizedTo };
     if (opts?.applicationId) {
