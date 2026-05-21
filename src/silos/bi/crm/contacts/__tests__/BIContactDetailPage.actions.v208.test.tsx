@@ -8,7 +8,7 @@ const openDialerMock = vi.fn();
 vi.mock("@/api", () => ({
   api: (...args: unknown[]) => apiMock(...args),
 }));
-vi.mock("@/stores/dialerStore", () => ({ openDialer: (...args: unknown[]) => openDialerMock(...args) }));
+vi.mock("@/dialer/store", () => ({ useDialer: { getState: () => ({ open: (...args: unknown[]) => openDialerMock(...args) }) } }));
 vi.mock("react-hot-toast", () => ({ default: { success: vi.fn(), error: vi.fn() } }));
 
 import BIContactDetailPage from "@/silos/bi/crm/contacts/BIContactDetailPage";
@@ -164,7 +164,13 @@ describe("BF_PORTAL_BLOCK_v208 — Contact actions", () => {
     renderAtId("c1");
     await waitFor(() => screen.getByText("Jane Doe"));
     fireEvent.click(screen.getByTestId("bi-contact-call-button"));
-    expect(openDialerMock).toHaveBeenCalledWith({ to: "+14165551234", contactId: "c1", contactName: "Jane Doe" });
+    await waitFor(() => expect(openDialerMock).toHaveBeenCalled());
+    expect(openDialerMock).toHaveBeenCalledWith({
+      contactId: "c1",
+      contactName: "Jane Doe",
+      phone: "+14165551234",
+      source: "bi-crm",
+    });
   });
 });
 
