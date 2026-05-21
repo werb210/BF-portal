@@ -14,7 +14,6 @@ import { ActiveCallBanner } from "@/components/ActiveCallBanner";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import RequireRole from "@/components/auth/RequireRole";
 import { useServerCallSync } from "@/dialer/useServerCallSync";
-import { bootstrapVoice, destroyVoiceDevice } from "@/telephony/bootstrapVoice";
 import Login from "@/pages/Login";
 import Verify from "@/pages/Verify";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
@@ -71,10 +70,6 @@ import ToastProvider from "@/components/ui/ToastProvider";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
 import { SiloProvider } from "@/context/SiloContext";
 import AppLayout from "@/layouts/AppLayout";
-import IncomingCallOverlay from "./telephony/components/IncomingCallOverlay";
-import PortalDialer from "./telephony/components/PortalDialer";
-import GlobalDialerButton from "./components/GlobalDialerButton";
-import DialerButton from "./components/DialerButton";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import { applicationDetailElement } from "@/pages/applications/applicationDetailRoute";
 import { queryClient } from "@/lib/queryClient";
@@ -88,22 +83,13 @@ function SessionGuard() {
 }
 
 function VoiceBootstrap() {
-  const { role, authenticated, authStatus } = useAuth();
-
-  useEffect(() => {
-    if (import.meta.env.MODE === "test") return;
-    if (!authenticated || authStatus !== "authenticated") return;
-    if (!roleIn(role, ["Admin", "Staff"])) return;
-
-    void bootstrapVoice().catch(() => {
-      // bootstrapVoice writes a user-facing error state.
-    });
-
-    return () => {
-      void destroyVoiceDevice();
-    };
-  }, [authenticated, authStatus, role]);
-
+  // BF_PORTAL_BLOCK_v224_DIALER_RIP_OUT_v1 -- in-portal Twilio Voice
+  // SDK dialer removed. device.connect() was disconnecting client-side
+  // within ~19ms and never reaching Twilio; the prior dual-path only
+  // appeared to work because the REST leg placed the actual phone call.
+  // CRM "Call" buttons now use tel: links. BF-Server telephony routes,
+  // SMS, status callbacks, and the client: ring-all webhook are left
+  // intact; only the staff-portal FE entry points are removed.
   return null;
 }
 
@@ -123,10 +109,6 @@ function AppShell() {
       {/* BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1 --
           <IncomingCallModal /> removed. IncomingCallOverlay below
           is the single inbound UI. */}
-      <DialerButton />
-      <PortalDialer />
-      <GlobalDialerButton />
-      <IncomingCallOverlay />
       <AppLayout />
     </>
   );
