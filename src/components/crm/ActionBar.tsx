@@ -27,16 +27,14 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, onCh
         <ActionBtn
           label="Call"
           onClick={() => {
-            // BF_PORTAL_BLOCK_v224_DIALER_RIP_OUT_v1 -- in-portal
-            // dialer removed; hand off to the OS via tel:. For non-
-            // contact scopes (companies etc.) the legacy modal still
-            // opens, since those flows don't have a single phone yet.
             if (scope.kind === "contact") {
-              if (!contactPhone) {
-                window.alert("No phone number on this contact");
-                return;
-              }
-              window.location.href = "tel:" + contactPhone;
+              if (!contactPhone) { window.alert("No phone number on this contact"); return; }
+              import("@/dialer/store").then(({ useDialer }) => {
+                useDialer.getState().open({
+                  contactId: scope.id, contactName: contactName ?? undefined,
+                  phone: contactPhone, source: "actionbar",
+                });
+              });
               return;
             }
             setOpen("call");
