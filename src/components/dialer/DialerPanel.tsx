@@ -204,6 +204,29 @@ export default function DialerPanel() {
           online: typeof navigator !== "undefined" ? navigator.onLine : "?",
         });
       }
+      // v220 (C): also probe the api() wrapper path that is what
+      // getTelephonyDiagnostics actually uses. If the bare fetch
+      // succeeds but this throws, the failure is in the api wrapper.
+      try {
+        const mod = await import("@/api");
+        const result = await mod.api("/api/telephony/token", { method: "GET" });
+        // eslint-disable-next-line no-console
+        console.log("[dialer.v220.api-probe]", {
+          ok: true,
+          hasToken: Boolean((result as any)?.token),
+          hasOutboundCallerId: Boolean((result as any)?.outbound_caller_id),
+          rawKeys: Object.keys(result || {}),
+        });
+      } catch (e: any) {
+        // eslint-disable-next-line no-console
+        console.log("[dialer.v220.api-probe] API_THREW", {
+          name: e?.name,
+          message: e?.message,
+          code: e?.code,
+          status: e?.status,
+          stack: (e?.stack ?? "").split("\n").slice(0, 8).join(" | "),
+        });
+      }
     })();
 
     const runDiagnostics = async () => {
@@ -223,7 +246,13 @@ export default function DialerPanel() {
           setTokenStatus("ready");
           setTokenDetail("Ready");
         }
-        const callerId = diagnostics?.outboundCallerId || diagnostics?.callerId || diagnostics?.from;
+        // v220 (A): server returns data.outbound_caller_id (snake_case).
+        // The previous read of outboundCallerId silently never matched.
+        const callerId =
+          (diagnostics as any)?.outbound_caller_id ||
+          diagnostics?.outboundCallerId ||
+          diagnostics?.callerId ||
+          diagnostics?.from;
         if (callerId) {
           setOutboundCallerId(callerId);
         } else {
