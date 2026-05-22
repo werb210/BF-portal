@@ -593,98 +593,235 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
 }
 
 // ── Messages tab ──────────────────────────────────────────────────────────────
+// BF_PORTAL_BLOCK_v607_MESSAGES_TAB_REBUILD_v1
+// Left panel: every CRM contact in the active silo (v636 ?mode=all).
+// Thread: /api/communications/messages/thread/:applicationId — richer
+// payload with ctaLabel/ctaAction.
+// Send: /api/communications/messages/send — server (v636) fires the
+// offline-fallback SMS when the user hasn't polled the mini-portal in 60s.
+type MessagesListRow = {
+  thread_key: string | null;
+  contact_id: string | null;
+  display_name: string | null;
+  phone: string | null;
+  email: string | null;
+  last_at: string | null;
+  last_body: string | null;
+  unread_count: number | null;
+};
+
+type MsgRow = {
+  id: string;
+  body: string;
+  senderType?: "client" | "staff";
+  senderName?: string | null;
+  createdAt?: string;
+  source?: "client" | "staff";
+  ctaLabel?: string | null;
+  ctaAction?: string | null;
+};
+
 function MessagesTab({ onStartConversation }: { onStartConversation: (contact: Contact) => void }) {
   const [open, setOpen] = useState(false);
   const [to, setTo] = useState("");
   const [body, setBody] = useState("");
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [selected, setSelected] = useState<Contact | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+
+  type Row = {
+    contactId: string;
+    name: string;
+    phone: string | null;
+    lastAt: string | null;
+    lastBody: string | null;
+    unread: number;
+  };
+  const [rows, setRows] = useState<Row[]>([]);
+  const [selected, setSelected] = useState<Row | null>(null);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<MsgRow[]>([]);
   const [loadingThread, setLoadingThread] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ── Left panel: every CRM contact in silo, sorted by latest activity ─────
   useEffect(() => {
-    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null; latest_message_at?: string; preview?: string }> }>("/api/communications/messages-list?types=maya_handoff,client_portal_chat")
-      .then(async (r) => {
+    let cancelled = false;
+    api<{ conversations?: MessagesListRow[] }>("/api/communications/messages-list", { params: { mode: "all" } })
+      .then((r) => {
+        if (cancelled) return;
         const list = Array.isArray(r.conversations) ? r.conversations : [];
-        const mapped = list
+        const mapped: Row[] = list
+          .filter((c) => c.contact_id)
           .map((c) => ({
-            id: c.contact_id ?? "",
-            name: c.contact_name ?? c.contact_phone ?? "Unknown",
-            phone: c.contact_phone ?? null,
-            latest: c.latest_message_at ?? "",
-            preview: c.preview ?? "",
-          }))
-          .filter((c) => c.id)
-          .sort((a, b) => new Date(b.latest).getTime() - new Date(a.latest).getTime());
-        setContacts(mapped as Contact[]);
-        const first = mapped[0];
-        if (first) {
-          setSelected({ id: first.id, name: first.name, phone: first.phone });
-        }
+            contactId: c.contact_id as string,
+            name: c.display_name ?? c.phone ?? "Unknown",
+            phone: c.phone,
+            lastAt: c.last_at,
+            lastBody: c.last_body,
+            unread: Number(c.unread_count ?? 0),
+          }));
+        setRows(mapped);
+        if (!selected && mapped[0]) setSelected(mapped[0]);
       })
-      .catch(() => setContacts([]));
-  }, []);
+      .catch(() => setRows([]));
+    return () => {
+      cancelled = true;
+    };
+    // Re-fetch on selection change so the unread count + last preview update
+    // after a send. The ESLint exhaustive-deps lint reports `selected` here;
+    // intentional — we re-fetch the list after every selection-driven send.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.contactId]);
 
+  // ── On selection: resolve latest application_id ──────────────────────────
   useEffect(() => {
-    if (!selected?.id) {
+    if (!selected?.contactId) {
+      setApplicationId(null);
       setMessages([]);
       return;
     }
     let cancelled = false;
-    setLoadingThread(true);
-    api<{ messages?: Message[]; data?: Message[] } | Message[]>("/api/communications/messages", { params: { contact_id: selected.id } })
-      .then((r) => {
+    api<Array<{ id: string }>>(`/api/crm/contacts/${encodeURIComponent(selected.contactId)}/applications`)
+      .then((apps) => {
         if (cancelled) return;
-        const list = Array.isArray(r) ? r : (r?.messages ?? r?.data ?? []);
-        setMessages(list);
+        const latest = Array.isArray(apps) ? apps[0]?.id ?? null : null;
+        setApplicationId(latest);
       })
       .catch(() => {
-        if (!cancelled) setMessages([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingThread(false);
+        if (!cancelled) setApplicationId(null);
       });
     return () => {
       cancelled = true;
     };
-  }, [selected?.id]);
+  }, [selected?.contactId]);
+
+  // ── Thread load + poll ──────────────────────────────────────────────────
+  const loadThread = useCallback((appId: string) => {
+    api<MsgRow[]>(`/api/communications/messages/thread/${encodeURIComponent(appId)}`)
+      .then((r) => {
+        setMessages(Array.isArray(r) ? r : []);
+      })
+      .catch(() => setMessages([]));
+  }, []);
+
+  useEffect(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    if (!applicationId) {
+      setMessages([]);
+      return;
+    }
+    setLoadingThread(true);
+    loadThread(applicationId);
+    setLoadingThread(false);
+    pollRef.current = setInterval(() => loadThread(applicationId), 5000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = null;
+    };
+  }, [applicationId, loadThread]);
+
+  // ── Send ────────────────────────────────────────────────────────────────
+  async function send() {
+    if (!applicationId || !draft.trim() || sending) return;
+    setSending(true);
+    const text = draft.trim();
+    setDraft("");
+    try {
+      // Optimistic append. Server returns the canonical row; we replace on poll.
+      const optimisticId = `local-${Date.now()}`;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: optimisticId,
+          body: text,
+          senderType: "staff",
+          senderName: "You",
+          createdAt: new Date().toISOString(),
+          source: "staff",
+        },
+      ]);
+      await api.post("/api/communications/messages/send", { applicationId, body: text });
+      // Poll picks up the canonical row on the next tick.
+      loadThread(applicationId);
+    } catch (err) {
+      console.error("[messages tab] send failed", err);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function fmtAt(at: string | null): string {
+    if (!at) return "";
+    try {
+      const d = new Date(at);
+      if (Number.isNaN(d.getTime())) return "";
+      const diffH = (Date.now() - d.getTime()) / 36e5;
+      if (diffH < 24) return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    } catch {
+      return "";
+    }
+  }
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0 }}>
-      <div style={{ borderRight: "1px solid #e2e8f0", padding: 12 }}>
+      <div style={{ borderRight: "1px solid #e2e8f0", padding: 12, overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ margin: 0 }}>Messages</h3>
-          <button onClick={() => setOpen(true)} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px", fontWeight: 600 }}>+ Start new conversation</button>
+          <button onClick={() => setOpen(true)} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px", fontWeight: 600 }}>+ New SMS</button>
         </div>
-        {contacts.map((c) => (
+        {rows.map((c) => (
           <button
-            key={c.id}
+            key={c.contactId}
             type="button"
             onClick={() => setSelected(c)}
             style={{
               width: "100%",
               textAlign: "left",
               border: 0,
-              background: selected?.id === c.id ? "#f0f9ff" : "transparent",
+              background: selected?.contactId === c.contactId ? "#f0f9ff" : "transparent",
               padding: "10px 8px",
               borderBottom: "1px solid #eef2f7",
               cursor: "pointer",
               color: "#000",
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
             }}
           >
-            <div style={{ fontWeight: 600 }}>{c.name}</div>
-            {c.phone && <div style={{ fontSize: 12, color: "#64748b" }}>{c.phone}</div>}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{c.name}</div>
+              <div style={{ fontSize: 11, color: "#94a3b8" }}>{fmtAt(c.lastAt)}</div>
+            </div>
+            {c.lastBody && (
+              <div style={{ fontSize: 12, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {c.lastBody}
+              </div>
+            )}
+            {c.unread > 0 && (
+              <div style={{ alignSelf: "flex-start", background: "#2563eb", color: "#fff", fontSize: 11, fontWeight: 700, padding: "1px 6px", borderRadius: 10, marginTop: 2 }}>
+                {c.unread}
+              </div>
+            )}
           </button>
         ))}
-        {contacts.length === 0 && <div style={{ color: "#8e8e93" }}>No active conversations. Maya handoffs and client mini-portal chats will appear here.</div>}
+        {rows.length === 0 && <div style={{ color: "#8e8e93", padding: 12 }}>No contacts in this silo yet.</div>}
       </div>
       <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, height: "100%", overflow: "hidden", background: "#fff" }}>
-        {!selected && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#8e8e93", flex: 1 }}>Choose or start a conversation.</div>}
+        {!selected && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#8e8e93", flex: 1 }}>Choose a contact.</div>}
         {selected && (
           <>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid #f0f0f5", background: "#f5f5f7" }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: "#000" }}>{selected.name}</div>
               {selected.phone && <div style={{ fontSize: 12, color: "#3c3c43" }}>{selected.phone}</div>}
+              {!applicationId && (
+                <div style={{ fontSize: 11, color: "#b45309", marginTop: 4 }}>
+                  No application on file — send an SMS via "+ New SMS" to reach this contact.
+                </div>
+              )}
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", minHeight: 0 }}>
               {loadingThread ? (
@@ -694,38 +831,66 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                   messages={messages.map((m) => ({
                     id: m.id,
                     body: m.body,
-                    direction: m.direction,
-                    authorRole: m.direction === "outbound" ? "self" : "other",
-                    authorName: m.direction === "outbound" ? "You" : selected.name,
-                    created_at: m.created_at,
+                    authorRole: (m.senderType === "staff" || m.source === "staff") ? "self" : "other",
+                    authorName: m.senderType === "staff" ? (m.senderName ?? "You") : selected.name,
+                    created_at: m.createdAt ?? null,
                   }))}
-                  emptyText="No messages yet."
+                  emptyText="No messages yet — say hello."
                 />
               )}
             </div>
+            {applicationId && (
+              <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 16px", display: "flex", gap: 8, background: "#fff" }}>
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      void send();
+                    }
+                  }}
+                  rows={2}
+                  placeholder="Message the client…  (⌘/Ctrl+Enter to send.  Insert form links like #networth, #debt, #upload.)"
+                  style={{ flex: 1, resize: "none", border: "1px solid #d1d5db", borderRadius: 8, padding: 10, fontSize: 14, color: "#000", background: "#fff" }}
+                />
+                <button
+                  onClick={() => void send()}
+                  disabled={!draft.trim() || sending}
+                  style={{
+                    alignSelf: "flex-end",
+                    background: draft.trim() && !sending ? "#2563eb" : "#94a3b8",
+                    color: "#fff",
+                    border: 0,
+                    borderRadius: 8,
+                    padding: "10px 18px",
+                    fontWeight: 600,
+                    cursor: draft.trim() && !sending ? "pointer" : "not-allowed",
+                  }}
+                >
+                  Send
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
       {open && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 70 }}>
           <div style={{ width: "min(560px, 92vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
-            <h3 style={{ marginTop: 0 }}>New Conversation</h3>
+            <h3 style={{ marginTop: 0 }}>New SMS</h3>
             <label style={{ display: "block", marginBottom: 8 }}>Phone<textarea value={to} onChange={(e) => setTo(e.target.value)} rows={2} style={{ background: "#fff", color: "#000", border: "1px solid #d1d5db", padding: 10, borderRadius: 8, fontSize: 14, width: "100%", minHeight: 80 }} /></label>
             <label style={{ display: "block", marginBottom: 8 }}>Message<textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} style={{ background: "#fff", color: "#000", border: "1px solid #d1d5db", padding: 10, borderRadius: 8, fontSize: 14, width: "100%", minHeight: 80 }} /></label>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={async () => {
                 if (!to.trim() || !body.trim()) return;
-                // BF_PORTAL_BLOCK_v320_COMMS_SMS_SEND_URL_v1
-                // Same fix as the SMS-tab send() above — /api/sms/send is a
-                // stub returning HTTP 501. The real Twilio send endpoint is
-                // /api/communications/sms.
                 await api.post("/api/communications/sms", { to: to.trim(), body: body.trim() });
                 const c: Contact = { id: `new-${to.replace(/\D/g,"")}`, name: to.trim(), phone: to.trim() };
                 onStartConversation(c);
                 setOpen(false);
                 setTo("");
                 setBody("");
-              }} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px" }}>Send</button>
+              }} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px" }}>Send SMS</button>
               <SecondaryButton onClick={() => setOpen(false)}>Cancel</SecondaryButton>
             </div>
           </div>
