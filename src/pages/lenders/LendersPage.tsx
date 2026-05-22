@@ -1051,28 +1051,40 @@ function ProductsPanel({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p: any) => {
-                  const ld = lenders.find((x) => x.id === (p.lenderId ?? p.lender_id));
-                  const country = ld?.address?.country === "CA" ? "Canada" : ld?.address?.country === "US" ? "USA" : ld?.address?.country ?? "—";
-                  return (
-                    <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 500 }}>{ld?.name ?? "—"}</td>
-                      <td style={{ padding: "10px 12px", color: "#334155" }}>{country}</td>
-                      <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 600 }}>{formatAmount(p.minAmount) || "—"}</td>
-                      <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 600 }}>{formatAmount(p.maxAmount) || "—"}</td>
-                      <td style={{ padding: "10px 12px" }}>
-                        <StatusBadge active={(p.is_active ?? p.active)} status={p.status} />
-                      </td>
-                      <td style={{ padding: "10px 12px", textAlign: "right" }}>
-                        <button
-                          type="button"
-                          onClick={() => onEditProduct(p)}
-                          style={{ padding: "5px 12px", border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
-                        >Edit</button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {/* v193_category_groups */}
+                {(() => {
+                  const byCat = new Map<string, any[]>();
+                  for (const p of filtered) { const cat = (p as any).category ?? "TERM_LOAN"; if (!byCat.has(cat)) byCat.set(cat, []); byCat.get(cat)!.push(p); }
+                  const ordered = CATEGORY_ORDER.filter((c) => byCat.has(c)).concat(Array.from(byCat.keys()).filter((c) => !CATEGORY_ORDER.includes(c)));
+                  const rows: React.ReactNode[] = [];
+                  for (const cat of ordered) {
+                    const items = byCat.get(cat) ?? []; if (!items.length) continue;
+                    rows.push(<tr key={`cat-${cat}`} style={{ background: "#f1f5f9" }}><td colSpan={6} style={{ padding: "8px 12px", fontWeight: 700, color: "#0f172a", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>{CATEGORY_LABELS[cat] ?? cat} <span style={{ color: "#64748b", fontWeight: 500, marginLeft: 6 }}>({items.length})</span></td></tr>);
+                    for (const p of items) {
+                      const ld = lenders.find((x) => x.id === (p.lenderId ?? p.lender_id));
+                      const country = ld?.address?.country === "CA" ? "Canada" : ld?.address?.country === "US" ? "USA" : ld?.address?.country ?? "—";
+                      rows.push(
+                        <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 500 }}>{ld?.name ?? "—"}</td>
+                          <td style={{ padding: "10px 12px", color: "#334155" }}>{country}</td>
+                          <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 600 }}>{formatAmount(p.minAmount) || "—"}</td>
+                          <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 600 }}>{formatAmount(p.maxAmount) || "—"}</td>
+                          <td style={{ padding: "10px 12px" }}>
+                            <StatusBadge active={(p.is_active ?? p.active)} status={p.status} />
+                          </td>
+                          <td style={{ padding: "10px 12px", textAlign: "right" }}>
+                            <button
+                              type="button"
+                              onClick={() => onEditProduct(p)}
+                              style={{ padding: "5px 12px", border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
+                            >Edit</button>
+                          </td>
+                        </tr>
+                      );
+                    }
+                  }
+                  return rows;
+                })()}
               </tbody>
             </table>
           </div>

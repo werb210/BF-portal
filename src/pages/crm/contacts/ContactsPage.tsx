@@ -48,6 +48,8 @@ export default function ContactsPage() {
       try {
         const r = await crmApi.listContacts({
           silo: String(silo).toLowerCase(),
+          // v193_contact_search: server reads `search` not `q`.
+          search: q,
           q,
           sort: `${sort.col}:${sort.dir}`,
           owner_id: ownerId || undefined,
