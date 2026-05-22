@@ -291,13 +291,23 @@ export default function DocumentsTab({ applicationId }: Props) {
                         <div style={{ padding: 8, color: "#9ca3af", fontStyle: "italic" }}>No files uploaded.</div>
                       ) : (
                         c.files.map((f) => (
-                          <div key={f.id} data-testid={`doc-file-${f.id}`} style={{ display: "flex", alignItems: "center", padding: "8px 6px", borderTop: "1px solid #f3f4f6", gap: 12 }}>
-                            <div style={{ flex: 2, minWidth: 0 }}>
-                              <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.filename}</div>
-                              <div style={{ fontSize: 11, color: "#6b7280" }}>
-                                {fmtDate(f.uploadedAt)} · {fmtSize(f.size ?? null)}
-                              </div>
-                            </div>
+                          // v188: row expand for OCR preview
+                          <div key={f.id} style={{ borderTop: "1px solid #f3f4f6" }}>
+                            <div data-testid={`doc-file-${f.id}`} style={{ display: "flex", alignItems: "center", padding: "8px 6px", gap: 12 }}>
+                              <button
+                                type="button"
+                                onClick={() => toggleFileExpanded(f.id)}
+                                aria-expanded={expandedFiles.has(f.id)}
+                                title={expandedFiles.has(f.id) ? "Hide OCR text" : "Show OCR text"}
+                                style={{ flex: 2, minWidth: 0, textAlign: "left", background: "transparent", border: 0, padding: 0, cursor: "pointer" }}
+                              >
+                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#0f172a" }}>
+                                  {expandedFiles.has(f.id) ? "▾" : "▸"} {f.filename}
+                                </div>
+                                <div style={{ fontSize: 11, color: "#6b7280" }}>
+                                  {fmtDate(f.uploadedAt)} · {fmtSize(f.size ?? null)}
+                                </div>
+                              </button>
                             <StatusPill s={f.status} />
                             <div style={{ position: "relative" }}>
                               <button
@@ -334,6 +344,8 @@ export default function DocumentsTab({ applicationId }: Props) {
                                 </div>
                               ) : null}
                             </div>
+                          </div>
+                          {expandedFiles.has(f.id) && <OcrPreviewBlock state={ocrCache[f.id]} />}
                           </div>
                         ))
                       )}
