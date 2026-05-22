@@ -95,6 +95,6 @@ function kindBadge(kind: TimelineItem["kind"]): CSSProperties {
   const c = palette[kind];
   return {
     display: "inline-block", padding: "2px 8px", borderRadius: 12,
-    background: c.bg, color: c.fg, fontSize: 11, fontWeight: 600, textTransform: "uppercase",
+    background: c?.bg ?? "transparent", color: c?.fg ?? "inherit", fontSize: 11, fontWeight: 600, textTransform: "uppercase",
   };
 }

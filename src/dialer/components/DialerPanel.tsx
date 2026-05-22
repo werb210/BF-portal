@@ -65,7 +65,7 @@ function SiloChip({ silo }: { silo?: string | null }) {
   if (!silo) return null;
   const colors: Record<string, { bg: string; fg: string }> = { BF: { bg: "rgba(59,130,246,0.18)", fg: "#93c5fd" }, BI: { bg: "rgba(139,92,246,0.18)", fg: "#c4b5fd" }, SLF: { bg: "rgba(245,158,11,0.20)", fg: "#fcd34d" } };
   const c = colors[silo.toUpperCase()] ?? { bg: "rgba(255,255,255,0.08)", fg: T.textMuted };
-  return <span style={{ padding: "3px 9px", borderRadius: 6, background: c.bg, color: c.fg, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>{silo}</span>;
+  return <span style={{ padding: "3px 9px", borderRadius: 6, background: c?.bg ?? "transparent", color: c?.fg ?? "inherit", fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>{silo}</span>;
 }
 
 function CtlBtn({ label, icon, active, danger, onClick, disabled }: { label: string; icon: string; active?: boolean; danger?: boolean; onClick: () => void; disabled?: boolean; }) {

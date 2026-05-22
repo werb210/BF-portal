@@ -265,7 +265,7 @@ export default function LendersTab({ applicationId }: Props) {
                   <td style={styles.td}>{m.productCategory ?? "—"}</td>
                   <td style={styles.td}>{formatRange(m)}</td>
                   <td style={styles.td}>
-                    <span style={{ ...styles.pill, background: pctColors.bg, color: pctColors.fg }}>
+                    <span style={{ ...styles.pill, background: pctColors?.bg ?? "transparent", color: pctColors?.fg ?? "inherit" }}>
                       {formatLikelihood(m)}
                     </span>
                   </td>
