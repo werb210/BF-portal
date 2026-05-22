@@ -48,7 +48,7 @@ function MethodBadge({ m }: { m: SubmissionMethod }) {
   };
   const c = map[m];
   return (
-    <span style={{ background: c.bg, color: c.fg, fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999 }}>
+    <span style={{ background: c?.bg ?? "transparent", color: c?.fg ?? "inherit", fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999 }}>
       {c.label}
     </span>
   );
@@ -63,7 +63,7 @@ function LikelihoodPill({ l }: { l: Likelihood }) {
   };
   const c = map[l];
   return (
-    <span style={{ background: c.bg, color: c.fg, fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999 }}>
+    <span style={{ background: c?.bg ?? "transparent", color: c?.fg ?? "inherit", fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999 }}>
       {c.label}
     </span>
   );
