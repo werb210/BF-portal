@@ -936,13 +936,16 @@ function CreateProductModal({
 // ─── Products panel ───────────────────────────────────────────────────────────
 function ProductsPanel({
   lender,
+  lenders,
   onAddProduct,
   onEditProduct,
 }: {
   lender: Lender | null;
+  lenders: Lender[];
   onAddProduct: () => void;
   onEditProduct: (product: LenderProduct) => void;
 }) {
+  // v190: flat columns — Lender name | Country | Min | Max | Active | Edit
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
 
@@ -1036,11 +1039,49 @@ function ProductsPanel({
           </div>
         )}
 
-        {grouped.map(([cat, items]) => {
+        {/* v190: flat product table — Lender | Country | Min | Max | Active | Edit */}
+        {!isLoading && filtered.length > 0 && (
+          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #f1f5f9", background: "#f8fafc" }}>
+                  {["Lender", "Country", "Min", "Max", "Active", ""].map((h) => (
+                    <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#1e293b", fontSize: 12 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p: any) => {
+                  const ld = lenders.find((x) => x.id === (p.lenderId ?? p.lender_id));
+                  const country = ld?.address?.country === "CA" ? "Canada" : ld?.address?.country === "US" ? "USA" : ld?.address?.country ?? "—";
+                  return (
+                    <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 500 }}>{ld?.name ?? "—"}</td>
+                      <td style={{ padding: "10px 12px", color: "#334155" }}>{country}</td>
+                      <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 600 }}>{formatAmount(p.minAmount) || "—"}</td>
+                      <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 600 }}>{formatAmount(p.maxAmount) || "—"}</td>
+                      <td style={{ padding: "10px 12px" }}>
+                        <StatusBadge active={(p.is_active ?? p.active)} status={p.status} />
+                      </td>
+                      <td style={{ padding: "10px 12px", textAlign: "right" }}>
+                        <button
+                          type="button"
+                          onClick={() => onEditProduct(p)}
+                          style={{ padding: "5px 12px", border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
+                        >Edit</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {false && grouped.map(([cat, items]) => {
           const isOpen = !collapsed.has(cat);
           return (
             <div key={cat} style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
-              {/* Category header */}
+              {/* (legacy grouped render — disabled by v190; kept to avoid breaking diff anchors) */}
               <div
                 onClick={() => toggleCollapse(cat)}
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", cursor: "pointer", userSelect: "none" }}
@@ -1294,6 +1335,7 @@ export default function LendersPage() {
       {/* ── Right panel — always visible ── */}
       <ProductsPanel
         lender={selected}
+        lenders={lenders}
         onAddProduct={() => setShowCreateProduct(true)}
         onEditProduct={(product) => setEditingProduct(product)}
       />
