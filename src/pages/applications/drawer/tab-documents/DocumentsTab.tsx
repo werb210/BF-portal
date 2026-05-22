@@ -70,6 +70,29 @@ function StatusPill({ s }: { s: DocStatus }) {
   );
 }
 
+
+// v186: OCR preview helper component. Use inside the per-file row:
+//   {expandedFiles.has(file.id) && <OcrPreviewBlock state={ocrCache[file.id]} />}
+function OcrPreviewBlock({ state }: { state?: { ocr_text?: string; ocr_tables?: unknown[]; loading?: boolean; error?: string } }) {
+  if (!state) return null;
+  if (state.loading) return <div style={{ padding: "8px 12px", fontSize: 12, color: "#64748b" }}>Loading OCR result…</div>;
+  if (state.error) return <div style={{ padding: "8px 12px", fontSize: 12, color: "#b91c1c" }}>OCR error: {state.error}</div>;
+  if (!state.ocr_text && !state.ocr_tables?.length) return <div style={{ padding: "8px 12px", fontSize: 12, color: "#64748b" }}>OCR has no extracted text for this file.</div>;
+  return (
+    <div style={{ padding: "8px 12px", background: "#f8fafc", borderTop: "1px solid #e2e8f0", fontSize: 12 }}>
+      {state.ocr_text && (
+        <div style={{ whiteSpace: "pre-wrap", maxHeight: 320, overflowY: "auto", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
+          {state.ocr_text.slice(0, 4000)}
+          {state.ocr_text.length > 4000 ? " …(truncated)" : ""}
+        </div>
+      )}
+      {Array.isArray(state.ocr_tables) && state.ocr_tables.length > 0 && (
+        <div style={{ marginTop: 8, color: "#475569" }}>{state.ocr_tables.length} extracted table(s).</div>
+      )}
+    </div>
+  );
+}
+
 export default function DocumentsTab({ applicationId }: Props) {
   const selectedApplicationId = usePipelineStore((state) => state.selectedApplicationId);
   const resolvedApplicationId = applicationId ?? selectedApplicationId ?? "";
@@ -79,6 +102,27 @@ export default function DocumentsTab({ applicationId }: Props) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"required" | "other">("required");
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
+  // v186: OCR preview cache — per-document, fetched on expand.
+  const [ocrCache, setOcrCache] = useState<Record<string, { ocr_text?: string; ocr_tables?: unknown[]; loading?: boolean; error?: string }>>({});
+  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
+  const fetchOcr = async (fileId: string) => {
+    if (ocrCache[fileId] && !ocrCache[fileId].error) return;
+    setOcrCache((p) => ({ ...p, [fileId]: { loading: true } }));
+    try {
+      const data = await api.get<{ ocr_text?: string; ocr_tables?: unknown[] }>(`/api/ocr/admin/documents/${encodeURIComponent(fileId)}/result`);
+      setOcrCache((p) => ({ ...p, [fileId]: { ocr_text: data?.ocr_text, ocr_tables: data?.ocr_tables, loading: false } }));
+    } catch (e) {
+      setOcrCache((p) => ({ ...p, [fileId]: { error: e instanceof Error ? e.message : "fetch_failed" } }));
+    }
+  };
+  const toggleFileExpanded = (fileId: string) => {
+    setExpandedFiles((prev) => {
+      const next = new Set(prev);
+      if (next.has(fileId)) next.delete(fileId);
+      else { next.add(fileId); void fetchOcr(fileId); }
+      return next;
+    });
+  };
   const [actionFor, setActionFor] = useState<string | null>(null);
 
   useEffect(() => {
