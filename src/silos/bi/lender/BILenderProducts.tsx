@@ -4,14 +4,11 @@ import { api } from "@/api";
 
 type BiLenderProduct = {
   id: string;
-  product_name?: string | null;
-  name?: string | null;
   lender_name?: string | null;
   lender_company_name?: string | null;
+  country?: string | null;
   amount_low?: number | string | null;
   amount_high?: number | string | null;
-  interest_rate?: number | string | null;
-  rate?: number | string | null;
   active?: boolean | null;
   is_active?: boolean | null;
 };
@@ -23,15 +20,40 @@ function money(value: BiLenderProduct["amount_low"]) {
   return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(n);
 }
 
-function rate(value: BiLenderProduct["interest_rate"]) {
-  if (value === null || value === undefined || value === "") return "—";
-  if (typeof value === "string") return value;
-  return `${value}%`;
+// v187: companion row component for the Lender Products list. Renders
+// lender name + amount range + country + active + edit.
+type LenderProductRowV187 = {
+  product: BiLenderProduct;
+  onEdit: (id: string) => void;
+};
+
+export function LenderProductRowV187({ product, onEdit }: LenderProductRowV187) {
+  return (
+    <tr className="border-t border-white/10">
+      <td className="px-3 py-2">{product.lender_name ?? product.lender_company_name ?? "—"}</td>
+      <td className="px-3 py-2">{`${money(product.amount_low)} – ${money(product.amount_high)}`}</td>
+      <td className="px-3 py-2">{product.country ?? "—"}</td>
+      <td className="px-3 py-2">{(product.active ?? product.is_active) === false ? "No" : "Yes"}</td>
+      <td className="px-3 py-2">
+        <button
+          type="button"
+          className="rounded border border-white/20 px-2 py-1 text-xs hover:bg-white/10"
+          onClick={() => onEdit(product.id)}
+        >
+          Edit
+        </button>
+      </td>
+    </tr>
+  );
 }
 
 export default function BILenderProducts() {
   const [products, setProducts] = useState<BiLenderProduct[]>([]);
   const [loading, setLoading] = useState(false);
+  const openEditModal = (id: string) => {
+    // placeholder edit action; wire to modal when available.
+    void id;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -58,28 +80,20 @@ export default function BILenderProducts() {
         <table className="w-full text-sm">
           <thead className="text-left text-xs uppercase tracking-wider text-white/50">
             <tr>
-              <th className="px-3 py-2">Product name</th>
               <th className="px-3 py-2">Lender name</th>
-              <th className="px-3 py-2">Amount Low</th>
-              <th className="px-3 py-2">Amount High</th>
-              <th className="px-3 py-2">Interest rate</th>
+              <th className="px-3 py-2">Amount range</th>
+              <th className="px-3 py-2">Country</th>
               <th className="px-3 py-2">Active</th>
+              <th className="px-3 py-2">Edit</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className="px-3 py-4 text-white/40" colSpan={6}>Loading products...</td></tr>
+              <tr><td className="px-3 py-4 text-white/40" colSpan={5}>Loading products...</td></tr>
             ) : products.length === 0 ? (
-              <tr><td className="px-3 py-4 text-white/40" colSpan={6}>No lender products found.</td></tr>
+              <tr><td className="px-3 py-4 text-white/40" colSpan={5}>No lender products found.</td></tr>
             ) : products.map((p) => (
-              <tr key={p.id} className="border-t border-white/10">
-                <td className="px-3 py-2">{p.product_name ?? p.name ?? "—"}</td>
-                <td className="px-3 py-2">{p.lender_name ?? p.lender_company_name ?? "—"}</td>
-                <td className="px-3 py-2">{money(p.amount_low)}</td>
-                <td className="px-3 py-2">{money(p.amount_high)}</td>
-                <td className="px-3 py-2">{rate(p.interest_rate ?? p.rate)}</td>
-                <td className="px-3 py-2">{(p.active ?? p.is_active) === false ? "No" : "Yes"}</td>
-              </tr>
+              <LenderProductRowV187 key={p.id} product={p} onEdit={openEditModal} />
             ))}
           </tbody>
         </table>
