@@ -89,6 +89,8 @@ const emptyProductForm = (lenderId: string): ProductFormValues => ({
   minTerm: "",
   maxTerm: "",
   rateType: "fixed",
+  // BF_PORTAL_BLOCK_v614_RATE_KIND_v1
+  rateKind: "apr",
   interestMin: "",
   interestMax: "",
   fees: "",
@@ -312,6 +314,8 @@ const LenderProductsContent = () => {
       minTerm: toFormString(editingProduct.termLength.min),
       maxTerm: toFormString(editingProduct.termLength.max),
       rateType: editingProduct.rateType,
+      // BF_PORTAL_BLOCK_v614_RATE_KIND_v1
+      rateKind: editingProduct.rateKind ?? "apr",
       interestMin: toFormString(editingProduct.interestRateMin),
       interestMax: toFormString(editingProduct.interestRateMax),
       fees: editingProduct.fees ?? "",
@@ -338,6 +342,8 @@ const LenderProductsContent = () => {
       min_term: "minTerm",
       max_term: "maxTerm",
       rate_type: "rateType",
+      // BF_PORTAL_BLOCK_v614_RATE_KIND_v1
+      rate_kind: "rateKind",
       interest_min: "interestMin",
       interest_max: "interestMax",
       fees: "fees",

@@ -4,7 +4,9 @@ import Input from "@/components/ui/Input";
 import ModalFooterWithDelete from "@/components/ModalFooterWithDelete";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
-import type { LenderProductCategory, RateType } from "@/types/lenderManagement.types";
+import type { LenderProductCategory, RateType, RateKind } from "@/types/lenderManagement.types";
+// BF_PORTAL_BLOCK_v614_RATE_KIND_v1
+import { RATE_KINDS, RATE_KIND_LABELS } from "@/types/lenderManagement.types";
 
 export type ProductFormValues = {
   lenderId: string;
@@ -16,6 +18,8 @@ export type ProductFormValues = {
   minTerm: string;
   maxTerm: string;
   rateType: RateType;
+  // BF_PORTAL_BLOCK_v614_RATE_KIND_v1
+  rateKind: RateKind;
   interestMin: string;
   interestMax: string;
   fees: string;
@@ -192,6 +196,17 @@ const LenderProductModal = ({
 
         <div className="management-field">
           <span className="management-field__label">Pricing &amp; terms</span>
+          {/* BF_PORTAL_BLOCK_v614_RATE_KIND_v1 — Rate Kind selector controls
+              how interestMin/interestMax should be interpreted and labeled. */}
+          <Select
+            label="Rate kind"
+            value={formValues.rateKind}
+            onChange={(event) => onChange({ rateKind: event.target.value as RateKind })}
+          >
+            {RATE_KINDS.map((rk) => (
+              <option key={rk} value={rk}>{RATE_KIND_LABELS[rk]}</option>
+            ))}
+          </Select>
           <Select
             label="Rate type"
             value={formValues.rateType}
@@ -206,13 +221,23 @@ const LenderProductModal = ({
           {formErrors.rateType && <span className="ui-field__error">{formErrors.rateType}</span>}
           <div className="management-grid__row">
             <Input
-              label={formValues.rateType === "variable" ? "Interest min (Prime + X%)" : "Interest min (%)"}
+              label={(() => {
+                if (formValues.rateKind === "factor") return "Factor min (e.g. 1.24)";
+                if (formValues.rateKind === "monthly") return "Interest min (% / month)";
+                if (formValues.rateType === "variable") return "Interest min (Prime + X%)";
+                return "Interest min (% APR)";
+              })()}
               value={formValues.interestMin}
               onChange={(event) => onChange({ interestMin: event.target.value })}
               error={formErrors.interestMin}
             />
             <Input
-              label={formValues.rateType === "variable" ? "Interest max (Prime + Y%)" : "Interest max (%)"}
+              label={(() => {
+                if (formValues.rateKind === "factor") return "Factor max (e.g. 1.45)";
+                if (formValues.rateKind === "monthly") return "Interest max (% / month)";
+                if (formValues.rateType === "variable") return "Interest max (Prime + Y%)";
+                return "Interest max (% APR)";
+              })()}
               value={formValues.interestMax}
               onChange={(event) => onChange({ interestMax: event.target.value })}
               error={formErrors.interestMax}
