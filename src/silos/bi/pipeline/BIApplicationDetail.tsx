@@ -112,7 +112,12 @@ export default function BIApplicationDetail() {
   }
   if (!app) return <div className="p-6 text-white/70">Loading…</div>;
 
-  const isReadOnly = app.source_type === "lender" || app.source_type === "referrer";
+  // BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — lender/referrer apps used to hide the
+  // entire button group (View+Accept+Reject+Delete). Operator directive: View
+  // should ALWAYS be visible and staff still need to be able to act on docs.
+  const isReadOnly = false;
+  const _legacy_isReadOnly = app.source_type === "lender" || app.source_type === "referrer";
+  void _legacy_isReadOnly;
   const sourceLabel =
     app.source_type === "lender"
       ? `Lender-submitted${app.lender_name ? ` (${app.lender_name})` : ""}`
