@@ -75,6 +75,21 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 export const RATE_TYPES = ["fixed", "variable", "factor"] as const;
 export type RateType = (typeof RATE_TYPES)[number];
 
+// BF_PORTAL_BLOCK_v614_RATE_KIND_v1 — distinguishes the three rate semantics
+// crammed into interestMin/interestMax today. Orthogonal to RATE_TYPES
+// (fixed/variable). Server column: lender_products.rate_kind.
+//   apr     → annual percentage rate (term loans, equipment, working cap)
+//   monthly → percent per MONTH (factoring, AR, PO, ABL revolvers)
+//   factor  → MCA payback multiplier (1.24x = repay $1.24 per $1 borrowed)
+export const RATE_KINDS = ["apr", "monthly", "factor"] as const;
+export type RateKind = (typeof RATE_KINDS)[number];
+
+export const RATE_KIND_LABELS: Record<RateKind, string> = {
+  apr:     "APR (annual %)",
+  monthly: "Monthly %",
+  factor:  "Factor (MCA payback)",
+};
+
 export const TERM_UNITS = ["months", "years"] as const;
 export type TermUnit = (typeof TERM_UNITS)[number];
 

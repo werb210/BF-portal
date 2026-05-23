@@ -1,4 +1,4 @@
-import type { LenderProductCategory, RateType, SubmissionMethod, TermUnit } from "./lenderManagement.types";
+import type { LenderProductCategory, RateType, RateKind, SubmissionMethod, TermUnit } from "./lenderManagement.types";
 
 export type LenderAddress = {
   street: string;
@@ -110,6 +110,10 @@ export type LenderProduct = {
   interestRateMin: number | string;
   interestRateMax: number | string;
   rateType: RateType;
+  // BF_PORTAL_BLOCK_v614_RATE_KIND_v1 — optional during data backfill;
+  // becomes required once all rows have been classified.
+  rateKind?: RateKind | null;
+  ratePeriodDays?: number | null;
   termLength: LenderProductTermLength;
   fees: string | null;
   minimumCreditScore: number | null;
