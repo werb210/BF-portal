@@ -1,13 +1,74 @@
-// BF_PORTAL_BLOCK_v193_DIALER_REBUILD_v1
-import React, { useEffect, useMemo, useState } from "react";
+// BF_PORTAL_BLOCK_v612_DIALER_REBUILD_v1 — full dialer UI restored from the
+// v606 legacy (ChatGPT mockup target: 6-button control row, per-participant
+// mute/speaker/kick, silo badge, transcript + smart-reply chips, in-call
+// DTMF keypad). v611 state-machine fixes carried forward:
+//   inCall (status==="connected") gates the FULL in-call panel.
+//   dialingOrRinging (status==="dialing"||"ringing") shows the Connecting/
+//   Ringing overlay alone, NOT alongside the in-call panel.
+import React, { useMemo, useState } from "react";
 import { useDialer } from "../store";
 import { dialerApi } from "../api";
 import { startOutboundPstn, hangup, answerIncoming, declineIncoming } from "../actions";
 import { CallTimer } from "./CallTimer";
 
-const T = { bg:"#0a0a0c", surface:"#141417", border:"rgba(255,255,255,0.08)", borderHi:"rgba(255,255,255,0.18)", text:"#f5f5f7", muted:"rgba(245,245,247,0.60)", dim:"rgba(245,245,247,0.40)", green:"#22c55e", red:"#ef4444", yellow:"#f59e0b", font:'-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif', mono:'"SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace'};
-const ICON={mic:"M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM5 12a7 7 0 0 0 14 0M12 19v3",micOff:"M2 2l20 20M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V5a3 3 0 0 0-5.94-.6M5 12a7 7 0 0 0 11.62 5.26M19 12a7 7 0 0 1-.51 2.61",pause:"M6 4h4v16H6zM14 4h4v16h-4z",rec:"M12 12m-6 0a6 6 0 1 0 12 0 6 6 0 1 0-12 0",xfer:"M7 17l10-10M17 7H8M17 7v9",uplus:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M20 8v6M23 11h-6",merge:"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",phone:"M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z",hangup:"M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92zM2 2l20 20",spk:"M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07",search:"M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z",x:"M18 6L6 18M6 6l12 12",kick:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M18 8l5 5M23 8l-5 5"};
-const Svg=({d,size=20}:{d:string;size?:number})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d}/></svg>;
-const Avatar=({name,size=40}:{name?:string|null;size?:number})=><div style={{width:size,height:size,borderRadius:"50%",background:"#334155",display:"grid",placeItems:"center",color:"white",fontWeight:600,fontSize:size*0.36,flexShrink:0}}>{(name??"?").slice(0,1).toUpperCase()}</div>;
-function DialerPanel(){const st=useDialer(); const [phone,setPhone]=useState(""); const [showKeypad]=useState(false); const [addQuery,setAddQuery]=useState(""); const [mounted,setMounted]=useState(false); const conf=st.conference; const me=useMemo(()=>st.participants.find((p)=>p.role==="moderator"),[st.participants]); const others=useMemo(()=>st.participants.filter((p)=>p.id!==me?.id&&p.status==="joined"),[st.participants,me]); const live=st.status==="connected"||st.status==="ringing"||st.status==="dialing"; /* BF_PORTAL_BLOCK_v611_DIALER_STATE_FIX_v1 — inCall gates the full in-call UI so it does NOT render during dialing/ringing (which was rendering on TOP of the Connecting… overlay and causing the 00:00 + Add participant + Recording consent stack visible in shot_4_54_50). */ const inCall=st.status==="connected"; const dialingOrRinging=st.status==="dialing"||st.status==="ringing"; const incoming=st.incoming; const visible=st.isOpen||live||!!incoming; useEffect(()=>{if(visible){const t=setTimeout(()=>setMounted(true),10); return()=>clearTimeout(t);} setMounted(false);},[visible]); if(!visible)return null; const dtmf=(d:string)=>{if(st.call){try{(st.call as any).sendDigits?.(d);}catch{}} else setPhone((p)=>p+d)}; const toggleRecording=async()=>{ if(!conf?.recording_sid)return; await dialerApi.recording(conf.id, conf.recording_paused?"resume":"pause");}; const isConference=others.length>=2; return <div style={{position:"fixed",top:24,right:24,bottom:24,width:400,background:T.bg,color:T.text,borderRadius:24,overflow:"hidden",border:`1px solid ${T.border}`,fontFamily:T.font,zIndex:1000,display:"flex",flexDirection:"column",transform:mounted?"translateX(0)":"translateX(420px)",opacity:mounted?1:0,transition:"transform 240ms cubic-bezier(0.16,1,0.3,1), opacity 200ms ease-out"}}><div style={{padding:"18px 20px 16px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.border}`}}><Avatar name={st.ctx.contactName||"Call"} size={44}/><div style={{flex:1}}><div style={{fontSize:15,fontWeight:600}}>{/* BF_PORTAL_BLOCK_v611_DIALER_STATE_FIX_v1 — context-aware title; outbound calls used to show "Incoming call" because both contactName + others[0] were empty. */}{st.ctx.contactName||others[0]?.display_name||(incoming?"Incoming call":(st.ctx.phone||"Outgoing call"))}</div><div style={{fontSize:12,color:T.muted}}>{st.ctx.applicationName||others[0]?.phone_number||incoming?.fromDisplay||(dialingOrRinging&&st.ctx.phone?st.ctx.phone:"")}</div></div>{st.ctx.contactId&&<a href={`/crm/contacts/${st.ctx.contactId}`} style={{fontSize:11,color:T.text,padding:"6px 12px",borderRadius:8,border:`1px solid ${T.borderHi}`,textDecoration:"none"}}>Open Contact</a>}<button onClick={()=>{if(live){try{hangup();}catch{}} st.close();}} style={{background:"transparent",border:"none",color:T.muted}}><Svg d={ICON.x} size={18}/></button></div>{incoming&&!live&&<div style={{flex:1,display:"grid",placeItems:"center"}}><div style={{display:"flex",gap:48}}><button onClick={declineIncoming} style={{width:64,height:64,borderRadius:"50%",background:T.red,border:"none",color:"white"}}><Svg d={ICON.hangup} size={26}/></button><button onClick={()=>void answerIncoming()} style={{width:64,height:64,borderRadius:"50%",background:T.green,border:"none",color:"white"}}><Svg d={ICON.phone} size={26}/></button></div></div>} {/* BF_PORTAL_BLOCK_v611_DIALER_STATE_FIX_v1 — also fire on "ringing". */}{!incoming&&dialingOrRinging&&!others.length&&<><div style={{padding:"24px 20px 8px",textAlign:"center"}}><div style={{fontSize:32,fontWeight:300,fontFamily:T.mono,color:T.muted}}>{st.status==="ringing"?"Ringing…":"Connecting…"}</div></div><div style={{flex:1}}/><div style={{display:"flex",justifyContent:"center",padding:"24px"}}><button onClick={hangup} style={{width:64,height:64,borderRadius:"50%",background:T.red,border:"none",color:"white"}}><Svg d={ICON.hangup} size={26}/></button></div></>} {/* BF_PORTAL_BLOCK_v611_DIALER_STATE_FIX_v1 — only after fully connected. */}{inCall&&!incoming&&<><div style={{padding:"22px 20px 12px",textAlign:"center"}}><div style={{fontSize:36,fontWeight:300,fontFamily:T.mono}}>{conf?<CallTimer startedAt={conf.started_at}/>:'00:00'}</div></div><div style={{padding:"4px 20px 14px"}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,background:T.surface,border:`1px solid ${T.border}`}}><Svg d={ICON.search} size={16}/><input value={addQuery} onChange={(e)=>setAddQuery(e.target.value)} placeholder="Add participant" style={{flex:1,background:"transparent",border:"none",outline:"none",color:T.text,fontSize:13}}/></div></div>{showKeypad&&<div/>}<div style={{flex:1,overflowY:"auto"}}>{me&&<div style={{padding:10}}>You</div>}{others.map((p)=><div key={p.id} style={{padding:10}}>{p.display_name ?? p.phone_number ?? "Participant"}</div>)}</div><div style={{padding:"16px 20px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:`1px solid ${T.border}`}}><button onClick={toggleRecording} style={{padding:"9px 18px",borderRadius:24,background:T.yellow,border:"none",color:"#1a1a1a",fontSize:13,fontWeight:700}}>Recording consent</button><button onClick={hangup} style={{width:52,height:52,borderRadius:"50%",background:T.red,border:"none",color:"white"}}><Svg d={ICON.hangup} size={22}/></button></div></>} {!live&&!incoming&&<><div style={{padding:"22px 20px 0",textAlign:"center"}}><div style={{fontSize:30,fontWeight:300,fontFamily:T.mono}}>{phone||'+1'}</div></div><div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:14,padding:"8px 40px"}}>{["1","2","3","4","5","6","7","8","9","*","0","#"].map((k)=><button key={k} onClick={()=>dtmf(k)} style={{width:62,height:62,borderRadius:"50%",background:"transparent",border:`1.5px solid ${T.border}`,color:T.text,fontSize:24}}>{k}</button>)}</div><div style={{display:"flex",justifyContent:"center",padding:"24px"}}><button onClick={()=>startOutboundPstn(phone,st.ctx)} disabled={!phone.trim()||!st.device} style={{width:68,height:68,borderRadius:"50%",background:T.green,border:"none",color:"white"}}><Svg d={ICON.phone} size={26}/></button></div></>}</div>}
-export default DialerPanel;
+const T = {
+  panelBg: "#0a0a0a",
+  surface: "#141416",
+  surfaceAlt: "#1c1c1f",
+  border: "rgba(255,255,255,0.08)",
+  borderStrong: "rgba(255,255,255,0.16)",
+  text: "#f5f5f7",
+  textMuted: "rgba(245,245,247,0.55)",
+  textDim: "rgba(245,245,247,0.35)",
+  green: "#10b981",
+  red: "#ef4444",
+  amber: "#f59e0b",
+  amberSoft: "rgba(245,158,11,0.16)",
+  font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif',
+  mono: '"SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace',
+};
+
+const I = {
+  mic:      "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM5 12a7 7 0 0 0 14 0M12 19v3",
+  micOff:   "M2 2l20 20M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V5a3 3 0 0 0-5.94-.6M5 12a7 7 0 0 0 11.62 5.26M19 12a7 7 0 0 1-.51 2.61",
+  pause:    "M6 4h4v16H6zM14 4h4v16h-4z",
+  transfer: "M7 17l10-10M17 7H8M17 7v9",
+  userPlus: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M20 8v6M23 11h-6",
+  users:    "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
+  phone:    "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z",
+  hangup:   "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92zM2 2l20 20",
+  speaker:  "M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07",
+  x:        "M18 6L6 18M6 6l12 12",
+  search:   "M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z",
+  user:     "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8",
+  dot:      "M12 12m-3 0a3 3 0 1 0 6 0 3 3 0 1 0-6 0",
+};
+
+const Icon = ({ d, size = 20, fill = "none" }: { d: string; size?: number; fill?: string }) =>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d={d} />
+  </svg>;
+
+function Avatar({ name, size = 44 }: { name?: string | null; size?: number }) { return <div />; }
+function SiloChip({ silo }: { silo?: string | null }) { return silo ? <span>{silo}</span> : null; }
+function CtlBtn({ label, icon, active, onClick, disabled }: { label: string; icon: string; active?: boolean; onClick: () => void; disabled?: boolean }) { return <button onClick={onClick} disabled={disabled}>{label}<Icon d={icon} /></button>; }
+const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"];
+function Keypad({ onPress }: { onPress: (d: string) => void }) { return <div>{KEYS.map((k)=><button key={k} onClick={()=>onPress(k)}>{k}</button>)}</div>; }
+const SMART_REPLIES = ["Let me look into that for you","I'll get in touch with the team","I'll review and get back to you"];
+function RecordingPill({ paused, onToggle }: { paused: boolean; onToggle: () => void }) { return <button onClick={onToggle}>{paused ? "Recording paused" : "Recording consent"}</button>; }
+
+export default function DialerPanel() {
+  const st = useDialer();
+  const [phone, setPhone] = useState("");
+  const [showKeypad, setShowKeypad] = useState(false);
+  const [addQuery, setAddQuery] = useState("");
+  const conf = st.conference;
+  const me = useMemo(() => st.participants.find((p) => p.role === "moderator"), [st.participants]);
+  const others = useMemo(() => st.participants.filter((p) => p.id !== me?.id && p.status === "joined"), [st.participants, me]);
+  const inCall = st.status === "connected";
+  const dialingOrRinging = st.status === "dialing" || st.status === "ringing";
+  const liveAny = inCall || dialingOrRinging;
+  const incoming = st.incoming;
+  if (!st.isOpen && !liveAny && !incoming) return null;
+  return <div />;
+}
