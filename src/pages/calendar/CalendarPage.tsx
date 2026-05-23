@@ -74,9 +74,19 @@ function groupTasks(tasks: CalendarTask[]) {
     dueToday: [] as CalendarTask[],
     upcoming: [] as CalendarTask[],
     noDueDate: [] as CalendarTask[],
+    // BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1
+    completed: [] as CalendarTask[],
   };
 
+  // BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — completed tasks were staying in
+  // Overdue (and the calendar grid) forever because the grouper ignored
+  // status/completedAt. Now done-tasks route into a Completed bucket instead.
   tasks.forEach((task) => {
+    const isDone = task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed);
+    if (isDone) {
+      grouped.completed.push(task);
+      return;
+    }
     const due = task.due_date ?? task.dueAt ?? task.dueDate;
     if (!due) {
       grouped.noDueDate.push(task);
@@ -101,6 +111,9 @@ function CalendarContent() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [view, setView] = useState<View>("month");
+  // BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — mirror RBC's internal date so the
+  // explicit month/year header updates when staff clicks Back/Next.
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -184,6 +197,9 @@ function CalendarContent() {
     end.setDate(end.getDate() + 1);
     const taskEvents = tasks
       .map((task) => {
+        // BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — drop completed tasks from the grid.
+        const isDone = task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed);
+        if (isDone) return null;
         const due = task.due_date ?? task.dueDate ?? task.dueAt;
         if (!due) return null;
         const dueDate = new Date(due);
@@ -212,8 +228,13 @@ function CalendarContent() {
   return (
     <div className="page" style={{ display: "grid", gridTemplateColumns: "65% 35%", gap: 16, minHeight: "calc(100vh - 160px)" }}>
       <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}>
+        {/* BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — the default rbc-toolbar label
+            was being suppressed by a global stylesheet. Render the month/year
+            ourselves so staff actually knows what they're looking at. */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h2 style={{ margin: 0, fontSize: 20 }}>Calendar</h2>
+          <h2 style={{ margin: 0, fontSize: 20 }}>
+            Calendar — <span style={{ color: "#475569", fontWeight: 500 }}>{format(currentDate, view === "day" ? "EEEE, MMMM d, yyyy" : view === "week" ? "'Week of' MMMM d, yyyy" : "MMMM yyyy")}</span>
+          </h2>
           <button onClick={() => setShowEventForm(true)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2563eb", background: "#2563eb", color: "#fff" }}>
             Add Event
           </button>
@@ -226,6 +247,8 @@ function CalendarContent() {
             views={["month", "week", "day"]}
             view={view}
             onView={(nextView: View) => setView(nextView)}
+            date={currentDate}
+            onNavigate={(d: Date) => setCurrentDate(d)}
             defaultView="month"
             dayLayoutAlgorithm="no-overlap"
             allDayMaxRows={2}
@@ -256,11 +279,13 @@ function CalendarContent() {
 
         {tasksQuery.isLoading && <p>Loading tasks…</p>}
 
+        {/* BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — added Completed bucket */}
         {[
           ["Overdue", groupedTasks.overdue, "#dc2626"],
           ["Due Today", groupedTasks.dueToday, "#f97316"],
           ["Upcoming", groupedTasks.upcoming, "#0f172a"],
           ["No Due Date", groupedTasks.noDueDate, "#64748b"],
+          ["Completed", groupedTasks.completed, "#10b981"],
         ].map(([label, items, color]) => (
           <div key={label as string} style={{ marginBottom: 14 }}>
             <h4 style={{ margin: "0 0 8px", color: color as string, fontSize: 14 }}>{label as string}</h4>
