@@ -91,6 +91,8 @@ const emptyProductForm = (lenderId: string): ProductFormValues => ({
   rateType: "fixed",
   // BF_PORTAL_BLOCK_v614_RATE_KIND_v1
   rateKind: "apr",
+  // BF_PORTAL_BLOCK_v615_RATE_KIND_POLISH_v1
+  ratePeriodDays: "",
   interestMin: "",
   interestMax: "",
   fees: "",
@@ -316,6 +318,8 @@ const LenderProductsContent = () => {
       rateType: editingProduct.rateType,
       // BF_PORTAL_BLOCK_v614_RATE_KIND_v1
       rateKind: editingProduct.rateKind ?? "apr",
+      // BF_PORTAL_BLOCK_v615_RATE_KIND_POLISH_v1
+      ratePeriodDays: editingProduct.ratePeriodDays != null ? String(editingProduct.ratePeriodDays) : "",
       interestMin: toFormString(editingProduct.interestRateMin),
       interestMax: toFormString(editingProduct.interestRateMax),
       fees: editingProduct.fees ?? "",
@@ -344,6 +348,8 @@ const LenderProductsContent = () => {
       rate_type: "rateType",
       // BF_PORTAL_BLOCK_v614_RATE_KIND_v1
       rate_kind: "rateKind",
+      // BF_PORTAL_BLOCK_v615_RATE_KIND_POLISH_v1
+      rate_period_days: "ratePeriodDays",
       interest_min: "interestMin",
       interest_max: "interestMax",
       fees: "fees",
@@ -444,18 +450,35 @@ const LenderProductsContent = () => {
         errors.interestMax = "Use format Prime + Y%.";
       }
     } else {
+      // BF_PORTAL_BLOCK_v615_RATE_KIND_POLISH_v1 — range-check based on
+      // rateKind so e.g. "12.5" for a factor product (which would mean
+      // 1250% payback) trips a validation error before reaching the server.
       const interestMin = Number(values.interestMin);
       const interestMax = Number(values.interestMax);
       if (Number.isNaN(interestMin)) errors.interestMin = "Interest minimum must be a number.";
       if (Number.isNaN(interestMax)) errors.interestMax = "Interest maximum must be a number.";
-      if (!Number.isNaN(interestMin) && interestMin < 0) {
-        errors.interestMin = "Interest minimum must be positive.";
-      }
-      if (!Number.isNaN(interestMax) && interestMax < 0) {
-        errors.interestMax = "Interest maximum must be positive.";
+      const bounds: Record<"apr" | "monthly" | "factor", { lo: number; hi: number; unit: string }> = {
+        apr:     { lo: 0,   hi: 100, unit: "% APR" },
+        monthly: { lo: 0,   hi: 15,  unit: "% / month" },
+        factor:  { lo: 1.0, hi: 3.0, unit: "x payback" },
+      };
+      const b = bounds[values.rateKind];
+      if (b) {
+        if (!Number.isNaN(interestMin) && (interestMin < b.lo || interestMin > b.hi)) {
+          errors.interestMin = `Must be ${b.lo}–${b.hi} ${b.unit}.`;
+        }
+        if (!Number.isNaN(interestMax) && (interestMax < b.lo || interestMax > b.hi)) {
+          errors.interestMax = `Must be ${b.lo}–${b.hi} ${b.unit}.`;
+        }
       }
       if (!Number.isNaN(interestMin) && !Number.isNaN(interestMax) && interestMin > interestMax) {
-        errors.interestMax = "Interest maximum must be greater than minimum.";
+        errors.interestMax = "Maximum must be greater than minimum.";
+      }
+      if (values.ratePeriodDays) {
+        const pd = Number(values.ratePeriodDays);
+        if (Number.isNaN(pd) || pd <= 0 || pd > 365) {
+          errors.ratePeriodDays = "Period must be 1–365 days.";
+        }
       }
     }
     return errors;
@@ -648,7 +671,18 @@ const LenderProductsContent = () => {
                               ${product.minAmount.toLocaleString()} - ${product.maxAmount.toLocaleString()}
                             </td>
                             <td>{formatLenderCountryLabel(product.country)}</td>
-                            <td>{formatRateType(product.rateType)}</td>
+                            <td>{(() => {
+                              // BF_PORTAL_BLOCK_v615_RATE_KIND_POLISH_v1
+                              const lo = product.interestRateMin;
+                              const hi = product.interestRateMax;
+                              const kind = product.rateKind ?? "apr";
+                              if (lo == null || hi == null || lo === "" || hi === "") {
+                                return <span className="text-white/50">{formatRateType(product.rateType)}</span>;
+                              }
+                              if (kind === "factor") return `${lo}x – ${hi}x`;
+                              if (kind === "monthly") return `${lo}% – ${hi}% /mo`;
+                              return `${lo}% – ${hi}% APR`;
+                            })()}</td>
                             <td>
                               <Button
                                 variant="ghost"

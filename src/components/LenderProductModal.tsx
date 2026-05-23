@@ -20,6 +20,9 @@ export type ProductFormValues = {
   rateType: RateType;
   // BF_PORTAL_BLOCK_v614_RATE_KIND_v1
   rateKind: RateKind;
+  // BF_PORTAL_BLOCK_v615_RATE_KIND_POLISH_v1 — only used when rateKind is
+  // "monthly" or for non-standard period APR (e.g., "for 30 days").
+  ratePeriodDays: string;
   interestMin: string;
   interestMax: string;
   fees: string;
@@ -243,6 +246,18 @@ const LenderProductModal = ({
               error={formErrors.interestMax}
             />
           </div>
+          {/* BF_PORTAL_BLOCK_v615_RATE_KIND_POLISH_v1 — period in days when
+              the rate isn't quoted per standard year/month (e.g.,
+              Brookridge "2.5% for 30 days" → ratePeriodDays = 30). */}
+          {(formValues.rateKind === "monthly" || formValues.rateKind === "factor") && (
+            <Input
+              label="Rate period (days)"
+              placeholder={formValues.rateKind === "factor" ? "e.g. 180 (typical MCA term)" : "e.g. 30"}
+              value={formValues.ratePeriodDays}
+              onChange={(event) => onChange({ ratePeriodDays: event.target.value })}
+              error={formErrors.ratePeriodDays}
+            />
+          )}
         </div>
 
         <div className="management-field">
