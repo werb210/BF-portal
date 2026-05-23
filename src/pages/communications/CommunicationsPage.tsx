@@ -650,10 +650,15 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
       .then((r) => {
         if (cancelled) return;
         const list = Array.isArray(r.conversations) ? r.conversations : [];
+        // BF_PORTAL_BLOCK_v608_THREE_FIXES_v1 — DON'T filter out NULL contact_id
+        // threads. When applications.contact_id is NULL (typical), mini-portal
+        // messages get inserted with contact_id=NULL and the server keys the
+        // thread on application_id::text. Filtering them out is what made
+        // client→staff sends look "dead" in the staff Messages tab.
         const mapped: Row[] = list
-          .filter((c) => c.contact_id)
+          .filter((c) => c.contact_id || c.thread_key)
           .map((c) => ({
-            contactId: c.contact_id as string,
+            contactId: (c.contact_id ?? c.thread_key) as string,
             name: c.display_name ?? c.phone ?? "Unknown",
             phone: c.phone,
             lastAt: c.last_at,
