@@ -1,3 +1,6 @@
+// BF_PORTAL_BLOCK_v613_DIALER_MERGE_v1 — adds Merge button (option A: same as
+// Add — dials a new participant into the live conference). 7-button row now:
+// Mute / Hold / Record / Transfer / Add / Merge / Keypad. Supersedes v612.
 // BF_PORTAL_BLOCK_v612_DIALER_REBUILD_v1 — full dialer UI restored from the
 // v606 legacy (ChatGPT mockup target: 6-button control row, per-participant
 // mute/speaker/kick, silo badge, transcript + smart-reply chips, in-call
