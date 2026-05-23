@@ -189,7 +189,7 @@ export default function ApplicationTab({ application }: Props) {
         <Field label="Province / State" value={fmt(business.state ?? business.province ?? business.region)} />
         <Field label="Postal / ZIP" value={fmt(business.postalCode ?? business.zip ?? business.zipCode)} />
         <Field label="Phone" value={fmt(business.phone ?? business.phoneNumber)} />
-        <Field label="Email" value={business.email ? <Email value={String(business.email)} /> : "—"} />
+        {/* BF_PORTAL_BLOCK_v608_THREE_FIXES_v1 — Business Email removed per Todd. */}
         <Field label="Website" value={business.website ? <Anchor href={String(business.website)} /> : "—"} />
         <Field label="Industry" value={fmt(business.industry ?? fp.industry)} />
         <Field label="Entity Type" value={prettyEnum(business.businessStructure ?? business.entityType ?? business.businessType)} />
@@ -198,7 +198,7 @@ export default function ApplicationTab({ application }: Props) {
         <Field label="Number of Employees" value={fmt(business.numberOfEmployees ?? business.employees)} />
         <Field label="Annual Revenue" value={fmtMoney(business.annualRevenue ?? fp.annualRevenue ?? business.estimatedRevenue ?? fp.revenueLast12Months)} />
         <Field label="Monthly Revenue" value={fmtMoney(business.monthlyRevenue ?? fp.monthlyRevenue)} />
-        <Field label="Tax ID / EIN" value={fmt(business.taxId ?? business.ein)} />
+        {/* BF_PORTAL_BLOCK_v608_THREE_FIXES_v1 — Tax ID / EIN removed per Todd. */}
       </SectionGroup>
 
       <SectionGroup title="Financial Profile">

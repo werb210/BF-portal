@@ -143,6 +143,10 @@ export default function BIContactsList() {
           style={searchInput}
           aria-label="Search contacts"
         />
+        {/* BF_PORTAL_BLOCK_v608_THREE_FIXES_v1 — record count */}
+        <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">
+          {rows.length} {rows.length === 1 ? "record" : "records"}
+        </div>
         <span style={{ flex: 1 }} />
         <div style={filterDropdownWrap}>
           <button style={filterBtn} type="button" onClick={() => setIsTagsOpen((o) => !o)}>
