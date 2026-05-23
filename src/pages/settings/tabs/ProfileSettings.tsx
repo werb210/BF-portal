@@ -412,6 +412,10 @@ const ProfileSettings = () => {
         />
       </div>
 
+      {/* BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — email signature editor.
+          GET/PUT /api/o365/me/signature (server-side shipped in v635). */}
+      <EmailSignaturePanel />
+
       <div className="avatar-upload">
         <div>
           <p className="ui-field__label">Profile image</p>
@@ -516,5 +520,61 @@ const ProfileSettings = () => {
     </form>
   );
 };
+
+
+// BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — minimal email-signature editor.
+function EmailSignaturePanel() {
+  const [html, setHtml] = useState<string>("");
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get<{ signatureHtml?: string }>("/api/o365/me/signature")
+      .then((r) => { if (!cancelled) { setHtml(r?.signatureHtml ?? ""); setLoaded(true); } })
+      .catch(() => { if (!cancelled) setLoaded(true); });
+    return () => { cancelled = true; };
+  }, []);
+
+  async function save() {
+    setSaving(true);
+    setStatus(null);
+    try {
+      await api.put("/api/o365/me/signature", { signatureHtml: html });
+      setStatus("Saved.");
+    } catch (e) {
+      setStatus(getErrorMessage(e, "Save failed."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="settings-grid" style={{ marginTop: 16 }}>
+      <div style={{ width: "100%" }}>
+        <h3 style={{ margin: "0 0 8px 0" }}>Email signature</h3>
+        <p style={{ margin: "0 0 8px 0", fontSize: 13, color: "#6b7280" }}>
+          Paste HTML or plain text. Appended to outbound emails sent via Boreal.
+        </p>
+        <textarea
+          value={html}
+          onChange={(e) => setHtml(e.target.value)}
+          rows={8}
+          disabled={!loaded}
+          aria-label="Email signature HTML"
+          placeholder={loaded ? "<p>Best,<br>Your Name<br>Boreal Financial</p>" : "Loading…"}
+          style={{ width: "100%", padding: 8, fontFamily: "monospace", fontSize: 12, borderRadius: 6, border: "1px solid #e5e7eb" }}
+        />
+        <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+          <Button type="button" onClick={() => void save()} disabled={!loaded || saving}>
+            {saving ? "Saving…" : "Save signature"}
+          </Button>
+          {status && <span style={{ fontSize: 13, color: status === "Saved." ? "#0d9b6c" : "#b00020" }}>{status}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default ProfileSettings;

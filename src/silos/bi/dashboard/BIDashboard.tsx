@@ -182,7 +182,8 @@ export default function BIDashboard() {
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 mb-6">
-        <StatPill label="Total in pipeline" value={total} />
+        {/* BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — was `total` (all apps incl. pre-pipeline created/in_progress/ready_for_submission) which inflated the dashboard above what the pipeline view actually showed. */}
+        <StatPill label="Total in pipeline" value={visibleStageTotal} />
         <StatPill
           label="Carrier health"
           value={healthStatus}

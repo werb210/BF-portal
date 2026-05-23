@@ -152,7 +152,13 @@ function fmtMonth(m: string): string {
   return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
 }
 
-function StatusBanner({ status }: { status?: string }) {
+// BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — accept auto-skip flag; render a clear
+// "Skipped — no bank statements" message instead of the misleading
+// "Analysis complete" / all-zeros state.
+function StatusBanner({ status, autoSkip }: { status?: string; autoSkip?: boolean }) {
+  if (autoSkip) {
+    return <div style={bannerStyle("missing")}>Banking analysis skipped — no bank statements detected in uploaded documents. Upload statements (PDF/CSV/OFX) and the analysis will retry automatically.</div>;
+  }
   if (status === "no_bank_statements") {
     return <div style={bannerStyle("missing")}>No bank statements on file — request from applicant.</div>;
   }
@@ -247,7 +253,7 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
           <div style={{ display: "none" }}>{docCount ?? ""}</div>
         </div>
 
-        <StatusBanner status={data.status} />
+        <StatusBanner status={data.status} autoSkip={Boolean((data as any)?.banking_auto_skip ?? (data as any)?.bankingAutoSkip)} />
 
         {accounts.length > 0 && (
           <div style={styles.panel}>
