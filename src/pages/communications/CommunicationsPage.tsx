@@ -1121,6 +1121,37 @@ function InboxTab() {
   if (mailboxes.mine) mailboxOptions.push({ value: "", label: `${mailboxes.mine.display_name} (mine)` });
   for (const m of mailboxes.shared) mailboxOptions.push({ value: m.address, label: m.display_name });
 
+  // BF_PORTAL_BLOCK_v625_INBOX_COMPOSE_FULL_v1 — load applications list for
+  // the "Insert app link" picker on the Compose modal. Lightweight, runs
+  // once on mount.
+  const [appOptions, setAppOptions] = useState<Array<{ id: string; label: string }>>([]);
+  useEffect(() => {
+    let cancelled = false;
+    api<{ items?: Array<{ id: string; business_name?: string | null; legal_business_name?: string | null; applicant_name?: string | null }> } | Array<any>>(
+      "/api/applications",
+      { params: { pageSize: 100 } },
+    )
+      .then((r) => {
+        if (cancelled) return;
+        const list = Array.isArray(r) ? r : (r?.items ?? []);
+        setAppOptions(
+          list
+            .filter((a: any) => a?.id)
+            .map((a: any) => ({
+              id: String(a.id),
+              label:
+                a.business_name ||
+                a.legal_business_name ||
+                a.applicant_name ||
+                String(a.id).slice(-8).toUpperCase(),
+            }))
+            .slice(0, 100),
+        );
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, height: "100%", background: "#fff", color: "#000", position: "relative" }}>
       {/* BF_PORTAL_BLOCK_v213_INBOX_RECONNECT_M365_v2 — reconnect banner */}
@@ -1259,6 +1290,7 @@ function InboxTab() {
         open={composeOpen}
         fromOptions={mailboxOptions}
         defaultFrom={active}
+        appOptions={appOptions}
         onClose={() => setComposeOpen(false)}
       />
     </div>
