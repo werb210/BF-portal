@@ -643,19 +643,17 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   const [sending, setSending] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Left panel: every CRM contact in silo, sorted by latest activity ─────
+  // BF_PORTAL_BLOCK_v621_MESSAGES_TAB_FALLBACK_v1 — when messages-list returns
+  // empty, fall back to /api/crm/contacts so the left list isn't blank even
+  // before any messages have been exchanged with a contact.
   useEffect(() => {
     let cancelled = false;
-    api<{ conversations?: MessagesListRow[] }>("/api/communications/messages-list", { params: { mode: "all" } })
-      .then((r) => {
+    (async () => {
+      try {
+        const r = await api<{ conversations?: MessagesListRow[] }>("/api/communications/messages-list", { params: { mode: "all" } });
         if (cancelled) return;
         const list = Array.isArray(r.conversations) ? r.conversations : [];
-        // BF_PORTAL_BLOCK_v608_THREE_FIXES_v1 — DON'T filter out NULL contact_id
-        // threads. When applications.contact_id is NULL (typical), mini-portal
-        // messages get inserted with contact_id=NULL and the server keys the
-        // thread on application_id::text. Filtering them out is what made
-        // client→staff sends look "dead" in the staff Messages tab.
-        const mapped: Row[] = list
+        let mapped: Row[] = list
           .filter((c) => c.contact_id || c.thread_key)
           .map((c) => ({
             contactId: (c.contact_id ?? c.thread_key) as string,
@@ -665,10 +663,32 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
             lastBody: c.last_body,
             unread: Number(c.unread_count ?? 0),
           }));
+        mapped.sort((a, b) => {
+          const ta = a.lastAt ? new Date(a.lastAt).getTime() : 0;
+          const tb = b.lastAt ? new Date(b.lastAt).getTime() : 0;
+          return tb - ta;
+        });
+        if (mapped.length === 0) {
+          try {
+            const crm = await api<{ items?: Array<{ id: string; name?: string | null; phone?: string | null; email?: string | null }> } | Array<{ id: string; name?: string | null; phone?: string | null; email?: string | null }>>("/api/crm/contacts", { params: { pageSize: 500 } });
+            const items = Array.isArray(crm) ? crm : (crm as { items?: Array<{ id: string; name?: string | null; phone?: string | null; email?: string | null }> }).items ?? [];
+            mapped = items.map((c) => ({
+              contactId: c.id,
+              name: c.name ?? c.email ?? c.phone ?? "Unknown",
+              phone: c.phone ?? null,
+              lastAt: null,
+              lastBody: null,
+              unread: 0,
+            }));
+          } catch { /* ignore */ }
+        }
+        if (cancelled) return;
         setRows(mapped);
         if (!selected && mapped[0]) setSelected(mapped[0]);
-      })
-      .catch(() => setRows([]));
+      } catch {
+        if (!cancelled) setRows([]);
+      }
+    })();
     return () => {
       cancelled = true;
     };
