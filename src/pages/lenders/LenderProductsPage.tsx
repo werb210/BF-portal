@@ -197,6 +197,8 @@ const LenderProductsContent = () => {
   const [productsState, setProductsState] = useState<LenderProduct[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<"lender" | "productName" | "category" | "country" | "min" | "max" | "active" | "rate" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
   const { user } = useAuth();
   const showDelete = canDelete(user?.role as any);
   void showDelete;
@@ -277,6 +279,12 @@ const LenderProductsContent = () => {
     () => visibleProducts.some((product) => product.category === "STARTUP_CAPITAL") || editingProduct?.category === "STARTUP_CAPITAL",
     [visibleProducts, editingProduct]
   );
+  const cycleSort = (key: NonNullable<typeof sortKey>) => {
+    if (sortKey !== key) { setSortKey(key); setSortDir("asc"); return; }
+    if (sortDir === "asc") setSortDir("desc");
+    else if (sortDir === "desc") { setSortKey(null); setSortDir(null); }
+    else setSortDir("asc");
+  };
 
   const selectedProduct = useMemo(
     () => visibleProducts.find((product) => product.id === selectedProductId) ?? null,
@@ -636,20 +644,33 @@ const LenderProductsContent = () => {
           {!activeLenders.length ? null : (
             <div className="space-y-4">
               {CATEGORY_DISPLAY_ORDER.map((category) => {
-                const productsInCategory = visibleProducts.filter((product) => product.category === category);
+                let productsInCategory = visibleProducts.filter((product) => product.category === category);
+                if (sortKey && sortDir) {
+                  const dir = sortDir === "asc" ? 1 : -1;
+                  productsInCategory = [...productsInCategory].sort((a, b) => {
+                    if (sortKey === "min") return (a.minAmount - b.minAmount) * dir;
+                    if (sortKey === "max") return (a.maxAmount - b.maxAmount) * dir;
+                    if (sortKey === "active") return ((a.active ? 1 : 0) - (b.active ? 1 : 0)) * dir;
+                    const lenderA = safeLenders.find((x) => x.id === a.lenderId)?.name ?? "";
+                    const lenderB = safeLenders.find((x) => x.id === b.lenderId)?.name ?? "";
+                    const av = sortKey === "lender" ? lenderA : sortKey === "country" ? (a.country ?? "") : sortKey === "category" ? (a.category ?? "") : sortKey === "rate" ? String(a.interestRateMin ?? "") : (a.productName ?? "");
+                    const bv = sortKey === "lender" ? lenderB : sortKey === "country" ? (b.country ?? "") : sortKey === "category" ? (b.category ?? "") : sortKey === "rate" ? String(b.interestRateMin ?? "") : (b.productName ?? "");
+                    return av.toLowerCase().localeCompare(bv.toLowerCase()) * dir;
+                  });
+                }
                 if (!productsInCategory.length) return null;
                 return (
                   <div key={category} className="space-y-2">
                     <h3>{PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category]}</h3>
                     <Table
                       headers={[
-                        "Product name",
-                        "Lender",
+                        <button type="button" onClick={() => cycleSort("productName")}>Product Name{sortKey === "productName" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</button>,
+                        <button type="button" onClick={() => cycleSort("lender")}>Lender{sortKey === "lender" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</button>,
                         "Submission",
-                        "Active",
-                        "Min - Max",
-                        "Country",
-                        "Rate type",
+                        <button type="button" onClick={() => cycleSort("active")}>Active{sortKey === "active" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</button>,
+                        <span><button type="button" onClick={() => cycleSort("min")}>Min</button> / <button type="button" onClick={() => cycleSort("max")}>Max</button></span>,
+                        <button type="button" onClick={() => cycleSort("country")}>Country{sortKey === "country" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</button>,
+                        <button type="button" onClick={() => cycleSort("rate")}>Rate{sortKey === "rate" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</button>,
                         "Actions"
                       ]}
                     >
