@@ -727,9 +727,14 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   }, [selected?.contactId]);
 
   // ── Thread load + poll ──────────────────────────────────────────────────
-  // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — thread loader is now
-  // CONTACT-keyed. Messages are one rolling conversation per contact
-  // across all of that contact's apps (Todd #2).
+  // BF_PORTAL_BLOCK_v626_COMMS_REALTIME_v1 — adds:
+  //   • Typing indicator state (whether the OTHER side is typing)
+  //   • read-receipt mark on view (inbound→read_at NOW)
+  //   • Typing emit on draft change (debounced 1.5s)
+  // Thread loader stays contact-keyed (v624).
+  const [otherTyping, setOtherTyping] = useState(false);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const loadThread = useCallback((contactId: string) => {
     if (!contactId) {
       setMessages([]);
@@ -742,6 +747,12 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
       .catch(() => setMessages([]));
   }, []);
 
+  // Mark inbound messages read whenever the staff opens / scrolls a thread.
+  const markRead = useCallback((contactId: string) => {
+    if (!contactId) return;
+    api.post('/api/communications/messages/mark-read', { contactId }).catch(() => undefined);
+  }, []);
+
   useEffect(() => {
     if (pollRef.current) {
       clearInterval(pollRef.current);
@@ -750,17 +761,33 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
     const cid = selected?.contactId ?? null;
     if (!cid) {
       setMessages([]);
+      setOtherTyping(false);
       return;
     }
     setLoadingThread(true);
     loadThread(cid);
+    markRead(cid);
     setLoadingThread(false);
-    pollRef.current = setInterval(() => loadThread(cid), 5000);
+    pollRef.current = setInterval(() => {
+      loadThread(cid);
+      api<{ typing: boolean; label: string | null }>(`/api/communications/messages/typing`, { params: { contactId: cid, side: 'client' } })
+        .then((r) => setOtherTyping(Boolean(r?.typing)))
+        .catch(() => undefined);
+    }, 3000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = null;
     };
-  }, [selected?.contactId, loadThread]);
+  }, [selected?.contactId, loadThread, markRead]);
+
+  useEffect(() => {
+    const cid = selected?.contactId ?? null;
+    if (!cid || !draft) return;
+    api.post('/api/communications/messages/typing', { contactId: cid, side: 'staff' }).catch(() => undefined);
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    typingTimer.current = setTimeout(() => { typingTimer.current = null; }, 1500);
+    return () => { if (typingTimer.current) { clearTimeout(typingTimer.current); typingTimer.current = null; } };
+  }, [draft, selected?.contactId]);
 
   // ── Send ────────────────────────────────────────────────────────────────
   async function send() {
@@ -876,6 +903,11 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                   }))}
                   emptyText="No messages yet — say hello."
                 />
+              )}
+              {otherTyping && (
+                <div style={{ fontSize: 12, color: "#64748b", padding: "4px 0", fontStyle: "italic" }}>
+                  {selected.name} is typing…
+                </div>
               )}
             </div>
             {applicationId && (

@@ -115,7 +115,9 @@ function CalendarContent() {
   // only (Work week), no mini month picker, tasks do NOT render on the
   // grid (they live in the right-side panel only — calendar and tasks are
   // separate per Todd's #14).
-  const [view, setView] = useState<View>("day");
+  // BF_PORTAL_BLOCK_v626_COMMS_REALTIME_v1 — 'year' is a custom view
+  // outside react-big-calendar; rendered separately below.
+  const [view, setView] = useState<View | "year">("day");
   const minTime = useMemo(() => { const d = new Date(); d.setHours(7, 0, 0, 0); return d; }, []);
   const maxTime = useMemo(() => { const d = new Date(); d.setHours(20, 0, 0, 0); return d; }, []);
   // BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — mirror RBC's internal date so the
@@ -228,26 +230,44 @@ function CalendarContent() {
           .rbc-time-view .rbc-time-header-content { font-size: 12px; }
           .rbc-time-slot { font-size: 11px; color: #475569; }
         `}</style>
-        <div style={{ height: 700 }}>
-          <Calendar<CalendarEvent>
-            localizer={localizer}
-            events={events}
-            views={{ day: true, work_week: true, month: true }}
-            view={view}
-            onView={(nextView: View) => setView(nextView)}
-            date={currentDate}
-            onNavigate={(d: Date) => setCurrentDate(d)}
-            defaultView="day"
-            min={minTime}
-            max={maxTime}
-            step={30}
-            timeslots={2}
-            dayLayoutAlgorithm="no-overlap"
-            allDayMaxRows={2}
-            onSelectEvent={(event: CalendarEvent) => setSelectedEvent(event)}
-            eventPropGetter={() => ({ style: { backgroundColor: "#2563eb", borderColor: "#1d4ed8", color: "#fff" } })}
-            popup
-          />
+        <div style={{ height: 700, display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", gap: 8, padding: "0 0 8px 0" }}>
+            <button onClick={() => setView("day")}    style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "day" ? "#0066cc" : "#fff", color: view === "day" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Day</button>
+            <button onClick={() => setView("work_week")} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "work_week" ? "#0066cc" : "#fff", color: view === "work_week" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Week</button>
+            <button onClick={() => setView("month")}  style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "month" ? "#0066cc" : "#fff", color: view === "month" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Month</button>
+            <button onClick={() => setView("year")}   style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "year" ? "#0066cc" : "#fff", color: view === "year" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Year</button>
+          </div>
+
+          {view === "year" ? (
+            <YearView
+              year={currentDate.getFullYear()}
+              events={events}
+              onPrevYear={() => setCurrentDate(new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1))}
+              onNextYear={() => setCurrentDate(new Date(currentDate.getFullYear() + 1, currentDate.getMonth(), 1))}
+              onPickDay={(d) => { setCurrentDate(d); setView("day"); }}
+            />
+          ) : (
+            <Calendar<CalendarEvent>
+              localizer={localizer}
+              events={events}
+              views={{ day: true, work_week: true, month: true }}
+              view={view as View}
+              onView={(nextView: View) => setView(nextView)}
+              date={currentDate}
+              onNavigate={(d: Date) => setCurrentDate(d)}
+              defaultView="day"
+              min={minTime}
+              max={maxTime}
+              step={30}
+              timeslots={2}
+              dayLayoutAlgorithm="no-overlap"
+              allDayMaxRows={2}
+              onSelectEvent={(event: CalendarEvent) => setSelectedEvent(event)}
+              eventPropGetter={() => ({ style: { backgroundColor: "#2563eb", borderColor: "#1d4ed8", color: "#fff" } })}
+              popup
+              toolbar={false}
+            />
+          )}
         </div>
       </section>
 
@@ -468,5 +488,101 @@ const CalendarPage = () => (
     <CalendarContent />
   </RequireRole>
 );
+
+function YearView({
+  year,
+  events,
+  onPrevYear,
+  onNextYear,
+  onPickDay,
+}: {
+  year: number;
+  events: CalendarEvent[];
+  onPrevYear: () => void;
+  onNextYear: () => void;
+  onPickDay: (d: Date) => void;
+}) {
+  const eventDays = useMemo(() => {
+    const s = new Set<string>();
+    for (const e of events) {
+      const d = new Date(e.start);
+      s.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+    }
+    return s;
+  }, [events]);
+
+  const months = Array.from({ length: 12 }, (_, m) => m);
+  const dayLetters = ["S", "M", "T", "W", "T", "F", "S"];
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  function monthCells(monthIdx: number): Array<{ key: string; day: number | null; date: Date | null }> {
+    const first = new Date(year, monthIdx, 1);
+    const offset = first.getDay();
+    const daysIn = new Date(year, monthIdx + 1, 0).getDate();
+    const cells: Array<{ key: string; day: number | null; date: Date | null }> = [];
+    for (let i = 0; i < offset; i++) cells.push({ key: `b-${monthIdx}-${i}`, day: null, date: null });
+    for (let d = 1; d <= daysIn; d++) {
+      const dt = new Date(year, monthIdx, d);
+      cells.push({ key: `${monthIdx}-${d}`, day: d, date: dt });
+    }
+    while (cells.length % 7 !== 0) cells.push({ key: `a-${monthIdx}-${cells.length}`, day: null, date: null });
+    return cells;
+  }
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, background: "#fff" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <button onClick={onPrevYear} style={{ padding: "6px 12px", border: "1px solid #cbd6e2", borderRadius: 6, background: "#fff", cursor: "pointer" }}>← {year - 1}</button>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#0f172a" }}>{year}</h2>
+        <button onClick={onNextYear} style={{ padding: "6px 12px", border: "1px solid #cbd6e2", borderRadius: 6, background: "#fff", cursor: "pointer" }}>{year + 1} →</button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+        {months.map((m) => {
+          const name = new Date(year, m, 1).toLocaleDateString(undefined, { month: "long" });
+          return (
+            <div key={m} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "#0f172a", marginBottom: 6 }}>{name}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, fontSize: 11 }}>
+                {dayLetters.map((l, i) => (
+                  <div key={`h-${m}-${i}`} style={{ textAlign: "center", color: "#94a3b8", fontWeight: 600, padding: "2px 0" }}>{l}</div>
+                ))}
+                {monthCells(m).map((cell) => {
+                  if (cell.day == null) return <div key={cell.key} />;
+                  const key = `${year}-${String(m + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
+                  const hasEvent = eventDays.has(key);
+                  const isToday = key === todayKey;
+                  return (
+                    <button
+                      key={cell.key}
+                      onClick={() => cell.date && onPickDay(cell.date)}
+                      style={{
+                        position: "relative",
+                        textAlign: "center",
+                        padding: "4px 0",
+                        border: 0,
+                        background: isToday ? "#dbeafe" : "transparent",
+                        color: isToday ? "#1d4ed8" : "#0f172a",
+                        fontWeight: isToday ? 700 : 400,
+                        cursor: "pointer",
+                        borderRadius: 4,
+                        fontSize: 11,
+                      }}
+                    >
+                      {cell.day}
+                      {hasEvent && (
+                        <span style={{ position: "absolute", bottom: 2, left: "50%", transform: "translateX(-50%)", width: 4, height: 4, borderRadius: "50%", background: "#2563eb" }} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default CalendarPage;
