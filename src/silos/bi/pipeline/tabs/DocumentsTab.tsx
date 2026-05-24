@@ -184,7 +184,11 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
         </div>
       </div>
 
-      {docs.map((d) => (
+      {/* BF_PORTAL_BLOCK_v623_MEGAFIX_v1 — filter out docs already shown
+          in the Required-documents section above. */}
+      {docs
+        .filter((d) => !visibleDocs.some((rd) => rd.doc_type === (d.doc_slot ?? d.doc_type)))
+        .map((d) => (
         <div key={d.id} className="flex justify-between rounded border border-white/10 p-2">
           <div className="min-w-0">
             <div className="text-sm font-medium">

@@ -126,7 +126,13 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
           latest: row.latest_message_at ?? "",
         })).filter((c) => c.id);
         if (mapped.length > 0) {
-          mapped.sort((a, b) => new Date(b.latest).getTime() - new Date(a.latest).getTime());
+          mapped.sort((a, b) => {
+            const ta = a.latest ? new Date(a.latest).getTime() : 0;
+            const tb = b.latest ? new Date(b.latest).getTime() : 0;
+            const tas = Number.isNaN(ta) ? 0 : ta;
+            const tbs = Number.isNaN(tb) ? 0 : tb;
+            return tbs - tas;
+          });
           setContacts(mapped as Contact[]);
           setHasSentMessages(true);
         } else {
@@ -220,8 +226,8 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
   }, [selected, loadMessages]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [threads, selected]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [threads, selected, threadMessages.length]);
 
   async function send() {
     const selectedContact = selected;
