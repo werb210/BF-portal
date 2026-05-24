@@ -121,19 +121,19 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
       const r = await api<{
         conversations?: Array<{
           contact_id?: string;
-          contact_name?: string;
-          contact_phone?: string | null;
-          latest_message_at?: string;
-          preview?: string;
+          display_name?: string;
+          phone?: string | null;
+          last_at?: string;
+          last_body?: string;
           unread_count?: number;
         }>;
-      }>("/api/communications/sms");
+      }>("/api/communications/sms", { params: { mode: "all" } });
       const convo = Array.isArray(r.conversations) ? r.conversations : [];
       const meta: Record<string, { unread: number; latest: string }> = {};
       for (const row of convo) {
         const id = row.contact_id ?? "";
         if (!id) continue;
-        meta[id] = { unread: Number(row.unread_count ?? 0), latest: row.latest_message_at ?? "" };
+        meta[id] = { unread: Number(row.unread_count ?? 0), latest: row.last_at ?? "" };
       }
       setContactMeta(meta);
       return convo;
@@ -146,21 +146,21 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     return () => clearInterval(tick);
   }, [fetchSmsConversations]);
   useEffect(() => {
-    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null; latest_message_at?: string; preview?: string; unread_count?: number }> }>("/api/communications/sms")
+    api<{ conversations?: Array<{ contact_id?: string; display_name?: string; phone?: string | null; last_at?: string; last_body?: string; unread_count?: number }> }>("/api/communications/sms", { params: { mode: "all" } })
       .then(async (r) => {
         const convo = Array.isArray(r.conversations) ? r.conversations : [];
         const meta: Record<string, { unread: number; latest: string }> = {};
         for (const row of convo) {
           const id = row.contact_id ?? "";
           if (!id) continue;
-          meta[id] = { unread: Number(row.unread_count ?? 0), latest: row.latest_message_at ?? "" };
+          meta[id] = { unread: Number(row.unread_count ?? 0), latest: row.last_at ?? "" };
         }
         setContactMeta(meta);
         const mapped = convo.map((row) => ({
           id: row.contact_id ?? "",
-          name: row.contact_name ?? row.contact_phone ?? "Unknown",
-          phone: row.contact_phone ?? null,
-          latest: row.latest_message_at ?? "",
+          name: row.display_name ?? row.phone ?? "Unknown",
+          phone: row.phone ?? null,
+          latest: row.last_at ?? "",
         })).filter((c) => c.id);
         if (mapped.length > 0) {
           mapped.sort((a, b) => {
@@ -171,6 +171,9 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
             return tbs - tas;
           });
           setContacts(mapped as Contact[]);
+          if (!selected && mapped[0]) {
+            setSelected(mapped[0] as Contact);
+          }
           setHasSentMessages(true);
         } else {
           // BF_PORTAL_BLOCK_57R_CAL_DOCS_DELETE_REFERRER_COMMS_v2
@@ -591,7 +594,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
             <div
               style={{
                 padding: "8px 16px 12px 16px",
-                paddingRight: 80,
+                paddingRight: 88,
                 borderTop: "1px solid #f0f0f5",
                 display: "flex",
                 alignItems: "flex-end",
@@ -879,7 +882,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
       // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — POST is now contactId
       // first; applicationId optional (sent if a current app is resolved).
       await api.post("/api/communications/messages/send", { contactId: cid, applicationId: applicationId ?? undefined, body: text });
-      loadThread(cid);
+      await loadThread(cid);
     } catch (err) {
       console.error("[messages tab] send failed", err);
     } finally {
@@ -977,7 +980,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
               )}
             </div>
             {applicationId && (
-              <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 16px", display: "flex", gap: 8, background: "#fff" }}>
+              <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 16px", paddingRight: 88, display: "flex", gap: 8, background: "#fff" }}>
                 <textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
