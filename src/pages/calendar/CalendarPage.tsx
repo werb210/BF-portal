@@ -110,7 +110,14 @@ function groupTasks(tasks: CalendarTask[]) {
 function CalendarContent() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [view, setView] = useState<View>("month");
+  // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — Calendar config locked to
+  // Todd's spec: Day default, 7am–8pm visible hours, Week shows Mon–Fri
+  // only (Work week), no mini month picker, tasks do NOT render on the
+  // grid (they live in the right-side panel only — calendar and tasks are
+  // separate per Todd's #14).
+  const [view, setView] = useState<View>("day");
+  const minTime = useMemo(() => { const d = new Date(); d.setHours(7, 0, 0, 0); return d; }, []);
+  const maxTime = useMemo(() => { const d = new Date(); d.setHours(20, 0, 0, 0); return d; }, []);
   // BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — mirror RBC's internal date so the
   // explicit month/year header updates when staff clicks Back/Next.
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
@@ -179,8 +186,10 @@ function CalendarContent() {
   const groupedTasks = useMemo(() => groupTasks(Array.isArray(tasksQuery.data) ? tasksQuery.data : []), [tasksQuery.data]);
 
   const events = useMemo<CalendarEvent[]>(() => {
+    // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — calendar grid shows
+    // EVENTS only. Tasks have their own right-side panel (per Todd's #14).
     const list = Array.isArray(eventsQuery.data) ? eventsQuery.data : [];
-    const calendarEvents = list
+    return list
       .filter((event) => event.start && event.end)
       .map((event) => ({
         id: event.id,
@@ -189,41 +198,8 @@ function CalendarContent() {
         end: new Date(event.end as string),
         resource: { ...event, source: "calendar" as const },
       }));
-
-    const tasks = Array.isArray(tasksQuery.data) ? tasksQuery.data : [];
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    const taskEvents = tasks
-      .map((task) => {
-        // BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — drop completed tasks from the grid.
-        const isDone = task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed);
-        if (isDone) return null;
-        const due = task.due_date ?? task.dueDate ?? task.dueAt;
-        if (!due) return null;
-        const dueDate = new Date(due);
-        if (Number.isNaN(dueDate.getTime())) return null;
-        const dayStart = new Date(dueDate);
-        dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(dayStart);
-        dayEnd.setDate(dayEnd.getDate() + 1);
-        const taskState: "overdue" | "dueToday" | "upcoming" = dayStart < start ? "overdue" : dayStart < end ? "dueToday" : "upcoming";
-        return {
-          id: `task-${task.id ?? task.title}`,
-          title: task.title ?? "Untitled task",
-          start: dayStart,
-          end: dayEnd,
-          allDay: true,
-          resource: { source: "task" as const, taskId: task.id, taskState },
-        } satisfies CalendarEvent;
-      })
-      .filter((event): event is NonNullable<typeof event> => event !== null);
-
-    return [...calendarEvents, ...taskEvents]
-      .filter((event): event is NonNullable<typeof event> => event !== null)
-      .map((event) => ({ ...event, id: event.id ?? `cal-${crypto.randomUUID()}` }));
-  }, [eventsQuery.data, tasksQuery.data]);
+  }, [eventsQuery.data]);
+  void tasksQuery; // tasks still loaded for the right-side panel below
 
   return (
     <div className="page" style={{ display: "grid", gridTemplateColumns: "65% 35%", gap: 16, minHeight: "calc(100vh - 160px)" }}>
@@ -256,26 +232,20 @@ function CalendarContent() {
           <Calendar<CalendarEvent>
             localizer={localizer}
             events={events}
-            views={["month", "week", "day"]}
+            views={{ day: true, work_week: true, month: true }}
             view={view}
             onView={(nextView: View) => setView(nextView)}
             date={currentDate}
             onNavigate={(d: Date) => setCurrentDate(d)}
-            defaultView="month"
+            defaultView="day"
+            min={minTime}
+            max={maxTime}
+            step={30}
+            timeslots={2}
             dayLayoutAlgorithm="no-overlap"
             allDayMaxRows={2}
-            onSelectEvent={(event: CalendarEvent) => {
-              if (event.resource.source === "task" && event.resource.taskId) {
-                navigate(`/tasks?taskId=${event.resource.taskId}`);
-                return;
-              }
-              setSelectedEvent(event);
-            }}
-            eventPropGetter={(event: CalendarEvent) => {
-              if (event.resource.source !== "task") return { style: {} };
-              const backgroundColor = event.resource.taskState === "overdue" ? "#dc2626" : event.resource.taskState === "dueToday" ? "#f97316" : "#0f766e";
-              return { style: { backgroundColor, borderColor: backgroundColor, color: "#fff" } };
-            }}
+            onSelectEvent={(event: CalendarEvent) => setSelectedEvent(event)}
+            eventPropGetter={() => ({ style: { backgroundColor: "#2563eb", borderColor: "#1d4ed8", color: "#fff" } })}
             popup
           />
         </div>

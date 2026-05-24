@@ -727,8 +727,15 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   }, [selected?.contactId]);
 
   // ── Thread load + poll ──────────────────────────────────────────────────
-  const loadThread = useCallback((appId: string) => {
-    api<MsgRow[]>(`/api/communications/messages/thread/${encodeURIComponent(appId)}`)
+  // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — thread loader is now
+  // CONTACT-keyed. Messages are one rolling conversation per contact
+  // across all of that contact's apps (Todd #2).
+  const loadThread = useCallback((contactId: string) => {
+    if (!contactId) {
+      setMessages([]);
+      return;
+    }
+    api<MsgRow[]>(`/api/communications/messages/thread`, { params: { contactId } })
       .then((r) => {
         setMessages(Array.isArray(r) ? r : []);
       })
@@ -740,28 +747,29 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
       clearInterval(pollRef.current);
       pollRef.current = null;
     }
-    if (!applicationId) {
+    const cid = selected?.contactId ?? null;
+    if (!cid) {
       setMessages([]);
       return;
     }
     setLoadingThread(true);
-    loadThread(applicationId);
+    loadThread(cid);
     setLoadingThread(false);
-    pollRef.current = setInterval(() => loadThread(applicationId), 5000);
+    pollRef.current = setInterval(() => loadThread(cid), 5000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = null;
     };
-  }, [applicationId, loadThread]);
+  }, [selected?.contactId, loadThread]);
 
   // ── Send ────────────────────────────────────────────────────────────────
   async function send() {
-    if (!applicationId || !draft.trim() || sending) return;
+    const cid = selected?.contactId ?? null;
+    if (!cid || !draft.trim() || sending) return;
     setSending(true);
     const text = draft.trim();
     setDraft("");
     try {
-      // Optimistic append. Server returns the canonical row; we replace on poll.
       const optimisticId = `local-${Date.now()}`;
       setMessages((prev) => [
         ...prev,
@@ -774,9 +782,10 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
           source: "staff",
         },
       ]);
-      await api.post("/api/communications/messages/send", { applicationId, body: text });
-      // Poll picks up the canonical row on the next tick.
-      loadThread(applicationId);
+      // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — POST is now contactId
+      // first; applicationId optional (sent if a current app is resolved).
+      await api.post("/api/communications/messages/send", { contactId: cid, applicationId: applicationId ?? undefined, body: text });
+      loadThread(cid);
     } catch (err) {
       console.error("[messages tab] send failed", err);
     } finally {
@@ -812,6 +821,9 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
             style={{
               width: "100%",
               textAlign: "left",
+              // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — unread contacts
+              // get a bold left border (no numeric badge per Todd's #9).
+              borderLeft: c.unread > 0 ? "4px solid #2563eb" : "4px solid transparent",
               border: 0,
               background: selected?.contactId === c.contactId ? "#f0f9ff" : "transparent",
               padding: "10px 8px",
@@ -821,20 +833,16 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
               display: "flex",
               flexDirection: "column",
               gap: 2,
+              fontWeight: c.unread > 0 ? 700 : 400,
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{c.name}</div>
+              <div style={{ fontWeight: c.unread > 0 ? 700 : 600, fontSize: 14 }}>{c.name}</div>
               <div style={{ fontSize: 11, color: "#94a3b8" }}>{fmtAt(c.lastAt)}</div>
             </div>
             {c.lastBody && (
-              <div style={{ fontSize: 12, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: 12, color: c.unread > 0 ? "#1e293b" : "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {c.lastBody}
-              </div>
-            )}
-            {c.unread > 0 && (
-              <div style={{ alignSelf: "flex-start", background: "#2563eb", color: "#fff", fontSize: 11, fontWeight: 700, padding: "1px 6px", borderRadius: 10, marginTop: 2 }}>
-                {c.unread}
               </div>
             )}
           </button>
