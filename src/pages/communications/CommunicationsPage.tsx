@@ -115,10 +115,47 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     );
   }, []);
 
+  const [contactMeta, setContactMeta] = useState<Record<string, { unread: number; latest: string }>>({});
+  const fetchSmsConversations = useCallback(async () => {
+    try {
+      const r = await api<{
+        conversations?: Array<{
+          contact_id?: string;
+          contact_name?: string;
+          contact_phone?: string | null;
+          latest_message_at?: string;
+          preview?: string;
+          unread_count?: number;
+        }>;
+      }>("/api/communications/sms");
+      const convo = Array.isArray(r.conversations) ? r.conversations : [];
+      const meta: Record<string, { unread: number; latest: string }> = {};
+      for (const row of convo) {
+        const id = row.contact_id ?? "";
+        if (!id) continue;
+        meta[id] = { unread: Number(row.unread_count ?? 0), latest: row.latest_message_at ?? "" };
+      }
+      setContactMeta(meta);
+      return convo;
+    } catch {
+      return [];
+    }
+  }, []);
   useEffect(() => {
-    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null; latest_message_at?: string; preview?: string }> }>("/api/communications/sms")
+    const tick = setInterval(() => { void fetchSmsConversations(); }, 5000);
+    return () => clearInterval(tick);
+  }, [fetchSmsConversations]);
+  useEffect(() => {
+    api<{ conversations?: Array<{ contact_id?: string; contact_name?: string; contact_phone?: string | null; latest_message_at?: string; preview?: string; unread_count?: number }> }>("/api/communications/sms")
       .then(async (r) => {
         const convo = Array.isArray(r.conversations) ? r.conversations : [];
+        const meta: Record<string, { unread: number; latest: string }> = {};
+        for (const row of convo) {
+          const id = row.contact_id ?? "";
+          if (!id) continue;
+          meta[id] = { unread: Number(row.unread_count ?? 0), latest: row.latest_message_at ?? "" };
+        }
+        setContactMeta(meta);
         const mapped = convo.map((row) => ({
           id: row.contact_id ?? "",
           name: row.contact_name ?? row.contact_phone ?? "Unknown",
@@ -169,6 +206,12 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
       setThreadMessages([]);
       return;
     }
+    setContactMeta((prev) => {
+      const id = String(selected.id ?? "");
+      const existing = id ? prev[id] : undefined;
+      if (!existing) return prev;
+      return { ...prev, [id]: { unread: 0, latest: existing.latest } };
+    });
     let cancelled = false;
     (async () => {
       try {
@@ -283,10 +326,20 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     return d.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
   }
 
-  const filtered = contacts.filter((c) => {
-    const q = search.toLowerCase();
-    return c.name?.toLowerCase().includes(q) || c.phone?.includes(q);
-  });
+  const filtered = contacts
+    .filter((c) => {
+      const q = search.toLowerCase();
+      return c.name?.toLowerCase().includes(q) || c.phone?.includes(q);
+    })
+    .sort((a, b) => {
+      const ma = contactMeta[String(a.id ?? "")];
+      const mb = contactMeta[String(b.id ?? "")];
+      const ta = ma?.latest ? new Date(ma.latest).getTime() : 0;
+      const tb = mb?.latest ? new Date(mb.latest).getTime() : 0;
+      const tas = Number.isNaN(ta) ? 0 : ta;
+      const tbs = Number.isNaN(tb) ? 0 : tb;
+      return tbs - tas;
+    });
 
   const messages = selected ? threadMessages : [];
 
@@ -407,6 +460,9 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
           {filtered.map((c) => {
             const last = lastMessage(c.id);
             const isSelected = selected?.id === c.id;
+            const meta = contactMeta[String(c.id ?? "")];
+            const unread = Number(meta?.unread ?? 0);
+            const hasUnread = unread > 0 && !isSelected;
             return (
               <div
                 key={c.id}
@@ -420,21 +476,27 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   gap: 12,
                   padding: "10px 16px",
                   cursor: "pointer",
-                  borderBottom: "1px solid #f0f0f5",
-                  background: isSelected ? "#e8f0fe" : "transparent",
+                  background: isSelected ? "#e8f0fe" : (hasUnread ? "#eff6ff" : "transparent"),
+                  borderTop: hasUnread ? "2px solid #2563eb" : "2px solid transparent",
+                  borderRight: hasUnread ? "2px solid #2563eb" : "2px solid transparent",
+                  borderLeft: hasUnread ? "2px solid #2563eb" : "2px solid transparent",
+                  borderBottom: hasUnread ? "2px solid #2563eb" : "1px solid #f0f0f5",
+                  transition: "background 0.2s ease-out, border-color 0.2s ease-out",
+                  position: "relative",
                 }}
               >
                 <Avatar name={c.name} size={44} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                    <span style={{ fontWeight: 600, fontSize: 15, color: "#000" }}>{c.name}</span>
-                    {last && <span style={{ fontSize: 11, color: "#8e8e93", flexShrink: 0 }}>{timeLabel(last.created_at)}</span>}
+                    <span style={{ fontWeight: hasUnread ? 700 : 600, fontSize: 15, color: "#000" }}>{c.name}</span>
+                    {last && <span style={{ fontSize: 11, color: hasUnread ? "#2563eb" : "#8e8e93", flexShrink: 0, fontWeight: hasUnread ? 600 : 400 }}>{timeLabel(last.created_at)}</span>}
                   </div>
                   {last ? (
                     <div
                       style={{
                         fontSize: 13,
-                        color: "#8e8e93",
+                        color: hasUnread ? "#1e293b" : "#8e8e93",
+                        fontWeight: hasUnread ? 500 : 400,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -447,6 +509,11 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                     <div style={{ fontSize: 13, color: "#c7c7cc" }}>{c.phone}</div>
                   )}
                 </div>
+                {hasUnread && (
+                  <div style={{ position: "absolute", top: 6, right: 8, minWidth: 18, height: 18, borderRadius: 9, background: "#2563eb", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }} aria-label={`${unread} unread`}>
+                    {unread > 99 ? "99+" : unread}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -838,7 +905,6 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
       <div style={{ borderRight: "1px solid #e2e8f0", padding: 12, overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ margin: 0 }}>Messages</h3>
-          <button onClick={() => setOpen(true)} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px", fontWeight: 600 }}>+ New SMS</button>
         </div>
         {rows.map((c) => (
           <button
@@ -885,7 +951,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
               {selected.phone && <div style={{ fontSize: 12, color: "#3c3c43" }}>{selected.phone}</div>}
               {!applicationId && (
                 <div style={{ fontSize: 11, color: "#b45309", marginTop: 4 }}>
-                  No application on file — send an SMS via "+ New SMS" to reach this contact.
+                  No active application linked to this contact yet — once they start an application the thread becomes active.
                 </div>
               )}
             </div>

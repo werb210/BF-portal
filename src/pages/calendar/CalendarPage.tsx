@@ -295,10 +295,12 @@ function CalendarContent() {
               <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>None</p>
             ) : (
               (items as CalendarTask[]).map((task) => (
-                <div key={task.id ?? `${task.title}-${task.due_date}`} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
-                  <input type="checkbox" checked={task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed)} onChange={() => task.id && completeTaskMutation.mutate(task)} />
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{task.title ?? "Untitled task"}</div>
+                <div key={task.id ?? `${task.title}-${task.due_date}`} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f5f9", alignItems: "flex-start" }}>
+                  <input type="checkbox" style={{ marginTop: 3 }} checked={task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed)} onChange={() => task.id && completeTaskMutation.mutate(task)} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: "#0f172a", wordBreak: "break-word" }}>
+                      {(typeof task.title === "string" && task.title.trim()) ? task.title : "Untitled task"}
+                    </div>
                     <div style={{ fontSize: 12, color: "#64748b" }}>
                       Due: {(task.dueAt ?? task.due_date ?? task.dueDate) ? new Date(task.dueAt ?? task.due_date ?? task.dueDate ?? "").toLocaleString() : "-"}
                     </div>
