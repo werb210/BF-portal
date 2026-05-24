@@ -41,7 +41,7 @@ describe("CommunicationsPage", () => {
 
     render(<CommunicationsPage />);
 
-    fireEvent.click((await screen.findAllByText("Jordan Lee"))[0]);
+    fireEvent.click((await screen.findAllByText("Jordan Lee"))[0]!);
 
     await waitFor(() => {
       expect(apiMock).toHaveBeenCalledWith("/api/communications/sms/thread", { params: { contactId: "c-1" } });

@@ -17,7 +17,7 @@ describe("Sms thread", () => {
     apiMock.mockResolvedValueOnce({ messages: [{ id: "m1", direction: "inbound", body: "hi", created_at: new Date().toISOString() }] });
     apiMock.mockResolvedValueOnce({ messages: [{ id: "m1", direction: "inbound", body: "hi", created_at: new Date().toISOString() }] });
     render(<CommunicationsPage />);
-    fireEvent.click((await screen.findAllByText("Jordan"))[0]);
+    fireEvent.click((await screen.findAllByText("Jordan"))[0]!);
     expect((await screen.findAllByText("hi")).length).toBeGreaterThan(0);
   });
 
@@ -26,7 +26,7 @@ describe("Sms thread", () => {
     apiMock.mockResolvedValueOnce({ conversations: [{ contact_id: "c-1", display_name: "Jordan", phone: "+1555", last_at: new Date().toISOString(), last_body: "hi" }] });
     apiMock.mockResolvedValueOnce({ messages: [] });
     render(<CommunicationsPage />);
-    fireEvent.click((await screen.findAllByText("Jordan"))[0]);
+    fireEvent.click((await screen.findAllByText("Jordan"))[0]!);
     await waitFor(() => expect(screen.getByText(/No messages yet/i)).toBeInTheDocument());
   });
 });
