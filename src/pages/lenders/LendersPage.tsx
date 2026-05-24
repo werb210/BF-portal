@@ -601,13 +601,13 @@ function CreateProductModal({
         interestRateMin: form.minRate ? Number(form.minRate) : null,
         interestRateMax: form.maxRate ? Number(form.maxRate) : null,
         rateType: "fixed",
-        // BF_PORTAL_BLOCK_v627_LENDER_PRODUCT_RATE_KIND_v1 — translate the
-        // short rate-kind code used in the modal UI to the canonical string
-        // expected by the BF-Server schema (v647 migration CHECK constraint).
-        rate_kind:
-          form.rateKind === "monthly" ? "Monthly %" :
-          form.rateKind === "factor"  ? "Factor (MCA)" :
-          "APR %",
+        // BF_PORTAL_BLOCK_v628_LENDER_PRODUCT_RATE_KIND_REVERT_v1 — v627
+        // translated short codes to long display strings ("Monthly %",
+        // "Factor (MCA)", "APR %") on submit, which the BF-Server CHECK
+        // constraint (lender_products_rate_kind_check, from migration v640)
+        // rejects — that constraint requires the lowercase short codes
+        // ('apr','monthly','factor') exactly. Send the raw short code.
+        rate_kind: form.rateKind,
         rate_min_num: form.minRate ? Number(form.minRate) : null,
         rate_max_num: form.maxRate ? Number(form.maxRate) : null,
         category_label: CATEGORY_LABELS[form.category] ?? form.category,
