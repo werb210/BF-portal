@@ -144,13 +144,43 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
       <div className="rounded border border-white/10 p-3">
         <div className="mb-2 text-sm font-semibold">Required documents</div>
         {requiredDocsError && <div className="mb-2 text-xs text-red-300">{requiredDocsError}</div>}
+        {/* BF_PORTAL_BLOCK_v620_BI_DOCS_INLINE_v1 — surface View/Accept/Reject
+            inline per requirement row. */}
         <div className="space-y-2">
-          {visibleDocs.map((rd) => (
-            <div key={rd.doc_type} className="rounded border border-white/10 p-2">
-              <div className="text-sm font-medium">{rd.display_label}</div>
-              {rd.description && <div className="text-xs text-white/60">{rd.description}</div>}
-            </div>
-          ))}
+          {visibleDocs.map((rd) => {
+            const uploaded = docs.find((dd) => (dd.doc_slot ?? dd.doc_type) === rd.doc_type);
+            return (
+              <div key={rd.doc_type} className="rounded border border-white/10 p-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium">
+                      {rd.display_label}
+                      {uploaded?.status === "accepted" && (
+                        <span className="ml-2 rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-200">Accepted</span>
+                      )}
+                      {uploaded?.status === "rejected" && (
+                        <span className="ml-2 rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-red-200">Rejected</span>
+                      )}
+                      {!uploaded && (
+                        <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-white/60">Awaiting upload</span>
+                      )}
+                    </div>
+                    {rd.description && <div className="text-xs text-white/60">{rd.description}</div>}
+                    {uploaded?.file_name && (
+                      <div className="mt-1 text-xs text-white/70">📄 {uploaded.file_name}</div>
+                    )}
+                  </div>
+                  {!readOnly && uploaded && (
+                    <div className="flex shrink-0 gap-1">
+                      <button onClick={() => void view(uploaded.id)} className="rounded bg-white/10 px-2 py-1 text-xs">View</button>
+                      <button disabled={uploaded.status === "accepted"} onClick={() => accept(uploaded.id)} className="rounded bg-emerald-600/80 px-2 py-1 text-xs disabled:opacity-50">Accept</button>
+                      <button disabled={uploaded.status === "rejected"} onClick={() => reject(uploaded.id, uploaded.file_name)} className="rounded bg-amber-600/80 px-2 py-1 text-xs disabled:opacity-50">Reject</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -150,35 +150,8 @@ export default function ApplicationTab({ app, onMutated, readOnly = false }: { r
     app.all_docs_accepted &&
     !app.submission_locked;
 
-  // BF_PORTAL_BLOCK_v617_BI_APP_DECLINE_v1 — staff can close out an application
-  // before carrier submission. Available in all pre-submission stages on public
-  // apps. Disabled once submitted/approved/declined to avoid stage thrashing.
-  const [declining, setDeclining] = useState(false);
-  const canDecline =
-    app.source_type === "public" &&
-    !["submitted", "ready_for_submission", "approved", "declined", "policy_issued"].includes(app.stage as string);
-
-  async function declineApplication() {
-    const reason = window.prompt("Reason for declining this application?\n(minimum 4 characters, will be logged)");
-    if (reason == null) return;
-    const trimmed = reason.trim();
-    if (trimmed.length < 4) {
-      toast.error("Reason must be at least 4 characters");
-      return;
-    }
-    if (!confirm(`Decline this application?\n\nReason: ${trimmed}\n\nThis sets stage to 'declined' and is logged. It cannot be undone from here.`)) return;
-    setDeclining(true);
-    try {
-      await api(`/api/v1/bi/applications/${app.id}/staff-decline`, { method: "POST", body: JSON.stringify({ reason: trimmed }) });
-      toast.success("Application declined");
-      onMutated();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Decline failed");
-    } finally {
-      setDeclining(false);
-    }
-  }
-
+  // BF_PORTAL_BLOCK_v620_BI_DOCS_INLINE_v1 — v617 Decline button removed
+  // per Todd's directive ("you never asked for it"). Reverted.
   async function submitToCarrier() {
     if (!confirm("Submit this application to the carrier? The application will be locked.")) return;
     setSubmitting(true);
@@ -195,28 +168,14 @@ export default function ApplicationTab({ app, onMutated, readOnly = false }: { r
   return (
     <div className="space-y-6">
       <DecisionBanner app={app} />
-      {/* BF_PORTAL_BLOCK_v617_BI_APP_DECLINE_v1 — Submit + Decline live side by side. */}
-      {!readOnly && (canSubmit || canDecline) && (
-        <div className="flex gap-3">
-          {canSubmit && (
-            <button
-              onClick={submitToCarrier}
-              disabled={submitting || declining}
-              className="rounded bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-            >
-              {submitting ? "Submitting…" : "Submit to Carrier"}
-            </button>
-          )}
-          {canDecline && (
-            <button
-              onClick={declineApplication}
-              disabled={submitting || declining}
-              className="rounded border border-red-500/60 bg-red-600/20 px-6 py-3 font-semibold text-red-200 hover:bg-red-600/40 disabled:opacity-50"
-            >
-              {declining ? "Declining…" : "Decline Application"}
-            </button>
-          )}
-        </div>
+      {!readOnly && canSubmit && (
+        <button
+          onClick={submitToCarrier}
+          disabled={submitting}
+          className="rounded bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {submitting ? "Submitting…" : "Submit to Carrier"}
+        </button>
       )}
       {/* BF_PORTAL_BLOCK_82_45_FIELDS_v1 - full 45-question render per
           BOREAL_FINANCIAL_SYSTEM sec 7. Six sections matching the
