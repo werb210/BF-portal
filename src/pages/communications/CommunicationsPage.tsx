@@ -1069,6 +1069,40 @@ function InboxTab() {
     }
   };
 
+  // BF_PORTAL_BLOCK_v622_INBOX_REFRESH_DELETE_v1 — delete + auto-refresh
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const handleDelete = useCallback(async (messageId: string): Promise<void> => {
+    if (!messageId) return;
+    if (!window.confirm("Move this email to Deleted Items?")) return;
+    setDeletingId(messageId);
+    try {
+      const params = active ? { mailbox: active } : {};
+      await api(`/api/crm/inbox/${encodeURIComponent(messageId)}`, { method: "DELETE", params });
+      setMessages((prev) => prev.filter((mm) => mm.id !== messageId));
+      setSelectedId((sid) => (sid === messageId ? "" : sid));
+      setSelected((sel) => (selectedId === messageId ? null : sel));
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Delete failed";
+      setErr(message);
+    } finally {
+      setDeletingId(null);
+    }
+  }, [active, selectedId]);
+
+  useEffect(() => {
+    if (needsReconnect) return;
+    const tick = setInterval(() => {
+      (async () => {
+        try {
+          const params = active ? { mailbox: active } : {};
+          const r = await withO365Refresh(() => api<typeof messages>("/api/crm/inbox", { params }));
+          if (Array.isArray(r)) setMessages(r);
+        } catch { /* background poll: swallow */ }
+      })();
+    }, 20000);
+    return () => clearInterval(tick);
+  }, [active, needsReconnect]);
+
   const mailboxOptions: Array<{ value: string; label: string }> = [];
   if (mailboxes.mine) mailboxOptions.push({ value: "", label: `${mailboxes.mine.display_name} (mine)` });
   for (const m of mailboxes.shared) mailboxOptions.push({ value: m.address, label: m.display_name });
@@ -1128,6 +1162,15 @@ function InboxTab() {
             {mailboxOptions.map(o => <option key={o.value || "self"} value={o.value}>{o.label}</option>)}
             {mailboxOptions.length === 0 && <option value="">No mailbox available</option>}
           </select>
+          <button
+            type="button"
+            onClick={() => setReconnectAttempts((n) => n + 1)}
+            disabled={loading}
+            style={{ width: "100%", padding: "6px 10px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#f8fafc", color: "#33475b", fontSize: 12, cursor: loading ? "default" : "pointer" }}
+          >
+            {loading ? "Refreshing…" : "↻ Refresh inbox"}
+          </button>
+          <div style={{ fontSize: 10, color: "#94a3b8", textAlign: "center" }}>Auto-refreshes every 20s</div>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
@@ -1137,29 +1180,45 @@ function InboxTab() {
             <div style={{ padding: 16, color: "#7c98b6" }}>Nothing in this inbox.</div>
           )}
           {messages.map(m => (
-            <button
-              key={m.id}
-              onClick={() => setSelectedId(m.id)}
-              style={{
-                display: "block", width: "100%", textAlign: "left",
-                padding: 12, border: "none", background: selectedId === m.id ? "#eaf2fb" : "transparent",
-                borderBottom: "1px solid #f0f4f8", cursor: "pointer", color: "#000",
-                fontWeight: m.isRead ? 400 : 600,
-              }}
-            >
-              <div style={{ fontSize: 13, color: "#33475b" }}>
-                {m.from?.emailAddress?.name || m.from?.emailAddress?.address || "(unknown)"}
-              </div>
-              <div style={{ fontSize: 14, marginTop: 2 }}>{m.subject || "(no subject)"}</div>
-              <div style={{ fontSize: 12, color: "#7c98b6", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {m.bodyPreview || ""}
-              </div>
-              {m.receivedDateTime && (
-                <div style={{ fontSize: 11, color: "#7c98b6", marginTop: 2 }}>
-                  {new Date(m.receivedDateTime).toLocaleString()}
+            <div key={m.id} style={{ position: "relative", borderBottom: "1px solid #f0f4f8" }}>
+              <button
+                type="button"
+                onClick={() => setSelectedId(m.id)}
+                style={{
+                  display: "block", width: "100%", textAlign: "left",
+                  padding: "12px 56px 12px 12px", border: "none",
+                  background: selectedId === m.id ? "#eaf2fb" : "transparent",
+                  cursor: "pointer", color: "#000",
+                  fontWeight: m.isRead ? 400 : 600,
+                }}
+              >
+                <div style={{ fontSize: 13, color: "#33475b" }}>
+                  {m.from?.emailAddress?.name || m.from?.emailAddress?.address || "(unknown)"}
                 </div>
-              )}
-            </button>
+                <div style={{ fontSize: 14, marginTop: 2 }}>{m.subject || "(no subject)"}</div>
+                <div style={{ fontSize: 12, color: "#7c98b6", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {m.bodyPreview || ""}
+                </div>
+                {m.receivedDateTime && (
+                  <div style={{ fontSize: 11, color: "#7c98b6", marginTop: 2 }}>
+                    {new Date(m.receivedDateTime).toLocaleString()}
+                  </div>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={(ev) => { ev.stopPropagation(); void handleDelete(m.id); }}
+                disabled={deletingId === m.id}
+                title="Move to Deleted Items"
+                style={{
+                  position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                  border: "none", background: "transparent", color: "#dc2626",
+                  fontSize: 16, cursor: "pointer", padding: "4px 8px", borderRadius: 4,
+                }}
+              >
+                {deletingId === m.id ? "…" : "🗑"}
+              </button>
+            </div>
           ))}
         </div>
       </div>
