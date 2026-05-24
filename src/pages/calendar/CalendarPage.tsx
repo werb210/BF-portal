@@ -42,6 +42,7 @@ type CalendarTask = {
   completedAt?: string | null;
   status?: "open" | "done";
   priority?: "low" | "normal" | "high";
+  notes?: string | null;
 };
 
 type CalendarEvent = {
@@ -126,6 +127,7 @@ function CalendarContent() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<CalendarTask | null>(null);
   const [eventForm, setEventForm] = useState({ title: "", start: "", end: "", attendees: "", location: "", notes: "" });
   const [taskForm, setTaskForm] = useState({ title: "", dueAt: "", priority: "normal", assignee_user_id: (user as { id?: string } | null)?.id ?? "", notes: "" });
   const queryClient = useQueryClient();
@@ -295,8 +297,8 @@ function CalendarContent() {
               <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>None</p>
             ) : (
               (items as CalendarTask[]).map((task) => (
-                <div key={task.id ?? `${task.title}-${task.due_date}`} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f5f9", alignItems: "flex-start" }}>
-                  <input type="checkbox" style={{ marginTop: 3 }} checked={task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed)} onChange={() => task.id && completeTaskMutation.mutate(task)} />
+                <div key={task.id ?? `${task.title}-${task.due_date}`} onClick={() => setSelectedTask(task)} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f5f9", alignItems: "flex-start", cursor: "pointer" }}>
+                  <input type="checkbox" style={{ marginTop: 3 }} checked={task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed)} onChange={(e) => { e.stopPropagation(); task.id && completeTaskMutation.mutate(task); }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, color: "#0f172a", wordBreak: "break-word" }}>
                       {(typeof task.title === "string" && task.title.trim()) ? task.title : "Untitled task"}
@@ -331,6 +333,22 @@ function CalendarContent() {
             <button onClick={() => setSelectedEvent(null)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}>
               Close
             </button>
+          </div>
+        </div>
+      )}
+      {selectedTask && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "grid", placeItems: "center", zIndex: 1000 }}>
+          <div style={{ background: "#fff", borderRadius: 10, padding: 16, width: "min(520px, 92vw)" }}>
+            <h3 style={{ marginTop: 0 }}>{selectedTask.title ?? "Untitled task"}</h3>
+            <p><strong>Notes:</strong> {selectedTask.notes ?? "-"}</p>
+            <p><strong>Due date:</strong> {(selectedTask.dueAt ?? selectedTask.due_date ?? selectedTask.dueDate) ? new Date(selectedTask.dueAt ?? selectedTask.due_date ?? selectedTask.dueDate ?? "").toLocaleString() : "-"}</p>
+            <p><strong>Priority:</strong> {selectedTask.priority ?? "normal"}</p>
+            <p><strong>Assigned to:</strong> {selectedTask.assignee_name ?? selectedTask.assigneeName ?? selectedTask.assignee_email ?? selectedTask.assigneeEmail ?? "-"}</p>
+            <p><strong>Status:</strong> {selectedTask.status ?? "open"}</p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => selectedTask.id && completeTaskMutation.mutate(selectedTask)}>Mark Complete</button>
+              <SecondaryButton onClick={() => setSelectedTask(null)}>Close</SecondaryButton>
+            </div>
           </div>
         </div>
       )}

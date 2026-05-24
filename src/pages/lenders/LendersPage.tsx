@@ -202,7 +202,17 @@ function CreateLenderModal({
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
       onClose();
     } catch (err) {
-      setServerError(getErrorMessage(err, "Delete failed."));
+      const status = (err as { status?: number })?.status;
+      const details = (err as { details?: { code?: string; message?: string; productsCount?: number } })?.details;
+      const message = getErrorMessage(err, "Delete failed.");
+      const code = String(details?.code ?? "");
+      const isForeignKey = (status === 500 && code.startsWith("23")) || /foreign key/i.test(message) || /foreign key/i.test(details?.message ?? "");
+      if (isForeignKey) {
+        const count = Number(details?.productsCount ?? 0) || 0;
+        setServerError(`Cannot delete: this lender has ${count} products. Delete the products first, or use Edit to mark the lender inactive.`);
+      } else {
+        setServerError(message);
+      }
     } finally {
       setSaving(false);
     }
@@ -1283,6 +1293,8 @@ export default function LendersPage() {
   const [showCreateProduct, setShowCreateProduct] = useState(false);
   const [editingLender, setEditingLender] = useState<Lender | null>(null);
   const [editingProduct, setEditingProduct] = useState<LenderProduct | null>(null);
+  const [sortKey, setSortKey] = useState<"name" | "status" | "country" | "active" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
 
   const { data: lenders = [], isLoading } = useQuery({
     queryKey: ["lenders"],
@@ -1300,8 +1312,26 @@ export default function LendersPage() {
     );
   }, [lenders, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const sorted = useMemo(() => {
+    if (!sortKey || !sortDir) return filtered;
+    const copy = [...filtered];
+    copy.sort((a, b) => {
+      const dir = sortDir === "asc" ? 1 : -1;
+      if (sortKey === "active") return ((a.active ? 1 : 0) - (b.active ? 1 : 0)) * dir;
+      const av = sortKey === "country" ? (a.address?.country ?? "") : sortKey === "status" ? (a.status ?? "") : (a.name ?? "");
+      const bv = sortKey === "country" ? (b.address?.country ?? "") : sortKey === "status" ? (b.status ?? "") : (b.name ?? "");
+      return av.toLowerCase().localeCompare(bv.toLowerCase()) * dir;
+    });
+    return copy;
+  }, [filtered, sortDir, sortKey]);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const cycleSort = (key: "name" | "status" | "country" | "active") => {
+    if (sortKey !== key) { setSortKey(key); setSortDir("asc"); return; }
+    if (sortDir === "asc") setSortDir("desc");
+    else if (sortDir === "desc") { setSortDir(null); setSortKey(null); }
+    else setSortDir("asc");
+  };
 
   const handleLenderCreated = useCallback(
     (lender: Lender) => {
@@ -1350,9 +1380,15 @@ export default function LendersPage() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
-                {["Lender", "Status", "Country", "Primary Contact", "Actions"].map((h) => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc" }}>{h}</th>
+                {[
+                  ["Lender Name", "name"],
+                  ["Status", "status"],
+                  ["Country", "country"],
+                  ["Active", "active"],
+                ].map(([h, key]) => (
+                  <th key={h} onClick={() => cycleSort(key as "name" | "status" | "country" | "active")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc", cursor: "pointer" }}>{h}{sortKey === key ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
                 ))}
+                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1383,7 +1419,7 @@ export default function LendersPage() {
                     <td style={{ padding: "10px 12px", color: "#64748b" }}>
                       {l.address?.country === "CA" ? "Canada" : l.address?.country === "US" ? "USA" : l.address?.country ?? "—"}
                     </td>
-                    <td style={{ padding: "10px 12px", color: "#64748b" }}>{l.primaryContact?.name ?? "—"}</td>
+                    <td style={{ padding: "10px 12px", color: "#64748b" }}>{l.active ? "Yes" : "No"}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <button
                         type="button"

@@ -1,5 +1,6 @@
 // BF_PORTAL_v70_BLOCK_2_4 — Documents tab rebuild per locked spec.
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { api } from "@/api";
 import { usePipelineStore } from "@/core/engines/pipeline/pipeline.store";
 
@@ -228,6 +229,17 @@ export default function DocumentsTab({ applicationId }: Props) {
       console.error("doc_action_failed", e);
     }
   };
+  const deleteFile = async (categoryKey: string, fileId: string) => {
+    if (!window.confirm("Delete this document permanently? The client will NOT be re-prompted.")) return;
+    try {
+      await api.delete(`/api/applications/${encodeURIComponent(resolvedApplicationId)}/documents/${encodeURIComponent(fileId)}`);
+      setCategories((cur) => cur.map((c) => c.key === categoryKey ? { ...c, files: c.files.filter((f) => f.id !== fileId) } : c));
+      setActionFor(null);
+      toast.success("Deleted");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
 
   if (loading) return <div data-testid="docs-loading">Loading documents…</div>;
   if (error)   return <div data-testid="docs-error" style={{ color: "#b91c1c" }}>{error}</div>;
@@ -340,6 +352,14 @@ export default function DocumentsTab({ applicationId }: Props) {
                                     style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", border: "none", background: "transparent", cursor: "pointer", color: "#b91c1c" }}
                                   >
                                     Reject
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => void deleteFile(c.key, f.id)}
+                                    style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", border: "none", background: "transparent", cursor: "pointer", color: "#dc2626" }}
+                                  >
+                                    Delete
                                   </button>
                                 </div>
                               ) : null}
