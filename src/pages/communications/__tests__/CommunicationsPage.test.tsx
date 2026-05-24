@@ -33,7 +33,7 @@ describe("CommunicationsPage", () => {
   it("loads SMS thread messages from thread endpoint", async () => {
     Element.prototype.scrollIntoView = vi.fn();
     apiMock.mockResolvedValueOnce({
-      conversations: [{ contact_id: "c-1", contact_name: "Jordan Lee", contact_phone: "+15551234567" }],
+      conversations: [{ contact_id: "c-1", display_name: "Jordan Lee", phone: "+15551234567", last_at: new Date().toISOString() }],
     });
     apiMock.mockResolvedValueOnce({ messages: [] });
     apiMock.mockResolvedValueOnce({ mine: null, shared: [] });
@@ -41,7 +41,7 @@ describe("CommunicationsPage", () => {
 
     render(<CommunicationsPage />);
 
-    fireEvent.click(await screen.findByText("Jordan Lee"));
+    fireEvent.click((await screen.findAllByText("Jordan Lee"))[0]);
 
     await waitFor(() => {
       expect(apiMock).toHaveBeenCalledWith("/api/communications/sms/thread", { params: { contactId: "c-1" } });
