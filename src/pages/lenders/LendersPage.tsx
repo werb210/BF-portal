@@ -466,6 +466,9 @@ function CreateProductModal({
     creditBand: bfBandFromMin((product as any)?.minCreditScore ?? (product as any)?.minimumCreditScore ?? null),
     eligibilityNotes: product?.eligibilityRules ?? "",
     signnowTemplateId: (product as any)?.signnowTemplateId ?? "",
+    // BF_PORTAL_BLOCK_v627_LENDER_PRODUCT_RATE_KIND_v1 — semi-colon-separated
+    // documents-required list (matches the Excel seed shape).
+    documentsRequired: (product as any)?.documentsRequired ?? (product as any)?.documents_required ?? "",
     active: product?.active ?? true,
     category: (product as any)?.category ?? "TERM_LOAN",
     // BF_PORTAL_BLOCK_v97_LENDER_PRODUCT_COUNTRY_PICKER_v1
@@ -598,8 +601,17 @@ function CreateProductModal({
         interestRateMin: form.minRate ? Number(form.minRate) : null,
         interestRateMax: form.maxRate ? Number(form.maxRate) : null,
         rateType: "fixed",
-        // BF_PORTAL_BLOCK_v619_LENDERSPAGE_RATEKIND_v1
-        rate_kind: form.rateKind,
+        // BF_PORTAL_BLOCK_v627_LENDER_PRODUCT_RATE_KIND_v1 — translate the
+        // short rate-kind code used in the modal UI to the canonical string
+        // expected by the BF-Server schema (v647 migration CHECK constraint).
+        rate_kind:
+          form.rateKind === "monthly" ? "Monthly %" :
+          form.rateKind === "factor"  ? "Factor (MCA)" :
+          "APR %",
+        rate_min_num: form.minRate ? Number(form.minRate) : null,
+        rate_max_num: form.maxRate ? Number(form.maxRate) : null,
+        category_label: CATEGORY_LABELS[form.category] ?? form.category,
+        documents_required: form.documentsRequired || null,
         rate_period_days: form.ratePeriodDays ? Number(form.ratePeriodDays) : null,
         // BF_LP_FORM_FIELDS_v36 — send termMin/termMax explicitly + legacy termLength.
         termMin: form.termMin ? Number(form.termMin) : null,
@@ -874,6 +886,21 @@ function CreateProductModal({
             <textarea placeholder="Enter any eligibility requirements" value={form.eligibilityNotes}
               onChange={(e) => set("eligibilityNotes", e.target.value)} rows={3}
               style={{ ...inputStyle(), resize: "vertical" }} />
+          </div>
+
+          {/* BF_PORTAL_BLOCK_v627_LENDER_PRODUCT_RATE_KIND_v1 — Documents Required */}
+          <div>
+            <label style={labelStyle}>Documents Required <span style={{ color: "#6b7280", fontWeight: 400 }}>(Semicolon-separated)</span></label>
+            <textarea
+              placeholder="e.g. Bank Statements; Profit and Loss Statement; Balance Sheet; Personal Financial Statement"
+              value={form.documentsRequired}
+              onChange={(e) => set("documentsRequired", e.target.value)}
+              rows={3}
+              style={{ ...inputStyle(), resize: "vertical" }}
+            />
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+              List the document names separated by semicolons — matches the seed file format from the lender PDFs.
+            </div>
           </div>
 
           {/* SignNow Template ID */}
@@ -1215,6 +1242,15 @@ function EditProductModal({ product, lenders, onClose, onSaved }: { product: Len
           eligibilityRules: String(pick("eligibilityRules", "eligibility_notes", "eligibilityNotes", "notes") ?? ""),
           signnowTemplateId: pick("signnowTemplateId", "signnow_template_id", "signnowTemplateID") ?? null,
           requiredDocuments: pick("requiredDocuments", "required_documents", "documents", "docs") ?? [],
+          // BF_PORTAL_BLOCK_v627_LENDER_PRODUCT_RATE_KIND_v1 — hydrate new fields
+          rateKind: ((): "apr" | "monthly" | "factor" => {
+            const k = pick("rateKind", "rate_kind");
+            if (k === "Monthly %" || k === "monthly") return "monthly";
+            if (k === "Factor (MCA)" || k === "factor") return "factor";
+            return "apr";
+          })(),
+          documentsRequired: String(pick("documentsRequired", "documents_required") ?? ""),
+          categoryLabel: pick("categoryLabel", "category_label") ?? null,
           active: Boolean(pick("active", "is_active", "isActive") ?? true),
           termLength: source?.termLength ?? source?.term_length ?? product.termLength,
         } as LenderProduct;
