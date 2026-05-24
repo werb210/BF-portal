@@ -445,6 +445,10 @@ function CreateProductModal({
     maxAmount: product?.maxAmount != null && product.maxAmount > 0 ? formatDollar(product.maxAmount) : "",
     minRate: product?.interestRateMin != null && Number(product.interestRateMin) > 0 ? String(product.interestRateMin) : "",
     maxRate: product?.interestRateMax != null && Number(product.interestRateMax) > 0 ? String(product.interestRateMax) : "",
+    // BF_PORTAL_BLOCK_v619_LENDERSPAGE_RATEKIND_v1
+    rateKind: (((product as any)?.rateKind ?? (product as any)?.rate_kind) || "apr") as "apr" | "monthly" | "factor",
+    ratePeriodDays: (((product as any)?.ratePeriodDays ?? (product as any)?.rate_period_days) != null)
+      ? String((product as any)?.ratePeriodDays ?? (product as any)?.rate_period_days) : "",
     // BF_LP_FORM_FIELDS_v36 — split term into min and max, add commission and credit band.
     termMin: (product as any)?.termMin != null
       ? String((product as any).termMin)
@@ -594,6 +598,9 @@ function CreateProductModal({
         interestRateMin: form.minRate ? Number(form.minRate) : null,
         interestRateMax: form.maxRate ? Number(form.maxRate) : null,
         rateType: "fixed",
+        // BF_PORTAL_BLOCK_v619_LENDERSPAGE_RATEKIND_v1
+        rate_kind: form.rateKind,
+        rate_period_days: form.ratePeriodDays ? Number(form.ratePeriodDays) : null,
         // BF_LP_FORM_FIELDS_v36 — send termMin/termMax explicitly + legacy termLength.
         termMin: form.termMin ? Number(form.termMin) : null,
         termMax: form.termMax ? Number(form.termMax) : null,
@@ -773,16 +780,45 @@ function CreateProductModal({
             {errors.amount && <p style={errorStyle}>{errors.amount}</p>}
           </div>
 
-          {/* Rate / Fee Range */}
+          {/* BF_PORTAL_BLOCK_v619_LENDERSPAGE_RATEKIND_v1 */}
           <div>
-            <label style={labelStyle}>Rate / Fee Range <span style={{ color: "#ef4444" }}>*</span></label>
+            <label style={labelStyle}>Rate kind <span style={{ color: "#ef4444" }}>*</span></label>
+            <select value={form.rateKind} onChange={(e) => set("rateKind", e.target.value as "apr"|"monthly"|"factor")}
+              style={{ ...inputStyle(), background: "white", width: "100%" }}>
+              <option value="apr">APR (annual %) — term loans / equipment / working capital</option>
+              <option value="monthly">Monthly % — factoring / AR / PO / ABL</option>
+              <option value="factor">Factor (MCA payback, e.g. 1.24x)</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>
+              {form.rateKind === "factor" ? "Payback factor range" :
+               form.rateKind === "monthly" ? "Rate range (% per month)" :
+               "Rate range (% APR)"} <span style={{ color: "#ef4444" }}>*</span>
+            </label>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <input placeholder="e.g. 4.99" value={form.minRate} onChange={(e) => set("minRate", e.target.value)}
+              <input
+                placeholder={form.rateKind === "factor" ? "e.g. 1.24" : form.rateKind === "monthly" ? "e.g. 1.0" : "e.g. 4.99"}
+                value={form.minRate} onChange={(e) => set("minRate", e.target.value)}
                 style={{ ...inputStyle(), flex: 1 }} type="text" inputMode="decimal" />
               <span style={{ color: "#9ca3af", fontSize: 18, flexShrink: 0 }}>—</span>
-              <input placeholder="e.g. 19.99" value={form.maxRate} onChange={(e) => set("maxRate", e.target.value)}
+              <input
+                placeholder={form.rateKind === "factor" ? "e.g. 1.45" : form.rateKind === "monthly" ? "e.g. 3.0" : "e.g. 19.99"}
+                value={form.maxRate} onChange={(e) => set("maxRate", e.target.value)}
                 style={{ ...inputStyle(), flex: 1 }} type="text" inputMode="decimal" />
             </div>
+            {(form.rateKind === "monthly" || form.rateKind === "factor") && (
+              <div style={{ marginTop: 8 }}>
+                <label style={{ ...labelStyle, fontSize: 12, color: "#64748b" }}>
+                  Rate period (days) — optional; defaults: 30 monthly, 180 factor
+                </label>
+                <input
+                  placeholder={form.rateKind === "factor" ? "180" : "30"}
+                  value={form.ratePeriodDays} onChange={(e) => set("ratePeriodDays", e.target.value)}
+                  style={{ ...inputStyle(), width: "100%" }} type="text" inputMode="numeric" />
+              </div>
+            )}
           </div>
 
           {/* BF_LP_FORM_FIELDS_v36 — Term Min + Max, Commission, Min Credit Score */}
