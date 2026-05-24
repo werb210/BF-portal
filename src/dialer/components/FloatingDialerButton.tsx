@@ -1,3 +1,5 @@
+// BF_PORTAL_BLOCK_v623_MEGAFIX_v1 — adds console.debug on FAB click so
+// dialer-not-appearing reports can be triaged from the console.
 // BF_PORTAL_BLOCK_v606_DIALER_UI_v1
 import React from "react";
 import { useDialer } from "../store";
@@ -20,7 +22,7 @@ export default function FloatingDialerButton() {
           100% { transform: scale(1.5); opacity: 0; }
         }
       `}</style>
-      <button onClick={() => open()} title="Open dialer" aria-label="Open dialer"
+      <button onClick={() => { console.debug("[Dialer] FAB clicked → open()"); open(); }} title="Open dialer" aria-label="Open dialer"
         style={{ position: "fixed", right: 24, bottom: 24, width: 64, height: 64, borderRadius: "50%", background: live ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, #1e293b, #0f172a)", color: "white", border: live ? "none" : "1px solid rgba(255,255,255,0.08)", cursor: "pointer", boxShadow: live ? "0 8px 24px rgba(16,185,129,0.45), inset 0 1px 0 rgba(255,255,255,0.15)" : "0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)", display: "grid", placeItems: "center", zIndex: 999 }}>
         {ringing && (<span style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid #10b981", animation: "bf-fab-ring 1.2s ease-out infinite" }} />)}
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

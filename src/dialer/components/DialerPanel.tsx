@@ -71,10 +71,16 @@ export default function DialerPanel() {
   const conf = st.conference;
   const me = useMemo(() => st.participants.find((p) => p.role === "moderator"), [st.participants]);
   const others = useMemo(() => st.participants.filter((p) => p.id !== me?.id && p.status === "joined"), [st.participants, me]);
+  // BF_PORTAL_BLOCK_v623_MEGAFIX_v1 — state machine with explicit logging
+  // so future "dialer disappeared" reports can be triaged from the console.
   const inCall = st.status === "connected";
   const dialingOrRinging = st.status === "dialing" || st.status === "ringing";
   const liveAny = inCall || dialingOrRinging;
   const incoming = st.incoming;
+  if (typeof window !== "undefined" && (st.isOpen || liveAny || incoming)) {
+    // eslint-disable-next-line no-console
+    console.debug("[Dialer]", { isOpen: st.isOpen, status: st.status, liveAny, hasIncoming: !!incoming });
+  }
   if (!st.isOpen && !liveAny && !incoming) return null;
   return <div />;
 }
