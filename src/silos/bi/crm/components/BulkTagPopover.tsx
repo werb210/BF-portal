@@ -1,0 +1,13 @@
+import { useMemo, useState, type CSSProperties } from "react";
+
+type Op = "add" | "remove" | "replace";
+export default function BulkTagPopover({ existingTags, onApply }: { existingTags: string[]; onApply: (payload: { op: Op; tags: string[] }) => Promise<void> }) {
+  const [open, setOpen] = useState(false); const [op, setOp] = useState<Op>("add"); const [selected, setSelected] = useState<string[]>([]); const [newTags, setNewTags] = useState("");
+  const tags = useMemo(() => Array.from(new Set([...selected, ...newTags.split(",").map((t) => t.trim()).filter(Boolean)])), [newTags, selected]);
+  return <div style={{ position: "relative" }}><button type="button" style={btn} onClick={() => setOpen((v) => !v)}>Tags ▼</button>{open && <div style={pop}><label><input type="radio" checked={op === "add"} onChange={() => setOp("add")} /> Add tag(s)</label><label><input type="radio" checked={op === "remove"} onChange={() => setOp("remove")} /> Remove tag(s)</label><label><input type="radio" checked={op === "replace"} onChange={() => setOp("replace")} /> Replace all tags</label>{op === "replace" && <div style={warn}>⚠ Replace removes ALL existing tags from the selected rows, including tags that trigger automation. Use Add/Remove for safer changes.</div>}<div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>{existingTags.map((t) => <button key={t} type="button" onClick={() => setSelected((p) => p.includes(t) ? p.filter((x) => x !== t) : [...p, t])} style={{ ...chip, ...(selected.includes(t) ? chipOn : {}) }}>{t}</button>)}</div><input aria-label="create new tag" value={newTags} onChange={(e) => setNewTags(e.target.value)} placeholder="+ create new tag (comma-separated)" style={{ width: "100%", marginTop: 8 }} /><button type="button" style={{ ...btn, marginTop: 8 }} onClick={async () => { await onApply({ op, tags }); setOpen(false); }}>Apply</button></div>}</div>;
+}
+const btn: CSSProperties = { border: 0, background: "#0d9b6c", color: "#fff", borderRadius: 6, padding: "8px 12px", fontWeight: 600, cursor: "pointer" };
+const pop: CSSProperties = { position: "absolute", right: 0, top: "110%", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 6, padding: 10, width: 350, zIndex: 4, display: "flex", flexDirection: "column", gap: 6 };
+const chip: CSSProperties = { border: "1px solid #cbd5e1", background: "#fff", borderRadius: 999, padding: "3px 8px" };
+const chipOn: CSSProperties = { background: "#dcfce7", borderColor: "#22c55e" };
+const warn: CSSProperties = { marginTop: 6, background: "#fff7ed", border: "1px solid #fdba74", padding: 8, borderRadius: 4, fontSize: 12 };
