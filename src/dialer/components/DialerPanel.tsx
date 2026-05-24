@@ -1,3 +1,6 @@
+// BF_PORTAL_BLOCK_v618_DIALER_RESTORE_v1 — defensive idle render: panel
+// always shows the dialpad UI when isOpen=true and no call is in progress,
+// regardless of exact status value ("idle"/"ready"/etc).
 // BF_PORTAL_BLOCK_v613_DIALER_MERGE_v1 — adds Merge button (option A: same as
 // Add — dials a new participant into the live conference). 7-button row now:
 // Mute / Hold / Record / Transfer / Add / Merge / Keypad. Supersedes v612.
