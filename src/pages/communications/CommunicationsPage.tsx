@@ -286,6 +286,12 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     el.scrollTop = el.scrollHeight;
   }, [threadMessages, selected?.id]);
 
+  // When switching threads or first opening, force stick to bottom so the
+  // user lands on the latest message — not somewhere up the history.
+  useEffect(() => {
+    if (selected?.id) stickToBottomRef.current = true;
+  }, [selected?.id]);
+
   async function send() {
     const selectedContact = selected;
     const selectedPhone = selectedContact?.phone ?? selectedContact?.phone_e164 ?? selectedContact?.mobile ?? null;
