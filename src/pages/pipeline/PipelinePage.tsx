@@ -21,6 +21,8 @@ const COLORS: Record<Stage, string> = {
   "Rejected":                  "#6b7280",
 };
 
+type DocProgress = { accepted: number; rejected: number; pending: number; total: number };
+
 type Card = {
   id: string;
   name: string | null;
@@ -28,6 +30,13 @@ type Card = {
   pipeline_state: string;
   requested_amount?: number | null;
   created_at: string;
+  // v2 fields from /api/portal/applications enriched response (Block J):
+  owner_user_id?: string | null;
+  owner_first_name?: string | null;
+  owner_last_name?: string | null;
+  stage_entered_at?: string | null;
+  doc_progress?: DocProgress;
+  contact_name?: string | null;
 };
 
 function isDraftLikeApplication(card: Card): boolean {
@@ -38,6 +47,47 @@ function isDraftLikeApplication(card: Card): boolean {
   const invalidDate = Number.isNaN(dateMs);
   const state = String(card.pipeline_state ?? "").toLowerCase();
   return invalidDate && (state === "received" || state === "draft" || state === "new");
+}
+
+
+function relativeTime(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+}
+
+function stageAge(iso: string | null | undefined): { label: string; warn: boolean } | null {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+  if (days < 1) return null;
+  return { label: `${days}d in stage`, warn: days >= 3 };
+}
+
+function initials(first?: string | null, last?: string | null): string {
+  const f = (first ?? "").trim().charAt(0).toUpperCase();
+  const l = (last ?? "").trim().charAt(0).toUpperCase();
+  return (f + l) || "—";
+}
+
+function docProgressLabel(p: DocProgress | undefined): { text: string; color: string; bg: string } | null {
+  if (!p || p.total === 0) return null;
+  if (p.rejected > 0) {
+    return { text: `${p.rejected} doc${p.rejected === 1 ? "" : "s"} rejected`, color: "#991b1b", bg: "#fee2e2" };
+  }
+  if (p.accepted === p.total) {
+    return { text: `${p.total}/${p.total} docs`, color: "#166534", bg: "#dcfce7" };
+  }
+  return { text: `${p.accepted}/${p.total} docs`, color: "#92400e", bg: "#fef3c7" };
 }
 
 export default function PipelinePage() {
@@ -190,8 +240,12 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
   const name = cardName;
   const amount = card.requested_amount
     ? `$${Number(card.requested_amount).toLocaleString()}` : null;
-  const date = new Date(card.created_at).toLocaleDateString("en-CA",
-    { month: "short", day: "numeric" });
+  const lastTouch = relativeTime(card.created_at);
+  const stage_age = stageAge(card.stage_entered_at);
+  const docPill = docProgressLabel(card.doc_progress);
+  const ownerInitials = initials(card.owner_first_name, card.owner_last_name);
+  const hasOwner = Boolean(card.owner_user_id);
+  const ownerTitle = [card.owner_first_name, card.owner_last_name].filter(Boolean).join(" ");
 
   const btnBase: React.CSSProperties = {
     flex: 1, fontSize: 11, padding: "5px 0", borderRadius: 6,
@@ -200,37 +254,61 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
 
   return (
     <div style={{ background: "#1e293b", borderRadius: 10, padding: 12,
-      border: "1px solid rgba(255,255,255,0.06)",
+      border: stage_age?.warn ? "1px solid #f59e0b80" : "1px solid rgba(255,255,255,0.06)",
       opacity: busy ? 0.6 : 1, transition: "opacity 0.15s" }}>
 
-      {/* Click anywhere on the card header to open */}
+      {/* Header: name + call/delete buttons */}
       <div onClick={onOpen} style={{ cursor: "pointer", marginBottom: 8 }}>
-<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 3 }}>
-        <div style={{ fontWeight: 600, fontSize: 13, color: "#f1f5f9" }}>{name}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {/* BF_PORTAL_BLOCK_v175_CALL_CLIENT_BUTTON_v1 — pipeline card call trigger */}
-          <button
-            type="button"
-            aria-label="Call client"
-            title={callBusy ? "Looking up phone…" : "Call client"}
-            onClick={(e) => { e.stopPropagation(); void handleCall(); }}
-            disabled={busy || callBusy}
-            style={{ border: 0, background: "transparent", color: callBusy ? "#475569" : "#94a3b8", cursor: (busy || callBusy) ? "default" : "pointer", padding: "4px 6px", display: "inline-flex", alignItems: "center", borderRadius: 4 }}
-          >
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
-            </svg>
-          </button>
-          <button type="button" aria-label="Delete card" onClick={(e) => { e.stopPropagation(); onDelete(card.id); }} style={{ border: 0, background: "transparent", color: "#94a3b8", cursor: busy ? "default" : "pointer", fontSize: 18, lineHeight: 1 }} disabled={busy}>×</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "#f1f5f9", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+            {card.contact_name && (
+              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+            <button type="button" aria-label="Call client" title={callBusy ? "Looking up phone…" : "Call client"}
+              onClick={(e) => { e.stopPropagation(); void handleCall(); }}
+              disabled={busy || callBusy}
+              style={{ border: 0, background: "transparent", color: callBusy ? "#475569" : "#94a3b8", cursor: (busy || callBusy) ? "default" : "pointer", padding: "4px 6px", display: "inline-flex", alignItems: "center", borderRadius: 4 }}>
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+              </svg>
+            </button>
+            <button type="button" aria-label="Delete card" onClick={(e) => { e.stopPropagation(); onDelete(card.id); }} disabled={busy}
+              style={{ border: 0, background: "transparent", color: "#94a3b8", cursor: busy ? "default" : "pointer", fontSize: 18, lineHeight: 1 }}>×</button>
+          </div>
         </div>
-      </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#94a3b8" }}>
-          {amount && <span>{amount}</span>}
-          <span>{date}</span>
+
+        {/* Amount + owner row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: "#94a3b8", marginBottom: 6 }}>
+          <span style={{ fontWeight: 600, color: "#cbd5e1" }}>{amount ?? "—"}</span>
+          {hasOwner && (
+            <span title={ownerTitle || "Owner"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 999, background: "#334155", color: "#e2e8f0", fontSize: 9, fontWeight: 700 }}>{ownerInitials}</span>
+          )}
         </div>
-        <div style={{ fontSize: 10, color: "#475569", marginTop: 3 }}>
-          Click to open · auto-advances on actions
-        </div>
+
+        {/* Pills row: doc progress, stage age */}
+        {(docPill || stage_age) && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+            {docPill && (
+              <span style={{ display: "inline-block", padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 600, background: docPill.bg, color: docPill.color }}>
+                {docPill.text}
+              </span>
+            )}
+            {stage_age && (
+              <span style={{ display: "inline-block", padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 600,
+                background: stage_age.warn ? "#fef3c7" : "#1e293b", color: stage_age.warn ? "#92400e" : "#94a3b8", border: stage_age.warn ? "0" : "1px solid #475569" }}>
+                {stage_age.label}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Footer: last touch */}
+        {lastTouch && (
+          <div style={{ fontSize: 10, color: "#64748b" }}>{lastTouch}</div>
+        )}
       </div>
 
       {/* Request Additional Steps — only on In Review or Documents Required */}
