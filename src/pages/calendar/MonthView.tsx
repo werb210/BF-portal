@@ -3,7 +3,17 @@ import { getMonthGrid, groupEventsByDay } from "./utils";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const MonthView = ({ date, localEvents }: { date: Date; localEvents: CalendarEvent[] }) => {
+const MonthView = ({
+  date,
+  localEvents,
+  onEventClick,
+  onTaskClick,
+}: {
+  date: Date;
+  localEvents: CalendarEvent[];
+  onEventClick?: (event: CalendarEvent) => void;
+  onTaskClick?: (task: unknown) => void;
+}) => {
   const grid = getMonthGrid(date);
   const groupedLocal = groupEventsByDay(localEvents);
   const month = date.getMonth();
@@ -45,11 +55,19 @@ const MonthView = ({ date, localEvents }: { date: Date; localEvents: CalendarEve
               }}
             >
               <div className="calendar-month-grid__header" style={{ fontWeight: 700, color: isCurrentMonth ? "#0f172a" : "#94a3b8" }}>{day.getDate()}</div>
-              {events.slice(0, 3).map((event) => (
-                <div key={event.id} className="calendar-event small">
-                  <div className="calendar-event__title">{event.title}</div>
+              {events.slice(0, 3).map((event) => {
+                const resource = (event as any).resource;
+                const isTask = resource?.__kind === "task";
+                return (
+                <div
+                  key={event.id}
+                  className="calendar-event small"
+                  onClick={() => isTask ? onTaskClick?.(resource.task) : onEventClick?.(event)}
+                  style={{ background: isTask ? "#fed7aa" : "#dbeafe", color: isTask ? "#9a3412" : "#1e40af", borderRadius: 6, padding: "4px 6px", marginTop: 4, cursor: "pointer" }}
+                >
+                  <div className="calendar-event__title">{isTask ? "✓ " : ""}{event.title}</div>
                 </div>
-              ))}
+              );})}
               {events.length > 3 && <div className="muted">+{events.length - 3} more</div>}
             </div>
           );

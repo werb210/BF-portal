@@ -203,7 +203,25 @@ function CalendarContent() {
         resource: { ...event, source: "calendar" as const },
       }));
   }, [eventsQuery.data]);
-  void tasksQuery; // tasks still loaded for the right-side panel below
+  const tasksAsEvents = useMemo<CalendarEvent[]>(() => {
+    const tasks = Array.isArray(tasksQuery.data) ? tasksQuery.data : [];
+    return tasks
+      .filter((t) => t.dueAt || t.due_date || t.dueDate)
+      .map((t) => {
+        const due = new Date(t.dueAt ?? t.due_date ?? t.dueDate ?? "");
+        if (Number.isNaN(due.getTime())) return null;
+        return {
+          id: `task:${t.id}`,
+          title: t.title ?? "Untitled task",
+          start: due,
+          end: due,
+          allDay: true,
+          resource: { __kind: "task", task: t } as any,
+        } as CalendarEvent;
+      })
+      .filter((e): e is CalendarEvent => e !== null);
+  }, [tasksQuery.data]);
+  const allItems = useMemo(() => [...events, ...tasksAsEvents], [events, tasksAsEvents]);
 
   return (
     <div className="page" style={{ display: "grid", gridTemplateColumns: "65% 35%", gap: 16, minHeight: "calc(100vh - 160px)" }}>
@@ -243,7 +261,7 @@ function CalendarContent() {
           {view === "year" ? (
             <YearView
               year={currentDate.getFullYear()}
-              events={events}
+              events={allItems}
               onPrevYear={() => setCurrentDate(new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1))}
               onNextYear={() => setCurrentDate(new Date(currentDate.getFullYear() + 1, currentDate.getMonth(), 1))}
               onPickDay={(d) => { setCurrentDate(d); setView("day"); }}
@@ -264,8 +282,18 @@ function CalendarContent() {
               timeslots={2}
               dayLayoutAlgorithm="no-overlap"
               allDayMaxRows={2}
-              onSelectEvent={(event: CalendarEvent) => setSelectedEvent(event)}
-              eventPropGetter={() => ({ style: { backgroundColor: "#2563eb", borderColor: "#1d4ed8", color: "#fff" } })}
+              onSelectEvent={(event: CalendarEvent) => {
+                const resource = (event.resource as any) ?? {};
+                if (resource.__kind === "task") {
+                  setSelectedTask(resource.task as CalendarTask);
+                  return;
+                }
+                setSelectedEvent(event);
+              }}
+              eventPropGetter={(event: CalendarEvent) => {
+                const isTask = ((event.resource as any)?.__kind === "task");
+                return { style: { backgroundColor: isTask ? "#fed7aa" : "#2563eb", borderColor: isTask ? "#c2410c" : "#1d4ed8", color: isTask ? "#9a3412" : "#fff" } };
+              }}
               popup
               toolbar={false}
             />

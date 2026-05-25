@@ -254,6 +254,8 @@ export const crmApi = {
   // Lists
   listContacts: (params: Record<string, string | number | undefined> = {}) =>
     api.get<{ data?: ContactRow[] } | ContactRow[]>(`/api/crm/contacts`, { params }).then(unwrap<ContactRow[]>),
+  bulkDeleteContacts: (ids: string[]) => api.post("/api/crm/contacts/bulk-delete", { ids }),
+  bulkTagContacts: (ids: string[], tag: string) => api.post("/api/crm/contacts/bulk-tag", { ids, tag }),
   listCompanies: (params: Record<string, string | number | undefined> = {}) =>
     api.get<{ data?: CompanyRow[] } | CompanyRow[]>(`/api/crm/companies`, { params }).then(unwrap<CompanyRow[]>),
 
