@@ -40,31 +40,39 @@ function mapGraphToEmail(m: GraphMessage, contactId: string): EmailMessage {
   };
 }
 
-export async function fetchEmailMessages(contactId: string, contactEmail?: string): Promise<EmailMessage[]> {
+export const fetchEmailMessages = async (
+  contactId: string,
+  folder?: string,
+  query?: string,
+  contactEmail?: string,
+): Promise<EmailMessage[]> => {
   if (!contactEmail) return [];
   try {
     const messages = await withO365Refresh(() => api<GraphMessage[]>("/api/crm/inbox"));
     const lower = contactEmail.trim().toLowerCase();
-    return (messages ?? [])
+    const matched = (messages ?? [])
       .filter((m) => {
         const from = m.from?.emailAddress?.address?.toLowerCase() ?? "";
         const tos = (m.toRecipients ?? []).map((r) => r.emailAddress?.address?.toLowerCase() ?? "");
         return from === lower || tos.includes(lower);
       })
       .map((m) => mapGraphToEmail(m, contactId));
+    if (!query) return matched;
+    const q = query.toLowerCase();
+    return matched.filter((m) => m.subject.toLowerCase().includes(q) || m.body.toLowerCase().includes(q));
   } catch {
     return [];
   }
-}
+};
 
-export async function fetchEmailMessage(messageId: string): Promise<EmailMessage | undefined> {
+export const fetchEmailMessage = async (messageId: string): Promise<EmailMessage | undefined> => {
   try {
     const m = await withO365Refresh(() => api<GraphMessage>(`/api/crm/inbox/${encodeURIComponent(messageId)}`));
     return m ? mapGraphToEmail(m, "") : undefined;
   } catch {
     return undefined;
   }
-}
+};
 
 export type EmailPayload = {
   to: string | string[];
