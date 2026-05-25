@@ -10,17 +10,18 @@ import EmailMessageItem from "./EmailMessageItem";
 interface EmailViewerProps {
   visible: boolean;
   contactId: string;
+  contactEmail?: string;
   onClose: () => void;
 }
 
-const EmailViewer = ({ visible, contactId, onClose }: EmailViewerProps) => {
+const EmailViewer = ({ visible, contactId, contactEmail, onClose }: EmailViewerProps) => {
   const [folder, setFolder] = useState<"inbox" | "sent" | "archived" | "">("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<EmailMessage | null>(null);
 
   const { data: messages = [] } = useQuery({
-    queryKey: ["email", contactId, folder, search],
-    queryFn: () => fetchEmailMessages(contactId, folder || undefined, search),
+    queryKey: ["email", contactId, contactEmail],
+    queryFn: () => fetchEmailMessages(contactId, contactEmail),
     enabled: visible
   });
 
@@ -58,7 +59,9 @@ const EmailViewer = ({ visible, contactId, onClose }: EmailViewerProps) => {
             ))}
           </div>
           <div data-testid="email-body">
-            {selected ? (
+            {messages.length === 0 ? (
+              <p>No emails with this contact</p>
+            ) : selected ? (
               <div>
                 <div className="font-semibold">{selected.subject}</div>
                 <div className="text-sm">From: {selected.from}</div>
