@@ -1,253 +1,140 @@
-// BF_PORTAL_BLOCK_v196_UNDERWRITING_BANNER_v1
-// BF_PORTAL_BLOCK_54_BI_DETAIL_OWNERSHIP_DEMO_v1 — structured renderer.
-import { useState } from "react";
-import toast from "react-hot-toast";
-import { api } from "@/api";
-import type { BiApplicationDetailData } from "../BIApplicationDetail";
+// BF_PORTAL_BLOCK_v629_BI_PURBECK_RENDER_v1
+// Renders the Purbeck-aligned application fields with legacy-column fallback.
+import { useMemo } from "react";
+import { DeclarationsCard } from "./DeclarationsCard";
+import { CoGuarantorList } from "./CoGuarantorList";
+import { SendToPurbeckGate } from "./SendToPurbeckGate";
+
+type BIApplication = {
+  id: string;
+  public_id?: string;
+  // Legacy columns
+  guarantor_name?: string;
+  guarantor_email?: string;
+  guarantor_phone?: string;
+  business_name?: string;
+  lender_name?: string;
+  loan_amount?: number | string;
+  pgi_limit?: number | string;
+  country?: string;
+  // New q-keyed columns (preferred when present)
+  q_business_province?: string;
+  q_ca_loan_type?: string;
+  q_ca_id_type?: string;
+  q_ca_id_number?: string;
+  has_co_guarantors?: boolean;
+  declarations?: Record<string, unknown>;
+  data?: Record<string, unknown>;
+  loan_agreement_uploaded_at?: string | null;
+  pgi_application_id?: string | null;
+  status?: string;
+};
+
+function fmtMoney(v: number | string | undefined | null): string {
+  if (v == null || v === "") return "—";
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n)) return String(v);
+  return `$${n.toLocaleString("en-CA", { maximumFractionDigits: 0 })}`;
+}
+function fmtDate(v: string | undefined | null): string {
+  if (!v) return "—";
+  const s = String(v);
+  return s.length >= 10 ? s.slice(0, 10) : s;
+}
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
-  if (value === null || value === undefined || value === "") return null;
   return (
-    <div>
-      <div className="text-[10px] uppercase tracking-widest text-white/40">{label}</div>
-      <div className="text-sm text-white">{value}</div>
+    <div className="flex justify-between py-1 border-b border-gray-100">
+      <span className="text-sm text-gray-600">{label}</span>
+      <span className="text-sm font-medium text-right">{value}</span>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-card bg-brand-surface p-4">
-      <div className="mb-3 text-xs uppercase tracking-widest text-white/60">{title}</div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
-    </div>
-  );
-}
+export default function ApplicationTab({ app }: { app: BIApplication }) {
+  const d = (app.data as Record<string, unknown>) || {};
 
-function fmtMoney(n: number | string | null | undefined): string | null {
-  const num = typeof n === "string" ? Number(n) : n;
-  if (typeof num !== "number" || !Number.isFinite(num) || num <= 0) return null;
-  return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(num);
-}
-
-function fmtDate(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return null;
-  return d.toLocaleDateString();
-}
-
-// BF_PORTAL_BLOCK_82_45_FIELDS_v1 - boolean renderer for yes/no fields.
-// Treats null/undefined as "not answered" (hidden). Strings "true"/"false"
-// and actual booleans both map.
-function fmtBool(v: unknown): string | null {
-  if (v === null || v === undefined || v === "") return null;
-  if (v === true || v === "true" || v === "yes" || v === 1 || v === "1") return "Yes";
-  if (v === false || v === "false" || v === "no" || v === 0 || v === "0") return "No";
-  return String(v);
-}
-
-function DecisionBanner({ app }: { app: BiApplicationDetailData }) {
-  const stage = String(app.stage || "");
-  const premium = fmtMoney(app.annual_premium ?? null);
-  const validUntil = fmtDate(app.quote_valid_until ?? null);
-  const bound = fmtDate(app.policy_bound_at ?? null);
-
-  if (stage === "policy_issued") {
-    return (
-      <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4">
-        <div className="text-xs uppercase tracking-widest text-emerald-300">Policy bound</div>
-        <div className="mt-1 text-lg font-semibold text-white">🛡 Policy issued by carrier</div>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3 text-sm text-white/80">
-          {premium && <div><span className="text-white/60">Annual premium</span><div className="font-semibold text-white">{premium}</div></div>}
-          {app.policy_id && <div><span className="text-white/60">Policy id</span><div className="font-mono text-xs">{app.policy_id}</div></div>}
-          {bound && <div><span className="text-white/60">Bound</span><div>{bound}</div></div>}
-        </div>
-      </div>
-    );
-  }
-
-  if (stage === "approved") {
-    return (
-      <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4">
-        <div className="text-xs uppercase tracking-widest text-emerald-300">Approved by carrier</div>
-        <div className="mt-1 text-lg font-semibold text-white">✓ Approved — waiting on policy binding</div>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3 text-sm text-white/80">
-          {premium && <div><span className="text-white/60">Annual premium</span><div className="font-semibold text-white">{premium}</div></div>}
-          {app.quote_id && <div><span className="text-white/60">Quote</span><div className="font-mono text-xs">{app.quote_id}</div></div>}
-          {app.underwriter_ref && <div><span className="text-white/60">Underwriter</span><div className="font-mono text-xs">{app.underwriter_ref}</div></div>}
-        </div>
-      </div>
-    );
-  }
-
-  if (stage === "under_review" && premium) {
-    return (
-      <div className="rounded-xl border border-blue-500/40 bg-blue-500/10 p-4">
-        <div className="text-xs uppercase tracking-widest text-blue-300">Quoted</div>
-        <div className="mt-1 text-lg font-semibold text-white">Quote returned — under review</div>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3 text-sm text-white/80">
-          <div><span className="text-white/60">Annual premium</span><div className="font-semibold text-white">{premium}</div></div>
-          {app.quote_id && <div><span className="text-white/60">Quote</span><div className="font-mono text-xs">{app.quote_id}</div></div>}
-          {validUntil && <div><span className="text-white/60">Valid until</span><div>{validUntil}</div></div>}
-        </div>
-      </div>
-    );
-  }
-
-  if (stage === "declined") {
-    return (
-      <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4">
-        <div className="text-xs uppercase tracking-widest text-red-300">Declined</div>
-        <div className="mt-1 text-lg font-semibold text-white">✗ Carrier declined this application</div>
-        {app.score_reason && (
-          <div className="mt-2 text-sm text-white/80">
-            <span className="text-white/60">Reason:</span>
-            <div className="mt-1 italic">{app.score_reason}</div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (stage === "information_required") {
-    return (
-      <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
-        <div className="text-xs uppercase tracking-widest text-amber-200">Information required</div>
-        <div className="mt-1 text-lg font-semibold text-white">ℹ Carrier requested more information</div>
-        {app.score_reason && (
-          <div className="mt-2 text-sm text-white/80">
-            <span className="text-white/60">What they need:</span>
-            <div className="mt-1 italic">{app.score_reason}</div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return null;
-}
-
-// BF_PORTAL_BLOCK_BI_ROUND8_DETAIL_v1 -- accept readOnly prop.
-// BF_PORTAL_BLOCK_82_APPDATA_DRILL_v1 - app.data is {core_inputs:{...}}
-// after server-side BLOCK_v258 schema fix. Read core_inputs as primary,
-// fall back to flat top-level for legacy rows that never got migrated.
-export default function ApplicationTab({ app, onMutated, readOnly = false }: { readOnly?: boolean; app: BiApplicationDetailData; onMutated: () => void }) {
-  const [submitting, setSubmitting] = useState(false);
-  const rawData = (app.data || {}) as Record<string, unknown>;
-  const core = (rawData.core_inputs as Record<string, unknown> | undefined) ?? {};
-  const ext = (rawData.extended as Record<string, unknown> | undefined) ?? {};
-  const consents = (rawData.consents as Record<string, unknown> | undefined) ?? {};
-  // Single lookup: prefer core_inputs, then extended, then top-level legacy.
-  const d = new Proxy({} as Record<string, unknown>, {
-    get(_t, key: string) {
-      return (core as any)[key] ?? (ext as any)[key] ?? (rawData as any)[key];
-    },
-  });
-  const canSubmit =
-    app.source_type === "public" &&
-    (app.stage as string) === "document_review" &&
-    app.all_docs_accepted &&
-    !app.submission_locked;
-
-  // BF_PORTAL_BLOCK_v620_BI_DOCS_INLINE_v1 — v617 Decline button removed
-  // per Todd's directive ("you never asked for it"). Reverted.
-  async function submitToCarrier() {
-    if (!confirm("Submit this application to the carrier? The application will be locked.")) return;
-    setSubmitting(true);
-    try {
-      await api(`/api/v1/bi/applications/${app.id}/submit-to-carrier`, { method: "POST" });
-      toast.success("Submitted to carrier");
-      onMutated();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Submit failed");
-    } finally {
-      setSubmitting(false);
+  // Source-of-truth lookups: prefer q-keyed column, fall back to data JSONB, fall back to legacy column.
+  const pick = (qKey: string, legacyKey?: string): string => {
+    const fromCol = (app as Record<string, unknown>)[qKey];
+    if (fromCol != null && fromCol !== "") return String(fromCol);
+    const fromData = d[qKey];
+    if (fromData != null && fromData !== "") return String(fromData);
+    if (legacyKey) {
+      const fromLegacyCol = (app as Record<string, unknown>)[legacyKey];
+      if (fromLegacyCol != null && fromLegacyCol !== "") return String(fromLegacyCol);
+      const fromLegacyData = d[legacyKey];
+      if (fromLegacyData != null && fromLegacyData !== "") return String(fromLegacyData);
     }
-  }
+    return "";
+  };
+
+  const carrierEligibilityIssues = useMemo<string[]>(() => {
+    const issues: string[] = [];
+    const province = pick("q_business_province", "business_province");
+    if (province.toUpperCase() === "QC") issues.push("Quebec address — PGI does not write business in Quebec.");
+    const loanType = pick("q_ca_loan_type", "loan_purpose");
+    if (loanType && !["Commercial Mortgage", "Other Secured Loan"].includes(loanType)) {
+      issues.push(`Loan type '${loanType}' is not eligible (must be Commercial Mortgage or Other Secured Loan).`);
+    }
+    const loanAmount = Number(pick("q41_loan_amount", "loan_amount"));
+    if (Number.isFinite(loanAmount) && loanAmount > 1_000_000) issues.push(`Loan amount ${fmtMoney(loanAmount)} exceeds the 1,000,000 cap.`);
+    const pgiLimit = Number(pick("q42_pgi_limit", "pgi_limit"));
+    if (Number.isFinite(pgiLimit) && pgiLimit > 1_000_000) issues.push(`PGI limit ${fmtMoney(pgiLimit)} exceeds the 1,000,000 cap.`);
+    return issues;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [app]);
+
   return (
     <div className="space-y-6">
-      <DecisionBanner app={app} />
-      {!readOnly && canSubmit && (
-        <button
-          onClick={submitToCarrier}
-          disabled={submitting}
-          className="rounded bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {submitting ? "Submitting…" : "Submit to Carrier"}
-        </button>
+      {carrierEligibilityIssues.length > 0 && (
+        <div className="rounded border border-red-300 bg-red-50 p-3">
+          <strong className="text-red-700">Carrier eligibility issues</strong>
+          <ul className="list-disc pl-5 text-sm text-red-700 mt-1">
+            {carrierEligibilityIssues.map((i) => <li key={i}>{i}</li>)}
+          </ul>
+        </div>
       )}
-      {/* BF_PORTAL_BLOCK_82_45_FIELDS_v1 - full 45-question render per
-          BOREAL_FINANCIAL_SYSTEM sec 7. Six sections matching the
-          applicant intake. Field hides itself when value is null/empty,
-          so partial intakes still look clean. */}
-      <Section title="1. Policy Holder Information">
-        <Field label="Guarantor name" value={app.guarantor_name ?? (d.guarantor_name as string)} />
-        <Field label="Date of birth" value={fmtDate(d.guarantor_dob as string)} />
-        <Field label="Address" value={d.guarantor_address as string} />
-        <Field label="Email" value={app.guarantor_email ?? (d.guarantor_email as string)} />
-        <Field label="Phone" value={d.guarantor_phone as string} />
-      </Section>
 
-      <Section title="2. Business Information">
-        <Field label="Country" value={d.country as string} />
-        <Field label="Legal name" value={app.business_name ?? (d.business_name as string)} />
-        <Field label="Address" value={d.business_address as string} />
-        <Field label="Website" value={d.business_website as string} />
-        <Field label="Entity type" value={d.entity_type as string} />
-        <Field label="Business number" value={d.business_number as string} />
-        <Field label="NAICS" value={d.naics_code as string} />
-        <Field label="Revenue start month" value={d.revenue_start_month as string} />
-      </Section>
+      <section>
+        <h3 className="font-semibold mb-2">Director / Guarantor</h3>
+        <Field label="Full legal name" value={pick("q2_full_name", "guarantor_name") || "—"} />
+        <Field label="Date of birth" value={fmtDate(pick("q4_date_of_birth", "guarantor_dob"))} />
+        <Field label="Residential address" value={pick("q5_residential_address", "guarantor_address") || "—"} />
+        <Field label="Email" value={pick("guarantor_email") || "—"} />
+        <Field label="Phone" value={pick("guarantor_phone") || "—"} />
+        <Field label="Gov ID type" value={pick("q_ca_id_type") || <span className="text-amber-600">Not collected yet</span>} />
+        <Field label="Gov ID number" value={pick("q_ca_id_number") || <span className="text-amber-600">Not collected yet</span>} />
+      </section>
 
-      <Section title="3. Loan & Guarantee Details">
-        <Field label="Loan amount" value={fmtMoney(d.loan_amount as number)} />
-        <Field label="CSBFP backed" value={fmtBool(d.csbfp_backed)} />
-        <Field label="Loan has guaranteed cap" value={fmtBool(d.loan_has_guaranteed_cap)} />
-        <Field label="PGI limit" value={fmtMoney(d.pgi_limit as number)} />
-        <Field label="Lender name" value={d.lender_name as string} />
-        <Field label="Loan funding date" value={fmtDate(d.loan_funding_date as string)} />
-        <Field label="Loan purpose" value={d.loan_purpose as string} />
-        <Field label="Personally guaranteeing" value={fmtBool(d.personally_guaranteeing)} />
-        <Field label="Has other guarantors" value={fmtBool(d.has_other_guarantors)} />
-        <Field label="Policy start date" value={fmtDate(d.policy_start_date as string)} />
-      </Section>
+      <section>
+        <h3 className="font-semibold mb-2">Business</h3>
+        <Field label="Legal name" value={pick("q15_business_legal_name", "business_name") || "—"} />
+        <Field label="Operating address" value={pick("q17_business_operating_address", "business_address") || "—"} />
+        <Field label="Province" value={pick("q_business_province", "business_province") || "—"} />
+        <Field label="NAICS" value={pick("q25_naics_code", "naics_code") || "—"} />
+        <Field label="Formation date" value={fmtDate(pick("q26_formation_date", "formation_date"))} />
+      </section>
 
-      <Section title="4. Financial Information">
-        <Field label="Annual revenue" value={fmtMoney(d.annual_revenue as number)} />
-        <Field label="EBITDA" value={fmtMoney(d.ebitda as number)} />
-        <Field label="Total debt" value={fmtMoney(d.total_debt as number)} />
-        <Field label="Monthly debt service" value={fmtMoney(d.monthly_debt_service as number)} />
-        <Field label="Collateral value" value={fmtMoney(d.collateral_value as number)} />
-        <Field label="Enterprise value" value={fmtMoney(d.enterprise_value as number)} />
-      </Section>
+      <section>
+        <h3 className="font-semibold mb-2">Loan</h3>
+        <Field label="Loan type (carrier)" value={pick("q_ca_loan_type") || <span className="text-amber-600">Not set</span>} />
+        <Field label="Loan amount" value={fmtMoney(Number(pick("q41_loan_amount", "loan_amount")) || undefined)} />
+        <Field label="PGI limit" value={fmtMoney(Number(pick("q42_pgi_limit", "pgi_limit")) || undefined)} />
+        <Field label="Lender" value={pick("lender_name") || "—"} />
+        <Field label="Loan purpose (internal)" value={pick("loan_purpose") || "—"} />
+      </section>
 
-      <Section title="5. Risk & Compliance">
-        <Field label="Payables threatening" value={fmtBool(d.payables_threatening)} />
-        <Field label="Upcoming adverse events" value={fmtBool(d.upcoming_adverse_events)} />
-        <Field label="Bankruptcy history" value={fmtBool(d.bankruptcy_history)} />
-        <Field label="Insolvency history" value={fmtBool(d.insolvency_history)} />
-        <Field label="Personal investigations" value={fmtBool(d.personal_investigations)} />
-        <Field label="Business investigations" value={fmtBool(d.business_investigations)} />
-        <Field label="Property insurance in force" value={fmtBool(d.property_insurance_in_force)} />
-        <Field label="Personal judgments" value={fmtBool(d.personal_judgments)} />
-        <Field label="Business judgments" value={fmtBool(d.business_judgments)} />
-      </Section>
+      <CoGuarantorList applicationId={app.id} hasCoGuarantors={app.has_co_guarantors === true} />
 
-      <Section title="6. Consents">
-        <Field label="Electronic signature" value={fmtBool((consents as any).consent_electronic_signature ?? d.consent_electronic_signature)} />
-        <Field label="Info accurate" value={fmtBool((consents as any).consent_info_accurate ?? d.consent_info_accurate ?? (consents as any).info_accurate)} />
-        <Field label="Business solvent" value={fmtBool((consents as any).consent_business_solvent ?? d.consent_business_solvent)} />
-        <Field label="No undisclosed events" value={fmtBool((consents as any).consent_no_undisclosed_events ?? d.consent_no_undisclosed_events)} />
-        <Field label="Data use" value={fmtBool((consents as any).consent_data_use ?? d.consent_data_use ?? (consents as any).data_use)} />
-        <Field label="Credit pull" value={fmtBool((consents as any).consent_credit_pull ?? d.consent_credit_pull ?? (consents as any).credit_pull)} />
-        <Field label="Coverage understood" value={fmtBool((consents as any).consent_coverage_understood ?? d.consent_coverage_understood)} />
-      </Section>
+      <DeclarationsCard declarations={app.declarations || {}} />
 
-      <details className="rounded border border-white/10 p-2">
-        <summary className="cursor-pointer text-xs text-white/40 hover:text-white/70">Raw data (debug)</summary>
-        <pre className="mt-2 overflow-auto rounded bg-black/30 p-3 text-xs">{JSON.stringify(d, null, 2)}</pre>
-      </details>
+      <SendToPurbeckGate
+        applicationId={app.id}
+        status={app.status}
+        pgiApplicationId={app.pgi_application_id ?? null}
+        loanAgreementUploadedAt={app.loan_agreement_uploaded_at ?? null}
+      />
     </div>
   );
 }
