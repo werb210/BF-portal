@@ -1,22 +1,19 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { postMock, getMicrosoftAccessTokenMock } = vi.hoisted(() => ({
+const { postMock } = vi.hoisted(() => ({
   postMock: vi.fn(),
-  getMicrosoftAccessTokenMock: vi.fn(),
 }));
 
 vi.mock("@/api", () => ({
-  api: {
-    post: postMock,
-  },
+  api: Object.assign(
+    // The new sendEmail uses api.post
+    vi.fn(),
+    { post: postMock }
+  ),
 }));
 
-vi.mock("@/auth/microsoftToken", () => ({
-  getMicrosoftAccessToken: getMicrosoftAccessTokenMock,
-}));
-
-vi.mock("@/auth/msal", () => ({
-  msalClient: { getAllAccounts: vi.fn() },
+vi.mock("./o365Interceptor", () => ({
+  withO365Refresh: <T,>(call: () => Promise<T>) => call(),
 }));
 
 import { sendEmail } from "@/api/email";
@@ -24,32 +21,59 @@ import { sendEmail } from "@/api/email";
 describe("sendEmail", () => {
   beforeEach(() => {
     postMock.mockReset();
-    getMicrosoftAccessTokenMock.mockReset();
   });
 
-  it("attaches X-MS-Access-Token header when a token is available", async () => {
-    getMicrosoftAccessTokenMock.mockResolvedValueOnce("ms-token");
+  it("posts to /api/o365/mail/send with normalized payload", async () => {
     postMock.mockResolvedValueOnce({ ok: true });
 
-    await sendEmail({ to: "a@example.com", subject: "Hello", body: "Hi" });
+    await sendEmail({ to: "a@example.com", subject: "Hello", body: "<p>Hi</p>" });
 
-    expect(postMock).toHaveBeenCalledWith(
-      "/api/email/send",
-      { to: "a@example.com", subject: "Hello", body: "Hi" },
-      { headers: { "X-MS-Access-Token": "ms-token" } }
-    );
+    expect(postMock).toHaveBeenCalledWith("/api/o365/mail/send", {
+      to: ["a@example.com"],
+      cc: [],
+      bcc: [],
+      subject: "Hello",
+      body_html: "<p>Hi</p>",
+    });
   });
 
-  it("sends request without X-MS-Access-Token header when token is null", async () => {
-    getMicrosoftAccessTokenMock.mockResolvedValueOnce(null);
+  it("normalizes a `to` array as-is and includes cc/bcc when provided", async () => {
     postMock.mockResolvedValueOnce({ ok: true });
 
-    await sendEmail({ to: "a@example.com", subject: "Hello", body: "Hi" });
+    await sendEmail({
+      to: ["a@example.com", "b@example.com"],
+      cc: ["c@example.com"],
+      bcc: ["d@example.com"],
+      subject: "Multi",
+      body: "<p>Body</p>",
+    });
 
-    expect(postMock).toHaveBeenCalledWith(
-      "/api/email/send",
-      { to: "a@example.com", subject: "Hello", body: "Hi" },
-      { headers: {} }
-    );
+    expect(postMock).toHaveBeenCalledWith("/api/o365/mail/send", {
+      to: ["a@example.com", "b@example.com"],
+      cc: ["c@example.com"],
+      bcc: ["d@example.com"],
+      subject: "Multi",
+      body_html: "<p>Body</p>",
+    });
+  });
+
+  it("defaults cc and bcc to empty arrays when omitted", async () => {
+    postMock.mockResolvedValueOnce({ ok: true });
+
+    await sendEmail({ to: "x@example.com", subject: "S", body: "B" });
+
+    const callArgs = postMock.mock.calls[0];
+    expect(callArgs[1]).toMatchObject({ cc: [], bcc: [] });
+  });
+
+  it("does NOT send X-MS-Access-Token header (server uses stored token)", async () => {
+    postMock.mockResolvedValueOnce({ ok: true });
+
+    await sendEmail({ to: "x@example.com", subject: "S", body: "B" });
+
+    // The new sendEmail makes a 2-arg call: (path, body) — no third options
+    // arg with headers. Verify exactly 2 args were passed.
+    const callArgs = postMock.mock.calls[0];
+    expect(callArgs.length).toBe(2);
   });
 });
