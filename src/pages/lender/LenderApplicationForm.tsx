@@ -68,14 +68,20 @@ export default function LenderApplicationForm({ onClose, onSubmitted }: Props) {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Generic setter for nested fields.
+  // BF_PORTAL_BLOCK_v631_HOTFIX_v629_v630_v1
+  // Generic setter for nested fields. setNested is only ever called with
+  // a non-empty dotted path (e.g. "guarantor.name"), so the bang asserts
+  // are sound and satisfy noUncheckedIndexedAccess.
   function setNested(path: string, value: unknown) {
     setForm((prev) => {
       const next = JSON.parse(JSON.stringify(prev));
       const keys = path.split(".");
-      let cur = next;
-      for (let i = 0; i < keys.length - 1; i++) cur = cur[keys[i]];
-      cur[keys[keys.length - 1]] = value;
+      if (keys.length === 0) return prev;
+      let cur: Record<string, unknown> = next;
+      for (let i = 0; i < keys.length - 1; i++) {
+        cur = cur[keys[i]!] as Record<string, unknown>;
+      }
+      cur[keys[keys.length - 1]!] = value;
       return next;
     });
   }

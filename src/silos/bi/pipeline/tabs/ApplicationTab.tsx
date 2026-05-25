@@ -5,29 +5,35 @@ import { DeclarationsCard } from "./DeclarationsCard";
 import { CoGuarantorList } from "./CoGuarantorList";
 import { SendToPurbeckGate } from "./SendToPurbeckGate";
 
+// BF_PORTAL_BLOCK_v631_HOTFIX_v629_v630_v1
+// Widened to accept BiApplicationDetailData from the parent without an
+// explicit cast. The DB columns are nullable so `string | null` is the
+// honest shape — `?: string` (i.e. `string | undefined`) was too narrow.
 type BIApplication = {
   id: string;
-  public_id?: string;
+  public_id?: string | null;
   // Legacy columns
-  guarantor_name?: string;
-  guarantor_email?: string;
-  guarantor_phone?: string;
-  business_name?: string;
-  lender_name?: string;
-  loan_amount?: number | string;
-  pgi_limit?: number | string;
-  country?: string;
+  guarantor_name?: string | null;
+  guarantor_email?: string | null;
+  guarantor_phone?: string | null;
+  business_name?: string | null;
+  lender_name?: string | null;
+  loan_amount?: number | string | null;
+  pgi_limit?: number | string | null;
+  country?: string | null;
   // New q-keyed columns (preferred when present)
-  q_business_province?: string;
-  q_ca_loan_type?: string;
-  q_ca_id_type?: string;
-  q_ca_id_number?: string;
-  has_co_guarantors?: boolean;
-  declarations?: Record<string, unknown>;
-  data?: Record<string, unknown>;
+  q_business_province?: string | null;
+  q_ca_loan_type?: string | null;
+  q_ca_id_type?: string | null;
+  q_ca_id_number?: string | null;
+  has_co_guarantors?: boolean | null;
+  declarations?: Record<string, unknown> | null;
+  data?: Record<string, unknown> | null;
   loan_agreement_uploaded_at?: string | null;
   pgi_application_id?: string | null;
-  status?: string;
+  status?: string | null;
+  // Allow extra columns the row may carry without breaking the prop check.
+  [key: string]: unknown;
 };
 
 function fmtMoney(v: number | string | undefined | null): string {
@@ -51,7 +57,10 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-export default function ApplicationTab({ app }: { app: BIApplication }) {
+export default function ApplicationTab({ app, onMutated, readOnly }: { app: BIApplication; onMutated?: () => void; readOnly?: boolean }) {
+  // onMutated/readOnly are accepted for parent-call compatibility but unused in v629/v631 — siblings tabs use them.
+  void onMutated;
+  void readOnly;
   const d = (app.data as Record<string, unknown>) || {};
 
   // Source-of-truth lookups: prefer q-keyed column, fall back to data JSONB, fall back to legacy column.
@@ -131,7 +140,7 @@ export default function ApplicationTab({ app }: { app: BIApplication }) {
 
       <SendToPurbeckGate
         applicationId={app.id}
-        status={app.status}
+        status={app.status ?? undefined}
         pgiApplicationId={app.pgi_application_id ?? null}
         loanAgreementUploadedAt={app.loan_agreement_uploaded_at ?? null}
       />
