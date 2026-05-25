@@ -20,8 +20,8 @@ const EmailViewer = ({ visible, contactId, contactEmail, onClose }: EmailViewerP
   const [selected, setSelected] = useState<EmailMessage | null>(null);
 
   const { data: messages = [] } = useQuery({
-    queryKey: ["email", contactId, contactEmail],
-    queryFn: () => fetchEmailMessages(contactId, contactEmail),
+    queryKey: ["email", contactId, folder, search, contactEmail],
+    queryFn: () => fetchEmailMessages(contactId, folder, search, contactEmail),
     enabled: visible
   });
 
@@ -60,7 +60,7 @@ const EmailViewer = ({ visible, contactId, contactEmail, onClose }: EmailViewerP
           </div>
           <div data-testid="email-body">
             {messages.length === 0 ? (
-              <p>No emails with this contact</p>
+              <p>No emails with this contact.</p>
             ) : selected ? (
               <div>
                 <div className="font-semibold">{selected.subject}</div>
