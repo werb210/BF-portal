@@ -17,6 +17,8 @@ import { dialerApi } from "../api";
 import { startOutboundPstn, hangup, answerIncoming, declineIncoming } from "../actions";
 import { CallTimer } from "./CallTimer";
 import { ParticipantRow } from "./ParticipantRow";
+import { AddParticipantBar } from "./AddParticipantBar";
+import { TransferBar } from "./TransferBar";
 
 const T = {
   panelBg: "#0a0a0a",
@@ -27,6 +29,8 @@ const T = {
   text: "#f5f5f7",
   textMuted: "rgba(245,245,247,0.55)",
   textDim: "rgba(245,245,247,0.35)",
+  accent: "#3b82f6",
+  accentSoft: "rgba(59,130,246,0.15)",
   green: "#10b981",
   red: "#ef4444",
   amber: "#f59e0b",
@@ -56,18 +60,45 @@ const Icon = ({ d, size = 20, fill = "none" }: { d: string; size?: number; fill?
     <path d={d} />
   </svg>;
 
-function Avatar({ name, size = 44 }: { name?: string | null; size?: number }) { return <div />; }
-function SiloChip({ silo }: { silo?: string | null }) { return silo ? <span>{silo}</span> : null; }
-function CtlBtn({ label, icon, active, onClick, disabled }: { label: string; icon: string; active?: boolean; onClick: () => void; disabled?: boolean }) { return <button onClick={onClick} disabled={disabled}>{label}<Icon d={icon} /></button>; }
+function Avatar({ name, size = 44 }: { name?: string | null; size?: number }) {
+  const initials = (name ?? "?").trim().split(/\s+/).slice(0, 2).map((s) => s[0]).join("").toUpperCase() || "?";
+  const hash = (name ?? "?").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const hues: Array<[number, number]> = [[210, 250], [180, 220], [330, 360], [20, 50], [140, 170], [270, 300]];
+  const [h1, h2] = hues[hash % hues.length] ?? [210, 250];
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg, hsl(${h1} 65% 55%), hsl(${h2} 75% 45%))`, display: "grid", placeItems: "center", color: "white", fontWeight: 600, fontSize: size * 0.36, flexShrink: 0, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)" }}>{initials}</div>
+  );
+}
+
+function SiloChip({ silo }: { silo?: string | null }) {
+  if (!silo) return null;
+  const colors: Record<string, { bg: string; fg: string }> = { BF: { bg: "rgba(59,130,246,0.18)", fg: "#93c5fd" }, BI: { bg: "rgba(139,92,246,0.18)", fg: "#c4b5fd" }, SLF: { bg: "rgba(245,158,11,0.20)", fg: "#fcd34d" } };
+  const c = colors[silo.toUpperCase()] ?? { bg: "rgba(255,255,255,0.08)", fg: T.textMuted };
+  return <span style={{ padding: "3px 9px", borderRadius: 6, background: c?.bg ?? "transparent", color: c?.fg ?? "inherit", fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>{silo}</span>;
+}
+
+function CtlBtn({ label, icon, active, danger, onClick, disabled }: { label: string; icon: string; active?: boolean; danger?: boolean; onClick: () => void; disabled?: boolean; }) {
+  const [hover, setHover] = useState(false);
+  const bg = danger ? T.red : active ? "rgba(255,255,255,0.12)" : (hover ? "rgba(255,255,255,0.06)" : "transparent");
+  const border = active || danger ? "transparent" : `1.5px solid ${T.borderStrong}`;
+  return (
+    <button onClick={onClick} disabled={disabled} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "transparent", border: "none", padding: 0, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.4 : 1 }}>
+      <span style={{ width: 48, height: 48, borderRadius: "50%", background: bg, border, color: T.text, display: "grid", placeItems: "center" }}><Icon d={icon} size={20} /></span>
+      <span style={{ fontSize: 10.5, fontWeight: 600, color: T.textMuted, letterSpacing: 0.6, textTransform: "uppercase" }}>{label}</span>
+    </button>
+  );
+}
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"];
-function Keypad({ onPress }: { onPress: (d: string) => void }) { return <div>{KEYS.map((k)=><button key={k} onClick={()=>onPress(k)}>{k}</button>)}</div>; }
+function Keypad({ onPress }: { onPress: (d: string) => void }) { return <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, padding: "8px 32px" }}>{KEYS.map((k) => <button key={k} onClick={() => onPress(k)} style={{ width: 60, height: 60, borderRadius: "50%", background: "transparent", border: `1.5px solid ${T.border}`, color: T.text, fontSize: 22, cursor: "pointer", justifySelf: "center" }}>{k}</button>)}</div>; }
 const SMART_REPLIES = ["Let me look into that for you","I'll get in touch with the team","I'll review and get back to you"];
-function RecordingPill({ paused, onToggle }: { paused: boolean; onToggle: () => void }) { return <button onClick={onToggle}>{paused ? "Recording paused" : "Recording consent"}</button>; }
+function RecordingPill({ paused, onToggle }: { paused: boolean; onToggle: () => void }) { return <button onClick={onToggle} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 14px", borderRadius: 999, background: T.amberSoft, border: `1px solid ${T.amber}40`, color: T.amber, fontSize: 12, fontWeight: 600, cursor: "pointer" }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: T.amber }} />{paused ? "Recording paused" : "Recording consent"}</button>; }
 
 export default function DialerPanel() {
   const st = useDialer();
   const [phone, setPhone] = useState("");
   const [showKeypad, setShowKeypad] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
   const [addQuery, setAddQuery] = useState("");
   const conf = st.conference;
   const me = useMemo(() => st.participants.find((p) => p.role === "moderator"), [st.participants]);
@@ -91,7 +122,7 @@ export default function DialerPanel() {
   return <div style={{ position: "fixed", right: 24, bottom: 24, width: 380, background: T.panelBg, color: T.text, borderRadius: 28, overflow: "hidden", border: `1px solid ${T.border}`, boxShadow: "0 24px 60px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.4)", fontFamily: T.font, zIndex: 1000, maxHeight: "calc(100vh - 48px)", display: "flex", flexDirection: "column" }}>
     <div style={{ padding: "18px 20px 16px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${T.border}` }}><Avatar name={headline} size={44} /><div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 15, fontWeight: 600 }}>{headline}</div><div style={{ fontSize: 12, color: T.textMuted }}>{subline}</div></div><SiloChip silo={silo} />{st.ctx.contactId && <a href={`/crm/contacts/${st.ctx.contactId}`} style={{ fontSize: 11, color: T.text }}>Open Contact</a>}<button onClick={() => { if (liveAny) { try { hangup(); } catch {} } st.close(); }} style={{ background: "transparent", border: "none", color: T.textMuted, cursor: "pointer" }} title="Close dialer"><Icon d={I.x} size={18} /></button></div>
     {incoming && !liveAny && <div style={{ padding: 20, textAlign: "center" }}><div>Incoming call</div><div>{incoming.fromDisplay}</div><div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 18 }}><button onClick={declineIncoming} style={{ width: 56, height: 56, borderRadius: "50%", background: T.red, border: "none", color: "white" }}><Icon d={I.hangup} size={22} /></button><button onClick={answerIncoming} style={{ width: 56, height: 56, borderRadius: "50%", background: T.green, border: "none", color: "white" }}><Icon d={I.phone} size={22} /></button></div></div>}
-    {liveAny && !incoming && <><div style={{ padding: "20px 20px 8px", textAlign: "center" }}><div style={{ fontSize: 32, fontWeight: 300, fontFamily: T.mono }}>{conf ? <CallTimer startedAt={conf.started_at} /> : "00:00"}</div></div><div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, padding: "12px 16px" }}><CtlBtn label="Mute" icon={me?.muted ? I.micOff : I.mic} active={!!me?.muted} onClick={() => me && conf && dialerApi.muteParticipant(conf.id, me.id, !me.muted)} /><CtlBtn label="Hold" icon={I.pause} active={!!me?.on_hold} onClick={() => me && conf && dialerApi.holdParticipant(conf.id, me.id, !me.on_hold)} /><CtlBtn label="Record" icon={I.dot} active={!!conf?.recording_sid && !conf.recording_paused} onClick={toggleRecording} disabled={!conf?.recording_sid} /><CtlBtn label="Transfer" icon={I.transfer} onClick={() => setShowKeypad(false)} /><CtlBtn label="Add" icon={I.userPlus} onClick={() => {}} /><CtlBtn label="Keypad" icon={I.users} active={showKeypad} onClick={() => setShowKeypad((v) => !v)} /></div>{showKeypad && <Keypad onPress={dtmf} />}<div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between" }}>{conf?.recording_sid ? <RecordingPill paused={!!conf.recording_paused} onToggle={toggleRecording} /> : <span>Not recording</span>}<button onClick={hangup} style={{ width: 48, height: 48, borderRadius: "50%", background: T.red, border: "none", color: "white" }}><Icon d={I.hangup} size={20} /></button></div></>}
+    {liveAny && !incoming && <><div style={{ padding: "20px 20px 8px", textAlign: "center" }}><div style={{ fontSize: 32, fontWeight: 300, fontFamily: T.mono }}>{conf ? <CallTimer startedAt={conf.started_at} /> : "00:00"}</div></div><div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, padding: "12px 16px" }}><CtlBtn label="Mute" icon={me?.muted ? I.micOff : I.mic} active={!!me?.muted} onClick={() => me && conf && dialerApi.muteParticipant(conf.id, me.id, !me.muted)} /><CtlBtn label="Hold" icon={I.pause} active={!!me?.on_hold} onClick={() => me && conf && dialerApi.holdParticipant(conf.id, me.id, !me.on_hold)} /><CtlBtn label="Record" icon={I.dot} active={!!conf?.recording_sid && !conf.recording_paused} onClick={toggleRecording} disabled={!conf?.recording_sid} /><CtlBtn label="Transfer" icon={I.transfer} active={showTransfer} onClick={() => { setShowTransfer((v) => !v); setShowAdd(false); setShowKeypad(false); }} /><CtlBtn label="Add" icon={I.userPlus} active={showAdd} onClick={() => { setShowAdd((v) => !v); setShowTransfer(false); setShowKeypad(false); }} /><CtlBtn label="Keypad" icon={I.users} active={showKeypad} onClick={() => setShowKeypad((v) => !v)} /></div>{showKeypad && <Keypad onPress={dtmf} />}{showAdd && conf && <AddParticipantBar conferenceId={conf.id} />}{showTransfer && conf && <TransferBar conferenceId={conf.id} initiatorPid={me?.id ?? null} />}<div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between" }}>{conf?.recording_sid ? <RecordingPill paused={!!conf.recording_paused} onToggle={toggleRecording} /> : <span>Not recording</span>}<button onClick={hangup} style={{ width: 48, height: 48, borderRadius: "50%", background: T.red, border: "none", color: "white" }}><Icon d={I.hangup} size={20} /></button></div></>}
     {!liveAny && !incoming && <><div style={{ padding: "20px 20px 0", textAlign: "center" }}><div style={{ fontSize: 28, fontFamily: T.mono }}>{phone || "+1"}</div></div><Keypad onPress={(d) => setPhone((p) => p + d)} /><div style={{ padding: "8px 32px 22px", display: "flex", justifyContent: "center", gap: 16 }}><button onClick={() => setPhone((p) => p.slice(0, -1))}>Delete</button><button onClick={() => startOutboundPstn(phone, st.ctx)} disabled={!phone.trim() || !st.device} style={{ width: 64, height: 64, borderRadius: "50%", background: T.green, border: "none", color: "white" }}><Icon d={I.phone} size={24} /></button><button onClick={() => setPhone("")}>Clear</button></div></>}
     {liveAny && !incoming && <div style={{ padding: "12px 20px 18px", borderTop: `1px solid ${T.border}`, background: T.surface }}><div style={{ fontSize: 11, color: T.textMuted, marginBottom: 8 }}>{st.transcript.length === 0 ? "Call transcript will appear here" : st.transcript.slice(-3).map((s) => s.text).join(" ")}</div><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{SMART_REPLIES.map((r) => <span key={r} style={{ padding: "5px 10px", borderRadius: 12, fontSize: 11, background: T.surfaceAlt, color: T.textMuted, border: `1px solid ${T.border}` }}>{r}</span>)}</div></div>}
     {others.length > 0 && <div style={{ padding: "0 20px" }}>{others.map((p) => <ParticipantRow key={p.id} p={p} canModerate={Boolean(conf)} onMute={() => conf && dialerApi.muteParticipant(conf.id, p.id, !p.muted)} onHold={() => conf && dialerApi.holdParticipant(conf.id, p.id, !p.on_hold)} onKick={() => conf && dialerApi.kickParticipant(conf.id, p.id)} />)}</div>}
