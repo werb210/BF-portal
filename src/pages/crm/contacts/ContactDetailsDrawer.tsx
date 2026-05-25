@@ -176,7 +176,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
       </div>
 
       <SMSComposer visible={showSms} contact={contact} onClose={() => setShowSms(false)} />
-      <EmailViewer visible={showEmail} contactId={contact.id} onClose={() => setShowEmail(false)} />
+      <EmailViewer visible={showEmail} contactId={contact.id} contactEmail={contact.email} onClose={() => setShowEmail(false)} />
     </aside>
   );
 };

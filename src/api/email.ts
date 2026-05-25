@@ -1,6 +1,5 @@
 import { api } from "@/api";
-import { getMicrosoftAccessToken } from "@/auth/microsoftToken";
-import { msalClient } from "@/auth/msal";
+import { withO365Refresh } from "./o365Interceptor";
 
 export type EmailMessage = {
   id: string;
@@ -11,46 +10,61 @@ export type EmailMessage = {
   to: string;
   body: string;
   attachments: string[];
+  receivedDateTime?: string;
+  isRead?: boolean;
 };
 
-const emailMessages: EmailMessage[] = [
-  {
-    id: "m1",
-    contactId: "c1",
-    subject: "Welcome to Boreal",
-    folder: "inbox",
-    from: "jane@example.com",
-    to: "agent@boreal.com",
-    body: "<p>Hello agent, thanks for reaching out.</p>",
-    attachments: ["contract.pdf"]
-  },
-  {
-    id: "m2",
-    contactId: "c1",
-    subject: "Sent docs",
-    folder: "sent",
-    from: "agent@boreal.com",
-    to: "jane@example.com",
-    body: "<p>Here are the documents.</p>",
-    attachments: []
-  }
-];
+type GraphMessage = {
+  id: string;
+  subject?: string;
+  from?: { emailAddress?: { address?: string } };
+  toRecipients?: Array<{ emailAddress?: { address?: string } }>;
+  bodyPreview?: string;
+  body?: { content?: string };
+  receivedDateTime?: string;
+  isRead?: boolean;
+};
 
-export const fetchEmailMessages = async (contactId: string, folder?: string, query?: string) =>
-  new Promise<EmailMessage[]>((resolve) =>
-    setTimeout(() => {
-      const filtered = emailMessages.filter((message) => message.contactId === contactId);
-      const byFolder = folder ? filtered.filter((message) => message.folder === folder) : filtered;
-      const byQuery = query
-        ? byFolder.filter(
-            (message) =>
-              message.subject.toLowerCase().includes(query.toLowerCase()) ||
-              message.body.toLowerCase().includes(query.toLowerCase())
-          )
-        : byFolder;
-      resolve(byQuery);
-    }, 10)
-  );
+function mapGraphToEmail(m: GraphMessage, contactId: string): EmailMessage {
+  return {
+    id: m.id,
+    contactId,
+    subject: m.subject ?? "(no subject)",
+    folder: "inbox",
+    from: m.from?.emailAddress?.address ?? "",
+    to: (m.toRecipients ?? []).map((r) => r.emailAddress?.address ?? "").join(", "),
+    body: m.body?.content ?? m.bodyPreview ?? "",
+    attachments: [],
+    receivedDateTime: m.receivedDateTime,
+    isRead: m.isRead,
+  };
+}
+
+export async function fetchEmailMessages(contactId: string, contactEmail?: string): Promise<EmailMessage[]> {
+  if (!contactEmail) return [];
+  try {
+    const messages = await withO365Refresh(() => api<GraphMessage[]>("/api/crm/inbox"));
+    const lower = contactEmail.trim().toLowerCase();
+    return (messages ?? [])
+      .filter((m) => {
+        const from = m.from?.emailAddress?.address?.toLowerCase() ?? "";
+        const tos = (m.toRecipients ?? []).map((r) => r.emailAddress?.address?.toLowerCase() ?? "");
+        return from === lower || tos.includes(lower);
+      })
+      .map((m) => mapGraphToEmail(m, contactId));
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchEmailMessage(messageId: string): Promise<EmailMessage | undefined> {
+  try {
+    const m = await withO365Refresh(() => api<GraphMessage>(`/api/crm/inbox/${encodeURIComponent(messageId)}`));
+    return m ? mapGraphToEmail(m, "") : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export type EmailPayload = {
   to: string | string[];
@@ -61,13 +75,11 @@ export type EmailPayload = {
 };
 
 export async function sendEmail(payload: EmailPayload) {
-  const msToken = await getMicrosoftAccessToken(msalClient);
-  return api.post("/api/email/send", payload, {
-    headers: msToken ? { "X-MS-Access-Token": msToken } : {},
+  return api.post("/api/o365/mail/send", {
+    to: Array.isArray(payload.to) ? payload.to : [payload.to],
+    cc: payload.cc ?? [],
+    bcc: payload.bcc ?? [],
+    subject: payload.subject,
+    body_html: payload.body,
   });
 }
-
-export const fetchEmailMessage = async (messageId: string) =>
-  new Promise<EmailMessage | undefined>((resolve) =>
-    setTimeout(() => resolve(emailMessages.find((message) => message.id === messageId)), 10)
-  );
