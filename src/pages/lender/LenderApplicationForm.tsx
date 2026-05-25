@@ -44,7 +44,7 @@ const blankDecl: Declarations = {
 
 const initial = {
   company_name: "",
-  guarantor: { name: "", phone: "", email: "", dob: "", address: "" },
+  guarantor: { name: "", phone: "", email: "", dob: "", address: "", q_ca_id_type: "", q_ca_id_number: "" },
   business: {
     entity_type: "", business_number: "", address: "", website: "",
     province: "", naics: "", start_date: "", country: "CA" as "CA" | "US",
@@ -91,11 +91,16 @@ export default function LenderApplicationForm({ onClose, onSubmitted }: Props) {
     if (!form.company_name.trim()) issues.push("Company name required.");
     if (!form.guarantor.name.trim()) issues.push("Guarantor name required.");
     if (!form.guarantor.phone.trim()) issues.push("Guarantor phone required.");
+    if (!form.guarantor.email.trim()) issues.push("Guarantor email required (carrier).");
+    if (!(form.guarantor as any).q_ca_id_type) issues.push("Government ID type required.");
+    if (!String((form.guarantor as any).q_ca_id_number || "").trim()) issues.push("Government ID number required.");
     if (!/^\d{6}$/.test(form.business.naics)) issues.push("NAICS must be 6 digits.");
     if (!form.business.start_date) issues.push("Business start date required.");
     if (form.business.province.toUpperCase() === "QC") issues.push("PGI does not currently write business in Quebec.");
     if (!form.business.province) issues.push("Business province required.");
+    // BF_PORTAL_BLOCK_v632_CARRIER_CORRECTIONS_v1 — Boreal-side $50K floor.
     if (Number(form.loan.amount) <= 0) issues.push("Loan amount must be > 0.");
+    if (Number(form.loan.amount) > 0 && Number(form.loan.amount) < 50_000) issues.push("Loan amount is below the 50,000 minimum.");
     if (Number(form.loan.amount) > LOAN_AMOUNT_MAX) issues.push(`Loan amount exceeds 1,000,000 cap.`);
     if (Number(form.loan.pgi_limit) <= 0) issues.push("PGI limit must be > 0.");
     if (Number(form.loan.pgi_limit) > PGI_LIMIT_MAX) issues.push(`PGI limit exceeds 1,000,000 cap.`);
@@ -182,9 +187,18 @@ export default function LenderApplicationForm({ onClose, onSubmitted }: Props) {
           <div className="grid grid-cols-2 gap-2">
             <input className="border p-2 rounded" placeholder="Guarantor name *" value={form.guarantor.name} onChange={(e) => setNested("guarantor.name", e.target.value)} />
             <input className="border p-2 rounded" placeholder="Guarantor phone *" value={form.guarantor.phone} onChange={(e) => setNested("guarantor.phone", e.target.value)} />
-            <input className="border p-2 rounded" placeholder="Guarantor email" value={form.guarantor.email} onChange={(e) => setNested("guarantor.email", e.target.value)} />
-            <input type="date" className="border p-2 rounded" placeholder="DOB" value={form.guarantor.dob} onChange={(e) => setNested("guarantor.dob", e.target.value)} />
-            <input className="col-span-2 border p-2 rounded" placeholder="Residential address" value={form.guarantor.address} onChange={(e) => setNested("guarantor.address", e.target.value)} />
+            <input className="border p-2 rounded" placeholder="Guarantor email *" value={form.guarantor.email} onChange={(e) => setNested("guarantor.email", e.target.value)} />
+            <input type="date" className="border p-2 rounded" placeholder="DOB *" value={form.guarantor.dob} onChange={(e) => setNested("guarantor.dob", e.target.value)} />
+            <input className="col-span-2 border p-2 rounded" placeholder="Residential address *" value={form.guarantor.address} onChange={(e) => setNested("guarantor.address", e.target.value)} />
+            {/* BF_PORTAL_BLOCK_v632_CARRIER_CORRECTIONS_v1 — Government ID required by carrier. */}
+            <select className="border p-2 rounded" value={(form.guarantor as any).q_ca_id_type || ""} onChange={(e) => setNested("guarantor.q_ca_id_type", e.target.value)}>
+              <option value="">Gov ID type *</option>
+              <option value="Passport">Passport</option>
+              <option value="National ID">National ID</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Other">Other</option>
+            </select>
+            <input className="border p-2 rounded" placeholder="Gov ID number *" value={(form.guarantor as any).q_ca_id_number || ""} onChange={(e) => setNested("guarantor.q_ca_id_number", e.target.value)} />
           </div>
         </section>
 
@@ -227,17 +241,18 @@ export default function LenderApplicationForm({ onClose, onSubmitted }: Props) {
 
         <section className="mb-4">
           <h3 className="font-semibold mb-2">Declarations (Purbeck — all 11 required)</h3>
-          <DeclarationRow label="Consent to underwriting / credit checks" k="section_1_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} />
-          <DeclarationRow label="Past loan default / write-off / called credit" k="section_1_2" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_1_2_reason" />
-          <DeclarationRow label="Personal bankruptcy history" k="section_2_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_2_a_reason" />
-          <DeclarationRow label="Business insolvency / receivership history" k="section_2_b" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_2_b_reason" />
-          <DeclarationRow label="Outstanding personal judgments / liens" k="section_2_c" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_2_c_reason" />
-          <DeclarationRow label="Outstanding business judgments / liens" k="section_2_d" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_2_d_reason" />
-          <DeclarationRow label="Criminal proceedings (past or pending)" k="section_3_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_3_a_reason" />
-          <DeclarationRow label="Agree to policy terms" k="section_3_c" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="Disagree" reasonKey="section_3_c_reason" agreeDisagree />
-          <DeclarationRow label="Regulatory investigations" k="section_4_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_4_a_reason" />
-          <DeclarationRow label="Anticipated material adverse change (12mo)" k="section_5_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_5_a_reason" />
-          <DeclarationRow label="Certify information is accurate" k="section_6_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} />
+          {/* BF_PORTAL_BLOCK_v632_CARRIER_CORRECTIONS_v1 — authoritative wording */}
+          <DeclarationRow label="Does the business carry insurance coverage for all physical assets covered by the personal guarantee?" k="section_1_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} />
+          <DeclarationRow label="Have you ever declared personal bankruptcy?" k="section_1_2" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_1_2_reason" />
+          <DeclarationRow label="Have you ever been barred from serving as a Director, or are you under investigation that could result in being barred?" k="section_2_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_2_a_reason" />
+          <DeclarationRow label="Have you ever been a Director of a company that has gone through bankruptcy, receivership, or restructuring proceedings?" k="section_2_b" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_2_b_reason" />
+          <DeclarationRow label="Have you ever been a Director of a company under investigation by the Canada Revenue Agency or the Canada Border Services Agency?" k="section_2_c" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_2_c_reason" />
+          <DeclarationRow label="Do you currently have any actual or contingent liability that you will not be able to pay within 30 days of when it becomes due?" k="section_2_d" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_2_d_reason" />
+          <DeclarationRow label="Does the business currently have any bad or doubtful debts owed to it that are likely to materially affect its ability to pay liabilities?" k="section_3_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_3_a_reason" />
+          <DeclarationRow label="I confirm that all answers above are true to the best of my knowledge (and if anyone else completed this form on my behalf, that they were authorized)." k="section_3_c" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="Disagree" reasonKey="section_3_c_reason" agreeDisagree />
+          <DeclarationRow label="Has the business lost a significant investor, customer, or supplier in the last 6 months?" k="section_4_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_4_a_reason" />
+          <DeclarationRow label="Are you aware of any information that could materially affect the business's ability to meet its obligations over the next 6 months?" k="section_5_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} adverseTriggers="yes" reasonKey="section_5_a_reason" />
+          <DeclarationRow label="As of today, is the company solvent (able to pay its debts as they become due)?" k="section_6_a" decl={form.declarations} setDecl={(d) => setNested("declarations", d)} />
         </section>
 
         {validation.issues.length > 0 && (
