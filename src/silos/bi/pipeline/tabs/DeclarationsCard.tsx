@@ -1,18 +1,22 @@
 // BF_PORTAL_BLOCK_v629_BI_PURBECK_RENDER_v1
 import React from "react";
 
+// BF_PORTAL_BLOCK_v632_CARRIER_CORRECTIONS_v1
+// Authoritative wording from Craig's corrected changelog 2026-05-25.
+// Section numbers prefixed for staff cross-reference to Purbeck spec; the
+// short label captures the actual question topic, not the old inferred one.
 const SECTION_LABELS: Record<string, string> = {
-  section_1_a: "1.a — Consent to underwriting",
-  section_1_2: "1.2 — Prior loan default / written off",
-  section_2_a: "2.a — Personal bankruptcy history",
-  section_2_b: "2.b — Business insolvency history",
-  section_2_c: "2.c — Outstanding personal judgments",
-  section_2_d: "2.d — Outstanding business judgments",
-  section_3_a: "3.a — Criminal proceedings",
-  section_3_c: "3.c — Policy terms acknowledgment",
-  section_4_a: "4.a — Regulatory investigations",
-  section_5_a: "5.a — Material adverse change anticipated",
-  section_6_a: "6.a — Information accuracy",
+  section_1_a: "1.a — Physical-asset insurance in force?",
+  section_1_2: "1.2 — Personal bankruptcy ever declared?",
+  section_2_a: "2.a — Ever barred / under investigation as Director?",
+  section_2_b: "2.b — Director of an insolvent company (history)?",
+  section_2_c: "2.c — Director of a CRA/CBSA investigation target?",
+  section_2_d: "2.d — Liability not payable within 30 days?",
+  section_3_a: "3.a — Material bad debts owed to the business?",
+  section_3_c: "3.c — Truthfulness oath (Agree/Disagree)",
+  section_4_a: "4.a — Lost key investor/customer/supplier (last 6mo)?",
+  section_5_a: "5.a — Risks to obligations next 6 months?",
+  section_6_a: "6.a — Company solvent today?",
 };
 
 const ADVERSE_YES = new Set([
