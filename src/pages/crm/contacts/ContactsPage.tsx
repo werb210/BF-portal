@@ -14,6 +14,7 @@ export default function ContactsPage() {
   const { silo } = useSilo();
   const { user } = useAuth();
   const showDelete = canDelete(user?.role as any);
+  const isAdmin = user?.role === "Admin";
   const [rows, setRows] = useState<ContactRow[]>([]);
   const [q, setQ] = useState("");
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
@@ -23,6 +24,9 @@ export default function ContactsPage() {
   const [err, setErr] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [tagInput, setTagInput] = useState("");
+  const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,9 +73,46 @@ export default function ContactsPage() {
 
   const sortIndicator = (col: SortCol) =>
     sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "";
+  function toggleSel(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  async function massDelete() {
+    if (!isAdmin || selected.size === 0) return;
+    if (!window.confirm(`Hard-delete ${selected.size} contact(s)? This cannot be undone. Use only for Apollo imports — never for applicants.`)) return;
+    setBusyMass("delete");
+    try {
+      await crmApi.bulkDeleteContacts(Array.from(selected));
+      setSelected(new Set());
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      window.alert(`Mass delete failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setBusyMass(null); }
+  }
+  async function massTag() {
+    if (!isAdmin || selected.size === 0 || !tagInput.trim()) return;
+    if (!window.confirm(`Apply tag "${tagInput.trim()}" to ${selected.size} contact(s)? Tags can trigger background jobs (lender/applicant fan-out).`)) return;
+    setBusyMass("tag");
+    try {
+      await crmApi.bulkTagContacts(Array.from(selected), tagInput.trim());
+      setSelected(new Set());
+      setTagInput("");
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      window.alert(`Mass tag failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setBusyMass(null); }
+  }
 
   const tableRows = useMemo(() => rows.map(r => (
     <tr key={r.id} style={trStyle}>
+      {isAdmin && (
+        <td style={{ padding: "8px 0", textAlign: "center" }}>
+          <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSel(r.id)} />
+        </td>
+      )}
       <td style={tdStyle}>
         <Link to={`/crm/contacts/${r.id}`} style={linkStyle}>{r.name || "(no name)"}</Link>
       </td>
@@ -80,7 +121,7 @@ export default function ContactsPage() {
       <td style={tdStyle}>{r.owner_name ?? "—"}</td>
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows]);
+  )), [isAdmin, rows, selected]);
 
   return (
     <div style={page}>
@@ -113,10 +154,24 @@ export default function ContactsPage() {
         <button style={toolbarBtn}>Edit columns</button>
         <button onClick={() => setCreateOpen(true)} style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
       </div>
+      {isAdmin && selected.size > 0 && (
+        <div style={{ display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" }}>
+          <span style={{ fontWeight: 600, fontSize: 13 }}>{selected.size} selected</span>
+          <button disabled={busyMass !== null} onClick={massDelete} style={{ padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
+          <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 }} />
+          <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={{ padding: "6px 12px", borderRadius: 6, background: "#2563eb", color: "#fff", border: 0, cursor: tagInput.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
+          <button onClick={() => setSelected(new Set())} style={{ padding: "6px 12px", borderRadius: 6, background: "#fff", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 13 }}>Clear</button>
+        </div>
+      )}
 
       <table style={table}>
         <thead>
           <tr style={theadRow}>
+            {isAdmin && (
+              <th style={{ width: 32, padding: "8px 0" }}>
+                <input type="checkbox" checked={selected.size > 0 && rows.length > 0 && rows.every((c) => selected.has(c.id))} onChange={(e) => setSelected(e.target.checked ? new Set(rows.map((c) => c.id)) : new Set())} />
+              </th>
+            )}
             <Th onClick={() => onSort("name")}>Name{sortIndicator("name")}</Th>
             <Th onClick={() => onSort("company_name")}>Company{sortIndicator("company_name")}</Th>
             <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>
@@ -125,10 +180,10 @@ export default function ContactsPage() {
           </tr>
         </thead>
         <tbody>
-          {loading && <tr><td colSpan={5} style={emptyCell}>Loading…</td></tr>}
-          {err && <tr><td colSpan={5} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
+          {loading && <tr><td colSpan={isAdmin ? 6 : 5} style={emptyCell}>Loading…</td></tr>}
+          {err && <tr><td colSpan={isAdmin ? 6 : 5} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
           {!loading && !err && rows.length === 0 && (
-            <tr><td colSpan={5} style={emptyCell}>No contacts in this silo.</td></tr>
+            <tr><td colSpan={isAdmin ? 6 : 5} style={emptyCell}>No contacts in this silo.</td></tr>
           )}
           {!loading && !err && tableRows}
         </tbody>

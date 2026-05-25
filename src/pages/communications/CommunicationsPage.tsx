@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "@/api";
 import { withO365Refresh } from "@/api/o365Interceptor";
 import { ApiError } from "@/api/http";
@@ -103,8 +103,16 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
   const [showNewThread, setShowNewThread] = useState(false);
   const [hasSentMessages, setHasSentMessages] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const stickToBottomRef = useRef(true);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  function onScrollContainer() {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottomRef.current = distanceFromBottom < 80;
+  }
   const mergeMessages = useCallback((existing: Message[], incoming: Message[]) => {
     const byId = new Map<string, Message>();
     [...existing, ...incoming].forEach((message) => {
@@ -271,9 +279,12 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     };
   }, [selected, loadMessages]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [threads, selected, threadMessages.length]);
+  useLayoutEffect(() => {
+    if (!stickToBottomRef.current) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [threadMessages, selected?.id]);
 
   async function send() {
     const selectedContact = selected;
@@ -282,6 +293,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     setSending(true);
     const pendingBody = draft.trim();
     try {
+      stickToBottomRef.current = true;
       setThreadMessages((prev) => [...prev, {
         id: `tmp-${Date.now()}`,
         body: pendingBody,
@@ -565,6 +577,8 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
 
             {/* Messages */}
             <div
+              ref={scrollContainerRef}
+              onScroll={onScrollContainer}
               style={{
                 flex: 1,
                 overflowY: "auto",

@@ -10,7 +10,7 @@ const formatHourLabel = (hour: number) =>
 const formatTimeRange = (start: string, end: string) =>
   `${new Date(start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} - ${new Date(end).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 
-const WeekView = ({ date, localEvents }: { date: Date; localEvents: CalendarEvent[] }) => {
+const WeekView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date; localEvents: CalendarEvent[]; onEventClick?: (event: CalendarEvent) => void; onTaskClick?: (task: unknown) => void }) => {
   const days = getWeekDays(date);
   const today = new Date().toDateString();
 
@@ -86,19 +86,27 @@ const WeekView = ({ date, localEvents }: { date: Date; localEvents: CalendarEven
                   }}
                 >
                   {events.map((event) => (
-                    <div
-                      key={event.id}
-                      style={{
-                        padding: "6px 8px",
-                        borderRadius: 6,
-                        background: "#dbeafe",
-                        borderLeft: "3px solid #2563eb",
-                        marginBottom: 4,
-                      }}
-                    >
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#1e3a8a" }}>{event.title}</div>
-                      <div style={{ fontSize: 11, color: "#1d4ed8" }}>{formatTimeRange(event.start, event.end)}</div>
-                    </div>
+                    (() => {
+                      const resource = (event as any).resource;
+                      const isTask = resource?.__kind === "task";
+                      return (
+                        <div
+                          key={event.id}
+                          onClick={() => isTask ? onTaskClick?.(resource.task) : onEventClick?.(event)}
+                          style={{
+                            padding: "6px 8px",
+                            borderRadius: 6,
+                            background: isTask ? "#fed7aa" : "#dbeafe",
+                            borderLeft: `3px solid ${isTask ? "#c2410c" : "#2563eb"}`,
+                            marginBottom: 4,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <div style={{ fontSize: 12, fontWeight: 700, color: isTask ? "#9a3412" : "#1e3a8a" }}>{isTask ? "✓ " : ""}{event.title}</div>
+                          <div style={{ fontSize: 11, color: isTask ? "#9a3412" : "#1d4ed8" }}>{formatTimeRange(event.start, event.end)}</div>
+                        </div>
+                      );
+                    })()
                   ))}
                 </div>
               );
