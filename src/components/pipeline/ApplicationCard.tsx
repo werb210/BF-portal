@@ -1,47 +1,15 @@
-import { useState } from "react"
-import ApplicationDetail from "./ApplicationDetail"
-
-type ApplicationCardProps = {
-  card: {
-    id: string
-    company: string
-    amount: string
-  }
-}
-
-export default function ApplicationCard({ card }: ApplicationCardProps) {
-  const [tab, setTab] = useState<"application" | "documents" | "notes">("application")
-  const [open, setOpen] = useState(false)
-
-  return (
-    <>
-      <div
-        style={{
-          background: "#1e293b",
-          padding: "12px",
-          borderRadius: "8px",
-          marginBottom: "10px"
-        }}
-      >
-        <strong onClick={() => setOpen(true)} style={{ cursor: "pointer" }}>
-          {card.company}
-        </strong>
-
-        <div style={{ marginTop: "10px", display: "flex", gap: "6px" }}>
-          <button onClick={() => setTab("application")}>Application</button>
-          <button onClick={() => setTab("documents")}>Documents</button>
-          <button onClick={() => setTab("notes")}>Notes</button>
-        </div>
-
-        <div style={{ marginTop: "10px" }}>
-          {tab === "application" && <div>Amount: {card.amount}</div>}
-
-          {tab === "documents" && <div>No documents uploaded</div>}
-
-          {tab === "notes" && <div>No notes yet</div>}
-        </div>
-      </div>
-      {open && <ApplicationDetail id={card.id} onClose={() => setOpen(false)} />}
-    </>
-  )
+// BF_PORTAL_BLOCK_v634_TEST2_FIX_PACK_v1
+// @deprecated This placeholder component is NOT what production renders.
+// The real pipeline kanban card is at src/core/engines/pipeline/PipelineCard.tsx
+// and includes business name, product category, amount, stage, doc warning,
+// processing status, and credit summary. This file existed as an early
+// stub with hardcoded document/notes placeholder copy which would
+// silently break the pipeline UI if imported by mistake. The export is
+// preserved as a throwing component so any accidental import surfaces
+// loudly at render time instead of silently displaying wrong data.
+export default function ApplicationCard(): never {
+  throw new Error(
+    "ApplicationCard is deprecated. Use PipelineCard from " +
+    "src/core/engines/pipeline/PipelineCard.tsx instead."
+  );
 }

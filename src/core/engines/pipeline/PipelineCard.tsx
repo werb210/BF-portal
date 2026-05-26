@@ -12,9 +12,22 @@ type PipelineCardProps = {
   onSelectChange: (id: string) => void;
 };
 
-const formatAmount = (value?: number) => {
+// BF_PORTAL_BLOCK_v634_TEST2_FIX_PACK_v1 — currency derives from card.country.
+// Pre-fix: all amounts rendered as USD even for Canadian applications.
+// CA / Canada → CAD; US / United States / undefined → USD; everything else
+// also USD as a defensible default until other markets are added.
+const pickCurrency = (country?: string): "CAD" | "USD" => {
+  const c = String(country ?? "").trim().toLowerCase();
+  if (c === "ca" || c === "canada" || c === "can") return "CAD";
+  return "USD";
+};
+const formatAmount = (value?: number, country?: string) => {
   if (typeof value !== "number" || Number.isNaN(value)) return "—";
-  return value.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  return value.toLocaleString(undefined, {
+    style: "currency",
+    currency: pickCurrency(country),
+    maximumFractionDigits: 0,
+  });
 };
 
 const formatTimeAgo = (value?: string) => {
@@ -85,7 +98,7 @@ const PipelineCard = ({ card, stageId, onClick, isSelected, selectable, onSelect
           <div className="pipeline-card__title">{card.businessName ?? "Unnamed application"}</div>
           <div className="pipeline-card__subtitle">{card.productCategory ?? "Unspecified"}</div>
         </div>
-        <div className="pipeline-card__amount">{formatAmount(card.requestedAmount)}</div>
+        <div className="pipeline-card__amount">{formatAmount(card.requestedAmount, card.country)}</div>
       </div>
       {/* BF_PORTAL_BLOCK_v151_PENDING_ACCEPTANCE_SURFACE_v1 */}
       {card.pending_acceptance_offer_id ? (
