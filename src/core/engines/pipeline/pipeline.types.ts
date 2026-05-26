@@ -79,6 +79,11 @@ export type PipelineApplication = {
   assignedStaff?: string;
   assignedLender?: string;
   industry?: string;
+  // BF_PORTAL_BLOCK_v634_TEST2_FIX_PACK_v1 — used by PipelineCard.formatAmount
+  // to render Canadian applications in CAD. BF-Server's pipeline list query
+  // surfaces this from applications.metadata.kyc.country (or businessLocation).
+  // When undefined the card falls back to USD for backward compat.
+  country?: string;
   yearsInBusiness?: string;
   annualRevenue?: string;
   monthlyRevenue?: string;
