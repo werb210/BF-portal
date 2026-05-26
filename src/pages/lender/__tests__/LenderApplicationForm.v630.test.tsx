@@ -33,19 +33,27 @@ describe("LenderApplicationForm (v630/v631) — Purbeck alignment", () => {
     expect(screen.queryByText(/^Judgment History$/i)).toBeNull();
   });
 
-  it("renders all 11 declaration rows", () => {
+  // BF_PORTAL_BLOCK_v633_HOTFIX_v631_STALE_TEST_v1
+  // Was asserting on the inferred (pre-v632) wording. v632 swapped those
+  // labels for Craig's authoritative wording, and v632's own test file
+  // (LenderApplicationForm.v632.test.tsx) now owns the label-text
+  // assertions. Here we keep a structural assertion that survives wording
+  // changes: confirm the section renders 11 rows (one selector per
+  // declaration plus the truthfulness oath = 11 total).
+  it("renders all 11 declaration rows (structural)", () => {
     render(<LenderApplicationForm onClose={() => {}} onSubmitted={() => {}} />);
-    expect(screen.getByText(/Consent to underwriting/i)).toBeInTheDocument();
-    expect(screen.getByText(/Past loan default/i)).toBeInTheDocument();
-    expect(screen.getByText(/Personal bankruptcy history/i)).toBeInTheDocument();
-    expect(screen.getByText(/Business insolvency \/ receivership/i)).toBeInTheDocument();
-    expect(screen.getByText(/Outstanding personal judgments/i)).toBeInTheDocument();
-    expect(screen.getByText(/Outstanding business judgments/i)).toBeInTheDocument();
-    expect(screen.getByText(/Criminal proceedings/i)).toBeInTheDocument();
-    expect(screen.getByText(/Agree to policy terms/i)).toBeInTheDocument();
-    expect(screen.getByText(/Regulatory investigations/i)).toBeInTheDocument();
-    expect(screen.getByText(/Anticipated material adverse change/i)).toBeInTheDocument();
-    expect(screen.getByText(/Certify information is accurate/i)).toBeInTheDocument();
+    // Each DeclarationRow renders a <select>. The form has additional
+    // selects elsewhere (entity type, province, loan type, etc.), so we
+    // assert on the declarations section's selects by scoping to the
+    // section heading.
+    expect(screen.getByText(/Declarations \(Purbeck — all 11 required\)/i)).toBeInTheDocument();
+    // 11 yes/no or Agree/Disagree dropdowns within the Declarations card.
+    // The heading text is unique on this page; query its parent section.
+    const heading = screen.getByText(/Declarations \(Purbeck — all 11 required\)/i);
+    const section = heading.closest("section");
+    expect(section).not.toBeNull();
+    const selects = section!.querySelectorAll("select");
+    expect(selects.length).toBe(11);
   });
 
   it("Quebec is absent from the province dropdown", () => {
