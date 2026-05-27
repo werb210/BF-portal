@@ -1,7 +1,16 @@
+// BF_PORTAL_BLOCK_v635_HOTFIX_v621_NODE_API_v1
+// Behavioral test using @testing-library/react. Replaces the v621
+// source-grep it() block which imported node:fs / node:path and called
+// process.cwd() — those fail tsc --noEmit on BF-portal because the main
+// tsconfig (a) doesn't include "node" in its types array and (b) excludes
+// *.test.ts but NOT *.test.tsx, so .tsx tests get prod-typechecked.
+// The behavioral it() below already proves v621 is in place; the marker
+// it() is dropped as redundant. Also guards mock.calls[0] with a non-null
+// assertion (TS2532) — the prior waitFor already proved it exists.
+// Pattern matches v629 / v633.
+
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
 import DocumentsTab from "../DocumentsTab";
 
 const apiMock = vi.fn();
@@ -74,7 +83,9 @@ describe("BF_PORTAL_BLOCK_v621_BI_DOC_REVIEW_ACTION_KEY_v1", () => {
       );
     });
 
-    expect(JSON.stringify(biApiMock.mock.calls[0][1])).not.toContain('"decision":"accepted"');
+    expect(JSON.stringify(biApiMock.mock.calls[0]![1])).not.toContain(
+      '"decision":"accepted"',
+    );
 
     const rejectButton = screen.getByRole("button", { name: "Reject" });
     fireEvent.click(rejectButton);
@@ -90,11 +101,5 @@ describe("BF_PORTAL_BLOCK_v621_BI_DOC_REVIEW_ACTION_KEY_v1", () => {
     });
 
     expect(promptSpy).toHaveBeenCalledWith("Reason for rejecting statement.pdf?");
-  });
-
-  it("contains v621 marker in DocumentsTab source", () => {
-    const sourcePath = path.resolve(process.cwd(), "src/silos/bi/pipeline/tabs/DocumentsTab.tsx");
-    const source = fs.readFileSync(sourcePath, "utf8");
-    expect(source).toContain("BF_PORTAL_BLOCK_v621_BI_DOC_REVIEW_ACTION_KEY_v1");
   });
 });
