@@ -220,11 +220,13 @@ export default function BIDashboard() {
           </Link>
         ))}
       </div>
-      {prePipelineCount > 0 ? (
-        <p className="mb-6 text-xs text-white/50">
-          Note: {prePipelineCount} applications are in pre-pipeline stages (created, in_progress, ready_for_submission) not shown above.
-        </p>
-      ) : <div className="mb-6" />}
+      <div className="mb-6">
+        <div className="rounded bg-slate-700/50 p-3 text-sm">
+          <div className="text-slate-300">PRE-PIPELINE (not in columns)</div>
+          <div className="mt-1 text-2xl font-semibold">{prePipelineCount}</div>
+          <div className="text-xs text-slate-400">Drafts, scoring, ready for staff review</div>
+        </div>
+      </div>
 
       <h3 className="text-lg font-semibold mb-3 text-white/80">Recent updates</h3>
       <div className="rounded-xl border border-card bg-brand-surface overflow-hidden">

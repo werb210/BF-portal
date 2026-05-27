@@ -117,7 +117,15 @@ export default function ContactsPage() {
         <Link to={`/crm/contacts/${r.id}`} style={linkStyle}>{r.name || "(no name)"}</Link>
       </td>
       <td style={tdStyle}>{r.company_name ?? "—"}</td>
-      <td style={tdStyle}>{r.lead_status ?? "—"}</td>
+      <td style={tdStyle}>{(
+        r.lead_status === "applicant" ||
+        ((r as any).types_of_financing ?? []).includes("APPLICANT") ||
+        Number((r as any).applications_count ?? 0) > 0
+          ? "Applicant"
+          : r.lead_status === "lender"
+          ? "Lender"
+          : (r.lead_status ?? "New")
+      )}</td>
       <td style={tdStyle}>{r.owner_name ?? "—"}</td>
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>

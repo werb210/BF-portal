@@ -225,7 +225,7 @@ export default function DialerPanel() {
 
   return (
     <div style={{
-      position: "fixed", right: 24, bottom: 24, width: 380,
+      position: "fixed", right: 24, bottom: "5rem", width: 380,
       background: T.panelBg, color: T.text, borderRadius: 28, overflow: "hidden",
       border: `1px solid ${T.border}`,
       boxShadow: "0 24px 60px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.4)",
@@ -374,6 +374,19 @@ export default function DialerPanel() {
           <div style={{ padding: "18px 20px 4px", textAlign: "center" }}>
             <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 0.6 }}>Enter a number</div>
             <div style={{ fontSize: 28, fontFamily: T.mono, marginTop: 6, minHeight: 36 }}>{phone || "+1"}</div>
+          </div>
+          <div style={{ padding: "0 24px 8px" }}>
+            <input
+              type="tel"
+              autoFocus
+              inputMode="tel"
+              pattern="[+0-9 ()-]*"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") void startOutboundPstn(phone, st.ctx); }}
+              placeholder="+1..."
+              style={{ width: "100%", borderRadius: 10, border: `1px solid ${T.borderStrong}`, background: T.surfaceAlt, color: T.text, padding: "10px 12px" }}
+            />
           </div>
           <DTMFKeypad onPress={(d) => setPhone((p) => p + d)} />
           <div style={{ padding: "6px 24px 22px", display: "flex", justifyContent: "center", alignItems: "center", gap: 18 }}>

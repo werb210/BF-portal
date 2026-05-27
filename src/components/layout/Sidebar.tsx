@@ -25,7 +25,7 @@ const navigationSections: NavigationSection[] = [
     items: [
       { label: "Dashboard", path: "/dashboard" },
       { label: "Applications", path: "/applications" },
-      { label: "Contacts", path: "/crm/contacts" },
+      { label: "CRM", path: "/crm/contacts" },
       { label: "Leads", path: "/leads" },
       { label: "Communications", path: "/communications" },
       { label: "Readiness Leads", path: "/portal/readiness", roles: ["Admin", "Staff", "Marketing"] },
