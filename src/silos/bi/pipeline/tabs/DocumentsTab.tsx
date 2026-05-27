@@ -23,7 +23,11 @@ async function biReviewDocument(applicationId: string, docId: string, decision: 
   const biApi = apiForSilo("BI");
   return biApi<{ ok: boolean }>(`/api/v1/bi/applications/${applicationId}/documents/${docId}/review`, {
     method: "POST",
-    body: JSON.stringify({ decision, reason: reason ?? null }),
+    // BF_PORTAL_BLOCK_v621_BI_DOC_REVIEW_ACTION_KEY_v1
+    // Server (biApplicationDetailRoutes.ts:575) reads req.body.action,
+    // not req.body.decision. Pre-v621 the portal sent {decision} and every
+    // Accept/Reject click 400'd with "action must be 'accepted' or 'rejected'".
+    body: JSON.stringify({ action: decision, reason: reason ?? null }),
   });
 }
 
