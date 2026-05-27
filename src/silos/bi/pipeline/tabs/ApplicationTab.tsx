@@ -6,7 +6,6 @@
 import { useMemo } from "react";
 import { DeclarationsCard } from "./DeclarationsCard";
 import { CoGuarantorList } from "./CoGuarantorList";
-import { SendToPurbeckGate } from "./SendToPurbeckGate";
 
 type BIApplication = {
   id: string;
@@ -207,12 +206,14 @@ export default function ApplicationTab({ app, onMutated, readOnly }: { app: BIAp
 
       <DeclarationsCard declarations={app.declarations || {}} />
 
-      <SendToPurbeckGate
-        applicationId={app.id}
-        status={app.status ?? undefined}
-        pgiApplicationId={app.pgi_application_id ?? null}
-        loanAgreementUploadedAt={app.loan_agreement_uploaded_at ?? null}
-      />
+      {/* BF_PORTAL_BLOCK_v630_REMOVE_SEND_TO_PURBECK_PANEL_v1 */}
+      {/* Per 2026-05-27 ruling, public apps auto-submit when the last
+          required doc is accepted (bi-server v391). No staff action needed. */}
+      {app.source_type === "public" && app.stage === "document_review" && (
+        <div className="rounded border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-200">
+          When you accept the last required document, this application is automatically forwarded to PGI. No manual step needed.
+        </div>
+      )}
     </div>
   );
 }

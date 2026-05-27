@@ -24,7 +24,7 @@ function baseApp(overrides: Record<string, unknown> = {}) {
 
 describe("ApplicationTab (v629)", () => {
   it("renders director / business / loan sections with new q-keys", () => {
-    render(<ApplicationTab app={baseApp()} />);
+    render(<ApplicationTab app={baseApp({ source_type: "public", stage: "document_review" })} />);
     expect(screen.getByText(/Director \/ Guarantor/)).toBeInTheDocument();
     expect(screen.getByText("Sarah Chen")).toBeInTheDocument();
     expect(screen.getByText("Maple Leaf Technologies Inc.")).toBeInTheDocument();
@@ -53,20 +53,13 @@ describe("ApplicationTab (v629)", () => {
     expect(notCollected.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("renders 'Send to Purbeck' gate UI", () => {
+  it("renders auto-submit hint for public document-review applications", () => {
     render(<ApplicationTab app={baseApp()} />);
-    expect(screen.getByRole("heading", { name: /Send to Purbeck/i })).toBeInTheDocument();
-    expect(screen.getByText(/Loan agreement required before Purbeck submission/)).toBeInTheDocument();
-    const btn = screen.getByRole("button", { name: /Send to Purbeck/i });
-    expect(btn).toBeDisabled();
+    expect(screen.getByText(/automatically forwarded to PGI/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Send to Purbeck/i)).not.toBeInTheDocument();
   });
 
-  it("enables the send button when loan_agreement is uploaded", () => {
-    render(<ApplicationTab app={baseApp({ loan_agreement_uploaded_at: "2026-05-25T19:00:00Z" })} />);
-    const btn = screen.getByRole("button", { name: /Send to Purbeck/i });
-    expect(btn).not.toBeDisabled();
-  });
-
+  
   it("falls back to legacy columns when q-keyed columns are absent", () => {
     render(<ApplicationTab app={baseApp({ q_ca_loan_type: undefined, q_business_province: undefined, business_province: "AB", loan_purpose: "Commercial Mortgage" })} />);
     expect(screen.getByText("AB")).toBeInTheDocument();
