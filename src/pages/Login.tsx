@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { normalizePhone } from "@/utils/normalizePhone";
 import { clearOtpFlowState, setOtpStartRequested, setOtpStartSucceeded } from "@/auth/otpFlow";
 import { API_BASE } from "@/config/api";
+import logoUrl from "@/assets/logo-boreal-mountains-white.svg";
 
 type StartError = string | null;
 
@@ -95,9 +96,15 @@ export default function Login() {
       className="min-h-screen w-screen flex items-center justify-center bg-[#020817] px-4 py-12"
     >
       <div className="w-full max-w-md flex flex-col items-center gap-6">
-        <h1 className="text-2xl font-semibold text-white text-center">
-          Boreal Group of Companies Staff Portal
-        </h1>
+        <div className="text-center">
+          <img
+            src={logoUrl}
+            alt="Boreal"
+            style={{ display: "block", margin: "0 auto 16px", height: 56, width: "auto" }}
+          />
+          <h1 className="text-2xl font-semibold text-white">Boreal Group of Companies</h1>
+          <p className="mt-1 text-sm font-medium text-white/70">Staff Portal</p>
+        </div>
 
         <form
           className="w-full bg-white border border-slate-200 rounded-xl p-6 shadow-md"
