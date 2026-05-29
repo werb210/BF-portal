@@ -1,28 +1,72 @@
-// BF_PORTAL_BLOCK_v202_OUTREACH_UI_v1
-// Outreach subtab. Filters → list → per-row inline activity logger
-// → activity timeline. Pairs with BI-Server v251 endpoints under
-// /api/v1/bi/crm/outreach/*.
+// BF_PORTAL_BLOCK_v210_OUTREACH_KANBAN_v1
+// Full replace of the flat Outreach list with a Kanban pipeline board.
+// Pairs with BI-Server v251/v409/v410/v411 endpoints under
+// /api/v1/bi/crm/outreach/*. All data handlers and sub-components
+// (logger, InviteButton, EnrollButton, ActivityTimeline, ProfilePanel)
+// are preserved; the layout becomes a board with drag-between-stage
+// columns, a lender/broker segment filter, and a "Start onboarding"
+// action wired to v410.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/api";
 
-const STATUSES = [
-  "cold",
-  "attempting",
-  "voicemail",
+const STAGES = [
+  "new",
+  "contacted",
   "engaged",
   "demo_booked",
   "demo_completed",
-  "not_interested",
+  "onboarding",
+  "active",
+] as const;
+type Stage = (typeof STAGES)[number];
+
+const ARCHIVE_STAGE = "not_interested" as const;
+
+const LEGACY_MAP: Record<string, Stage | typeof ARCHIVE_STAGE> = {
+  cold: "new",
+  attempting: "contacted",
+  voicemail: "contacted",
+  engaged: "engaged",
+  demo_booked: "demo_booked",
+  demo_completed: "demo_completed",
+  lender: "active",
+  not_interested: ARCHIVE_STAGE,
+};
+
+const ALL_STATUSES = [
+  ...STAGES,
+  ARCHIVE_STAGE,
+  "cold",
+  "attempting",
+  "voicemail",
   "lender",
 ] as const;
-type Status = (typeof STATUSES)[number];
+type Status = (typeof ALL_STATUSES)[number];
+
+const STAGE_LABELS: Record<string, string> = {
+  new: "New",
+  contacted: "Contacted",
+  engaged: "Engaged",
+  demo_booked: "Demo Booked",
+  demo_completed: "Demo Completed",
+  onboarding: "Onboarding",
+  active: "Active",
+  not_interested: "Not Interested",
+};
+
+function stageOf(status: string | null): Stage | typeof ARCHIVE_STAGE {
+  if (!status) return "new";
+  if ((STAGES as readonly string[]).includes(status)) return status as Stage;
+  if (status === ARCHIVE_STAGE) return ARCHIVE_STAGE;
+  return LEGACY_MAP[status] ?? "new";
+}
 
 const EVENT_TYPES = ["call", "demo", "sms", "email", "note"] as const;
 type EventType = (typeof EVENT_TYPES)[number];
 
 const CALL_OUTCOMES = [
   { value: "spoke", label: "Spoke (→ engaged)" },
-  { value: "voicemail", label: "Voicemail (→ voicemail)" },
+  { value: "voicemail", label: "Voicemail" },
   { value: "no_answer", label: "No answer" },
   { value: "booked", label: "Booked demo (→ demo_booked)" },
   { value: "not_interested", label: "Not interested (→ not_interested)" },
@@ -40,8 +84,8 @@ type Contact = {
   outreach_status: Status | null;
   outreach_owner_id: string | null;
   outreach_updated_at: string | null;
-  outreach_segment?: "lender" | "broker" | null; // BI_SERVER_BLOCK_v411
-  promoted_lender_id?: string | null;
+  outreach_segment: "lender" | "broker" | null;
+  promoted_lender_id: string | null;
   created_at: string;
 };
 
@@ -64,17 +108,16 @@ type StaffProfile = {
 };
 
 export default function BIOutreach() {
-  const [status, setStatus] = useState<string>("");
-  const [owner, setOwner] = useState<string>("");
+  const [segment, setSegment] = useState<string>("");
   const [q, setQ] = useState("");
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
-  // BF_PORTAL_BLOCK_v203_OUTREACH_IMPORT_AND_INVITE_v1
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -84,7 +127,6 @@ export default function BIOutreach() {
     results?: Array<{ row: number; ok: boolean; error?: string }>;
   } | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
-  // BF_PORTAL_BLOCK_v205_OUTREACH_ENROLL_v1
   const [sequences, setSequences] = useState<ReadonlyArray<{ id: string; name: string; is_active: boolean }>>([]);
 
   const load = useCallback(async () => {
@@ -92,8 +134,6 @@ export default function BIOutreach() {
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (status) params.set("status", status);
-      if (owner) params.set("owner", owner);
       if (q.trim()) params.set("q", q.trim());
       const r: any = await api(
         `/api/v1/bi/crm/outreach/contacts${params.toString() ? `?${params}` : ""}`,
@@ -104,18 +144,12 @@ export default function BIOutreach() {
     } finally {
       setLoading(false);
     }
-  }, [status, owner, q]);
+  }, [q]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  // BF_PORTAL_BLOCK_v205_OUTREACH_ENROLL_v1
-  // Fetch active Apollo sequences once when the Outreach tab mounts.
-  // Used by the per-row "Enroll in sequence" action. Errors are
-  // silent — if the endpoint isn't reachable, the action surfaces
-  // as a disabled button and staff can still log activity / send
-  // invites as before.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -181,10 +215,19 @@ export default function BIOutreach() {
     await load();
   }
 
-  // BF_PORTAL_BLOCK_v203_OUTREACH_IMPORT_AND_INVITE_v1
-  // The api wrapper detects FormData and skips Content-Type +
-  // JSON.stringify (see src/api/index.ts), so we just hand it a
-  // FormData and it does the right thing.
+  async function startOnboarding(contactId: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await api(`/api/v1/bi/crm/outreach/contacts/${contactId}/start-onboarding`, {
+        method: "POST",
+        body: {},
+      } as any);
+      await load();
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, error: e?.message ?? "onboarding_failed" };
+    }
+  }
+
   async function importFile(file: File) {
     setImporting(true);
     setImportError(null);
@@ -212,18 +255,11 @@ export default function BIOutreach() {
 
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
-    // Clear the input so picking the same file twice still fires onChange.
     e.target.value = "";
     if (f) void importFile(f);
   }
 
-  // BF_PORTAL_BLOCK_v203_OUTREACH_IMPORT_AND_INVITE_v1
-  // Send the demo invite SMS. Returns the server response so the
-  // caller can surface sid / error to the user.
-  async function sendDemoInvite(
-    contactId: string,
-    customMessage?: string,
-  ): Promise<{ ok: boolean; error?: string }> {
+  async function sendDemoInvite(contactId: string, customMessage?: string): Promise<{ ok: boolean; error?: string }> {
     try {
       await api(`/api/v1/bi/crm/outreach/contacts/${contactId}/demo-invite`, {
         method: "POST",
@@ -236,9 +272,6 @@ export default function BIOutreach() {
     }
   }
 
-  // BF_PORTAL_BLOCK_v205_OUTREACH_ENROLL_v1
-  // Enroll a contact into an Apollo sequence. Returns the server
-  // response so the caller can show "Enrolled (mock)" vs "Enrolled".
   async function enrollInSequence(
     contactId: string,
     sequenceId: string,
@@ -254,42 +287,50 @@ export default function BIOutreach() {
     }
   }
 
-  const stats = useMemo(() => {
-    const by: Record<string, number> = {};
-    for (const c of contacts) {
-      const k = c.outreach_status ?? "unassigned";
-      by[k] = (by[k] ?? 0) + 1;
+  const visible = useMemo(() => {
+    if (!segment) return contacts;
+    return contacts.filter((c) => c.outreach_segment === segment);
+  }, [contacts, segment]);
+
+  const columns = useMemo(() => {
+    const map: Record<string, Contact[]> = {};
+    for (const s of STAGES) map[s] = [];
+    map[ARCHIVE_STAGE] = [];
+    for (const c of visible) {
+      const st = stageOf(c.outreach_status);
+      (map[st] ?? map.new ?? []).push(c);
     }
-    return by;
-  }, [contacts]);
+    return map;
+  }, [visible]);
+
+  const selected = useMemo(
+    () => contacts.find((c) => c.id === selectedId) ?? null,
+    [contacts, selectedId],
+  );
+
+  async function onDropToStage(stage: Stage | typeof ARCHIVE_STAGE, contactId: string) {
+    setDragOverStage(null);
+    const c = contacts.find((x) => x.id === contactId);
+    if (!c) return;
+    if (stageOf(c.outreach_status) === stage) return;
+    await changeStatus(contactId, stage as Status);
+  }
 
   return (
     <div className="space-y-4" data-testid="bi-outreach">
       <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm text-white/70">Status</label>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="bg-brand-surface border border-card rounded-md px-2 py-1 text-sm"
-          aria-label="Status filter"
-        >
-          <option value="">All</option>
-          <option value="unassigned">Unassigned</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
-          ))}
-        </select>
+        <h3 className="font-semibold text-lg">Outreach Pipeline</h3>
 
-        <label className="text-sm text-white/70 ml-2">Owner</label>
+        <label className="text-sm text-white/70 ml-2">Segment</label>
         <select
-          value={owner}
-          onChange={(e) => setOwner(e.target.value)}
+          value={segment}
+          onChange={(e) => setSegment(e.target.value)}
           className="bg-brand-surface border border-card rounded-md px-2 py-1 text-sm"
-          aria-label="Owner filter"
+          aria-label="Segment filter"
         >
           <option value="">All</option>
-          <option value="mine">Mine</option>
-          <option value="unassigned">Unassigned</option>
+          <option value="lender">Lenders</option>
+          <option value="broker">Brokers</option>
         </select>
 
         <input
@@ -345,9 +386,7 @@ export default function BIOutreach() {
           data-testid="bi-outreach-import-banner"
           role="status"
         >
-          {importError && (
-            <p className="text-red-400">Import failed: {importError}</p>
-          )}
+          {importError && <p className="text-red-400">Import failed: {importError}</p>}
           {importResult && (
             <div className="space-y-1">
               <p>
@@ -363,9 +402,7 @@ export default function BIOutreach() {
                       .filter((r) => !r.ok)
                       .slice(0, 50)
                       .map((r, i) => (
-                        <li key={i}>
-                          row {r.row}: {r.error}
-                        </li>
+                        <li key={i}>row {r.row}: {r.error}</li>
                       ))}
                   </ul>
                 </details>
@@ -391,67 +428,146 @@ export default function BIOutreach() {
         />
       )}
 
-      <div className="text-xs text-white/60">
-        {Object.entries(stats).map(([k, v]) => (
-          <span key={k} className="inline-block mr-3">
-            <span className="text-white/40">{k.replace(/_/g, " ")}:</span>{" "}
-            <span className="text-white/90">{v}</span>
-          </span>
-        ))}
-      </div>
-
       {loading && <p className="text-sm text-white/60">Loading…</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
 
-      <div className="space-y-2">
-        {contacts.map((c) => (
-          <ContactRow
-            key={c.id}
-            contact={c}
-            expanded={expandedId === c.id}
-            onToggle={() => setExpandedId((id) => (id === c.id ? null : c.id))}
-            onLog={(payload) => logActivity(c.id, payload)}
-            onStatusChange={(s) => changeStatus(c.id, s)}
-            bookingsUrl={profile?.bookings_url ?? null}
-            onInvite={(msg) => sendDemoInvite(c.id, msg)}
-            sequences={sequences}
-            onEnroll={(seqId) => enrollInSequence(c.id, seqId)}
+      <div className="flex gap-3 overflow-x-auto pb-2">
+        {STAGES.map((stage) => (
+          <BoardColumn
+            key={stage}
+            stage={stage}
+            label={STAGE_LABELS[stage] ?? stage}
+            cards={columns[stage] ?? []}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            dragOver={dragOverStage === stage}
+            onDragOverStage={() => setDragOverStage(stage)}
+            onDragLeaveStage={() => setDragOverStage((s) => (s === stage ? null : s))}
+            onDropCard={(id) => void onDropToStage(stage, id)}
           />
         ))}
-        {!loading && contacts.length === 0 && (
-          <p className="text-sm text-white/50">No contacts match these filters.</p>
-        )}
+        <BoardColumn
+          stage={ARCHIVE_STAGE}
+          label={STAGE_LABELS[ARCHIVE_STAGE] ?? ARCHIVE_STAGE}
+          cards={columns[ARCHIVE_STAGE] ?? []}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          dragOver={dragOverStage === ARCHIVE_STAGE}
+          onDragOverStage={() => setDragOverStage(ARCHIVE_STAGE)}
+          onDragLeaveStage={() => setDragOverStage((s) => (s === ARCHIVE_STAGE ? null : s))}
+          onDropCard={(id) => void onDropToStage(ARCHIVE_STAGE, id)}
+          muted
+        />
+      </div>
+
+      {!loading && visible.length === 0 && (
+        <p className="text-sm text-white/50">No contacts match these filters.</p>
+      )}
+
+      {selected && (
+        <ContactPanel
+          contact={selected}
+          onClose={() => setSelectedId(null)}
+          onLog={(payload) => logActivity(selected.id, payload)}
+          onStatusChange={(s) => changeStatus(selected.id, s)}
+          bookingsUrl={profile?.bookings_url ?? null}
+          onInvite={(msg) => sendDemoInvite(selected.id, msg)}
+          sequences={sequences}
+          onEnroll={(seqId) => enrollInSequence(selected.id, seqId)}
+          onStartOnboarding={() => startOnboarding(selected.id)}
+        />
+      )}
+    </div>
+  );
+}
+
+function BoardColumn(props: {
+  stage: string;
+  label: string;
+  cards: Contact[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  dragOver: boolean;
+  onDragOverStage: () => void;
+  onDragLeaveStage: () => void;
+  onDropCard: (contactId: string) => void;
+  muted?: boolean;
+}) {
+  const { label, cards, selectedId, onSelect, dragOver, onDragOverStage, onDragLeaveStage, onDropCard, muted } = props;
+  return (
+    <div
+      className={`flex-shrink-0 w-64 rounded-xl border p-2 ${
+        dragOver ? "border-white/40 bg-white/5" : "border-card bg-brand-surface"
+      } ${muted ? "opacity-80" : ""}`}
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOverStage();
+      }}
+      onDragLeave={onDragLeaveStage}
+      onDrop={(e) => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData("text/plain");
+        if (id) onDropCard(id);
+      }}
+    >
+      <div className="flex items-center justify-between px-1 py-1">
+        <span className="text-sm font-medium">{label}</span>
+        <span className="text-xs text-white/40">{cards.length}</span>
+      </div>
+      <div className="space-y-2 min-h-[3rem]">
+        {cards.map((c) => (
+          <div
+            key={c.id}
+            draggable
+            onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}
+            onClick={() => onSelect(c.id)}
+            className={`cursor-pointer rounded-lg border p-2 text-sm bg-black/20 hover:bg-black/30 ${
+              selectedId === c.id ? "border-white/50" : "border-card"
+            }`}
+            data-testid="bi-outreach-card"
+          >
+            <div className="flex items-center gap-1">
+              <strong className="truncate">{c.full_name}</strong>
+              {c.promoted_lender_id && (
+                <span className="text-[10px] uppercase text-emerald-400/80" title="Onboarded as lender">
+                  ✓ lender
+                </span>
+              )}
+            </div>
+            {c.title && <div className="text-xs text-white/50 truncate">{c.title}</div>}
+            <div className="text-xs text-white/40 truncate">
+              {c.email ?? c.phone_e164 ?? "—"}
+            </div>
+            {c.outreach_segment && (
+              <span className="mt-1 inline-block text-[10px] uppercase tracking-wide text-white/40">
+                {c.outreach_segment}
+              </span>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-function ContactRow(props: {
+function ContactPanel(props: {
   contact: Contact;
-  expanded: boolean;
-  onToggle: () => void;
+  onClose: () => void;
   onLog: (payload: { event_type: EventType; outcome?: string; body?: string }) => Promise<void>;
   onStatusChange: (status: Status | "") => Promise<void>;
   bookingsUrl: string | null;
   onInvite: (customMessage?: string) => Promise<{ ok: boolean; error?: string }>;
   sequences: ReadonlyArray<{ id: string; name: string; is_active: boolean }>;
   onEnroll: (sequenceId: string) => Promise<{ ok: boolean; mock?: boolean; error?: string }>;
+  onStartOnboarding: () => Promise<{ ok: boolean; error?: string }>;
 }) {
-  const {
-    contact: c,
-    expanded,
-    onToggle,
-    onLog,
-    onStatusChange,
-    bookingsUrl,
-    onInvite,
-    sequences,
-    onEnroll,
-  } = props;
+  const { contact: c, onClose, onLog, onStatusChange, bookingsUrl, onInvite, sequences, onEnroll, onStartOnboarding } = props;
   const [logging, setLogging] = useState(false);
   const [eventType, setEventType] = useState<EventType>("call");
   const [outcome, setOutcome] = useState<string>("");
   const [note, setNote] = useState("");
+  const [onboarding, setOnboarding] = useState(false);
+  const [onboardFeedback, setOnboardFeedback] = useState<string | null>(null);
 
   async function submit() {
     setLogging(true);
@@ -469,24 +585,44 @@ function ContactRow(props: {
     }
   }
 
+  async function onboard() {
+    setOnboarding(true);
+    setOnboardFeedback(null);
+    try {
+      const r = await onStartOnboarding();
+      setOnboardFeedback(r.ok ? "Onboarding started — lender created & invited." : `Failed: ${r.error}`);
+    } finally {
+      setOnboarding(false);
+    }
+  }
+
   return (
-    <div className="bg-brand-surface border border-card rounded-xl p-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="text-left flex-1 min-w-0"
-          aria-expanded={expanded}
-        >
+    <div className="bg-brand-surface border border-card rounded-xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
           <div className="flex items-center gap-2">
-            <strong className="truncate">{c.full_name}</strong>
+            <strong>{c.full_name}</strong>
             {c.title && <span className="text-xs text-white/50">· {c.title}</span>}
+            {c.promoted_lender_id && (
+              <span className="text-[10px] uppercase text-emerald-400/80">✓ onboarded</span>
+            )}
           </div>
           <div className="text-xs text-white/60">
             {c.email ?? "—"} · {c.phone_e164 ?? "—"}
           </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs text-white/60 hover:text-white"
+          aria-label="Close contact panel"
+        >
+          ×
         </button>
+      </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="text-xs text-white/60">Stage</label>
         <select
           value={c.outreach_status ?? ""}
           onChange={(e) => void onStatusChange(e.target.value as Status | "")}
@@ -494,8 +630,8 @@ function ContactRow(props: {
           aria-label={`Status for ${c.full_name}`}
         >
           <option value="">unassigned</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+          {ALL_STATUSES.map((s) => (
+            <option key={s} value={s}>{(STAGE_LABELS[s] ?? s).toString()}</option>
           ))}
         </select>
 
@@ -522,68 +658,71 @@ function ContactRow(props: {
           sequences={sequences}
           onEnroll={onEnroll}
         />
+
+        <button
+          type="button"
+          disabled={onboarding || Boolean(c.promoted_lender_id)}
+          title={c.promoted_lender_id ? "Already onboarded as a lender" : ""}
+          onClick={() => void onboard()}
+          className="px-2 py-1 rounded-md text-xs bg-emerald-500/20 hover:bg-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {onboarding ? "Onboarding…" : c.promoted_lender_id ? "Onboarded" : "Start onboarding"}
+        </button>
+        {onboardFeedback && (
+          <span className="text-xs text-white/60" role="status">{onboardFeedback}</span>
+        )}
       </div>
 
-      {expanded && (
-        <div className="mt-3 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value as EventType)}
-              className="bg-black/20 border border-card rounded-md px-2 py-1 text-xs"
-              aria-label="Event type"
-            >
-              {EVENT_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={eventType}
+          onChange={(e) => setEventType(e.target.value as EventType)}
+          className="bg-black/20 border border-card rounded-md px-2 py-1 text-xs"
+          aria-label="Event type"
+        >
+          {EVENT_TYPES.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
 
-            {eventType === "call" && (
-              <select
-                value={outcome}
-                onChange={(e) => setOutcome(e.target.value)}
-                className="bg-black/20 border border-card rounded-md px-2 py-1 text-xs"
-                aria-label="Call outcome"
-              >
-                <option value="">— outcome —</option>
-                {CALL_OUTCOMES.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            )}
+        {eventType === "call" && (
+          <select
+            value={outcome}
+            onChange={(e) => setOutcome(e.target.value)}
+            className="bg-black/20 border border-card rounded-md px-2 py-1 text-xs"
+            aria-label="Call outcome"
+          >
+            <option value="">— outcome —</option>
+            {CALL_OUTCOMES.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        )}
 
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Free-text note"
-              className="bg-black/20 border border-card rounded-md px-2 py-1 text-xs flex-1 min-w-[12rem]"
-              aria-label="Note"
-            />
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Free-text note"
+          className="bg-black/20 border border-card rounded-md px-2 py-1 text-xs flex-1 min-w-[12rem]"
+          aria-label="Note"
+        />
 
-            <button
-              type="button"
-              disabled={logging}
-              onClick={() => void submit()}
-              className="px-3 py-1 rounded-md text-xs bg-white/10 hover:bg-white/15 disabled:opacity-50"
-            >
-              {logging ? "Logging…" : "Log activity"}
-            </button>
-          </div>
+        <button
+          type="button"
+          disabled={logging}
+          onClick={() => void submit()}
+          className="px-3 py-1 rounded-md text-xs bg-white/10 hover:bg-white/15 disabled:opacity-50"
+        >
+          {logging ? "Logging…" : "Log activity"}
+        </button>
+      </div>
 
-          <ActivityTimeline contactId={c.id} />
-        </div>
-      )}
+      <ActivityTimeline contactId={c.id} />
     </div>
   );
 }
 
-// BF_PORTAL_BLOCK_v205_OUTREACH_ENROLL_v1
-// Two-state button mirroring InviteButton: idle → inline sequence
-// picker. Sequences are passed in from BIOutreach so this component
-// does no fetching. After a successful enroll we show "Enrolled"
-// (or "Enrolled (mock)" if BI-Server is running in mock mode) and
-// collapse back to idle.
 function EnrollButton(props: {
   disabled: boolean;
   disabledReason: string;
@@ -630,9 +769,7 @@ function EnrollButton(props: {
   if (!open) {
     return (
       <div className="flex items-center gap-2">
-        {feedback && (
-          <span className="text-xs text-white/60" role="status">{feedback}</span>
-        )}
+        {feedback && <span className="text-xs text-white/60" role="status">{feedback}</span>}
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -646,9 +783,7 @@ function EnrollButton(props: {
 
   return (
     <div className="flex items-center gap-2">
-      {feedback && (
-        <span className="text-xs text-white/60" role="status">{feedback}</span>
-      )}
+      {feedback && <span className="text-xs text-white/60" role="status">{feedback}</span>}
       <select
         value={picked}
         onChange={(e) => setPicked(e.target.value)}
@@ -693,9 +828,7 @@ function ActivityTimeline({ contactId }: { contactId: string }) {
     (async () => {
       setLoading(true);
       try {
-        const r: any = await api(
-          `/api/v1/bi/crm/outreach/contacts/${contactId}/activity`,
-        );
+        const r: any = await api(`/api/v1/bi/crm/outreach/contacts/${contactId}/activity`);
         if (cancelled) return;
         setEvents(Array.isArray(r?.events) ? r.events : []);
       } finally {
@@ -708,16 +841,12 @@ function ActivityTimeline({ contactId }: { contactId: string }) {
   }, [contactId]);
 
   if (loading) return <p className="text-xs text-white/50">Loading timeline…</p>;
-  if (events.length === 0) {
-    return <p className="text-xs text-white/40">No activity logged yet.</p>;
-  }
+  if (events.length === 0) return <p className="text-xs text-white/40">No activity logged yet.</p>;
   return (
     <ul className="space-y-1">
       {events.map((e) => (
         <li key={e.id} className="text-xs text-white/70 border-l border-white/10 pl-2">
-          <span className="text-white/40">
-            {new Date(e.created_at).toLocaleString()} ·{" "}
-          </span>
+          <span className="text-white/40">{new Date(e.created_at).toLocaleString()} · </span>
           <span className="uppercase text-white/50">{e.event_type}</span>
           {e.outcome && <span className="text-white/60"> · {e.outcome}</span>}
           {e.actor_name && <span className="text-white/40"> · {e.actor_name}</span>}
@@ -728,13 +857,6 @@ function ActivityTimeline({ contactId }: { contactId: string }) {
   );
 }
 
-// BF_PORTAL_BLOCK_v203_OUTREACH_IMPORT_AND_INVITE_v1
-// Two-state button: a "Send demo invite" affordance that, when
-// clicked the first time, expands inline to take an optional
-// custom-message override before firing the POST. Keeps invites
-// one-click for the default case (Bookings link) and two-click
-// for the override case (custom + link). Disabled when the
-// contact has no phone or the staff member has no bookings_url.
 function InviteButton(props: {
   disabled: boolean;
   disabledReason: string;
@@ -779,9 +901,7 @@ function InviteButton(props: {
   if (!open) {
     return (
       <div className="flex items-center gap-2">
-        {feedback && (
-          <span className="text-xs text-white/60" role="status">{feedback}</span>
-        )}
+        {feedback && <span className="text-xs text-white/60" role="status">{feedback}</span>}
         <button
           type="button"
           onClick={() => setOpen(true)}
