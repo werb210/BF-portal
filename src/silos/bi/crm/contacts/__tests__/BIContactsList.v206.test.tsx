@@ -1,5 +1,6 @@
 // BF_PORTAL_BLOCK_v206_BI_CONTACTS_LIST_v1
 import { describe, it, expect, vi, beforeEach } from "vitest";
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1", role: "Admin" } }) }));
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
