@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { normalizePhone } from "@/utils/normalizePhone";
 import { clearOtpFlowState, setOtpStartRequested, setOtpStartSucceeded } from "@/auth/otpFlow";
@@ -20,6 +20,7 @@ export default function Login() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<StartError>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const autoFiredFor = useRef<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +41,8 @@ export default function Login() {
           : "";
     if (!normalized) return;
     if (isSubmitting) return;
+    if (autoFiredFor.current === normalized) return;
+    autoFiredFor.current = normalized;
     const t = window.setTimeout(() => {
       void handleStartOTP(undefined, normalized);
     }, 350);
@@ -80,6 +83,7 @@ export default function Login() {
       navigate("/verify");
     } catch {
       clearOtpFlowState();
+      autoFiredFor.current = null;
       setError("Unable to start OTP. Please try again.");
     } finally {
       setIsSubmitting(false);

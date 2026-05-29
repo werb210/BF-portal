@@ -38,6 +38,7 @@ const initial: DialerState = {
   inputDeviceId: null,
   outputDeviceId: null,
   micPermission: "unknown",
+  callStartedAt: null,
 };
 
 export const useDialer = create<DialerState & Actions>((set, get) => ({
@@ -48,7 +49,13 @@ export const useDialer = create<DialerState & Actions>((set, get) => ({
   },
   setStatus: (status, error = null) => {
     ringPush("store.status", { status, error });
-    set({ status, error });
+    if (status === "connected") {
+      set((s) => ({ status, error, callStartedAt: s.callStartedAt ?? new Date().toISOString() }));
+    } else if (status === "ready" || status === "idle" || status === "error") {
+      set({ status, error, callStartedAt: null });
+    } else {
+      set({ status, error });
+    }
   },
   setCall: (call) => {
     ringPush("store.call", !!call);

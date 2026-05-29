@@ -71,4 +71,5 @@ export type DialerState = {
   inputDeviceId: string | null;
   outputDeviceId: string | null;
   micPermission: "granted" | "denied" | "prompt" | "unknown";
+  callStartedAt: string | null;
 };
