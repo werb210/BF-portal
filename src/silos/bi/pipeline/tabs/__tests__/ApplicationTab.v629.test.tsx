@@ -54,7 +54,7 @@ describe("ApplicationTab (v629)", () => {
   });
 
   it("renders auto-submit hint for public document-review applications", () => {
-    render(<ApplicationTab app={baseApp()} />);
+    render(<ApplicationTab app={baseApp({ source_type: "public", stage: "document_review" })} />);
     expect(screen.getByText(/automatically forwarded to PGI/i)).toBeInTheDocument();
     expect(screen.queryByText(/Send to Purbeck/i)).not.toBeInTheDocument();
   });
