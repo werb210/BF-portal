@@ -20,7 +20,7 @@ type NavItem = { label: string; path: string; roles: string[]; capability?: stri
 const BF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",         roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
-  { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
+  { label: "CRM",            path: "/crm/contacts",    roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
