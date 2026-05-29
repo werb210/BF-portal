@@ -14,10 +14,11 @@ const ConversationViewer = ({ conversation, onSend, onAcknowledgeIssue }: Conver
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [conversation?.messages.length]);
+    const el = scrollRef.current;
+    if (!el) return;
+    const id = requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+    return () => cancelAnimationFrame(id);
+  }, [conversation?.id, conversation?.messages.length]);
 
   const metadata = useMemo(() => {
     if (!conversation) return null;

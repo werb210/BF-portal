@@ -307,7 +307,7 @@ export default function DialerPanel() {
         <>
           <div style={{ padding: "16px 20px 0", textAlign: "center" }}>
             <div style={{ fontSize: 28, fontWeight: 300, fontFamily: T.mono }}>
-              {conf ? <CallTimer startedAt={conf.started_at} /> : "00:00"}
+              <CallTimer startedAt={conf?.started_at ?? st.callStartedAt} />
             </div>
           </div>
 

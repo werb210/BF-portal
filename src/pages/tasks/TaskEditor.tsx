@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import type { TaskItem } from "@/api/tasks";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -59,7 +60,7 @@ const TaskEditor = ({ onSave, onClose, defaultValues }: TaskEditorProps) => {
         </label>
         <label>
           Description
-          <textarea value={description} onChange={(event) => setDescription(event.target.value)} />
+          <textarea value={description} onChange={(event) => setDescription(event.target.value)} style={taskFieldStyle} />
         </label>
         <label>
           Due Date
@@ -67,7 +68,7 @@ const TaskEditor = ({ onSave, onClose, defaultValues }: TaskEditorProps) => {
         </label>
         <label>
           Priority
-          <select value={priority} onChange={(event) => setPriority(event.target.value as TaskItem["priority"])}>
+          <select value={priority} onChange={(event) => setPriority(event.target.value as TaskItem["priority"])} style={taskFieldStyle}>
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
@@ -94,3 +95,14 @@ const TaskEditor = ({ onSave, onClose, defaultValues }: TaskEditorProps) => {
 };
 
 export default TaskEditor;
+
+const taskFieldStyle: CSSProperties = {
+  width: "100%",
+  padding: 8,
+  border: "1px solid #cbd6e2",
+  borderRadius: 4,
+  background: "#fff",
+  color: "#000",
+  fontSize: 14,
+  fontFamily: "inherit",
+};
