@@ -1,5 +1,6 @@
 // BF_PORTAL_BLOCK_v629_BI_PURBECK_RENDER_v1
 import { useEffect, useState } from "react";
+import { apiForSilo } from "@/api";
 
 type CoGuarantor = {
   id: string;
@@ -24,13 +25,11 @@ export function CoGuarantorList({ applicationId, hasCoGuarantors }: { applicatio
     (async () => {
       setLoading(true);
       try {
-        const r = await fetch(`/api/v1/bi/applications/${applicationId}/co-guarantors`, {
-          credentials: "include",
-        });
-        if (!cancel && r.ok) {
-          const body = await r.json();
-          setItems(body.co_guarantors || []);
-        }
+        const biApi = apiForSilo("BI");
+        const body = await biApi<{ co_guarantors?: CoGuarantor[] }>(
+          `/api/v1/bi/applications/${applicationId}/co-guarantors`,
+        );
+        if (!cancel) setItems(body?.co_guarantors || []);
       } catch (_) {
         // non-blocking
       } finally {
