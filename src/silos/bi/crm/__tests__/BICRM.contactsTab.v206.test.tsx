@@ -4,6 +4,7 @@
 // reduced two-tab shape (Contacts + Companies) and the absence of
 // the old tabs.
 import { describe, it, expect, vi } from "vitest";
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1", role: "Admin" } }) }));
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
