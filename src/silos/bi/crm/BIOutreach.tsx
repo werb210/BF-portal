@@ -40,6 +40,8 @@ type Contact = {
   outreach_status: Status | null;
   outreach_owner_id: string | null;
   outreach_updated_at: string | null;
+  outreach_segment?: "lender" | "broker" | null; // BI_SERVER_BLOCK_v411
+  promoted_lender_id?: string | null;
   created_at: string;
 };
 
