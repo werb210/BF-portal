@@ -12,6 +12,7 @@ export default function CompaniesPage() {
   const { silo } = useSilo();
   const { user } = useAuth();
   const showDelete = canDelete(user?.role as any);
+  const isAdmin = user?.role === "Admin";
   const [rows, setRows] = useState<CompanyRow[]>([]);
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>({ col: "created_at", dir: "desc" });
@@ -19,6 +20,11 @@ export default function CompaniesPage() {
   const [err, setErr] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [tagInput, setTagInput] = useState("");
+  const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
+
+  void showDelete;
 
   useEffect(() => {
     let cancelled = false;
@@ -47,8 +53,46 @@ export default function CompaniesPage() {
   const sortIndicator = (col: SortCol) =>
     sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "";
 
+  function toggleSel(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  async function massDelete() {
+    if (!isAdmin || selected.size === 0) return;
+    if (!window.confirm(`Hard-delete ${selected.size} company(ies)? This cannot be undone. Use only for Apollo imports.`)) return;
+    setBusyMass("delete");
+    try {
+      await crmApi.bulkDeleteCompanies(Array.from(selected));
+      setSelected(new Set());
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      window.alert(`Mass delete failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setBusyMass(null); }
+  }
+  async function massTag() {
+    if (!isAdmin || selected.size === 0 || !tagInput.trim()) return;
+    if (!window.confirm(`Apply tag "${tagInput.trim()}" to ${selected.size} company(ies)?`)) return;
+    setBusyMass("tag");
+    try {
+      await crmApi.bulkTagCompanies(Array.from(selected), tagInput.trim());
+      setSelected(new Set());
+      setTagInput("");
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      window.alert(`Mass tag failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setBusyMass(null); }
+  }
+
   const tableRows = useMemo(() => rows.map(r => (
     <tr key={r.id} style={trStyle}>
+      {isAdmin && (
+        <td style={{ padding: "8px 0", textAlign: "center" }}>
+          <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSel(r.id)} />
+        </td>
+      )}
       <td style={tdStyle}>
         <Link to={`/crm/companies/${r.id}`} style={linkStyle}>{r.name}</Link>
       </td>
@@ -61,7 +105,7 @@ export default function CompaniesPage() {
       <td style={tdStyle}>{r.owner_name ?? "—"}</td>
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows]);
+  )), [isAdmin, rows, selected]);
 
   return (
     <div style={page}>
@@ -79,10 +123,24 @@ export default function CompaniesPage() {
           style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}
         >+ Create Company</button>
       </div>
+      {isAdmin && selected.size > 0 && (
+        <div style={{ display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" }}>
+          <span style={{ fontWeight: 600, fontSize: 13 }}>{selected.size} selected</span>
+          <button disabled={busyMass !== null} onClick={massDelete} style={{ padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
+          <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 }} />
+          <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={{ padding: "6px 12px", borderRadius: 6, background: "#2563eb", color: "#fff", border: 0, cursor: tagInput.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
+          <button onClick={() => setSelected(new Set())} style={{ padding: "6px 12px", borderRadius: 6, background: "#fff", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 13 }}>Clear</button>
+        </div>
+      )}
 
       <table style={table}>
         <thead>
           <tr style={theadRow}>
+            {isAdmin && (
+              <th style={{ width: 32, padding: "8px 0" }}>
+                <input type="checkbox" checked={selected.size > 0 && rows.length > 0 && rows.every((c) => selected.has(c.id))} onChange={(e) => setSelected(e.target.checked ? new Set(rows.map((c) => c.id)) : new Set())} />
+              </th>
+            )}
             <Th onClick={() => onSort("name")}>Company name{sortIndicator("name")}</Th>
             <Th onClick={() => onSort("industry")}>Industry{sortIndicator("industry")}</Th>
             <Th>Types of financing</Th>
@@ -91,10 +149,10 @@ export default function CompaniesPage() {
           </tr>
         </thead>
         <tbody>
-          {loading && <tr><td colSpan={5} style={emptyCell}>Loading…</td></tr>}
-          {err && <tr><td colSpan={5} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
+          {loading && <tr><td colSpan={isAdmin ? 6 : 5} style={emptyCell}>Loading…</td></tr>}
+          {err && <tr><td colSpan={isAdmin ? 6 : 5} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
           {!loading && !err && rows.length === 0 && (
-            <tr><td colSpan={5} style={emptyCell}>No companies in this silo.</td></tr>
+            <tr><td colSpan={isAdmin ? 6 : 5} style={emptyCell}>No companies in this silo.</td></tr>
           )}
           {!loading && !err && tableRows}
         </tbody>
