@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { api, apiForSilo } from "@/api";
+import { useAuth } from "@/hooks/useAuth";
 // BF_PORTAL_BLOCK_1_22_BI_DOC_UI — required-doc catalog.
 import { fetchRequiredDocs, type BiRequiredDoc } from "@/silos/bi/api/biRequiredDocs";
 import type { BiStageId } from "../biStages";
@@ -55,6 +56,8 @@ function OcrStatusBadge({ status }: { status: string | null | undefined }) {
 // true, accept/reject controls are hidden (lender + referrer apps
 // auto-forward to carrier and staff don't touch documents).
 export default function DocumentsTab({ applicationId, stage: _stage, onMutated, isStartup = false, readOnly = false }: { readOnly?: boolean; applicationId: string; stage: BiStageId; onMutated: () => void; isStartup?: boolean }) {
+  const { user } = useAuth();
+  const isDocAdmin = user?.role === "Admin";
   const [docs, setDocs] = useState<Doc[]>([]);
   // BF_PORTAL_BLOCK_1_22_BI_DOC_UI — load required docs from server.
   const [requiredDocs, setRequiredDocs] = useState<BiRequiredDoc[]>([]);
@@ -216,7 +219,7 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
                   own action (can't re-accept an already-accepted doc). */}
               <button disabled={d.status === "accepted"} onClick={() => accept(d.id)} className="rounded bg-emerald-600/80 px-2 text-xs disabled:opacity-50">Accept</button>
               <button disabled={d.status === "rejected"} onClick={() => reject(d.id, d.file_name)} className="rounded bg-amber-600/80 px-2 text-xs disabled:opacity-50">Reject</button>
-              <button onClick={() => del(d.id)} className="rounded bg-red-600/80 px-2 text-xs">Delete</button>
+              {isDocAdmin && <button onClick={() => del(d.id)} className="rounded bg-red-600/80 px-2 text-xs">Delete</button>}
             </div>
           )}
         </div>

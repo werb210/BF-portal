@@ -1,11 +1,8 @@
-// BF_PORTAL_BLOCK_v209_BI_COMPANIES_LIST_v1
-// BI-side mirror of src/pages/crm/companies/CompaniesPage.tsx.
-// Same table shape and styling. Columns adapted to BI's domain:
-// Company name (with o/a operating_name), Industry, Contacts
-// (count from v256 rollup), Location (city, province), Create date.
+// BF_PORTAL_BLOCK_v664_BI_COMPANIES_BULK
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
+import { useAuth } from "@/hooks/useAuth";
 
 type SortCol = "name" | "industry" | "created_at";
 
@@ -13,219 +10,140 @@ type BICompanyRow = {
   id: string;
   legal_name: string;
   operating_name: string | null;
-  business_number: string | null;
-  address_line1: string | null;
   city: string | null;
   province: string | null;
-  postal_code: string | null;
   industry: string | null;
   created_at: string;
   contact_count: number;
 };
 
 export default function BICompaniesList() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "Admin";
   const [rows, setRows] = useState<BICompanyRow[]>([]);
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>({
-    col: "created_at",
-    dir: "desc",
-  });
+  const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>({ col: "created_at", dir: "desc" });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  // Inline create state
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newIndustry, setNewIndustry] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [tagInput, setTagInput] = useState("");
+  const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setErr(null);
+    setLoading(true); setErr(null);
     (async () => {
       try {
         const params = new URLSearchParams();
         if (q.trim()) params.set("q", q.trim());
         params.set("sort", `${sort.col}:${sort.dir}`);
-        const r: any = await api(
-          `/api/v1/bi/crm/companies${params.toString() ? `?${params}` : ""}`,
-        );
-        const list: BICompanyRow[] = Array.isArray(r)
-          ? r
-          : Array.isArray(r?.data)
-            ? r.data
-            : [];
+        const r: any = await api(`/api/v1/bi/crm/companies${params.toString() ? `?${params}` : ""}`);
+        const list: BICompanyRow[] = Array.isArray(r) ? r : Array.isArray(r?.data) ? r.data : [];
         if (!cancelled) setRows(list);
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "Could not load companies.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      } finally { if (!cancelled) setLoading(false); }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [q, sort.col, sort.dir, refreshKey]);
 
-  const onSort = (col: SortCol) =>
-    setSort((s) => ({
-      col,
-      dir: s.col === col && s.dir === "asc" ? "desc" : "asc",
-    }));
+  const onSort = (col: SortCol) => setSort((s) => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
+  const sortIndicator = (col: SortCol) => (sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "");
 
-  const sortIndicator = (col: SortCol) =>
-    sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "";
-
+  function toggleSel(id: string) {
+    setSelected((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  }
   async function createCompany() {
     if (!newName.trim()) return;
-    setCreating(true);
-    setCreateError(null);
+    setCreating(true); setCreateError(null);
     try {
-      await api(`/api/v1/bi/crm/companies`, {
-        method: "POST",
-        body: {
-          legal_name: newName.trim(),
-          industry: newIndustry.trim() || null,
-        },
-      } as any);
-      setNewName("");
-      setNewIndustry("");
-      setCreateOpen(false);
-      setRefreshKey((k) => k + 1);
-    } catch (e: any) {
-      setCreateError(e?.message ?? "Could not create company.");
-    } finally {
-      setCreating(false);
-    }
+      await api(`/api/v1/bi/crm/companies`, { method: "POST", body: { legal_name: newName.trim(), industry: newIndustry.trim() || null } } as any);
+      setNewName(""); setNewIndustry(""); setCreateOpen(false); setRefreshKey((k) => k + 1);
+    } catch (e: any) { setCreateError(e?.message ?? "Could not create company."); }
+    finally { setCreating(false); }
+  }
+  async function massDelete() {
+    if (!isAdmin || selected.size === 0) return;
+    if (!window.confirm(`Delete ${selected.size} company(ies)? Contacts are kept; their company link is cleared.`)) return;
+    setBusyMass("delete");
+    try {
+      await api(`/api/v1/bi/crm/companies/bulk-delete`, { method: "POST", body: { ids: Array.from(selected) } } as any);
+      setSelected(new Set()); setRefreshKey((k) => k + 1);
+    } catch (e: any) { window.alert(`Mass delete failed: ${e?.message ?? String(e)}`); }
+    finally { setBusyMass(null); }
+  }
+  async function massTag() {
+    if (!isAdmin || selected.size === 0 || !tagInput.trim()) return;
+    setBusyMass("tag");
+    try {
+      await api(`/api/v1/bi/crm/companies/bulk-tag`, { method: "POST", body: { ids: Array.from(selected), tag: tagInput.trim() } } as any);
+      setSelected(new Set()); setTagInput(""); setRefreshKey((k) => k + 1);
+    } catch (e: any) { window.alert(`Mass tag failed: ${e?.message ?? String(e)}`); }
+    finally { setBusyMass(null); }
   }
 
-  const tableRows = useMemo(
-    () =>
-      rows.map((r) => (
-        <tr key={r.id} style={trStyle} data-testid="bi-company-row">
-          <td style={tdStyle}>
-            <Link to={`/silo/bi/crm/companies/${r.id}`} style={linkStyle}>
-              {r.legal_name}
-            </Link>
-            {r.operating_name && r.operating_name !== r.legal_name && (
-              <div style={subtleCell}>o/a {r.operating_name}</div>
-            )}
-          </td>
-          <td style={tdStyle}>{r.industry ?? "—"}</td>
-          <td style={tdStyle}>{r.contact_count ?? 0}</td>
-          <td style={tdStyle}>
-            {[r.city, r.province].filter(Boolean).join(", ") || "—"}
-          </td>
-          <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
-        </tr>
-      )),
-    [rows],
-  );
+  const tableRows = useMemo(() => rows.map((r) => (
+    <tr key={r.id} style={trStyle} data-testid="bi-company-row">
+      {isAdmin && (
+        <td style={{ padding: "8px 0", textAlign: "center" }}>
+          <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSel(r.id)} />
+        </td>
+      )}
+      <td style={tdStyle}>
+        <Link to={`/silo/bi/crm/companies/${r.id}`} style={linkStyle}>{r.legal_name}</Link>
+        {r.operating_name && r.operating_name !== r.legal_name && <div style={subtleCell}>o/a {r.operating_name}</div>}
+      </td>
+      <td style={tdStyle}>{r.industry ?? "—"}</td>
+      <td style={tdStyle}>{r.contact_count ?? 0}</td>
+      <td style={tdStyle}>{[r.city, r.province].filter(Boolean).join(", ") || "—"}</td>
+      <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
+    </tr>
+  )), [rows, isAdmin, selected]);
+
+  const colCount = isAdmin ? 6 : 5;
 
   return (
     <div style={page} data-testid="bi-companies-list">
       <div style={toolbar}>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search companies"
-          style={searchInput}
-          aria-label="Search companies"
-        />
-        {/* BF_PORTAL_BLOCK_v608_THREE_FIXES_v1 — record count */}
-        <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">
-          {rows.length} {rows.length === 1 ? "record" : "records"}
-        </div>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies" style={searchInput} aria-label="Search companies" />
+        <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
-        <button style={toolbarBtn} type="button" disabled title="Coming in v211">
-          Export
-        </button>
-        <button style={toolbarBtn} type="button" disabled title="Coming in v211">
-          Edit columns
-        </button>
-        <button
-          type="button"
-          onClick={() => setCreateOpen((v) => !v)}
-          style={{
-            background: createOpen ? "#fff" : "#0d9b6c",
-            color: createOpen ? "#0d9b6c" : "#fff",
-            padding: "8px 14px",
-            borderRadius: 8,
-            fontWeight: 600,
-            border: createOpen ? "1px solid #0d9b6c" : 0,
-            cursor: "pointer",
-          }}
-          data-testid="bi-companies-create-toggle"
-        >
-          {createOpen ? "Cancel" : "+ Create Company"}
-        </button>
+        <button type="button" onClick={() => setCreateOpen((v) => !v)} style={{ background: createOpen ? "#fff" : "#0d9b6c", color: createOpen ? "#0d9b6c" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: createOpen ? "1px solid #0d9b6c" : 0, cursor: "pointer" }} data-testid="bi-companies-create-toggle">{createOpen ? "Cancel" : "+ Create Company"}</button>
       </div>
 
       {createOpen && (
-        <div
-          style={{
-            background: "#f5f8fa",
-            border: "1px solid #cbd6e2",
-            borderRadius: 6,
-            padding: 12,
-            marginBottom: 16,
-            display: "flex",
-            gap: 8,
-            alignItems: "flex-end",
-          }}
-          data-testid="bi-companies-create-form"
-        >
-          <div style={{ flex: 2 }}>
-            <div style={fieldLabel}>Legal name *</div>
-            <input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Acme Inc"
-              style={{ ...searchInput, marginTop: 4 }}
-              aria-label="Legal name"
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={fieldLabel}>Industry</div>
-            <input
-              value={newIndustry}
-              onChange={(e) => setNewIndustry(e.target.value)}
-              placeholder="Optional"
-              style={{ ...searchInput, marginTop: 4 }}
-              aria-label="Industry"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => void createCompany()}
-            disabled={creating || !newName.trim()}
-            style={{
-              background: "#0d9b6c",
-              color: "#fff",
-              padding: "8px 14px",
-              borderRadius: 8,
-              fontWeight: 600,
-              border: 0,
-              cursor: "pointer",
-              opacity: creating || !newName.trim() ? 0.5 : 1,
-            }}
-          >
-            {creating ? "Creating…" : "Create"}
-          </button>
-          {createError && (
-            <span style={{ color: "#b00020", fontSize: 12 }} role="status">
-              {createError}
-            </span>
-          )}
+        <div style={createBar} data-testid="bi-companies-create-form">
+          <div style={{ flex: 2 }}><div style={fieldLabel}>Legal name *</div><input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Acme Inc" style={{ ...searchInput, marginTop: 4 }} aria-label="Legal name" /></div>
+          <div style={{ flex: 1 }}><div style={fieldLabel}>Industry</div><input value={newIndustry} onChange={(e) => setNewIndustry(e.target.value)} placeholder="Optional" style={{ ...searchInput, marginTop: 4 }} aria-label="Industry" /></div>
+          <button type="button" onClick={() => void createCompany()} disabled={creating || !newName.trim()} style={{ background: "#0d9b6c", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", opacity: creating || !newName.trim() ? 0.5 : 1 }}>{creating ? "Creating…" : "Create"}</button>
+          {createError && <span style={{ color: "#b00020", fontSize: 12 }} role="status">{createError}</span>}
+        </div>
+      )}
+
+      {isAdmin && selected.size > 0 && (
+        <div style={massBar}>
+          <span style={{ fontWeight: 600, fontSize: 13 }}>{selected.size} selected</span>
+          <button disabled={busyMass !== null} onClick={massDelete} style={delBtn}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
+          <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={tagBox} />
+          <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={tagBtn}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
+          <button onClick={() => setSelected(new Set())} style={clearBtn}>Clear</button>
         </div>
       )}
 
       <table style={table}>
         <thead>
           <tr style={theadRow}>
+            {isAdmin && (
+              <th style={{ width: 32, padding: "8px 0" }}>
+                <input type="checkbox" checked={selected.size > 0 && rows.length > 0 && rows.every((c) => selected.has(c.id))} onChange={(e) => setSelected(e.target.checked ? new Set(rows.map((c) => c.id)) : new Set())} />
+              </th>
+            )}
             <Th onClick={() => onSort("name")}>Company name{sortIndicator("name")}</Th>
             <Th onClick={() => onSort("industry")}>Industry{sortIndicator("industry")}</Th>
             <Th>Contacts</Th>
@@ -234,27 +152,9 @@ export default function BICompaniesList() {
           </tr>
         </thead>
         <tbody>
-          {loading && (
-            <tr>
-              <td colSpan={5} style={emptyCell}>
-                Loading…
-              </td>
-            </tr>
-          )}
-          {err && (
-            <tr>
-              <td colSpan={5} style={{ ...emptyCell, color: "#b00020" }}>
-                {err}
-              </td>
-            </tr>
-          )}
-          {!loading && !err && rows.length === 0 && (
-            <tr>
-              <td colSpan={5} style={emptyCell}>
-                No BI companies.
-              </td>
-            </tr>
-          )}
+          {loading && <tr><td colSpan={colCount} style={emptyCell}>Loading…</td></tr>}
+          {err && <tr><td colSpan={colCount} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
+          {!loading && !err && rows.length === 0 && <tr><td colSpan={colCount} style={emptyCell}>No BI companies.</td></tr>}
           {!loading && !err && tableRows}
         </tbody>
       </table>
@@ -263,51 +163,24 @@ export default function BICompaniesList() {
 }
 
 function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  return (
-    <th onClick={onClick} style={thStyle}>
-      {children}
-    </th>
-  );
+  return <th onClick={onClick} style={thStyle}>{children}</th>;
 }
 
-// Styles mirrored from BF CompaniesPage / ContactsPage so the
-// BI Companies and BI Contacts tabs share visual identity.
 const page: CSSProperties = { background: "#fff", color: "#000", padding: 24, borderRadius: 8 };
-const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16 };
-const searchInput: CSSProperties = {
-  flex: 1,
-  padding: 8,
-  border: "1px solid #cbd6e2",
-  borderRadius: 4,
-  background: "#fff",
-  color: "#000",
-};
-const toolbarBtn: CSSProperties = {
-  padding: "8px 16px",
-  border: "1px solid #cbd6e2",
-  background: "#fff",
-  borderRadius: 4,
-  cursor: "pointer",
-  opacity: 0.5,
-};
+const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16, alignItems: "center" };
+const searchInput: CSSProperties = { flex: 1, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000" };
+const createBar: CSSProperties = { background: "#f5f8fa", border: "1px solid #cbd6e2", borderRadius: 6, padding: 12, marginBottom: 16, display: "flex", gap: 8, alignItems: "flex-end" };
+const massBar: CSSProperties = { display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" };
+const delBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
+const tagBox: CSSProperties = { padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 };
+const tagBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#2563eb", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
+const clearBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#fff", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 13 };
 const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "#fff" };
 const theadRow: CSSProperties = { borderBottom: "1px solid #cbd6e2", background: "#f5f8fa" };
-const thStyle: CSSProperties = {
-  padding: 12,
-  textAlign: "left",
-  cursor: "pointer",
-  color: "#33475b",
-  textTransform: "uppercase",
-  fontSize: 12,
-  userSelect: "none",
-};
+const thStyle: CSSProperties = { padding: 12, textAlign: "left", cursor: "pointer", color: "#33475b", textTransform: "uppercase", fontSize: 12, userSelect: "none" };
 const tdStyle: CSSProperties = { padding: 12, color: "#000" };
 const trStyle: CSSProperties = { borderBottom: "1px solid #eaf0f6" };
 const linkStyle: CSSProperties = { color: "#0091ae", textDecoration: "none" };
 const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "#7c98b6" };
 const subtleCell: CSSProperties = { color: "#7c98b6", fontSize: 12, marginTop: 2 };
-const fieldLabel: CSSProperties = {
-  fontSize: 11,
-  color: "#7c98b6",
-  textTransform: "uppercase",
-};
+const fieldLabel: CSSProperties = { fontSize: 11, color: "#7c98b6", textTransform: "uppercase" };
