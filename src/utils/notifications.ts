@@ -9,18 +9,20 @@ const DEFAULT_TITLES: Record<NotificationType, string> = {
   auth_alert: "Login alert",
   document_requested: "Document requested",
   lender_status: "Lender status update",
-  system_alert: "System alert"
+  system_alert: "System alert",
+  new_message: "New message"
 };
 
 const DEFAULT_MESSAGES: Record<NotificationType, string> = {
   auth_alert: "We noticed a login or OTP event on your account.",
   document_requested: "A new document was requested.",
   lender_status: "A lender status changed.",
-  system_alert: "Important system update available."
+  system_alert: "Important system update available.",
+  new_message: "You have a new message."
 };
 
 const ensureNotificationType = (type?: string): NotificationType => {
-  if (type === "auth_alert" || type === "document_requested" || type === "lender_status" || type === "system_alert") {
+  if (type === "auth_alert" || type === "document_requested" || type === "lender_status" || type === "system_alert" || type === "new_message") {
     return type;
   }
   return "system_alert";

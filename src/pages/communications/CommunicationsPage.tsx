@@ -735,6 +735,8 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MsgRow[]>([]);
   const [loadingThread, setLoadingThread] = useState(false);
+  // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1 — stick the Messages thread to bottom.
+  const threadEndRef = useRef<HTMLDivElement | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -794,6 +796,30 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.contactId]);
 
+  // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1 — poll the thread list so brand-new
+  // inbound conversations appear without a manual remount.
+  useEffect(() => {
+    const tick = setInterval(async () => {
+      try {
+        const r = await api<{ conversations?: MessagesListRow[] }>("/api/communications/messages-list", { params: { mode: "all" } });
+        const list = Array.isArray(r.conversations) ? r.conversations : [];
+        const mapped: Row[] = list
+          .filter((c) => c.contact_id || c.thread_key)
+          .map((c) => ({
+            contactId: (c.contact_id ?? c.thread_key) as string,
+            name: c.display_name ?? c.phone ?? "Unknown",
+            phone: c.phone,
+            lastAt: c.last_at,
+            lastBody: c.last_body,
+            unread: Number(c.unread_count ?? 0),
+          }))
+          .sort((a, b) => (b.lastAt ? new Date(b.lastAt).getTime() : 0) - (a.lastAt ? new Date(a.lastAt).getTime() : 0));
+        if (mapped.length > 0) setRows(mapped);
+      } catch { /* ignore */ }
+    }, 8000);
+    return () => clearInterval(tick);
+  }, []);
+
   // ── On selection: resolve latest application_id ──────────────────────────
   useEffect(() => {
     if (!selected?.contactId) {
@@ -823,6 +849,9 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   //   • Typing emit on draft change (debounced 1.5s)
   // Thread loader stays contact-keyed (v624).
   const [otherTyping, setOtherTyping] = useState(false);
+  useLayoutEffect(() => {
+    threadEndRef.current?.scrollIntoView({ block: "end" });
+  }, [messages, selected?.contactId]);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadThread = useCallback((contactId: string) => {
@@ -998,6 +1027,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                   {selected.name} is typing…
                 </div>
               )}
+              <div ref={threadEndRef} />
             </div>
             {applicationId && (
               <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 16px", paddingRight: 88, display: "flex", gap: 8, background: "#fff" }}>

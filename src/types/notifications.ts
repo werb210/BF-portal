@@ -2,7 +2,8 @@ export type NotificationType =
   | "auth_alert"
   | "document_requested"
   | "lender_status"
-  | "system_alert";
+  | "system_alert"
+  | "new_message";
 
 export type NotificationSource = "push" | "in_app";
 

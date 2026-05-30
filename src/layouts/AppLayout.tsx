@@ -11,6 +11,10 @@ import { useAuth } from "@/auth/AuthContext";
 import { useSilo } from "@/hooks/useSilo";
 import Topbar from "@/components/layout/Topbar";
 import MayaChat from "@/components/maya/MayaChat";
+// BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1
+import NotificationToast from "@/components/notifications/NotificationToast";
+import { useInboundMessageWatcher } from "@/hooks/useInboundMessageWatcher";
+import { useNotificationsStore } from "@/state/notifications.store";
 
 
 const TOPBAR_HEIGHT = 68;
@@ -60,6 +64,9 @@ const SILO_BRAND: Record<string, { label: string; accent: string }> = {
 
 export default function AppLayout({ children }: { children?: React.ReactNode }) {
   const [mayaOpen, setMayaOpen] = useState(true);
+  // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1 — global new-message alerts.
+  useInboundMessageWatcher();
+  const messagesUnread = useNotificationsStore((st) => st.messagesUnread);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user } = useAuth();
   const { silo } = useSilo();
@@ -121,6 +128,11 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
           })}
         >
           {item.label}
+          {item.path === "/communications" && messagesUnread > 0 && (
+            <span style={{ marginLeft: 8, background: "#ef4444", color: "#fff", borderRadius: 999, fontSize: 11, fontWeight: 700, padding: "1px 7px", minWidth: 18, display: "inline-block", textAlign: "center" }}>
+              {messagesUnread}
+            </span>
+          )}
         </NavLink>
       ))}
     </nav>
@@ -128,6 +140,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      <NotificationToast />
       {/* ── Sidebar ── */}
       <aside
         style={{
