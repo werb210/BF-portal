@@ -272,6 +272,12 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
 
   useEffect(() => {
     if (!selected) return;
+    // BF_PORTAL_BLOCK_v639_UNREAD_CLEAR_v1 — clear server-side read_at on open so
+    // the nav badge and per-thread tags drop (SMS rows included via BF-Server
+    // v689). Without this the SMS tab only cleared the count client-side.
+    if (selected.id) {
+      api.post("/api/communications/messages/mark-read", { contactId: selected.id }).catch(() => undefined);
+    }
     loadMessages(selected.id, selected.phone);
     pollRef.current = setInterval(() => loadMessages(selected.id, selected.phone), 5000);
     return () => {
@@ -498,10 +504,10 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   padding: "10px 16px",
                   cursor: "pointer",
                   background: isSelected ? "#e8f0fe" : (hasUnread ? "#eff6ff" : "transparent"),
-                  borderTop: hasUnread ? "2px solid #2563eb" : "2px solid transparent",
-                  borderRight: hasUnread ? "2px solid #2563eb" : "2px solid transparent",
-                  borderLeft: hasUnread ? "2px solid #2563eb" : "2px solid transparent",
-                  borderBottom: hasUnread ? "2px solid #2563eb" : "1px solid #f0f0f5",
+                  // BF_PORTAL_BLOCK_v639_UNREAD_CLEAR_v1 — subtle left accent for
+                  // unread instead of a heavy 4-sided box (which read as an error).
+                  borderLeft: hasUnread ? "3px solid #2563eb" : "3px solid transparent",
+                  borderBottom: "1px solid #f0f0f5",
                   transition: "background 0.2s ease-out, border-color 0.2s ease-out",
                   position: "relative",
                 }}
