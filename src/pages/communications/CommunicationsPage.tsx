@@ -276,7 +276,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     // the nav badge and per-thread tags drop (SMS rows included via BF-Server
     // v689). Without this the SMS tab only cleared the count client-side.
     if (selected.id) {
-      api.post("/api/communications/messages/mark-read", { contactId: selected.id }).catch(() => undefined);
+      void Promise.resolve(api.post("/api/communications/messages/mark-read", { contactId: selected.id })).catch(() => undefined);
     }
     loadMessages(selected.id, selected.phone);
     pollRef.current = setInterval(() => loadMessages(selected.id, selected.phone), 5000);
