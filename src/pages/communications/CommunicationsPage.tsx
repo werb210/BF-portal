@@ -957,6 +957,22 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
       <div style={{ borderRight: "1px solid #e2e8f0", padding: 12, overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ margin: 0 }}>Messages</h3>
+          {/* BF_PORTAL_BLOCK_v638_MESSAGES_USABILITY_v1 — clear the unread backlog
+              (the "stuck 16"). Marks every unread thread read server-side; the
+              nav badge self-heals on the next watcher poll. */}
+          {rows.some((r) => Number(r.unread) > 0) && (
+            <button
+              type="button"
+              onClick={async () => {
+                const ids = rows.filter((r) => Number(r.unread) > 0).map((r) => r.contactId).filter(Boolean);
+                await Promise.all(ids.map((id) => api.post("/api/communications/messages/mark-read", { contactId: id }).catch(() => undefined)));
+                setRows((prev) => prev.map((r) => ({ ...r, unread: 0 })));
+              }}
+              style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0 }}
+            >
+              Mark all read
+            </button>
+          )}
         </div>
         {rows.map((c) => (
           <button
@@ -970,7 +986,9 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
               // get a bold left border (no numeric badge per Todd's #9).
               borderLeft: c.unread > 0 ? "4px solid #2563eb" : "4px solid transparent",
               border: 0,
-              background: selected?.contactId === c.contactId ? "#f0f9ff" : "transparent",
+              // BF_PORTAL_BLOCK_v638_MESSAGES_USABILITY_v1 — require a real contactId
+              // on both sides so null-id rows (e.g. duplicates) do not all highlight.
+              background: (!!selected?.contactId && selected?.contactId === c.contactId) ? "#f0f9ff" : "transparent",
               padding: "10px 8px",
               borderBottom: "1px solid #eef2f7",
               cursor: "pointer",
@@ -1003,7 +1021,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
               {selected.phone && <div style={{ fontSize: 12, color: "#3c3c43" }}>{selected.phone}</div>}
               {!applicationId && (
                 <div style={{ fontSize: 11, color: "#b45309", marginTop: 4 }}>
-                  No active application linked to this contact yet — once they start an application the thread becomes active.
+                  No active application linked to this contact yet — messages can still be sent.
                 </div>
               )}
             </div>
@@ -1029,7 +1047,11 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
               )}
               <div ref={threadEndRef} />
             </div>
-            {applicationId && (
+            {/* BF_PORTAL_BLOCK_v638_MESSAGES_USABILITY_v1 — composer shows for any
+                selected contact; send() already posts contactId-first with
+                applicationId optional, so staff can message people who have no
+                application yet. */}
+            {selected && (
               <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 16px", paddingRight: 88, display: "flex", gap: 8, background: "#fff" }}>
                 <textarea
                   value={draft}
@@ -1455,12 +1477,17 @@ function IssuesTab() {
   const [selected, setSelected] = useState<Issue | null>(null);
 
   useEffect(() => {
-    api<{ issues: Issue[] }>("/api/portal/issues")
-      .then((r) => setIssues(Array.isArray(r.issues) ? r.issues : []))
-      .catch((error) => {
-        if (isBadRequest(error)) return;
-      })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    const load = () =>
+      api<{ issues: Issue[] }>("/api/portal/issues")
+        .then((r) => { if (!cancelled) setIssues(Array.isArray(r.issues) ? r.issues : []); })
+        .catch((error) => { if (isBadRequest(error)) return; })
+        .finally(() => { if (!cancelled) setLoading(false); });
+    void load();
+    // BF_PORTAL_BLOCK_v638_MESSAGES_USABILITY_v1 — auto-refresh so a reported
+    // issue appears without a manual page refresh.
+    const tick = setInterval(load, 10000);
+    return () => { cancelled = true; clearInterval(tick); };
   }, []);
 
   const statusColor = (s: string) =>
