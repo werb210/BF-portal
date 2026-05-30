@@ -36,9 +36,13 @@ export const useNotificationAudio = () => {
     };
   }, []);
 
-  const playNotificationSound = useCallback(() => {
+  const playNotificationSound = useCallback((opts?: { force?: boolean }) => {
     if (!isPrimedRef.current) return;
-    if (typeof document !== "undefined" && !document.hidden) return;
+    // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1 — when force is set (a new
+    // inbound client message), play even while the tab is focused so staff
+    // hear it. Default behaviour (background-only) is preserved for callers
+    // that pass no argument.
+    if (!opts?.force && typeof document !== "undefined" && !document.hidden) return;
     if (!canUseAudio()) return;
 
     const context = getAudioContext();
