@@ -1,184 +1,251 @@
-// BF_PORTAL_BLOCK_v694_COMMS — reusable O365 compose templates settings.
-import { useEffect, useState } from "react";
-import { api } from "@/api";
+// BF_PORTAL_BLOCK_v694_COMMS — Message Templates tab.
+// CRUD over /api/templates (server v693). Channels: email | message | sms.
+// Tokens {{first_name}} and {{meeting_link}} are substituted at compose time.
+import { useCallback, useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
-import ErrorBanner from "@/components/ui/ErrorBanner";
+import api from "@/api";
 import { getErrorMessage } from "@/utils/errors";
+
+type Channel = "email" | "message" | "sms";
 
 type Template = {
   id: string;
+  channel: Channel;
   name: string;
-  subject?: string | null;
-  body_text?: string | null;
-  body_html?: string | null;
-  category?: string | null;
-  is_active?: boolean | null;
+  subject: string | null;
+  body_html: string | null;
+  body_text: string | null;
+  shared: boolean;
+  owner_user_id: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
-type TemplateDraft = {
-  name: string;
-  subject: string;
-  body_text: string;
-  category: string;
-  is_active: boolean;
-};
-
-const EMPTY_DRAFT: TemplateDraft = {
+const EMPTY: Omit<Template, "id"> = {
+  channel: "email",
   name: "",
   subject: "",
+  body_html: "",
   body_text: "",
-  category: "",
-  is_active: true,
+  shared: true,
+  owner_user_id: null,
 };
 
-function normalizeTemplates(value: unknown): Template[] {
-  const maybeItems = value && typeof value === "object" && "items" in value ? (value as { items?: unknown }).items : value;
-  return Array.isArray(maybeItems)
-    ? maybeItems.filter((item): item is Template => Boolean(item && typeof item === "object" && typeof (item as Template).id === "string"))
-    : [];
-}
-
 export default function TemplatesSettings() {
-  const [items, setItems] = useState<Template[]>([]);
-  const [draft, setDraft] = useState<TemplateDraft>(EMPTY_DRAFT);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const [editing, setEditing] = useState<(Omit<Template, "id"> & { id?: string }) | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await api<unknown>("/api/o365/templates");
-      setItems(normalizeTemplates(response));
-    } catch (err) {
-      setError(getErrorMessage(err, "Unable to load email templates."));
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
+  const load = useCallback(() => {
+    api
+      .get<Template[]>("/api/templates")
+      .then((rows) => {
+        setTemplates(Array.isArray(rows) ? rows : []);
+        setLoaded(true);
+      })
+      .catch((e) => {
+        setError(getErrorMessage(e, "Unable to load templates."));
+        setLoaded(true);
+      });
   }, []);
 
-  function startEdit(template: Template) {
-    setEditingId(template.id);
-    setDraft({
-      name: template.name ?? "",
-      subject: template.subject ?? "",
-      body_text: template.body_text ?? template.body_html ?? "",
-      category: template.category ?? "",
-      is_active: template.is_active !== false,
-    });
-    setStatus(null);
-    setError(null);
-  }
-
-  function resetDraft() {
-    setEditingId(null);
-    setDraft(EMPTY_DRAFT);
-  }
+  useEffect(() => {
+    load();
+  }, [load]);
 
   async function save() {
-    if (!draft.name.trim()) {
-      setError("Template name is required.");
+    if (!editing) return;
+    if (!editing.name.trim()) {
+      setError("Name is required.");
       return;
     }
     setSaving(true);
     setError(null);
-    setStatus(null);
     const payload = {
-      name: draft.name.trim(),
-      subject: draft.subject.trim() || null,
-      body_text: draft.body_text,
-      category: draft.category.trim() || null,
-      is_active: draft.is_active,
+      channel: editing.channel,
+      name: editing.name.trim(),
+      subject: editing.subject ?? "",
+      body_html: editing.channel === "email" ? editing.body_html ?? "" : null,
+      body_text: editing.channel === "email" ? null : editing.body_text ?? "",
+      shared: editing.shared,
     };
     try {
-      if (editingId) {
-        await api.patch(`/api/o365/templates/${encodeURIComponent(editingId)}`, payload);
-        setStatus("Template updated.");
+      if (editing.id) {
+        await api.put(`/api/templates/${editing.id}`, payload);
       } else {
-        await api.post("/api/o365/templates", payload);
-        setStatus("Template created.");
+        await api.post("/api/templates", payload);
       }
-      resetDraft();
-      await load();
-    } catch (err) {
-      setError(getErrorMessage(err, "Unable to save template."));
+      setEditing(null);
+      load();
+    } catch (e) {
+      setError(getErrorMessage(e, "Save failed."));
     } finally {
       setSaving(false);
     }
   }
 
-  async function remove(template: Template) {
-    if (!window.confirm(`Delete template ${template.name}?`)) return;
+  async function remove(id: string) {
     setError(null);
-    setStatus(null);
     try {
-      await api.delete(`/api/o365/templates/${encodeURIComponent(template.id)}`);
-      setStatus("Template deleted.");
-      await load();
-    } catch (err) {
-      setError(getErrorMessage(err, "Unable to delete template."));
+      await api.delete(`/api/templates/${id}`);
+      load();
+    } catch (e) {
+      setError(getErrorMessage(e, "Delete failed."));
     }
   }
 
   return (
-    <section className="settings-panel" aria-label="Email template settings">
-      <header>
-        <h2>Email templates</h2>
-        <p>Create reusable subject/body snippets for the Microsoft 365 composer.</p>
-      </header>
-      {error && <ErrorBanner message={error} />}
-      {status && <p role="status" style={{ color: "#0d9b6c", fontSize: 13 }}>{status}</p>}
+    <div className="settings-panel" aria-label="Message templates">
+      <h2 style={{ margin: "0 0 4px 0" }}>Templates</h2>
+      <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>
+        Reusable email, message, and SMS templates. Use tokens{" "}
+        <code>{"{{first_name}}"}</code> and <code>{"{{meeting_link}}"}</code> — they are filled in
+        automatically when you pick a template in the composer.
+      </p>
 
-      <div className="settings-grid" style={{ alignItems: "start" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <h3 style={{ margin: 0 }}>{editingId ? "Edit template" : "New template"}</h3>
-          <input aria-label="Template name" placeholder="Template name" value={draft.name} onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4 }} />
-          <input aria-label="Template category" placeholder="Category (optional)" value={draft.category} onChange={(e) => setDraft((prev) => ({ ...prev, category: e.target.value }))} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4 }} />
-          <input aria-label="Template subject" placeholder="Subject" value={draft.subject} onChange={(e) => setDraft((prev) => ({ ...prev, subject: e.target.value }))} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4 }} />
-          <textarea aria-label="Template body" placeholder="Body" rows={10} value={draft.body_text} onChange={(e) => setDraft((prev) => ({ ...prev, body_text: e.target.value }))} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontFamily: "inherit" }} />
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}>
-            <input type="checkbox" checked={draft.is_active} onChange={(e) => setDraft((prev) => ({ ...prev, is_active: e.target.checked }))} />
-            Active in composer
+      {error && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+
+      {!editing && (
+        <Button type="button" onClick={() => setEditing({ ...EMPTY })}>
+          New template
+        </Button>
+      )}
+
+      {editing && (
+        <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16, marginBottom: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <label style={{ fontSize: 13 }}>
+              Channel
+              <br />
+              <select
+                value={editing.channel}
+                onChange={(e) => setEditing({ ...editing, channel: e.target.value as Channel })}
+                style={{ padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4 }}
+              >
+                <option value="email">Email</option>
+                <option value="message">Message</option>
+                <option value="sms">SMS</option>
+              </select>
+            </label>
+            <label style={{ fontSize: 13, flex: 1, minWidth: 200 }}>
+              Name
+              <br />
+              <input
+                type="text"
+                value={editing.name}
+                onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4 }}
+              />
+            </label>
+          </div>
+
+          {editing.channel === "email" && (
+            <label style={{ fontSize: 13 }}>
+              Subject
+              <br />
+              <input
+                type="text"
+                value={editing.subject ?? ""}
+                onChange={(e) => setEditing({ ...editing, subject: e.target.value })}
+                style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4 }}
+              />
+            </label>
+          )}
+
+          <label style={{ fontSize: 13 }}>
+            Body
+            <br />
+            <textarea
+              rows={8}
+              value={(editing.channel === "email" ? editing.body_html : editing.body_text) ?? ""}
+              onChange={(e) =>
+                setEditing(
+                  editing.channel === "email"
+                    ? { ...editing, body_html: e.target.value }
+                    : { ...editing, body_text: e.target.value }
+                )
+              }
+              style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4, fontFamily: "inherit", fontSize: 13 }}
+            />
           </label>
+
+          <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={editing.shared}
+              onChange={(e) => setEditing({ ...editing, shared: e.target.checked })}
+            />
+            Shared with all staff (uncheck to keep personal)
+          </label>
+
           <div style={{ display: "flex", gap: 8 }}>
-            <Button type="button" onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : editingId ? "Update template" : "Create template"}</Button>
-            {editingId && <Button type="button" variant="secondary" onClick={resetDraft} disabled={saving}>Cancel edit</Button>}
+            <Button type="button" onClick={() => void save()} disabled={saving}>
+              {saving ? "Saving…" : "Save template"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => setEditing(null)}
+              style={{ padding: "8px 14px", border: "1px solid #cbd6e2", borderRadius: 6, background: "#fff", cursor: "pointer" }}
+            >
+              Cancel
+            </button>
           </div>
         </div>
+      )}
 
-        <div>
-          <h3 style={{ marginTop: 0 }}>Saved templates</h3>
-          {loading ? (
-            <p>Loading templates…</p>
-          ) : items.length === 0 ? (
-            <p style={{ color: "#64748b" }}>No templates yet.</p>
-          ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-              {items.map((template) => (
-                <li key={template.id} style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: 10, display: "flex", justifyContent: "space-between", gap: 12 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <strong>{template.name}</strong>
-                    {template.is_active === false && <span style={{ marginLeft: 8, color: "#94a3b8", fontSize: 11 }}>inactive</span>}
-                    <div style={{ color: "#64748b", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{template.subject || "(no subject)"}{template.category ? ` · ${template.category}` : ""}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <Button type="button" variant="secondary" onClick={() => startEdit(template)}>Edit</Button>
-                    <Button type="button" variant="ghost" onClick={() => void remove(template)}>Delete</Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      <div style={{ marginTop: 16 }}>
+        {!loaded ? (
+          <p style={{ fontSize: 13, color: "#6b7280" }}>Loading…</p>
+        ) : templates.length === 0 ? (
+          <p style={{ fontSize: 13, color: "#6b7280" }}>No templates yet.</p>
+        ) : (
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            {templates.map((t) => (
+              <li
+                key={t.id}
+                style={{ border: "1px solid #eef2f7", borderRadius: 6, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}
+              >
+                <span style={{ fontSize: 14 }}>
+                  <strong>{t.name}</strong>{" "}
+                  <span style={{ fontSize: 12, color: "#94a3b8" }}>
+                    · {t.channel}
+                    {t.shared ? " · shared" : " · personal"}
+                  </span>
+                </span>
+                <span style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditing({
+                        id: t.id,
+                        channel: t.channel,
+                        name: t.name,
+                        subject: t.subject ?? "",
+                        body_html: t.body_html ?? "",
+                        body_text: t.body_text ?? "",
+                        shared: t.shared,
+                        owner_user_id: t.owner_user_id,
+                      })
+                    }
+                    style={{ padding: "4px 10px", border: "1px solid #cbd6e2", borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13 }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void remove(t.id)}
+                    style={{ padding: "4px 10px", border: "1px solid #f0c4c4", borderRadius: 6, background: "#fff", color: "#b00020", cursor: "pointer", fontSize: 13 }}
+                  >
+                    Delete
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-    </section>
+    </div>
   );
 }
