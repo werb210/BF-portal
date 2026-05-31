@@ -15,6 +15,8 @@ import ProfileSettings from "./tabs/ProfileSettings";
 import RuntimeSettings from "./tabs/RuntimeSettings";
 import UserManagement from "./tabs/UserManagement";
 import SettingsOverview from "./tabs/SettingsOverview";
+import TemplatesSettings from "./tabs/TemplatesSettings"; // v694
+import CollateralSettings from "./tabs/CollateralSettings"; // v694
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -31,6 +33,8 @@ const SettingsPage = () => {
       { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin && !isBI, content: isAdmin ? <KnowledgeManager /> : null },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: !isBI, content: <RuntimeSettings /> },
+      { id: "templates", label: "Templates", visible: !isBI, content: <TemplatesSettings /> }, // v694
+      { id: "collateral", label: "Collateral", visible: !isBI, content: <CollateralSettings /> }, // v694
     ],
     [isAdmin, isBI]
   );
@@ -38,13 +42,14 @@ const SettingsPage = () => {
   const safeTabs = Array.isArray(tabs) ? tabs : [];
   const availableTabs = safeTabs.filter((tab) => tab.visible);
   const activeTabId = tabParam ?? searchParams.get("tab");
-  const fallbackTabId = availableTabs[0]?.id ?? "profile";
+  const fallbackTabId = availableTabs.some((tab) => tab.id === "profile") ? "profile" : availableTabs[0]?.id ?? "profile";
   const resolvedTabId = availableTabs.some((tab) => tab.id === activeTabId) ? activeTabId : fallbackTabId;
   const activeTab = availableTabs.find((tab) => tab.id === resolvedTabId) ?? availableTabs[0];
-  const showOverview = !tabParam && !searchParams.get("tab");
+  // v694: land directly on the tabbed view (default My Profile) instead of the card chooser.
+  const showOverview = false;
 
   useEffect(() => {
-    if (!tabParam && activeTabId) {
+    if (!tabParam) {
       navigate(`/settings/${resolvedTabId}`, { replace: true });
       return;
     }
