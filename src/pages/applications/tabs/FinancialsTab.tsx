@@ -52,14 +52,17 @@ function normalizeFieldLabel(label: string): string {
   return label.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 }
 
-function renderFinancialValue(labelKey: string, rawValue: string): ReactNode {
-  if (!NUMERIC_FIELD_LABELS.has(normalizeFieldLabel(labelKey))) return rawValue || "—";
-  const value = rawValue || "";
-  const nonNumericTokens = value.split(/\s+/).filter(Boolean).filter((token) => !NUMERIC_TOKEN_RE.test(token)).length;
-  if (nonNumericTokens <= 3) return rawValue || "—";
+function renderFinancialValue(labelKey: string, rawValue: unknown): ReactNode {
+  // v695: financial/OCR values can arrive as numbers (or null), not just
+  // strings — coerce before any string ops so `.split` can't throw
+  // "(t || "").split is not a function".
+  const text = rawValue == null ? "" : String(rawValue);
+  if (!NUMERIC_FIELD_LABELS.has(normalizeFieldLabel(labelKey))) return text || "—";
+  const nonNumericTokens = text.split(/\s+/).filter(Boolean).filter((token) => !NUMERIC_TOKEN_RE.test(token)).length;
+  if (nonNumericTokens <= 3) return text || "—";
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-      <span title={rawValue} style={{ color: "#9ca3af" }}>—</span>
+      <span title={text} style={{ color: "#9ca3af" }}>—</span>
       <span style={pivotStyles.ocrUncertainBadge}>OCR uncertain</span>
     </span>
   );
