@@ -232,7 +232,6 @@ function CreateLenderModal({
     try {
       const payload = {
         name: form.name.trim(),
-        country: "CA",
         street: form.street.trim() || null,
         city: null,
         region: null,
@@ -1293,7 +1292,7 @@ export default function LendersPage() {
   const [showCreateProduct, setShowCreateProduct] = useState(false);
   const [editingLender, setEditingLender] = useState<Lender | null>(null);
   const [editingProduct, setEditingProduct] = useState<LenderProduct | null>(null);
-  const [sortKey, setSortKey] = useState<"name" | "status" | "country" | "active" | null>(null);
+  const [sortKey, setSortKey] = useState<"name" | "status" | "active" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
 
   const { data: lenders = [], isLoading } = useQuery({
@@ -1307,7 +1306,6 @@ export default function LendersPage() {
     return lenders.filter(
       (l) =>
         l.name.toLowerCase().includes(q) ||
-        l.address?.country?.toLowerCase().includes(q) ||
         l.primaryContact?.name?.toLowerCase().includes(q)
     );
   }, [lenders, search]);
@@ -1318,15 +1316,15 @@ export default function LendersPage() {
     copy.sort((a, b) => {
       const dir = sortDir === "asc" ? 1 : -1;
       if (sortKey === "active") return ((a.active ? 1 : 0) - (b.active ? 1 : 0)) * dir;
-      const av = sortKey === "country" ? (a.address?.country ?? "") : sortKey === "status" ? (a.status ?? "") : (a.name ?? "");
-      const bv = sortKey === "country" ? (b.address?.country ?? "") : sortKey === "status" ? (b.status ?? "") : (b.name ?? "");
+      const av = sortKey === "status" ? (a.status ?? "") : (a.name ?? "");
+      const bv = sortKey === "status" ? (b.status ?? "") : (b.name ?? "");
       return av.toLowerCase().localeCompare(bv.toLowerCase()) * dir;
     });
     return copy;
   }, [filtered, sortDir, sortKey]);
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const cycleSort = (key: "name" | "status" | "country" | "active") => {
+  const cycleSort = (key: "name" | "status" | "active") => {
     if (sortKey !== key) { setSortKey(key); setSortDir("asc"); return; }
     if (sortDir === "asc") setSortDir("desc");
     else if (sortDir === "desc") { setSortDir(null); setSortKey(null); }
@@ -1383,20 +1381,19 @@ export default function LendersPage() {
                 {[
                   ["Lender Name", "name"],
                   ["Status", "status"],
-                  ["Country", "country"],
                   ["Active", "active"],
                 ].map(([h, key]) => (
-                  <th key={h} onClick={() => cycleSort(key as "name" | "status" | "country" | "active")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc", cursor: "pointer" }}>{h}{sortKey === key ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
+                  <th key={h} onClick={() => cycleSort(key as "name" | "status" | "active")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc", cursor: "pointer" }}>{h}{sortKey === key ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
                 ))}
                 <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Loading…</td></tr>
+                <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Loading…</td></tr>
               )}
               {!isLoading && paginated.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No lenders found</td></tr>
+                <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No lenders found</td></tr>
               )}
               {paginated.map((l) => {
                 const isSelected = selected?.id === l.id;
@@ -1415,9 +1412,6 @@ export default function LendersPage() {
                     <td style={{ padding: "10px 12px", fontWeight: isSelected ? 600 : 400, color: "#1e293b" }}>{l.name}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <StatusBadge active={l.active} status={l.status} />
-                    </td>
-                    <td style={{ padding: "10px 12px", color: "#64748b" }}>
-                      {l.address?.country === "CA" ? "Canada" : l.address?.country === "US" ? "USA" : l.address?.country ?? "—"}
                     </td>
                     <td style={{ padding: "10px 12px", color: "#64748b" }}>{l.active ? "Yes" : "No"}</td>
                     <td style={{ padding: "10px 12px" }}>

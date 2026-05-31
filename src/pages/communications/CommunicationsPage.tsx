@@ -1487,6 +1487,20 @@ function IssuesTab() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Issue | null>(null);
+  const [resolving, setResolving] = useState(false);
+  // v700: PATCH status=resolved so the issue clears from the open-count badge.
+  const resolveIssue = async (issue: Issue) => {
+    setResolving(true);
+    try {
+      await api.patch(`/api/portal/issues/${issue.id}/status`, { status: "resolved" });
+      setIssues((prev) => prev.map((i) => (i.id === issue.id ? { ...i, status: "resolved" } : i)));
+      setSelected((prev) => (prev && prev.id === issue.id ? { ...prev, status: "resolved" } : prev));
+    } catch {
+      /* swallow; badge self-heals on next poll */
+    } finally {
+      setResolving(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -1567,6 +1581,16 @@ function IssuesTab() {
             <div style={{ fontSize: 12, color: "#8e8e93", marginBottom: 16 }}>
               {new Date(selected.created_at).toLocaleString()}
             </div>
+            {selected.status !== "resolved" && selected.status !== "closed" && (
+              <button
+                type="button"
+                onClick={() => void resolveIssue(selected)}
+                disabled={resolving}
+                style={{ marginBottom: 16, padding: "8px 16px", border: "none", borderRadius: 8, background: "#22c55e", color: "#fff", fontWeight: 600, fontSize: 13, cursor: resolving ? "default" : "pointer", opacity: resolving ? 0.6 : 1 }}
+              >
+                {resolving ? "Resolving…" : "Mark resolved"}
+              </button>
+            )}
             {selected.description && (
               <div
                 style={{
