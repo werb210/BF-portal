@@ -113,7 +113,7 @@ export default function PipelinePage() {
       params: showDrafts ? { include_drafts: 1 } : undefined,
     })
       .then(({ items }) => setCards(
-        Array.isArray(items) ? items.filter((card) => showDrafts || !isDraftLikeApplication(card)) : []
+        Array.isArray(items) ? items.filter((card) => !isDraftLikeApplication(card)) : [] // v699: junk drafts (no name / invalid) never count, even with show-drafts on
       ))
       .catch(() => setCards([]))
       .finally(() => setLoading(false));
