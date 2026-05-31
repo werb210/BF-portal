@@ -1,175 +1,147 @@
-// BF_PORTAL_BLOCK_v694_COMMS — reusable collateral library for O365 compose.
-import { useEffect, useState } from "react";
-import { api } from "@/api";
+// BF_PORTAL_BLOCK_v694_COMMS — Collateral library tab.
+// All staff can view/list; admins upload (multipart) and delete.
+// Server: /api/collateral (GET list, POST upload [admin], DELETE /:id [admin]),
+// GET /api/collateral/:id/file for download. Files attach in the composer.
+import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
-import ErrorBanner from "@/components/ui/ErrorBanner";
+import api from "@/api";
+import { useAuth } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/utils/errors";
 
-type Collateral = {
+type CollateralAsset = {
   id: string;
   name: string;
-  url?: string | null;
-  description?: string | null;
-  is_active?: boolean | null;
+  audience: string | null;
+  doc_type: string | null;
+  content_type: string | null;
+  size_bytes: number | null;
+  created_at?: string;
 };
-
-type Draft = {
-  name: string;
-  url: string;
-  description: string;
-  is_active: boolean;
-};
-
-const EMPTY_DRAFT: Draft = { name: "", url: "", description: "", is_active: true };
-
-function normalizeCollateral(value: unknown): Collateral[] {
-  const maybeItems = value && typeof value === "object" && "items" in value ? (value as { items?: unknown }).items : value;
-  return Array.isArray(maybeItems)
-    ? maybeItems.filter((item): item is Collateral => Boolean(item && typeof item === "object" && typeof (item as Collateral).id === "string"))
-    : [];
-}
 
 export default function CollateralSettings() {
-  const [items, setItems] = useState<Collateral[]>([]);
-  const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === "Admin";
+  const [assets, setAssets] = useState<CollateralAsset[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [name, setName] = useState("");
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await api<unknown>("/api/o365/collateral");
-      setItems(normalizeCollateral(response));
-    } catch (err) {
-      setError(getErrorMessage(err, "Unable to load collateral."));
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const load = useCallback(() => {
+    api
+      .get<CollateralAsset[]>("/api/collateral")
+      .then((rows) => {
+        setAssets(Array.isArray(rows) ? rows : []);
+        setLoaded(true);
+      })
+      .catch((e) => {
+        setError(getErrorMessage(e, "Unable to load collateral."));
+        setLoaded(true);
+      });
+  }, []);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  function startEdit(item: Collateral) {
-    setEditingId(item.id);
-    setDraft({
-      name: item.name ?? "",
-      url: item.url ?? "",
-      description: item.description ?? "",
-      is_active: item.is_active !== false,
-    });
-    setError(null);
-    setStatus(null);
-  }
-
-  function resetDraft() {
-    setEditingId(null);
-    setDraft(EMPTY_DRAFT);
-  }
-
-  async function save() {
-    if (!draft.name.trim()) {
-      setError("Collateral name is required.");
+  async function upload() {
+    const file = fileRef.current?.files?.[0];
+    if (!file) {
+      setError("Choose a file to upload.");
       return;
     }
-    if (!draft.url.trim()) {
-      setError("Collateral URL is required.");
-      return;
-    }
-    setSaving(true);
+    setUploading(true);
     setError(null);
-    setStatus(null);
-    const payload = {
-      name: draft.name.trim(),
-      url: draft.url.trim(),
-      description: draft.description.trim() || null,
-      is_active: draft.is_active,
-    };
     try {
-      if (editingId) {
-        await api.patch(`/api/o365/collateral/${encodeURIComponent(editingId)}`, payload);
-        setStatus("Collateral updated.");
-      } else {
-        await api.post("/api/o365/collateral", payload);
-        setStatus("Collateral created.");
-      }
-      resetDraft();
-      await load();
-    } catch (err) {
-      setError(getErrorMessage(err, "Unable to save collateral."));
+      const fd = new FormData();
+      fd.append("file", file);
+      if (name.trim()) fd.append("name", name.trim());
+      await api.post("/api/collateral", fd);
+      setName("");
+      if (fileRef.current) fileRef.current.value = "";
+      load();
+    } catch (e) {
+      setError(getErrorMessage(e, "Upload failed."));
     } finally {
-      setSaving(false);
+      setUploading(false);
     }
   }
 
-  async function remove(item: Collateral) {
-    if (!window.confirm(`Delete collateral ${item.name}?`)) return;
+  async function remove(id: string) {
     setError(null);
-    setStatus(null);
     try {
-      await api.delete(`/api/o365/collateral/${encodeURIComponent(item.id)}`);
-      setStatus("Collateral deleted.");
-      await load();
-    } catch (err) {
-      setError(getErrorMessage(err, "Unable to delete collateral."));
+      await api.delete(`/api/collateral/${id}`);
+      load();
+    } catch (e) {
+      setError(getErrorMessage(e, "Delete failed."));
     }
   }
 
   return (
-    <section className="settings-panel" aria-label="Collateral settings">
-      <header>
-        <h2>Collateral</h2>
-        <p>Manage reusable links or hosted assets that can be attached to outbound emails.</p>
-      </header>
-      {error && <ErrorBanner message={error} />}
-      {status && <p role="status" style={{ color: "#0d9b6c", fontSize: 13 }}>{status}</p>}
+    <div className="settings-panel" aria-label="Collateral library">
+      <h2 style={{ margin: "0 0 4px 0" }}>Collateral</h2>
+      <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>
+        Shared PDFs that any staff member can attach to an email from the composer.
+        {isAdmin ? " Upload and manage files below." : " Ask an admin to add or remove files."}
+      </p>
 
-      <div className="settings-grid" style={{ alignItems: "start" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <h3 style={{ margin: 0 }}>{editingId ? "Edit collateral" : "New collateral"}</h3>
-          <input aria-label="Collateral name" placeholder="Name" value={draft.name} onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4 }} />
-          <input aria-label="Collateral URL" placeholder="https://…" value={draft.url} onChange={(e) => setDraft((prev) => ({ ...prev, url: e.target.value }))} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4 }} />
-          <textarea aria-label="Collateral description" placeholder="Description (optional)" rows={5} value={draft.description} onChange={(e) => setDraft((prev) => ({ ...prev, description: e.target.value }))} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontFamily: "inherit" }} />
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}>
-            <input type="checkbox" checked={draft.is_active} onChange={(e) => setDraft((prev) => ({ ...prev, is_active: e.target.checked }))} />
-            Active in composer
+      {error && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+
+      {isAdmin && (
+        <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16, marginBottom: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+          <label style={{ fontSize: 13 }}>
+            Display name (optional)
+            <br />
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Boreal One-Pager"
+              style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4 }}
+            />
           </label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Button type="button" onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : editingId ? "Update collateral" : "Create collateral"}</Button>
-            {editingId && <Button type="button" variant="secondary" onClick={resetDraft} disabled={saving}>Cancel edit</Button>}
+          <input ref={fileRef} type="file" accept="application/pdf" style={{ fontSize: 13 }} />
+          <div>
+            <Button type="button" onClick={() => void upload()} disabled={uploading}>
+              {uploading ? "Uploading…" : "Upload"}
+            </Button>
           </div>
         </div>
+      )}
 
-        <div>
-          <h3 style={{ marginTop: 0 }}>Saved collateral</h3>
-          {loading ? (
-            <p>Loading collateral…</p>
-          ) : items.length === 0 ? (
-            <p style={{ color: "#64748b" }}>No collateral yet.</p>
-          ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-              {items.map((item) => (
-                <li key={item.id} style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: 10, display: "flex", justifyContent: "space-between", gap: 12 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <strong>{item.name}</strong>
-                    {item.is_active === false && <span style={{ marginLeft: 8, color: "#94a3b8", fontSize: 11 }}>inactive</span>}
-                    <div style={{ color: "#64748b", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.url}</div>
-                    {item.description && <div style={{ color: "#64748b", fontSize: 12 }}>{item.description}</div>}
-                  </div>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <Button type="button" variant="secondary" onClick={() => startEdit(item)}>Edit</Button>
-                    <Button type="button" variant="ghost" onClick={() => void remove(item)}>Delete</Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      <div>
+        {!loaded ? (
+          <p style={{ fontSize: 13, color: "#6b7280" }}>Loading…</p>
+        ) : assets.length === 0 ? (
+          <p style={{ fontSize: 13, color: "#6b7280" }}>No collateral uploaded yet.</p>
+        ) : (
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            {assets.map((a) => (
+              <li
+                key={a.id}
+                style={{ border: "1px solid #eef2f7", borderRadius: 6, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}
+              >
+                <span style={{ fontSize: 14 }}>
+                  <strong>{a.name}</strong>{" "}
+                  {a.size_bytes != null && (
+                    <span style={{ fontSize: 12, color: "#94a3b8" }}>· {Math.round(a.size_bytes / 1024)} KB</span>
+                  )}
+                </span>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => void remove(a.id)}
+                    style={{ padding: "4px 10px", border: "1px solid #f0c4c4", borderRadius: 6, background: "#fff", color: "#b00020", cursor: "pointer", fontSize: 13 }}
+                  >
+                    Delete
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-    </section>
+    </div>
   );
 }
