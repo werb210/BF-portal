@@ -1,7 +1,7 @@
 // BF_PORTAL_BLOCK_v664_BI_COMPANIES_BULK
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
-import { api, rawApiFetch } from "@/api";
+import { api } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 
 type SortCol = "name" | "industry" | "created_at";
@@ -35,7 +35,7 @@ export default function BICompaniesList() {
   const [tagInput, setTagInput] = useState("");
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
   const [crmPage, setCrmPage] = useState(1); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
-  const [total, setTotal] = useState(0); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
+  const [hasNext, setHasNext] = useState(false); // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
 
   useEffect(() => {
     let cancelled = false;
@@ -47,10 +47,9 @@ export default function BICompaniesList() {
         params.set("sort", `${sort.col}:${sort.dir}`);
         params.set("page", String(crmPage)); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
         params.set("pageSize", "100");
-        const resp: any = await rawApiFetch(`/api/v1/bi/crm/companies?${params.toString()}`);
-        const j: any = await resp.json();
-        const list: BICompanyRow[] = Array.isArray(j?.data) ? j.data : Array.isArray(j) ? j : [];
-        if (!cancelled) { setRows(list); setTotal(Number(j?.total ?? list.length)); }
+        const r: any = await api(`/api/v1/bi/crm/companies${params.toString() ? `?${params}` : ""}`);
+        const list: BICompanyRow[] = Array.isArray(r) ? r : Array.isArray(r?.data) ? r.data : [];
+        if (!cancelled) { setRows(list); setHasNext(list.length >= 100); } // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "Could not load companies.");
       } finally { if (!cancelled) setLoading(false); }
@@ -117,7 +116,7 @@ export default function BICompaniesList() {
     <div style={page} data-testid="bi-companies-list">
       <div style={toolbar}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies" style={searchInput} aria-label="Search companies" />
-        <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{total} {total === 1 ? "record" : "records"}</div>
+        <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
         <button type="button" onClick={() => setCreateOpen((v) => !v)} style={{ background: createOpen ? "#fff" : "#0d9b6c", color: createOpen ? "#0d9b6c" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: createOpen ? "1px solid #0d9b6c" : 0, cursor: "pointer" }} data-testid="bi-companies-create-toggle">{createOpen ? "Cancel" : "+ Create Company"}</button>
       </div>
@@ -165,9 +164,9 @@ export default function BICompaniesList() {
       </table>
       {/* BF_PORTAL_BLOCK_v696_CRM_PAGER_v1 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-        <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage} of {Math.max(1, Math.ceil(total / 100))} · {total} total</span>
+        <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage}</span>
         <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
-        <button type="button" disabled={crmPage >= Math.max(1, Math.ceil(total / 100))} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage >= Math.max(1, Math.ceil(total / 100)) ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: crmPage >= Math.max(1, Math.ceil(total / 100)) ? "default" : "pointer" }}>Next</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
     </div>
   );

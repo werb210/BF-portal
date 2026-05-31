@@ -115,8 +115,8 @@ export default function O365ComposeModal({
     (async () => {
       try {
         const [templateResponse, collateralResponse, bookingResponse] = await Promise.allSettled([
-          api<unknown>("/api/o365/templates"),
-          api<unknown>("/api/o365/collateral"),
+          api<unknown>("/api/templates"),
+          api<unknown>("/api/collateral"),
           api<{ bookingUrl?: string | null; booking_url?: string | null }>("/api/o365/me/booking-url"),
         ]);
         if (cancelled) return;
