@@ -132,9 +132,36 @@ function CalendarContent() {
   const [taskForm, setTaskForm] = useState({ title: "", dueAt: "", priority: "normal", assignee_user_id: (user as { id?: string } | null)?.id ?? "", notes: "" });
   const queryClient = useQueryClient();
 
+  // BF_PORTAL_BLOCK_v699_CALENDAR_RANGE_v1 — send the visible window to the
+  // server as ?start/?end so navigating weeks/months loads that range. The
+  // server otherwise defaults to ~now-7d..now+60d (BF_SERVER_BLOCK_v685).
+  const calRange = useMemo(() => {
+    const d = currentDate;
+    const DAY = 86400000;
+    let start: Date;
+    let end: Date;
+    if (view === "year") {
+      start = new Date(d.getFullYear(), 0, 1);
+      end = new Date(d.getFullYear() + 1, 0, 1);
+    } else if (view === "month") {
+      start = new Date(d.getFullYear(), d.getMonth(), 1 - 7);
+      end = new Date(d.getFullYear(), d.getMonth() + 1, 1 + 7);
+    } else if (view === "week" || view === "work_week") {
+      start = new Date(d.getTime() - 10 * DAY);
+      end = new Date(d.getTime() + 10 * DAY);
+    } else {
+      start = new Date(d.getTime() - 2 * DAY);
+      end = new Date(d.getTime() + 3 * DAY);
+    }
+    return { start: start.toISOString(), end: end.toISOString() };
+  }, [currentDate, view]);
+
   const eventsQuery = useQuery({
-    queryKey: ["calendar-events"],
-    queryFn: () => api.get<ApiCalendarEvent[]>("/api/calendar/events"),
+    queryKey: ["calendar-events", calRange.start, calRange.end],
+    queryFn: () =>
+      api.get<ApiCalendarEvent[]>("/api/calendar/events", {
+        params: { start: calRange.start, end: calRange.end },
+      }),
   });
 
   const usersQuery = useQuery({
