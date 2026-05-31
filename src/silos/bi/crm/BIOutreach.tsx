@@ -8,6 +8,7 @@
 // action wired to v410.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/api";
+import { useNavigate } from "react-router-dom"; // BF_PORTAL_BLOCK_v696_OUTREACH_CARD_v1
 
 const STAGES = [
   "new",
@@ -494,6 +495,8 @@ function BoardColumn(props: {
   muted?: boolean;
 }) {
   const { label, cards, selectedId, onSelect, dragOver, onDragOverStage, onDragLeaveStage, onDropCard, muted } = props;
+  const navigate = useNavigate(); // BF_PORTAL_BLOCK_v696_OUTREACH_CARD_v1
+  void onSelect;
   return (
     <div
       className={`flex-shrink-0 w-64 rounded-xl border p-2 ${
@@ -520,7 +523,7 @@ function BoardColumn(props: {
             key={c.id}
             draggable
             onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}
-            onClick={() => onSelect(c.id)}
+            onClick={() => navigate(`/silo/bi/crm/contacts/${c.id}`)}
             className={`cursor-pointer rounded-lg border p-2 text-sm bg-black/20 hover:bg-black/30 ${
               selectedId === c.id ? "border-white/50" : "border-card"
             }`}
