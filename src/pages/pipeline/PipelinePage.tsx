@@ -232,12 +232,12 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
         window.alert("No phone number on file for this applicant.");
         return;
       }
-      const { useDialer } = await import("@/dialer/store");
-      useDialer.getState().open({
+      const { startOutboundPstn } = await import("@/dialer/actions");
+      // v697: actually place the call (was only opening the panel, never dialing).
+      void startOutboundPstn(String(phone), {
         applicationId: card.id,
         applicationName: cardName,
         contactName: [a?.firstName, a?.lastName].filter(Boolean).join(" ") || cardName,
-        phone: String(phone),
         source: "pipeline",
       });
     } catch (err: any) {
