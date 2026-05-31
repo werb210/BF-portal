@@ -416,6 +416,10 @@ const ProfileSettings = () => {
           GET/PUT /api/o365/me/signature (server-side shipped in v635). */}
       <EmailSignaturePanel />
 
+      {/* BF_PORTAL_BLOCK_v694_COMMS — per-user booking URL.
+          GET/PUT /api/o365/me/booking-url (server v693). */}
+      <BookingUrlPanel />
+
       <div className="avatar-upload">
         <div>
           <p className="ui-field__label">Profile image</p>
@@ -569,6 +573,71 @@ function EmailSignaturePanel() {
         <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
           <Button type="button" onClick={() => void save()} disabled={!loaded || saving}>
             {saving ? "Saving…" : "Save signature"}
+          </Button>
+          {status && <span style={{ fontSize: 13, color: status === "Saved." ? "#0d9b6c" : "#b00020" }}>{status}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// BF_PORTAL_BLOCK_v694_COMMS — per-user booking URL editor.
+function BookingUrlPanel() {
+  const [bookingUrl, setBookingUrl] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get<{ bookingUrl?: string | null; booking_url?: string | null }>("/api/o365/me/booking-url")
+      .then((response) => {
+        if (!cancelled) {
+          setBookingUrl(response?.bookingUrl ?? response?.booking_url ?? "");
+          setLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function save() {
+    setSaving(true);
+    setStatus(null);
+    try {
+      await api.put("/api/o365/me/booking-url", { bookingUrl: bookingUrl.trim() || null });
+      setStatus("Saved.");
+    } catch (error) {
+      setStatus(getErrorMessage(error, "Save failed."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="settings-grid" style={{ marginTop: 16 }}>
+      <div style={{ width: "100%" }}>
+        <h3 style={{ margin: "0 0 8px 0" }}>Booking URL</h3>
+        <p style={{ margin: "0 0 8px 0", fontSize: 13, color: "#6b7280" }}>
+          Store your scheduling link so the Microsoft 365 composer can insert it into outbound messages.
+        </p>
+        <input
+          type="url"
+          value={bookingUrl}
+          onChange={(event) => setBookingUrl(event.target.value)}
+          disabled={!loaded}
+          aria-label="Booking URL"
+          placeholder={loaded ? "https://calendly.com/your-name/intro" : "Loading…"}
+          style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb" }}
+        />
+        <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+          <Button type="button" onClick={() => void save()} disabled={!loaded || saving}>
+            {saving ? "Saving…" : "Save booking URL"}
           </Button>
           {status && <span style={{ fontSize: 13, color: status === "Saved." ? "#0d9b6c" : "#b00020" }}>{status}</span>}
         </div>

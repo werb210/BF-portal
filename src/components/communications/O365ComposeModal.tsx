@@ -9,6 +9,22 @@ import { api } from "@/api";
 
 type MailboxOption = { value: string; label: string };
 type AppOption = { id: string; label: string };
+type ComposeTemplate = {
+  id: string;
+  name: string;
+  subject?: string | null;
+  body_text?: string | null;
+  body_html?: string | null;
+  category?: string | null;
+  is_active?: boolean | null;
+};
+type CollateralOption = {
+  id: string;
+  name: string;
+  url?: string | null;
+  description?: string | null;
+  is_active?: boolean | null;
+};
 type Attachment = { name: string; contentType: string; contentBytes: string; size: number };
 
 const MAX_ATTACH_BYTES = 3 * 1024 * 1024;
@@ -25,6 +41,17 @@ function fileToBase64(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+function normalizeItems<T extends { id: string }>(value: unknown): T[] {
+  const maybeItems = value && typeof value === "object" && "items" in value ? (value as { items?: unknown }).items : value;
+  return Array.isArray(maybeItems)
+    ? maybeItems.filter((item): item is T => Boolean(item && typeof item === "object" && typeof (item as T).id === "string"))
+    : [];
+}
+
+function stripHtml(html: string) {
+  return html.replace(/<br\s*\/?\s*>/gi, "\n").replace(/<[^>]+>/g, "").trim();
 }
 
 export default function O365ComposeModal({
@@ -53,6 +80,11 @@ export default function O365ComposeModal({
   const [composeBody, setComposeBody] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [linkAppId, setLinkAppId] = useState("");
+  const [templates, setTemplates] = useState<ComposeTemplate[]>([]); // v694
+  const [templateId, setTemplateId] = useState(""); // v694
+  const [bookingUrl, setBookingUrl] = useState(""); // v694
+  const [collateral, setCollateral] = useState<CollateralOption[]>([]); // v694
+  const [collateralIds, setCollateralIds] = useState<string[]>([]); // v694
   const [composeSending, setComposeSending] = useState(false);
   const [composeError, setComposeError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -68,8 +100,39 @@ export default function O365ComposeModal({
     setComposeBody("");
     setAttachments([]);
     setLinkAppId("");
+    setTemplateId("");
+    setCollateralIds([]);
     setComposeError(null);
   }, [open, initialTo, defaultFrom]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [templateResponse, collateralResponse, bookingResponse] = await Promise.allSettled([
+          api<unknown>("/api/o365/templates"),
+          api<unknown>("/api/o365/collateral"),
+          api<{ bookingUrl?: string | null; booking_url?: string | null }>("/api/o365/me/booking-url"),
+        ]);
+        if (cancelled) return;
+        if (templateResponse.status === "fulfilled") {
+          setTemplates(normalizeItems<ComposeTemplate>(templateResponse.value).filter((template) => template.is_active !== false));
+        }
+        if (collateralResponse.status === "fulfilled") {
+          setCollateral(normalizeItems<CollateralOption>(collateralResponse.value).filter((item) => item.is_active !== false));
+        }
+        if (bookingResponse.status === "fulfilled") {
+          setBookingUrl(bookingResponse.value?.bookingUrl ?? bookingResponse.value?.booking_url ?? "");
+        }
+      } catch {
+        // Individual Promise.allSettled results above keep compose usable if optional comms metadata fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   function parseAddrs(s: string): string[] {
     return s.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
@@ -111,6 +174,26 @@ export default function O365ComposeModal({
     setComposeBody((prev) => prev + (prev && !prev.endsWith("\n") ? "\n" : "") + url + "\n");
   }
 
+  function applyTemplate(nextTemplateId: string) {
+    setTemplateId(nextTemplateId);
+    const template = templates.find((item) => item.id === nextTemplateId);
+    if (!template) return;
+    if (template.subject) setComposeSubject(template.subject);
+    const body = template.body_text ?? (template.body_html ? stripHtml(template.body_html) : "");
+    if (body) {
+      setComposeBody((prev) => prev + (prev && !prev.endsWith("\n") ? "\n\n" : "") + body);
+    }
+  }
+
+  function insertBookingUrl() {
+    if (!bookingUrl) return;
+    setComposeBody((prev) => prev + (prev && !prev.endsWith("\n") ? "\n" : "") + bookingUrl + "\n");
+  }
+
+  function toggleCollateral(id: string) {
+    setCollateralIds((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]);
+  }
+
   async function sendComposed() {
     const to = parseAddrs(composeTo);
     const cc = parseAddrs(composeCc);
@@ -140,6 +223,7 @@ export default function O365ComposeModal({
           subject: composeSubject.trim(),
           body_html,
           attachments: attachments.map(({ name, contentType, contentBytes }) => ({ name, contentType, contentBytes })),
+          collateralIds,
         },
       });
       onClose();
@@ -206,6 +290,42 @@ export default function O365ComposeModal({
               ))}
             </select>
             <button type="button" onClick={insertAppLink} disabled={!linkAppId} style={{ padding: "6px 10px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: linkAppId ? "pointer" : "default", fontSize: 13 }}>Insert link</button>
+          </div>
+        )}
+
+        {/* BF_PORTAL_BLOCK_v694_COMMS — templates, booking URL, and collateral. */}
+        {(templates.length > 0 || bookingUrl || collateral.length > 0) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 10, border: "1px solid #e2e8f0", borderRadius: 6, background: "#f8fafc" }}>
+            {templates.length > 0 && (
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <select
+                  value={templateId}
+                  onChange={(e) => applyTemplate(e.target.value)}
+                  style={{ padding: 6, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 13, flex: 1, background: "#fff" }}
+                >
+                  <option value="">Insert template…</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>{template.name}{template.category ? ` · ${template.category}` : ""}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {bookingUrl && (
+              <button type="button" onClick={insertBookingUrl} style={{ alignSelf: "flex-start", padding: "6px 10px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: "pointer", fontSize: 13 }}>Insert booking URL</button>
+            )}
+            {collateral.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>Collateral to include</span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {collateral.map((item) => (
+                    <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#334155" }} title={item.description ?? item.url ?? undefined}>
+                      <input type="checkbox" checked={collateralIds.includes(item.id)} onChange={() => toggleCollateral(item.id)} />
+                      {item.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
