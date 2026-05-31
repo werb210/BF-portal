@@ -31,8 +31,11 @@ export default function CollateralSettings() {
   const load = useCallback(() => {
     api
       .get<CollateralAsset[]>("/api/collateral")
-      .then((rows) => {
-        setAssets(Array.isArray(rows) ? rows : []);
+      .then((res: any) => {
+        // BF_PORTAL_BLOCK_v697_COLLATERAL_LIST_FIX_v1 — server returns { items: [...] };
+        // unwrap it instead of treating the envelope as the array (list was always empty).
+        const list = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : Array.isArray(res?.data) ? res.data : [];
+        setAssets(list);
         setLoaded(true);
       })
       .catch((e) => {
@@ -101,7 +104,7 @@ export default function CollateralSettings() {
               style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4 }}
             />
           </label>
-          <input ref={fileRef} type="file" accept="application/pdf" style={{ fontSize: 13 }} />
+          <input ref={fileRef} type="file" accept="application/pdf" onChange={() => setError(null)} style={{ fontSize: 13 }} />
           <div>
             <Button type="button" onClick={() => void upload()} disabled={uploading}>
               {uploading ? "Uploading…" : "Upload"}
