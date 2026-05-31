@@ -57,6 +57,8 @@ function stripHtml(html: string) {
 export default function O365ComposeModal({
   open,
   initialTo = "",
+  initialSubject = "",
+  initialBody = "",
   fromOptions = [],
   defaultFrom = "",
   appOptions = [],
@@ -65,6 +67,8 @@ export default function O365ComposeModal({
 }: {
   open: boolean;
   initialTo?: string;
+  initialSubject?: string;
+  initialBody?: string;
   fromOptions?: MailboxOption[];
   defaultFrom?: string;
   appOptions?: AppOption[];
@@ -96,14 +100,14 @@ export default function O365ComposeModal({
     setComposeBcc("");
     setShowCcBcc(false);
     setComposeFrom(defaultFrom);
-    setComposeSubject("");
-    setComposeBody("");
+    setComposeSubject(initialSubject);
+    setComposeBody(initialBody);
     setAttachments([]);
     setLinkAppId("");
     setTemplateId("");
     setCollateralIds([]);
     setComposeError(null);
-  }, [open, initialTo, defaultFrom]);
+  }, [open, initialTo, initialSubject, initialBody, defaultFrom]);
 
   useEffect(() => {
     if (!open) return;
