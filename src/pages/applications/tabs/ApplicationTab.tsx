@@ -125,10 +125,11 @@ export default function ApplicationTab({ application }: Props) {
   const applicationId = String(application.id ?? "");
   function callClient() {
     if (!phone) return;
-    import("@/dialer/store").then(({ useDialer }) => {
-      useDialer.getState().open({
+    // v697: actually place the call (was only opening the panel, never dialing).
+    import("@/dialer/actions").then(({ startOutboundPstn }) => {
+      void startOutboundPstn(phone, {
         applicationId, applicationName: businessName,
-        contactName: applicantName, phone, source: "application",
+        contactName: applicantName, source: "application",
       });
     });
   }
