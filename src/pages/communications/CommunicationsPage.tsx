@@ -1127,6 +1127,12 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
 // ── Inbox tab ─────────────────────────────────────────────────────────────────
 function InboxTab() {
   const [composeOpen, setComposeOpen] = useState(false);
+  // v702: reply prefill (to / "Re:" subject / quoted body) for the open email.
+  const [replyCtx, setReplyCtx] = useState<{ to: string; subject: string; body: string }>({
+    to: "",
+    subject: "",
+    body: "",
+  });
 
   const [mailboxes, setMailboxes] = useState<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>({ mine: null, shared: [] });
   const [active, setActive] = useState<string>("");
@@ -1465,6 +1471,38 @@ function InboxTab() {
                 <span style={{ marginLeft: 8 }}>· {new Date(selected.receivedDateTime).toLocaleString()}</span>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                const addr = selected.from?.emailAddress?.address ?? "";
+                const subj = selected.subject ?? "";
+                const orig = selected.body?.contentType === "html"
+                  ? (selected.body?.content ?? "").replace(/<[^>]+>/g, " ")
+                  : (selected.body?.content ?? "");
+                setReplyCtx({
+                  to: addr,
+                  subject: /^re:/i.test(subj) ? subj : `Re: ${subj}`,
+                  body: `
+
+----- Original message -----
+${orig}`,
+                });
+                setComposeOpen(true);
+              }}
+              style={{
+                marginBottom: 16,
+                padding: "7px 16px",
+                border: "1px solid #0066cc",
+                borderRadius: 6,
+                background: "#fff",
+                color: "#0066cc",
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              Reply
+            </button>
             {selected.body?.contentType === "html"
               ? <div dangerouslySetInnerHTML={{ __html: selected.body.content }} />
               : <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{selected.body?.content ?? ""}</pre>}
@@ -1473,10 +1511,16 @@ function InboxTab() {
       </div>
       <O365ComposeModal
         open={composeOpen}
+        initialTo={replyCtx.to}
+        initialSubject={replyCtx.subject}
+        initialBody={replyCtx.body}
         fromOptions={mailboxOptions}
         defaultFrom={active}
         appOptions={appOptions}
-        onClose={() => setComposeOpen(false)}
+        onClose={() => {
+          setComposeOpen(false);
+          setReplyCtx({ to: "", subject: "", body: "" });
+        }}
       />
     </div>
   );
