@@ -318,16 +318,34 @@ export default function O365ComposeModal({
               <button type="button" onClick={insertBookingUrl} style={{ alignSelf: "flex-start", padding: "6px 10px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: "pointer", fontSize: 13 }}>Insert booking URL</button>
             )}
             {collateral.length > 0 && (
+              /* BF_PORTAL_BLOCK_v698_COLLATERAL_PULLDOWN_v1 — dropdown picker + removable chips (was checkboxes) */
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>Collateral to include</span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {collateral.map((item) => (
-                    <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#334155" }} title={item.description ?? item.url ?? undefined}>
-                      <input type="checkbox" checked={collateralIds.includes(item.id)} onChange={() => toggleCollateral(item.id)} />
-                      {item.name}
-                    </label>
+                <select
+                  value=""
+                  onChange={(e) => { const id = e.target.value; if (id) toggleCollateral(id); }}
+                  style={{ padding: 6, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 13, background: "#fff" }}
+                  aria-label="Add collateral"
+                >
+                  <option value="">Add collateral…</option>
+                  {collateral.filter((item) => !collateralIds.includes(item.id)).map((item) => (
+                    <option key={item.id} value={item.id}>{item.name}</option>
                   ))}
-                </div>
+                </select>
+                {collateralIds.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 }}>
+                    {collateralIds.map((id) => {
+                      const item = collateral.find((c) => c.id === id);
+                      if (!item) return null;
+                      return (
+                        <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#334155", background: "#e2e8f0", borderRadius: 12, padding: "2px 8px" }} title={item.description ?? item.url ?? undefined}>
+                          {item.name}
+                          <button type="button" onClick={() => toggleCollateral(id)} aria-label={`Remove ${item.name}`} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", padding: 0, lineHeight: 1, fontSize: 13 }}>✕</button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>

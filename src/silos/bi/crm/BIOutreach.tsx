@@ -8,7 +8,6 @@
 // action wired to v410.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/api";
-import { useNavigate } from "react-router-dom"; // BF_PORTAL_BLOCK_v696_OUTREACH_CARD_v1
 
 const STAGES = [
   "new",
@@ -432,6 +431,21 @@ export default function BIOutreach() {
       {loading && <p className="text-sm text-white/60">Loading…</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
 
+      {/* BF_PORTAL_BLOCK_v698_OUTREACH_PANEL_v1 — selected contact actions at top, above the board */}
+      {selected && (
+        <ContactPanel
+          contact={selected}
+          onClose={() => setSelectedId(null)}
+          onLog={(payload) => logActivity(selected.id, payload)}
+          onStatusChange={(s) => changeStatus(selected.id, s)}
+          bookingsUrl={profile?.bookings_url ?? null}
+          onInvite={(msg) => sendDemoInvite(selected.id, msg)}
+          sequences={sequences}
+          onEnroll={(seqId) => enrollInSequence(selected.id, seqId)}
+          onStartOnboarding={() => startOnboarding(selected.id)}
+        />
+      )}
+
       <div className="flex gap-3 overflow-x-auto pb-2">
         {STAGES.map((stage) => (
           <BoardColumn
@@ -465,19 +479,6 @@ export default function BIOutreach() {
         <p className="text-sm text-white/50">No contacts match these filters.</p>
       )}
 
-      {selected && (
-        <ContactPanel
-          contact={selected}
-          onClose={() => setSelectedId(null)}
-          onLog={(payload) => logActivity(selected.id, payload)}
-          onStatusChange={(s) => changeStatus(selected.id, s)}
-          bookingsUrl={profile?.bookings_url ?? null}
-          onInvite={(msg) => sendDemoInvite(selected.id, msg)}
-          sequences={sequences}
-          onEnroll={(seqId) => enrollInSequence(selected.id, seqId)}
-          onStartOnboarding={() => startOnboarding(selected.id)}
-        />
-      )}
     </div>
   );
 }
@@ -494,9 +495,7 @@ function BoardColumn(props: {
   onDropCard: (contactId: string) => void;
   muted?: boolean;
 }) {
-  const { label, cards, selectedId, onSelect, dragOver, onDragOverStage, onDragLeaveStage, onDropCard, muted } = props;
-  const navigate = useNavigate(); // BF_PORTAL_BLOCK_v696_OUTREACH_CARD_v1
-  void onSelect;
+  const { label, cards, selectedId, onSelect, dragOver, onDragOverStage, onDropCard, onDragLeaveStage, muted } = props; // BF_PORTAL_BLOCK_v698_OUTREACH_PANEL_v1 — inline selection restored
   return (
     <div
       className={`flex-shrink-0 w-64 rounded-xl border p-2 ${
@@ -523,7 +522,7 @@ function BoardColumn(props: {
             key={c.id}
             draggable
             onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}
-            onClick={() => navigate(`/silo/bi/crm/contacts/${c.id}`)}
+            onClick={() => onSelect(c.id)}
             className={`cursor-pointer rounded-lg border p-2 text-sm bg-black/20 hover:bg-black/30 ${
               selectedId === c.id ? "border-white/50" : "border-card"
             }`}

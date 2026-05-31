@@ -1020,6 +1020,7 @@ function ProductsPanel({
   // v190: flat columns — Lender name | Country | Min | Max | Active | Edit
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [countryFilter, setCountryFilter] = useState<"ALL" | "US" | "CA">("ALL"); // BF_PORTAL_BLOCK_v698_LP_COUNTRY_FILTER_v1
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["lender-products", "all"],
@@ -1030,7 +1031,17 @@ function ProductsPanel({
   const filtered = products.filter((p) => {
     const q = search.toLowerCase();
     const name = ((p as any).productName || (p as any).name || "").toLowerCase();
-    return name.includes(q);
+    if (!name.includes(q)) return false;
+    // BF_PORTAL_BLOCK_v698_LP_COUNTRY_FILTER_v1 — All / US / Canada (BOTH matches either)
+    if (countryFilter !== "ALL") {
+      const cv = String((p as any).country ?? "").trim().toUpperCase();
+      const isCA = cv === "CA" || cv === "CANADA";
+      const isUS = cv === "US" || cv === "USA" || cv === "UNITED STATES";
+      const isBoth = cv === "BOTH";
+      if (countryFilter === "CA" && !(isCA || isBoth)) return false;
+      if (countryFilter === "US" && !(isUS || isBoth)) return false;
+    }
+    return true;
   });
 
   const grouped = useMemo(() => {
@@ -1087,10 +1098,20 @@ function ProductsPanel({
             + Create Product
           </button>
         </div>
-        <input value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search products…"
-          style={{ width: "100%", padding: "7px 12px", border: "1px solid #d1d5db",
-            borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+        {/* BF_PORTAL_BLOCK_v698_LP_COUNTRY_FILTER_v1 — search + country filter */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search products…"
+            style={{ flex: 1, padding: "7px 12px", border: "1px solid #d1d5db",
+              borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+          <select value={countryFilter} onChange={(e) => setCountryFilter(e.target.value as "ALL" | "US" | "CA")}
+            aria-label="Filter products by country"
+            style={{ padding: "7px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, background: "#fff", outline: "none", cursor: "pointer" }}>
+            <option value="ALL">All countries</option>
+            <option value="US">United States</option>
+            <option value="CA">Canada</option>
+          </select>
+        </div>
       </div>
 
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>

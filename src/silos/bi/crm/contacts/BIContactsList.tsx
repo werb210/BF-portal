@@ -87,13 +87,14 @@ export default function BIContactsList() {
       )}
       <td style={tdStyle}><Link to={`/silo/bi/crm/contacts/${r.id}`} style={linkStyle}>{r.full_name || "(no name)"}</Link></td>
       <td style={tdStyle}>{r.company_name ?? "—"}</td>
+      <td style={tdStyle}>{r.tags && r.tags.length ? (<span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>{r.tags.map((t) => (<span key={t} style={tagChip}>{t}</span>))}</span>) : "—"}</td>{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
       <td style={tdStyle}>{r.outreach_status ? r.outreach_status.replace(/_/g, " ") : "—"}</td>
       <td style={tdStyle}>{r.outreach_owner_id ?? "—"}</td>
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
   )), [rows, isAdmin, selected]);
 
-  const colCount = isAdmin ? 6 : 5;
+  const colCount = isAdmin ? 7 : 6; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 (+Tags col)
 
   return (
     <div style={page} data-testid="bi-contacts-list">
@@ -113,6 +114,12 @@ export default function BIContactsList() {
         </div>
       )}
 
+      {/* BF_PORTAL_BLOCK_v698_CRM_PAGER_TOP_v1 — top pager */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginBottom: 12 }}>
+        <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage}</span>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+      </div>
       <table style={table}>
         <thead>
           <tr style={theadRow}>
@@ -123,6 +130,7 @@ export default function BIContactsList() {
             )}
             <Th onClick={() => onSort("name")}>Name{sortIndicator("name")}</Th>
             <Th onClick={() => onSort("company_name")}>Company{sortIndicator("company_name")}</Th>
+            <th style={thStyle}>Tags</th>{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
             <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>
             <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
@@ -164,3 +172,4 @@ const tdStyle: CSSProperties = { padding: 12, color: "#000" };
 const trStyle: CSSProperties = { borderBottom: "1px solid #eaf0f6" };
 const linkStyle: CSSProperties = { color: "#0091ae", textDecoration: "none" };
 const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "#7c98b6" };
+const tagChip: CSSProperties = { display: "inline-block", fontSize: 11, color: "#1e293b", background: "#e2e8f0", borderRadius: 10, padding: "1px 8px" }; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1
