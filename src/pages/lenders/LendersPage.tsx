@@ -1134,7 +1134,7 @@ function ProductsPanel({
                     rows.push(<tr key={`cat-${cat}`} style={{ background: "#f1f5f9" }}><td colSpan={6} style={{ padding: "8px 12px", fontWeight: 700, color: "#0f172a", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>{CATEGORY_LABELS[cat] ?? cat} <span style={{ color: "#64748b", fontWeight: 500, marginLeft: 6 }}>({items.length})</span></td></tr>);
                     for (const p of items) {
                       const ld = lenders.find((x) => x.id === (p.lenderId ?? p.lender_id));
-                      const country = ld?.address?.country === "CA" ? "Canada" : ld?.address?.country === "US" ? "USA" : ld?.address?.country ?? "—";
+                      const country = /* BF_PORTAL_BLOCK_v695_PRODUCT_COUNTRY_COLUMN_v1 */ (() => { const v = String((p as any).country ?? "").trim().toUpperCase(); if (v === "CA" || v === "CANADA") return "Canada"; if (v === "US" || v === "USA" || v === "UNITED STATES") return "United States"; if (v === "BOTH") return "Both"; return v ? String((p as any).country) : "—"; })();
                       rows.push(
                         <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                           <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 500 }}>{ld?.name ?? "—"}</td>
