@@ -49,6 +49,15 @@ function isDraftLikeApplication(card: Card): boolean {
   return invalidDate && (state === "received" || state === "draft" || state === "new");
 }
 
+// v696: every card must land in exactly one column, otherwise it inflates the
+// header count without rendering (the "34 counted, 1 shown" bug). Any card whose
+// pipeline_state isn't one of the known STAGES falls back to "Received", matching
+// the existing null-state default.
+function effectiveStage(card: Card): Stage {
+  const raw = (card.pipeline_state ?? "Received") as Stage;
+  return (STAGES as readonly string[]).includes(raw) ? raw : "Received";
+}
+
 
 function relativeTime(iso: string | null | undefined): string | null {
   if (!iso) return null;
@@ -155,7 +164,7 @@ export default function PipelinePage() {
       </div>
       <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 16, alignItems: "flex-start" }}>
         {STAGES.map((stage) => {
-          const col = cards.filter((c) => (c.pipeline_state ?? "Received") === stage);
+          const col = cards.filter((c) => effectiveStage(c) === stage);
           return (
             <div key={stage} style={{ minWidth: 260, maxWidth: 260, flexShrink: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
