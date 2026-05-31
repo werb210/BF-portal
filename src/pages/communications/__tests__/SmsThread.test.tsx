@@ -13,9 +13,12 @@ vi.mock("@/api", () => ({ api: apiMock, default: apiMock }));
 describe("Sms thread", () => {
   it("renders bubble when messages exist", async () => {
     Element.prototype.scrollIntoView = vi.fn();
-    apiMock.mockResolvedValueOnce({ conversations: [{ contact_id: "c-1", display_name: "Jordan", phone: "+1555", last_at: new Date().toISOString(), last_body: "hi" }] });
-    apiMock.mockResolvedValueOnce({ messages: [{ id: "m1", direction: "inbound", body: "hi", created_at: new Date().toISOString() }] });
-    apiMock.mockResolvedValueOnce({ messages: [{ id: "m1", direction: "inbound", body: "hi", created_at: new Date().toISOString() }] });
+    apiMock.mockImplementation((url: any) => {
+      const u = String(url ?? "");
+      if (u.includes("/thread")) return Promise.resolve({ messages: [{ id: "m1", direction: "inbound", body: "hi", created_at: new Date().toISOString() }] });
+      if (u.includes("/sms") || u.includes("messages-list")) return Promise.resolve({ conversations: [{ contact_id: "c-1", display_name: "Jordan", phone: "+1555", last_at: new Date().toISOString(), last_body: "hi" }] });
+      return Promise.resolve({});
+    });
     render(<CommunicationsPage />);
     fireEvent.click((await screen.findAllByText("Jordan"))[0]!);
     expect((await screen.findAllByText("hi")).length).toBeGreaterThan(0);
@@ -23,8 +26,12 @@ describe("Sms thread", () => {
 
   it("renders empty-state when no messages", async () => {
     Element.prototype.scrollIntoView = vi.fn();
-    apiMock.mockResolvedValueOnce({ conversations: [{ contact_id: "c-1", display_name: "Jordan", phone: "+1555", last_at: new Date().toISOString(), last_body: "hi" }] });
-    apiMock.mockResolvedValueOnce({ messages: [] });
+    apiMock.mockImplementation((url: any) => {
+      const u = String(url ?? "");
+      if (u.includes("/thread")) return Promise.resolve({ messages: [] });
+      if (u.includes("/sms") || u.includes("messages-list")) return Promise.resolve({ conversations: [{ contact_id: "c-1", display_name: "Jordan", phone: "+1555", last_at: new Date().toISOString(), last_body: "hi" }] });
+      return Promise.resolve({});
+    });
     render(<CommunicationsPage />);
     fireEvent.click((await screen.findAllByText("Jordan"))[0]!);
     await waitFor(() => expect(screen.getByText(/No messages yet/i)).toBeInTheDocument());

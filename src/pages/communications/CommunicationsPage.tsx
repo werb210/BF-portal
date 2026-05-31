@@ -289,7 +289,10 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     if (!stickToBottomRef.current) return;
     const el = scrollContainerRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    // Defer to the next frame: at layout-effect time the freshly rendered
+    // bubbles' height may not be final yet, so scrollHeight is stale.
+    const raf = requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+    return () => cancelAnimationFrame(raf);
   }, [threadMessages, selected?.id]);
 
   // When switching threads or first opening, force stick to bottom so the
@@ -856,7 +859,10 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   // Thread loader stays contact-keyed (v624).
   const [otherTyping, setOtherTyping] = useState(false);
   useLayoutEffect(() => {
-    threadEndRef.current?.scrollIntoView({ block: "end" });
+    const node = threadEndRef.current;
+    if (!node) return;
+    const raf = requestAnimationFrame(() => node.scrollIntoView({ block: "end" }));
+    return () => cancelAnimationFrame(raf);
   }, [messages, selected?.contactId]);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1596,6 +1602,54 @@ function IssuesTab() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function CommunicationsPage() {
   const [tab, setTab] = useState<Tab>("sms");
+  // BF_PORTAL_BLOCK_v641_TAB_COUNTS_v1 — per-sub-tab counters. Each source is
+  // the same endpoint that tab renders from. Fully guarded so a mocked/undefined
+  // api response can never throw during render or tests.
+  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; issues: number }>({
+    messages: 0,
+    sms: 0,
+    inbox: 0,
+    issues: 0,
+  });
+  useEffect(() => {
+    let cancelled = false;
+    const sumUnread = (r: any): number =>
+      Array.isArray(r?.conversations)
+        ? r.conversations.reduce((a: number, c: any) => a + (parseInt(c?.unread_count, 10) || 0), 0)
+        : 0;
+    const loadCounts = () => {
+      Promise.resolve()
+        .then(() => api<any>("/api/communications/messages-list", { params: { mode: "all" } }))
+        .then((r) => { if (!cancelled) setTabCounts((p) => ({ ...p, messages: sumUnread(r) })); })
+        .catch(() => undefined);
+      Promise.resolve()
+        .then(() => api<any>("/api/communications/sms", { params: { mode: "all" } }))
+        .then((r) => { if (!cancelled) setTabCounts((p) => ({ ...p, sms: sumUnread(r) })); })
+        .catch(() => undefined);
+      Promise.resolve()
+        .then(() => api<any>("/api/crm/inbox"))
+        .then((r) => {
+          const arr = Array.isArray(r) ? r : Array.isArray(r?.messages) ? r.messages : [];
+          const n = arr.filter((m: any) => m && (m.unread === true || m.read === false || (m.read_at == null && m.direction !== "outbound"))).length;
+          if (!cancelled) setTabCounts((p) => ({ ...p, inbox: n }));
+        })
+        .catch(() => undefined);
+      Promise.resolve()
+        .then(() => api<any>("/api/portal/issues"))
+        .then((r) => {
+          const arr = Array.isArray(r?.issues) ? r.issues : Array.isArray(r) ? r : [];
+          const n = arr.filter((i: any) => {
+            const st = String(i?.status ?? "open").toLowerCase();
+            return st !== "resolved" && st !== "closed";
+          }).length;
+          if (!cancelled) setTabCounts((p) => ({ ...p, issues: n }));
+        })
+        .catch(() => undefined);
+    };
+    loadCounts();
+    const id = setInterval(loadCounts, 15000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
   const [forcedSmsContact, setForcedSmsContact] = useState<Contact | null>(null);
 
   return (
@@ -1633,9 +1687,30 @@ export default function CommunicationsPage() {
               borderBottom: tab === t.id ? "2px solid #007aff" : "2px solid transparent",
               marginBottom: -2,
               transition: "all 0.1s",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
             }}
           >
             {t.label}
+            {tabCounts[t.id] > 0 && (
+              <span
+                style={{
+                  background: t.id === "issues" ? "#f59e0b" : "#ff3b30",
+                  color: "#fff",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  borderRadius: 999,
+                  padding: "0 6px",
+                  minWidth: 18,
+                  height: 18,
+                  lineHeight: "18px",
+                  textAlign: "center",
+                }}
+              >
+                {tabCounts[t.id]}
+              </span>
+            )}
           </button>
         ))}
       </div>
