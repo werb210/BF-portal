@@ -12,6 +12,23 @@ const WB_MANIFEST_MARKER = "__WB_MANIFEST";
 precacheAndRoute(self.__WB_MANIFEST || []);
 cleanupOutdatedCaches();
 
+// BF_PORTAL_SW_v710_NO_API_INTERCEPT — the SW must NEVER intercept /api/ calls.
+// A prior NetworkFirst("/api/") route cached status-0 (opaque/failed) responses
+// from the cross-origin API host; once a bad entry was cached it was replayed on
+// every call, breaking the whole portal with net::ERR_FAILED while the server was
+// healthy. install->skipWaiting + activate->clients.claim ensure this fixed SW
+// takes over immediately, and we purge the poisoned runtime cache for any client
+// still carrying it, so users self-heal on next load (no manual unregister).
+self.addEventListener("install", () => {
+  void self.skipWaiting();
+});
+self.addEventListener("activate", (event) => {
+  event.waitUntil((async () => {
+    await caches.delete("bf-portal-api");
+    await self.clients.claim();
+  })());
+});
+
 const navHandler = new NetworkFirst({
   cacheName: "bf-portal-navigations",
   networkTimeoutSeconds: 4,
@@ -21,17 +38,9 @@ registerRoute(new NavigationRoute(navHandler, {
   denylist: [/^\/api\//, /^\/_/, /\.\w+$/]
 }));
 
-registerRoute(
-  ({ url, request }) => request.method === "GET" && url.pathname.startsWith("/api/"),
-  new NetworkFirst({
-    cacheName: "bf-portal-api",
-    networkTimeoutSeconds: 6,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 300 })
-    ]
-  })
-);
+// BF_PORTAL_SW_v710_NO_API_INTERCEPT — API requests bypass the SW entirely and
+// always go straight to the network. They are authenticated + cross-origin and
+// must never be cached or replayed.
 
 registerRoute(
   ({ request }) => request.destination === "image",
