@@ -282,6 +282,10 @@ function CalendarContent() {
         `}</style>
         <div style={{ height: 700, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", gap: 8, padding: "0 0 8px 0" }}>
+            {/* BF_PORTAL_BLOCK_v712 — prev / today / next, scoped to the active view */}
+            <button onClick={() => setCurrentDate((d) => { const x = new Date(d); if (view === "month") x.setMonth(x.getMonth() - 1); else if (view === "year") x.setFullYear(x.getFullYear() - 1); else x.setDate(x.getDate() - (view === "work_week" ? 7 : 1)); return x; })} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: "#fff", color: "#0f172a", fontSize: 13, cursor: "pointer" }}>‹ Prev</button>
+            <button onClick={() => setCurrentDate(new Date())} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: "#fff", color: "#0f172a", fontSize: 13, cursor: "pointer" }}>Today</button>
+            <button onClick={() => setCurrentDate((d) => { const x = new Date(d); if (view === "month") x.setMonth(x.getMonth() + 1); else if (view === "year") x.setFullYear(x.getFullYear() + 1); else x.setDate(x.getDate() + (view === "work_week" ? 7 : 1)); return x; })} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: "#fff", color: "#0f172a", fontSize: 13, cursor: "pointer" }}>Next ›</button>
             <button onClick={() => setView("day")}    style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "day" ? "#0066cc" : "#fff", color: view === "day" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Day</button>
             <button onClick={() => setView("work_week")} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "work_week" ? "#0066cc" : "#fff", color: view === "work_week" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Week</button>
             <button onClick={() => setView("month")}  style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "month" ? "#0066cc" : "#fff", color: view === "month" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Month</button>
@@ -387,7 +391,22 @@ function CalendarContent() {
             {(selectedEvent.resource.teams_link || selectedEvent.resource.teamsLink) && (
               <p><strong>Teams Link:</strong> <a target="_blank" rel="noreferrer" href={selectedEvent.resource.teams_link ?? selectedEvent.resource.teamsLink}>Open meeting</a></p>
             )}
-            <p><strong>Notes:</strong> {selectedEvent.resource.notes ?? "—"}</p>
+            {/* BF_PORTAL_BLOCK_v712 — Teams invites stuff raw HTML into notes; strip tags to readable text. */}
+            <p style={{ whiteSpace: "pre-wrap", maxHeight: 200, overflow: "auto" }}><strong>Notes:</strong> {(() => {
+              const n = selectedEvent.resource.notes;
+              if (!n) return "—";
+              const text = String(n)
+                .replace(/<style[\s\S]*?<\/style>/gi, " ")
+                .replace(/<[^>]+>/g, " ")
+                .replace(/&nbsp;/g, " ")
+                .replace(/&amp;/g, "&")
+                .replace(/&lt;/g, "<")
+                .replace(/&gt;/g, ">")
+                .replace(/\s+/g, " ")
+                .trim();
+              if (!text) return "—";
+              return text.length > 600 ? text.slice(0, 600) + "…" : text;
+            })()}</p>
             <button onClick={() => setSelectedEvent(null)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}>
               Close
             </button>
@@ -615,7 +634,7 @@ function YearView({
         <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#0f172a" }}>{year}</h2>
         <button onClick={onNextYear} style={{ padding: "6px 12px", border: "1px solid #cbd6e2", borderRadius: 6, background: "#fff", cursor: "pointer" }}>{year + 1} →</button>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
         {months.map((m) => {
           const name = new Date(year, m, 1).toLocaleDateString(undefined, { month: "long" });
           return (
