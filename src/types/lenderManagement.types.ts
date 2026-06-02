@@ -47,7 +47,13 @@ export const DOCUMENT_TYPES = [
   "vendor_quote_invoice",
   "purchase_order_or_invoice_of_equipment",
   "identity_documents",
-  "net_worth_statement"
+  "net_worth_statement",
+  // BF_PORTAL_BLOCK_v303_COLLATERAL_DOCTYPES_v1 — Accord LOC doc types
+  "flinks_banking",
+  "cra_view_only_authorization",
+  "real_estate_collateral_disclosure",
+  "org_chart_beneficial_ownership",
+  "equipment_list"
 ] as const;
 
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
@@ -69,7 +75,13 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   vendor_quote_invoice: "Vendor quote / invoice",
   purchase_order_or_invoice_of_equipment: "Purchase Order or Invoice of Equipment",
   identity_documents: "Identity documents",
-  net_worth_statement: "Net worth statement"
+  net_worth_statement: "Net worth statement",
+  // BF_PORTAL_BLOCK_v303_COLLATERAL_DOCTYPES_v1 — Accord LOC doc types
+  flinks_banking: "Banking — Flinks view-only connection",
+  cra_view_only_authorization: "CRA Level-1 view-only authorization",
+  real_estate_collateral_disclosure: "Real estate collateral disclosure",
+  org_chart_beneficial_ownership: "Org chart / beneficial ownership",
+  equipment_list: "Equipment list"
 };
 
 export const RATE_TYPES = ["fixed", "variable", "factor"] as const;
