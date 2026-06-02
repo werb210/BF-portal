@@ -20,6 +20,8 @@ import { getErrorMessage } from "@/utils/errors";
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
 import { canWrite } from "@/auth/can";
+// BF_PORTAL_BLOCK_v303_COLLATERAL_DOCTYPES_v1
+import CollateralFacilitySection from "@/pages/applications/tabs/CollateralFacilitySection";
 
 type Props = { applicationId?: string | null };
 
@@ -184,6 +186,7 @@ export default function LendersTab({ applicationId }: Props) {
       <div style={styles.page}>
         <h2 style={styles.header}>Lenders</h2>
         <div style={styles.subhead}>Lender matching is locked until all required documents are accepted.</div>
+        <CollateralFacilitySection applicationId={id} />
         <div style={styles.lockedCard} data-testid="lenders-locked">
           <div style={styles.lockedTitle}>Outstanding required documents</div>
           <div style={styles.lockedHint}>Upload and accept these to unlock lender matching.</div>
@@ -208,6 +211,7 @@ export default function LendersTab({ applicationId }: Props) {
         {matches.length} match{matches.length === 1 ? "" : "es"}
         {envelope.computed_at ? ` · last computed ${new Date(envelope.computed_at).toLocaleString()}` : ""}
       </div>
+      <CollateralFacilitySection applicationId={id} />
 
       {isStale && (
         <div style={{ ...styles.banner, ...styles.bannerStale }}>
