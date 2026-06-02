@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import type { Scope } from "@/api/crm";
 import { NotePopup } from "./popups/NotePopup";
-import { EmailPopup } from "./popups/EmailPopup";
+import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { CallPopup } from "./popups/CallPopup";
 import { SmsPopup } from "./popups/SmsPopup";
 import { TaskPopup } from "./popups/TaskPopup";
@@ -51,7 +51,7 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, onCh
         <NotePopup scope={scope} onClose={close} onCreated={onChanged} />
       )}
       {open === "email" && (
-        <EmailPopup scope={scope} defaultTo={contactEmail} onClose={close} onSent={onChanged} />
+        <O365ComposeModal open initialTo={contactEmail ?? ""} onClose={close} onSent={onChanged} />
       )}
       {open === "call" && scope.kind !== "contact" && (
         <CallPopup scope={scope} defaultPhone={contactPhone} onClose={close} onLogged={onChanged} />
