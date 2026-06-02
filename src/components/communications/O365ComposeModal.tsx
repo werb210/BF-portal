@@ -89,6 +89,7 @@ export default function O365ComposeModal({
   const [bookingUrl, setBookingUrl] = useState(""); // v694
   const [collateral, setCollateral] = useState<CollateralOption[]>([]); // v694
   const [collateralIds, setCollateralIds] = useState<string[]>([]); // v694
+  const [selfMailboxes, setSelfMailboxes] = useState<MailboxOption[]>([]); // BF_PORTAL_BLOCK_v730 — used when caller passes no fromOptions
   const [composeSending, setComposeSending] = useState(false);
   const [composeError, setComposeError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -108,6 +109,27 @@ export default function O365ComposeModal({
     setCollateralIds([]);
     setComposeError(null);
   }, [open, initialTo, initialSubject, initialBody, defaultFrom]);
+
+  // BF_PORTAL_BLOCK_v730 — when the caller passes no mailboxes (CRM / BI "Email"
+  // actions), self-fetch them so the composer is fully drop-in everywhere and
+  // never shows "No mailbox available".
+  useEffect(() => {
+    if (!open || fromOptions.length > 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api<{ mine?: { address: string; display_name?: string } | null; shared?: { address: string; display_name?: string }[] }>("/api/crm/shared-mailboxes");
+        if (cancelled) return;
+        const opts: MailboxOption[] = [];
+        if (r?.mine?.address) opts.push({ value: r.mine.address, label: `${r.mine.display_name || r.mine.address} (mine)` });
+        for (const s of r?.shared ?? []) if (s?.address) opts.push({ value: s.address, label: s.display_name || s.address });
+        setSelfMailboxes(opts);
+        const firstMailbox = opts[0]?.value;
+        if (firstMailbox) setComposeFrom((curr) => curr || firstMailbox);
+      } catch { /* leave empty -> "No mailbox available" */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open, fromOptions.length]);
 
   useEffect(() => {
     if (!open) return;
@@ -213,10 +235,17 @@ export default function O365ComposeModal({
     setComposeSending(true);
     setComposeError(null);
     try {
-      const body_html = composeBody
+      let body_html = composeBody
         .split("\n")
         .map((line) => line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
         .join("<br/>");
+      // BF_PORTAL_BLOCK_v730 — body is escaped above, so swap the (escaped)
+      // booking URL for a real styled anchor (the "Insert booking button").
+      if (bookingUrl) {
+        const escapedUrl = bookingUrl.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+        body_html = body_html.split(escapedUrl).join(bookingButton);
+      }
       await api("/api/o365/mail/send", {
         method: "POST",
         body: {
@@ -260,10 +289,11 @@ export default function O365ComposeModal({
           onChange={(e) => setComposeFrom(e.target.value)}
           style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14, background: "#fff" }}
         >
-          {fromOptions.map((option) => (
+          {/* BF_PORTAL_BLOCK_v730 — fall back to self-fetched mailboxes */}
+          {(fromOptions.length ? fromOptions : selfMailboxes).map((option) => (
             <option key={option.value || "self"} value={option.value}>{option.label}</option>
           ))}
-          {fromOptions.length === 0 && <option value="">No mailbox available</option>}
+          {fromOptions.length === 0 && selfMailboxes.length === 0 && <option value="">No mailbox available</option>}
         </select>
 
         <input type="text" placeholder="To (comma-separated)" value={composeTo} onChange={(e) => setComposeTo(e.target.value)} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14 }} />
@@ -315,7 +345,7 @@ export default function O365ComposeModal({
               </div>
             )}
             {bookingUrl && (
-              <button type="button" onClick={insertBookingUrl} style={{ alignSelf: "flex-start", padding: "6px 10px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: "pointer", fontSize: 13 }}>Insert booking URL</button>
+              <button type="button" onClick={insertBookingUrl} style={{ alignSelf: "flex-start", padding: "6px 10px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: "pointer", fontSize: 13 }}>Insert booking button</button>
             )}
             {collateral.length > 0 && (
               /* BF_PORTAL_BLOCK_v698_COLLATERAL_PULLDOWN_v1 — dropdown picker + removable chips (was checkboxes) */
