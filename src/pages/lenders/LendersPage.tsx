@@ -436,6 +436,10 @@ function CreateProductModal({
     { label: "Business plan / projections", defaultStage: 2 as 1 | 2 },
     { label: "Lease agreement (if applicable)", defaultStage: 2 as 1 | 2 },
     { label: "Debt stack", defaultStage: 2 as 1 | 2, hasForm: true },
+    // BF_PORTAL_BLOCK_v306_STAGE2_DOCS_v1 — new Accord stage-2 docs (CMP forms)
+    { label: "Banking connection (Flinks view-only)", defaultStage: 2 as 1 | 2, hasForm: true },
+    { label: "CRA view-only access", defaultStage: 2 as 1 | 2, hasForm: true },
+    { label: "Real estate collateral", defaultStage: 2 as 1 | 2, hasForm: true },
   ].map((d) => ({ key: d.label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label: d.label, defaultStage: d.defaultStage, hasForm: (d as any).hasForm ?? false }));
   const conditionalTypes = [
     "Budget",
