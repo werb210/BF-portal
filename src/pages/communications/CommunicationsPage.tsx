@@ -1698,7 +1698,11 @@ export default function CommunicationsPage() {
         .then(() => api<any>("/api/crm/inbox"))
         .then((r) => {
           const arr = Array.isArray(r) ? r : Array.isArray(r?.messages) ? r.messages : [];
-          const n = arr.filter((m: any) => m && (m.unread === true || m.read === false || (m.read_at == null && m.direction !== "outbound"))).length;
+          // BF_PORTAL_BLOCK_v713 — inbox messages carry isRead (from Graph),
+          // not unread/read/read_at/direction. The old last clause was always
+          // true, so the badge counted EVERY email and never cleared. Count
+          // only true-unread (isRead === false).
+          const n = arr.filter((m: any) => m && m.isRead === false).length;
           if (!cancelled) setTabCounts((p) => ({ ...p, inbox: n }));
         })
         .catch(() => undefined);
