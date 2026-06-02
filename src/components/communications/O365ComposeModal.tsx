@@ -64,6 +64,7 @@ export default function O365ComposeModal({
   appOptions = [],
   onClose,
   onSent,
+  logScope,
 }: {
   open: boolean;
   initialTo?: string;
@@ -74,6 +75,7 @@ export default function O365ComposeModal({
   appOptions?: AppOption[];
   onClose: () => void;
   onSent?: () => void;
+  logScope?: { kind: "contact" | "company"; id: string }; // BF_PORTAL_BLOCK_v734
 }) {
   const [composeTo, setComposeTo] = useState(initialTo);
   const [composeCc, setComposeCc] = useState("");
@@ -258,6 +260,8 @@ export default function O365ComposeModal({
           bcc,
           subject: composeSubject.trim(),
           body_html,
+          log_contact_id: logScope?.kind === "contact" ? logScope.id : undefined, // BF_PORTAL_BLOCK_v734
+          log_company_id: logScope?.kind === "company" ? logScope.id : undefined,
           attachments: attachments.map(({ name, contentType, contentBytes }) => ({ name, contentType, contentBytes })),
           collateralIds,
         },
