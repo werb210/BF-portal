@@ -2,6 +2,8 @@
 import { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { api, apiForSilo } from "@/api";
+import { getAuthToken } from "@/lib/authToken";
+import { __apiBaseUrls } from "@/config/api";
 import { useAuth } from "@/hooks/useAuth";
 // BF_PORTAL_BLOCK_1_22_BI_DOC_UI — required-doc catalog.
 import { fetchRequiredDocs, type BiRequiredDoc } from "@/silos/bi/api/biRequiredDocs";
@@ -121,16 +123,26 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
     }
   }
 
+  // BF_PORTAL_BLOCK_v711 — the /download endpoint sits behind requireAuth, so
+  // a bare window.open (no Authorization header) returned 401. Fetch with the
+  // bearer token and open the result as a blob URL instead.
   async function view(docId: string) {
     try {
-      const r = await api<{ url?: string }>(`/api/v1/bi/documents/${docId}/file-url`);
-      if (r.url) {
-        window.open(r.url, "_blank", "noopener,noreferrer");
+      const token = getAuthToken();
+      const base = __apiBaseUrls.bi;
+      const resp = await fetch(`${base}/api/v1/bi/documents/${docId}/download`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) {
+        toast.error(`Could not open document (${resp.status})`);
         return;
       }
-      window.open(`/api/v1/bi/documents/${docId}/file-url`, "_blank", "noopener,noreferrer");
-    } catch {
-      window.open(`/api/v1/bi/documents/${docId}/file-url`, "_blank", "noopener,noreferrer");
+      const blob = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not open document");
     }
   }
 

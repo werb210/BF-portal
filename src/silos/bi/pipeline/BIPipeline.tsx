@@ -257,6 +257,24 @@ export default function BIPipeline() {
           Show demo applications
         </label>
         <button onClick={reset} className="rounded border border-card px-3 py-1 text-xs text-white/70 hover:text-white">Reset filters</button>
+        {/* BF_PORTAL_BLOCK_v711 — admin-only hard-delete of demo/test apps. */}
+        {String((user as { role?: string } | null)?.role ?? "").toLowerCase() === "admin" && (
+          <button
+            onClick={async () => {
+              if (!window.confirm("Hard-delete ALL demo/test applications? This cannot be undone. Lenders are not affected.")) return;
+              try {
+                const r = await api<{ deleted?: number }>("/api/v1/bi/admin/apps/purge-demo", { method: "POST" });
+                window.alert(`Deleted ${r?.deleted ?? 0} demo/test application(s).`);
+                await load();
+              } catch (e) {
+                window.alert(e instanceof Error ? e.message : "Purge failed");
+              }
+            }}
+            className="rounded border border-red-500/40 px-3 py-1 text-xs text-red-200 hover:bg-red-500/10"
+          >
+            Purge demo/test
+          </button>
+        )}
       </div>
 
       {/* BF_PORTAL_BLOCK_78_PGI_VS_STAFF_STAGE_LABELS_v1 -

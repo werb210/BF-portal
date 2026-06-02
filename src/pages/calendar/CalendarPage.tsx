@@ -225,8 +225,11 @@ function CalendarContent() {
       .map((event) => ({
         id: event.id,
         title: event.title ?? "Untitled",
-        start: new Date(event.start as string),
-        end: new Date(event.end as string),
+        // BF_PORTAL_BLOCK_v711 — Graph returns UTC wall-clock without a 'Z';
+        // new Date() then mis-reads it as local. Append 'Z' when no tz so the
+        // browser converts UTC -> local. Already-zoned strings pass through.
+        start: new Date(/Z$|[+-]\d{2}:?\d{2}$/.test(String(event.start)) ? String(event.start) : String(event.start).replace(/\.\d+$/, "") + "Z"),
+        end: new Date(/Z$|[+-]\d{2}:?\d{2}$/.test(String(event.end)) ? String(event.end) : String(event.end).replace(/\.\d+$/, "") + "Z"),
         resource: { ...event, source: "calendar" as const },
       }));
   }, [eventsQuery.data]);
@@ -376,7 +379,7 @@ function CalendarContent() {
 
       {selectedEvent && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
-          <div style={{ width: "min(560px, 90vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
+          <div style={{ width: "min(560px, 90vw)", background: "#fff", color: "#0f172a", borderRadius: 12, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>{selectedEvent.title}</h3>
             <p><strong>Date/Time:</strong> {selectedEvent.start.toLocaleString()} - {selectedEvent.end.toLocaleString()}</p>
             <p><strong>Attendees:</strong> {Array.isArray(selectedEvent.resource.attendees) ? selectedEvent.resource.attendees.join(", ") : (selectedEvent.resource.attendees ?? "—")}</p>
@@ -393,7 +396,7 @@ function CalendarContent() {
       )}
       {selectedTask && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "grid", placeItems: "center", zIndex: 1000 }}>
-          <div style={{ background: "#fff", borderRadius: 10, padding: 16, width: "min(520px, 92vw)" }}>
+          <div style={{ background: "#fff", color: "#0f172a", borderRadius: 10, padding: 16, width: "min(520px, 92vw)" }}>
             <h3 style={{ marginTop: 0 }}>{selectedTask.title ?? "Untitled task"}</h3>
             <p><strong>Notes:</strong> {selectedTask.notes ?? "-"}</p>
             <p><strong>Due date:</strong> {(selectedTask.dueAt ?? selectedTask.due_date ?? selectedTask.dueDate) ? new Date(selectedTask.dueAt ?? selectedTask.due_date ?? selectedTask.dueDate ?? "").toLocaleString() : "-"}</p>
