@@ -121,7 +121,10 @@ export default function O365ComposeModal({
         const r = await api<{ mine?: { address: string; display_name?: string } | null; shared?: { address: string; display_name?: string }[] }>("/api/crm/shared-mailboxes");
         if (cancelled) return;
         const opts: MailboxOption[] = [];
-        if (r?.mine?.address) opts.push({ value: r.mine.address, label: `${r.mine.display_name || r.mine.address} (mine)` });
+        // BF_PORTAL_BLOCK_v732 — "" = send as self (/me/sendMail). Sending the
+        // literal address made the server treat it as a shared-mailbox send and
+        // 403 with from_not_allowed when it didn't match the Graph /me mailbox.
+        if (r?.mine?.address) opts.push({ value: "", label: `${r.mine.display_name || r.mine.address} (mine)` });
         for (const s of r?.shared ?? []) if (s?.address) opts.push({ value: s.address, label: s.display_name || s.address });
         setSelfMailboxes(opts);
         const firstMailbox = opts[0]?.value;
