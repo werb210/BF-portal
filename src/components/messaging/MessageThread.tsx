@@ -104,6 +104,11 @@ export default function MessageThread({ messages, onHashtagClick, emptyText }: P
                         <a key={i} href={a.dataUrl} target="_blank" rel="noreferrer">
                           <img src={a.dataUrl} alt={a.name} style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, display: "block" }} />
                         </a>
+                      ) : (a.contentType ?? "").startsWith("audio/") ? (
+                        <div key={i} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          <span style={{ fontSize: 12, opacity: 0.8 }}>🎙 {a.name}</span>
+                          <audio controls preload="none" src={a.dataUrl} style={{ maxWidth: 260 }} />
+                        </div>
                       ) : (
                         <a key={i} href={a.dataUrl} download={a.name} style={{ fontSize: 13, color: "inherit", textDecoration: "underline" }}>
                           📎 {a.name}

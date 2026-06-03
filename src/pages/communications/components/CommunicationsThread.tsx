@@ -24,6 +24,9 @@ export type CommRow = {
   sentAt?: string | null;
   sent_at?: string | null;
   attachments?: Array<{ name: string; contentType?: string | null; dataUrl: string }> | null;
+  type?: string | null;
+  mediaUrl?: string | null;
+  mediaDurationSeconds?: number | null;
 };
 
 type Props = {
@@ -38,6 +41,16 @@ function pickBody(r: CommRow): string {
 
 function pickCreatedAt(r: CommRow): string {
   return String(r.createdAt ?? r.created_at ?? r.sentAt ?? r.sent_at ?? new Date().toISOString());
+}
+
+function pickAttachments(r: CommRow) {
+  const base = r.attachments ? [...r.attachments] : [];
+  if (r.type === "voicemail" && r.mediaUrl) {
+    const secs = r.mediaDurationSeconds;
+    const label = secs ? `Voicemail (${Math.round(secs)}s)` : "Voicemail";
+    base.unshift({ name: label, contentType: "audio/mpeg", dataUrl: r.mediaUrl });
+  }
+  return base.length ? base : undefined;
 }
 
 function deriveRole(r: CommRow, currentUserId: string | null): "self" | "other" {
@@ -68,7 +81,7 @@ export default function CommunicationsThread({ messages, emptyText, onHashtagCli
         authorName: r.authorName ?? r.author ?? undefined,
         body: pickBody(r),
         createdAt: pickCreatedAt(r),
-        attachments: r.attachments ?? undefined,
+        attachments: pickAttachments(r),
       })),
     [messages, currentUserId]
   );

@@ -1,7 +1,7 @@
 import { http } from "@/api";
 import type { Contact } from "@/api/crm";
 
-export type CommunicationType = "chat" | "sms" | "human" | "issue" | "system" | "credit_readiness" | "contact_form";
+export type CommunicationType = "chat" | "sms" | "human" | "issue" | "system" | "credit_readiness" | "contact_form" | "voicemail";
 
 export type CommunicationMessage = {
   id: string;
@@ -9,6 +9,8 @@ export type CommunicationMessage = {
   type: CommunicationType;
   direction: "in" | "out" | "system";
   message: string;
+  mediaUrl?: string;
+  mediaDurationSeconds?: number;
   createdAt: string;
 };
 
