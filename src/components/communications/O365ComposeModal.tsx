@@ -27,6 +27,7 @@ type CollateralOption = {
   is_active?: boolean | null;
 };
 type Attachment = { name: string; contentType: string; contentBytes: string; size: number };
+type OutlookDraftSummary = { id: string; subject: string; to: string[] };
 
 const MAX_ATTACH_BYTES = 3 * 1024 * 1024;
 const MAX_ATTACH_COUNT = 10;
@@ -113,6 +114,10 @@ export default function O365ComposeModal({
   const [requestReadReceipt, setRequestReadReceipt] = useState(false);
   const [requestDeliveryReceipt, setRequestDeliveryReceipt] = useState(false);
   const [importance, setImportance] = useState<"low" | "normal" | "high">("normal");
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<OutlookDraftSummary[]>([]);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -129,12 +134,38 @@ export default function O365ComposeModal({
     setRequestReadReceipt(false);
     setRequestDeliveryReceipt(false);
     setImportance("normal");
+    setDraftId(null);
+    setDraftSavedAt(null);
     setAttachments([]);
     setLinkAppId("");
     setTemplateId("");
     setCollateralIds([]);
     setComposeError(null);
   }, [open, initialTo, initialSubject, initialBody, defaultFrom]);
+
+  // Load the user's recent Outlook drafts so they can be reopened here.
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    (async () => {
+      try {
+        const r: any = await api<any>("/api/o365/mail/drafts");
+        const items = r?.items ?? r?.data?.items ?? [];
+        if (alive) {
+          setDrafts(Array.isArray(items)
+            ? items
+              .filter((item: any) => item && typeof item === "object" && typeof item.id === "string")
+              .map((item: any) => ({
+                id: item.id,
+                subject: typeof item.subject === "string" && item.subject.trim() ? item.subject : "(no subject)",
+                to: normalizeDraftRecipients(item.to ?? item.toRecipients),
+              }))
+            : []);
+        }
+      } catch { /* drafts list is best-effort */ }
+    })();
+    return () => { alive = false; };
+  }, [open]);
 
   // BF_PORTAL_BLOCK_v730 — when the caller passes no mailboxes (CRM / BI "Email"
   // actions), self-fetch them so the composer is fully drop-in everywhere and
@@ -260,6 +291,89 @@ export default function O365ComposeModal({
     insertHtmlAtCursor(btn + "<br/>");
   }
 
+  async function saveDraft() {
+    setSavingDraft(true);
+    setComposeError(null);
+    try {
+      const body_html = bodyRef.current?.innerHTML ?? composeBody;
+      const r: any = await api<any>("/api/o365/mail/draft", {
+        method: "POST",
+        body: {
+          draftId: draftId || undefined,
+          from: composeFrom || undefined,
+          to: parseAddrs(composeTo),
+          cc: parseAddrs(composeCc),
+          bcc: parseAddrs(composeBcc),
+          subject: composeSubject,
+          body_html,
+          importance,
+          isReadReceiptRequested: requestReadReceipt,
+          isDeliveryReceiptRequested: requestDeliveryReceipt,
+        },
+      });
+      const id = (r?.id ?? r?.data?.id) || null;
+      if (id) {
+        setDraftId(id);
+        setDrafts((prev) => {
+          const summary = { id, subject: composeSubject.trim() || "(no subject)", to: parseAddrs(composeTo) };
+          const rest = prev.filter((item) => item.id !== id);
+          return [summary, ...rest];
+        });
+      }
+      setDraftSavedAt(Date.now());
+    } catch (e: any) {
+      setComposeError(e?.message ?? "Couldn't save draft.");
+    } finally {
+      setSavingDraft(false);
+    }
+  }
+
+  function normalizeDraftRecipients(value: any): string[] {
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => typeof item === "string" ? item : item?.emailAddress?.address ?? item?.address)
+        .filter((item): item is string => typeof item === "string" && Boolean(item.trim()));
+    }
+    if (typeof value === "string") return parseAddrs(value);
+    return [];
+  }
+
+  async function loadDraft(nextDraftId: string) {
+    if (!nextDraftId) return;
+    setComposeError(null);
+    try {
+      const r: any = await api<any>(`/api/o365/mail/draft/${encodeURIComponent(nextDraftId)}`);
+      const draft = r?.item ?? r?.draft ?? r?.data?.item ?? r?.data ?? r;
+      const to = normalizeDraftRecipients(draft?.to ?? draft?.toRecipients);
+      const cc = normalizeDraftRecipients(draft?.cc ?? draft?.ccRecipients);
+      const bcc = normalizeDraftRecipients(draft?.bcc ?? draft?.bccRecipients);
+      const html = draft?.body_html ?? draft?.bodyHtml ?? draft?.body?.content ?? draft?.body_text ?? draft?.bodyPreview ?? "";
+      setDraftId(nextDraftId);
+      setComposeTo(to.join(", "));
+      setComposeCc(cc.join(", "));
+      setComposeBcc(bcc.join(", "));
+      setShowCcBcc(cc.length > 0 || bcc.length > 0);
+      const fromAddress = typeof draft?.from === "string" ? draft.from : draft?.from?.emailAddress?.address ?? draft?.from?.address;
+      if (fromAddress) setComposeFrom(fromAddress);
+      setComposeSubject(draft?.subject ?? "");
+      setComposeBody(html);
+      if (bodyRef.current) bodyRef.current.innerHTML = html;
+      if (draft?.importance === "low" || draft?.importance === "normal" || draft?.importance === "high") setImportance(draft.importance);
+      if (typeof draft?.isReadReceiptRequested === "boolean") setRequestReadReceipt(draft.isReadReceiptRequested);
+      if (typeof draft?.isDeliveryReceiptRequested === "boolean") setRequestDeliveryReceipt(draft.isDeliveryReceiptRequested);
+      setDraftSavedAt(null);
+    } catch (e: any) {
+      setComposeError(e?.message ?? "Couldn't open draft.");
+    }
+  }
+
+  async function discardDraft(id: string) {
+    try {
+      await api(`/api/o365/mail/draft/${encodeURIComponent(id)}`, { method: "DELETE" });
+      setDrafts((prev) => prev.filter((item) => item.id !== id));
+    } catch { /* draft cleanup is best-effort after send */ }
+  }
+
   function toggleCollateral(id: string) {
     setCollateralIds((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]);
   }
@@ -329,6 +443,7 @@ export default function O365ComposeModal({
           collateralIds,
         },
       });
+      if (draftId) await discardDraft(draftId);
       onClose();
       onSent?.();
     } catch (e: any) {
@@ -345,7 +460,7 @@ export default function O365ComposeModal({
 
   return (
     <div
-      onClick={() => !composeSending && onClose()}
+      onClick={() => !composeSending && !savingDraft && onClose()}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
     >
       <div
@@ -353,6 +468,23 @@ export default function O365ComposeModal({
         style={{ background: "#fff", borderRadius: 8, padding: 20, width: "min(680px, 92vw)", maxHeight: "92vh", overflow: "auto", color: "#000", display: "flex", flexDirection: "column", gap: 10 }}
       >
         <h3 style={{ margin: 0, fontSize: 18 }}>New message</h3>
+
+        {drafts.length > 0 && (
+          <select
+            value=""
+            onChange={(e) => { const id = e.target.value; if (id) void loadDraft(id); }}
+            disabled={composeSending || savingDraft}
+            style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14, background: "#fff" }}
+            aria-label="Open a saved draft"
+          >
+            <option value="">Open a saved draft…</option>
+            {drafts.map((draft) => (
+              <option key={draft.id} value={draft.id}>
+                {(draft.subject || "(no subject)")}{draft.to?.length ? ` — ${draft.to.join(", ")}` : ""}
+              </option>
+            ))}
+          </select>
+        )}
 
         <select
           value={composeFrom}
@@ -517,9 +649,16 @@ export default function O365ComposeModal({
 
         {composeError && <div style={{ color: "#b00020", fontSize: 13 }}>{composeError}</div>}
 
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button type="button" onClick={onClose} disabled={composeSending} style={{ padding: "8px 14px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: composeSending ? "default" : "pointer" }}>Cancel</button>
-          <button type="button" onClick={() => void sendComposed()} disabled={composeSending} style={{ padding: "8px 14px", border: "none", borderRadius: 4, background: "#0066cc", color: "#fff", fontWeight: 600, cursor: composeSending ? "default" : "pointer" }}>{composeSending ? "Sending..." : "Send"}</button>
+        <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontSize: 12, color: "#64748b" }}>
+            {draftId ? "Outlook draft linked" : ""}
+            {draftSavedAt ? ` · Saved ${new Date(draftSavedAt).toLocaleTimeString()}` : ""}
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button type="button" onClick={onClose} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: composeSending || savingDraft ? "default" : "pointer" }}>Cancel</button>
+            <button type="button" onClick={() => void saveDraft()} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: composeSending || savingDraft ? "default" : "pointer" }}>{savingDraft ? "Saving..." : "Save draft"}</button>
+            <button type="button" onClick={() => void sendComposed()} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "none", borderRadius: 4, background: "#0066cc", color: "#fff", fontWeight: 600, cursor: composeSending || savingDraft ? "default" : "pointer" }}>{composeSending ? "Sending..." : "Send"}</button>
+          </div>
         </div>
       </div>
     </div>
