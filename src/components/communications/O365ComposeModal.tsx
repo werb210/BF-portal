@@ -254,6 +254,29 @@ export default function O365ComposeModal({
         // No booking page configured — drop the token so it never sends literally.
         body_html = body_html.split("{{meeting_link}}").join("");
       }
+      // Refresh the server's O365 token right before sending. MSAL refreshes
+      // silently (no re-login) for the SSO session; the server can't refresh on
+      // its own because a browser SPA never receives a refresh token, so the
+      // stored access token would otherwise die ~hourly and Graph would reject
+      // the send (graph_send_failed).
+      try {
+        const { msalClient } = await import("@/auth/msal");
+        const accounts = msalClient.getAllAccounts?.() ?? [];
+        if (accounts.length) {
+          const scopes = ["User.Read", "Mail.Send", "Mail.ReadWrite", "Mail.Send.Shared", "Calendars.ReadWrite", "Tasks.ReadWrite", "offline_access"];
+          const result = await msalClient.acquireTokenSilent({ scopes, account: accounts[0] });
+          if (result?.accessToken) {
+            await api("/api/users/me/o365-tokens", {
+              method: "POST",
+              body: {
+                access_token: result.accessToken,
+                expires_in: result.expiresOn ? Math.max(0, Math.floor((result.expiresOn.getTime() - Date.now()) / 1000)) : null,
+                account_id: accounts[0]?.homeAccountId ?? null,
+              },
+            });
+          }
+        }
+      } catch { /* best-effort: if silent refresh fails the send will surface a clear error */ }
       await api("/api/o365/mail/send", {
         method: "POST",
         body: {
