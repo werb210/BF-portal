@@ -12,6 +12,9 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
+import { NotePopup } from "@/components/crm/popups/NotePopup";
+import { TaskPopup } from "@/components/crm/popups/TaskPopup";
+import { MeetingPopup } from "@/components/crm/popups/MeetingPopup";
 // BF_PORTAL_BLOCK_v312_BI_CRM_ALIGN_v1
 import { startOutboundPstn } from "@/dialer/actions";
 import toast from "react-hot-toast";
@@ -192,6 +195,7 @@ export default function BIContactDetailPage() {
   const [smsBody, setSmsBody] = useState("");
   const [smsSending, setSmsSending] = useState(false);
   const [emailComposeOpen, setEmailComposeOpen] = useState(false);
+  const [actionPopup, setActionPopup] = useState<"note" | "task" | "meeting" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [form, setForm] = useState<{
     full_name: string;
@@ -472,6 +476,9 @@ export default function BIContactDetailPage() {
               Email
             </button>
             <button type="button" onClick={() => setComposing((v) => !v)} disabled={!contact.phone_e164} title={contact.phone_e164 ? "Send a free-text SMS" : "Contact has no phone number"} style={actionBtn} data-testid="bi-contact-sms-button">{composing ? "Cancel SMS" : "Send SMS"}</button>
+            <button type="button" onClick={() => setActionPopup("note")} style={actionBtn} data-testid="bi-contact-note-button">Note</button>
+            <button type="button" onClick={() => setActionPopup("task")} style={actionBtn} data-testid="bi-contact-task-button">Task</button>
+            <button type="button" onClick={() => setActionPopup("meeting")} style={actionBtn} data-testid="bi-contact-meeting-button">Meeting</button>
           </div>
         )}
         {actionError && <div style={{ marginTop: 8, color: "#b00020", fontSize: 12 }} role="status">{actionError}</div>}
@@ -601,6 +608,15 @@ export default function BIContactDetailPage() {
         onClose={() => setEmailComposeOpen(false)}
         onSent={() => { toast.success("Sent"); refresh(); }}
       />
+      {actionPopup === "note" && (
+        <NotePopup scope={{ kind: "contact", id: contact.id }} onClose={() => setActionPopup(null)} onCreated={() => { setActionPopup(null); refresh(); }} />
+      )}
+      {actionPopup === "task" && (
+        <TaskPopup scope={{ kind: "contact", id: contact.id }} onClose={() => setActionPopup(null)} onCreated={() => { setActionPopup(null); refresh(); }} />
+      )}
+      {actionPopup === "meeting" && (
+        <MeetingPopup scope={{ kind: "contact", id: contact.id }} onClose={() => setActionPopup(null)} onCreated={() => { setActionPopup(null); refresh(); }} />
+      )}
     </div>
   );
 }

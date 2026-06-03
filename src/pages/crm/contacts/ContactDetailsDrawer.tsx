@@ -101,12 +101,13 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
 
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
             <Button onClick={() => {
-              if (!contact.phone) { window.alert("No phone number on this contact"); return; }
-              import("@/dialer/store").then(({ useDialer }) => {
-                useDialer.getState().open({
+              const phone = contact.phone;
+              if (!phone) { window.alert("No phone number on this contact"); return; }
+              import("@/dialer/actions").then(({ startOutboundPstn }) => {
+                void startOutboundPstn(phone, {
                   contactId: contact.id, contactName: contact.name,
                   applicationId: (contact.applicationIds ?? [])[0],
-                  phone: contact.phone, source: "crm",
+                  source: "crm",
                 });
               });
             }}>Call</Button>
