@@ -4,7 +4,7 @@ import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import type { EmailMessage } from "@/api/email";
-import { fetchEmailMessage, fetchEmailMessages } from "@/api/email";
+import { fetchEmailMessage, fetchEmailMessages, archiveEmailMessage } from "@/api/email";
 import EmailMessageItem from "./EmailMessageItem";
 
 interface EmailViewerProps {
@@ -19,7 +19,7 @@ const EmailViewer = ({ visible, contactId, contactEmail, onClose }: EmailViewerP
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<EmailMessage | null>(null);
 
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], refetch } = useQuery({
     queryKey: ["email", contactId, folder, search, contactEmail],
     queryFn: () => fetchEmailMessages(contactId, folder, search, contactEmail),
     enabled: visible
@@ -74,7 +74,20 @@ const EmailViewer = ({ visible, contactId, contactEmail, onClose }: EmailViewerP
                     ))}
                   </ul>
                 )}
-                <Button className="mt-2">Log Email to CRM Timeline</Button>
+                <div className="mt-2 flex gap-2">
+                  <Button>Log Email to CRM Timeline</Button>
+                  <Button
+                    variant="secondary"
+                    onClick={async () => {
+                      if (!selected) return;
+                      await archiveEmailMessage(contactId, selected.id);
+                      setSelected(null);
+                      await refetch();
+                    }}
+                  >
+                    Archive
+                  </Button>
+                </div>
               </div>
             ) : (
               <p>No message selected</p>

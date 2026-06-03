@@ -119,6 +119,7 @@ export default function O365ComposeModal({
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
   const [scheduleAt, setScheduleAt] = useState(""); // scheduleSend-marker-v320
+  const lastAutosaveKeyRef = useRef("");
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -137,6 +138,7 @@ export default function O365ComposeModal({
     setImportance("normal");
     setDraftId(null);
     setDraftSavedAt(null);
+    lastAutosaveKeyRef.current = "";
     setScheduleAt("");
     setAttachments([]);
     setLinkAppId("");
@@ -168,6 +170,18 @@ export default function O365ComposeModal({
     })();
     return () => { alive = false; };
   }, [open]);
+
+  // Debounced autosave: keep the in-progress message in Outlook so an accidental
+  // close or crash never loses work. Fires ~25s after the last edit.
+  useEffect(() => {
+    if (!open) return;
+    const hasContent = !!((composeBody || "").replace(/<[^>]*>/g, "").trim() || composeSubject.trim());
+    if (!hasContent || composeSending || savingDraft) return;
+    const autosaveKey = draftContentKey();
+    if (lastAutosaveKeyRef.current === autosaveKey) return;
+    const t = setTimeout(() => { void saveDraft(); }, 25000);
+    return () => clearTimeout(t);
+  }, [open, composeBody, composeSubject, composeTo, composeCc, composeBcc, composeFrom, importance, requestReadReceipt, requestDeliveryReceipt, composeSending, savingDraft]);
 
   // BF_PORTAL_BLOCK_v730 — when the caller passes no mailboxes (CRM / BI "Email"
   // actions), self-fetch them so the composer is fully drop-in everywhere and
@@ -293,6 +307,20 @@ export default function O365ComposeModal({
     insertHtmlAtCursor(btn + "<br/>");
   }
 
+  function draftContentKey(bodyHtml = composeBody) {
+    return JSON.stringify({
+      from: composeFrom || "",
+      to: parseAddrs(composeTo),
+      cc: parseAddrs(composeCc),
+      bcc: parseAddrs(composeBcc),
+      subject: composeSubject,
+      body_html: bodyHtml,
+      importance,
+      requestReadReceipt,
+      requestDeliveryReceipt,
+    });
+  }
+
   async function saveDraft() {
     setSavingDraft(true);
     setComposeError(null);
@@ -322,6 +350,7 @@ export default function O365ComposeModal({
           return [summary, ...rest];
         });
       }
+      lastAutosaveKeyRef.current = draftContentKey(body_html);
       setDraftSavedAt(Date.now());
     } catch (e: any) {
       setComposeError(e?.message ?? "Couldn't save draft.");
@@ -464,7 +493,12 @@ export default function O365ComposeModal({
 
   return (
     <div
-      onClick={() => !composeSending && !savingDraft && onClose()}
+      onClick={() => {
+        if (composeSending || savingDraft) return;
+        const dirty = !!((composeBody || "").replace(/<[^>]*>/g, "").trim() || composeSubject.trim() || composeTo.trim());
+        if (dirty && !window.confirm("Discard this message? Use \u201cSave draft\u201d to keep it.")) return;
+        onClose();
+      }}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
     >
       <div
