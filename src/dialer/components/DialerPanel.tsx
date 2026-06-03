@@ -21,6 +21,8 @@ import { CallTimer } from "./CallTimer";
 import { ParticipantRow } from "./ParticipantRow";
 import { AddParticipantBar } from "./AddParticipantBar";
 import { TransferBar } from "./TransferBar";
+// BF_PORTAL_BLOCK_v311_QUICK_CALL_v1
+import QuickCallRow from "./QuickCallRow";
 
 const T = {
   panelBg: "#0a0a0a",
@@ -388,6 +390,7 @@ export default function DialerPanel() {
               style={{ width: "100%", borderRadius: 10, border: `1px solid ${T.borderStrong}`, background: T.surfaceAlt, color: T.text, padding: "10px 12px" }}
             />
           </div>
+          <QuickCallRow />
           <DTMFKeypad onPress={(d) => setPhone((p) => p + d)} />
           <div style={{ padding: "6px 24px 22px", display: "flex", justifyContent: "center", alignItems: "center", gap: 18 }}>
             <button onClick={() => setPhone((p) => p.slice(0, -1))}
