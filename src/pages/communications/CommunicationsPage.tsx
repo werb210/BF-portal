@@ -4,6 +4,8 @@ import { withO365Refresh } from "@/api/o365Interceptor";
 import { ApiError } from "@/api/http";
 import SecondaryButton from "@/components/forms/SecondaryButton";
 import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
+// BF_PORTAL_BLOCK_v312_COMPOSER_PULLDOWNS_v1
+import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 
 type Tab = "messages" | "sms" | "inbox" | "issues";
@@ -619,6 +621,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
               <div ref={bottomRef} />
             </div>
 
+            <ComposerPulldowns onInsertText={(text) => setDraft((previous) => previous + (previous && !previous.endsWith(" ") ? " " : "") + text)} />
             {/* Compose — padding-right keeps send button clear of floating dialer */}
             <div
               style={{
@@ -1064,37 +1067,40 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 applicationId optional, so staff can message people who have no
                 application yet. */}
             {selected && (
-              <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 16px", paddingRight: 88, display: "flex", gap: 8, background: "#fff" }}>
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                      e.preventDefault();
-                      void send();
-                    }
-                  }}
-                  rows={2}
-                  placeholder="Message the client…  (⌘/Ctrl+Enter to send.  Insert form links like #networth, #debt, #upload.)"
-                  style={{ flex: 1, resize: "none", border: "1px solid #d1d5db", borderRadius: 8, padding: 10, fontSize: 14, color: "#000", background: "#fff" }}
-                />
-                <button
-                  onClick={() => void send()}
-                  disabled={!draft.trim() || sending}
-                  style={{
-                    alignSelf: "flex-end",
-                    background: draft.trim() && !sending ? "#2563eb" : "#94a3b8",
-                    color: "#fff",
-                    border: 0,
-                    borderRadius: 8,
-                    padding: "10px 18px",
-                    fontWeight: 600,
-                    cursor: draft.trim() && !sending ? "pointer" : "not-allowed",
-                  }}
-                >
-                  Send
-                </button>
-              </div>
+              <>
+                <ComposerPulldowns onInsertText={(text) => setDraft((previous) => previous + (previous && !previous.endsWith(" ") ? " " : "") + text)} />
+                <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 16px", paddingRight: 88, display: "flex", gap: 8, background: "#fff" }}>
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        void send();
+                      }
+                    }}
+                    rows={2}
+                    placeholder="Message the client…  (⌘/Ctrl+Enter to send.  Insert form links like #networth, #debt, #upload.)"
+                    style={{ flex: 1, resize: "none", border: "1px solid #d1d5db", borderRadius: 8, padding: 10, fontSize: 14, color: "#000", background: "#fff" }}
+                  />
+                  <button
+                    onClick={() => void send()}
+                    disabled={!draft.trim() || sending}
+                    style={{
+                      alignSelf: "flex-end",
+                      background: draft.trim() && !sending ? "#2563eb" : "#94a3b8",
+                      color: "#fff",
+                      border: 0,
+                      borderRadius: 8,
+                      padding: "10px 18px",
+                      fontWeight: 600,
+                      cursor: draft.trim() && !sending ? "pointer" : "not-allowed",
+                    }}
+                  >
+                    Send
+                  </button>
+                </div>
+              </>
             )}
           </>
         )}

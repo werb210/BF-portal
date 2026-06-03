@@ -12,6 +12,8 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
+// BF_PORTAL_BLOCK_v312_BI_CRM_ALIGN_v1
+import { startOutboundPstn } from "@/dialer/actions";
 import toast from "react-hot-toast";
 
 // BF_PORTAL_BLOCK_v212_CONTACT_NAME_v1 — surface a clean display name when
@@ -442,13 +444,11 @@ export default function BIContactDetailPage() {
               type="button"
               onClick={() => {
                 if (!contact.phone_e164) return;
-                import("@/dialer/store").then(({ useDialer }) => {
-                  useDialer.getState().open({
-                    contactId: contact.id,
-                    contactName: contact.full_name ?? undefined,
-                    phone: contact.phone_e164 ?? undefined,
-                    source: "bi-crm",
-                  });
+                void startOutboundPstn(contact.phone_e164, {
+                  contactId: contact.id,
+                  contactName: contact.full_name ?? undefined,
+                  silo: "BI",
+                  source: "bi-crm",
                 });
               }}
               disabled={!contact.phone_e164}
@@ -597,6 +597,7 @@ export default function BIContactDetailPage() {
       <O365ComposeModal
         open={emailComposeOpen}
         initialTo={contact.email ?? ""}
+        logScope={{ kind: "contact", id: contact.id }}
         onClose={() => setEmailComposeOpen(false)}
         onSent={() => { toast.success("Sent"); refresh(); }}
       />
