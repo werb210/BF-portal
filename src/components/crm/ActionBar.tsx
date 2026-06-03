@@ -29,10 +29,11 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, onCh
           onClick={() => {
             if (scope.kind === "contact") {
               if (!contactPhone) { window.alert("No phone number on this contact"); return; }
-              import("@/dialer/store").then(({ useDialer }) => {
-                useDialer.getState().open({
-                  contactId: scope.id, contactName: contactName ?? undefined,
-                  phone: contactPhone, source: "actionbar",
+              import("@/dialer/actions").then(({ startOutboundPstn }) => {
+                void startOutboundPstn(contactPhone, {
+                  contactId: scope.id,
+                  contactName: contactName ?? null,
+                  source: "actionbar",
                 });
               });
               return;
