@@ -5,6 +5,7 @@
 // indicator. Server-side /api/o365/mail/send (v634/v645) now passes
 // attachments through to Graph as fileAttachment objects.
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { api } from "@/api";
 
 type MailboxOption = { value: string; label: string };
@@ -50,9 +51,23 @@ function normalizeItems<T extends { id: string }>(value: unknown): T[] {
     : [];
 }
 
-function stripHtml(html: string) {
-  return html.replace(/<br\s*\/?\s*>/gi, "\n").replace(/<[^>]+>/g, "").trim();
+function escapeToHtml(s: string): string {
+  return (s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br/>");
 }
+
+const tbBtn: CSSProperties = {
+  padding: "3px 9px",
+  border: "1px solid #cbd6e2",
+  borderRadius: 4,
+  background: "#fff",
+  cursor: "pointer",
+  fontSize: 13,
+  lineHeight: 1.2,
+};
 
 export default function O365ComposeModal({
   open,
@@ -94,6 +109,10 @@ export default function O365ComposeModal({
   const [selfMailboxes, setSelfMailboxes] = useState<MailboxOption[]>([]); // BF_PORTAL_BLOCK_v730 — used when caller passes no fromOptions
   const [composeSending, setComposeSending] = useState(false);
   const [composeError, setComposeError] = useState<string | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const [requestReadReceipt, setRequestReadReceipt] = useState(false);
+  const [requestDeliveryReceipt, setRequestDeliveryReceipt] = useState(false);
+  const [importance, setImportance] = useState<"low" | "normal" | "high">("normal");
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -104,7 +123,12 @@ export default function O365ComposeModal({
     setShowCcBcc(false);
     setComposeFrom(defaultFrom);
     setComposeSubject(initialSubject);
-    setComposeBody(initialBody);
+    const initHtml = /<[a-z][\s\S]*>/i.test(initialBody) ? initialBody : escapeToHtml(initialBody);
+    setComposeBody(initHtml);
+    if (bodyRef.current) bodyRef.current.innerHTML = initHtml;
+    setRequestReadReceipt(false);
+    setRequestDeliveryReceipt(false);
+    setImportance("normal");
     setAttachments([]);
     setLinkAppId("");
     setTemplateId("");
@@ -197,12 +221,28 @@ export default function O365ComposeModal({
     setAttachments((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  function syncBody() { setComposeBody(bodyRef.current?.innerHTML ?? ""); }
+  function exec(cmd: string, value?: string) {
+    bodyRef.current?.focus();
+    document.execCommand(cmd, false, value);
+    syncBody();
+  }
+  function insertHtmlAtCursor(html: string) {
+    bodyRef.current?.focus();
+    document.execCommand("insertHTML", false, html);
+    syncBody();
+  }
+  function insertLinkPrompt() {
+    const url = window.prompt("Link URL:", "https://");
+    if (url) exec("createLink", url);
+  }
+
   function insertAppLink() {
     if (!linkAppId) return;
     const clientBase = (typeof window !== "undefined" && (window as any).BF_CLIENT_BASE) ||
       "https://client.boreal.financial";
     const url = `${clientBase}/portal/${encodeURIComponent(linkAppId)}`;
-    setComposeBody((prev) => prev + (prev && !prev.endsWith("\n") ? "\n" : "") + url + "\n");
+    insertHtmlAtCursor(`<a href="${url}">${url}</a><br/>`);
   }
 
   function applyTemplate(nextTemplateId: string) {
@@ -210,15 +250,14 @@ export default function O365ComposeModal({
     const template = templates.find((item) => item.id === nextTemplateId);
     if (!template) return;
     if (template.subject) setComposeSubject(template.subject);
-    const body = template.body_text ?? (template.body_html ? stripHtml(template.body_html) : "");
-    if (body) {
-      setComposeBody((prev) => prev + (prev && !prev.endsWith("\n") ? "\n\n" : "") + body);
-    }
+    const html = template.body_html ?? (template.body_text ? escapeToHtml(template.body_text) : "");
+    if (html) insertHtmlAtCursor(html);
   }
 
   function insertBookingUrl() {
     if (!bookingUrl) return;
-    setComposeBody((prev) => prev + (prev && !prev.endsWith("\n") ? "\n" : "") + "{{meeting_link}}" + "\n");
+    const btn = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+    insertHtmlAtCursor(btn + "<br/>");
   }
 
   function toggleCollateral(id: string) {
@@ -240,18 +279,13 @@ export default function O365ComposeModal({
     setComposeSending(true);
     setComposeError(null);
     try {
-      let body_html = composeBody
-        .split("\n")
-        .map((line) => line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
-        .join("<br/>");
-      // BF_PORTAL_BLOCK_v730 — body is escaped above, so swap the {{meeting_link}}
-      // token (and any legacy pasted booking URL) for a real styled anchor.
+      // Rich-text editor: the body is already HTML. Convert any {{meeting_link}}
+      // token (and legacy pasted booking URL) into the styled booking button.
+      let body_html = bodyRef.current?.innerHTML ?? composeBody;
       if (bookingUrl) {
-        const escapedUrl = bookingUrl.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
-        body_html = body_html.split("{{meeting_link}}").join(bookingButton).split(escapedUrl).join(bookingButton);
+        body_html = body_html.split("{{meeting_link}}").join(bookingButton).split(bookingUrl).join(bookingButton);
       } else {
-        // No booking page configured — drop the token so it never sends literally.
         body_html = body_html.split("{{meeting_link}}").join("");
       }
       // Refresh the server's O365 token right before sending. MSAL refreshes
@@ -286,6 +320,9 @@ export default function O365ComposeModal({
           bcc,
           subject: composeSubject.trim(),
           body_html,
+          isReadReceiptRequested: requestReadReceipt,
+          isDeliveryReceiptRequested: requestDeliveryReceipt,
+          importance,
           log_contact_id: logScope?.kind === "contact" ? logScope.id : undefined, // BF_PORTAL_BLOCK_v734
           log_company_id: logScope?.kind === "company" ? logScope.id : undefined,
           attachments: attachments.map(({ name, contentType, contentBytes }) => ({ name, contentType, contentBytes })),
@@ -342,7 +379,26 @@ export default function O365ComposeModal({
 
         <input type="text" placeholder="Subject" value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14 }} />
 
-        <textarea placeholder="Message" value={composeBody} onChange={(e) => setComposeBody(e.target.value)} rows={9} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14, resize: "vertical", fontFamily: "inherit" }} />
+        <style>{`[contenteditable][data-placeholder]:empty:before{content:attr(data-placeholder);color:#9aa5b4;}[contenteditable] ul,[contenteditable] ol{margin:4px 0 4px 22px;padding:0;}`}</style>
+        <div style={{ border: "1px solid #cbd6e2", borderRadius: 4, overflow: "hidden" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, padding: 5, borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+            <button type="button" title="Bold" onMouseDown={(e) => { e.preventDefault(); exec("bold"); }} style={tbBtn}><b>B</b></button>
+            <button type="button" title="Italic" onMouseDown={(e) => { e.preventDefault(); exec("italic"); }} style={tbBtn}><i>I</i></button>
+            <button type="button" title="Underline" onMouseDown={(e) => { e.preventDefault(); exec("underline"); }} style={tbBtn}><u>U</u></button>
+            <button type="button" title="Bulleted list" onMouseDown={(e) => { e.preventDefault(); exec("insertUnorderedList"); }} style={tbBtn}>• List</button>
+            <button type="button" title="Numbered list" onMouseDown={(e) => { e.preventDefault(); exec("insertOrderedList"); }} style={tbBtn}>1. List</button>
+            <button type="button" title="Insert link" onMouseDown={(e) => { e.preventDefault(); insertLinkPrompt(); }} style={tbBtn}>🔗</button>
+            <button type="button" title="Clear formatting" onMouseDown={(e) => { e.preventDefault(); exec("removeFormat"); }} style={tbBtn}>✕ⁿ</button>
+          </div>
+          <div
+            ref={bodyRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={syncBody}
+            data-placeholder="Message"
+            style={{ minHeight: 170, maxHeight: 340, overflowY: "auto", padding: 8, fontSize: 14, outline: "none", lineHeight: 1.45 }}
+          />
+        </div>
 
         {appOptions.length > 0 && (
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -434,6 +490,25 @@ export default function O365ComposeModal({
               ))}
             </ul>
           )}
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", fontSize: 13, color: "#334155" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }} title="Asks the recipient's mail client to confirm when they open it. Recipients can decline, and many (e.g. most Gmail) never send one.">
+            <input type="checkbox" checked={requestReadReceipt} onChange={(e) => setRequestReadReceipt(e.target.checked)} />
+            Request read receipt
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }} title="Confirms the recipient's mail server accepted the message (delivery, not read).">
+            <input type="checkbox" checked={requestDeliveryReceipt} onChange={(e) => setRequestDeliveryReceipt(e.target.checked)} />
+            Delivery receipt
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            Importance
+            <select value={importance} onChange={(e) => setImportance(e.target.value as "low" | "normal" | "high")} style={{ padding: 4, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 13, background: "#fff" }}>
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+            </select>
+          </label>
         </div>
 
         <div style={{ fontSize: 11, color: "#94a3b8", fontStyle: "italic" }}>
