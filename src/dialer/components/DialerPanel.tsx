@@ -225,7 +225,7 @@ export default function DialerPanel() {
 
   return (
     <div style={{
-      position: "fixed", right: 24, bottom: "5rem", width: 380,
+      position: "fixed", right: 24, bottom: "7rem", width: 380,
       background: T.panelBg, color: T.text, borderRadius: 28, overflow: "hidden",
       border: `1px solid ${T.border}`,
       boxShadow: "0 24px 60px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.4)",
