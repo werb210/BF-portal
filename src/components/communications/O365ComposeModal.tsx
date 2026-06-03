@@ -118,6 +118,7 @@ export default function O365ComposeModal({
   const [drafts, setDrafts] = useState<OutlookDraftSummary[]>([]);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  const [scheduleAt, setScheduleAt] = useState(""); // scheduleSend-marker-v320
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -136,6 +137,7 @@ export default function O365ComposeModal({
     setImportance("normal");
     setDraftId(null);
     setDraftSavedAt(null);
+    setScheduleAt("");
     setAttachments([]);
     setLinkAppId("");
     setTemplateId("");
@@ -362,6 +364,7 @@ export default function O365ComposeModal({
       if (typeof draft?.isReadReceiptRequested === "boolean") setRequestReadReceipt(draft.isReadReceiptRequested);
       if (typeof draft?.isDeliveryReceiptRequested === "boolean") setRequestDeliveryReceipt(draft.isDeliveryReceiptRequested);
       setDraftSavedAt(null);
+      setScheduleAt("");
     } catch (e: any) {
       setComposeError(e?.message ?? "Couldn't open draft.");
     }
@@ -378,7 +381,7 @@ export default function O365ComposeModal({
     setCollateralIds((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]);
   }
 
-  async function sendComposed() {
+  async function sendComposed(scheduleIso?: string) {
     const to = parseAddrs(composeTo);
     const cc = parseAddrs(composeCc);
     const bcc = parseAddrs(composeBcc);
@@ -437,6 +440,7 @@ export default function O365ComposeModal({
           isReadReceiptRequested: requestReadReceipt,
           isDeliveryReceiptRequested: requestDeliveryReceipt,
           importance,
+          ...(scheduleIso ? { scheduleAt: scheduleIso } : {}),
           log_contact_id: logScope?.kind === "contact" ? logScope.id : undefined, // BF_PORTAL_BLOCK_v734
           log_company_id: logScope?.kind === "company" ? logScope.id : undefined,
           attachments: attachments.map(({ name, contentType, contentBytes }) => ({ name, contentType, contentBytes })),
@@ -654,7 +658,12 @@ export default function O365ComposeModal({
             {draftId ? "Outlook draft linked" : ""}
             {draftSavedAt ? ` · Saved ${new Date(draftSavedAt).toLocaleTimeString()}` : ""}
           </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#334155" }}>
+              Schedule
+              <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} disabled={composeSending || savingDraft} style={{ padding: 4, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 13 }} />
+            </label>
+            <button type="button" disabled={composeSending || savingDraft || !scheduleAt} onClick={() => { const iso = scheduleAt ? new Date(scheduleAt).toISOString() : ""; if (iso) void sendComposed(iso); }} style={{ padding: "8px 14px", border: "1px solid #2563eb", borderRadius: 4, background: "#fff", color: "#2563eb", fontWeight: 600, cursor: composeSending || savingDraft || !scheduleAt ? "default" : "pointer" }}>Schedule send</button>
             <button type="button" onClick={onClose} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: composeSending || savingDraft ? "default" : "pointer" }}>Cancel</button>
             <button type="button" onClick={() => void saveDraft()} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: composeSending || savingDraft ? "default" : "pointer" }}>{savingDraft ? "Saving..." : "Save draft"}</button>
             <button type="button" onClick={() => void sendComposed()} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "none", borderRadius: 4, background: "#0066cc", color: "#fff", fontWeight: 600, cursor: composeSending || savingDraft ? "default" : "pointer" }}>{composeSending ? "Sending..." : "Send"}</button>
