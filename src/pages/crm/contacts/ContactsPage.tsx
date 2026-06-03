@@ -26,7 +26,8 @@ export default function ContactsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tagInput, setTagInput] = useState("");
-  const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
+  const [busyMass, setBusyMass] = useState<"delete" | "tag" | "assign" | null>(null);
+  const [assignOwnerId, setAssignOwnerId] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +107,19 @@ export default function ContactsPage() {
     } finally { setBusyMass(null); }
   }
 
+  async function massAssign() {
+    if (!isAdmin || selected.size === 0 || !assignOwnerId) return;
+    setBusyMass("assign");
+    try {
+      await crmApi.bulkAssignContacts(Array.from(selected), assignOwnerId);
+      setSelected(new Set());
+      setAssignOwnerId("");
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      window.alert(`Mass assign failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setBusyMass(null); }
+  }
+
   const tableRows = useMemo(() => rows.map(r => (
     <tr key={r.id} style={trStyle}>
       {isAdmin && (
@@ -168,6 +182,11 @@ export default function ContactsPage() {
           <button disabled={busyMass !== null} onClick={massDelete} style={{ padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
           <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 }} />
           <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={{ padding: "6px 12px", borderRadius: 6, background: "#2563eb", color: "#fff", border: 0, cursor: tagInput.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
+          <select value={assignOwnerId} onChange={(e) => setAssignOwnerId(e.target.value)} style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, background: "#fff" }}>
+            <option value="">Assign owner…</option>
+            {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
+          </select>
+          <button disabled={busyMass !== null || !assignOwnerId} onClick={massAssign} style={{ padding: "6px 12px", borderRadius: 6, background: "#0d9b6c", color: "#fff", border: 0, cursor: assignOwnerId ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "assign" ? "Assigning…" : "Assign"}</button>
           <button onClick={() => setSelected(new Set())} style={{ padding: "6px 12px", borderRadius: 6, background: "#fff", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 13 }}>Clear</button>
         </div>
       )}
