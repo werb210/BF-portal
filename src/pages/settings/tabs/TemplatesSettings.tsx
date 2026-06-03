@@ -31,6 +31,18 @@ const EMPTY: Omit<Template, "id"> = {
   owner_user_id: null,
 };
 
+// Merge tokens available in templates. first_name/last_name/full_name/name/email
+// are filled from the recipient's contact record at send time; meeting_link is
+// replaced with the booking button (email) at send time.
+const TOKENS: { token: string; label: string }[] = [
+  { token: "{{first_name}}", label: "First name" },
+  { token: "{{last_name}}", label: "Last name" },
+  { token: "{{full_name}}", label: "Full name" },
+  { token: "{{name}}", label: "Full name (alt)" },
+  { token: "{{email}}", label: "Email address" },
+  { token: "{{meeting_link}}", label: "Booking link / button" },
+];
+
 export default function TemplatesSettings() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -40,9 +52,9 @@ export default function TemplatesSettings() {
 
   const load = useCallback(() => {
     api
-      .get<Template[]>("/api/templates")
+      .get<any>("/api/templates")
       .then((rows) => {
-        setTemplates(Array.isArray(rows) ? rows : []);
+        setTemplates(Array.isArray(rows) ? rows : (rows?.items ?? []));
         setLoaded(true);
       })
       .catch((e) => {
@@ -153,6 +165,34 @@ export default function TemplatesSettings() {
               />
             </label>
           )}
+
+          <label style={{ fontSize: 13 }}>
+            Insert token
+            <br />
+            <select
+              value=""
+              onChange={(e) => {
+                const tok = e.target.value;
+                e.target.value = "";
+                if (!tok) return;
+                setEditing((prev) => {
+                  if (!prev) return prev;
+                  if (prev.channel === "email") {
+                    const cur = prev.body_html ?? "";
+                    return { ...prev, body_html: cur + (cur && !cur.endsWith(" ") && !cur.endsWith("\n") ? " " : "") + tok };
+                  }
+                  const cur = prev.body_text ?? "";
+                  return { ...prev, body_text: cur + (cur && !cur.endsWith(" ") && !cur.endsWith("\n") ? " " : "") + tok };
+                });
+              }}
+              style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4, fontFamily: "inherit", fontSize: 13, background: "#fff" }}
+            >
+              <option value="">Insert a token…</option>
+              {TOKENS.map((t) => (
+                <option key={t.token} value={t.token}>{t.label} — {t.token}</option>
+              ))}
+            </select>
+          </label>
 
           <label style={{ fontSize: 13 }}>
             Body

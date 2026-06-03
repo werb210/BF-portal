@@ -218,7 +218,7 @@ export default function O365ComposeModal({
 
   function insertBookingUrl() {
     if (!bookingUrl) return;
-    setComposeBody((prev) => prev + (prev && !prev.endsWith("\n") ? "\n" : "") + bookingUrl + "\n");
+    setComposeBody((prev) => prev + (prev && !prev.endsWith("\n") ? "\n" : "") + "{{meeting_link}}" + "\n");
   }
 
   function toggleCollateral(id: string) {
@@ -244,12 +244,15 @@ export default function O365ComposeModal({
         .split("\n")
         .map((line) => line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
         .join("<br/>");
-      // BF_PORTAL_BLOCK_v730 — body is escaped above, so swap the (escaped)
-      // booking URL for a real styled anchor (the "Insert booking button").
+      // BF_PORTAL_BLOCK_v730 — body is escaped above, so swap the {{meeting_link}}
+      // token (and any legacy pasted booking URL) for a real styled anchor.
       if (bookingUrl) {
         const escapedUrl = bookingUrl.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
-        body_html = body_html.split(escapedUrl).join(bookingButton);
+        body_html = body_html.split("{{meeting_link}}").join(bookingButton).split(escapedUrl).join(bookingButton);
+      } else {
+        // No booking page configured — drop the token so it never sends literally.
+        body_html = body_html.split("{{meeting_link}}").join("");
       }
       await api("/api/o365/mail/send", {
         method: "POST",
