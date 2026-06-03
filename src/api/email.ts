@@ -74,6 +74,13 @@ export const fetchEmailMessage = async (messageId: string): Promise<EmailMessage
   }
 };
 
+// Move a message to the Outlook Archive folder (Graph /messages/{id}/move).
+export const archiveEmailMessage = async (contactId: string, messageId: string): Promise<void> => {
+  await withO365Refresh(() =>
+    api(`/api/crm/contacts/${encodeURIComponent(contactId)}/emails/${encodeURIComponent(messageId)}/archive`, { method: "POST" }),
+  );
+};
+
 export type EmailPayload = {
   to: string | string[];
   subject: string;
