@@ -727,6 +727,7 @@ type MsgRow = {
   source?: "client" | "staff";
   ctaLabel?: string | null;
   ctaAction?: string | null;
+  attachments?: Array<{ name: string; contentType?: string | null; dataUrl: string }> | null;
 };
 
 function MessagesTab({ onStartConversation }: { onStartConversation: (contact: Contact) => void }) {
@@ -1051,6 +1052,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                     authorRole: (m.senderType === "staff" || m.source === "staff") ? "self" : "other",
                     authorName: m.senderType === "staff" ? (m.senderName ?? "You") : selected.name,
                     created_at: m.createdAt ?? null,
+                    attachments: m.attachments ?? undefined,
                   }))}
                   emptyText="No messages yet — say hello."
                 />

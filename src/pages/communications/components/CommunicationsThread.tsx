@@ -23,6 +23,7 @@ export type CommRow = {
   created_at?: string | null;
   sentAt?: string | null;
   sent_at?: string | null;
+  attachments?: Array<{ name: string; contentType?: string | null; dataUrl: string }> | null;
 };
 
 type Props = {
@@ -67,6 +68,7 @@ export default function CommunicationsThread({ messages, emptyText, onHashtagCli
         authorName: r.authorName ?? r.author ?? undefined,
         body: pickBody(r),
         createdAt: pickCreatedAt(r),
+        attachments: r.attachments ?? undefined,
       })),
     [messages, currentUserId]
   );
