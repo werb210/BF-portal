@@ -10,6 +10,7 @@ export type ThreadMessage = {
   authorName?: string;
   body: string;
   createdAt: string; // ISO
+  attachments?: Array<{ name: string; contentType?: string | null; dataUrl: string }> | null;
 };
 
 type Props = {
@@ -96,6 +97,21 @@ export default function MessageThread({ messages, onHashtagClick, emptyText }: P
             <div className="msg-bubble-wrap">
               <div className={`msg-bubble ${right ? "msg-bubble--self" : "msg-bubble--other"}`}>
                 {renderBody(m.body, onHashtagClick)}
+                {m.attachments && m.attachments.length > 0 && (
+                  <div style={{ marginTop: m.body ? 6 : 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                    {m.attachments.map((a, i) =>
+                      (a.contentType ?? "").startsWith("image/") ? (
+                        <a key={i} href={a.dataUrl} target="_blank" rel="noreferrer">
+                          <img src={a.dataUrl} alt={a.name} style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, display: "block" }} />
+                        </a>
+                      ) : (
+                        <a key={i} href={a.dataUrl} download={a.name} style={{ fontSize: 13, color: "inherit", textDecoration: "underline" }}>
+                          📎 {a.name}
+                        </a>
+                      ),
+                    )}
+                  </div>
+                )}
               </div>
               <div className="msg-meta">
                 {m.authorName ? <span>{m.authorName}</span> : null}
