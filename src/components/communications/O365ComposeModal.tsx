@@ -550,8 +550,9 @@ export default function O365ComposeModal({
         <input type="text" placeholder="Subject" value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14 }} />
 
         <style>{`[contenteditable][data-placeholder]:empty:before{content:attr(data-placeholder);color:#9aa5b4;}[contenteditable] ul,[contenteditable] ol{margin:4px 0 4px 22px;padding:0;}`}</style>
-        <div style={{ border: "1px solid #cbd6e2", borderRadius: 4, overflow: "hidden" }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, padding: 5, borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+        {/* BF_PORTAL_BLOCK_v740_TOOLBAR_STICKY */}
+        <div style={{ border: "1px solid #cbd6e2", borderRadius: 4 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, padding: 5, borderBottom: "1px solid #e2e8f0", background: "#f8fafc", position: "sticky", top: 0, zIndex: 5, borderTopLeftRadius: 4, borderTopRightRadius: 4 }}>
             <button type="button" title="Bold" onMouseDown={(e) => { e.preventDefault(); exec("bold"); }} style={tbBtn}><b>B</b></button>
             <button type="button" title="Italic" onMouseDown={(e) => { e.preventDefault(); exec("italic"); }} style={tbBtn}><i>I</i></button>
             <button type="button" title="Underline" onMouseDown={(e) => { e.preventDefault(); exec("underline"); }} style={tbBtn}><u>U</u></button>
