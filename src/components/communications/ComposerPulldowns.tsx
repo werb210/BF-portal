@@ -45,7 +45,8 @@ const selectStyle: CSSProperties = {
   color: "#334155",
 };
 
-export default function ComposerPulldowns({ onInsertText }: { onInsertText: (text: string) => void }) {
+// BF_PORTAL_BLOCK_v742_TEMPLATE_CHANNEL — scope templates to the composer channel.
+export default function ComposerPulldowns({ onInsertText, channel }: { onInsertText: (text: string) => void; channel?: string }) {
   const [templates, setTemplates] = useState<ComposeTemplate[]>([]);
   const [collateral, setCollateral] = useState<CollateralOption[]>([]);
   const [templateId, setTemplateId] = useState("");
@@ -60,7 +61,7 @@ export default function ComposerPulldowns({ onInsertText }: { onInsertText: (tex
       ]);
       if (!alive) return;
       if (templateResult.status === "fulfilled") {
-        setTemplates(normalizeItems<ComposeTemplate>(templateResult.value).filter((item) => item.is_active !== false));
+        setTemplates(normalizeItems<ComposeTemplate>(templateResult.value).filter((item) => item.is_active !== false && (!channel || (((item as { channel?: string }).channel) ?? "email") === channel)));
       }
       if (collateralResult.status === "fulfilled") {
         setCollateral(normalizeItems<CollateralOption>(collateralResult.value).filter((item) => item.is_active !== false));

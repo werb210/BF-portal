@@ -652,6 +652,9 @@ function CreateProductModal({
         const result = await createLenderProduct(payload);
         console.log("[lender-product] PATCH result JSON:", JSON.stringify(result)); // BF_PRODUCT_DIAG_JSON_v30
       }
+      // BF_PORTAL_BLOCK_v739_LP_REFRESH — refetch lists so create/edit shows without a reload.
+      await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
       onCreated();
     } catch (err) {
       setServerError(getErrorMessage(err, "Failed to create product."));

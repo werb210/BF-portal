@@ -621,7 +621,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
               <div ref={bottomRef} />
             </div>
 
-            <ComposerPulldowns onInsertText={(text) => setDraft((previous) => previous + (previous && !previous.endsWith(" ") ? " " : "") + text)} />
+            <ComposerPulldowns channel="sms" onInsertText={(text) => setDraft((previous) => previous + (previous && !previous.endsWith(" ") ? " " : "") + text)} />
             {/* Compose — padding-right keeps send button clear of floating dialer */}
             <div
               style={{
@@ -1070,7 +1070,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 application yet. */}
             {selected && (
               <>
-                <ComposerPulldowns onInsertText={(text) => setDraft((previous) => previous + (previous && !previous.endsWith(" ") ? " " : "") + text)} />
+                <ComposerPulldowns channel="message" onInsertText={(text) => setDraft((previous) => previous + (previous && !previous.endsWith(" ") ? " " : "") + text)} />
                 <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 16px", paddingRight: 88, display: "flex", gap: 8, background: "#fff" }}>
                   <textarea
                     value={draft}
