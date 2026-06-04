@@ -8,6 +8,14 @@
 // BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
 // v207 baseline page extended with Edit / Delete / Send SMS
 // actions backed by BI-Server v255 endpoints.
+// BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1
+// Visual parity pass: SMS now opens the same modal shell BF uses
+// (PopupShell) instead of an inline composer, the button reads
+// "SMS", the action buttons follow BF's order
+// (Note/Email/Call/SMS/Task/Meeting), and the activity feed renders
+// through the shared <ActivityTimeline> tab layout. Behaviour is
+// unchanged: the same merged feed is displayed and the SMS still
+// POSTs { to, body, contact_id, silo:"BI" } to /api/communications/sms.
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
@@ -15,6 +23,10 @@ import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { NotePopup } from "@/components/crm/popups/NotePopup";
 import { TaskPopup } from "@/components/crm/popups/TaskPopup";
 import { MeetingPopup } from "@/components/crm/popups/MeetingPopup";
+// BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1
+import { PopupShell, popupInputStyle } from "@/components/crm/popups/PopupShell";
+import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
+import type { TimelineItem } from "@/api/crm";
 // BF_PORTAL_BLOCK_v312_BI_CRM_ALIGN_v1
 import { startOutboundPstn } from "@/dialer/actions";
 import toast from "react-hot-toast";
@@ -191,7 +203,9 @@ export default function BIContactDetailPage() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [composing, setComposing] = useState(false);
+  // BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1 — smsOpen drives the modal
+  // (was the inline `composing` toggle).
+  const [smsOpen, setSmsOpen] = useState(false);
   const [smsBody, setSmsBody] = useState("");
   const [smsSending, setSmsSending] = useState(false);
   const [emailComposeOpen, setEmailComposeOpen] = useState(false);
@@ -331,6 +345,24 @@ export default function BIContactDetailPage() {
     });
   }, [events, bfEvents]);
 
+  // BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1 — project the merged feed onto
+  // the shared TimelineItem shape so the BF <ActivityTimeline> renders it.
+  // The feed (and its data sources) are unchanged; this is display-only.
+  // `kind` is the leading token of the label lowercased (e.g. SMS_OUTBOUND
+  // -> "sms", CALL -> "call"); meta_parts collapse into `extra`.
+  const timelineItems = useMemo<TimelineItem[]>(
+    () =>
+      unifiedEvents.map((e) => ({
+        kind: (e.label.toLowerCase().split("_")[0] || "note") as TimelineItem["kind"],
+        id: e.uid,
+        ts: e.created_at,
+        title: null,
+        body: e.body,
+        extra: e.meta_parts.length ? e.meta_parts.join(" · ") : null,
+      })),
+    [unifiedEvents],
+  );
+
   // BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -396,7 +428,7 @@ export default function BIContactDetailPage() {
       } as any);
       toast.success("Sent");
       setSmsBody("");
-      setComposing(false);
+      setSmsOpen(false);
       refresh();
     } catch (e: any) {
       setActionError(e?.message ?? "SMS failed.");
@@ -444,6 +476,20 @@ export default function BIContactDetailPage() {
           <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setEditing(true)} style={actionBtn} data-testid="bi-contact-edit-button">Edit</button>
             <button type="button" onClick={() => deleteContact()} disabled={deleting} style={{ ...actionBtn, borderColor: "#fecaca", color: "#b91c1c" }} data-testid="bi-contact-delete-button">{deleting ? "Deleting…" : "Delete"}</button>
+            <button type="button" onClick={() => setActionPopup("note")} style={actionBtn} data-testid="bi-contact-note-button">Note</button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!contact.email) return;
+                setEmailComposeOpen(true);
+              }}
+              disabled={!contact.email}
+              title={contact.email ? "Compose email" : "Contact has no email address"}
+              style={actionBtn}
+              data-testid="bi-contact-email-button"
+            >
+              Email
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -462,36 +508,12 @@ export default function BIContactDetailPage() {
             >
               Call
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (!contact.email) return;
-                setEmailComposeOpen(true);
-              }}
-              disabled={!contact.email}
-              title={contact.email ? "Compose email" : "Contact has no email address"}
-              style={actionBtn}
-              data-testid="bi-contact-email-button"
-            >
-              Email
-            </button>
-            <button type="button" onClick={() => setComposing((v) => !v)} disabled={!contact.phone_e164} title={contact.phone_e164 ? "Send a free-text SMS" : "Contact has no phone number"} style={actionBtn} data-testid="bi-contact-sms-button">{composing ? "Cancel SMS" : "Send SMS"}</button>
-            <button type="button" onClick={() => setActionPopup("note")} style={actionBtn} data-testid="bi-contact-note-button">Note</button>
+            <button type="button" onClick={() => setSmsOpen((v) => !v)} disabled={!contact.phone_e164} title={contact.phone_e164 ? "Send a free-text SMS" : "Contact has no phone number"} style={actionBtn} data-testid="bi-contact-sms-button">SMS</button>
             <button type="button" onClick={() => setActionPopup("task")} style={actionBtn} data-testid="bi-contact-task-button">Task</button>
             <button type="button" onClick={() => setActionPopup("meeting")} style={actionBtn} data-testid="bi-contact-meeting-button">Meeting</button>
           </div>
         )}
-        {actionError && <div style={{ marginTop: 8, color: "#b00020", fontSize: 12 }} role="status">{actionError}</div>}
-        {composing && !editing && (
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #eaf0f6" }} data-testid="bi-contact-sms-composer">
-            <div style={fieldLabel}>SMS to {contact.phone_e164}</div>
-            <textarea value={smsBody} onChange={(e) => setSmsBody(e.target.value)} rows={4} placeholder="Type your message…" style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000", fontSize: 13 }} aria-label="SMS body" />
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <button type="button" onClick={() => void sendSms()} disabled={smsSending || !smsBody.trim()} style={{ ...actionBtn, background: "#0d9b6c", color: "#fff", borderColor: "#0d9b6c" }}>{smsSending ? "Sending…" : "Send"}</button>
-              <button type="button" onClick={() => { setComposing(false); setSmsBody(""); }} style={actionBtn}>Cancel</button>
-            </div>
-          </div>
-        )}
+        {actionError && !smsOpen && <div style={{ marginTop: 8, color: "#b00020", fontSize: 12 }} role="status">{actionError}</div>}
         {editing ? (
           <div style={fieldsBlock} data-testid="bi-contact-edit-form">
             <FieldEdit label="Full name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
@@ -521,46 +543,10 @@ export default function BIContactDetailPage() {
       </aside>
 
       <main style={mainCol} data-testid="bi-contact-main">
-        <div style={panel}>
-          <div style={panelHeader}>
-            <h3 style={{ margin: 0 }}>Activity</h3>
-            {/* BF_PORTAL_BLOCK_BI_ROUND5_D_TIMELINE_v1 -- badge now
-                counts the merged feed (bi_contact_activity +
-                BF-Server timeline) instead of only BI-Server's
-                contact.activity_count, so the number matches the
-                rendered list. */}
-            <span style={badge}>{unifiedEvents.length}</span>
-          </div>
-          {unifiedEvents.length === 0 ? (
-            <p style={{ color: "#7c98b6", padding: 12 }}>No activity logged yet.</p>
-          ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {unifiedEvents.map((e) => (
-                <li
-                  key={e.uid}
-                  style={timelineRow}
-                  data-testid="bi-contact-timeline-row"
-                  data-source={e.source}
-                >
-                  <div style={timelineWhen}>
-                    {new Date(e.created_at).toLocaleString()}
-                  </div>
-                  <div>
-                    <span style={timelineKind}>{e.label}</span>
-                    {e.meta_parts.map((part, idx) => (
-                      <span key={idx} style={{ marginLeft: 8, color: "#516f90" }}>
-                        · {part}
-                      </span>
-                    ))}
-                  </div>
-                  {e.body && (
-                    <div style={{ marginTop: 4, color: "#33475b" }}>{e.body}</div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {/* BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1 — render the merged feed
+            through the shared tabbed timeline so the BI card matches BF.
+            Data is unchanged; <ActivityTimeline> is controlled via items. */}
+        <ActivityTimeline items={timelineItems} />
 
         {contact.notes && (
           <div style={{ ...panel, marginTop: 16 }}>
@@ -608,6 +594,37 @@ export default function BIContactDetailPage() {
         onClose={() => setEmailComposeOpen(false)}
         onSent={() => { toast.success("Sent"); refresh(); }}
       />
+      {/* BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1 — SMS modal mirrors BF's
+          SmsPopup look (PopupShell) while keeping BI's existing send. */}
+      {smsOpen && contact.phone_e164 && (
+        <PopupShell
+          title="SMS"
+          onClose={() => { setSmsOpen(false); setSmsBody(""); setActionError(null); }}
+          primaryAction={{
+            label: smsSending ? "Sending…" : "Send",
+            disabled: smsSending || !smsBody.trim(),
+            onClick: () => void sendSms(),
+          }}
+        >
+          <div data-testid="bi-contact-sms-composer">
+            <input
+              value={contact.phone_e164}
+              readOnly
+              aria-label="SMS recipient"
+              style={{ ...popupInputStyle, marginBottom: 8 }}
+            />
+            <textarea
+              value={smsBody}
+              onChange={(e) => setSmsBody(e.target.value)}
+              rows={6}
+              placeholder="Message…"
+              aria-label="SMS body"
+              style={popupInputStyle}
+            />
+            {actionError && <div style={{ color: "#b00020", marginTop: 8 }}>{actionError}</div>}
+          </div>
+        </PopupShell>
+      )}
       {actionPopup === "note" && (
         <NotePopup scope={{ kind: "contact", id: contact.id }} onClose={() => setActionPopup(null)} onCreated={() => { setActionPopup(null); refresh(); }} />
       )}
@@ -756,14 +773,6 @@ const panelHeader: CSSProperties = {
   borderBottom: "1px solid #eaf0f6",
   background: "#f5f8fa",
 };
-const badge: CSSProperties = {
-  background: "#e5e7eb",
-  color: "#111827",
-  padding: "2px 8px",
-  borderRadius: 999,
-  fontSize: 12,
-  fontWeight: 600,
-};
 const backLink: CSSProperties = {
   color: "#1d4ed8",
   fontSize: 14,
@@ -811,16 +820,4 @@ const tagBadge: CSSProperties = {
   padding: "2px 8px",
   borderRadius: 999,
   fontSize: 12,
-};
-const timelineRow: CSSProperties = {
-  padding: "12px 16px",
-  borderBottom: "1px solid #eaf0f6",
-  fontSize: 13,
-};
-const timelineWhen: CSSProperties = { color: "#7c98b6", fontSize: 12 };
-const timelineKind: CSSProperties = {
-  color: "#33475b",
-  fontWeight: 600,
-  fontSize: 11,
-  letterSpacing: 0.5,
 };

@@ -82,13 +82,12 @@ describe("BF_PORTAL_BLOCK_v207 — BIContactDetailPage", () => {
       return contactFixture();
     });
     renderAtId("c1");
+    // BF_PORTAL_BLOCK_v699 — merged feed now renders via the shared
+    // <ActivityTimeline>; assert the event body and its lowercased kind badge.
     await waitFor(() => {
-      expect(screen.getAllByTestId("bi-contact-timeline-row")).toHaveLength(1);
+      expect(screen.getByText(/Demo booked for next week/)).toBeInTheDocument();
     });
-    expect(screen.getByText("CALL")).toBeInTheDocument();
-    expect(screen.getByText(/Demo booked for next week/)).toBeInTheDocument();
-    // merged-feed badge (BI activity + BF timeline). In this test only BI has one event.
-    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("call")).toBeInTheDocument();
   });
 
   it("shows empty-state when there are no events", async () => {
@@ -99,7 +98,7 @@ describe("BF_PORTAL_BLOCK_v207 — BIContactDetailPage", () => {
     });
     renderAtId("c1");
     await waitFor(() => {
-      expect(screen.getByText(/No activity logged yet/)).toBeInTheDocument();
+      expect(screen.getByText(/No activity yet/)).toBeInTheDocument();
     });
   });
 
@@ -136,7 +135,9 @@ describe("BF_PORTAL_BLOCK_v207 — BIContactDetailPage", () => {
     });
     renderAtId("c1");
     await waitFor(() => screen.getByText("Jane Doe"));
-    expect(screen.queryByText(/^Notes$/)).toBeNull();
+    // BF_PORTAL_BLOCK_v699 — the shared timeline renders a "Notes" tab, so
+    // assert the Notes *panel heading* is absent rather than the bare word.
+    expect(screen.queryByRole("heading", { name: /^Notes$/ })).toBeNull();
   });
 
   it("shows tag chips when tags are present", async () => {
