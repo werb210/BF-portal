@@ -42,7 +42,7 @@ describe("PipelinePage doc progress pill", () => {
     await waitFor(() => expect(screen.getByText("1 doc rejected")).toBeInTheDocument());
 
     expect(screen.getByText("1 doc rejected")).toHaveStyle({ background: "#fee2e2", color: "#991b1b" });
-    expect(screen.getByText("2/2 docs")).toHaveStyle({ background: "#dcfce7", color: "#166534" });
-    expect(screen.getByText("1/2 docs")).toHaveStyle({ background: "#fef3c7", color: "#92400e" });
+    expect(screen.getByText("2 received · 2 accepted")).toHaveStyle({ background: "#dcfce7", color: "#166534" });
+    expect(screen.getByText("2 received · 1 accepted")).toHaveStyle({ background: "#fef3c7", color: "#92400e" });
   });
 });
