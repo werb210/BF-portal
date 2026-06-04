@@ -53,7 +53,9 @@ export const DOCUMENT_TYPES = [
   "cra_view_only_authorization",
   "real_estate_collateral_disclosure",
   "org_chart_beneficial_ownership",
-  "equipment_list"
+  "equipment_list",
+  // BF_PORTAL_BLOCK_v701_ADVISORS_DOCTYPE_v1 — Accord Professional Advisors form
+  "professional_advisors"
 ] as const;
 
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
@@ -81,7 +83,9 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   cra_view_only_authorization: "CRA Level-1 view-only authorization",
   real_estate_collateral_disclosure: "Real estate collateral disclosure",
   org_chart_beneficial_ownership: "Org chart / beneficial ownership",
-  equipment_list: "Equipment list"
+  equipment_list: "Equipment list",
+  // BF_PORTAL_BLOCK_v701_ADVISORS_DOCTYPE_v1
+  professional_advisors: "Professional advisors (CPA / lawyer / insurance)"
 };
 
 export const RATE_TYPES = ["fixed", "variable", "factor"] as const;
