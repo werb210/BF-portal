@@ -3,22 +3,29 @@ import { crmApi, type Scope, type TimelineItem } from "@/api/crm";
 
 type FilterTab = "all" | "note" | "email" | "call" | "task" | "meeting";
 
-export function ActivityTimeline({ scope, refreshKey }: {
-  scope: Scope; refreshKey: number;
+// BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1 — `items` makes this a controlled
+// component: when a caller supplies its own already-fetched events (e.g. the
+// BI contact card, whose feed is merged from BI-Server + BF-Server), the
+// internal fetch is skipped entirely. BF callers pass scope/refreshKey and
+// behave exactly as before.
+export function ActivityTimeline({ scope, refreshKey, items: itemsProp }: {
+  scope?: Scope; refreshKey?: number; items?: TimelineItem[];
 }): JSX.Element {
-  const [items, setItems] = useState<TimelineItem[]>([]);
+  const controlled = itemsProp !== undefined;
+  const [fetchedItems, setFetchedItems] = useState<TimelineItem[]>([]);
   const [filter, setFilter] = useState<FilterTab>("all");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    if (controlled || !scope) return;
     let cancelled = false;
     setLoading(true);
     setErr(null);
     (async () => {
       try {
         const r = await crmApi.timeline(scope);
-        if (!cancelled) setItems(Array.isArray(r) ? r : []);
+        if (!cancelled) setFetchedItems(Array.isArray(r) ? r : []);
       } catch (e) {
         if (!cancelled) setErr((e as Error)?.message ?? "Could not load activity.");
       } finally {
@@ -26,8 +33,9 @@ export function ActivityTimeline({ scope, refreshKey }: {
       }
     })();
     return () => { cancelled = true; };
-  }, [scope.kind, scope.id, refreshKey]);
+  }, [controlled, scope?.kind, scope?.id, refreshKey]);
 
+  const items = controlled ? (itemsProp as TimelineItem[]) : fetchedItems;
   const filtered = filter === "all" ? items : items.filter(i => i.kind === filter);
 
   return (
