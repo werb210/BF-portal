@@ -442,7 +442,10 @@ function CreateProductModal({
     { label: "Real estate collateral", defaultStage: 2 as 1 | 2, hasForm: true },
     // BF_PORTAL_BLOCK_v307_EQUIPMENT_DOC_v1 — Equipment collateral now a real CMP form
     { label: "Equipment collateral", defaultStage: 2 as 1 | 2, hasForm: true },
-  ].map((d) => ({ key: d.label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label: d.label, defaultStage: d.defaultStage, hasForm: (d as any).hasForm ?? false }));
+    // BF_PORTAL_BLOCK_v706_ADVISORS_DOC_v1 — Accord Professional Advisors CMP form.
+    // Explicit key so it matches the client FORM_RENDERERS key + server registry.
+    { label: "Professional advisors (CPA / lawyer / insurance)", key: "professional_advisors", defaultStage: 2 as 1 | 2, hasForm: true },
+  ].map((d) => ({ key: (d as any).key ?? d.label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label: d.label, defaultStage: d.defaultStage, hasForm: (d as any).hasForm ?? false }));
   const conditionalTypes = [
     "Budget",
     "Finance plan",
