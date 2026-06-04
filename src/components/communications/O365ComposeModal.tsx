@@ -219,7 +219,7 @@ export default function O365ComposeModal({
         ]);
         if (cancelled) return;
         if (templateResponse.status === "fulfilled") {
-          setTemplates(normalizeItems<ComposeTemplate>(templateResponse.value).filter((template) => template.is_active !== false));
+          setTemplates(normalizeItems<ComposeTemplate>(templateResponse.value).filter((template) => template.is_active !== false && (((template as { channel?: string }).channel ?? "email") === "email")));
         }
         if (collateralResponse.status === "fulfilled") {
           setCollateral(normalizeItems<CollateralOption>(collateralResponse.value).filter((item) => item.is_active !== false));
