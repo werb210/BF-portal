@@ -94,9 +94,10 @@ function docProgressLabel(p: DocProgress | undefined): { text: string; color: st
     return { text: `${p.rejected} doc${p.rejected === 1 ? "" : "s"} rejected`, color: "#991b1b", bg: "#fee2e2" };
   }
   if (p.accepted === p.total) {
-    return { text: `${p.total}/${p.total} docs`, color: "#166534", bg: "#dcfce7" };
+    // BF_PORTAL_BLOCK_v743_DOC_PILL — show received (uploaded) vs accepted explicitly.
+    return { text: `${p.total} received \u00b7 ${p.accepted} accepted`, color: "#166534", bg: "#dcfce7" };
   }
-  return { text: `${p.accepted}/${p.total} docs`, color: "#92400e", bg: "#fef3c7" };
+  return { text: `${p.total} received \u00b7 ${p.accepted} accepted`, color: "#92400e", bg: "#fef3c7" };
 }
 
 export default function PipelinePage() {
