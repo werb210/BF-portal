@@ -1033,6 +1033,7 @@ function ProductsPanel({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState<"ALL" | "US" | "CA">("ALL"); // BF_PORTAL_BLOCK_v698_LP_COUNTRY_FILTER_v1
+  const [categoryFilter, setCategoryFilter] = useState<string>("ALL"); // BF_PORTAL_BLOCK_v709_LP_CATEGORY_FILTER_v1
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["lender-products", "all"],
@@ -1053,6 +1054,8 @@ function ProductsPanel({
       if (countryFilter === "CA" && !(isCA || isBoth)) return false;
       if (countryFilter === "US" && !(isUS || isBoth)) return false;
     }
+    // BF_PORTAL_BLOCK_v709_LP_CATEGORY_FILTER_v1
+    if (categoryFilter !== "ALL" && ((p as any).category ?? "TERM_LOAN") !== categoryFilter) return false;
     return true;
   });
 
@@ -1122,6 +1125,15 @@ function ProductsPanel({
             <option value="ALL">All countries</option>
             <option value="US">United States</option>
             <option value="CA">Canada</option>
+          </select>
+          {/* BF_PORTAL_BLOCK_v709_LP_CATEGORY_FILTER_v1 — category filter beside country */}
+          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
+            aria-label="Filter products by category"
+            style={{ padding: "7px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, background: "#fff", outline: "none", cursor: "pointer" }}>
+            <option value="ALL">All categories</option>
+            {CATEGORY_ORDER.map((c) => (
+              <option key={c} value={c}>{CATEGORY_LABELS[c] ?? c}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -1334,6 +1346,22 @@ export default function LendersPage() {
     staleTime: 30_000,
   });
 
+  // BF_PORTAL_BLOCK_v709_LP_PRODUCT_COUNTS_v1 — per-lender product counts.
+  // Reuses the ["lender-products","all"] query cache (no extra fetch).
+  const { data: lpForCounts = [] } = useQuery({
+    queryKey: ["lender-products", "all"],
+    queryFn: () => fetchLenderProducts(""),
+    staleTime: 30_000,
+  });
+  const productCountByLender = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of lpForCounts) {
+      const lid = String((p as any).lenderId ?? (p as any).lender_id ?? "");
+      if (lid) m.set(lid, (m.get(lid) ?? 0) + 1);
+    }
+    return m;
+  }, [lpForCounts]);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return lenders.filter(
@@ -1411,8 +1439,10 @@ export default function LendersPage() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
+                {/* BF_PORTAL_BLOCK_v709_LP_PRODUCT_COUNTS_v1 — Products column between Name and Status */}
+                <th onClick={() => cycleSort("name")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc", cursor: "pointer" }}>Lender Name{sortKey === "name" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
+                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc" }}>Products</th>
                 {[
-                  ["Lender Name", "name"],
                   ["Status", "status"],
                   ["Active", "active"],
                 ].map(([h, key]) => (
@@ -1423,10 +1453,10 @@ export default function LendersPage() {
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Loading…</td></tr>
+                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Loading…</td></tr>
               )}
               {!isLoading && paginated.length === 0 && (
-                <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No lenders found</td></tr>
+                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No lenders found</td></tr>
               )}
               {paginated.map((l) => {
                 const isSelected = selected?.id === l.id;
@@ -1443,6 +1473,8 @@ export default function LendersPage() {
                     }}
                   >
                     <td style={{ padding: "10px 12px", fontWeight: isSelected ? 600 : 400, color: "#1e293b" }}>{l.name}</td>
+                    {/* BF_PORTAL_BLOCK_v709_LP_PRODUCT_COUNTS_v1 */}
+                    <td style={{ padding: "10px 12px", color: "#64748b", fontWeight: 600 }}>{productCountByLender.get(l.id) ?? 0}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <StatusBadge active={l.active} status={l.status} />
                     </td>
