@@ -40,8 +40,8 @@ const s = {
   sub: { fontSize: 12, color: "#64748b", marginBottom: 12 } as const,
   table: { width: "100%", borderCollapse: "collapse" as const } as const,
   th: { textAlign: "left" as const, padding: "6px 8px", fontSize: 11, fontWeight: 600, color: "#475569", borderBottom: "1px solid #e5e7eb" } as const,
-  td: { padding: "4px 8px", borderBottom: "1px solid #f1f5f9" } as const,
-  input: { width: "100%", padding: "6px 8px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 4, boxSizing: "border-box" as const } as const,
+  td: { padding: "4px 8px", borderBottom: "1px solid #f1f5f9", color: "#0f172a" } as const, // BF_PORTAL_BLOCK_v723_COLLATERAL_TEXT_COLOR_v1
+  input: { width: "100%", padding: "6px 8px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 4, boxSizing: "border-box" as const, color: "#0f172a", background: "#fff" } as const, // BF_PORTAL_BLOCK_v723_COLLATERAL_TEXT_COLOR_v1
   addBtn: { marginTop: 8, border: "1px solid #cbd5e1", background: "#fff", padding: "6px 12px", borderRadius: 6, fontSize: 13, cursor: "pointer", color: "#0f172a" } as const,
 };
 
