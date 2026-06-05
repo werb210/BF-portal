@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchUsers } from "@/api/settings";
+import type { AdminUser } from "@/state/settings.store";
 import { PopupShell, popupInputStyle } from "./PopupShell";
 import { crmApi, type Scope } from "@/api/crm";
 
@@ -15,6 +17,14 @@ export function TaskPopup({ scope, onClose, onCreated }: {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v333_TASK_ASSIGNEE_v1 — assign a task to any staff user
+  const [assignedTo, setAssignedTo] = useState("");
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  useEffect(() => {
+    let alive = true;
+    fetchUsers().then((u) => { if (alive) setUsers(Array.isArray(u) ? u : []); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   async function save(): Promise<void> {
     setSaving(true); setErr(null);
@@ -24,6 +34,7 @@ export function TaskPopup({ scope, onClose, onCreated }: {
         due_at: dueAt ? new Date(dueAt).toISOString() : null,
         priority,
         task_type: taskType,
+        assigned_to: assignedTo || null,
         notes,
       });
       onCreated();
@@ -61,6 +72,19 @@ export function TaskPopup({ scope, onClose, onCreated }: {
           <option value="high">High</option>
         </select>
       </div>
+      {/* BF_PORTAL_BLOCK_v333_TASK_ASSIGNEE_v1 */}
+      <select
+        value={assignedTo}
+        onChange={(e) => setAssignedTo(e.target.value)}
+        style={{ ...popupInputStyle, marginBottom: 8 }}
+      >
+        <option value="">Assign to… (unassigned)</option>
+        {users.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.name || [u.firstName || u.first_name, u.lastName || u.last_name].filter(Boolean).join(" ") || u.email}
+          </option>
+        ))}
+      </select>
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
