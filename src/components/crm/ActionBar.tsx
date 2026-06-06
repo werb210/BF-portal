@@ -9,12 +9,19 @@ import { MeetingPopup } from "./popups/MeetingPopup";
 
 type Action = "note" | "email" | "call" | "sms" | "task" | "meeting";
 
-export function ActionBar({ scope, contactEmail, contactPhone, contactName, onChanged }: {
+// BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1 — optional Edit/Delete so BI can adopt this
+// shared bar without losing them; BF callers omit these props and are unchanged.
+export function ActionBar({ scope, contactEmail, contactPhone, contactName, onChanged, onEdit, onDelete, deleting, editTestId, deleteTestId }: {
   scope: Scope;
   contactEmail?: string;
   contactPhone?: string;
   contactName?: string;
   onChanged: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  deleting?: boolean;
+  editTestId?: string;
+  deleteTestId?: string;
 }): JSX.Element {
   const [open, setOpen] = useState<Action | null>(null);
   const close = (): void => setOpen(null);
@@ -22,6 +29,8 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, onCh
   return (
     <>
       <div style={row}>
+        {onEdit && <ActionBtn label="Edit" onClick={onEdit} testId={editTestId} />}
+        {onDelete && <ActionBtn label={deleting ? "Deleting\u2026" : "Delete"} onClick={onDelete} disabled={deleting} danger testId={deleteTestId} />}
         <ActionBtn label="Note" onClick={() => setOpen("note")} />
         <ActionBtn label="Email" onClick={() => setOpen("email")} />
         <ActionBtn
@@ -70,8 +79,8 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, onCh
   );
 }
 
-function ActionBtn({ label, onClick }: { label: string; onClick: () => void }): JSX.Element {
-  return <button onClick={onClick} style={btn}>{label}</button>;
+function ActionBtn({ label, onClick, testId, danger, disabled }: { label: string; onClick: () => void; testId?: string; danger?: boolean; disabled?: boolean }): JSX.Element {
+  return <button onClick={onClick} disabled={disabled} data-testid={testId} style={danger ? { ...btn, borderColor: "#fecaca", color: "#b91c1c" } : btn}>{label}</button>;
 }
 
 const row: CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 };

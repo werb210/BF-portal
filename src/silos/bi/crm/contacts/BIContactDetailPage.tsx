@@ -20,15 +20,9 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
-import { NotePopup } from "@/components/crm/popups/NotePopup";
-import { TaskPopup } from "@/components/crm/popups/TaskPopup";
-import { MeetingPopup } from "@/components/crm/popups/MeetingPopup";
-// BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1
-import { PopupShell, popupInputStyle } from "@/components/crm/popups/PopupShell";
+import { ActionBar } from "@/components/crm/ActionBar"; // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
 import type { TimelineItem } from "@/api/crm";
-// BF_PORTAL_BLOCK_v312_BI_CRM_ALIGN_v1
-import { startOutboundPstn } from "@/dialer/actions";
 import toast from "react-hot-toast";
 
 // BF_PORTAL_BLOCK_v212_CONTACT_NAME_v1 — surface a clean display name when
@@ -203,13 +197,7 @@ export default function BIContactDetailPage() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  // BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1 — smsOpen drives the modal
-  // (was the inline `composing` toggle).
-  const [smsOpen, setSmsOpen] = useState(false);
-  const [smsBody, setSmsBody] = useState("");
-  const [smsSending, setSmsSending] = useState(false);
   const [emailComposeOpen, setEmailComposeOpen] = useState(false);
-  const [actionPopup, setActionPopup] = useState<"note" | "task" | "meeting" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [form, setForm] = useState<{
     full_name: string;
@@ -410,33 +398,6 @@ export default function BIContactDetailPage() {
     }
   }
 
-  async function sendSms() {
-    const body = smsBody.trim();
-    if (!body) return;
-    setSmsSending(true);
-    setActionError(null);
-    try {
-      // BF_PORTAL_BLOCK_BI_ROUND5_A_v1 -- explicit silo in the body
-      // even though /api/v1/bi/... is already silo-encoded by URL.
-      // When Block B lands and this call migrates to BF-Server's
-      // /api/communications/sms, the silo body field + the X-Silo
-      // header (auto-attached by api()) together route the activity
-      // to the BI timeline.
-      await api(`/api/communications/sms`, {
-        method: "POST",
-        body: { to: contact?.phone_e164, body, contact_id: id, silo: "BI" },
-      } as any);
-      toast.success("Sent");
-      setSmsBody("");
-      setSmsOpen(false);
-      refresh();
-    } catch (e: any) {
-      setActionError(e?.message ?? "SMS failed.");
-    } finally {
-      setSmsSending(false);
-    }
-  }
-
   if (err)
     return (
       <div style={{ padding: 24, color: "#b00020", background: "#fff", borderRadius: 8 }}>
@@ -473,47 +434,20 @@ export default function BIContactDetailPage() {
           </button>
         )}
         {!editing && (
-          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => setEditing(true)} style={actionBtn} data-testid="bi-contact-edit-button">Edit</button>
-            <button type="button" onClick={() => deleteContact()} disabled={deleting} style={{ ...actionBtn, borderColor: "#fecaca", color: "#b91c1c" }} data-testid="bi-contact-delete-button">{deleting ? "Deleting…" : "Delete"}</button>
-            <button type="button" onClick={() => setActionPopup("note")} style={actionBtn} data-testid="bi-contact-note-button">Note</button>
-            <button
-              type="button"
-              onClick={() => {
-                if (!contact.email) return;
-                setEmailComposeOpen(true);
-              }}
-              disabled={!contact.email}
-              title={contact.email ? "Compose email" : "Contact has no email address"}
-              style={actionBtn}
-              data-testid="bi-contact-email-button"
-            >
-              Email
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (!contact.phone_e164) return;
-                void startOutboundPstn(contact.phone_e164, {
-                  contactId: contact.id,
-                  contactName: contact.full_name ?? undefined,
-                  silo: "BI",
-                  source: "bi-crm",
-                });
-              }}
-              disabled={!contact.phone_e164}
-              title={contact.phone_e164 ? "Call this contact" : "Contact has no phone number"}
-              style={actionBtn}
-              data-testid="bi-contact-call-button"
-            >
-              Call
-            </button>
-            <button type="button" onClick={() => setSmsOpen((v) => !v)} disabled={!contact.phone_e164} title={contact.phone_e164 ? "Send a free-text SMS" : "Contact has no phone number"} style={actionBtn} data-testid="bi-contact-sms-button">SMS</button>
-            <button type="button" onClick={() => setActionPopup("task")} style={actionBtn} data-testid="bi-contact-task-button">Task</button>
-            <button type="button" onClick={() => setActionPopup("meeting")} style={actionBtn} data-testid="bi-contact-meeting-button">Meeting</button>
-          </div>
+          <ActionBar
+            scope={{ kind: "contact", id: contact.id }}
+            contactEmail={contact.email ?? undefined}
+            contactPhone={contact.phone_e164 ?? undefined}
+            contactName={contact.full_name ?? undefined}
+            onEdit={() => setEditing(true)}
+            onDelete={() => deleteContact()}
+            deleting={deleting}
+            editTestId="bi-contact-edit-button"
+            deleteTestId="bi-contact-delete-button"
+            onChanged={refresh}
+          />
         )}
-        {actionError && !smsOpen && <div style={{ marginTop: 8, color: "#b00020", fontSize: 12 }} role="status">{actionError}</div>}
+        {actionError && <div style={{ marginTop: 8, color: "#b00020", fontSize: 12 }} role="status">{actionError}</div>}
         {editing ? (
           <div style={fieldsBlock} data-testid="bi-contact-edit-form">
             <FieldEdit label="Full name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
@@ -594,46 +528,6 @@ export default function BIContactDetailPage() {
         onClose={() => setEmailComposeOpen(false)}
         onSent={() => { toast.success("Sent"); refresh(); }}
       />
-      {/* BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1 — SMS modal mirrors BF's
-          SmsPopup look (PopupShell) while keeping BI's existing send. */}
-      {smsOpen && contact.phone_e164 && (
-        <PopupShell
-          title="SMS"
-          onClose={() => { setSmsOpen(false); setSmsBody(""); setActionError(null); }}
-          primaryAction={{
-            label: smsSending ? "Sending…" : "Send",
-            disabled: smsSending || !smsBody.trim(),
-            onClick: () => void sendSms(),
-          }}
-        >
-          <div data-testid="bi-contact-sms-composer">
-            <input
-              value={contact.phone_e164}
-              readOnly
-              aria-label="SMS recipient"
-              style={{ ...popupInputStyle, marginBottom: 8 }}
-            />
-            <textarea
-              value={smsBody}
-              onChange={(e) => setSmsBody(e.target.value)}
-              rows={6}
-              placeholder="Message…"
-              aria-label="SMS body"
-              style={popupInputStyle}
-            />
-            {actionError && <div style={{ color: "#b00020", marginTop: 8 }}>{actionError}</div>}
-          </div>
-        </PopupShell>
-      )}
-      {actionPopup === "note" && (
-        <NotePopup scope={{ kind: "contact", id: contact.id }} onClose={() => setActionPopup(null)} onCreated={() => { setActionPopup(null); refresh(); }} />
-      )}
-      {actionPopup === "task" && (
-        <TaskPopup scope={{ kind: "contact", id: contact.id }} onClose={() => setActionPopup(null)} onCreated={() => { setActionPopup(null); refresh(); }} />
-      )}
-      {actionPopup === "meeting" && (
-        <MeetingPopup scope={{ kind: "contact", id: contact.id }} onClose={() => setActionPopup(null)} onCreated={() => { setActionPopup(null); refresh(); }} />
-      )}
     </div>
   );
 }
