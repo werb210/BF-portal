@@ -7,6 +7,7 @@
 // columns, a lender/broker segment filter, and a "Start onboarding"
 // action wired to v410.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom"; // BF_PORTAL_BLOCK_v744_OUTREACH_CARD_OPENS_CRM
 import { api } from "@/api";
 
 const STAGES = [
@@ -114,6 +115,9 @@ export default function BIOutreach() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v744_OUTREACH_CARD_OPENS_CRM — pipeline card opens the full BI CRM contact view.
+  const navigate = useNavigate();
+  const openContact = (id: string) => navigate(`/silo/bi/crm/contacts/${id}`);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -454,7 +458,7 @@ export default function BIOutreach() {
             label={STAGE_LABELS[stage] ?? stage}
             cards={columns[stage] ?? []}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={openContact}
             dragOver={dragOverStage === stage}
             onDragOverStage={() => setDragOverStage(stage)}
             onDragLeaveStage={() => setDragOverStage((s) => (s === stage ? null : s))}
@@ -466,7 +470,7 @@ export default function BIOutreach() {
           label={STAGE_LABELS[ARCHIVE_STAGE] ?? ARCHIVE_STAGE}
           cards={columns[ARCHIVE_STAGE] ?? []}
           selectedId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={openContact}
           dragOver={dragOverStage === ARCHIVE_STAGE}
           onDragOverStage={() => setDragOverStage(ARCHIVE_STAGE)}
           onDragLeaveStage={() => setDragOverStage((s) => (s === ARCHIVE_STAGE ? null : s))}
