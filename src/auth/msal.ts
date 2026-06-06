@@ -140,7 +140,7 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null): Promise
       }
       try {
         if (typeof sessionStorage !== "undefined") sessionStorage.setItem(REDIRECT_GUARD_KEY, "1");
-        const scopesEnv = import.meta.env.VITE_MSAL_SCOPES || "User.Read,Mail.Send,Calendars.ReadWrite,Tasks.ReadWrite";
+        const scopesEnv = import.meta.env.VITE_MSAL_SCOPES || "User.Read,Mail.Send,Mail.ReadWrite,Mail.ReadWrite.Shared,Calendars.ReadWrite,Tasks.ReadWrite,offline_access";
         const scopes = String(scopesEnv).split(",").map((scope) => scope.trim()).filter(Boolean);
         const account = msalClient.getActiveAccount() ?? msalClient.getAllAccounts()[0] ?? null;
         console.log("[msal.silent] iframe blocked — falling back to acquireTokenRedirect", { name });
