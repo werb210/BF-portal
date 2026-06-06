@@ -118,7 +118,7 @@ export default function BIOutreach() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // BF_PORTAL_BLOCK_v744_OUTREACH_CARD_OPENS_CRM — pipeline card opens the full BI CRM contact view.
   const navigate = useNavigate();
-  const openContact = (id: string) => navigate(`/silo/bi/crm/contacts/${id}`);
+  const openContact = (id: string) => navigate(`/silo/bi/crm/contacts/${id}`, { state: { from: "outreach" } });
   const [profileOpen, setProfileOpen] = useState(false);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);

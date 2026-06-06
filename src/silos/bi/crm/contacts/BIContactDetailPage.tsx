@@ -17,7 +17,7 @@
 // unchanged: the same merged feed is displayed and the SMS still
 // POSTs { to, body, contact_id, silo:"BI" } to /api/communications/sms.
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { ActionBar } from "@/components/crm/ActionBar"; // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1
@@ -187,6 +187,8 @@ function normalizeContact(raw: any): BIContactDetail | null {
 export default function BIContactDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const cameFromOutreach = (location.state as { from?: string } | null)?.from === "outreach";
   const [contact, setContact] = useState<BIContactDetail | null>(null);
   const [events, setEvents] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -414,8 +416,8 @@ export default function BIContactDetailPage() {
   return (
     <div style={layout} data-testid="bi-contact-detail">
       <aside style={rail} data-testid="bi-contact-rail-left">
-        <Link to="/silo/bi/crm" style={backLink}>
-          ← Back to contacts
+        <Link to={cameFromOutreach ? "/silo/bi/outreach" : "/silo/bi/crm"} style={backLink}>
+          {cameFromOutreach ? "← Back to outreach" : "← Back to contacts"}
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <h2 style={{ marginTop: 0, marginBottom: 0 }}>
