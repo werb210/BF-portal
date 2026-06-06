@@ -2,10 +2,13 @@ import { useState, type CSSProperties } from "react";
 import { PopupShell, popupInputStyle } from "./PopupShell";
 import { crmApi, type Scope } from "@/api/crm";
 
+// BF_PORTAL_BLOCK_v336_MEETING_TYPE_v1
+type MeetingType = "teams" | "phone" | "inperson";
+
 const PUBLIC_BOOKINGS_URL = (import.meta.env.VITE_BOOKINGS_URL as string | undefined) ?? "";
 
-export function MeetingPopup({ scope, onClose, onCreated }: {
-  scope: Scope; onClose: () => void; onCreated: () => void;
+export function MeetingPopup({ scope, onClose, onCreated, defaultPhone }: {
+  scope: Scope; onClose: () => void; onCreated: () => void; defaultPhone?: string;
 }): JSX.Element {
   const [title, setTitle] = useState("");
   const [start, setStart] = useState("");
@@ -17,6 +20,9 @@ export function MeetingPopup({ scope, onClose, onCreated }: {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  // BF_PORTAL_BLOCK_v336_MEETING_TYPE_v1 — Teams meeting vs phone call vs in person
+  const [meetingType, setMeetingType] = useState<MeetingType>("teams");
+  const [phone, setPhone] = useState(defaultPhone ?? "");
 
   async function copyBookingsLink(): Promise<void> {
     if (!PUBLIC_BOOKINGS_URL) {
@@ -39,7 +45,11 @@ export function MeetingPopup({ scope, onClose, onCreated }: {
         title,
         start_at: start ? new Date(start).toISOString() : null,
         end_at: end ? new Date(end).toISOString() : null,
-        location,
+        location: meetingType === "phone"
+          ? (phone.trim() ? `Phone call: ${phone.trim()}` : "")
+          : meetingType === "inperson" ? location : "",
+        meeting_type: meetingType,
+        online: meetingType === "teams",
         attendees: attendees
           .split(",").map(a => a.trim()).filter(Boolean)
           .map(address => ({ address })),
@@ -93,12 +103,21 @@ export function MeetingPopup({ scope, onClose, onCreated }: {
         placeholder="Attendees (comma-separated emails)"
         style={{ ...popupInputStyle, marginBottom: 8 }}
       />
-      <input
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-        placeholder="Location / Teams link / address"
-        style={{ ...popupInputStyle, marginBottom: 8 }}
-      />
+      {/* BF_PORTAL_BLOCK_v336_MEETING_TYPE_v1 */}
+      <select value={meetingType} onChange={(e) => setMeetingType(e.target.value as MeetingType)} style={{ ...popupInputStyle, marginBottom: 8 }}>
+        <option value="teams">Microsoft Teams meeting (auto link)</option>
+        <option value="phone">Phone call (we call the client)</option>
+        <option value="inperson">In person / other</option>
+      </select>
+      {meetingType === "teams" && (
+        <div style={{ fontSize: 12, color: "#516f90", marginBottom: 8 }}>A Microsoft Teams join link is created automatically and included in the invite to attendees.</div>
+      )}
+      {meetingType === "phone" && (
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number to call" style={{ ...popupInputStyle, marginBottom: 8 }} />
+      )}
+      {meetingType === "inperson" && (
+        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location / address" style={{ ...popupInputStyle, marginBottom: 8 }} />
+      )}
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
