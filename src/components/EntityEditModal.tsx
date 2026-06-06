@@ -4,7 +4,8 @@ import { useEffect, useState, type CSSProperties } from "react";
 export type EntityField = {
   key: string;
   label: string;
-  type?: "text" | "email" | "tel" | "url" | "number" | "textarea";
+  type?: "text" | "email" | "tel" | "url" | "number" | "textarea" | "select";
+  options?: { value: string; label: string }[];
   required?: boolean;
 };
 
@@ -46,7 +47,17 @@ export function EntityEditModal({ open, title, initial, fields, onClose, onSave,
         {fields.map((field) => (
           <label key={field.key} style={fieldWrap}>
             <span style={fieldLabel}>{field.label}{field.required ? " *" : ""}</span>
-            {field.type === "textarea" ? (
+            {field.type === "select" ? (
+              <select
+                value={String(form[field.key] ?? "")}
+                onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.value }))}
+                style={input}
+              >
+                {(field.options ?? []).map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            ) : field.type === "textarea" ? (
               <textarea
                 value={String(form[field.key] ?? "")}
                 onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.value }))}

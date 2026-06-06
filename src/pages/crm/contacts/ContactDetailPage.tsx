@@ -16,6 +16,18 @@ export default function ContactDetailPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [err, setErr] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]); // BF_PORTAL_BLOCK_v756_CONTACT_OWNER_EDIT
+  useEffect(() => { // BF_PORTAL_BLOCK_v756_CONTACT_OWNER_EDIT
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get<{ users?: Array<{ id: string; first_name?: string; last_name?: string }> } | Array<{ id: string; first_name?: string; last_name?: string }>>("/api/users");
+        const list = Array.isArray(r) ? r : (r?.users ?? []);
+        if (!cancelled) setOwners(list);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +123,7 @@ export default function ContactDetailPage() {
           lead_status: contact.lead_status ?? "",
           lifecycle_stage: contact.lifecycle_stage ?? "",
           job_title: contact.job_title ?? "",
+          owner_id: contact.owner_id ?? "", // BF_PORTAL_BLOCK_v756_CONTACT_OWNER_EDIT
         }}
         fields={[
           { key: "name", label: "Name", required: true },
@@ -119,6 +132,7 @@ export default function ContactDetailPage() {
           { key: "job_title", label: "Job title" },
           { key: "lead_status", label: "Status" },
           { key: "lifecycle_stage", label: "Stage" },
+          { key: "owner_id", label: "Owner", type: "select", options: [{ value: "", label: "— Unassigned —" }, ...owners.map((u) => ({ value: u.id, label: [u.first_name, u.last_name].filter(Boolean).join(" ").trim() || u.id }))] }, // BF_PORTAL_BLOCK_v756_CONTACT_OWNER_EDIT
         ]}
         onClose={() => setEditOpen(false)}
         onSave={async (data) => {
