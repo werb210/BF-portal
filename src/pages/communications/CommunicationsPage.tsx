@@ -1729,6 +1729,14 @@ export default function CommunicationsPage() {
           if (!cancelled) setTabCounts((p) => ({ ...p, issues: n }));
         })
         .catch(() => undefined);
+      Promise.resolve() // BF_PORTAL_BLOCK_v753_TEAM_TAB_BADGE
+        .then(() => api<any>("/api/team/channels"))
+        .then((r) => {
+          const arr = Array.isArray(r?.channels) ? r.channels : [];
+          const n = arr.reduce((a: number, c: any) => a + (parseInt(c?.unread_count, 10) || 0), 0);
+          if (!cancelled) setTabCounts((p) => ({ ...p, team: n }));
+        })
+        .catch(() => undefined);
     };
     loadCounts();
     const id = setInterval(loadCounts, 15000);
