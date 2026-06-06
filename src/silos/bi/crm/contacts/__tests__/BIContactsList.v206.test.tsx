@@ -40,6 +40,7 @@ describe("BF_PORTAL_BLOCK_v206 — BIContactsList", () => {
   beforeEach(() => apiMock.mockReset());
 
   it("loads contacts on mount and renders one row per record", async () => {
+    apiMock.mockResolvedValueOnce({ tags: [] }); // BF_PORTAL_BLOCK_v757 — tag-list fires first
     apiMock.mockResolvedValueOnce([rowFixture(), rowFixture({ id: "c2", full_name: "Bob Lee", company_name: null })]);
     renderList();
     await waitFor(() => {
@@ -122,6 +123,7 @@ describe("BF_PORTAL_BLOCK_v206 — BIContactsList", () => {
   });
 
   it("surfaces API error in the table body", async () => {
+    apiMock.mockResolvedValueOnce({ tags: [] }); // BF_PORTAL_BLOCK_v757 — tag-list fires first
     apiMock.mockRejectedValueOnce(new Error("upstream_5xx"));
     renderList();
     await waitFor(() => {
@@ -130,6 +132,7 @@ describe("BF_PORTAL_BLOCK_v206 — BIContactsList", () => {
   });
 
   it("displays outreach_status with underscores replaced by spaces", async () => {
+    apiMock.mockResolvedValueOnce({ tags: [] }); // BF_PORTAL_BLOCK_v757 — tag-list fires first
     apiMock.mockResolvedValueOnce([rowFixture({ outreach_status: "demo_booked" })]);
     renderList();
     await waitFor(() => {
