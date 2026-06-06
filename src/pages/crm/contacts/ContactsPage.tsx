@@ -7,6 +7,7 @@ import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
 import { useCrmStore } from "@/state/crm.store";
 import CreateContactModal from "./CreateContactModal";
+import ImportContactsModal from "./ImportContactsModal";
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
 
@@ -23,6 +24,7 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tagInput, setTagInput] = useState("");
@@ -174,6 +176,7 @@ export default function ContactsPage() {
         </select>
         <button style={toolbarBtn}>Export</button>
         <button style={toolbarBtn}>Edit columns</button>
+        <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>
         <button onClick={() => setCreateOpen(true)} style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
       </div>
       {isAdmin && selected.size > 0 && (
@@ -220,6 +223,12 @@ export default function ContactsPage() {
           open={createOpen}
           onClose={() => setCreateOpen(false)}
           onSaved={() => setRefreshKey((k) => k + 1)}
+        />
+      )}
+      {importOpen && (
+        <ImportContactsModal
+          onClose={() => setImportOpen(false)}
+          onDone={() => setRefreshKey((k) => k + 1)}
         />
       )}
     </div>
