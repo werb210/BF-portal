@@ -1865,14 +1865,22 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
     return u?.name ?? "Staff";
   }, [users]);
 
+  // BF_PORTAL_BLOCK_v758 — pin onUnreadChange in a ref so loadChannels (and the
+  // WebSocket effect that depends on it) are STABLE. Previously loadChannels
+  // depended on an inline parent callback, so it was recreated every render,
+  // tearing down/reconnecting the socket and re-fetching channels/messages/read
+  // on a feedback loop that flooded /api/team/*.
+  const onUnreadChangeRef = useRef(onUnreadChange);
+  onUnreadChangeRef.current = onUnreadChange;
+
   const loadChannels = useCallback(async () => {
     try {
       const r = await api<{ channels?: TeamChannel[] }>("/api/team/channels");
       const list: TeamChannel[] = Array.isArray(r?.channels) ? r.channels : [];
       setChannels(list);
-      if (onUnreadChange) onUnreadChange(list.reduce((sum, c) => sum + (c.unread_count || 0), 0));
+      onUnreadChangeRef.current?.(list.reduce((sum, c) => sum + (c.unread_count || 0), 0));
     } catch { /* ignore */ }
-  }, [onUnreadChange]);
+  }, []);
 
   useEffect(() => {
     void loadChannels();
@@ -1895,10 +1903,13 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   useEffect(() => {
     const token = getAuthToken();
     if (!token) return;
+    const authToken: string = token;
     const wsBase = API_BASE.replace(/^http/, "ws");
-    let ws: WebSocket;
-    try { ws = new WebSocket(`${wsBase}/api/team/ws?token=${encodeURIComponent(token)}`); } catch { return; }
-    ws.onmessage = (ev) => {
+    let ws: WebSocket | null = null;
+    let closed = false;
+    let retry = 0;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const handle = (ev: MessageEvent) => {
       try {
         const data = JSON.parse(typeof ev.data === "string" ? ev.data : "{}");
         if (data?.type === "message") {
@@ -1912,7 +1923,23 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
         }
       } catch { /* ignore */ }
     };
-    return () => { try { ws.close(); } catch { /* ignore */ } };
+    const scheduleReconnect = () => {
+      if (closed || timer) return;
+      retry += 1;
+      const delay = Math.min(30000, 1000 * 2 ** Math.min(retry, 5)); // 2s..30s backoff
+      timer = setTimeout(() => { timer = null; connect(); }, delay);
+    };
+    function connect() {
+      if (closed) return;
+      try { ws = new WebSocket(`${wsBase}/api/team/ws?token=${encodeURIComponent(authToken)}`); }
+      catch { scheduleReconnect(); return; }
+      ws.onopen = () => { retry = 0; };
+      ws.onmessage = handle;
+      ws.onerror = () => { try { ws?.close(); } catch { /* ignore */ } };
+      ws.onclose = () => { scheduleReconnect(); };
+    }
+    connect();
+    return () => { closed = true; if (timer) clearTimeout(timer); try { ws?.close(); } catch { /* ignore */ } };
   }, [loadChannels]);
 
   async function send() {
