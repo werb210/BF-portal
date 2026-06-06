@@ -27,7 +27,6 @@ export default function BIContactsList() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [tagInput, setTagInput] = useState("");
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
   const [crmPage, setCrmPage] = useState(1); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
   const [hasNext, setHasNext] = useState(false); // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
@@ -68,12 +67,12 @@ export default function BIContactsList() {
     } catch (e: any) { window.alert(`Mass delete failed: ${e?.message ?? String(e)}`); }
     finally { setBusyMass(null); }
   }
-  async function massTag() {
-    if (!isAdmin || selected.size === 0 || !tagInput.trim()) return;
+  async function massTag(tag: string) { // BF_PORTAL_BLOCK_v745_TAG_PRESET_PULLDOWN
+    if (!isAdmin || selected.size === 0 || !tag) return;
     setBusyMass("tag");
     try {
-      await api(`/api/v1/bi/crm/contacts/bulk-tag`, { method: "POST", body: { ids: Array.from(selected), tag: tagInput.trim() } } as any);
-      setSelected(new Set()); setTagInput(""); setRefreshKey((k) => k + 1);
+      await api(`/api/v1/bi/crm/contacts/bulk-tag`, { method: "POST", body: { ids: Array.from(selected), tag } } as any);
+      setSelected(new Set()); setRefreshKey((k) => k + 1);
     } catch (e: any) { window.alert(`Mass tag failed: ${e?.message ?? String(e)}`); }
     finally { setBusyMass(null); }
   }
@@ -108,8 +107,15 @@ export default function BIContactsList() {
         <div style={massBar}>
           <span style={{ fontWeight: 600, fontSize: 13 }}>{selected.size} selected</span>
           <button disabled={busyMass !== null} onClick={massDelete} style={delBtn}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
-          <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={tagBox} />
-          <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={tagBtn}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
+          {/* BF_PORTAL_BLOCK_v745_TAG_PRESET_PULLDOWN — preset "Tag as" pulldown; applies on select */}
+          <select value="" disabled={busyMass !== null} onChange={(e) => { const v = e.target.value; if (v) void massTag(v); }} style={tagBox}>
+            <option value="">{busyMass === "tag" ? "Tagging…" : "Tag as…"}</option>
+            <option value="lender">Lender</option>
+            <option value="broker">Broker</option>
+            <option value="lawyer">Lawyer</option>
+            <option value="bookkeeper">Account/Book Keeper</option>
+            <option value="referrer">Referrer</option>
+          </select>
           <button onClick={() => setSelected(new Set())} style={clearBtn}>Clear</button>
         </div>
       )}
@@ -163,7 +169,6 @@ const searchInput: CSSProperties = { flex: 1, padding: 8, border: "1px solid #cb
 const massBar: CSSProperties = { display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" };
 const delBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
 const tagBox: CSSProperties = { padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 };
-const tagBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#2563eb", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
 const clearBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#fff", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 13 };
 const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "#fff" };
 const theadRow: CSSProperties = { borderBottom: "1px solid #cbd6e2", background: "#f5f8fa" };
