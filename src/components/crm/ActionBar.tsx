@@ -11,11 +11,12 @@ type Action = "note" | "email" | "call" | "sms" | "task" | "meeting";
 
 // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1 — optional Edit/Delete so BI can adopt this
 // shared bar without losing them; BF callers omit these props and are unchanged.
-export function ActionBar({ scope, contactEmail, contactPhone, contactName, onChanged, onEdit, onDelete, deleting, editTestId, deleteTestId }: {
+export function ActionBar({ scope, contactEmail, contactPhone, contactName, googleQuery, onChanged, onEdit, onDelete, deleting, editTestId, deleteTestId }: {
   scope: Scope;
   contactEmail?: string;
   contactPhone?: string;
   contactName?: string;
+  googleQuery?: string; // BF_PORTAL_BLOCK_v751_CRM_GOOGLE_BUTTON
   onChanged: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -31,6 +32,17 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, onCh
       <div style={row}>
         {onEdit && <ActionBtn label="Edit" onClick={onEdit} testId={editTestId} />}
         {onDelete && <ActionBtn label={deleting ? "Deleting\u2026" : "Delete"} onClick={onDelete} disabled={deleting} danger testId={deleteTestId} />}
+        {/* BF_PORTAL_BLOCK_v751_CRM_GOOGLE_BUTTON */}
+        {(googleQuery ?? contactName) && (
+          <ActionBtn
+            label="Google"
+            onClick={() => {
+              const q = (googleQuery ?? contactName ?? "").trim();
+              if (q) window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank", "noopener,noreferrer");
+            }}
+            testId="crm-google-search"
+          />
+        )}
         <ActionBtn label="Note" onClick={() => setOpen("note")} />
         <ActionBtn label="Email" onClick={() => setOpen("email")} />
         <ActionBtn

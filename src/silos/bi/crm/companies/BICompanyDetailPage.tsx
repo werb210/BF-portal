@@ -222,6 +222,15 @@ export default function BICompanyDetailPage() {
             >
               Delete
             </button>
+            {/* BF_PORTAL_BLOCK_v751_CRM_GOOGLE_BUTTON */}
+            <button
+              type="button"
+              onClick={() => { const q = (co.legal_name || co.operating_name || "").trim(); if (q) window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank", "noopener,noreferrer"); }}
+              style={actionBtn}
+              data-testid="bi-company-google-button"
+            >
+              Google
+            </button>
           </div>
         )}
 

@@ -88,7 +88,7 @@ export default function CompanyDetailPage() {
         </div>
         {company.industry && <div style={subtle}>{company.industry}</div>}
         {company.domain && <a href={`https://${company.domain}`} target="_blank" rel="noreferrer" style={{ color: "#0091ae" }}>{company.domain}</a>}
-        <ActionBar scope={scope} onChanged={() => setRefreshKey(k => k + 1)} />
+        <ActionBar scope={scope} googleQuery={company.name ?? undefined} onChanged={() => setRefreshKey(k => k + 1)} />
         <div style={fieldsBlock}>
           <Field label="Industry" value={company.industry ?? null} />
           <Field label="Domain" value={company.domain ?? null} />
