@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "@/api";
+import { getAuthToken } from "@/lib/authToken"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
+import { API_BASE } from "@/config/api"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
 import { withO365Refresh } from "@/api/o365Interceptor";
 import { ApiError } from "@/api/http";
 import SecondaryButton from "@/components/forms/SecondaryButton";
@@ -8,13 +10,14 @@ import CommunicationsThread from "@/pages/communications/components/Communicatio
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 
-type Tab = "messages" | "sms" | "inbox" | "issues";
+type Tab = "messages" | "sms" | "inbox" | "issues" | "team";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "messages", label: "Messages" },
   { id: "sms", label: "SMS" },
   { id: "inbox", label: "Inbox" },
   { id: "issues", label: "Issues" },
+  { id: "team", label: "Team" }, // BF_PORTAL_BLOCK_v752_TEAM_TAB
 ];
 
 type Contact = {
@@ -1681,11 +1684,12 @@ export default function CommunicationsPage() {
   // BF_PORTAL_BLOCK_v641_TAB_COUNTS_v1 — per-sub-tab counters. Each source is
   // the same endpoint that tab renders from. Fully guarded so a mocked/undefined
   // api response can never throw during render or tests.
-  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; issues: number }>({
+  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; issues: number; team: number }>({
     messages: 0,
     sms: 0,
     inbox: 0,
     issues: 0,
+    team: 0,
   });
   useEffect(() => {
     let cancelled = false;
@@ -1801,6 +1805,230 @@ export default function CommunicationsPage() {
         {tab === "messages" && <MessagesTab onStartConversation={(contact) => { setForcedSmsContact(contact); setTab("sms"); }} />}
         {tab === "inbox" && <InboxTab />}
         {tab === "issues" && <IssuesTab />}
+        {tab === "team" && <TeamTab onUnreadChange={(n) => setTabCounts((c) => ({ ...c, team: n }))} />}
+      </div>
+    </div>
+  );
+}
+
+
+// ── Team tab (internal staff chat, WebSocket-backed) ─────────────────────────
+// BF_PORTAL_BLOCK_v752_TEAM_TAB
+type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string };
+type TeamChannel = {
+  id: string;
+  kind: string;
+  name: string | null;
+  dm_key: string | null;
+  created_by: string | null;
+  created_at: string;
+  member_ids: string[];
+  last_read_at: string | null;
+  last_message: TeamMessage | null;
+  unread_count: number;
+};
+type TeamUser = { id: string; name: string; email: string | null };
+
+function teamCurrentUserId(): string | null {
+  try {
+    const t = getAuthToken();
+    if (!t) return null;
+    const payload = JSON.parse(atob(t.split(".")[1] ?? ""));
+    return (payload?.sub ?? payload?.id ?? null) as string | null;
+  } catch {
+    return null;
+  }
+}
+
+function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
+  const [channels, setChannels] = useState<TeamChannel[]>([]);
+  const [users, setUsers] = useState<TeamUser[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<TeamMessage[]>([]);
+  const [draft, setDraft] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const activeIdRef = useRef<string | null>(null);
+  activeIdRef.current = activeId;
+  const myId = teamCurrentUserId();
+
+  const userName = useCallback((id: string | null): string => {
+    if (!id) return "Staff";
+    const u = users.find((x) => x.id === id);
+    return u?.name ?? "Staff";
+  }, [users]);
+
+  const loadChannels = useCallback(async () => {
+    try {
+      const r = await api<{ channels?: TeamChannel[] }>("/api/team/channels");
+      const list: TeamChannel[] = Array.isArray(r?.channels) ? r.channels : [];
+      setChannels(list);
+      if (onUnreadChange) onUnreadChange(list.reduce((sum, c) => sum + (c.unread_count || 0), 0));
+    } catch { /* ignore */ }
+  }, [onUnreadChange]);
+
+  useEffect(() => {
+    void loadChannels();
+    (async () => {
+      try { const r = await api<{ users?: TeamUser[] }>("/api/team/users"); setUsers(Array.isArray(r?.users) ? r.users : []); } catch { /* ignore */ }
+    })();
+  }, [loadChannels]);
+
+  useEffect(() => {
+    if (!activeId) { setMessages([]); return; }
+    let cancelled = false;
+    (async () => {
+      try { const r = await api<{ messages?: TeamMessage[] }>(`/api/team/channels/${activeId}/messages`); if (!cancelled) setMessages(Array.isArray(r?.messages) ? r.messages : []); } catch { /* ignore */ }
+      try { await api.post(`/api/team/channels/${activeId}/read`, {}); } catch { /* ignore */ }
+      void loadChannels();
+    })();
+    return () => { cancelled = true; };
+  }, [activeId, loadChannels]);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) return;
+    const wsBase = API_BASE.replace(/^http/, "ws");
+    let ws: WebSocket;
+    try { ws = new WebSocket(`${wsBase}/api/team/ws?token=${encodeURIComponent(token)}`); } catch { return; }
+    ws.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(typeof ev.data === "string" ? ev.data : "{}");
+        if (data?.type === "message") {
+          if (data.channel_id === activeIdRef.current && data.message) {
+            setMessages((prev) => (prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]));
+            void api.post(`/api/team/channels/${data.channel_id}/read`, {}).catch(() => undefined);
+          }
+          void loadChannels();
+        } else if (data?.type === "channel") {
+          void loadChannels();
+        }
+      } catch { /* ignore */ }
+    };
+    return () => { try { ws.close(); } catch { /* ignore */ } };
+  }, [loadChannels]);
+
+  async function send() {
+    const body = draft.trim();
+    if (!body || !activeId) return;
+    setDraft("");
+    try {
+      const r = await api.post<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages`, { body });
+      const message = r?.message;
+      if (message) setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
+      void loadChannels();
+    } catch { /* ignore */ }
+  }
+
+  function channelLabel(c: TeamChannel): string {
+    if (c.name) return c.name;
+    const others = c.member_ids.filter((id) => id !== myId).map((id) => userName(id));
+    return others.length ? others.join(", ") : "Direct message";
+  }
+
+  const active = channels.find((c) => c.id === activeId) ?? null;
+
+  return (
+    <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div style={{ width: 280, borderRight: "1px solid #e2e8f0", overflowY: "auto", background: "#fff", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>Team</span>
+          <button onClick={() => setShowNew(true)} style={{ fontSize: 13, color: "#007aff", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+ New</button>
+        </div>
+        {channels.length === 0 && <div style={{ padding: 20, color: "#8e8e93", fontSize: 13 }}>No conversations yet. Tap &quot;+ New&quot; to start one.</div>}
+        {channels.map((c) => (
+          <div key={c.id} onClick={() => setActiveId(c.id)} style={{ padding: "10px 16px", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: c.id === activeId ? "#eff6ff" : "transparent", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {c.kind === "channel" ? "# " : ""}{channelLabel(c)}
+              </div>
+              {c.last_message && <div style={{ fontSize: 12, color: "#8e8e93", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.last_message.body}</div>}
+            </div>
+            {c.unread_count > 0 && <span style={{ background: "#ff3b30", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "0 6px", minWidth: 18, height: 18, lineHeight: "18px", textAlign: "center" }}>{c.unread_count}</span>}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#f8fafc" }}>
+        {!active && <div style={{ margin: "auto", color: "#8e8e93", fontSize: 14 }}>Select a conversation</div>}
+        {active && (
+          <>
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", fontWeight: 700, color: "#0f172a", background: "#fff" }}>
+              {active.kind === "channel" ? "# " : ""}{channelLabel(active)}
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+              {messages.map((m) => {
+                const mine = m.sender_id === myId;
+                return (
+                  <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "70%" }}>
+                    {!mine && <div style={{ fontSize: 11, color: "#8e8e93", marginBottom: 2 }}>{userName(m.sender_id)}</div>}
+                    <div style={{ background: mine ? "#007aff" : "#fff", color: mine ? "#fff" : "#0f172a", border: mine ? "none" : "1px solid #e2e8f0", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.body}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ borderTop: "1px solid #e2e8f0", padding: 12, background: "#fff", display: "flex", gap: 8 }}>
+              <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14 }} />
+              <button onClick={() => void send()} disabled={!draft.trim()} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>Send</button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {showNew && <NewTeamChatModal users={users.filter((u) => u.id !== myId)} onClose={() => setShowNew(false)} onCreated={(id) => { setShowNew(false); void loadChannels(); setActiveId(id); }} />}
+    </div>
+  );
+}
+
+function NewTeamChatModal({ users, onClose, onCreated }: { users: TeamUser[]; onClose: () => void; onCreated: (channelId: string) => void }) {
+  const [mode, setMode] = useState<"dm" | "group" | "channel">("dm");
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function toggle(id: string) {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else { if (mode === "dm") next.clear(); next.add(id); }
+      return next;
+    });
+  }
+
+  async function create() {
+    setBusy(true);
+    try {
+      const body: { kind: "dm" | "group" | "channel"; member_ids: string[]; name?: string } = { kind: mode, member_ids: Array.from(picked) };
+      if (mode !== "dm") body.name = name.trim();
+      const r = await api.post<{ channel_id?: string }>("/api/team/channels", body);
+      if (r?.channel_id) onCreated(r.channel_id);
+    } catch { /* ignore */ } finally { setBusy(false); }
+  }
+
+  const canCreate = mode === "dm" ? picked.size === 1 : (mode === "group" ? picked.size >= 1 : name.trim().length > 0);
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: 420, maxHeight: "80vh", background: "#fff", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 12, overflow: "hidden" }}>
+        <div style={{ fontWeight: 700, fontSize: 16, color: "#0f172a" }}>New conversation</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {(["dm", "group", "channel"] as const).map((m) => (
+            <button key={m} onClick={() => { setMode(m); setPicked(new Set()); }} style={{ flex: 1, padding: "6px 0", borderRadius: 8, border: mode === m ? "1px solid #007aff" : "1px solid #cbd5e1", background: mode === m ? "#eff6ff" : "#fff", color: mode === m ? "#007aff" : "#475569", fontWeight: 600, fontSize: 13, cursor: "pointer", textTransform: "capitalize" }}>{m === "dm" ? "Direct" : m}</button>
+          ))}
+        </div>
+        {mode !== "dm" && <input value={name} onChange={(e) => setName(e.target.value)} placeholder={mode === "channel" ? "Channel name" : "Group name (optional)"} style={{ padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14 }} />}
+        <div style={{ fontSize: 12, color: "#8e8e93" }}>{mode === "dm" ? "Pick one person" : "Pick people"}</div>
+        <div style={{ overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8, maxHeight: 280 }}>
+          {users.map((u) => (
+            <div key={u.id} onClick={() => toggle(u.id)} style={{ padding: "8px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", background: picked.has(u.id) ? "#eff6ff" : "#fff" }}>
+              <span style={{ fontSize: 14, color: "#0f172a" }}>{u.name}</span>
+              {picked.has(u.id) && <span style={{ color: "#007aff" }}>✓</span>}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", border: "1px solid #cbd5e1", background: "#fff", borderRadius: 8, cursor: "pointer" }}>Cancel</button>
+          <button onClick={() => void create()} disabled={!canCreate || busy} style={{ padding: "8px 16px", border: "none", background: canCreate ? "#007aff" : "#cbd5e1", color: "#fff", borderRadius: 8, fontWeight: 600, cursor: canCreate ? "pointer" : "default" }}>{busy ? "Creating…" : "Create"}</button>
+        </div>
       </div>
     </div>
   );
