@@ -82,6 +82,7 @@ type Contact = {
   title: string | null;
   notes: string | null;
   tags: string[] | null;
+  company_name?: string | null; // BF_PORTAL_BLOCK_v749_OUTREACH_COMPANY
   outreach_status: Status | null;
   outreach_owner_id: string | null;
   outreach_updated_at: string | null;
@@ -533,7 +534,10 @@ function BoardColumn(props: {
             data-testid="bi-outreach-card"
           >
             <div className="flex items-center gap-1">
-              <strong className="truncate">{c.full_name}</strong>
+              <strong className="truncate max-w-[60%]">{c.full_name}</strong>
+              {c.company_name && (
+                <span className="truncate text-xs text-white/45 max-w-[40%]" title={c.company_name}>{/* BF_PORTAL_BLOCK_v749_OUTREACH_COMPANY */}{c.company_name}</span>
+              )}
               {c.promoted_lender_id && (
                 <span className="text-[10px] uppercase text-emerald-400/80" title="Onboarded as lender">
                   ✓ lender

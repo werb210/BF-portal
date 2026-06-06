@@ -29,7 +29,29 @@ export default function BIContactsList() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
   const [crmPage, setCrmPage] = useState(1); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
+  const [tagOptions, setTagOptions] = useState<string[]>([]); // BF_PORTAL_BLOCK_v749_VIEWBY
+  const [tagFilter, setTagFilter] = useState<Set<string>>(new Set()); // BF_PORTAL_BLOCK_v749_VIEWBY
+  const tagKey = Array.from(tagFilter).sort().join(","); // BF_PORTAL_BLOCK_v749_VIEWBY
+  const chipBtn = (active: boolean): CSSProperties => ({ // BF_PORTAL_BLOCK_v749_VIEWBY
+    fontSize: 12, padding: "3px 10px", borderRadius: 999,
+    border: active ? "1px solid #6366f1" : "1px solid #334155",
+    background: active ? "#4f46e5" : "transparent",
+    color: active ? "#fff" : "#cbd5e1", cursor: "pointer", whiteSpace: "nowrap",
+  });
+  function toggleTag(t: string) { // BF_PORTAL_BLOCK_v749_VIEWBY
+    setTagFilter((p) => { const n = new Set(p); if (n.has(t)) n.delete(t); else n.add(t); return n; });
+    setCrmPage(1);
+  }
   const [hasNext, setHasNext] = useState(false); // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
+
+  useEffect(() => { // BF_PORTAL_BLOCK_v749_VIEWBY — distinct tags for the View-by filter
+    let cancelled = false;
+    (async () => {
+      try { const r: any = await api(`/api/v1/bi/crm/contacts/tag-list`); if (!cancelled) setTagOptions(Array.isArray(r?.tags) ? r.tags : []); }
+      catch { /* non-fatal */ }
+    })();
+    return () => { cancelled = true; };
+  }, [refreshKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,6 +63,7 @@ export default function BIContactsList() {
         params.set("sort", `${sort.col}:${sort.dir}`);
         params.set("page", String(crmPage)); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
         params.set("pageSize", "100");
+        if (tagKey) params.set("tags", tagKey); // BF_PORTAL_BLOCK_v749_VIEWBY
         const r: any = await api(`/api/v1/bi/crm/contacts${params.toString() ? `?${params}` : ""}`);
         const list: BIContactRow[] = Array.isArray(r) ? r : Array.isArray(r?.items) ? r.items : Array.isArray(r?.data) ? r.data : [];
         if (!cancelled) { setRows(list); setHasNext(list.length >= 100); } // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
@@ -49,7 +72,7 @@ export default function BIContactsList() {
       } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [q, sort.col, sort.dir, refreshKey, crmPage]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
+  }, [q, sort.col, sort.dir, refreshKey, crmPage, tagKey]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
 
   const onSort = (col: SortCol) => setSort((s) => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
   const sortIndicator = (col: SortCol) => (sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "");
@@ -101,6 +124,16 @@ export default function BIContactsList() {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
         <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
+      </div>
+
+      {/* BF_PORTAL_BLOCK_v749_VIEWBY — View-by tag filter (multi-select) */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 0 10px" }}>
+        <span style={{ fontSize: 12, color: "#94a3b8", alignSelf: "center", marginRight: 2 }}>View by:</span>
+        <button type="button" onClick={() => { setTagFilter(new Set()); setCrmPage(1); }} style={chipBtn(tagFilter.size === 0)}>All</button>
+        <button type="button" onClick={() => toggleTag("__none__")} style={chipBtn(tagFilter.has("__none__"))}>Untagged</button>
+        {tagOptions.map((t) => (
+          <button key={t} type="button" onClick={() => toggleTag(t)} style={chipBtn(tagFilter.has(t))}>{t}</button>
+        ))}
       </div>
 
       {isAdmin && selected.size > 0 && (
