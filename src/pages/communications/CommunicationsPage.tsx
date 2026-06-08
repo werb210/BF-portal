@@ -10,13 +10,14 @@ import CommunicationsThread from "@/pages/communications/components/Communicatio
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 
-type Tab = "messages" | "sms" | "inbox" | "issues" | "team";
+type Tab = "messages" | "sms" | "inbox" | "issues" | "maya" | "team"; // BF_PORTAL_BLOCK_v763_MAYA_TAB_TYPE
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "messages", label: "Messages" },
   { id: "sms", label: "SMS" },
   { id: "inbox", label: "Inbox" },
   { id: "issues", label: "Issues" },
+  { id: "maya", label: "Maya" }, // BF_PORTAL_BLOCK_v763_MAYA_TAB
   { id: "team", label: "Team" }, // BF_PORTAL_BLOCK_v752_TEAM_TAB
 ];
 
@@ -1684,11 +1685,12 @@ export default function CommunicationsPage() {
   // BF_PORTAL_BLOCK_v641_TAB_COUNTS_v1 — per-sub-tab counters. Each source is
   // the same endpoint that tab renders from. Fully guarded so a mocked/undefined
   // api response can never throw during render or tests.
-  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; issues: number; team: number }>({
+  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; issues: number; maya: number; team: number }>({
     messages: 0,
     sms: 0,
     inbox: 0,
     issues: 0,
+    maya: 0,
     team: 0,
   });
   useEffect(() => {
@@ -1813,12 +1815,110 @@ export default function CommunicationsPage() {
         {tab === "messages" && <MessagesTab onStartConversation={(contact) => { setForcedSmsContact(contact); setTab("sms"); }} />}
         {tab === "inbox" && <InboxTab />}
         {tab === "issues" && <IssuesTab />}
+        {tab === "maya" && <MayaTab />}
         {tab === "team" && <TeamTab onUnreadChange={(n) => setTabCounts((c) => ({ ...c, team: n }))} />}
       </div>
     </div>
   );
 }
 
+
+// ── Maya tab (read-only visitor AI transcripts) ──────────────────────────────
+// BF_PORTAL_BLOCK_v763_MAYA_TAB — read-only view of Maya AI conversations
+// (chat_sessions / chat_messages) so staff can review how Maya is handling
+// visitors. Separate from Messages, which is for human conversations only.
+type MayaSession = {
+  id: string;
+  source: string | null;
+  channel: string | null;
+  status: string | null;
+  message_count: number;
+  last_message_at: string | null;
+  last_message: string | null;
+};
+type MayaMsg = { id: string; role: string; message: string; created_at: string };
+
+function MayaTab() {
+  const [sessions, setSessions] = useState<MayaSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [messages, setMessages] = useState<MayaMsg[]>([]);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    api<{ sessions?: MayaSession[] }>("/api/communications/maya-sessions")
+      .then((r) => { if (alive) setSessions(r?.sessions ?? []); })
+      .catch(() => { if (alive) setSessions([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!selected) { setMessages([]); return; }
+    let alive = true;
+    setLoadingMsgs(true);
+    api<{ messages?: MayaMsg[] }>(`/api/communications/maya-sessions/${selected}/messages`)
+      .then((r) => { if (alive) setMessages(r?.messages ?? []); })
+      .catch(() => { if (alive) setMessages([]); })
+      .finally(() => { if (alive) setLoadingMsgs(false); });
+    return () => { alive = false; };
+  }, [selected]);
+
+  return (
+    <div style={{ display: "flex", height: "100%" }}>
+      <div style={{ width: 340, borderRight: "1px solid #e2e8f0", overflowY: "auto" }}>
+        {loading ? (
+          <div style={{ padding: 16, color: "#64748b" }}>Loading Maya conversations…</div>
+        ) : sessions.length === 0 ? (
+          <div style={{ padding: 16, color: "#64748b" }}>No Maya conversations yet.</div>
+        ) : sessions.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setSelected(s.id)}
+            style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 14px", border: 0, borderBottom: "1px solid #f1f5f9", background: selected === s.id ? "#eff6ff" : "#fff", cursor: "pointer" }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 13, color: "#0f172a" }}>
+              {s.source || "Maya chat"}{s.status ? ` · ${s.status}` : ""}
+            </div>
+            <div style={{ fontSize: 12, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {s.last_message || `${s.message_count} messages`}
+            </div>
+            <div style={{ fontSize: 11, color: "#94a3b8" }}>
+              {s.message_count} messages{s.last_message_at ? ` · ${new Date(s.last_message_at).toLocaleString()}` : ""}
+            </div>
+          </button>
+        ))}
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
+        {!selected ? (
+          <div style={{ color: "#64748b" }}>Select a Maya conversation to review it.</div>
+        ) : loadingMsgs ? (
+          <div style={{ color: "#64748b" }}>Loading…</div>
+        ) : messages.length === 0 ? (
+          <div style={{ color: "#64748b" }}>No messages in this conversation.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {messages.map((m) => {
+              const isUser = m.role === "user";
+              return (
+                <div key={m.id} style={{ alignSelf: isUser ? "flex-end" : "flex-start", maxWidth: "75%" }}>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 2, textAlign: isUser ? "right" : "left" }}>
+                    {isUser ? "Visitor" : m.role === "ai" ? "Maya" : m.role}
+                  </div>
+                  <div style={{ background: isUser ? "#2563eb" : "#f1f5f9", color: isUser ? "#fff" : "#0f172a", padding: "8px 12px", borderRadius: 12, fontSize: 14, whiteSpace: "pre-wrap" }}>
+                    {m.message}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ── Team tab (internal staff chat, WebSocket-backed) ─────────────────────────
 // BF_PORTAL_BLOCK_v752_TEAM_TAB
