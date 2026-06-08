@@ -389,7 +389,13 @@ function CalendarContent() {
             <p><strong>Attendees:</strong> {Array.isArray(selectedEvent.resource.attendees) ? selectedEvent.resource.attendees.join(", ") : (selectedEvent.resource.attendees ?? "—")}</p>
             <p><strong>Location:</strong> {selectedEvent.resource.location ?? "—"}</p>
             {(selectedEvent.resource.teams_link || selectedEvent.resource.teamsLink) && (
-              <p><strong>Teams Link:</strong> <a target="_blank" rel="noreferrer" href={selectedEvent.resource.teams_link ?? selectedEvent.resource.teamsLink}>Open meeting</a></p>
+              <p style={{ margin: "10px 0" }}>
+                <a target="_blank" rel="noreferrer"
+                   href={selectedEvent.resource.teams_link ?? selectedEvent.resource.teamsLink}
+                   style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#5b5fc7", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, textDecoration: "none" }}>
+                  Join Teams meeting
+                </a>
+              </p>
             )}
             {/* BF_PORTAL_BLOCK_v712 — Teams invites stuff raw HTML into notes; strip tags to readable text. */}
             <p style={{ whiteSpace: "pre-wrap", maxHeight: 200, overflow: "auto" }}><strong>Notes:</strong> {(() => {

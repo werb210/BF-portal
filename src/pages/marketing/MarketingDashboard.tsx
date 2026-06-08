@@ -1,9 +1,8 @@
 import { useState } from "react";
 
-type MarketingTab = "campaigns" | "google-ads" | "linkedin-ads" | "analytics" | "bulk-sms" | "assets";
+type MarketingTab = "google-ads" | "linkedin-ads" | "analytics" | "bulk-sms" | "assets";
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
-  { id: "campaigns", label: "Email Campaigns" },
   { id: "google-ads", label: "Google Ads" },
   { id: "linkedin-ads", label: "LinkedIn Ads" },
   { id: "analytics", label: "Analytics" },
@@ -12,7 +11,7 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
 ];
 
 const MarketingDashboard = () => {
-  const [tab, setTab] = useState<MarketingTab>("campaigns");
+  const [tab, setTab] = useState<MarketingTab>("bulk-sms");
 
   return (
     <div className="space-y-4">
@@ -28,14 +27,6 @@ const MarketingDashboard = () => {
           </button>
         ))}
       </div>
-
-      {tab === "campaigns" && (
-        <section className="drawer-section">
-          <div className="drawer-section__title">SendGrid Campaigns</div>
-          <p>Track campaign name, status, sent count, open rate, and click rate.</p>
-          <p>Create campaigns with subject, rich body, audience segment, and schedule.</p>
-        </section>
-      )}
 
       {tab === "google-ads" && (
         <section className="drawer-section">

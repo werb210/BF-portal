@@ -37,6 +37,8 @@ type Card = {
   stage_entered_at?: string | null;
   doc_progress?: DocProgress;
   contact_name?: string | null;
+  productCategory?: string | null;
+  product_category?: string | null;
 };
 
 function isDraftLikeApplication(card: Card): boolean {
@@ -250,6 +252,18 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
   const name = cardName;
   const amount = card.requested_amount
     ? `$${Number(card.requested_amount).toLocaleString()}` : null;
+  // BF_PORTAL_BLOCK_v776 — product category under the amount (LOC / Equipment / …)
+  const productCat = (() => {
+    const raw = String((card as any).productCategory ?? (card as any).product_category ?? "").trim();
+    if (!raw) return null;
+    const k = raw.toLowerCase().replace(/[\s-]+/g, "_");
+    const map: Record<string, string> = {
+      line_of_credit: "LOC", loc: "LOC",
+      equipment_financing: "Equipment", equipment: "Equipment", equipment_finance: "Equipment",
+      working_capital: "Working Capital", term_loan: "Term Loan", factoring: "Factoring",
+    };
+    return map[k] ?? raw.replace(/[_-]+/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+  })();
   const lastTouch = relativeTime(card.created_at);
   const stage_age = stageAge(card.stage_entered_at);
   const docPill = docProgressLabel(card.doc_progress);
@@ -297,6 +311,11 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
             <span title={ownerTitle || "Owner"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 999, background: "#334155", color: "#e2e8f0", fontSize: 9, fontWeight: 700 }}>{ownerInitials}</span>
           )}
         </div>
+
+        {/* BF_PORTAL_BLOCK_v776 — product category under the amount */}
+        {productCat && (
+          <div style={{ fontSize: 11, color: "#cbd5e1", marginBottom: 6 }}>{productCat}</div>
+        )}
 
         {/* Pills row: doc progress, stage age */}
         {(docPill || stage_age) && (

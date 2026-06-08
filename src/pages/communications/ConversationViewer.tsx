@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import { Link } from "react-router-dom";
 import Button from "@/components/ui/Button";
 import type { CommunicationConversation, CommunicationMessage } from "@/api/communications";
 import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
@@ -40,7 +41,12 @@ const ConversationViewer = ({ conversation, onSend, onAcknowledgeIssue }: Conver
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center mb-3">
         <div>
-          <div className="text-lg font-semibold">{conversation.contactName || conversation.applicationName}</div>
+          <div className="flex items-center gap-2">
+            <div className="text-lg font-semibold">{conversation.contactName || conversation.applicationName}</div>
+            {conversation.contactId && (
+              <Link className="ui-button ui-button--secondary" style={{ fontSize: 12, padding: "2px 8px" }} to={`/crm/contacts/${conversation.contactId}`}>Open contact</Link>
+            )}
+          </div>
           <div className="text-sm text-slate-500 space-x-2">
             {metadata?.map((item) => (
               <span key={item} className="inline-block">
@@ -49,7 +55,7 @@ const ConversationViewer = ({ conversation, onSend, onAcknowledgeIssue }: Conver
             ))}
           </div>
           <div className="text-xs text-indigo-700 mt-1 space-x-3">
-            {conversation.contactId && <span>View in CRM Timeline</span>}
+            {conversation.contactId && <Link className="hover:underline" to={`/crm/contacts/${conversation.contactId}`}>View in CRM Timeline</Link>}
             {conversation.applicationId && <span>View in Application Card</span>}
           </div>
         </div>
