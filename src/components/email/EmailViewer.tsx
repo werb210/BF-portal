@@ -6,6 +6,35 @@ import Button from "@/components/ui/Button";
 import type { EmailMessage } from "@/api/email";
 import { fetchEmailMessage, fetchEmailMessages, archiveEmailMessage } from "@/api/email";
 import EmailMessageItem from "./EmailMessageItem";
+import O365ComposeModal from "@/components/communications/O365ComposeModal";
+
+// BF_PORTAL_BLOCK_v803_EMAIL_REPLY_FORWARD — reply / reply-all / forward open the
+// O365 composer pre-filled; sending goes through /api/o365/mail/send and is logged
+// to this contact's timeline via logScope.
+function rePrefix(subject: string): string {
+  const t = (subject ?? "").trim();
+  return /^re:/i.test(t) ? t : `Re: ${t}`;
+}
+function fwdPrefix(subject: string): string {
+  const t = (subject ?? "").trim();
+  return /^fwd?:/i.test(t) ? t : `Fwd: ${t}`;
+}
+function quotedBody(m: EmailMessage): string {
+  const esc = (v: string) => (v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return `<br/><br/><hr/><div style="color:#64748b;font-size:12px">From: ${esc(m.from)}<br/>To: ${esc(m.to)}<br/>Subject: ${esc(m.subject)}</div><br/>${m.body ?? ""}`;
+}
+function dedupeEmails(list: string[]): string {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of list) {
+    const e = raw.trim();
+    if (!e) continue;
+    const key = e.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key); out.push(e);
+  }
+  return out.join(", ");
+}
 
 interface EmailViewerProps {
   visible: boolean;
@@ -18,6 +47,8 @@ const EmailViewer = ({ visible, contactId, contactEmail, onClose }: EmailViewerP
   const [folder, setFolder] = useState<"inbox" | "sent" | "archived" | "">("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<EmailMessage | null>(null);
+  // BF_PORTAL_BLOCK_v803_EMAIL_REPLY_FORWARD
+  const [compose, setCompose] = useState<{ to: string; subject: string; body: string } | null>(null);
 
   const { data: messages = [], refetch } = useQuery({
     queryKey: ["email", contactId, folder, search, contactEmail],
@@ -74,7 +105,24 @@ const EmailViewer = ({ visible, contactId, contactEmail, onClose }: EmailViewerP
                     ))}
                   </ul>
                 )}
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex gap-2 flex-wrap">
+                  <Button
+                    onClick={() => selected && setCompose({ to: selected.from, subject: rePrefix(selected.subject), body: quotedBody(selected) })}
+                  >
+                    Reply
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => selected && setCompose({ to: dedupeEmails([selected.from, ...selected.to.split(",")]), subject: rePrefix(selected.subject), body: quotedBody(selected) })}
+                  >
+                    Reply All
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => selected && setCompose({ to: "", subject: fwdPrefix(selected.subject), body: quotedBody(selected) })}
+                  >
+                    Forward
+                  </Button>
                   <Button>Log Email to CRM Timeline</Button>
                   <Button
                     variant="secondary"
@@ -94,6 +142,15 @@ const EmailViewer = ({ visible, contactId, contactEmail, onClose }: EmailViewerP
             )}
           </div>
         </div>
+        <O365ComposeModal
+          open={!!compose}
+          initialTo={compose?.to ?? ""}
+          initialSubject={compose?.subject ?? ""}
+          initialBody={compose?.body ?? ""}
+          onClose={() => setCompose(null)}
+          onSent={() => setCompose(null)}
+          logScope={{ kind: "contact", id: contactId }}
+        />
       </Card>
     </div>
   );
