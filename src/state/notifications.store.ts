@@ -11,6 +11,7 @@ type NotificationsState = {
   messagesUnread: number;
   setMessagesUnread: (n: number) => void;
   addNotification: (notification: NotificationItem) => void;
+  mergeServer: (notifications: NotificationItem[]) => void;
   markRead: (id: string) => void;
   markAllRead: () => void;
   clearAll: () => void;
@@ -29,6 +30,19 @@ export const useNotificationsStore = create<NotificationsState>((set) => ({
         notifications: nextNotifications,
         toast: notification
       };
+    }),
+  // BF_PORTAL_BLOCK_v798_SERVER_NOTIFICATIONS — merge server feed (no toast on poll).
+  mergeServer: (incoming) =>
+    set((state) => {
+      const byId = new Map(state.notifications.map((item) => [item.id, item] as const));
+      for (const item of incoming) {
+        const existing = byId.get(item.id);
+        byId.set(item.id, existing ? { ...existing, ...item } : item);
+      }
+      const merged = Array.from(byId.values())
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .slice(0, MAX_NOTIFICATIONS);
+      return { notifications: merged };
     }),
   markRead: (id) =>
     set((state) => ({
