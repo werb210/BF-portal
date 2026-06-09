@@ -105,6 +105,12 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
+  // BF_PORTAL_BLOCK_v801_MULTISEND — pick multiple contacts, send the same SMS to each 1:1 via /broadcast.
+  const [multi, setMulti] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [bcBody, setBcBody] = useState("");
+  const [bcSending, setBcSending] = useState(false);
+  const [bcResult, setBcResult] = useState<string | null>(null);
   const [newThreadPhone, setNewThreadPhone] = useState("");
   const [showNewThread, setShowNewThread] = useState(false);
   const [hasSentMessages, setHasSentMessages] = useState(false);
@@ -362,6 +368,22 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     return d.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
   }
 
+  const sendBroadcast = async () => {
+    const ids = Array.from(picked);
+    if (!ids.length || !bcBody.trim() || bcSending) return;
+    setBcSending(true); setBcResult(null);
+    try {
+      const r: any = await api.post("/api/communications/broadcast", { contactIds: ids, body: bcBody.trim(), channel: "sms" });
+      const sent = Number(r?.sent ?? r?.data?.sent ?? ids.length);
+      setBcResult(`Sent to ${sent} contact(s).`);
+      setBcBody(""); setPicked(new Set());
+    } catch {
+      setBcResult("Send failed. Please try again.");
+    } finally {
+      setBcSending(false);
+    }
+  };
+
   const filtered = contacts
     .filter((c) => {
       const q = search.toLowerCase();
@@ -403,6 +425,12 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <span style={{ fontWeight: 700, fontSize: 17, color: "#000", flex: 1 }}>Messages</span>
             <button
+              onClick={() => { setMulti((m) => !m); setPicked(new Set()); setBcResult(null); }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#007aff", padding: "0 8px", fontWeight: 600 }}
+            >
+              {multi ? "Cancel" : "Select"}
+            </button>
+            <button
               onClick={() => setShowNewThread(true)}
               title="New Message"
               style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#007aff", padding: 0 }}
@@ -427,6 +455,41 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
             }}
           />
         </div>
+
+        {multi && (
+          <div style={{ padding: "0 12px 8px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <label style={{ fontSize: 13, color: "#007aff", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                <input
+                  type="checkbox"
+                  checked={filtered.length > 0 && filtered.every((c) => picked.has(String(c.id)))}
+                  onChange={(e) => setPicked(e.target.checked ? new Set(filtered.map((c) => String(c.id))) : new Set())}
+                />
+                Select all ({filtered.length})
+              </label>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "#8e8e93" }}>{picked.size} selected</span>
+            </div>
+            {picked.size > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <textarea
+                  value={bcBody}
+                  onChange={(e) => setBcBody(e.target.value)}
+                  placeholder={`Message ${picked.size} contact(s) individually…`}
+                  rows={2}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d1d6", fontSize: 14, boxSizing: "border-box", resize: "vertical", color: "#000" }}
+                />
+                <button
+                  disabled={!bcBody.trim() || bcSending}
+                  onClick={() => void sendBroadcast()}
+                  style={{ alignSelf: "flex-end", padding: "7px 16px", background: bcBody.trim() && !bcSending ? "#007aff" : "#b5d3ff", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: bcBody.trim() && !bcSending ? "pointer" : "not-allowed" }}
+                >
+                  {bcSending ? "Sending…" : `Send to ${picked.size}`}
+                </button>
+              </div>
+            )}
+            {bcResult && <div style={{ fontSize: 12, color: "#16a34a", marginTop: 4 }}>{bcResult}</div>}
+          </div>
+        )}
 
         {/* New thread input */}
         {showNewThread && (
@@ -521,6 +584,16 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   position: "relative",
                 }}
               >
+                {multi && (
+                  <input
+                    type="checkbox"
+                    checked={picked.has(String(c.id))}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => { e.stopPropagation(); setPicked((prev) => { const n = new Set(prev); const k = String(c.id); if (n.has(k)) n.delete(k); else n.add(k); return n; }); }}
+                    style={{ flexShrink: 0, width: 18, height: 18 }}
+                    aria-label="Select contact"
+                  />
+                )}
                 <Avatar name={c.name} size={44} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
