@@ -19,6 +19,8 @@
 //     (the wizard does NOT nest partner — submitNormalize.ts uses flat fields).
 //   - Ownership % for the applicant.
 import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useState } from "react";
+import { fetchTaskStatus, type TaskStatus } from "@/api/applicationTasks";
 
 type AnyRecord = Record<string, any>;
 type Props = { application: AnyRecord | null };
@@ -63,6 +65,21 @@ function readFlatPartner(applicant: AnyRecord, fdApplicant: AnyRecord): AnyRecor
 }
 
 export default function ApplicationTab({ application }: Props) {
+  // BF_PORTAL_BLOCK_v784_TASK_CHECKLIST — client task completion for staff.
+  const v784_appId = application ? String((application as any).id ?? "") : "";
+  const [v784_tasks, v784_setTasks] = useState<TaskStatus | null>(null);
+  const [v784_err, v784_setErr] = useState<string | null>(null);
+  useEffect(() => {
+    if (!v784_appId) return;
+    let active = true;
+    v784_setTasks(null);
+    v784_setErr(null);
+    fetchTaskStatus(v784_appId)
+      .then((d) => { if (active) v784_setTasks(d); })
+      .catch(() => { if (active) v784_setErr("Could not load task status."); });
+    return () => { active = false; };
+  }, [v784_appId]);
+
   if (!application) {
     return (
       <div style={styles.page}>
@@ -159,6 +176,31 @@ export default function ApplicationTab({ application }: Props) {
           </button>
           <span style={styles.statusPill}>{fmt(application.stage, "—")}</span>
         </div>
+      </div>
+
+      <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
+          Client Tasks
+          {v784_tasks && v784_tasks.summary.total > 0 ? ` · ${v784_tasks.summary.complete} of ${v784_tasks.summary.total} complete` : ""}
+        </div>
+        {v784_err && <div style={{ color: "#b91c1c", fontSize: 13 }}>{v784_err}</div>}
+        {!v784_tasks && !v784_err && <div style={{ color: "#64748b", fontSize: 13 }}>Loading…</div>}
+        {v784_tasks && v784_tasks.summary.total === 0 && (
+          <div style={{ color: "#64748b", fontSize: 13 }}>No client tasks tracked for this application.</div>
+        )}
+        {v784_tasks && v784_tasks.summary.total > 0 && (
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 4 }}>
+            {v784_tasks.tasks.map((t) => (
+              <li key={t.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                <span aria-hidden style={{ display: "inline-flex", width: 16, height: 16, borderRadius: "50%", alignItems: "center", justifyContent: "center", fontSize: 11, lineHeight: 1, color: "#fff", background: t.complete ? "#16a34a" : "#cbd5e1" }}>{t.complete ? "✓" : ""}</span>
+                <span style={{ color: t.complete ? "#16a34a" : "#334155" }}>{t.label}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {v784_tasks && v784_tasks.summary.allComplete && (
+          <div style={{ marginTop: 8, color: "#16a34a", fontWeight: 600, fontSize: 13 }}>All client tasks complete ✓</div>
+        )}
       </div>
 
       <SectionGroup title="Funding">

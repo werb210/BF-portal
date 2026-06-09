@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { api } from "@/api";
-import OverviewTab from "@/pages/applications/tabs/OverviewTab";
 // BF_NO_OVERVIEW_v41 — Block 41-C — Overview tab removed from drawer.
 import ApplicationTab from "@/pages/applications/tabs/ApplicationTab";
 import BankingAnalysisTab from "@/pages/applications/tabs/BankingAnalysisTab";
@@ -12,7 +11,6 @@ import NotesTab from "@/pages/applications/tabs/NotesTab";
 import LendersTab from "@/pages/applications/tabs/LendersTab";
 
 const TABS = [
-  { key: "overview", label: "Overview" },
   { key: "application", label: "Application" },
   { key: "banking-analysis", label: "Banking Analysis" },
   { key: "financials", label: "Financials" },
@@ -25,8 +23,8 @@ const TABS = [
 type TabKey = (typeof TABS)[number]["key"];
 
 function activeTabFromPath(pathname: string): TabKey {
-  const segment = pathname.split("/").filter(Boolean).at(-1) ?? "overview";
-  return (TABS.find((tab) => tab.key === segment)?.key ?? "overview") as TabKey;
+  const segment = pathname.split("/").filter(Boolean).at(-1) ?? "application";
+  return (TABS.find((tab) => tab.key === segment)?.key ?? "application") as TabKey;
 }
 
 // BF_PORTAL_BLOCK_v173_TAB_STRIP_OVERLAP_v1
@@ -60,7 +58,6 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
 
   // BF_PORTAL_BLOCK_v187_TABS_PROP_WIRING_v1 — pass applicationId to FinancialsTab and DocumentsTab
   const tabBody = {
-    overview: <OverviewTab application={application} applicationId={applicationId} />,
     application: <ApplicationTab application={application} />,
     "banking-analysis": <BankingAnalysisTab applicationId={applicationId} />,
     financials: <FinancialsTab applicationId={applicationId} />,
