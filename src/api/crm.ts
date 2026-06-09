@@ -190,6 +190,7 @@ const root = (s: Scope) =>
 export type ContactRow = {
   id: string;
   name: string;
+  tags?: string[] | null; // BF_PORTAL_BLOCK_v811_TAGS_COLUMN
   first_name?: string;
   last_name?: string;
   email?: string;
