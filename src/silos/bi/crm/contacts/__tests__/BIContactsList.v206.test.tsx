@@ -166,4 +166,28 @@ describe("BF_PORTAL_BLOCK_v206 — BIContactsList", () => {
       expect(apiMock).toHaveBeenCalledWith(expect.stringContaining("owner_id=staff-1"));
     });
   });
+
+  it("imports a selected spreadsheet through the outreach importer and refreshes", async () => {
+    apiMock.mockImplementation((path: string) => {
+      if (path === "/api/v1/bi/crm/outreach/import") {
+        return Promise.resolve({ imported: 1, updated: 2, suppressed: 3, skipped: 4 });
+      }
+      if (path === "/api/v1/bi/crm/contacts/tag-list") return Promise.resolve({ tags: [] });
+      return Promise.resolve([]);
+    });
+
+    renderList();
+    await waitFor(() => expect(apiMock).toHaveBeenCalledWith(expect.stringContaining("/api/v1/bi/crm/contacts")));
+
+    const file = new File(["email\ntodd@example.com\n"], "contacts.csv", { type: "text/csv" });
+    fireEvent.change(screen.getByTestId("bi-crm-import-input"), { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(apiMock).toHaveBeenCalledWith(
+        "/api/v1/bi/crm/outreach/import",
+        expect.objectContaining({ method: "POST", body: expect.any(FormData) }),
+      );
+    });
+    expect(await screen.findByRole("status")).toHaveTextContent("Imported 1 · updated 2 · suppressed 3 · skipped 4");
+  });
 });

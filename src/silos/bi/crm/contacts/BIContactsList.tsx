@@ -1,5 +1,5 @@
 // BF_PORTAL_BLOCK_v664_BI_CONTACTS_BULK
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +26,28 @@ export default function BIContactsList() {
   const [err, setErr] = useState<string | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  // BF_PORTAL_BLOCK_v813_BI_CRM_IMPORT — import a spreadsheet straight into the BI CRM (same importer as Outreach).
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  async function importFile(file: File) {
+    setImporting(true); setImportMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r: any = await api(`/api/v1/bi/crm/outreach/import`, { method: "POST", body: fd } as any);
+      const imported = Number(r?.imported ?? 0), updated = Number(r?.updated ?? 0), suppressed = Number(r?.suppressed ?? 0), skipped = Number(r?.skipped ?? 0);
+      setImportMsg(`Imported ${imported} · updated ${updated} · suppressed ${suppressed} · skipped ${skipped}`);
+      setRefreshKey((k) => k + 1);
+    } catch (e: any) {
+      setImportMsg(`Import failed: ${e?.message ?? String(e)}`);
+    } finally { setImporting(false); }
+  }
+  function onPickImport(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (f) void importFile(f);
+  }
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | "assign" | null>(null);
   // BF_PORTAL_BLOCK_v809_BI_ASSIGN_CREATE
@@ -177,9 +199,12 @@ export default function BIContactsList() {
         </select>
         <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
+        <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1 }}>{importing ? "Importing…" : "Import"}</button>
+        <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-crm-import-input" />
         <button type="button" onClick={() => setCreateOpen(true)} style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", whiteSpace: "nowrap" }}>+ Create Contact</button>
       </div>
 
+      {importMsg && <div style={{ fontSize: 12, color: "#34d399", padding: "0 0 8px" }} role="status">{importMsg}</div>}
       {/* BF_PORTAL_BLOCK_v749_VIEWBY — View-by tag filter (multi-select) */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 0 10px" }}>
         <span style={{ fontSize: 12, color: "#94a3b8", alignSelf: "center", marginRight: 2 }}>View by:</span>
