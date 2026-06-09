@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { useNavigate } from "react-router-dom";
+import RequestStepsModal from "./RequestStepsModal"; // BF_PORTAL_BLOCK_v793_REQUEST_STEPS
 
 const STAGES = [
   "Received", "In Review", "Documents Required",
@@ -193,7 +194,8 @@ export default function PipelinePage() {
                       navigate(`/applications/${card.id}`);
                     }}
                     onMove={move}
-                    onDelete={removeCard} />
+                    onDelete={removeCard}
+                    onRefresh={load} />
                 ))}
                 {col.length === 0 && (
                   <div style={{ fontSize: 12, color: "#475569", textAlign: "center", padding: "14px 0" }}>
@@ -209,17 +211,19 @@ export default function PipelinePage() {
   );
 }
 
-function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
+function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
   card: Card; stage: Stage; busy: boolean;
   onOpen: () => void;
   onMove: (id: string, to: string) => void;
   onDelete: (id: string) => void;
+  onRefresh: () => void; // BF_PORTAL_BLOCK_v793_REQUEST_STEPS
 }) {
   // BF_PORTAL_BLOCK_v175_CALL_CLIENT_BUTTON_v1
   // The pipeline card payload doesn't include phone (Card type only carries
   // id/name/state/amount/created_at). On Call click we fetch the application
   // details to pull applicantDetails.phone, then open the dialer pre-filled.
   const [callBusy, setCallBusy] = useState(false);
+  const [stepsOpen, setStepsOpen] = useState(false); // BF_PORTAL_BLOCK_v793_REQUEST_STEPS
   const cardName = card.business_legal_name ?? card.name ?? "Unnamed";
   // BF_PORTAL_BLOCK_v225_DIALER_CLEAN_SLATE_v1 -- look up phone via API,
   // then hand off to the OS dialer with a tel: link.
@@ -342,12 +346,20 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete }: {
 
       {/* Request Additional Steps — only on In Review or Documents Required */}
       {(stage === "In Review" || stage === "Documents Required") && (
-        <button disabled={busy} onClick={() => onMove(card.id, "Additional Steps Required")}
+        <button disabled={busy} onClick={() => setStepsOpen(true)}
           style={{ ...btnBase, width: "100%", flex: "unset",
             background: "#f97316" + "18", borderColor: "#f97316" + "55",
             color: "#f97316", marginBottom: 0, textAlign: "left", paddingLeft: 8 }}>
           ↗ Request additional steps
         </button>
+      )}
+      {stepsOpen && (
+        <RequestStepsModal
+          applicationId={card.id}
+          applicationName={card.name}
+          onClose={() => setStepsOpen(false)}
+          onDone={onRefresh}
+        />
       )}
 
       {/* Accept / Reject — only on Offer */}
