@@ -28,6 +28,9 @@ export default function BIContactsList() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
+  // BF_PORTAL_BLOCK_v807_BI_OWNER_PARITY — resolve owner UUID -> staff name + owner filter (BF parity).
+  const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
+  const [ownerId, setOwnerId] = useState("");
   const [crmPage, setCrmPage] = useState(1); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
   const [tagOptions, setTagOptions] = useState<string[]>([]); // BF_PORTAL_BLOCK_v749_VIEWBY
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set()); // BF_PORTAL_BLOCK_v749_VIEWBY
@@ -55,6 +58,27 @@ export default function BIContactsList() {
 
   useEffect(() => {
     let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get<{ users?: Array<{ id: string; first_name?: string; last_name?: string }> } | Array<{ id: string; first_name?: string; last_name?: string }>>("/api/users");
+        const list = Array.isArray(r) ? r : (r?.users ?? []);
+        if (!cancelled) setOwners(list);
+      } catch {
+        if (!cancelled) setOwners([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const ownerName = (id: string | null): string => {
+    if (!id) return "—";
+    const owner = owners.find((u) => u.id === id);
+    const name = owner ? `${owner.first_name ?? ""} ${owner.last_name ?? ""}`.trim() : "";
+    return name || "—";
+  };
+
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true); setErr(null); setLoadFailed(false);
     (async () => {
       try {
@@ -64,6 +88,7 @@ export default function BIContactsList() {
         params.set("page", String(crmPage)); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
         params.set("pageSize", "100");
         if (tagKey) params.set("tags", tagKey); // BF_PORTAL_BLOCK_v749_VIEWBY
+        if (ownerId) params.set("owner_id", ownerId); // BF_PORTAL_BLOCK_v807_BI_OWNER_PARITY
         const r: any = await api(`/api/v1/bi/crm/contacts${params.toString() ? `?${params}` : ""}`);
         const list: BIContactRow[] = Array.isArray(r) ? r : Array.isArray(r?.items) ? r.items : Array.isArray(r?.data) ? r.data : [];
         if (!cancelled) { setRows(list); setHasNext(list.length >= 100); } // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
@@ -72,7 +97,7 @@ export default function BIContactsList() {
       } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [q, sort.col, sort.dir, refreshKey, crmPage, tagKey]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
+  }, [q, sort.col, sort.dir, refreshKey, crmPage, tagKey, ownerId]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
 
   const onSort = (col: SortCol) => setSort((s) => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
   const sortIndicator = (col: SortCol) => (sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "");
@@ -111,10 +136,10 @@ export default function BIContactsList() {
       <td style={tdStyle}>{r.company_name ?? "—"}</td>
       <td style={tdStyle}>{r.tags && r.tags.length ? (<span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>{r.tags.map((t) => (<span key={t} style={tagChip}>{t}</span>))}</span>) : "—"}</td>{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
       <td style={tdStyle}>{r.outreach_status ? r.outreach_status.replace(/_/g, " ") : "—"}</td>
-      <td style={tdStyle}>{r.outreach_owner_id ?? "—"}</td>
+      <td style={tdStyle}>{ownerName(r.outreach_owner_id)}</td>
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows, isAdmin, selected]);
+  )), [rows, isAdmin, selected, owners]);
 
   const colCount = isAdmin ? 7 : 6; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 (+Tags col)
 
@@ -122,6 +147,10 @@ export default function BIContactsList() {
     <div style={page} data-testid="bi-contacts-list">
       <div style={toolbar}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
+        <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #334155", background: "transparent", color: "#cbd5e1", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
+          <option value="">All owners</option>
+          {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
+        </select>
         <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
       </div>

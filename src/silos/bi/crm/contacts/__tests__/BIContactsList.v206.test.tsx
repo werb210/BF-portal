@@ -4,9 +4,13 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1", role: "A
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
-const apiMock = vi.fn();
+const apiMock = vi.hoisted(() => {
+  const fn = vi.fn() as any;
+  fn.get = vi.fn();
+  return fn;
+});
 vi.mock("@/api", () => ({
-  api: (...args: unknown[]) => apiMock(...args),
+  api: apiMock,
 }));
 
 import BIContactsList from "@/silos/bi/crm/contacts/BIContactsList";
@@ -37,7 +41,11 @@ function renderList() {
 }
 
 describe("BF_PORTAL_BLOCK_v206 — BIContactsList", () => {
-  beforeEach(() => apiMock.mockReset());
+  beforeEach(() => {
+    apiMock.mockReset();
+    apiMock.get.mockReset();
+    apiMock.get.mockResolvedValue({ users: [{ id: "staff-1", first_name: "Jane", last_name: "Owner" }] });
+  });
 
   it("loads contacts on mount and renders one row per record", async () => {
     apiMock.mockResolvedValueOnce({ tags: [] }); // BF_PORTAL_BLOCK_v757 — tag-list fires first
@@ -137,6 +145,25 @@ describe("BF_PORTAL_BLOCK_v206 — BIContactsList", () => {
     renderList();
     await waitFor(() => {
       expect(screen.getByText("demo booked")).toBeInTheDocument();
+    });
+  });
+
+  it("renders owner names from /api/users and filters by owner_id", async () => {
+    apiMock.mockResolvedValueOnce({ tags: [] });
+    apiMock.mockResolvedValueOnce([rowFixture()]);
+
+    renderList();
+
+    expect(await screen.findAllByText("Jane Owner")).toHaveLength(2);
+    expect(apiMock.get).toHaveBeenCalledWith("/api/users");
+
+    apiMock.mockClear();
+    fireEvent.change(screen.getByTestId("bi-owner-filter"), {
+      target: { value: "staff-1" },
+    });
+
+    await waitFor(() => {
+      expect(apiMock).toHaveBeenCalledWith(expect.stringContaining("owner_id=staff-1"));
     });
   });
 });
