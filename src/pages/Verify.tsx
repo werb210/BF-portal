@@ -69,6 +69,8 @@ export default function Verify() {
         <input
           data-testid="code-input"
           type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
           placeholder="Enter code"
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -77,6 +79,7 @@ export default function Verify() {
           id="staff-verify-code"
           className="w-full px-3.5 py-3 text-base text-slate-900 bg-white border border-slate-300 rounded-lg mb-3 box-border text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-60"
         />
+        <p className="text-xs text-slate-500 mt-1 mb-2 text-center">{/* BF_PORTAL_BLOCK_v790_OTP_AUTOFILL */}Enter the 6-digit code we texted you.</p>
         {error ? (
           <div className="flex flex-col items-center gap-1">
             <p className="text-xs text-red-600 text-center max-w-xs">{error}</p>
