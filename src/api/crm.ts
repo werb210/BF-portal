@@ -255,10 +255,10 @@ export const crmApi = {
   listContacts: (params: Record<string, string | number | undefined> = {}) =>
     api.get<{ data?: ContactRow[] } | ContactRow[]>(`/api/crm/contacts`, { params }).then(unwrap<ContactRow[]>),
   bulkDeleteContacts: (ids: string[]) => api.post("/api/crm/contacts/bulk-delete", { ids }),
-  bulkTagContacts: (ids: string[], tag: string) => api.post("/api/crm/contacts/bulk-tag", { ids, tag }),
+  bulkTagContacts: (ids: string[], tag: string) => api.post("/api/crm/contacts/bulk-tag", { ids, tags: [tag], op: "add" }), // BF_PORTAL_BLOCK_v802_ACTIVE_TAG — server expects {tags[],op}, not {tag}
   bulkAssignContacts: (ids: string[], ownerUserId: string) => api.post("/api/crm/contacts/bulk-assign", { ids, ownerUserId }),
   bulkDeleteCompanies: (ids: string[]) => api.post("/api/crm/companies/bulk-delete", { ids }),
-  bulkTagCompanies: (ids: string[], tag: string) => api.post("/api/crm/companies/bulk-tag", { ids, tag }),
+  bulkTagCompanies: (ids: string[], tag: string) => api.post("/api/crm/companies/bulk-tag", { ids, tags: [tag], op: "add" }), // BF_PORTAL_BLOCK_v802_ACTIVE_TAG
   listCompanies: (params: Record<string, string | number | undefined> = {}) =>
     api.get<{ data?: CompanyRow[] } | CompanyRow[]>(`/api/crm/companies`, { params }).then(unwrap<CompanyRow[]>),
 
