@@ -193,6 +193,7 @@ const LenderProductsContent = () => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<LenderProduct | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set()); // BF_PORTAL_BLOCK_v796_LENDER_PRODUCTS_COLLAPSE
   const [formValues, setFormValues] = useState<ProductFormValues>(emptyProductForm(""));
   const [productsState, setProductsState] = useState<LenderProduct[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -659,11 +660,46 @@ const LenderProductsContent = () => {
                   });
                 }
                 if (!productsInCategory.length) return null;
+                const isCategoryCollapsed = collapsedCats.has(category);
+                const toggleCategory = () => setCollapsedCats((prev) => {
+                  const next = new Set(prev);
+                  next.has(category) ? next.delete(category) : next.add(category);
+                  return next;
+                });
                 return (
                   <div key={category} className="space-y-2">
-                    <h3>{PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category]}</h3>
-                    <Table
-                      headers={[
+                    <h3
+                      aria-expanded={!isCategoryCollapsed}
+                      onClick={toggleCategory}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          toggleCategory();
+                        }
+                      }}
+                      role="button"
+                      style={{ cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", gap: 8 }}
+                      tabIndex={0}
+                    >
+                      <span
+                        style={{
+                          color: "#64748b",
+                          display: "inline-block",
+                          fontSize: 12,
+                          transform: isCategoryCollapsed ? "rotate(-90deg)" : "none",
+                          transition: "transform .15s"
+                        }}
+                      >
+                        ▼
+                      </span>
+                      {PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category]}
+                      <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 500 }}>
+                        ({productsInCategory.length})
+                      </span>
+                    </h3>
+                    {!isCategoryCollapsed && (
+                      <Table
+                        headers={[
                         <button type="button" onClick={() => cycleSort("productName")}>Product Name{sortKey === "productName" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</button>,
                         <button type="button" onClick={() => cycleSort("lender")}>Lender{sortKey === "lender" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</button>,
                         "Submission",
@@ -672,8 +708,8 @@ const LenderProductsContent = () => {
                         <button type="button" onClick={() => cycleSort("country")}>Country{sortKey === "country" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</button>,
                         <button type="button" onClick={() => cycleSort("rate")}>Rate{sortKey === "rate" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</button>,
                         "Actions"
-                      ]}
-                    >
+                        ]}
+                      >
                       {productsInCategory.map((product) => {
                         const lender = activeLenders.find((item) => item.id === product.lenderId);
                         const isProductActive = Boolean(product.active);
@@ -729,7 +765,8 @@ const LenderProductsContent = () => {
                           </tr>
                         );
                       })}
-                    </Table>
+                      </Table>
+                    )}
                   </div>
                 );
               })}
