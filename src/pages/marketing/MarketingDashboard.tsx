@@ -1,16 +1,15 @@
 import { useState } from "react";
 
-type MarketingTab = "google-ads" | "linkedin-ads" | "analytics" | "bulk-sms";
+type MarketingTab = "google-ads" | "linkedin-ads" | "analytics"; // BF_PORTAL_BLOCK_v801_MULTISEND retired Bulk SMS (multi-send lives in Communications)
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "google-ads", label: "Google Ads" },
   { id: "linkedin-ads", label: "LinkedIn Ads" },
   { id: "analytics", label: "Analytics" },
-  { id: "bulk-sms", label: "Bulk SMS" },
 ];
 
 const MarketingDashboard = () => {
-  const [tab, setTab] = useState<MarketingTab>("bulk-sms");
+  const [tab, setTab] = useState<MarketingTab>("google-ads");
 
   return (
     <div className="space-y-4">
@@ -46,13 +45,6 @@ const MarketingDashboard = () => {
           <div className="drawer-section__title">Analytics</div>
           <p>Application funnel: visits → readiness check → OTP → step 1 → step 6 → submitted.</p>
           <p>Drop-off rates by step are summarized here.</p>
-        </section>
-      )}
-
-      {tab === "bulk-sms" && (
-        <section className="drawer-section">
-          <div className="drawer-section__title">Bulk SMS</div>
-          <p>Compose message and send to all contacts or audience filtered by tag/stage.</p>
         </section>
       )}
 
