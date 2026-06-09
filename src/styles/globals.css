@@ -656,6 +656,7 @@ a,
 
 .ui-card__title {
   font-weight: 700;
+  color: var(--ui-text); /* BF_PORTAL_BLOCK_v794_CARD_TITLE_CONTRAST: was unset, so section headers inherited a near-white color and were invisible on the light card surface (Credit Summary tab). Match the readable body text in both light and dark mode. */
 }
 
 .ui-card__body {
