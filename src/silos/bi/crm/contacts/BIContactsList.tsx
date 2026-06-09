@@ -27,7 +27,11 @@ export default function BIContactsList() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
+  const [busyMass, setBusyMass] = useState<"delete" | "tag" | "assign" | null>(null);
+  // BF_PORTAL_BLOCK_v809_BI_ASSIGN_CREATE
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ full_name: "", email: "", phone_e164: "", title: "" });
+  const [creating, setCreating] = useState(false);
   // BF_PORTAL_BLOCK_v807_BI_OWNER_PARITY — resolve owner UUID -> staff name + owner filter (BF parity).
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
   const [ownerId, setOwnerId] = useState("");
@@ -124,6 +128,26 @@ export default function BIContactsList() {
     } catch (e: any) { window.alert(`Mass tag failed: ${e?.message ?? String(e)}`); }
     finally { setBusyMass(null); }
   }
+  // BF_PORTAL_BLOCK_v809_BI_ASSIGN_CREATE — assign selected contacts to a staff owner (v808).
+  async function massAssign(ownerId: string) {
+    if (!isAdmin || selected.size === 0 || !ownerId) return;
+    setBusyMass("assign");
+    try {
+      await api(`/api/v1/bi/crm/contacts/bulk-assign`, { method: "POST", body: { ids: Array.from(selected), owner_id: ownerId } } as any);
+      setSelected(new Set()); setRefreshKey((k) => k + 1);
+    } catch (e: any) { window.alert(`Assign failed: ${e?.message ?? String(e)}`); }
+    finally { setBusyMass(null); }
+  }
+  async function createContact() {
+    const f = createForm;
+    if (!f.full_name.trim() && !f.email.trim() && !f.phone_e164.trim()) { window.alert("Enter a name, email, or phone."); return; }
+    setCreating(true);
+    try {
+      await api(`/api/v1/bi/crm/contacts`, { method: "POST", body: { full_name: f.full_name.trim() || undefined, email: f.email.trim() || undefined, phone_e164: f.phone_e164.trim() || undefined, title: f.title.trim() || undefined } } as any);
+      setCreateOpen(false); setCreateForm({ full_name: "", email: "", phone_e164: "", title: "" }); setRefreshKey((k) => k + 1);
+    } catch (e: any) { window.alert(`Create failed: ${e?.message ?? String(e)}`); }
+    finally { setCreating(false); }
+  }
 
   const tableRows = useMemo(() => rows.map((r) => (
     <tr key={r.id} style={trStyle} data-testid="bi-contact-row">
@@ -153,6 +177,7 @@ export default function BIContactsList() {
         </select>
         <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
+        <button type="button" onClick={() => setCreateOpen(true)} style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", whiteSpace: "nowrap" }}>+ Create Contact</button>
       </div>
 
       {/* BF_PORTAL_BLOCK_v749_VIEWBY — View-by tag filter (multi-select) */}
@@ -178,7 +203,29 @@ export default function BIContactsList() {
             <option value="bookkeeper">Account/Book Keeper</option>
             <option value="referrer">Referrer</option>
           </select>
+          <select value="" disabled={busyMass !== null} onChange={(e) => { const v = e.target.value; if (v) void massAssign(v); }} style={tagBox}>
+            <option value="">{busyMass === "assign" ? "Assigning…" : "Assign owner…"}</option>
+            {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
+          </select>
           <button onClick={() => setSelected(new Set())} style={clearBtn}>Clear</button>
+        </div>
+      )}
+
+      {createOpen && (
+        <div onClick={() => !creating && setCreateOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, padding: 20, width: 380, maxWidth: "90vw", color: "#e2e8f0" }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>New BI contact</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <input value={createForm.full_name} onChange={(e) => setCreateForm((f) => ({ ...f, full_name: e.target.value }))} placeholder="Full name" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13 }} />
+              <input value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13 }} />
+              <input value={createForm.phone_e164} onChange={(e) => setCreateForm((f) => ({ ...f, phone_e164: e.target.value }))} placeholder="Phone (E.164)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13 }} />
+              <input value={createForm.title} onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title (optional)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13 }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14 }}>
+              <button type="button" disabled={creating} onClick={() => setCreateOpen(false)} style={clearBtn}>Cancel</button>
+              <button type="button" disabled={creating} onClick={() => void createContact()} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 6, padding: "6px 14px", fontSize: 13, cursor: "pointer" }}>{creating ? "Saving…" : "Create"}</button>
+            </div>
+          </div>
         </div>
       )}
 
