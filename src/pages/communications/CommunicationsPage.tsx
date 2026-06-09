@@ -2201,6 +2201,29 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
     return () => { closed = true; if (timer) clearTimeout(timer); try { ws?.close(); } catch { /* ignore */ } };
   }, [loadChannels]);
 
+  // BF_PORTAL_BLOCK_v804_TEAM_POLL — gentle fallback auto-refresh so messages and unread
+  // counts stay current even when the WebSocket drops (Azure SWA / flaky networks). Fixed
+  // 8s interval; loadChannels is stable (useCallback) so this effect never re-creates and
+  // cannot re-enter the v758 flood loop. Message refetch dedupes by id-sequence to avoid
+  // clobbering optimistic sends or causing flicker.
+  useEffect(() => {
+    const id = setInterval(() => {
+      void loadChannels();
+      const aid = activeIdRef.current;
+      if (!aid) return;
+      void api<{ messages?: TeamMessage[] }>(`/api/team/channels/${aid}/messages`)
+        .then((r) => {
+          if (activeIdRef.current !== aid) return; // channel changed mid-flight
+          const next = Array.isArray(r?.messages) ? r.messages : [];
+          setMessages((prev) =>
+            next.length === prev.length && next.every((m, i) => m.id === prev[i]?.id) ? prev : next,
+          );
+        })
+        .catch(() => undefined);
+    }, 8000);
+    return () => clearInterval(id);
+  }, [loadChannels]);
+
   async function send() {
     const body = draft.trim();
     if (!body || !activeId) return;
