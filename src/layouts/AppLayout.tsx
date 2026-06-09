@@ -13,6 +13,7 @@ import Topbar from "@/components/layout/Topbar";
 import MayaChat from "@/components/maya/MayaChat";
 // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1
 import NotificationToast from "@/components/notifications/NotificationToast";
+import { useServerNotifications } from "@/hooks/useServerNotifications";
 import { useInboundMessageWatcher } from "@/hooks/useInboundMessageWatcher";
 import { useNotificationsStore } from "@/state/notifications.store";
 
@@ -66,6 +67,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const [mayaOpen, setMayaOpen] = useState(true);
   // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1 — global new-message alerts.
   useInboundMessageWatcher();
+  useServerNotifications(); // BF_PORTAL_BLOCK_v798_SERVER_NOTIFICATIONS
   const messagesUnread = useNotificationsStore((st) => st.messagesUnread);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user } = useAuth();

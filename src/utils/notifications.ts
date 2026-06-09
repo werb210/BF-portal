@@ -10,7 +10,8 @@ const DEFAULT_TITLES: Record<NotificationType, string> = {
   document_requested: "Document requested",
   lender_status: "Lender status update",
   system_alert: "System alert",
-  new_message: "New message"
+  new_message: "New message",
+  email_unopened: "Email not opened"
 };
 
 const DEFAULT_MESSAGES: Record<NotificationType, string> = {
@@ -18,11 +19,19 @@ const DEFAULT_MESSAGES: Record<NotificationType, string> = {
   document_requested: "A new document was requested.",
   lender_status: "A lender status changed.",
   system_alert: "Important system update available.",
-  new_message: "You have a new message."
+  new_message: "You have a new message.",
+  email_unopened: "This email has not been opened yet."
 };
 
 const ensureNotificationType = (type?: string): NotificationType => {
-  if (type === "auth_alert" || type === "document_requested" || type === "lender_status" || type === "system_alert" || type === "new_message") {
+  if (
+    type === "auth_alert" ||
+    type === "document_requested" ||
+    type === "lender_status" ||
+    type === "system_alert" ||
+    type === "new_message" ||
+    type === "email_unopened"
+  ) {
     return type;
   }
   return "system_alert";

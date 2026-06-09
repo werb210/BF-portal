@@ -3,9 +3,10 @@ export type NotificationType =
   | "document_requested"
   | "lender_status"
   | "system_alert"
-  | "new_message";
+  | "new_message"
+  | "email_unopened";
 
-export type NotificationSource = "push" | "in_app";
+export type NotificationSource = "push" | "in_app" | "server";
 
 export type NotificationItem = {
   id: string;
