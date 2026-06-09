@@ -28,7 +28,7 @@ export default function ContactsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tagInput, setTagInput] = useState("");
-  const [busyMass, setBusyMass] = useState<"delete" | "tag" | "assign" | null>(null);
+  const [busyMass, setBusyMass] = useState<"delete" | "tag" | "active" | "assign" | null>(null);
   const [assignOwnerId, setAssignOwnerId] = useState("");
 
   useEffect(() => {
@@ -109,6 +109,21 @@ export default function ContactsPage() {
     } finally { setBusyMass(null); }
   }
 
+
+  // BF_PORTAL_BLOCK_v802_ACTIVE_TAG — one-click "active" tag (consistent lowercase, no typos).
+  async function tagActive() {
+    if (!isAdmin || selected.size === 0) return;
+    if (!window.confirm(`Tag ${selected.size} contact(s) as "active"?`)) return;
+    setBusyMass("active");
+    try {
+      await crmApi.bulkTagContacts(Array.from(selected), "active");
+      setSelected(new Set());
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      window.alert(`Tag failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setBusyMass(null); }
+  }
+
   async function massAssign() {
     if (!isAdmin || selected.size === 0 || !assignOwnerId) return;
     setBusyMass("assign");
@@ -185,6 +200,7 @@ export default function ContactsPage() {
           <button disabled={busyMass !== null} onClick={massDelete} style={{ padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
           <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 }} />
           <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={{ padding: "6px 12px", borderRadius: 6, background: "#2563eb", color: "#fff", border: 0, cursor: tagInput.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
+          <button disabled={busyMass !== null} onClick={() => void tagActive()} title='Tag selected contacts as "active"' style={{ padding: "6px 12px", borderRadius: 6, background: "#16a34a", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "active" ? "Tagging…" : "Tag Active"}</button>
           <select value={assignOwnerId} onChange={(e) => setAssignOwnerId(e.target.value)} style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, background: "#fff" }}>
             <option value="">Assign owner…</option>
             {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
