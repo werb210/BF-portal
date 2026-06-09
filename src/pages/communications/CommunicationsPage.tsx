@@ -757,6 +757,12 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // BF_PORTAL_BLOCK_v802_MULTISEND_MESSAGES — pick multiple contacts and send the same in-app message to each 1:1 via /broadcast.
+  const [multi, setMulti] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [bcBody, setBcBody] = useState("");
+  const [bcSending, setBcSending] = useState(false);
+  const [bcResult, setBcResult] = useState<string | null>(null);
 
   // BF_PORTAL_BLOCK_v621_MESSAGES_TAB_FALLBACK_v1 — when messages-list returns
   // empty, fall back to /api/crm/contacts so the left list isn't blank even
@@ -959,6 +965,26 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
     }
   }
 
+  const sendBroadcast = async () => {
+    const ids = Array.from(picked);
+    const text = bcBody.trim();
+    if (!ids.length || !text || bcSending) return;
+    setBcSending(true);
+    setBcResult(null);
+    try {
+      const r: any = await api.post("/api/communications/broadcast", { contactIds: ids, body: text, channel: "message" });
+      const sent = Number(r?.sent ?? r?.data?.sent ?? ids.length);
+      setBcResult(`Sent to ${sent} contact(s).`);
+      setBcBody("");
+      setPicked(new Set());
+      setMulti(false);
+    } catch {
+      setBcResult("Send failed. Please try again.");
+    } finally {
+      setBcSending(false);
+    }
+  };
+
   function fmtAt(at: string | null): string {
     if (!at) return "";
     try {
@@ -976,7 +1002,20 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
     <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0 }}>
       <div style={{ borderRight: "1px solid #e2e8f0", padding: 12, overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h3 style={{ margin: 0 }}>Messages</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <h3 style={{ margin: 0 }}>Messages</h3>
+            <button
+              type="button"
+              onClick={() => {
+                setMulti((m) => !m);
+                setPicked(new Set());
+                setBcResult(null);
+              }}
+              style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0 }}
+            >
+              {multi ? "Cancel" : "Select"}
+            </button>
+          </div>
           {/* BF_PORTAL_BLOCK_v638_MESSAGES_USABILITY_v1 — clear the unread backlog
               (the "stuck 16"). Marks every unread thread read server-side; the
               nav badge self-heals on the next watcher poll. */}
@@ -994,41 +1033,88 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
             </button>
           )}
         </div>
-        {rows.map((c) => (
-          <button
-            key={c.contactId}
-            type="button"
-            onClick={() => setSelected(c)}
-            style={{
-              width: "100%",
-              textAlign: "left",
-              // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — unread contacts
-              // get a bold left border (no numeric badge per Todd's #9).
-              borderLeft: c.unread > 0 ? "4px solid #2563eb" : "4px solid transparent",
-              border: 0,
-              // BF_PORTAL_BLOCK_v638_MESSAGES_USABILITY_v1 — require a real contactId
-              // on both sides so null-id rows (e.g. duplicates) do not all highlight.
-              background: (!!selected?.contactId && selected?.contactId === c.contactId) ? "#f0f9ff" : "transparent",
-              padding: "10px 8px",
-              borderBottom: "1px solid #eef2f7",
-              cursor: "pointer",
-              color: "#000",
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              fontWeight: c.unread > 0 ? 700 : 400,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div style={{ fontWeight: c.unread > 0 ? 700 : 600, fontSize: 14 }}>{c.name}</div>
-              <div style={{ fontSize: 11, color: "#94a3b8" }}>{fmtAt(c.lastAt)}</div>
-            </div>
-            {c.lastBody && (
-              <div style={{ fontSize: 12, color: c.unread > 0 ? "#1e293b" : "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {c.lastBody}
+        {multi && (
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#2563eb", cursor: "pointer", marginBottom: 6 }}>
+              <input
+                type="checkbox"
+                checked={rows.length > 0 && rows.every((r) => picked.has(r.contactId))}
+                onChange={(e) => setPicked(e.target.checked ? new Set(rows.map((r) => r.contactId)) : new Set())}
+              />
+              Select all ({rows.length}) · {picked.size} selected
+            </label>
+            {picked.size > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <textarea
+                  value={bcBody}
+                  onChange={(e) => setBcBody(e.target.value)}
+                  placeholder={`Message ${picked.size} contact(s) individually…`}
+                  rows={2}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box", resize: "vertical", color: "#000" }}
+                />
+                <button
+                  type="button"
+                  disabled={!bcBody.trim() || bcSending}
+                  onClick={() => void sendBroadcast()}
+                  style={{ alignSelf: "flex-end", padding: "6px 14px", background: bcBody.trim() && !bcSending ? "#2563eb" : "#93c5fd", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: bcBody.trim() && !bcSending ? "pointer" : "not-allowed" }}
+                >
+                  {bcSending ? "Sending…" : `Send to ${picked.size}`}
+                </button>
               </div>
             )}
-          </button>
+            {bcResult && <div style={{ fontSize: 12, color: bcResult.startsWith("Sent") ? "#16a34a" : "#dc2626", marginTop: 4 }}>{bcResult}</div>}
+          </div>
+        )}
+        {rows.map((c) => (
+          <div key={c.contactId} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {multi && (
+              <input
+                type="checkbox"
+                checked={picked.has(c.contactId)}
+                onChange={() => setPicked((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(c.contactId)) next.delete(c.contactId);
+                  else next.add(c.contactId);
+                  return next;
+                })}
+                style={{ flexShrink: 0, width: 16, height: 16 }}
+                aria-label={`Select ${c.name}`}
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => setSelected(c)}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — unread contacts
+                // get a bold left border (no numeric badge per Todd's #9).
+                borderLeft: c.unread > 0 ? "4px solid #2563eb" : "4px solid transparent",
+                border: 0,
+                // BF_PORTAL_BLOCK_v638_MESSAGES_USABILITY_v1 — require a real contactId
+                // on both sides so null-id rows (e.g. duplicates) do not all highlight.
+                background: (!!selected?.contactId && selected?.contactId === c.contactId) ? "#f0f9ff" : "transparent",
+                padding: "10px 8px",
+                borderBottom: "1px solid #eef2f7",
+                cursor: "pointer",
+                color: "#000",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                fontWeight: c.unread > 0 ? 700 : 400,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <div style={{ fontWeight: c.unread > 0 ? 700 : 600, fontSize: 14 }}>{c.name}</div>
+                <div style={{ fontSize: 11, color: "#94a3b8" }}>{fmtAt(c.lastAt)}</div>
+              </div>
+              {c.lastBody && (
+                <div style={{ fontSize: 12, color: c.unread > 0 ? "#1e293b" : "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {c.lastBody}
+                </div>
+              )}
+            </button>
+          </div>
         ))}
         {rows.length === 0 && <div style={{ color: "#8e8e93", padding: 12 }}>No contacts in this silo yet.</div>}
       </div>
