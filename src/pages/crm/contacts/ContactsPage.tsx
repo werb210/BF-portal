@@ -20,6 +20,7 @@ export default function ContactsPage() {
   const [q, setQ] = useState("");
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
   const [ownerId, setOwnerId] = useState("");
+  const [tagFilter, setTagFilter] = useState(""); // BF_PORTAL_BLOCK_v806_TAG_FILTER
   const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>({ col: "created_at", dir: "desc" });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -60,6 +61,7 @@ export default function ContactsPage() {
           q,
           sort: `${sort.col}:${sort.dir}`,
           owner_id: ownerId || undefined,
+          tag: tagFilter || undefined, // BF_PORTAL_BLOCK_v806_TAG_FILTER
         });
         if (!cancelled) setRows(Array.isArray(r) ? r : []);
       } catch (e: any) {
@@ -69,7 +71,7 @@ export default function ContactsPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [silo, q, sort.col, sort.dir, ownerId, refreshKey]);
+  }, [silo, q, sort.col, sort.dir, ownerId, tagFilter, refreshKey]);
 
   const onSort = (col: SortCol) =>
     setSort(s => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
@@ -188,6 +190,16 @@ export default function ContactsPage() {
           {owners.map((o) => (
             <option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>
           ))}
+        </select>
+        <select
+          data-testid="tag-filter"
+          value={tagFilter}
+          onChange={(e) => setTagFilter(e.target.value)}
+          style={ownerSelect}
+          title="Filter by tag"
+        >
+          <option value="">All contacts</option>
+          <option value="active">Active only</option>
         </select>
         <button style={toolbarBtn}>Export</button>
         <button style={toolbarBtn}>Edit columns</button>

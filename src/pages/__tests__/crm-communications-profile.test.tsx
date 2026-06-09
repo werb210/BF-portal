@@ -112,6 +112,32 @@ describe("CRM owner dropdown", () => {
       expect(useCrmStore.getState().filters.owner).toBe("u-2");
     });
   });
+
+  it("passes the active tag when Active only is selected", async () => {
+    apiMock.get.mockImplementation((path: string) => {
+      if (path === "/api/users") return Promise.resolve({ users: [] });
+      if (path === "/api/crm/contacts") return Promise.resolve([]);
+      return Promise.resolve([]);
+    });
+
+    renderWithQuery(
+      <MemoryRouter>
+        <ContactsPage />
+      </MemoryRouter>,
+    );
+
+    const tagFilter = await screen.findByTestId("tag-filter");
+    expect(within(tagFilter).getByRole("option", { name: "All contacts" })).toBeInTheDocument();
+    expect(within(tagFilter).getByRole("option", { name: "Active only" })).toBeInTheDocument();
+
+    fireEvent.change(tagFilter, { target: { value: "active" } });
+
+    await waitFor(() => {
+      expect(apiMock.get).toHaveBeenCalledWith("/api/crm/contacts", {
+        params: expect.objectContaining({ tag: "active" }),
+      });
+    });
+  });
 });
 
 describe("CRM filters API params", () => {
