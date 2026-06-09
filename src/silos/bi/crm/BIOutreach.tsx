@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom"; // BF_PORTAL_BLOCK_v744_OUTREACH_CARD_OPENS_CRM
 import { api } from "@/api";
 
+const PAGE = 100; // BF_PORTAL_BLOCK_v800_OUTREACH_PAGER_AND_BULK
 const STAGES = [
   "new",
   "contacted",
@@ -116,6 +117,12 @@ export default function BIOutreach() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v800_OUTREACH_PAGER_AND_BULK
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [total, setTotal] = useState(0);
+  const [loadedOffset, setLoadedOffset] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
   // BF_PORTAL_BLOCK_v744_OUTREACH_CARD_OPENS_CRM — pipeline card opens the full BI CRM contact view.
   const navigate = useNavigate();
   const openContact = (id: string) => navigate(`/silo/bi/crm/contacts/${id}`, { state: { from: "outreach" } });
@@ -140,16 +147,63 @@ export default function BIOutreach() {
     try {
       const params = new URLSearchParams();
       if (q.trim()) params.set("q", q.trim());
-      const r: any = await api(
-        `/api/v1/bi/crm/outreach/contacts${params.toString() ? `?${params}` : ""}`,
-      );
-      setContacts(Array.isArray(r?.contacts) ? r.contacts : []);
+      params.set("limit", String(PAGE));
+      params.set("offset", "0");
+      const r: any = await api(`/api/v1/bi/crm/outreach/contacts?${params}`);
+      const rows: Contact[] = Array.isArray(r?.contacts) ? r.contacts : [];
+      setContacts(rows);
+      setTotal(typeof r?.total === "number" ? r.total : rows.length);
+      setLoadedOffset(rows.length);
     } catch (e: any) {
       setError(e?.message ?? "Failed to load contacts.");
     } finally {
       setLoading(false);
     }
   }, [q]);
+
+  // BF_PORTAL_BLOCK_v800_OUTREACH_PAGER_AND_BULK — append the next page (v791 offset/total).
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams();
+      if (q.trim()) params.set("q", q.trim());
+      params.set("limit", String(PAGE));
+      params.set("offset", String(loadedOffset));
+      const r: any = await api(`/api/v1/bi/crm/outreach/contacts?${params}`);
+      const more: Contact[] = Array.isArray(r?.contacts) ? r.contacts : [];
+      setContacts((prev) => {
+        const seen = new Set(prev.map((c) => c.id));
+        return [...prev, ...more.filter((c) => !seen.has(c.id))];
+      });
+      setLoadedOffset((o) => o + more.length);
+      if (typeof r?.total === "number") setTotal(r.total);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to load more.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [q, loadedOffset]);
+
+  // BF_PORTAL_BLOCK_v800_OUTREACH_PAGER_AND_BULK — selection + two-mode mass action (v799).
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }, []);
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+  const bulkAction = useCallback(async (mode: "remove_from_outreach" | "delete_from_crm") => {
+    const ids = Array.from(selectedIds);
+    if (!ids.length || bulkBusy) return;
+    if (mode === "delete_from_crm" && !window.confirm(`Permanently delete ${ids.length} contact(s) from the CRM and block re-import? This cannot be undone.`)) return;
+    setBulkBusy(true);
+    try {
+      await api.post(`/api/v1/bi/crm/outreach/contacts/bulk-action`, { ids, mode });
+      clearSelection();
+      await load();
+    } catch (e: any) {
+      setError(e?.message ?? "Bulk action failed.");
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [selectedIds, bulkBusy, clearSelection, load]);
 
   useEffect(() => {
     void load();
@@ -385,6 +439,15 @@ export default function BIOutreach() {
         </button>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-sm" data-testid="bi-outreach-selection-bar">
+          <span className="font-semibold text-white">{selectedIds.size} selected</span>
+          <button type="button" disabled={bulkBusy} onClick={() => void bulkAction("remove_from_outreach")} className="px-3 py-1 rounded-md bg-white/10 hover:bg-white/15 disabled:opacity-50">Remove from outreach</button>
+          <button type="button" disabled={bulkBusy} onClick={() => void bulkAction("delete_from_crm")} className="px-3 py-1 rounded-md bg-red-500/20 text-red-200 hover:bg-red-500/30 disabled:opacity-50">Delete from CRM</button>
+          <button type="button" onClick={clearSelection} className="ml-auto px-3 py-1 rounded-md bg-white/5 hover:bg-white/10">Clear</button>
+        </div>
+      )}
+
       {(importResult || importError) && (
         <div
           className="bg-brand-surface border border-card rounded-xl p-3 text-sm"
@@ -460,6 +523,8 @@ export default function BIOutreach() {
             cards={columns[stage] ?? []}
             selectedId={selectedId}
             onSelect={openContact}
+            selected={selectedIds}
+            onToggleSelect={toggleSelect}
             dragOver={dragOverStage === stage}
             onDragOverStage={() => setDragOverStage(stage)}
             onDragLeaveStage={() => setDragOverStage((s) => (s === stage ? null : s))}
@@ -472,6 +537,8 @@ export default function BIOutreach() {
           cards={columns[ARCHIVE_STAGE] ?? []}
           selectedId={selectedId}
           onSelect={openContact}
+          selected={selectedIds}
+          onToggleSelect={toggleSelect}
           dragOver={dragOverStage === ARCHIVE_STAGE}
           onDragOverStage={() => setDragOverStage(ARCHIVE_STAGE)}
           onDragLeaveStage={() => setDragOverStage((s) => (s === ARCHIVE_STAGE ? null : s))}
@@ -482,6 +549,14 @@ export default function BIOutreach() {
 
       {!loading && visible.length === 0 && (
         <p className="text-sm text-white/50">No contacts match these filters.</p>
+      )}
+
+      {contacts.length < total && (
+        <div className="flex justify-center pt-2" data-testid="bi-outreach-load-more">
+          <button type="button" disabled={loadingMore} onClick={() => void loadMore()} className="px-4 py-2 rounded-md text-sm bg-white/10 hover:bg-white/15 disabled:opacity-50">
+            {loadingMore ? "Loading…" : `Load more (${total - contacts.length} more)`}
+          </button>
+        </div>
       )}
 
     </div>
@@ -498,9 +573,11 @@ function BoardColumn(props: {
   onDragOverStage: () => void;
   onDragLeaveStage: () => void;
   onDropCard: (contactId: string) => void;
+  selected: Set<string>; // BF_PORTAL_BLOCK_v800_OUTREACH_PAGER_AND_BULK
+  onToggleSelect: (id: string) => void;
   muted?: boolean;
 }) {
-  const { label, cards, selectedId, onSelect, dragOver, onDragOverStage, onDropCard, onDragLeaveStage, muted } = props; // BF_PORTAL_BLOCK_v698_OUTREACH_PANEL_v1 — inline selection restored
+  const { label, cards, selectedId, onSelect, dragOver, onDragOverStage, onDropCard, onDragLeaveStage, selected, onToggleSelect, muted } = props; // BF_PORTAL_BLOCK_v698_OUTREACH_PANEL_v1 — inline selection restored
   return (
     <div
       className={`flex-shrink-0 w-64 rounded-xl border p-2 ${
@@ -534,6 +611,14 @@ function BoardColumn(props: {
             data-testid="bi-outreach-card"
           >
             <div className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={selected.has(c.id)}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => { e.stopPropagation(); onToggleSelect(c.id); }}
+                className="mr-1 shrink-0"
+                aria-label="Select contact"
+              />
               <strong className="truncate max-w-[60%]">{c.full_name}</strong>
               {c.company_name && (
                 <span className="truncate text-xs text-white/45 max-w-[40%]" title={c.company_name}>{/* BF_PORTAL_BLOCK_v749_OUTREACH_COMPANY */}{c.company_name}</span>
