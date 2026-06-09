@@ -134,6 +134,8 @@ export default function BIOutreach() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
     imported: number;
+    updated: number; // BF_PORTAL_BLOCK_v802_IMPORT_COUNTS (v799 upsert/suppress)
+    suppressed: number;
     skipped: number;
     total: number;
     results?: Array<{ row: number; ok: boolean; error?: string }>;
@@ -300,6 +302,8 @@ export default function BIOutreach() {
       } as any);
       setImportResult({
         imported: Number(r?.imported ?? 0),
+        updated: Number(r?.updated ?? 0),
+        suppressed: Number(r?.suppressed ?? 0),
         skipped: Number(r?.skipped ?? 0),
         total: Number(r?.total ?? 0),
         results: Array.isArray(r?.results) ? r.results : [],
@@ -459,6 +463,8 @@ export default function BIOutreach() {
             <div className="space-y-1">
               <p>
                 Imported <span className="text-white/90">{importResult.imported}</span>{" "}
+                · updated <span className="text-white/90">{importResult.updated}</span>{" "}
+                · suppressed <span className="text-white/90">{importResult.suppressed}</span>{" "}
                 · skipped <span className="text-white/90">{importResult.skipped}</span>{" "}
                 · total <span className="text-white/60">{importResult.total}</span>
               </p>
