@@ -150,6 +150,15 @@ export default function ContactsPage() {
         <Link to={`/crm/contacts/${r.id}`} style={linkStyle}>{r.name || "(no name)"}</Link>
       </td>
       <td style={tdStyle}>{r.company_name ?? "—"}</td>
+      <td style={tdStyle}>{/* BF_PORTAL_BLOCK_v811_TAGS_COLUMN */}
+        {r.tags && r.tags.length ? (
+          <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
+            {r.tags.map((t) => (
+              <span key={t} style={t.toLowerCase() === "active" ? activeChip : tagChip}>{t}</span>
+            ))}
+          </span>
+        ) : "—"}
+      </td>
       <td style={tdStyle}>{(
         r.lead_status === "applicant" ||
         ((r as any).types_of_financing ?? []).includes("APPLICANT") ||
@@ -232,16 +241,17 @@ export default function ContactsPage() {
             )}
             <Th onClick={() => onSort("name")}>Name{sortIndicator("name")}</Th>
             <Th onClick={() => onSort("company_name")}>Company{sortIndicator("company_name")}</Th>
+            <Th>Tags</Th>{/* BF_PORTAL_BLOCK_v811_TAGS_COLUMN */}
             <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>
             <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
           </tr>
         </thead>
         <tbody>
-          {loading && <tr><td colSpan={isAdmin ? 6 : 5} style={emptyCell}>Loading…</td></tr>}
-          {err && <tr><td colSpan={isAdmin ? 6 : 5} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
+          {loading && <tr><td colSpan={isAdmin ? 7 : 6} style={emptyCell}>Loading…</td></tr>}
+          {err && <tr><td colSpan={isAdmin ? 7 : 6} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
           {!loading && !err && rows.length === 0 && (
-            <tr><td colSpan={isAdmin ? 6 : 5} style={emptyCell}>No contacts in this silo.</td></tr>
+            <tr><td colSpan={isAdmin ? 7 : 6} style={emptyCell}>No contacts in this silo.</td></tr>
           )}
           {!loading && !err && tableRows}
         </tbody>
@@ -288,6 +298,8 @@ const thStyle: CSSProperties = {
   textTransform: "uppercase", fontSize: 12, userSelect: "none",
 };
 const tdStyle: CSSProperties = { padding: 12, color: "#000" };
+const tagChip: CSSProperties = { fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "#eef2f7", color: "#334155", whiteSpace: "nowrap" }; // BF_PORTAL_BLOCK_v811_TAGS_COLUMN
+const activeChip: CSSProperties = { fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "#16a34a", color: "#fff", whiteSpace: "nowrap", fontWeight: 600 };
 const trStyle: CSSProperties = { borderBottom: "1px solid #eaf0f6" };
 const linkStyle: CSSProperties = { color: "#0091ae", textDecoration: "none" };
 const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "#7c98b6" };
