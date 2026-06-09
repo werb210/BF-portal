@@ -1,13 +1,12 @@
 import { useState } from "react";
 
-type MarketingTab = "google-ads" | "linkedin-ads" | "analytics" | "bulk-sms" | "assets";
+type MarketingTab = "google-ads" | "linkedin-ads" | "analytics" | "bulk-sms";
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "google-ads", label: "Google Ads" },
   { id: "linkedin-ads", label: "LinkedIn Ads" },
   { id: "analytics", label: "Analytics" },
   { id: "bulk-sms", label: "Bulk SMS" },
-  { id: "assets", label: "Brand Assets" },
 ];
 
 const MarketingDashboard = () => {
@@ -57,12 +56,6 @@ const MarketingDashboard = () => {
         </section>
       )}
 
-      {tab === "assets" && (
-        <section className="drawer-section">
-          <div className="drawer-section__title">Brand Assets</div>
-          <p>Upload and manage logos, images, templates, and reusable creative assets.</p>
-        </section>
-      )}
     </div>
   );
 };
