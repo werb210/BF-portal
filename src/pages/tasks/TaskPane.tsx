@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -38,19 +38,32 @@ function CompletedTasks({
   onToggleComplete: (task: TaskItem) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const completedListId = useId();
   if (tasks.length === 0) return null;
   return (
     <li style={{ listStyle: "none", marginTop: 8 }} data-testid="task-completed-group">
       <button
         type="button"
+        aria-controls={completedListId}
+        aria-expanded={expanded}
+        aria-label={`${expanded ? "Collapse" : "Expand"} ${tasks.length} completed tasks`}
         onClick={() => setExpanded((v) => !v)}
         data-testid="task-completed-toggle"
-        style={{ background: "none", border: "none", padding: "4px 0", cursor: "pointer", color: "inherit", fontWeight: 600, fontSize: "0.85em", opacity: 0.85 }}
+        style={{
+          background: "none",
+          border: "none",
+          padding: "4px 0",
+          cursor: "pointer",
+          color: "inherit",
+          fontWeight: 600,
+          fontSize: "0.85em",
+          opacity: 0.85
+        }}
       >
         {expanded ? "\u25be" : "\u25b8"} Completed ({tasks.length})
       </button>
       {expanded && (
-        <ul style={{ margin: 0, padding: 0 }}>
+        <ul id={completedListId} style={{ margin: 0, padding: 0 }}>
           {tasks.map((task) => (
             <TaskListItem key={task.id} task={task} onSelect={onSelect} onToggleComplete={onToggleComplete} />
           ))}
