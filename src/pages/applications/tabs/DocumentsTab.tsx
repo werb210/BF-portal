@@ -11,7 +11,7 @@
 // yet exist on BF-Server. When that ships, swap the disabled button for an
 // <a href> to the URL.
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 // BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
 import { api } from "@/api";
 import { apiBlob } from "@/utils/api";
@@ -47,6 +47,23 @@ const CATEGORY_GROUPS = [
   { id: "id",          label: "Identification",       matches: (c: string) => /\bid\b|driver|passport|license/i.test(c) },
 ];
 
+// BF_PORTAL_BLOCK_v820_STAFF_UPLOAD — staff document category picker (exact labels, locked).
+const STAFF_DOC_CATEGORIES: string[] = [
+  "3 years accountant prepared financials",
+  "3 years business tax returns",
+  "PnL – Interim financials",
+  "Balance Sheet – Interim financials",
+  "A/R",
+  "A/P",
+  "2 pieces of Government Issued ID",
+  "VOID cheque or PAD",
+  "2 years personal tax returns (T1 generals)",
+  "Corporate structure / org chart",
+  "Business plan / projections",
+  "Lease agreement (if applicable)",
+  "Other",
+];
+
 export default function DocumentsTab({ applicationId }: Props) {
   const { user } = useAuth();
   const canManage = canWrite((user as { role?: string | null } | null)?.role ?? null);
@@ -58,6 +75,30 @@ export default function DocumentsTab({ applicationId }: Props) {
   const [rejectDraft, setRejectDraft] = useState<Record<string, string>>({});
   const [rejectOpen, setRejectOpen] = useState<Record<string, boolean>>({});
   const [actionError, setActionError] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v820_STAFF_UPLOAD
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadCat, setUploadCat] = useState<string>(STAFF_DOC_CATEGORIES[0] ?? "Other");
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const uploadFileRef = useRef<HTMLInputElement | null>(null);
+  async function doStaffUpload() {
+    const file = uploadFileRef.current?.files?.[0];
+    if (!file) { setUploadErr("Choose a file."); return; }
+    if (!applicationId) { setUploadErr("No application."); return; }
+    setUploading(true); setUploadErr(null);
+    try {
+      const fd = new FormData();
+      fd.append("applicationId", applicationId);
+      fd.append("category", uploadCat);
+      fd.append("file", file);
+      await api("/api/documents/upload", { method: "POST", body: fd });
+      if (uploadFileRef.current) uploadFileRef.current.value = "";
+      setUploadOpen(false);
+      await reload();
+    } catch (e: any) {
+      setUploadErr(e?.message ?? "Upload failed");
+    } finally { setUploading(false); }
+  }
   // BF_PORTAL_BLOCK_v184_DOC_PREVIEW_WIRE_UP_v1
   const [previewing, setPreviewing] = useState<Record<string, boolean>>({});
 
@@ -160,7 +201,25 @@ export default function DocumentsTab({ applicationId }: Props) {
             <span style={styles.subtitleTotal}>{docs.length} total</span>
           </div>
         </div>
+        <button type="button" onClick={() => { setUploadErr(null); setUploadOpen(true); }} style={{ background: "#1d4ed8", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", whiteSpace: "nowrap" }} data-testid="staff-upload-document">{/* BF_PORTAL_BLOCK_v820_STAFF_UPLOAD */}Upload document</button>
       </header>
+      {uploadOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={() => setUploadOpen(false)}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 20, width: 460, maxWidth: "92vw", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 12 }}>Upload document</div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Category</label>
+            <select value={uploadCat} onChange={(e) => setUploadCat(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1", margin: "4px 0 12px", fontSize: 14 }}>
+              {STAFF_DOC_CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
+            </select>
+            <input ref={uploadFileRef} type="file" accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" style={{ display: "block", marginBottom: 12 }} />
+            {uploadErr && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 10 }} role="status">{uploadErr}</div>}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button type="button" onClick={() => setUploadOpen(false)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <button type="button" disabled={uploading} onClick={() => void doStaffUpload()} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#1d4ed8", color: "#fff", fontWeight: 600, cursor: uploading ? "default" : "pointer", opacity: uploading ? 0.6 : 1 }}>{uploading ? "Uploading…" : "Upload"}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {actionError && (
         <div role="alert" style={styles.actionError}>{actionError}</div>
