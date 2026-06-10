@@ -21,7 +21,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { fetchTaskStatus, type TaskStatus } from "@/api/applicationTasks";
-import O365ComposeModal from "@/components/communications/O365ComposeModal"; // BF_PORTAL_BLOCK_v817_REMIND_CLIENT
+import { api } from "@/api"; // BF_PORTAL_BLOCK_v817_REMIND_CLIENT
 
 type AnyRecord = Record<string, any>;
 type Props = { application: AnyRecord | null };
@@ -70,12 +70,15 @@ export default function ApplicationTab({ application }: Props) {
   const v784_appId = application ? String((application as any).id ?? "") : "";
   const [v784_tasks, v784_setTasks] = useState<TaskStatus | null>(null);
   const [v784_err, v784_setErr] = useState<string | null>(null);
-  const [v817_remindOpen, v817_setRemindOpen] = useState(false);
+  const [v817_sending, v817_setSending] = useState(false);
+  const [v817_note, v817_setNote] = useState<string | null>(null);
   useEffect(() => {
     if (!v784_appId) return;
     let active = true;
     v784_setTasks(null);
     v784_setErr(null);
+    v817_setSending(false);
+    v817_setNote(null);
     fetchTaskStatus(v784_appId)
       .then((d) => { if (active) v784_setTasks(d); })
       .catch(() => { if (active) v784_setErr("Could not load task status."); });
@@ -141,16 +144,18 @@ export default function ApplicationTab({ application }: Props) {
   const applicantName = joinName(applicant) || businessName;
   const phoneRaw = applicant.phone ?? applicant.phoneNumber ?? null;
   const phone = phoneRaw ? String(phoneRaw).trim() : null;
-  // BF_PORTAL_BLOCK_v817_REMIND_CLIENT — email the client their outstanding tasks (from the staff O365 account; signature auto-appended server-side).
+  // BF_PORTAL_BLOCK_v817_REMIND_CLIENT — one-tap: email the client their outstanding tasks from the staff O365 account (signature auto-appended server-side).
   const v817_clientEmail = applicant.email ? String(applicant.email).trim() : "";
   const v817_clientFirst = String(
     (applicant as any).firstName ?? (applicant as any).first_name ?? (applicant as any).firstname ??
     (applicant.name ? String(applicant.name).split(" ")[0] : "") ?? ""
   ).trim();
   const v817_incomplete = v784_tasks ? v784_tasks.tasks.filter((t) => !t.complete) : [];
-  const v817_canRemind = !!v817_clientEmail && !!v784_tasks && v817_incomplete.length > 0;
+  const v817_canRemind = !!v817_clientEmail && !!v784_tasks && v817_incomplete.length > 0 && !v817_sending;
   const v817_remindTitle = !v817_clientEmail
     ? "No client email on file"
+    : v817_sending
+    ? "Sending…"
     : !v784_tasks
     ? "Client tasks are still loading"
     : v817_incomplete.length > 0
@@ -167,6 +172,31 @@ export default function ApplicationTab({ application }: Props) {
       `<p><a href="${V817_CLIENT_PORTAL_URL}" style="display:inline-block;padding:10px 18px;background:#1d4ed8;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:600;">Complete your application</a></p>` +
       `<p>If you have any questions or need assistance, please contact me directly.</p>`
     );
+  }
+
+  async function v817_sendReminder() {
+    if (!v817_clientEmail || v817_incomplete.length === 0 || v817_sending) return;
+    if (!window.confirm(`Send a reminder email to ${v817_clientFirst || "the client"} (${v817_clientEmail}) now?`)) return;
+
+    v817_setSending(true);
+    v817_setNote(null);
+    try {
+      const contactId = (application as any).contactId ?? (application as any).contact_id;
+      await api("/api/o365/mail/send", {
+        method: "POST",
+        body: {
+          to: [v817_clientEmail],
+          subject: "Reminder: items still needed to finalize your application",
+          body_html: v817_buildBody(),
+          ...(contactId ? { log_contact_id: String(contactId) } : {}),
+        },
+      });
+      v817_setNote("Reminder sent ✓");
+    } catch (e: any) {
+      v817_setNote(`Could not send: ${e?.message ?? String(e)}`);
+    } finally {
+      v817_setSending(false);
+    }
   }
   const applicationId = String(application.id ?? "");
   function callClient() {
@@ -191,9 +221,10 @@ export default function ApplicationTab({ application }: Props) {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          {v817_note && <span style={{ fontSize: 12, color: v817_note.startsWith("Could not") ? "#b00020" : "#16a34a", fontWeight: 600 }} role="status">{v817_note}</span>}
           <button
             type="button"
-            onClick={() => v817_setRemindOpen(true)}
+            onClick={() => void v817_sendReminder()}
             disabled={!v817_canRemind}
             title={v817_remindTitle}
             style={v817_canRemind
@@ -205,7 +236,7 @@ export default function ApplicationTab({ application }: Props) {
               <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
               <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
             </svg>
-            <span>Remind Client</span>
+            <span>{v817_sending ? "Sending…" : v817_note === "Reminder sent ✓" ? "Reminder sent ✓" : "Remind Client"}</span>
           </button>
           <button
             type="button"
@@ -223,15 +254,6 @@ export default function ApplicationTab({ application }: Props) {
         </div>
       </div>
 
-      {/* BF_PORTAL_BLOCK_v817_REMIND_CLIENT */}
-      <O365ComposeModal
-        open={v817_remindOpen}
-        initialTo={v817_clientEmail}
-        initialSubject="Reminder: items still needed to finalize your application"
-        initialBody={v817_buildBody()}
-        onClose={() => v817_setRemindOpen(false)}
-        onSent={() => v817_setRemindOpen(false)}
-      />
       <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
           Client Tasks
