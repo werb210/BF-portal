@@ -211,3 +211,73 @@ describe("BF_PORTAL_BLOCK_v209 — Inline Create", () => {
     });
   });
 });
+
+
+describe("BF_PORTAL_BLOCK_v816 — companies import UI", () => {
+  beforeEach(() => {
+    apiMock.mockReset();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+  });
+
+  it("renders company tags in the Tags column", async () => {
+    apiMock.mockResolvedValueOnce([rowFixture({ tags: ["financing:equipment", "country:CA", "lender"] })]);
+    renderList();
+
+    await waitFor(() => screen.getByText("Acme Inc"));
+    expect(screen.getByText("financing:equipment")).toBeInTheDocument();
+    expect(screen.getByText("country:CA")).toBeInTheDocument();
+    expect(screen.getByText("lender")).toBeInTheDocument();
+  });
+
+  it("uploads selected company import files and refreshes with import counts", async () => {
+    apiMock.mockImplementation(async (_path: string, init?: any) => {
+      if (init?.method === "POST") {
+        return {
+          companies_imported: 2,
+          companies_updated: 1,
+          contacts_imported: 4,
+          contacts_updated: 3,
+        };
+      }
+      return [];
+    });
+    renderList();
+    await waitFor(() => expect(apiMock).toHaveBeenCalled());
+    const fetchCountBefore = apiMock.mock.calls.length;
+
+    const file = new File(["legal_name\nAcme"], "companies.csv", { type: "text/csv" });
+    fireEvent.change(screen.getByTestId("bi-companies-import-input"), { target: { files: [file] } });
+
+    await waitFor(() => {
+      const postCall = apiMock.mock.calls.find(([path, init]) => path === "/api/v1/bi/crm/companies/import" && init?.method === "POST");
+      expect(postCall).toBeDefined();
+      expect(postCall![1].body).toBeInstanceOf(FormData);
+    });
+    expect(await screen.findByText(/Companies: 2 new, 1 updated · Contacts: 4 new, 3 updated/)).toBeInTheDocument();
+    await waitFor(() => expect(apiMock.mock.calls.length).toBeGreaterThan(fetchCountBefore + 1));
+  });
+
+  it("imports selected BI companies to BF and clears the selection", async () => {
+    apiMock.mockImplementation(async (path: string, init?: any) => {
+      if (path === "/api/portal/lenders/import-from-bi" && init?.method === "POST") {
+        return { lenders_created: 1, products_created: 2, lenders_skipped: 1 };
+      }
+      return [rowFixture({ id: "co-1", tags: ["lender"] })];
+    });
+    renderList();
+    await waitFor(() => screen.getByText("Acme Inc"));
+
+    const rowCheckbox = screen.getAllByRole("checkbox")[1] as HTMLElement;
+    fireEvent.click(rowCheckbox);
+    fireEvent.click(screen.getByTestId("bi-companies-import-to-bf"));
+
+    await waitFor(() => {
+      expect(apiMock).toHaveBeenCalledWith(
+        "/api/portal/lenders/import-from-bi",
+        expect.objectContaining({ method: "POST", body: { companyIds: ["co-1"] } }),
+      );
+    });
+    expect(await screen.findByText(/Imported to BF: 1 lenders, 2 products, 1 skipped/)).toBeInTheDocument();
+    expect(screen.queryByTestId("bi-companies-import-to-bf")).toBeNull();
+  });
+});
