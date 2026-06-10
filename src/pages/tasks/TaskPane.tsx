@@ -26,6 +26,40 @@ const filterTasks = (tasks: TaskItem[], filters: TaskFilters, currentUserId?: st
   });
 };
 
+// BF_PORTAL_BLOCK_v823_TASK_COMPLETED_COLLAPSE — completed ("done") tasks are tucked behind
+// an expand toggle so the My/Assigned lists don't grow unbounded.
+function CompletedTasks({
+  tasks,
+  onSelect,
+  onToggleComplete,
+}: {
+  tasks: TaskItem[];
+  onSelect: (task: TaskItem) => void;
+  onToggleComplete: (task: TaskItem) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  if (tasks.length === 0) return null;
+  return (
+    <li style={{ listStyle: "none", marginTop: 8 }} data-testid="task-completed-group">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        data-testid="task-completed-toggle"
+        style={{ background: "none", border: "none", padding: "4px 0", cursor: "pointer", color: "inherit", fontWeight: 600, fontSize: "0.85em", opacity: 0.85 }}
+      >
+        {expanded ? "\u25be" : "\u25b8"} Completed ({tasks.length})
+      </button>
+      {expanded && (
+        <ul style={{ margin: 0, padding: 0 }}>
+          {tasks.map((task) => (
+            <TaskListItem key={task.id} task={task} onSelect={onSelect} onToggleComplete={onToggleComplete} />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
 const TaskPane = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -113,7 +147,7 @@ const TaskPane = () => {
             {!isLoading &&
               !error &&
               tasksToDisplay
-                .filter((task) => task.assignedToUserId === user?.id)
+                .filter((task) => task.assignedToUserId === user?.id && task.status !== "done")
                 .map((task) => (
                   <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
                 ))}
@@ -122,6 +156,13 @@ const TaskPane = () => {
               tasksToDisplay.filter((task) => task.assignedToUserId === user?.id).length === 0 && (
                 <li>No tasks assigned to you.</li>
               )}
+            {!isLoading && !error && (
+              <CompletedTasks
+                tasks={tasksToDisplay.filter((task) => task.assignedToUserId === user?.id && task.status === "done")}
+                onSelect={setSelectedTask}
+                onToggleComplete={handleToggleComplete}
+              />
+            )}
           </ul>
         </section>
         <section>
@@ -132,7 +173,7 @@ const TaskPane = () => {
             {!isLoading &&
               !error &&
               tasksToDisplay
-                .filter((task) => task.assignedToUserId && task.assignedToUserId !== user?.id)
+                .filter((task) => task.assignedToUserId && task.assignedToUserId !== user?.id && task.status !== "done")
                 .map((task) => (
                   <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
                 ))}
@@ -141,6 +182,13 @@ const TaskPane = () => {
               tasksToDisplay.filter((task) => task.assignedToUserId && task.assignedToUserId !== user?.id).length === 0 && (
                 <li>No assigned tasks yet.</li>
               )}
+            {!isLoading && !error && (
+              <CompletedTasks
+                tasks={tasksToDisplay.filter((task) => task.assignedToUserId && task.assignedToUserId !== user?.id && task.status === "done")}
+                onSelect={setSelectedTask}
+                onToggleComplete={handleToggleComplete}
+              />
+            )}
           </ul>
         </section>
         <section>
