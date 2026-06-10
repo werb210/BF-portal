@@ -114,8 +114,11 @@ export default function ContactsPage() {
 
   // BF_PORTAL_BLOCK_v802_ACTIVE_TAG — one-click "active" tag (consistent lowercase, no typos).
   async function tagActive() {
+    // BF_PORTAL_BLOCK_v827_TAG_ACTIVE_NO_CONFIRM — drop window.confirm(): iPad/iOS Safari
+    // (especially in standalone/PWA mode) suppresses JS confirm dialogs, so confirm() returned
+    // false and the tag silently never applied. "Active" is a benign, reversible tag, so no
+    // confirmation is needed.
     if (!isAdmin || selected.size === 0) return;
-    if (!window.confirm(`Tag ${selected.size} contact(s) as "active"?`)) return;
     setBusyMass("active");
     try {
       await crmApi.bulkTagContacts(Array.from(selected), "active");
