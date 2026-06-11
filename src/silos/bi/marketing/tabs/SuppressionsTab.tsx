@@ -73,7 +73,7 @@ export default function SuppressionsTab() {
         {list.map((s) => (
           <li key={s.id} className="flex items-center justify-between bg-brand-surface border border-card rounded p-2 text-sm">
             <div className="min-w-0">
-              <span className="text-white">{s.phone_e164 || s.email || s.contact_name || "(unknown)"}</span>
+              <span className="text-white">{/* BF_PORTAL_BLOCK_v836_SUPPRESSION_SHOW_NAME */ s.contact_name || s.phone_e164 || s.email || "(unknown)"}</span>
               <span className="ml-2 text-xs text-white/40">{s.channel} {String.fromCharCode(8226)} {s.reason}</span>
             </div>
             <button onClick={() => void remove(s.id)} className="text-xs text-rose-300 hover:text-rose-200">Remove</button>
