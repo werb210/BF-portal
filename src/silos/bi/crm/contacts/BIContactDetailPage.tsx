@@ -447,6 +447,15 @@ export default function BIContactDetailPage() {
             editTestId="bi-contact-edit-button"
             deleteTestId="bi-contact-delete-button"
             onChanged={refresh}
+            onAction={(eventType) => {
+              // BF_PORTAL_BLOCK_v846_BI_EMAIL_TIMELINE — mirror every BI card action
+              // into bi_contact_activity (shared popups otherwise log only to
+              // BF-Server's separate DB, which the BI timeline can't read).
+              void api(`/api/v1/bi/crm/outreach/contacts/${contact.id}/activity`, {
+                method: "POST",
+                body: JSON.stringify({ event_type: eventType, body: `${eventType} logged`, meta: { source: "bi_card" } }),
+              }).catch(() => {});
+            }}
           />
         )}
         {actionError && <div style={{ marginTop: 8, color: "#b00020", fontSize: 12 }} role="status">{actionError}</div>}
@@ -528,7 +537,15 @@ export default function BIContactDetailPage() {
         initialTo={contact.email ?? ""}
         logScope={{ kind: "contact", id: contact.id }}
         onClose={() => setEmailComposeOpen(false)}
-        onSent={() => { toast.success("Sent"); refresh(); }}
+        onSent={() => {
+          // BF_PORTAL_BLOCK_v846_BI_EMAIL_TIMELINE
+          void api(`/api/v1/bi/crm/outreach/contacts/${contact.id}/activity`, {
+            method: "POST",
+            body: JSON.stringify({ event_type: "email", outcome: "sent", body: `Email sent to ${contact.email ?? ""}`.trim(), meta: { direction: "outbound", channel: "o365" } }),
+          }).catch(() => {});
+          toast.success("Sent");
+          refresh();
+        }}
       />
     </div>
   );
