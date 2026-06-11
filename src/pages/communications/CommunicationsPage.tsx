@@ -1318,6 +1318,9 @@ function InboxTab() {
   const [reconnecting, setReconnecting] = useState(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
+  // BF_PORTAL_BLOCK_v823_INBOX_READTOGGLE_SORT_BADGE
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+
   // Load mailboxes once
   useEffect(() => {
     let cancelled = false;
@@ -1355,7 +1358,7 @@ function InboxTab() {
     setSelected(null);
     (async () => {
       try {
-        const params = active ? { mailbox: active } : {};
+        const params = { ...(active ? { mailbox: active } : {}), sort: sortDir };
         const r = await withO365Refresh(() =>
           api<typeof messages>("/api/crm/inbox", { params })
         );
@@ -1378,7 +1381,7 @@ function InboxTab() {
       }
     })();
     return () => { cancelled = true; };
-  }, [active, reconnectAttempts]);
+  }, [active, reconnectAttempts, sortDir]);
 
   // Load body when a message is selected
   useEffect(() => {
@@ -1447,6 +1450,14 @@ function InboxTab() {
 
   // BF_PORTAL_BLOCK_v622_INBOX_REFRESH_DELETE_v1 — delete + auto-refresh
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const unreadCount = messages.filter((mm) => mm.isRead === false).length;
+  const markRead = useCallback(async (messageId: string, isRead: boolean): Promise<void> => {
+    try {
+      const params = active ? { mailbox: active } : {};
+      await api(`/api/crm/inbox/${encodeURIComponent(messageId)}/read`, { method: "PATCH", params, body: { isRead } });
+      setMessages((prev) => prev.map((mm) => (mm.id === messageId ? { ...mm, isRead } : mm)));
+    } catch { /* non-fatal */ }
+  }, [active]);
   const handleDelete = useCallback(async (messageId: string): Promise<void> => {
     if (!messageId) return;
     if (!window.confirm("Move this email to Deleted Items?")) return;
@@ -1586,6 +1597,20 @@ function InboxTab() {
           {!loading && !err && messages.length === 0 && (
             <div style={{ padding: 16, color: "#7c98b6" }}>Nothing in this inbox.</div>
           )}
+          {/* BF_PORTAL_BLOCK_v823_INBOX_READTOGGLE_SORT_BADGE — sort + unread badge */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 12px", borderBottom: "1px solid #f0f4f8" }}>
+            <span style={{ fontSize: 12, color: "#7c98b6" }}>
+              {unreadCount > 0 ? `${unreadCount} unread` : "All read"}
+            </span>
+            <select
+              value={sortDir}
+              onChange={(e) => setSortDir(e.target.value === "asc" ? "asc" : "desc")}
+              style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid #e2e8f0" }}
+            >
+              <option value="desc">Newest first</option>
+              <option value="asc">Oldest first</option>
+            </select>
+          </div>
           {messages.map(m => (
             <div key={m.id} style={{ position: "relative", borderBottom: "1px solid #f0f4f8" }}>
               <button
@@ -1611,6 +1636,18 @@ function InboxTab() {
                     {new Date(m.receivedDateTime).toLocaleString()}
                   </div>
                 )}
+              </button>
+              <button
+                type="button"
+                onClick={(ev) => { ev.stopPropagation(); void markRead(m.id, m.isRead === false); }}
+                title={m.isRead === false ? "Mark as read" : "Mark as unread"}
+                style={{
+                  position: "absolute", right: 40, top: "50%", transform: "translateY(-50%)",
+                  border: "none", background: "transparent", color: "#0066cc",
+                  fontSize: 14, cursor: "pointer", padding: "4px 6px", borderRadius: 4,
+                }}
+              >
+                {m.isRead === false ? "●" : "○"}
               </button>
               <button
                 type="button"
