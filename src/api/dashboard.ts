@@ -1,3 +1,4 @@
+import { api } from "@/api"; // BF_PORTAL_BLOCK_v822_DASHBOARD_FETCH_REAL
 export type PipelineOverview = {
   newApplications: number;
   inReview: number;
@@ -83,8 +84,15 @@ const metricsFallback: DealMetrics = {
 };
 
 export const dashboardApi = {
-  getPipeline: async () => pipelineFallback,
-  getActions: async () => actionsFallback,
+  // BF_PORTAL_BLOCK_v822_DASHBOARD_FETCH_REAL — fetch real data; fall back on error.
+  getPipeline: async (): Promise<PipelineOverview> => {
+    try { return await api.get<PipelineOverview>("/api/dashboard/pipeline"); }
+    catch { return pipelineFallback; }
+  },
+  getActions: async (): Promise<UrgentActions> => {
+    try { return await api.get<UrgentActions>("/api/dashboard/actions"); }
+    catch { return actionsFallback; }
+  },
   getDocumentHealth: async () => documentHealthFallback,
   getLenderActivity: async () => lenderActivityFallback,
   getOffers: async () => offersFallback,
