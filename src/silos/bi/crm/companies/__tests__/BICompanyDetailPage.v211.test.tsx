@@ -146,7 +146,9 @@ describe("BF_PORTAL_BLOCK_v211 — BICompanyDetailPage", () => {
     apiMock.mockResolvedValue(detailFixture());
     renderAtId("co-1");
     const back = (await screen.findByText(/back to companies/i)) as HTMLAnchorElement;
-    expect(back.getAttribute("href")).toBe("/silo/bi/crm");
+    // BF_PORTAL_BLOCK_v854_BI_CRM_TAB_URL — back link now carries the tab so it
+    // returns to the Companies tab instead of defaulting to Contacts.
+    expect(back.getAttribute("href")).toBe("/silo/bi/crm?tab=companies");
   });
 
   it("formats Location field as 'City, Province'", async () => {
