@@ -72,40 +72,51 @@ export default function RequestItemsTab({ applicationId }: Props) {
     }
   };
 
+  // BF_PORTAL_BLOCK_v834_REQUEST_ITEMS_COLOR_AND_LAYOUT — explicit dark text so
+  // labels are never white-on-white in the dark-themed shell.
   const chip = (active: boolean): CSSProperties => ({
     display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
     border: `1px solid ${active ? "#2563eb" : "#e2e8f0"}`, borderRadius: 8,
     background: active ? "#eff6ff" : "#fff", cursor: "pointer", fontSize: 14,
+    color: "#0f172a",
   });
 
   return (
-    <div style={{ maxWidth: 880 }}>
+    <div style={{ maxWidth: 1100 }}>
       <h3 style={{ margin: "4px 0 4px" }}>Request Items</h3>
       <p style={{ color: "#64748b", fontSize: 13, marginTop: 0 }}>
         Check the documents and forms you need. The client receives each as a task
         in their portal (with one SMS), and the application moves to “Additional Steps Required”.
       </p>
 
-      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "#94a3b8", fontWeight: 700, margin: "16px 0 8px" }}>
-        Required documents
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {DOCUMENTS.map((d) => (
-          <div key={d} onClick={() => toggle(setDocs, d)} style={chip(docs.has(d))}>
-            <input type="checkbox" readOnly checked={docs.has(d)} /> <span>{d}</span>
+      {/* BF_PORTAL_BLOCK_v834_REQUEST_ITEMS_COLOR_AND_LAYOUT — 3 columns:
+          required documents fill the left two columns, forms sit in the
+          third column on the right. */}
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, alignItems: "start" }}>
+        <div>
+          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "#94a3b8", fontWeight: 700, margin: "16px 0 8px" }}>
+            Required documents
           </div>
-        ))}
-      </div>
-
-      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "#94a3b8", fontWeight: 700, margin: "20px 0 8px" }}>
-        Forms
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {FORMS.map((f) => (
-          <div key={f.id} onClick={() => toggle(setForms, f.id)} style={chip(forms.has(f.id))}>
-            <input type="checkbox" readOnly checked={forms.has(f.id)} /> <span>{f.label}</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {DOCUMENTS.map((d) => (
+              <div key={d} onClick={() => toggle(setDocs, d)} style={chip(docs.has(d))}>
+                <input type="checkbox" readOnly checked={docs.has(d)} /> <span style={{ color: "#0f172a" }}>{d}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+        <div>
+          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "#94a3b8", fontWeight: 700, margin: "16px 0 8px" }}>
+            Forms
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+            {FORMS.map((f) => (
+              <div key={f.id} onClick={() => toggle(setForms, f.id)} style={chip(forms.has(f.id))}>
+                <input type="checkbox" readOnly checked={forms.has(f.id)} /> <span style={{ color: "#0f172a" }}>{f.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {error && <div style={{ color: "#dc2626", fontSize: 13, marginTop: 12 }}>{error}</div>}
