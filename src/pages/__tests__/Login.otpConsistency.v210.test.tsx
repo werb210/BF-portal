@@ -56,14 +56,17 @@ describe("BF_PORTAL_BLOCK_v210 — staff Login OTP consistency", () => {
     ).toBeInTheDocument();
   });
 
+  // BF_PORTAL_BLOCK_v831_OTP_TEST_FIX_FOR_v828 — v828 split the header to match
+  // Verify.tsx: an <h1> "Boreal Group of Companies" plus a "Staff Portal" subtitle.
   it("keeps the staff-portal title as a hero above the card", () => {
     renderLogin();
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /boreal group of companies staff portal/i,
+        name: /boreal group of companies/i,
       }),
     ).toBeInTheDocument();
+    expect(screen.getByText(/staff portal/i)).toBeInTheDocument();
   });
 
   it("preserves data-testid hooks for downstream e2e suites", () => {
