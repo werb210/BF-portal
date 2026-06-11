@@ -1310,7 +1310,7 @@ function InboxTab() {
   const [active, setActive] = useState<string>("");
   const [messages, setMessages] = useState<Array<{ id: string; subject: string; bodyPreview?: string; from?: { emailAddress?: { address: string; name?: string } }; receivedDateTime?: string; isRead?: boolean; flag?: { flagStatus?: string }; conversationId?: string }>>([]); // BF_PORTAL_BLOCK_v833_INBOX_SEARCH_FOLDERS_THREAD
   const [selectedId, setSelectedId] = useState<string>("");
-  const [selected, setSelected] = useState<{ subject: string; from?: { emailAddress?: { address: string; name?: string } }; body?: { content: string; contentType: "html" | "text" }; receivedDateTime?: string } | null>(null);
+  const [selected, setSelected] = useState<{ subject: string; from?: { emailAddress?: { address: string; name?: string } }; toRecipients?: Array<{ emailAddress?: { address?: string } }>; ccRecipients?: Array<{ emailAddress?: { address?: string } }>; body?: { content: string; contentType: "html" | "text" }; receivedDateTime?: string } | null>(null); // BF_PORTAL_BLOCK_v835_INBOX_REPLY_ALL_FORWARD
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -1820,38 +1820,44 @@ function InboxTab() {
                 <span style={{ marginLeft: 8 }}>· {new Date(selected.receivedDateTime).toLocaleString()}</span>
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                const addr = selected.from?.emailAddress?.address ?? "";
+            {/* BF_PORTAL_BLOCK_v835_INBOX_REPLY_ALL_FORWARD */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              {(() => {
                 const subj = selected.subject ?? "";
+                const fromAddr = selected.from?.emailAddress?.address ?? "";
                 const orig = selected.body?.contentType === "html"
                   ? (selected.body?.content ?? "").replace(/<[^>]+>/g, " ")
                   : (selected.body?.content ?? "");
-                setReplyCtx({
-                  to: addr,
-                  subject: /^re:/i.test(subj) ? subj : `Re: ${subj}`,
-                  body: `
+                const myAddr = (active || mailboxes.mine?.address || "").toLowerCase();
+                const allRecipients = [
+                  ...(selected.toRecipients ?? []),
+                  ...(selected.ccRecipients ?? []),
+                ].map((r) => r.emailAddress?.address ?? "").filter(Boolean);
+                const reSubj = /^re:/i.test(subj) ? subj : `Re: ${subj}`;
+                const fwdSubj = /^fwd?:/i.test(subj) ? subj : `Fwd: ${subj}`;
+                const quoted = `
 
 ----- Original message -----
-${orig}`,
-                });
-                setComposeOpen(true);
-              }}
-              style={{
-                marginBottom: 16,
-                padding: "7px 16px",
-                border: "1px solid #0066cc",
-                borderRadius: 6,
-                background: "#fff",
-                color: "#0066cc",
-                fontWeight: 600,
-                fontSize: 13,
-                cursor: "pointer",
-              }}
-            >
-              Reply
-            </button>
+${orig}`;
+                const btnStyle: React.CSSProperties = {
+                  padding: "7px 16px", border: "1px solid #0066cc", borderRadius: 6,
+                  background: "#fff", color: "#0066cc", fontWeight: 600, fontSize: 13, cursor: "pointer",
+                };
+                const openCompose = (to: string, subject: string) => {
+                  setReplyCtx({ to, subject, body: quoted });
+                  setComposeOpen(true);
+                };
+                const replyAllTo = Array.from(new Set([fromAddr, ...allRecipients]
+                  .map((a) => a.trim()).filter((a) => a && a.toLowerCase() !== myAddr)));
+                return (
+                  <>
+                    <button type="button" style={btnStyle} onClick={() => openCompose(fromAddr, reSubj)}>Reply</button>
+                    <button type="button" style={btnStyle} onClick={() => openCompose(replyAllTo.join(", "), reSubj)}>Reply All</button>
+                    <button type="button" style={btnStyle} onClick={() => openCompose("", fwdSubj)}>Forward</button>
+                  </>
+                );
+              })()}
+            </div>
             {selected.body?.contentType === "html"
               ? <div dangerouslySetInnerHTML={{ __html: selected.body.content }} />
               : <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{selected.body?.content ?? ""}</pre>}
