@@ -1308,7 +1308,7 @@ function InboxTab() {
 
   const [mailboxes, setMailboxes] = useState<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>({ mine: null, shared: [] });
   const [active, setActive] = useState<string>("");
-  const [messages, setMessages] = useState<Array<{ id: string; subject: string; bodyPreview?: string; from?: { emailAddress?: { address: string; name?: string } }; receivedDateTime?: string; isRead?: boolean }>>([]);
+  const [messages, setMessages] = useState<Array<{ id: string; subject: string; bodyPreview?: string; from?: { emailAddress?: { address: string; name?: string } }; receivedDateTime?: string; isRead?: boolean; flag?: { flagStatus?: string } }>>([]); // BF_PORTAL_BLOCK_v832_INBOX_FLAG_AND_BULK
   const [selectedId, setSelectedId] = useState<string>("");
   const [selected, setSelected] = useState<{ subject: string; from?: { emailAddress?: { address: string; name?: string } }; body?: { content: string; contentType: "html" | "text" }; receivedDateTime?: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -1477,6 +1477,63 @@ function InboxTab() {
     }
   }, [active, selectedId]);
 
+  // BF_PORTAL_BLOCK_v832_INBOX_FLAG_AND_BULK — flag + bulk multi-select.
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const togglePick = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const flagMessage = useCallback(async (messageId: string, flagged: boolean): Promise<void> => {
+    try {
+      const params = active ? { mailbox: active } : {};
+      await api(`/api/crm/inbox/${encodeURIComponent(messageId)}/flag`, { method: "PATCH", params, body: { flagged } });
+      setMessages((prev) => prev.map((mm) => (mm.id === messageId ? { ...mm, flag: { flagStatus: flagged ? "flagged" : "notFlagged" } } : mm)));
+    } catch { /* non-fatal */ }
+  }, [active]);
+  const bulkMarkRead = useCallback(async (isRead: boolean): Promise<void> => {
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selectedIds);
+      for (const id of ids) { await markRead(id, isRead); }
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [selectedIds, markRead]);
+  const bulkFlag = useCallback(async (): Promise<void> => {
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selectedIds);
+      for (const id of ids) { await flagMessage(id, true); }
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [selectedIds, flagMessage]);
+  const bulkDelete = useCallback(async (): Promise<void> => {
+    const ids = Array.from(selectedIds);
+    if (!ids.length) return;
+    if (!window.confirm(`Move ${ids.length} email(s) to Deleted Items?`)) return;
+    setBulkBusy(true);
+    try {
+      const params = active ? { mailbox: active } : {};
+      for (const id of ids) {
+        try {
+          await api(`/api/crm/inbox/${encodeURIComponent(id)}`, { method: "DELETE", params });
+          setMessages((prev) => prev.filter((mm) => mm.id !== id));
+        } catch { /* skip individual failures */ }
+      }
+      setSelectedId((sid) => (ids.includes(sid) ? "" : sid));
+      setSelected((sel) => (selectedId && ids.includes(selectedId) ? null : sel));
+      setSelectedIds(new Set());
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [selectedIds, active, selectedId]);
+
   useEffect(() => {
     if (needsReconnect) return;
     const tick = setInterval(() => {
@@ -1603,23 +1660,49 @@ function InboxTab() {
             <span style={{ fontSize: 12, color: "#7c98b6" }}>
               {unreadCount > 0 ? `${unreadCount} unread` : "All read"}
             </span>
-            <select
-              value={sortDir}
-              onChange={(e) => setSortDir(e.target.value === "asc" ? "asc" : "desc")}
-              style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid #e2e8f0" }}
-            >
-              <option value="desc">Newest first</option>
-              <option value="asc">Oldest first</option>
-            </select>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* BF_PORTAL_BLOCK_v832_INBOX_FLAG_AND_BULK — bulk select toolbar */}
+              <button
+                type="button"
+                onClick={() => { setBulkMode((v) => !v); setSelectedIds(new Set()); }}
+                style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #e2e8f0", background: bulkMode ? "#eaf2fb" : "#fff", cursor: "pointer" }}
+              >
+                {bulkMode ? "Cancel" : "Select"}
+              </button>
+              <select
+                value={sortDir}
+                onChange={(e) => setSortDir(e.target.value === "asc" ? "asc" : "desc")}
+                style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid #e2e8f0" }}
+              >
+                <option value="desc">Newest first</option>
+                <option value="asc">Oldest first</option>
+              </select>
+            </div>
           </div>
-          {messages.map(m => (
-            <div key={m.id} style={{ position: "relative", borderBottom: "1px solid #f0f4f8" }}>
+          {bulkMode && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid #f0f4f8", background: "#f8fafc" }}>
+              <span style={{ fontSize: 12, color: "#7c98b6" }}>{selectedIds.size} selected</span>
+              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(true)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark read</button>
+              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(false)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark unread</button>
+              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkFlag()} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Flag</button>
+              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkDelete()} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #fecaca", background: "#fff", color: "#dc2626", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Delete</button>
+            </div>
+          )}
+          {messages.map(m => {
+            const isFlagged = m.flag?.flagStatus === "flagged";
+            return (
+            <div key={m.id} style={{ position: "relative", borderBottom: "1px solid #f0f4f8", display: "flex", alignItems: "stretch" }}>
+              {bulkMode && (
+                <label style={{ display: "flex", alignItems: "center", padding: "0 8px", cursor: "pointer" }} onClick={(ev) => ev.stopPropagation()}>
+                  <input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => togglePick(m.id)} />
+                </label>
+              )}
               <button
                 type="button"
                 onClick={() => setSelectedId(m.id)}
                 style={{
-                  display: "block", width: "100%", textAlign: "left",
-                  padding: "12px 56px 12px 12px", border: "none",
+                  display: "block", flex: 1, width: "100%", textAlign: "left",
+                  padding: "12px 88px 12px 12px", border: "none",
                   background: selectedId === m.id ? "#eaf2fb" : "transparent",
                   cursor: "pointer", color: "#000",
                   fontWeight: m.isRead ? 400 : 600,
@@ -1637,6 +1720,18 @@ function InboxTab() {
                     {new Date(m.receivedDateTime).toLocaleString()}
                   </div>
                 )}
+              </button>
+              <button
+                type="button"
+                onClick={(ev) => { ev.stopPropagation(); void flagMessage(m.id, !isFlagged); }}
+                title={isFlagged ? "Remove flag" : "Flag email"}
+                style={{
+                  position: "absolute", right: 72, top: "50%", transform: "translateY(-50%)",
+                  border: "none", background: "transparent", color: isFlagged ? "#f59e0b" : "#94a3b8",
+                  fontSize: 16, cursor: "pointer", padding: "4px 6px", borderRadius: 4,
+                }}
+              >
+                {isFlagged ? "★" : "☆"}
               </button>
               <button
                 type="button"
@@ -1664,7 +1759,8 @@ function InboxTab() {
                 {deletingId === m.id ? "…" : "🗑"}
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
