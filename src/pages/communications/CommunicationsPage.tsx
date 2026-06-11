@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/api";
 import { getAuthToken } from "@/lib/authToken"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
 import { API_BASE } from "@/config/api"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
@@ -1308,7 +1308,7 @@ function InboxTab() {
 
   const [mailboxes, setMailboxes] = useState<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>({ mine: null, shared: [] });
   const [active, setActive] = useState<string>("");
-  const [messages, setMessages] = useState<Array<{ id: string; subject: string; bodyPreview?: string; from?: { emailAddress?: { address: string; name?: string } }; receivedDateTime?: string; isRead?: boolean; flag?: { flagStatus?: string } }>>([]); // BF_PORTAL_BLOCK_v832_INBOX_FLAG_AND_BULK
+  const [messages, setMessages] = useState<Array<{ id: string; subject: string; bodyPreview?: string; from?: { emailAddress?: { address: string; name?: string } }; receivedDateTime?: string; isRead?: boolean; flag?: { flagStatus?: string }; conversationId?: string }>>([]); // BF_PORTAL_BLOCK_v833_INBOX_SEARCH_FOLDERS_THREAD
   const [selectedId, setSelectedId] = useState<string>("");
   const [selected, setSelected] = useState<{ subject: string; from?: { emailAddress?: { address: string; name?: string } }; body?: { content: string; contentType: "html" | "text" }; receivedDateTime?: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -1321,6 +1321,15 @@ function InboxTab() {
 
   // BF_PORTAL_BLOCK_v823_INBOX_READTOGGLE_SORT_BADGE
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+  // BF_PORTAL_BLOCK_v833_INBOX_SEARCH_FOLDERS_THREAD — search + folder filter.
+  const [queryInput, setQueryInput] = useState("");
+  const [query, setQuery] = useState("");
+  const [folder, setFolder] = useState<"inbox" | "sent" | "all">("inbox");
+  // Debounce the search box so we don't hit Graph on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(queryInput.trim()), 400);
+    return () => clearTimeout(t);
+  }, [queryInput]);
 
   // Load mailboxes once
   useEffect(() => {
@@ -1359,7 +1368,7 @@ function InboxTab() {
     setSelected(null);
     (async () => {
       try {
-        const params = { ...(active ? { mailbox: active } : {}), sort: sortDir };
+        const params = { ...(active ? { mailbox: active } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) };
         const r = await withO365Refresh(() =>
           api<typeof messages>("/api/crm/inbox", { params })
         );
@@ -1382,7 +1391,7 @@ function InboxTab() {
       }
     })();
     return () => { cancelled = true; };
-  }, [active, reconnectAttempts, sortDir]);
+  }, [active, reconnectAttempts, sortDir, folder, query]);
 
   // Load body when a message is selected
   useEffect(() => {
@@ -1452,6 +1461,14 @@ function InboxTab() {
   // BF_PORTAL_BLOCK_v622_INBOX_REFRESH_DELETE_v1 — delete + auto-refresh
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const unreadCount = messages.filter((mm) => mm.isRead === false).length;
+  const threadCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const message of messages) {
+      if (!message.conversationId) continue;
+      counts.set(message.conversationId, (counts.get(message.conversationId) ?? 0) + 1);
+    }
+    return counts;
+  }, [messages]);
   const markRead = useCallback(async (messageId: string, isRead: boolean): Promise<void> => {
     try {
       const params = active ? { mailbox: active } : {};
@@ -1655,6 +1672,25 @@ function InboxTab() {
           {!loading && !err && messages.length === 0 && (
             <div style={{ padding: 16, color: "#7c98b6" }}>Nothing in this inbox.</div>
           )}
+          {/* BF_PORTAL_BLOCK_v833_INBOX_SEARCH_FOLDERS_THREAD — search + folder */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid #f0f4f8" }}>
+            <input
+              type="search"
+              value={queryInput}
+              onChange={(e) => setQueryInput(e.target.value)}
+              placeholder="Search mail…"
+              style={{ flex: 1, fontSize: 13, padding: "4px 8px", borderRadius: 4, border: "1px solid #e2e8f0" }}
+            />
+            <select
+              value={folder}
+              onChange={(e) => setFolder(e.target.value === "sent" ? "sent" : e.target.value === "all" ? "all" : "inbox")}
+              style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid #e2e8f0" }}
+            >
+              <option value="inbox">Inbox</option>
+              <option value="sent">Sent</option>
+              <option value="all">All</option>
+            </select>
+          </div>
           {/* BF_PORTAL_BLOCK_v823_INBOX_READTOGGLE_SORT_BADGE — sort + unread badge */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 12px", borderBottom: "1px solid #f0f4f8" }}>
             <span style={{ fontSize: 12, color: "#7c98b6" }}>
@@ -1690,6 +1726,7 @@ function InboxTab() {
           )}
           {messages.map(m => {
             const isFlagged = m.flag?.flagStatus === "flagged";
+            const threadCount = m.conversationId ? (threadCounts.get(m.conversationId) ?? 1) : 1;
             return (
             <div key={m.id} style={{ position: "relative", borderBottom: "1px solid #f0f4f8", display: "flex", alignItems: "stretch" }}>
               {bulkMode && (
@@ -1711,7 +1748,14 @@ function InboxTab() {
                 <div style={{ fontSize: 13, color: "#33475b" }}>
                   {m.from?.emailAddress?.name || m.from?.emailAddress?.address || "(unknown)"}
                 </div>
-                <div style={{ fontSize: 14, marginTop: 2 }}>{m.subject || "(no subject)"}</div>
+                <div style={{ fontSize: 14, marginTop: 2 }}>
+                  {m.subject || "(no subject)"}
+                  {threadCount > 1 && (
+                    <span style={{ marginLeft: 6, fontSize: 11, color: "#0066cc", background: "#eaf2fb", borderRadius: 8, padding: "0 6px" }}>
+                      {threadCount}
+                    </span>
+                  )}
+                </div>
                 <div style={{ fontSize: 12, color: "#7c98b6", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {m.bodyPreview || ""}
                 </div>
