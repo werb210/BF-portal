@@ -10,12 +10,13 @@ import CommunicationsThread from "@/pages/communications/components/Communicatio
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 
-type Tab = "messages" | "sms" | "inbox" | "issues" | "maya" | "team"; // BF_PORTAL_BLOCK_v763_MAYA_TAB_TYPE
+type Tab = "messages" | "sms" | "inbox" | "issues" | "maya" | "team" | "voicemail"; // BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "messages", label: "Messages" },
   { id: "sms", label: "SMS" },
   { id: "inbox", label: "Inbox" },
+  { id: "voicemail", label: "Voicemail" }, // BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB
   { id: "issues", label: "Issues" },
   { id: "maya", label: "Maya" }, // BF_PORTAL_BLOCK_v763_MAYA_TAB
   { id: "team", label: "Team" }, // BF_PORTAL_BLOCK_v752_TEAM_TAB
@@ -1881,10 +1882,11 @@ export default function CommunicationsPage() {
   // BF_PORTAL_BLOCK_v641_TAB_COUNTS_v1 — per-sub-tab counters. Each source is
   // the same endpoint that tab renders from. Fully guarded so a mocked/undefined
   // api response can never throw during render or tests.
-  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; issues: number; maya: number; team: number }>({
+  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; voicemail: number; issues: number; maya: number; team: number }>({
     messages: 0,
     sms: 0,
     inbox: 0,
+    voicemail: 0,
     issues: 0,
     maya: 0,
     team: 0,
@@ -2010,6 +2012,7 @@ export default function CommunicationsPage() {
         {tab === "sms" && <SmsTab forcedContact={forcedSmsContact} onContactSelected={setForcedSmsContact} />}
         {tab === "messages" && <MessagesTab onStartConversation={(contact) => { setForcedSmsContact(contact); setTab("sms"); }} />}
         {tab === "inbox" && <InboxTab />}
+        {tab === "voicemail" && <VoicemailTab />} {/* BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB */}
         {tab === "issues" && <IssuesTab />}
         {tab === "maya" && <MayaTab />}
         {tab === "team" && <TeamTab onUnreadChange={(n) => setTabCounts((c) => ({ ...c, team: n }))} />}
@@ -2384,6 +2387,49 @@ function NewTeamChatModal({ users, onClose, onCreated }: { users: TeamUser[]; on
           <button onClick={() => void create()} disabled={!canCreate || busy} style={{ padding: "8px 16px", border: "none", background: canCreate ? "#007aff" : "#cbd5e1", color: "#fff", borderRadius: 8, fontWeight: 600, cursor: canCreate ? "pointer" : "default" }}>{busy ? "Creating…" : "Create"}</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB — central voicemail inbox.
+function VoicemailTab() {
+  const [items, setItems] = useState<Array<{ id: string; recording_url: string; created_at: string; contact_name: string | null; contact_phone: string | null; contact_id: string | null }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true); setErr(null);
+    api<typeof items>("/api/crm/voicemails")
+      .then((r) => { if (!cancelled) setItems(Array.isArray(r) ? r : []); })
+      .catch(() => { if (!cancelled) setErr("Could not load voicemails."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <div style={{ padding: 16, overflowY: "auto" }}>
+      <h3 style={{ marginTop: 0 }}>Voicemails</h3>
+      {loading && <div style={{ color: "#8e8e93" }}>Loading…</div>}
+      {err && <div style={{ color: "#b00020" }}>{err}</div>}
+      {!loading && !err && items.length === 0 && <div style={{ color: "#7c98b6" }}>No voicemails.</div>}
+      {items.map((vm) => (
+        <div key={vm.id} style={{ borderBottom: "1px solid #f0f4f8", padding: "12px 0" }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#33475b" }}>
+            {vm.contact_name || vm.contact_phone || "Unknown caller"}
+          </div>
+          <div style={{ fontSize: 12, color: "#7c98b6", marginBottom: 6 }}>
+            {vm.created_at ? new Date(vm.created_at).toLocaleString() : ""}
+          </div>
+          {vm.recording_url ? (
+            <audio controls preload="none" style={{ width: "100%", maxWidth: 420 }}>
+              <source src={vm.recording_url} />
+            </audio>
+          ) : (
+            <span style={{ fontSize: 12, color: "#94a3b8" }}>No recording</span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
