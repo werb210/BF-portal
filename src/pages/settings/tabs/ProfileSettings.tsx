@@ -415,6 +415,7 @@ const ProfileSettings = () => {
       {/* BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — email signature editor.
           GET/PUT /api/o365/me/signature (server-side shipped in v635). */}
       <EmailSignaturePanel />
+      <SharedMailboxSignaturePanel /> {/* BF_PORTAL_BLOCK_v826_PER_MAILBOX_SIGNATURE_UI */}
 
       {/* BF_PORTAL_BLOCK_v694_COMMS — per-user booking URL.
           GET/PUT /api/o365/me/booking-url (server v693). */}
@@ -572,6 +573,96 @@ function EmailSignaturePanel() {
         />
         <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
           <Button type="button" onClick={() => void save()} disabled={!loaded || saving}>
+            {saving ? "Saving…" : "Save signature"}
+          </Button>
+          {status && <span style={{ fontSize: 13, color: status === "Saved." ? "#0d9b6c" : "#b00020" }}>{status}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// BF_PORTAL_BLOCK_v826_PER_MAILBOX_SIGNATURE_UI — per shared-mailbox signature.
+// Emails sent AS a shared mailbox use the mailbox's own signature (server v824).
+function SharedMailboxSignaturePanel() {
+  const [shared, setShared] = useState<Array<{ address: string; display_name: string }>>([]);
+  const [address, setAddress] = useState<string>("");
+  const [html, setHtml] = useState<string>("");
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  // Load the shared mailboxes the staff member can send as.
+  useEffect(() => {
+    let cancelled = false;
+    api.get<{ mine: unknown; shared: Array<{ address: string; display_name: string }> }>("/api/crm/shared-mailboxes")
+      .then((r) => {
+        if (cancelled) return;
+        const list = Array.isArray(r?.shared) ? r.shared : [];
+        setShared(list);
+        if (list[0]) setAddress(list[0].address);
+        setLoaded(true);
+      })
+      .catch(() => { if (!cancelled) setLoaded(true); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load the selected mailbox's signature.
+  useEffect(() => {
+    if (!address) { setHtml(""); return; }
+    let cancelled = false;
+    setStatus(null);
+    api.get<{ signature_html?: string }>(`/api/crm/shared-mailboxes/${encodeURIComponent(address)}/signature`)
+      .then((r) => { if (!cancelled) setHtml(r?.signature_html ?? ""); })
+      .catch(() => { if (!cancelled) setHtml(""); });
+    return () => { cancelled = true; };
+  }, [address]);
+
+  async function save() {
+    if (!address) return;
+    setSaving(true); setStatus(null);
+    try {
+      await api.put(`/api/crm/shared-mailboxes/${encodeURIComponent(address)}/signature`, { signature_html: html });
+      setStatus("Saved.");
+    } catch (e) {
+      setStatus(getErrorMessage(e, "Save failed."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loaded && shared.length === 0) return null; // no shared mailboxes -> hide panel
+
+  return (
+    <div className="settings-grid" style={{ marginTop: 16 }}>
+      <div style={{ width: "100%" }}>
+        <h3 style={{ margin: "0 0 8px 0" }}>Shared mailbox signature</h3>
+        <p style={{ margin: "0 0 8px 0", fontSize: 13, color: "#6b7280" }}>
+          Each shared mailbox has its own signature, used when you send email as that account.
+        </p>
+        <select
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          disabled={!loaded}
+          aria-label="Shared mailbox"
+          style={{ marginBottom: 8, padding: 6, borderRadius: 6, border: "1px solid #e5e7eb", fontSize: 13 }}
+        >
+          {shared.map((m) => (
+            <option key={m.address} value={m.address}>{m.display_name} ({m.address})</option>
+          ))}
+        </select>
+        <textarea
+          value={html}
+          onChange={(e) => setHtml(e.target.value)}
+          rows={8}
+          disabled={!loaded || !address}
+          aria-label="Shared mailbox signature HTML"
+          placeholder="<p>Boreal Financial<br>submissions@boreal.financial</p>"
+          style={{ width: "100%", padding: 8, fontFamily: "monospace", fontSize: 12, borderRadius: 6, border: "1px solid #e5e7eb" }}
+        />
+        <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+          <Button type="button" onClick={() => void save()} disabled={!loaded || !address || saving}>
             {saving ? "Saving…" : "Save signature"}
           </Button>
           {status && <span style={{ fontSize: 13, color: status === "Saved." ? "#0d9b6c" : "#b00020" }}>{status}</span>}
