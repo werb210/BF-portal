@@ -194,7 +194,7 @@ export default function BICompanyDetailPage() {
     <div style={layout} data-testid="bi-company-detail">
       {/* LEFT RAIL — identity + actions + fields */}
       <aside style={rail} data-testid="bi-company-rail-left">
-        <Link to="/silo/bi/crm" style={backLink}>
+        <Link to="/silo/bi/crm?tab=companies" style={backLink}>
           ← Back to companies
         </Link>
 

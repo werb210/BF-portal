@@ -5,14 +5,18 @@
 // module per ruling 21. The Overview aggregate view is removed
 // outright; if it surfaces again later it should be a separate
 // page, not a CRM tab.
-import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import BIContactsList from "./contacts/BIContactsList";
 import BICompaniesList from "./companies/BICompaniesList";
 
 type TabKey = "contacts" | "companies";
 
 export default function BICRM() {
-  const [tab, setTab] = useState<TabKey>("contacts");
+  // BF_PORTAL_BLOCK_v854_BI_CRM_TAB_URL — keep the active tab in the URL so a
+  // company/contact card "Back" link can return to the tab the user came from.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab: TabKey = searchParams.get("tab") === "companies" ? "companies" : "contacts";
+  const setTab = (k: TabKey) => setSearchParams((p) => { p.set("tab", k); return p; }, { replace: true });
 
   const tabBtn = (k: TabKey, label: string) => (
     <button
