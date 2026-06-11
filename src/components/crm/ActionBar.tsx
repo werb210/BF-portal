@@ -11,8 +11,9 @@ type Action = "note" | "email" | "call" | "sms" | "task" | "meeting";
 
 // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1 — optional Edit/Delete so BI can adopt this
 // shared bar without losing them; BF callers omit these props and are unchanged.
-export function ActionBar({ scope, contactEmail, contactPhone, contactName, googleQuery, onChanged, onEdit, onDelete, deleting, editTestId, deleteTestId }: {
+export function ActionBar({ scope, contactEmail, contactPhone, contactName, googleQuery, onChanged, onAction, onEdit, onDelete, deleting, editTestId, deleteTestId }: {
   scope: Scope;
+  onAction?: (eventType: string) => void; // BF_PORTAL_BLOCK_v846_BI_EMAIL_TIMELINE
   contactEmail?: string;
   contactPhone?: string;
   contactName?: string;
@@ -70,22 +71,22 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, goog
       </div>
 
       {open === "note" && (
-        <NotePopup scope={scope} onClose={close} onCreated={onChanged} />
+        <NotePopup scope={scope} onClose={close} onCreated={() => { onAction?.("note"); onChanged?.(); }} />
       )}
       {open === "email" && (
-        <O365ComposeModal logScope={scope} open initialTo={contactEmail ?? ""} onClose={close} onSent={onChanged} />
+        <O365ComposeModal logScope={scope} open initialTo={contactEmail ?? ""} onClose={close} onSent={() => { onAction?.("email"); onChanged?.(); }} />
       )}
       {open === "call" && scope.kind !== "contact" && (
-        <CallPopup scope={scope} defaultPhone={contactPhone} onClose={close} onLogged={onChanged} />
+        <CallPopup scope={scope} defaultPhone={contactPhone} onClose={close} onLogged={() => { onAction?.("call"); onChanged?.(); }} />
       )}
       {open === "sms" && scope.kind === "contact" && (
-        <SmsPopup contactId={scope.id} defaultPhone={contactPhone} onClose={close} onSent={onChanged} />
+        <SmsPopup contactId={scope.id} defaultPhone={contactPhone} onClose={close} onSent={() => { onAction?.("sms"); onChanged?.(); }} />
       )}
       {open === "task" && (
-        <TaskPopup scope={scope} onClose={close} onCreated={onChanged} />
+        <TaskPopup scope={scope} onClose={close} onCreated={() => { onAction?.("task"); onChanged?.(); }} />
       )}
       {open === "meeting" && (
-        <MeetingPopup scope={scope} defaultPhone={contactPhone} onClose={close} onCreated={onChanged} />
+        <MeetingPopup scope={scope} defaultPhone={contactPhone} onClose={close} onCreated={() => { onAction?.("meeting"); onChanged?.(); }} />
       )}
     </>
   );
