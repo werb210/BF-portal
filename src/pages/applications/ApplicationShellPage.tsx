@@ -16,6 +16,7 @@ import BankingAnalysisTab from "@/pages/applications/tabs/BankingAnalysisTab";
 import FinancialsTab from "@/pages/applications/tabs/FinancialsTab";
 import DocumentsTab from "@/pages/applications/tabs/DocumentsTab";
 import CreditSummaryTab from "@/pages/applications/tabs/CreditSummaryTab";
+import RequestItemsTab from "@/pages/applications/tabs/RequestItemsTab"; // BF_PORTAL_BLOCK_v821_REQUEST_ITEMS_TAB
 import NotesTab from "@/pages/applications/tabs/NotesTab";
 import LendersTab from "@/pages/applications/tabs/LendersTab";
 // BF_PORTAL_BLOCK_v123a_REMOVE_CALLS_TAB_v1 — CallHistoryTab removed
@@ -42,6 +43,7 @@ const APPLICATION_TABS: DrawerTab[] = [
   { id: "financials", label: "Financials" },
   { id: "documents", label: "Documents" },
   { id: "credit-summary", label: "Credit Summary" },
+  { id: "request-items", label: "Request Items" }, // BF_PORTAL_BLOCK_v821_REQUEST_ITEMS_TAB
   { id: "notes", label: "Notes" },
   { id: "lenders", label: "Lenders" }
 ];
@@ -160,6 +162,7 @@ const ApplicationShellPage = () => {
           {selectedTab === "financials" && <FinancialsTab applicationId={application.id} />}
           {selectedTab === "documents" && <DocumentsTab applicationId={application.id} />}
           {selectedTab === "credit-summary" && <CreditSummaryTab applicationId={application.id} />}
+          {selectedTab === "request-items" && <RequestItemsTab applicationId={application.id} />}
           {selectedTab === "notes" && <NotesTab applicationId={application.id} />}
           {selectedTab === "lenders" && <LendersTab applicationId={application.id} />}
         </ApplicationCard>
