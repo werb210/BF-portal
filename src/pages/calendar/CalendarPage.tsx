@@ -127,6 +127,7 @@ function CalendarContent() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [completedExpanded, setCompletedExpanded] = useState(false); // BF_PORTAL_BLOCK_v825_CALENDAR_COMPLETED_COLLAPSE
   const [selectedTask, setSelectedTask] = useState<CalendarTask | null>(null);
   const [eventForm, setEventForm] = useState({ title: "", start: "", end: "", attendees: "", location: "", notes: "" });
   const [taskForm, setTaskForm] = useState({ title: "", dueAt: "", priority: "normal", assignee_user_id: (user as { id?: string } | null)?.id ?? "", notes: "" });
@@ -354,8 +355,19 @@ function CalendarContent() {
           ["Completed", groupedTasks.completed, "#10b981"],
         ].map(([label, items, color]) => (
           <div key={label as string} style={{ marginBottom: 14 }}>
-            <h4 style={{ margin: "0 0 8px", color: color as string, fontSize: 14 }}>{label as string}</h4>
-            {(items as CalendarTask[]).length === 0 ? (
+            {/* BF_PORTAL_BLOCK_v825_CALENDAR_COMPLETED_COLLAPSE — Completed is collapsible. */}
+            {label === "Completed" ? (
+              <h4
+                onClick={() => setCompletedExpanded((v) => !v)}
+                style={{ margin: "0 0 8px", color: color as string, fontSize: 14, cursor: "pointer", userSelect: "none" }}
+                data-testid="calendar-completed-toggle"
+              >
+                {(items as CalendarTask[]).length > 0 ? (completedExpanded ? "\u25be " : "\u25b8 ") : ""}{label as string} ({(items as CalendarTask[]).length})
+              </h4>
+            ) : (
+              <h4 style={{ margin: "0 0 8px", color: color as string, fontSize: 14 }}>{label as string}</h4>
+            )}
+            {label === "Completed" && !completedExpanded ? null : (items as CalendarTask[]).length === 0 ? (
               <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>None</p>
             ) : (
               (items as CalendarTask[]).map((task) => (
