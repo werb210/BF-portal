@@ -106,7 +106,9 @@ export default function Login() {
             alt="Boreal"
             style={{ display: "block", margin: "0 auto 16px", height: 56, width: "auto" }}
           />
-          <h1 className="text-2xl font-semibold text-white">Boreal Group of Companies<br/>Staff Portal</h1>
+          {/* BF_PORTAL_BLOCK_v828_OTP_PAGE_PARITY — header identical to Verify.tsx */}
+          <h1 className="text-2xl font-semibold text-white">Boreal Group of Companies</h1>
+          <p className="mt-1 text-sm font-medium text-white/70">Staff Portal</p>
         </div>
 
         <form
