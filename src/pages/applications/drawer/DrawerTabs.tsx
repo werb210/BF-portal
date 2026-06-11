@@ -8,6 +8,7 @@ export type DrawerTabId =
   | "banking"
   | "financials"
   | "credit-summary"
+  | "request-items"
   | "documents"
   | "comms"
   | "notes"

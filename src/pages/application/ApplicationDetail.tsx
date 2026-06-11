@@ -7,6 +7,7 @@ import BankingAnalysisTab from "@/pages/applications/tabs/BankingAnalysisTab";
 import FinancialsTab from "@/pages/applications/tabs/FinancialsTab";
 import DocumentsTab from "@/pages/applications/tabs/DocumentsTab";
 import CreditSummaryTab from "@/pages/applications/tabs/CreditSummaryTab";
+import RequestItemsTab from "@/pages/applications/tabs/RequestItemsTab"; // BF_PORTAL_BLOCK_v821_REQUEST_ITEMS_TAB
 import NotesTab from "@/pages/applications/tabs/NotesTab";
 import LendersTab from "@/pages/applications/tabs/LendersTab";
 
@@ -16,6 +17,7 @@ const TABS = [
   { key: "financials", label: "Financials" },
   { key: "documents", label: "Documents" },
   { key: "credit-summary", label: "Credit Summary" },
+  { key: "request-items", label: "Request Items" }, // BF_PORTAL_BLOCK_v821_REQUEST_ITEMS_TAB
   { key: "notes", label: "Notes" },
   { key: "lenders", label: "Lenders" },
 ] as const;
@@ -63,6 +65,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     financials: <FinancialsTab applicationId={applicationId} />,
     documents: <DocumentsTab applicationId={applicationId} />,
     "credit-summary": <CreditSummaryTab applicationId={applicationId} />,
+    "request-items": <RequestItemsTab applicationId={applicationId} />,
     notes: <NotesTab applicationId={applicationId} />,
     lenders: <LendersTab applicationId={applicationId} />,
   }[activeTab];
