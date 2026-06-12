@@ -21,6 +21,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { fetchTaskStatus, type TaskStatus } from "@/api/applicationTasks";
+import { formatMoneyOrRange } from "@/utils/moneyRange"; // BF_PORTAL_BLOCK_v864_MONEY_RANGE
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v817_REMIND_CLIENT
 
 type AnyRecord = Record<string, any>;
@@ -408,10 +409,10 @@ function prettyEnum(value: unknown, fallback: string = "\u2014"): string {
 
 
 function fmtMoney(v: unknown, fallback = "—"): string {
-  let n = NaN;
-  if (typeof v === "number") n = v;
-  else if (typeof v === "string") n = Number(v.replace(/[^0-9.\-]/g, ""));
-  return !Number.isFinite(n) || n <= 0 ? fallback : `$${Math.round(n).toLocaleString()}`;
+  // BF_PORTAL_BLOCK_v864_MONEY_RANGE — delegate to the range-aware formatter so
+  // banded wizard values ("$500,001 to $1,000,000") render verbatim instead of
+  // being mangled into a single concatenated number.
+  return formatMoneyOrRange(v, fallback);
 }
 
 function fmtPercent(v: unknown, fallback = "—"): string {
