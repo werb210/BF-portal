@@ -14,6 +14,7 @@ export default function KnowledgeManager() {
   const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
   const [text, setText] = useState("");
   const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "saving" | "ok" | "warn" | "err">("idle");
@@ -90,6 +91,32 @@ export default function KnowledgeManager() {
     }
   }
 
+  async function submitUrl() {
+    const u = url.trim();
+    if (!u) return;
+    setBusy(true);
+    setError(null);
+    setStatus("saving");
+    try {
+      const resp = await api.post("/api/settings/ai-knowledge/url", { url: u });
+      setUrl("");
+      if (resp && (resp as any).savedWithoutIndex) {
+        setStatus("warn");
+        setStatusMessage((resp as any).message ?? "Saved, but Maya search is degraded.");
+      } else {
+        setStatus("ok");
+        setStatusMessage(`Indexed ${(resp as any)?.chars ?? ""} characters from the page.`);
+      }
+      await load();
+    } catch {
+      setStatus("err");
+      setStatusMessage("Could not fetch that URL.");
+      setError("Could not fetch that URL.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function remove(id: string) {
     if (!confirm("Remove this entry from the knowledge base?")) return;
     try {
@@ -156,6 +183,24 @@ export default function KnowledgeManager() {
         />
         <p style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
           Up to 5 MB. First ~200 KB of text is indexed.
+        </p>
+      </section>
+
+      <section>
+        <h3>Train from a URL</h3>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            placeholder="https://example.com/page-maya-should-learn"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            style={{ flex: 1, background: "#ffffff", color: "#000000", border: "1px solid #cbd6e2", borderRadius: 4, padding: 8 }}
+          />
+          <Button onClick={() => void submitUrl()} disabled={busy || !url.trim()}>
+            {busy ? "Fetching…" : "Fetch & index"}
+          </Button>
+        </div>
+        <p style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
+          Maya fetches the page, extracts the text, and indexes it. First ~200 KB indexed.
         </p>
       </section>
 

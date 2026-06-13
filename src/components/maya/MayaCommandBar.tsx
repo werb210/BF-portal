@@ -8,6 +8,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { sendMayaMessage, type MayaAction } from "@/api/maya";
+import { startCall } from "@/api/call";
 
 type SpeechResultEvent = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
 interface SpeechRecognitionLike {
@@ -109,6 +110,13 @@ export default function MayaCommandBar() {
             const path = actionToPath(a);
             if (path) {
               navigate(path);
+              break;
+            }
+          }
+          if (a?.type === "dial") {
+            const to = typeof a.to === "string" ? a.to : "";
+            if (to) {
+              void startCall(to);
               break;
             }
           }
