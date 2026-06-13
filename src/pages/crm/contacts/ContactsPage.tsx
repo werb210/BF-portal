@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
+import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import { crmApi, type ContactRow } from "@/api/crm";
 import { canDelete } from "@/auth/canDelete";
 import { useSilo } from "@/hooks/useSilo";
@@ -33,6 +34,8 @@ export default function ContactsPage() {
   const [tagInput, setTagInput] = useState("");
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | "active" | "assign" | null>(null);
   const [assignOwnerId, setAssignOwnerId] = useState("");
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const toggleCol = (k: string) => setHiddenCols((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   useEffect(() => {
     let cancelled = false;
@@ -154,7 +157,8 @@ export default function ContactsPage() {
       <td style={tdStyle}>
         <Link to={`/crm/contacts/${r.id}`} style={linkStyle}>{r.name || "(no name)"}</Link>
       </td>
-      <td style={tdStyle}>{r.company_name ?? "—"}</td>
+      {!hiddenCols.has("company_name") && <td style={tdStyle}>{r.company_name ?? "—"}</td>}
+      {!hiddenCols.has("tags") && (
       <td style={tdStyle}>{/* BF_PORTAL_BLOCK_v811_TAGS_COLUMN */}
         {r.tags && r.tags.length ? (
           <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
@@ -164,6 +168,8 @@ export default function ContactsPage() {
           </span>
         ) : "—"}
       </td>
+      )}
+      {!hiddenCols.has("lead_status") && (
       <td style={tdStyle}>{(
         r.lead_status === "applicant" ||
         ((r as any).types_of_financing ?? []).includes("APPLICANT") ||
@@ -173,10 +179,11 @@ export default function ContactsPage() {
           ? "Lender"
           : (r.lead_status ?? "New")
       )}</td>
-      <td style={tdStyle}>{r.owner_name ?? "—"}</td>
+      )}
+      {!hiddenCols.has("owner_name") && <td style={tdStyle}>{r.owner_name ?? "—"}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [isAdmin, rows, selected]);
+  )), [isAdmin, rows, selected, hiddenCols]);
 
   return (
     <div style={page}>
@@ -216,7 +223,7 @@ export default function ContactsPage() {
           <option value="active">Active only</option>
         </select>
         <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-contacts.csv", rows as any)}>Export</button>
-        <button style={toolbarBtn}>Edit columns</button>
+        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={toolbarBtn} />
         <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>
         <button onClick={() => setCreateOpen(true)} style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
       </div>
@@ -245,10 +252,10 @@ export default function ContactsPage() {
               </th>
             )}
             <Th onClick={() => onSort("name")}>Name{sortIndicator("name")}</Th>
-            <Th onClick={() => onSort("company_name")}>Company{sortIndicator("company_name")}</Th>
-            <Th>Tags</Th>{/* BF_PORTAL_BLOCK_v811_TAGS_COLUMN */}
-            <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>
-            <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>
+            {!hiddenCols.has("company_name") && <Th onClick={() => onSort("company_name")}>Company{sortIndicator("company_name")}</Th>}
+            {!hiddenCols.has("tags") && <Th>Tags</Th>}{/* BF_PORTAL_BLOCK_v811_TAGS_COLUMN */}
+            {!hiddenCols.has("lead_status") && <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>}
+            {!hiddenCols.has("owner_name") && <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>}
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
           </tr>
         </thead>
