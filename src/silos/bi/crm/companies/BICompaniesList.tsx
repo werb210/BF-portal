@@ -56,7 +56,14 @@ export default function BICompaniesList() {
     setBfBusy(true); setBfMsg(null);
     try {
       const r: any = await api(`/api/portal/lenders/import-from-bi`, { method: "POST", body: { companyIds: Array.from(selected) } } as any);
-      setBfMsg(`Imported to BF: ${Number(r?.lenders_created ?? 0)} lenders, ${Number(r?.products_created ?? 0)} products${Number(r?.lenders_skipped ?? 0) ? `, ${Number(r?.lenders_skipped ?? 0)} skipped (already exist)` : ""}`);
+      // Surface the real per-company skip reason (create_failed / duplicate /
+      // missing_name / not_found) instead of a blanket "already exist".
+      const skips: Array<{ name?: string; company_id?: string; reason?: string }> =
+        Array.isArray(r?.skipped) ? r.skipped : [];
+      const skipDetail = skips.length
+        ? ` — ${skips.map((s) => `${s?.name || s?.company_id} (${s?.reason || "unknown"})`).join("; ")}`
+        : "";
+      setBfMsg(`Imported to BF: ${Number(r?.lenders_created ?? 0)} lenders, ${Number(r?.products_created ?? 0)} products${Number(r?.lenders_skipped ?? 0) ? `, ${Number(r?.lenders_skipped ?? 0)} skipped` : ""}${skipDetail}`);
       setSelected(new Set());
     } catch (e: any) {
       setBfMsg(`Import to BF failed: ${e?.message ?? String(e)}`);
