@@ -10,6 +10,7 @@ import ErrorBoundary from "@/components/system/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
 import { useSilo } from "@/hooks/useSilo";
 import KnowledgeManager from "@/features/ai/KnowledgeManager";
+import MayaTuning from "@/features/ai/MayaTuning";
 import SettingsSectionLayout from "./components/SettingsSectionLayout";
 import ProfileSettings from "./tabs/ProfileSettings";
 import RuntimeSettings from "./tabs/RuntimeSettings";
@@ -30,7 +31,7 @@ const SettingsPage = () => {
   const tabs = useMemo(
     () => [
       { id: "users", label: "User Management", visible: isAdmin && !isBI, content: <UserManagement /> },
-      { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin && !isBI, content: isAdmin ? <KnowledgeManager /> : null },
+      { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin && !isBI, content: isAdmin ? (<><KnowledgeManager /><div style={{ height: 28 }} /><MayaTuning /></>) : null },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: !isBI, content: <RuntimeSettings /> },
       { id: "templates", label: "Templates", visible: !isBI, content: <TemplatesSettings /> }, // v694
