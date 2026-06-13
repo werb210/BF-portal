@@ -230,6 +230,7 @@ export default function BIContactsList() {
             <option value="lawyer">Lawyer</option>
             <option value="bookkeeper">Account/Book Keeper</option>
             <option value="referrer">Referrer</option>
+            <option value="active">Active</option>
           </select>
           <select value="" disabled={busyMass !== null} onChange={(e) => { const v = e.target.value; if (v) void massAssign(v); }} style={tagBox}>
             <option value="">{busyMass === "assign" ? "Assigning…" : "Assign owner…"}</option>
