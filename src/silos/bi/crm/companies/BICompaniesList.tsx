@@ -83,6 +83,8 @@ export default function BICompaniesList() {
   const [hasNext, setHasNext] = useState(false); // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
   const [ownerFilter, setOwnerFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [seenTags, setSeenTags] = useState<string[]>([]);
   const ownerName = (id?: string | null) => { if (!id) return "—"; const o = owners.find((x) => x.id === id); return o ? `${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || id : id; };
 
   useEffect(() => {
@@ -93,18 +95,19 @@ export default function BICompaniesList() {
         const params = new URLSearchParams();
         if (q.trim()) params.set("q", q.trim());
         if (ownerFilter) params.set("owner_id", ownerFilter);
+        if (tagFilter) params.set("tag", tagFilter);
         params.set("sort", `${sort.col}:${sort.dir}`);
         params.set("page", String(crmPage)); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
         params.set("pageSize", "100");
         const r: any = await api(`/api/v1/bi/crm/companies${params.toString() ? `?${params}` : ""}`);
         const list: BICompanyRow[] = Array.isArray(r) ? r : Array.isArray(r?.data) ? r.data : [];
-        if (!cancelled) { setRows(list); setHasNext(list.length >= 100); } // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
+        if (!cancelled) { setRows(list); setHasNext(list.length >= 100); setSeenTags((prev) => Array.from(new Set([...prev, ...list.flatMap((c) => c.tags ?? [])])).sort()); } // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "Could not load companies.");
       } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [q, sort.col, sort.dir, refreshKey, crmPage, ownerFilter]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
+  }, [q, sort.col, sort.dir, refreshKey, crmPage, ownerFilter, tagFilter]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
 
   useEffect(() => {
     let cancelled = false;
@@ -216,6 +219,16 @@ export default function BICompaniesList() {
         <button type="button" onClick={() => setCreateOpen((v) => !v)} style={{ background: createOpen ? "#fff" : "#0d9b6c", color: createOpen ? "#0d9b6c" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: createOpen ? "1px solid #0d9b6c" : 0, cursor: "pointer" }} data-testid="bi-companies-create-toggle">{createOpen ? "Cancel" : "+ Create Company"}</button>
       </div>
 
+      {/* CRM_COMPANY_VIEWBY — single-tag filter chips (client-derived, monotonic). */}
+      {seenTags.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 0 10px" }}>
+          <span style={{ fontSize: 12, color: "#94a3b8", alignSelf: "center", marginRight: 2 }}>View by:</span>
+          <button type="button" onClick={() => { setTagFilter(""); setCrmPage(1); }} style={chipBtn(tagFilter === "")}>All</button>
+          {seenTags.map((t) => (
+            <button key={t} type="button" onClick={() => { setTagFilter(t === tagFilter ? "" : t); setCrmPage(1); }} style={chipBtn(tagFilter === t)}>{t}</button>
+          ))}
+        </div>
+      )}
       {importMsg && <div style={{ fontSize: 12, color: "#34d399", padding: "0 0 8px" }} role="status">{importMsg}</div>}
       {bfMsg && <div style={{ fontSize: 12, color: "#60a5fa", padding: "0 0 8px" }} role="status">{bfMsg}</div>}
       {createOpen && (
@@ -282,6 +295,10 @@ export default function BICompaniesList() {
 
 function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return <th onClick={onClick} style={thStyle}>{children}</th>;
+}
+
+function chipBtn(active: boolean): CSSProperties {
+  return { fontSize: 12, padding: "4px 10px", borderRadius: 999, border: active ? "1px solid #0d9b6c" : "1px solid #cbd6e2", background: active ? "#0d9b6c" : "#fff", color: active ? "#fff" : "#33475b", cursor: "pointer", whiteSpace: "nowrap" };
 }
 
 const page: CSSProperties = { background: "#fff", color: "#000", padding: 24, borderRadius: 8 };
