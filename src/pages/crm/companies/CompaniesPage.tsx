@@ -6,6 +6,7 @@ import { canDelete } from "@/auth/canDelete";
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
 import CreateCompanyModal from "./CreateCompanyModal";
+import CompaniesImportModal from "./CompaniesImportModal";
 import { exportRowsToCsv } from "@/utils/csvExport";
 
 type SortCol = "name" | "industry" | "owner_name" | "created_at";
@@ -29,6 +30,8 @@ export default function CompaniesPage() {
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
   const [ownerId, setOwnerId] = useState("");
   const [assignOwnerId, setAssignOwnerId] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
 
   void showDelete;
 
@@ -42,6 +45,7 @@ export default function CompaniesPage() {
           silo: String(silo).toLowerCase(),
           q,
           owner_id: ownerId || undefined,
+          tag: tagFilter || undefined,
           sort: `${sort.col}:${sort.dir}`,
         });
         if (!cancelled) setRows(Array.isArray(r) ? r : []);
@@ -52,7 +56,7 @@ export default function CompaniesPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [silo, q, sort.col, sort.dir, refreshKey, ownerId]);
+  }, [silo, q, sort.col, sort.dir, refreshKey, ownerId, tagFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -159,8 +163,13 @@ export default function CompaniesPage() {
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
+        <select data-testid="bf-companies-tag-filter" value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} style={toolbarBtn} aria-label="Filter by tag" title="Filter by tag">
+          <option value="">All companies</option>
+          <option value="active">Active only</option>
+        </select>
         <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-companies.csv", rows as any)}>Export</button>
         <button style={toolbarBtn}>Edit columns</button>
+        <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>
         <button
           onClick={() => setCreateOpen(true)}
           style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}
@@ -207,6 +216,12 @@ export default function CompaniesPage() {
         <CreateCompanyModal
           onClose={() => setCreateOpen(false)}
           onSaved={() => setRefreshKey((k) => k + 1)}
+        />
+      )}
+      {importOpen && (
+        <CompaniesImportModal
+          onClose={() => setImportOpen(false)}
+          onImported={() => setRefreshKey((k) => k + 1)}
         />
       )}
     </div>
