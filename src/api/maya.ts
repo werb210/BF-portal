@@ -10,16 +10,34 @@ const MAYA_HEADERS: Record<string, string> = {
   "X-Maya-Audience": "staff",
 };
 
-export async function sendMayaMessage(text: string): Promise<unknown> {
-  return api.post(
-    "/api/maya/message",
-    {
-      message: text,
-      surface: "staff_portal",
-      pathname: typeof window !== "undefined" ? window.location.pathname : null,
-    },
-    { headers: MAYA_HEADERS },
-  );
+export type MayaAction = {
+  type: string;
+  target?: string;
+  id?: string;
+  path?: string;
+  label?: string;
+  to?: string;
+  contact_id?: string;
+};
+export type MayaResponse = {
+  reply?: string;
+  actions?: MayaAction[];
+  audience?: string;
+  tools_used?: string[];
+};
+
+export async function sendMayaMessage(
+  text: string,
+  screenContext?: Record<string, unknown> | null,
+): Promise<MayaResponse> {
+  const body: Record<string, unknown> = {
+    message: text,
+    surface: "staff_portal",
+    pathname: typeof window !== "undefined" ? window.location.pathname : null,
+  };
+  if (screenContext) body.screen_context = screenContext;
+  const res = await api.post("/api/maya/message", body, { headers: MAYA_HEADERS });
+  return (res ?? {}) as MayaResponse;
 }
 
 export async function escalateToHuman(reason = "user_requested_human") {
