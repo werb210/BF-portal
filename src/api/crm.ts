@@ -260,6 +260,7 @@ export const crmApi = {
   bulkAssignContacts: (ids: string[], ownerUserId: string) => api.post("/api/crm/contacts/bulk-assign", { ids, ownerUserId }),
   bulkDeleteCompanies: (ids: string[]) => api.post("/api/crm/companies/bulk-delete", { ids }),
   bulkTagCompanies: (ids: string[], tag: string) => api.post("/api/crm/companies/bulk-tag", { ids, tags: [tag], op: "add" }), // BF_PORTAL_BLOCK_v802_ACTIVE_TAG
+  bulkAssignCompanies: (ids: string[], ownerUserId: string) => api.post("/api/crm/companies/bulk-assign", { ids, ownerUserId }),
   listCompanies: (params: Record<string, string | number | undefined> = {}) =>
     api.get<{ data?: CompanyRow[] } | CompanyRow[]>(`/api/crm/companies`, { params }).then(unwrap<CompanyRow[]>),
 

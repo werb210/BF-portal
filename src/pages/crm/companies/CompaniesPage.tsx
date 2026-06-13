@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
+import { api } from "@/api";
 import { crmApi, type CompanyRow } from "@/api/crm";
 import { canDelete } from "@/auth/canDelete";
 import { useSilo } from "@/hooks/useSilo";
@@ -24,7 +25,10 @@ export default function CompaniesPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tagInput, setTagInput] = useState("");
-  const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
+  const [busyMass, setBusyMass] = useState<"delete" | "tag" | "active" | "assign" | null>(null);
+  const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
+  const [ownerId, setOwnerId] = useState("");
+  const [assignOwnerId, setAssignOwnerId] = useState("");
 
   void showDelete;
 
@@ -37,6 +41,7 @@ export default function CompaniesPage() {
         const r = await crmApi.listCompanies({
           silo: String(silo).toLowerCase(),
           q,
+          owner_id: ownerId || undefined,
           sort: `${sort.col}:${sort.dir}`,
         });
         if (!cancelled) setRows(Array.isArray(r) ? r : []);
@@ -47,7 +52,19 @@ export default function CompaniesPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [silo, q, sort.col, sort.dir, refreshKey]);
+  }, [silo, q, sort.col, sort.dir, refreshKey, ownerId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get<{ users?: Array<{ id: string; first_name?: string; last_name?: string }> } | Array<{ id: string; first_name?: string; last_name?: string }>>("/api/users");
+        const list = Array.isArray(r) ? r : (r?.users ?? []);
+        if (!cancelled) setOwners(list);
+      } catch { if (!cancelled) setOwners([]); }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const onSort = (col: SortCol) =>
     setSort(s => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
@@ -87,6 +104,26 @@ export default function CompaniesPage() {
       window.alert(`Mass tag failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally { setBusyMass(null); }
   }
+  async function massTagActive() {
+    if (!isAdmin || selected.size === 0) return;
+    setBusyMass("active");
+    try {
+      await crmApi.bulkTagCompanies(Array.from(selected), "active");
+      setSelected(new Set()); setRefreshKey((k) => k + 1);
+    } catch (err) {
+      window.alert(`Tag Active failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setBusyMass(null); }
+  }
+  async function massAssign() {
+    if (!isAdmin || selected.size === 0 || !assignOwnerId) return;
+    setBusyMass("assign");
+    try {
+      await crmApi.bulkAssignCompanies(Array.from(selected), assignOwnerId);
+      setSelected(new Set()); setAssignOwnerId(""); setRefreshKey((k) => k + 1);
+    } catch (err) {
+      window.alert(`Assign failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setBusyMass(null); }
+  }
 
   const tableRows = useMemo(() => rows.map(r => (
     <tr key={r.id} style={trStyle}>
@@ -118,6 +155,10 @@ export default function CompaniesPage() {
           placeholder="Search companies"
           style={searchInput}
         />
+        <select data-testid="bf-companies-owner-filter" value={ownerId} onChange={(e) => setOwnerId(e.target.value)} style={toolbarBtn} aria-label="Filter by owner">
+          <option value="">All owners</option>
+          {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
+        </select>
         <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-companies.csv", rows as any)}>Export</button>
         <button style={toolbarBtn}>Edit columns</button>
         <button
@@ -131,6 +172,9 @@ export default function CompaniesPage() {
           <button disabled={busyMass !== null} onClick={massDelete} style={{ padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
           <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 }} />
           <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={{ padding: "6px 12px", borderRadius: 6, background: "#2563eb", color: "#fff", border: 0, cursor: tagInput.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
+          <button disabled={busyMass !== null} onClick={() => void massTagActive()} title='Tag selected companies as "active"' style={{ padding: "6px 12px", borderRadius: 6, background: "#16a34a", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "active" ? "Tagging…" : "Tag Active"}</button>
+          <select value={assignOwnerId} onChange={(e) => setAssignOwnerId(e.target.value)} style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, background: "#fff" }}><option value="">Assign owner…</option>{owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}</select>
+          <button disabled={busyMass !== null || !assignOwnerId} onClick={() => void massAssign()} style={{ padding: "6px 12px", borderRadius: 6, background: "#0d9b6c", color: "#fff", border: 0, cursor: assignOwnerId ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "assign" ? "Assigning…" : "Assign"}</button>
           <button onClick={() => setSelected(new Set())} style={{ padding: "6px 12px", borderRadius: 6, background: "#fff", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 13 }}>Clear</button>
         </div>
       )}
