@@ -5,8 +5,10 @@ import { canDelete } from "@/auth/canDelete";
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
 import CreateCompanyModal from "./CreateCompanyModal";
+import { exportRowsToCsv } from "@/utils/csvExport";
 
 type SortCol = "name" | "industry" | "owner_name" | "created_at";
+
 
 export default function CompaniesPage() {
   const { silo } = useSilo();
@@ -116,7 +118,7 @@ export default function CompaniesPage() {
           placeholder="Search companies"
           style={searchInput}
         />
-        <button style={toolbarBtn}>Export</button>
+        <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-companies.csv", rows as any)}>Export</button>
         <button style={toolbarBtn}>Edit columns</button>
         <button
           onClick={() => setCreateOpen(true)}

@@ -3,8 +3,9 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSPropert
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
+import { exportRowsToCsv } from "@/utils/csvExport";
 
-type SortCol = "name" | "industry" | "created_at";
+type SortCol = "name" | "industry" | "owner_name" | "created_at";
 
 type BICompanyRow = {
   id: string;
@@ -16,6 +17,7 @@ type BICompanyRow = {
   created_at: string;
   contact_count: number;
   tags?: string[] | null; // BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI
+  owner_id?: string | null; // CRM owner parity
 };
 
 export default function BICompaniesList() {
@@ -76,9 +78,12 @@ export default function BICompaniesList() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tagInput, setTagInput] = useState("");
-  const [busyMass, setBusyMass] = useState<"delete" | "tag" | null>(null);
+  const [busyMass, setBusyMass] = useState<"delete" | "tag" | "assign" | null>(null);
   const [crmPage, setCrmPage] = useState(1); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
   const [hasNext, setHasNext] = useState(false); // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
+  const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const ownerName = (id?: string | null) => { if (!id) return "—"; const o = owners.find((x) => x.id === id); return o ? `${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || id : id; };
 
   useEffect(() => {
     let cancelled = false;
@@ -87,6 +92,7 @@ export default function BICompaniesList() {
       try {
         const params = new URLSearchParams();
         if (q.trim()) params.set("q", q.trim());
+        if (ownerFilter) params.set("owner_id", ownerFilter);
         params.set("sort", `${sort.col}:${sort.dir}`);
         params.set("page", String(crmPage)); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
         params.set("pageSize", "100");
@@ -98,7 +104,19 @@ export default function BICompaniesList() {
       } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [q, sort.col, sort.dir, refreshKey, crmPage]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
+  }, [q, sort.col, sort.dir, refreshKey, crmPage, ownerFilter]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r: any = await api(`/api/users`);
+        const list = Array.isArray(r?.users) ? r.users : Array.isArray(r) ? r : [];
+        if (!cancelled) setOwners(list);
+      } catch { /* owners optional */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const onSort = (col: SortCol) => setSort((s) => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
   const sortIndicator = (col: SortCol) => (sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "");
@@ -134,6 +152,25 @@ export default function BICompaniesList() {
     } catch (e: any) { window.alert(`Mass tag failed: ${e?.message ?? String(e)}`); }
     finally { setBusyMass(null); }
   }
+  async function massTagActive() {
+    if (!isAdmin || selected.size === 0) return;
+    setBusyMass("tag");
+    try {
+      await api(`/api/v1/bi/crm/companies/bulk-tag`, { method: "POST", body: { ids: Array.from(selected), tag: "active" } } as any);
+      setSelected(new Set()); setRefreshKey((k) => k + 1);
+    } catch (e: any) { window.alert(`Tag Active failed: ${e?.message ?? String(e)}`); }
+    finally { setBusyMass(null); }
+  }
+  async function massAssign(ownerId: string) {
+    if (!isAdmin || selected.size === 0) return;
+    setBusyMass("assign");
+    try {
+      await api(`/api/v1/bi/crm/companies/bulk-assign`, { method: "POST", body: { ids: Array.from(selected), owner_id: ownerId || null } } as any);
+      setSelected(new Set()); setRefreshKey((k) => k + 1);
+    } catch (e: any) { window.alert(`Assign failed: ${e?.message ?? String(e)}`); }
+    finally { setBusyMass(null); }
+  }
+  function exportCsv() { exportRowsToCsv("bi-companies.csv", rows as any); }
 
   const tableRows = useMemo(() => rows.map((r) => (
     <tr key={r.id} style={trStyle} data-testid="bi-company-row">
@@ -156,16 +193,22 @@ export default function BICompaniesList() {
       </td>
       <td style={tdStyle}>{r.contact_count ?? 0}</td>
       <td style={tdStyle}>{[r.city, r.province].filter(Boolean).join(", ") || "—"}</td>
+      <td style={tdStyle}>{ownerName(r.owner_id)}</td>
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows, isAdmin, selected]);
+  )), [rows, isAdmin, selected, owners]);
 
-  const colCount = isAdmin ? 7 : 6; // BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI (+Tags column)
+  const colCount = isAdmin ? 8 : 7; // CRM owner parity (+Owner column)
 
   return (
     <div style={page} data-testid="bi-companies-list">
       <div style={toolbar}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies" style={searchInput} aria-label="Search companies" />
+        <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000" }} aria-label="Filter by owner" data-testid="bi-companies-owner-filter">
+          <option value="">All owners</option>
+          {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
+        </select>
+        <button type="button" onClick={exportCsv} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap", marginRight: 8 }} data-testid="bi-companies-export">Export</button>
         <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
         <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1, marginRight: 8 }} data-testid="bi-companies-import">{importing ? "Importing…" : "Import"}</button>
@@ -190,6 +233,8 @@ export default function BICompaniesList() {
           <button disabled={busyMass !== null} onClick={massDelete} style={delBtn}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
           <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={tagBox} />
           <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={tagBtn}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
+          <button disabled={busyMass !== null} onClick={() => void massTagActive()} style={tagBtn} data-testid="bi-companies-tag-active">Tag Active</button>
+          <select disabled={busyMass !== null} value="" onChange={(e) => { const v = e.target.value; if (v) void massAssign(v); }} style={tagBox} data-testid="bi-companies-assign"><option value="">Assign owner…</option>{owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}</select>
           <button disabled={bfBusy} onClick={() => void importToBf()} style={{ padding: "6px 12px", borderRadius: 6, background: "#1d4ed8", color: "#fff", border: 0, cursor: bfBusy ? "default" : "pointer", fontSize: 13, fontWeight: 600, opacity: bfBusy ? 0.6 : 1 }} data-testid="bi-companies-import-to-bf">{bfBusy ? "Importing…" : "Import to BF"}</button>
           <button onClick={() => setSelected(new Set())} style={clearBtn}>Clear</button>
         </div>
@@ -214,6 +259,7 @@ export default function BICompaniesList() {
             <Th>Tags</Th>{/* BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI */}
             <Th>Contacts</Th>
             <Th>Location</Th>
+            <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
           </tr>
         </thead>
