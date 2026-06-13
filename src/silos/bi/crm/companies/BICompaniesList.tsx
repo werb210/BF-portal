@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 import { exportRowsToCsv } from "@/utils/csvExport";
+import ColumnsMenu from "@/components/crm/ColumnsMenu";
 
 type SortCol = "name" | "industry" | "owner_name" | "created_at";
 
@@ -85,6 +86,8 @@ export default function BICompaniesList() {
   const [ownerFilter, setOwnerFilter] = useState("");
   const [tagFilter, setTagFilter] = useState("");
   const [seenTags, setSeenTags] = useState<string[]>([]);
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const toggleCol = (k: string) => setHiddenCols((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const ownerName = (id?: string | null) => { if (!id) return "—"; const o = owners.find((x) => x.id === id); return o ? `${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || id : id; };
 
   useEffect(() => {
@@ -186,7 +189,8 @@ export default function BICompaniesList() {
         <Link to={`/silo/bi/crm/companies/${r.id}`} style={linkStyle}>{r.legal_name}</Link>
         {r.operating_name && r.operating_name !== r.legal_name && <div style={subtleCell}>o/a {r.operating_name}</div>}
       </td>
-      <td style={tdStyle}>{r.industry ?? "—"}</td>
+      {!hiddenCols.has("industry") && <td style={tdStyle}>{r.industry ?? "—"}</td>}
+      {!hiddenCols.has("tags") && (
       <td style={tdStyle}>{/* BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI */}
         {r.tags && r.tags.length ? (
           <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
@@ -194,12 +198,13 @@ export default function BICompaniesList() {
           </span>
         ) : "—"}
       </td>
-      <td style={tdStyle}>{r.contact_count ?? 0}</td>
-      <td style={tdStyle}>{[r.city, r.province].filter(Boolean).join(", ") || "—"}</td>
-      <td style={tdStyle}>{ownerName(r.owner_id)}</td>
+      )}
+      {!hiddenCols.has("contacts") && <td style={tdStyle}>{r.contact_count ?? 0}</td>}
+      {!hiddenCols.has("location") && <td style={tdStyle}>{[r.city, r.province].filter(Boolean).join(", ") || "—"}</td>}
+      {!hiddenCols.has("owner") && <td style={tdStyle}>{ownerName(r.owner_id)}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows, isAdmin, selected, owners]);
+  )), [rows, isAdmin, selected, owners, hiddenCols]);
 
   const colCount = isAdmin ? 8 : 7; // CRM owner parity (+Owner column)
 
@@ -207,6 +212,7 @@ export default function BICompaniesList() {
     <div style={page} data-testid="bi-companies-list">
       <div style={toolbar}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies" style={searchInput} aria-label="Search companies" />
+        <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "contacts", label: "Contacts" }, { key: "location", label: "Location" }, { key: "owner", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} />
         <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000" }} aria-label="Filter by owner" data-testid="bi-companies-owner-filter">
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
@@ -268,11 +274,11 @@ export default function BICompaniesList() {
               </th>
             )}
             <Th onClick={() => onSort("name")}>Company name{sortIndicator("name")}</Th>
-            <Th onClick={() => onSort("industry")}>Industry{sortIndicator("industry")}</Th>
-            <Th>Tags</Th>{/* BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI */}
-            <Th>Contacts</Th>
-            <Th>Location</Th>
-            <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>
+            {!hiddenCols.has("industry") && <Th onClick={() => onSort("industry")}>Industry{sortIndicator("industry")}</Th>}
+            {!hiddenCols.has("tags") && <Th>Tags</Th>}{/* BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI */}
+            {!hiddenCols.has("contacts") && <Th>Contacts</Th>}
+            {!hiddenCols.has("location") && <Th>Location</Th>}
+            {!hiddenCols.has("owner") && <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>}
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
           </tr>
         </thead>

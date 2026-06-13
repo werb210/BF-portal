@@ -7,6 +7,7 @@ import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
 import CreateCompanyModal from "./CreateCompanyModal";
 import CompaniesImportModal from "./CompaniesImportModal";
+import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import { exportRowsToCsv } from "@/utils/csvExport";
 
 type SortCol = "name" | "industry" | "owner_name" | "created_at";
@@ -32,6 +33,8 @@ export default function CompaniesPage() {
   const [assignOwnerId, setAssignOwnerId] = useState("");
   const [tagFilter, setTagFilter] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const toggleCol = (k: string) => setHiddenCols((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   void showDelete;
 
@@ -139,16 +142,18 @@ export default function CompaniesPage() {
       <td style={tdStyle}>
         <Link to={`/crm/companies/${r.id}`} style={linkStyle}>{r.name}</Link>
       </td>
-      <td style={tdStyle}>{r.industry ?? "—"}</td>
+      {!hiddenCols.has("industry") && <td style={tdStyle}>{r.industry ?? "—"}</td>}
+      {!hiddenCols.has("financing") && (
       <td style={tdStyle}>
         {(r.types_of_financing ?? []).map(t => (
           <span key={t} style={tag}>{t}</span>
         ))}
       </td>
-      <td style={tdStyle}>{r.owner_name ?? "—"}</td>
+      )}
+      {!hiddenCols.has("owner_name") && <td style={tdStyle}>{r.owner_name ?? "—"}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [isAdmin, rows, selected]);
+  )), [isAdmin, rows, selected, hiddenCols]);
 
   return (
     <div style={page}>
@@ -168,7 +173,7 @@ export default function CompaniesPage() {
           <option value="active">Active only</option>
         </select>
         <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-companies.csv", rows as any)}>Export</button>
-        <button style={toolbarBtn}>Edit columns</button>
+        <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "financing", label: "Types of financing" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={toolbarBtn} />
         <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>
         <button
           onClick={() => setCreateOpen(true)}
@@ -197,9 +202,9 @@ export default function CompaniesPage() {
               </th>
             )}
             <Th onClick={() => onSort("name")}>Company name{sortIndicator("name")}</Th>
-            <Th onClick={() => onSort("industry")}>Industry{sortIndicator("industry")}</Th>
-            <Th>Types of financing</Th>
-            <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>
+            {!hiddenCols.has("industry") && <Th onClick={() => onSort("industry")}>Industry{sortIndicator("industry")}</Th>}
+            {!hiddenCols.has("financing") && <Th>Types of financing</Th>}
+            {!hiddenCols.has("owner_name") && <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>}
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
           </tr>
         </thead>

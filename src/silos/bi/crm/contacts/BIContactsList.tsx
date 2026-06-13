@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 import { exportRowsToCsv } from "@/utils/csvExport";
+import ColumnsMenu from "@/components/crm/ColumnsMenu";
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
 
@@ -74,6 +75,8 @@ export default function BIContactsList() {
     setCrmPage(1);
   }
   const [hasNext, setHasNext] = useState(false); // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const toggleCol = (k: string) => setHiddenCols((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   useEffect(() => { // BF_PORTAL_BLOCK_v749_VIEWBY — distinct tags for the View-by filter
     let cancelled = false;
@@ -181,13 +184,13 @@ export default function BIContactsList() {
         </td>
       )}
       <td style={tdStyle}><Link to={`/silo/bi/crm/contacts/${r.id}`} style={linkStyle}>{r.full_name || "(no name)"}</Link></td>
-      <td style={tdStyle}>{r.company_name ?? "—"}</td>
-      <td style={tdStyle}>{r.tags && r.tags.length ? (<span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>{r.tags.map((t) => (<span key={t} style={tagChip}>{t}</span>))}</span>) : "—"}</td>{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
-      <td style={tdStyle}>{r.outreach_status ? r.outreach_status.replace(/_/g, " ") : "—"}</td>
-      <td style={tdStyle}>{ownerName(r.outreach_owner_id)}</td>
+      {!hiddenCols.has("company_name") && <td style={tdStyle}>{r.company_name ?? "—"}</td>}
+      {!hiddenCols.has("tags") && <td style={tdStyle}>{r.tags && r.tags.length ? (<span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>{r.tags.map((t) => (<span key={t} style={tagChip}>{t}</span>))}</span>) : "—"}</td>}{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
+      {!hiddenCols.has("lead_status") && <td style={tdStyle}>{r.outreach_status ? r.outreach_status.replace(/_/g, " ") : "—"}</td>}
+      {!hiddenCols.has("owner_name") && <td style={tdStyle}>{ownerName(r.outreach_owner_id)}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows, isAdmin, selected, owners]);
+  )), [rows, isAdmin, selected, owners, hiddenCols]);
 
   const colCount = isAdmin ? 7 : 6; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 (+Tags col)
 
@@ -195,6 +198,7 @@ export default function BIContactsList() {
     <div style={page} data-testid="bi-contacts-list">
       <div style={toolbar}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
+        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} />
         <button type="button" onClick={() => exportRowsToCsv("bi-contacts.csv", rows as any)} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">Export</button>
         <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #334155", background: "transparent", color: "#cbd5e1", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
           <option value="">All owners</option>
@@ -273,10 +277,10 @@ export default function BIContactsList() {
               </th>
             )}
             <Th onClick={() => onSort("name")}>Name{sortIndicator("name")}</Th>
-            <Th onClick={() => onSort("company_name")}>Company{sortIndicator("company_name")}</Th>
-            <th style={thStyle}>Tags</th>{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
-            <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>
-            <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>
+            {!hiddenCols.has("company_name") && <Th onClick={() => onSort("company_name")}>Company{sortIndicator("company_name")}</Th>}
+            {!hiddenCols.has("tags") && <th style={thStyle}>Tags</th>}{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
+            {!hiddenCols.has("lead_status") && <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>}
+            {!hiddenCols.has("owner_name") && <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>}
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
           </tr>
         </thead>
