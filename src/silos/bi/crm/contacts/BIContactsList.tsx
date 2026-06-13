@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSPropert
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
+import { exportRowsToCsv } from "@/utils/csvExport";
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
 
@@ -15,6 +16,7 @@ type BIContactRow = {
   tags: string[] | null;
   created_at: string;
 };
+
 
 export default function BIContactsList() {
   const { user } = useAuth();
@@ -193,6 +195,7 @@ export default function BIContactsList() {
     <div style={page} data-testid="bi-contacts-list">
       <div style={toolbar}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
+        <button type="button" onClick={() => exportRowsToCsv("bi-contacts.csv", rows as any)} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">Export</button>
         <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #334155", background: "transparent", color: "#cbd5e1", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}

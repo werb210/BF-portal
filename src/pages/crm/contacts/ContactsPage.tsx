@@ -8,8 +8,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCrmStore } from "@/state/crm.store";
 import CreateContactModal from "./CreateContactModal";
 import ImportContactsModal from "./ImportContactsModal";
+import { exportRowsToCsv } from "@/utils/csvExport";
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
+
 
 export default function ContactsPage() {
   const { silo } = useSilo();
@@ -213,7 +215,7 @@ export default function ContactsPage() {
           <option value="">All contacts</option>
           <option value="active">Active only</option>
         </select>
-        <button style={toolbarBtn}>Export</button>
+        <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-contacts.csv", rows as any)}>Export</button>
         <button style={toolbarBtn}>Edit columns</button>
         <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>
         <button onClick={() => setCreateOpen(true)} style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
