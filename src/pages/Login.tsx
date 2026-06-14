@@ -4,6 +4,7 @@ import { normalizePhone } from "@/utils/normalizePhone";
 import { clearOtpFlowState, setOtpStartRequested, setOtpStartSucceeded } from "@/auth/otpFlow";
 import { API_BASE } from "@/config/api";
 import logoUrl from "@/assets/logo-boreal-mountains-white.svg";
+import { loginWithPasskey, passkeysSupported } from "@/auth/passkey"; // BF_PORTAL_WEBAUTHN_v1
 
 type StartError = string | null;
 
@@ -22,6 +23,21 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoFiredFor = useRef<string | null>(null);
   const navigate = useNavigate();
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const handlePasskeyLogin = async () => {
+    setError(null);
+    setPasskeyBusy(true);
+    try {
+      await loginWithPasskey();
+      window.location.href = "/dashboard";
+    } catch (e: any) {
+      if (e?.name !== "NotAllowedError" && e?.name !== "AbortError") {
+        setError("Passkey sign-in failed. Use your phone number instead.");
+      }
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
 
   useEffect(() => {
     clearOtpFlowState();
@@ -153,6 +169,17 @@ export default function Login() {
             We{"'"}ll text you a one-time code to verify.
           </p>
         </form>
+        {passkeysSupported() ? (
+          <button
+            type="button"
+            data-testid="passkey-login-button"
+            onClick={handlePasskeyLogin}
+            disabled={passkeyBusy}
+            className="w-full max-w-md py-3 px-5 text-[15px] font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg disabled:opacity-60"
+          >
+            {passkeyBusy ? "Waiting for passkey…" : "Sign in with a passkey"}
+          </button>
+        ) : null}
       </div>
     </div>
   );
