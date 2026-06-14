@@ -10,7 +10,6 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { useSilo } from "@/hooks/useSilo";
 import Topbar from "@/components/layout/Topbar";
-import MayaChat from "@/components/maya/MayaChat";
 import MayaCommandBar from "@/components/maya/MayaCommandBar";
 // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1
 import NotificationToast from "@/components/notifications/NotificationToast";
@@ -191,7 +190,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
           </button>
           {mayaOpen && (
             <div style={{ paddingBottom: 12, flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
-              <MayaChat />
+              <MayaCommandBar />
             </div>
           )}
         </div>
@@ -202,7 +201,6 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         <div style={{ position: "sticky", top: 0, zIndex: 30, flexShrink: 0 }}><Topbar onToggleSidebar={() => setMobileNavOpen((prev) => !prev)} /></div>
         <main style={{ height: `calc(100vh - ${TOPBAR_HEIGHT}px)`, overflowY: "auto", padding: 24, background: "var(--bg-primary)" }}>
           {children ?? <Outlet />}
-          <MayaCommandBar />
         </main>
       </div>
 
