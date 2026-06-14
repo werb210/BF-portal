@@ -11,6 +11,7 @@ import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
 import { logger } from "@/utils/logger";
 import { bfLogMsalPhase, pickLoginStrategy } from "@/auth/msalLoginStrategy";
+import { registerPasskey, passkeysSupported } from "@/auth/passkey"; // BF_PORTAL_WEBAUTHN_v1
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_DIMENSION = 256;
@@ -54,6 +55,7 @@ const ProfileSettings = () => {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [hideMicrosoftButton, setHideMicrosoftButton] = useState(false);
   const [msalReady, setMsalReady] = useState(false);
+  const [passkeyStatus, setPasskeyStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const redirectHandledRef = useRef(false);
 
@@ -474,6 +476,37 @@ const ProfileSettings = () => {
           )}
         </div>
       </div>
+
+      <section style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #eaf0f6" }}>
+        <h3 style={{ marginTop: 0 }}>Passkeys</h3>
+        <p style={{ color: "#516f90", fontSize: 13, marginBottom: 12 }}>
+          Sign in faster with Face ID, Touch ID, or your device PIN instead of a texted code.
+          Passkeys sync across your Apple devices via iCloud Keychain.
+        </p>
+        {passkeysSupported() ? (
+          <button
+            type="button"
+            data-testid="passkey-register-button"
+            onClick={async () => {
+              setPasskeyStatus(null);
+              try {
+                await registerPasskey();
+                setPasskeyStatus("Passkey added. You can now sign in with it.");
+              } catch (e: any) {
+                if (e?.name !== "NotAllowedError" && e?.name !== "AbortError") {
+                  setPasskeyStatus("Could not add a passkey. Please try again.");
+                }
+              }
+            }}
+            style={{ padding: "8px 16px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}
+          >
+            Set up a passkey
+          </button>
+        ) : (
+          <span style={{ fontSize: 13, color: "#516f90" }}>This browser doesn&apos;t support passkeys.</span>
+        )}
+        {passkeyStatus && <p style={{ marginTop: 10, fontSize: 13, color: "#516f90" }}>{passkeyStatus}</p>}
+      </section>
 
       <section style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #eaf0f6" }}>
         <h3 style={{ marginTop: 0 }}>Push notifications</h3>
