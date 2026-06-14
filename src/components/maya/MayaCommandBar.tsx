@@ -5,6 +5,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { sendMayaMessage, type MayaAction } from "@/api/maya";
 import { startCall } from "@/api/call";
+import { getAuthToken } from "@/lib/authToken";
+import { resolveApiBase } from "@/config/api";
 
 type SpeechResultEvent = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
 interface SpeechRecognitionLike {
@@ -54,6 +56,33 @@ export default function MayaCommandBar() {
   const [reply, setReply] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const recogRef = useRef<SpeechRecognitionLike | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [muted, setMuted] = useState(false);
+
+  // MAYA_VOICE_OUTPUT_v1 — speak Maya's reply via BF-Server /api/settings/maya-tts
+  // (nova by default). Best-effort: any failure is silent and never blocks the
+  // text reply. Triggered from a user gesture (Go / mic) so autoplay is allowed.
+  const speak = useCallback(async (textToSpeak: string) => {
+    if (muted || !textToSpeak.trim()) return;
+    try {
+      const path = "/api/settings/maya-tts";
+      const base = resolveApiBase(path);
+      const token = getAuthToken();
+      const resp = await fetch(`${base}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ text: textToSpeak.slice(0, 1000) }),
+      });
+      if (!resp.ok) return;
+      const blob = await resp.blob();
+      try { audioRef.current?.pause(); } catch { /* noop */ }
+      const audio = new Audio(URL.createObjectURL(blob));
+      audioRef.current = audio;
+      void audio.play();
+    } catch {
+      /* voice is best-effort */
+    }
+  }, [muted]);
 
   const run = useCallback(async (command: string) => {
     const cmd = command.trim();
@@ -62,7 +91,9 @@ export default function MayaCommandBar() {
     try {
       const ctx = buildScreenContext(window.location.pathname);
       const res = await sendMayaMessage(cmd, ctx);
-      setReply(typeof res.reply === "string" ? res.reply : "Done.");
+      const replyText = typeof res.reply === "string" ? res.reply : "Done.";
+      setReply(replyText);
+      void speak(replyText);
       const actions = Array.isArray(res.actions) ? res.actions : [];
       for (const a of actions) {
         if (a?.type === "navigate") {
@@ -77,7 +108,7 @@ export default function MayaCommandBar() {
       setText("");
     } catch { setReply("Sorry — I couldn't reach Maya just now."); }
     finally { setBusy(false); }
-  }, [busy, navigate]);
+  }, [busy, navigate, speak]);
 
   const startDictation = useCallback(() => {
     const Ctor = getRecognitionCtor();
@@ -95,7 +126,7 @@ export default function MayaCommandBar() {
   }, [run]);
   const stopDictation = useCallback(() => { try { recogRef.current?.stop(); } catch { /* noop */ } setListening(false); }, []);
 
-  useEffect(() => () => { try { recogRef.current?.stop(); } catch { /* noop */ } }, []);
+  useEffect(() => () => { try { recogRef.current?.stop(); } catch { /* noop */ } try { audioRef.current?.pause(); } catch { /* noop */ } }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
@@ -128,6 +159,24 @@ export default function MayaCommandBar() {
           }}
         >
           {listening ? "■" : "🎙"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMuted((m) => {
+              if (!m) { try { audioRef.current?.pause(); } catch { /* noop */ } }
+              return !m;
+            });
+          }}
+          title={muted ? "Maya voice off — tap to turn on" : "Maya voice on — tap to mute"}
+          style={{
+            width: 40, height: 34, borderRadius: 8,
+            border: "1px solid #cbd6e2",
+            background: muted ? "#f1f5f9" : "#dbeafe",
+            color: "#0f172a", cursor: "pointer",
+          }}
+        >
+          {muted ? "\u{1F507}" : "\u{1F50A}"}
         </button>
         <button
           type="button"
