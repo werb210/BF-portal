@@ -6,7 +6,9 @@ export type StartCallResponse = { ok: boolean; conferenceId: string; conferenceF
 export type QuickCallStaff = { userId: string; name: string; identity: string | null; avatarUrl: string | null; online: boolean };
 export type QuickCallData = { staff: QuickCallStaff[]; slots: string[] };
 export const dialerApi = {
-  startCall: (b: StartCallRequest) => api.post<StartCallResponse>("/api/voice/calls", b), getConference: (id: string) => api.get<any>(`/api/voice/conferences/${id}`), voiceToken: () => api.get<any>("/api/telephony/token"),
+  startCall: (b: StartCallRequest) => api.post<StartCallResponse>("/api/voice/calls", b),
+  resolveCaller: (phone: string) => api.post<{ ok: boolean; matched: boolean; name: string | null; contactId?: string; applicationId?: string | null; applicationName?: string | null; companyName?: string | null }>("/api/voice/resolve-caller", { phone }),
+  getConference: (id: string) => api.get<any>(`/api/voice/conferences/${id}`), voiceToken: () => api.get<any>("/api/telephony/token"),
   quickCallGet: () => api.get<QuickCallData>("/api/telephony/quick-call"),
   quickCallSave: (slots: string[]) => api.put<{ ok: boolean; slots: string[] }>("/api/telephony/quick-call", { slots }),
   muteParticipant: (cid: string, pid: string, muted: boolean) => api.post<any>(`/api/voice/conferences/${cid}/participants/${pid}/mute`, { muted }),

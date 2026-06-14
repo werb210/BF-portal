@@ -64,7 +64,7 @@ export type DialerState = {
   conference: Conference | null;
   participants: Participant[];
   transcript: TranscriptSegment[];
-  incoming: { conferenceFriendly: string; fromDisplay: string; pendingCall?: any } | null;
+  incoming: { conferenceFriendly: string; fromDisplay: string; pendingCall?: any; contactId?: string | null; applicationId?: string | null; applicationName?: string | null; companyName?: string | null; phone?: string | null } | null;
   isOpen: boolean;
   isMinimized: boolean;
   ctx: DialerCtx;

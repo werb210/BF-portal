@@ -14,6 +14,9 @@ export default function IncomingCallToast() {
           {incoming.fromDisplay || "Unknown"}
         </div>
       </div>
+      {incoming.contactId && (
+        <a href={`/crm/contacts/${incoming.contactId}`} style={{ ...btn("#1d4ed8"), textDecoration: "none", display: "inline-block" }}>Open</a>
+      )}
       <button onClick={() => declineIncoming()} style={btn("#374151")}>Dismiss</button>
       <button onClick={() => void answerIncoming()} style={btn("#22c55e")}>Answer</button>
     </div>
