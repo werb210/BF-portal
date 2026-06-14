@@ -4,6 +4,7 @@ import { getAuthToken } from "@/lib/authToken"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
 import { API_BASE } from "@/config/api"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
 import { withO365Refresh } from "@/api/o365Interceptor";
 import { ApiError } from "@/api/http";
+import toast from "react-hot-toast"; // BF_PORTAL_COMMS_SMS_ERROR_TOAST_v1
 import SecondaryButton from "@/components/forms/SecondaryButton";
 import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
 // BF_PORTAL_BLOCK_v312_COMPOSER_PULLDOWNS_v1
@@ -320,10 +321,11 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     if (!draft.trim() || !selectedContact || !selectedPhone || sending) return;
     setSending(true);
     const pendingBody = draft.trim();
+    const tmpId = `tmp-${Date.now()}`;
     try {
       stickToBottomRef.current = true;
       setThreadMessages((prev) => [...prev, {
-        id: `tmp-${Date.now()}`,
+        id: tmpId,
         body: pendingBody,
         direction: "outbound",
         created_at: new Date().toISOString(),
@@ -350,7 +352,23 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
       loadMessages(selectedContact.id, selectedPhone);
       setTimeout(() => inputRef.current?.focus(), 50);
     } catch (error) {
-      if (isBadRequest(error)) return;
+      // BF_PORTAL_COMMS_SMS_ERROR_TOAST_v1 — surface the real send failure.
+      // The server nests its reason under { error: { message, twilioCode } },
+      // which the http layer stashes on ApiError.details. Remove the optimistic
+      // bubble so the thread doesn't imply success, restore the draft, and toast.
+      setThreadMessages((prev) => prev.filter((m) => m.id !== tmpId));
+      setDraft(pendingBody);
+      if (isBadRequest(error)) {
+        toast.error("Message couldn't be sent. Please check the number and try again.");
+        return;
+      }
+      const details: any = (error as ApiError)?.details;
+      const serverMsg: string | undefined =
+        details?.error?.message ?? details?.message ?? (error as Error)?.message;
+      const twilioCode = details?.error?.twilioCode ?? details?.error?.code ?? null;
+      toast.error(
+        `SMS failed: ${serverMsg || "Unknown error"}${twilioCode ? ` (Twilio ${twilioCode})` : ""}`,
+      );
     } finally {
       setSending(false);
     }
