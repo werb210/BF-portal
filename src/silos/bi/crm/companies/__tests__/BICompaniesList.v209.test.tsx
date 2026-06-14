@@ -1,7 +1,7 @@
 // BF_PORTAL_BLOCK_v209_BI_COMPANIES_LIST_v1
 import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1", role: "Admin" } }) }));
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 const apiMock = vi.fn();
@@ -224,9 +224,13 @@ describe("BF_PORTAL_BLOCK_v816 — companies import UI", () => {
     renderList();
 
     await waitFor(() => screen.getByText("Acme Inc"));
-    expect(screen.getByText("financing:equipment")).toBeInTheDocument();
-    expect(screen.getByText("country:CA")).toBeInTheDocument();
-    expect(screen.getByText("lender")).toBeInTheDocument();
+    // Tags also appear as "View by" filter chips above the table, so scope the
+    // assertion to the company's row to verify the Tags column specifically.
+    const row = screen.getByText("Acme Inc").closest("tr") as HTMLElement;
+    const inRow = within(row);
+    expect(inRow.getByText("financing:equipment")).toBeInTheDocument();
+    expect(inRow.getByText("country:CA")).toBeInTheDocument();
+    expect(inRow.getByText("lender")).toBeInTheDocument();
   });
 
   it("uploads selected company import files and refreshes with import counts", async () => {
