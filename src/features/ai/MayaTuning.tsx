@@ -17,6 +17,7 @@ export default function MayaTuning() {
   const [testText, setTestText] = useState("");
   const [reply, setReply] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
+  const [sampleText, setSampleText] = useState("Hi, I'm Maya from Boreal Financial. How can I help you today?");
 
   useEffect(() => {
     void (async () => {
@@ -131,6 +132,14 @@ export default function MayaTuning() {
         <p style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
           Rate/pitch apply to the in-browser preview; the production voice is the OpenAI selection above.
         </p>
+        <label style={{ fontSize: 13, display: "block", marginTop: 10 }}>
+          Voice sample
+          <textarea value={sampleText} onChange={(e) => setSampleText(e.target.value)} rows={2} style={{ ...inputStyle, fontFamily: "inherit" }} />
+        </label>
+        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+          <Button onClick={() => void playNova(sampleText)}>🔊 Play sample in {cfg["maya.voice"] ?? "nova"}</Button>
+          <Button onClick={() => speakBrowser(sampleText)}>▶ Preview (browser)</Button>
+        </div>
       </section>
 
       <section>
