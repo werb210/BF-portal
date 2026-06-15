@@ -6,6 +6,30 @@ import { withO365Refresh } from "@/api/o365Interceptor";
 import { ApiError } from "@/api/http";
 import toast from "react-hot-toast"; // BF_PORTAL_COMMS_SMS_ERROR_TOAST_v1
 import SecondaryButton from "@/components/forms/SecondaryButton";
+import { apiBlob } from "@/utils/api"; // BF_PORTAL_VOICEMAIL_AUDIO_v1
+
+// BF_PORTAL_VOICEMAIL_AUDIO_v1 — Twilio recording URLs need auth, so fetch the
+// audio through the server proxy as an authenticated blob, then play it.
+function VoicemailAudio({ id }: { id: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  async function load() {
+    if (url || loading) return;
+    setLoading(true); setFailed(false);
+    try {
+      const blob = await apiBlob(`/api/crm/voicemails/${id}/audio`);
+      setUrl(URL.createObjectURL(blob));
+    } catch { setFailed(true); } finally { setLoading(false); }
+  }
+  if (url) return <audio controls autoPlay preload="auto" src={url} style={{ width: "100%", maxWidth: 420 }} />;
+  return (
+    <button onClick={load} disabled={loading}
+      style={{ fontSize: 13, padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer" }}>
+      {loading ? "Loading…" : failed ? "Retry" : "▶ Play voicemail"}
+    </button>
+  );
+}
 import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
 // BF_PORTAL_BLOCK_v312_COMPOSER_PULLDOWNS_v1
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
@@ -2587,9 +2611,7 @@ function VoicemailTab() {
             {vm.created_at ? new Date(vm.created_at).toLocaleString() : ""}
           </div>
           {vm.recording_url ? (
-            <audio controls preload="none" style={{ width: "100%", maxWidth: 420 }}>
-              <source src={vm.recording_url} />
-            </audio>
+            <VoicemailAudio id={vm.id} />
           ) : (
             <span style={{ fontSize: 12, color: "#94a3b8" }}>No recording</span>
           )}
