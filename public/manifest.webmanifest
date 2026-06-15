@@ -27,5 +27,9 @@
       "sizes": "180x180",
       "type": "image/png"
     }
-  ]
+  ],
+  "description": "Boreal Financial staff portal \u2014 CRM, pipeline, communications, and lender management.",
+  "id": "/",
+  "scope": "/",
+  "orientation": "any"
 }
