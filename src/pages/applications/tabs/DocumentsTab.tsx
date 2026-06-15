@@ -49,6 +49,7 @@ const CATEGORY_GROUPS = [
 
 // BF_PORTAL_BLOCK_v820_STAFF_UPLOAD — staff document category picker (exact labels, locked).
 const STAFF_DOC_CATEGORIES: string[] = [
+  "6 months business banking statements",
   "3 years accountant prepared financials",
   "3 years business tax returns",
   "PnL – Interim financials",
