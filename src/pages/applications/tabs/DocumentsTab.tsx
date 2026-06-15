@@ -83,18 +83,31 @@ export default function DocumentsTab({ applicationId }: Props) {
   const [uploadErr, setUploadErr] = useState<string | null>(null);
   const uploadFileRef = useRef<HTMLInputElement | null>(null);
   async function doStaffUpload() {
-    const file = uploadFileRef.current?.files?.[0];
-    if (!file) { setUploadErr("Choose a file."); return; }
+    // BF_PORTAL_STAFF_MULTI_UPLOAD_v1 — upload every selected file (all under
+    // the same category), so e.g. all 6 months of bank statements go up at once.
+    const files = Array.from(uploadFileRef.current?.files ?? []);
+    if (files.length === 0) { setUploadErr("Choose a file."); return; }
     if (!applicationId) { setUploadErr("No application."); return; }
     setUploading(true); setUploadErr(null);
     try {
-      const fd = new FormData();
-      fd.append("applicationId", applicationId);
-      fd.append("category", uploadCat);
-      fd.append("file", file);
-      await api("/api/documents/upload", { method: "POST", body: fd });
+      const failures: string[] = [];
+      for (const file of files) {
+        try {
+          const fd = new FormData();
+          fd.append("applicationId", applicationId);
+          fd.append("category", uploadCat);
+          fd.append("file", file);
+          await api("/api/documents/upload", { method: "POST", body: fd });
+        } catch (e: any) {
+          failures.push(`${file.name}: ${e?.message ?? "upload failed"}`);
+        }
+      }
       if (uploadFileRef.current) uploadFileRef.current.value = "";
-      setUploadOpen(false);
+      if (failures.length > 0) {
+        setUploadErr(`${files.length - failures.length} of ${files.length} uploaded. Failed: ${failures.join("; ")}`);
+      } else {
+        setUploadOpen(false);
+      }
       await reload();
     } catch (e: any) {
       setUploadErr(e?.message ?? "Upload failed");
@@ -212,7 +225,7 @@ export default function DocumentsTab({ applicationId }: Props) {
             <select value={uploadCat} onChange={(e) => setUploadCat(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1", margin: "4px 0 12px", fontSize: 14 }}>
               {STAFF_DOC_CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
             </select>
-            <input ref={uploadFileRef} type="file" accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" style={{ display: "block", marginBottom: 12 }} />
+            <input ref={uploadFileRef} type="file" multiple accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" style={{ display: "block", marginBottom: 12 }} />
             {uploadErr && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 10 }} role="status">{uploadErr}</div>}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button type="button" onClick={() => setUploadOpen(false)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
