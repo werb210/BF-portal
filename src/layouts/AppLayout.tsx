@@ -189,7 +189,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
             <span>{mayaOpen ? "▼" : "▲"}</span>
           </button>
           {mayaOpen && (
-            <div style={{ paddingBottom: 12, flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+            <div style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))", flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
               <MayaCommandBar />
             </div>
           )}
