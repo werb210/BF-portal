@@ -30,7 +30,7 @@ export default function FloatingDialerButton() {
         }}
         title={isOpen ? "Close dialer" : "Open dialer"}
         aria-label={isOpen ? "Close dialer" : "Open dialer"}
-        style={{ position: "fixed", right: 24, bottom: 24, width: 64, height: 64, borderRadius: "50%", background: live ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, #1e293b, #0f172a)", color: "white", border: live ? "none" : "1px solid rgba(255,255,255,0.08)", cursor: "pointer", boxShadow: live ? "0 8px 24px rgba(16,185,129,0.45), inset 0 1px 0 rgba(255,255,255,0.15)" : "0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)", display: "grid", placeItems: "center", zIndex: 1001 }}>
+        style={{ position: "fixed", right: 24, bottom: "calc(24px + env(safe-area-inset-bottom, 0px))", width: 64, height: 64, borderRadius: "50%", touchAction: "manipulation", background: live ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, #1e293b, #0f172a)", color: "white", border: live ? "none" : "1px solid rgba(255,255,255,0.08)", cursor: "pointer", boxShadow: live ? "0 8px 24px rgba(16,185,129,0.45), inset 0 1px 0 rgba(255,255,255,0.15)" : "0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)", display: "grid", placeItems: "center", zIndex: 1001 }}>
         {ringing && !isOpen && (<span style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid #10b981", animation: "bf-fab-ring 1.2s ease-out infinite" }} />)}
         {isOpen ? (
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
