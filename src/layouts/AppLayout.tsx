@@ -141,7 +141,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   );
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100dvh", overflow: "hidden" }}>
       <NotificationToast />
       {/* ── Sidebar ── */}
       <aside
@@ -189,7 +189,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
             <span>{mayaOpen ? "▼" : "▲"}</span>
           </button>
           {mayaOpen && (
-            <div style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))", flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+            <div style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))", flexShrink: 0, display: "flex", flexDirection: "column", minHeight: 0, maxHeight: "46vh", overflowY: "auto" }}>
               <MayaCommandBar />
             </div>
           )}
@@ -199,7 +199,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
       {/* ── Main ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <div style={{ position: "sticky", top: 0, zIndex: 30, flexShrink: 0 }}><Topbar onToggleSidebar={() => setMobileNavOpen((prev) => !prev)} /></div>
-        <main style={{ height: `calc(100vh - ${TOPBAR_HEIGHT}px)`, overflowY: "auto", padding: 24, background: "var(--bg-primary)" }}>
+        <main style={{ height: `calc(100dvh - ${TOPBAR_HEIGHT}px)`, overflowY: "auto", padding: 24, background: "var(--bg-primary)" }}>
           {children ?? <Outlet />}
         </main>
       </div>
