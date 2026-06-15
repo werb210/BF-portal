@@ -142,6 +142,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     try {
       const r = await api<{
         conversations?: Array<{
+          thread_key?: string;
           contact_id?: string;
           display_name?: string;
           phone?: string | null;
@@ -153,7 +154,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
       const convo = Array.isArray(r.conversations) ? r.conversations : [];
       const meta: Record<string, { unread: number; latest: string }> = {};
       for (const row of convo) {
-        const id = row.contact_id ?? "";
+        const id = row.thread_key ?? row.contact_id ?? "";
         if (!id) continue;
         meta[id] = { unread: Number(row.unread_count ?? 0), latest: row.last_at ?? "" };
       }
@@ -168,18 +169,18 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     return () => clearInterval(tick);
   }, [fetchSmsConversations]);
   useEffect(() => {
-    api<{ conversations?: Array<{ contact_id?: string; display_name?: string; phone?: string | null; last_at?: string; last_body?: string; unread_count?: number }> }>("/api/communications/sms", { params: { mode: "all" } })
+    api<{ conversations?: Array<{ thread_key?: string; contact_id?: string; display_name?: string; phone?: string | null; last_at?: string; last_body?: string; unread_count?: number }> }>("/api/communications/sms", { params: { mode: "all" } })
       .then(async (r) => {
         const convo = Array.isArray(r.conversations) ? r.conversations : [];
         const meta: Record<string, { unread: number; latest: string }> = {};
         for (const row of convo) {
-          const id = row.contact_id ?? "";
+          const id = row.thread_key ?? row.contact_id ?? "";
           if (!id) continue;
           meta[id] = { unread: Number(row.unread_count ?? 0), latest: row.last_at ?? "" };
         }
         setContactMeta(meta);
         const mapped = convo.map((row) => ({
-          id: row.contact_id ?? "",
+          id: row.thread_key ?? row.contact_id ?? "",
           name: row.display_name ?? row.phone ?? "Unknown",
           phone: row.phone ?? null,
           latest: row.last_at ?? "",
@@ -290,7 +291,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     // the nav badge and per-thread tags drop (SMS rows included via BF-Server
     // v689). Without this the SMS tab only cleared the count client-side.
     if (selected.id) {
-      void Promise.resolve(api.post("/api/communications/messages/mark-read", { contactId: selected.id })).catch(() => undefined);
+      void Promise.resolve(api.post("/api/communications/messages/mark-read", { contactId: selected.id, phone: selected.phone ?? undefined })).catch(() => undefined);
     }
     loadMessages(selected.id, selected.phone);
     pollRef.current = setInterval(() => loadMessages(selected.id, selected.phone), 5000);
