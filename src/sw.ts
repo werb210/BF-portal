@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
-import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
-import { registerRoute, NavigationRoute } from "workbox-routing";
+import { precacheAndRoute, cleanupOutdatedCaches, matchPrecache } from "workbox-precaching";
+import { registerRoute, NavigationRoute, setCatchHandler } from "workbox-routing";
 import { NetworkFirst, StaleWhileRevalidate, CacheFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
@@ -100,4 +100,14 @@ self.addEventListener("sync", (event: any) => {
       cs.forEach((c) => c.postMessage({ type: "BG_SYNC_TRIGGER" }));
     }));
   }
+});
+
+// BF_PORTAL_SW_OFFLINE_FALLBACK_v1 — when an uncached document navigation fails
+// (offline), serve the precached offline.html instead of the browser error page.
+setCatchHandler(async ({ request }) => {
+  if (request.destination === "document") {
+    const cached = await matchPrecache("/offline.html");
+    if (cached) return cached;
+  }
+  return Response.error();
 });
