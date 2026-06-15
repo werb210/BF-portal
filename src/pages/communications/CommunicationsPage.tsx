@@ -12,23 +12,21 @@ import { apiBlob } from "@/utils/api"; // BF_PORTAL_VOICEMAIL_AUDIO_v1
 // audio through the server proxy as an authenticated blob, then play it.
 function VoicemailAudio({ id }: { id: string }) {
   const [url, setUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
-  async function load() {
-    if (url || loading) return;
-    setLoading(true); setFailed(false);
-    try {
-      const blob = await apiBlob(`/api/crm/voicemails/${id}/audio`);
-      setUrl(URL.createObjectURL(blob));
-    } catch { setFailed(true); } finally { setLoading(false); }
-  }
-  if (url) return <audio controls autoPlay preload="auto" src={url} style={{ width: "100%", maxWidth: 420 }} />;
-  return (
-    <button onClick={load} disabled={loading}
-      style={{ fontSize: 13, padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer" }}>
-      {loading ? "Loading…" : failed ? "Retry" : "▶ Play voicemail"}
-    </button>
-  );
+  // BF_PORTAL_VOICEMAIL_AUTOLOAD_v1 — load the audio on mount so the player
+  // shows without a click. No autoPlay (that would blast every VM at once).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const blob = await apiBlob(`/api/crm/voicemails/${id}/audio`);
+        if (!cancelled) setUrl(URL.createObjectURL(blob));
+      } catch { if (!cancelled) setFailed(true); }
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+  if (url) return <audio controls preload="auto" src={url} style={{ width: "100%", maxWidth: 420 }} />;
+  return <span style={{ fontSize: 12, color: "#94a3b8" }}>{failed ? "Voicemail unavailable" : "Loading voicemail\u2026"}</span>;
 }
 import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
 // BF_PORTAL_BLOCK_v312_COMPOSER_PULLDOWNS_v1
