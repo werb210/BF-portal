@@ -49,7 +49,8 @@ export function bfRestoreActiveMsalAccount(): void {
 }
 
 // BF_MSAL_SILENT_v30 — Block 30
-export async function bfAcquireSilentO365Tokens(authJwt: string | null): Promise<boolean> {
+export async function bfAcquireSilentO365Tokens(authJwt: string | null, opts?: { allowRedirect?: boolean }): Promise<boolean> {
+  const allowRedirect = opts?.allowRedirect ?? false;
   try {
     const account = msalClient.getActiveAccount() ?? msalClient.getAllAccounts()[0] ?? null;
     if (!account) {
@@ -132,6 +133,14 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null): Promise
       ["monitor_window_timeout", "empty_window_error", "popup_window_error", "block_iframe_reload"].includes(error.errorCode);
 
     if (isIframeBlocked) {
+      // BF_PORTAL_O365_NO_BOOTSTRAP_REDIRECT_v1 — a background/bootstrap silent
+      // acquire must NEVER full-page-redirect: navigating away unloads the SPA
+      // and destroys the Twilio dialer device (callers unreachable). Only an
+      // interactive caller (the "Connect Microsoft 365" button) may redirect.
+      if (!allowRedirect) {
+        console.warn("[msal.silent] iframe blocked — skipping full-page redirect (not interactive); connect O365 from Settings", { name, message });
+        return false;
+      }
       const REDIRECT_GUARD_KEY = "bf_msal_redirect_attempted";
       const alreadyTried = typeof sessionStorage !== "undefined" && sessionStorage.getItem(REDIRECT_GUARD_KEY) === "1";
       if (alreadyTried) {
