@@ -31,7 +31,13 @@ export default function Login() {
       await loginWithPasskey();
       window.location.href = "/dashboard";
     } catch (e: any) {
-      if (e?.name !== "NotAllowedError" && e?.name !== "AbortError") {
+      // BF_PORTAL_PASSKEY_ERROR_SURFACING_v1 — surface the real failure instead
+      // of silently swallowing it. NotAllowedError/AbortError on a usernameless
+      // get() almost always means "no discoverable passkey on this device".
+      console.warn("[passkey] login failed", e?.name, e?.message);
+      if (e?.name === "NotAllowedError" || e?.name === "AbortError") {
+        setError("No passkey found on this device. Sign in with your phone number, then add a passkey from your Profile settings.");
+      } else {
         setError("Passkey sign-in failed. Use your phone number instead.");
       }
     } finally {
