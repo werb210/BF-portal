@@ -14,7 +14,7 @@ vi.mock("@/components/ui/Button", () => ({
 }));
 vi.mock("@/components/ui/Select", () => ({
   default: (p: any) => (
-    <select data-testid="submission-method" value={p.value} onChange={p.onChange}>
+    <select data-testid={p["data-testid"] ?? "submission-method"} value={p.value} onChange={p.onChange}>
       {(p.options ?? []).map((o: any) => (
         <option key={o.value} value={o.value}>{o.label}</option>
       ))}
@@ -68,7 +68,9 @@ describe("CreateLenderModal", () => {
     render(<CreateLenderModal open onClose={onClose} onCreated={onCreated} />);
     fireEvent.change(screen.getByTestId("lender-name"), { target: { value: "ABC Bank" } });
     fireEvent.change(screen.getByTestId("lender-street"), { target: { value: "123 Main" } });
-    fireEvent.change(screen.getByTestId("lender-citystatezip"), { target: { value: "Toronto, ON, M1N 2P3" } });
+    fireEvent.change(screen.getByTestId("lender-city"), { target: { value: "Toronto" } });
+    fireEvent.change(screen.getByTestId("lender-region"), { target: { value: "ON" } });
+    fireEvent.change(screen.getByTestId("lender-postal"), { target: { value: "M1N 2P3" } });
     fireEvent.change(screen.getByTestId("lender-mainphone"), { target: { value: "(416) 555-1234" } });
     fireEvent.change(screen.getByTestId("contact-name"), { target: { value: "Jane Doe" } });
     fireEvent.change(screen.getByTestId("contact-phone"), { target: { value: "(416) 555-9999" } });
@@ -78,12 +80,18 @@ describe("CreateLenderModal", () => {
     fireEvent.click(screen.getByTestId("create-lender-submit"));
     await waitFor(() => expect((api.post as any).mock.calls.length).toBe(1));
     const [path, body] = (api.post as any).mock.calls[0];
-    // BF_PORTAL_BLOCK_v150_CREATELENDER_TEST_FIX_v1 — v148 corrected the
-    // POST URL from /api/lenders (no handler, 404s) to /api/portal/lenders
-    // (real endpoint). Update the assertion to match.
     expect(path).toBe("/api/portal/lenders");
     expect(body).toEqual(expect.objectContaining({
       name: "ABC Bank",
+      country: "Canada",
+      street: "123 Main",
+      city: "Toronto",
+      region: "ON",
+      postal_code: "M1N 2P3",
+      phone: "(416) 555-1234",
+      primary_contact_name: "Jane Doe",
+      primary_contact_phone: "(416) 555-9999",
+      primary_contact_email: "jane@abc.com",
       submission_method: "email",
       submission_email: "submit@abc.com",
     }));

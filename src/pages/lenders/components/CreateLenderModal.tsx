@@ -1,3 +1,10 @@
+// BF_PORTAL_BLOCK_v149_LENDER_STRUCTURED_ADDRESS_v1
+// Fix: form now collects a structured address (street/city/region/postal/country)
+// and submits the field names the server actually reads (routes/portalLenders.ts:
+// name, country, street, city, region, postal_code, phone, primary_contact_*).
+// Previously it sent street_address / city_state_zip / contact_* / main_phone —
+// none of which the server reads — and never sent `country`, so every Create
+// failed with "name and country are required" and address/contact were dropped.
 import { useState } from "react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
@@ -15,8 +22,11 @@ type Props = {
 
 type FormState = {
   name: string;
-  streetAddress: string;
-  cityStateZip: string;
+  street: string;
+  city: string;
+  region: string;
+  postalCode: string;
+  country: string;
   mainPhone: string;
   contactName: string;
   contactPhone: string;
@@ -30,8 +40,11 @@ type FormState = {
 
 const EMPTY: FormState = {
   name: "",
-  streetAddress: "",
-  cityStateZip: "",
+  street: "",
+  city: "",
+  region: "",
+  postalCode: "",
+  country: "Canada",
   mainPhone: "",
   contactName: "",
   contactPhone: "",
@@ -46,8 +59,11 @@ const EMPTY: FormState = {
 function validate(s: FormState): Record<string, string> {
   const e: Record<string, string> = {};
   if (!s.name.trim()) e.name = "Lender name is required.";
-  if (!s.streetAddress.trim()) e.streetAddress = "Street address is required.";
-  if (!s.cityStateZip.trim()) e.cityStateZip = "City / State / ZIP is required.";
+  if (!s.country.trim()) e.country = "Country is required.";
+  if (!s.street.trim()) e.street = "Street address is required.";
+  if (!s.city.trim()) e.city = "City is required.";
+  if (!s.region.trim()) e.region = "Province / State is required.";
+  if (!s.postalCode.trim()) e.postalCode = "Postal code / ZIP is required.";
   if (!s.mainPhone.trim()) e.mainPhone = "Main phone is required.";
   if (!s.contactName.trim()) e.contactName = "Contact person is required.";
   if (!s.contactPhone.trim()) e.contactPhone = "Contact phone is required.";
@@ -113,12 +129,15 @@ export default function CreateLenderModal({ open, onClose, onCreated }: Props) {
     try {
       const payload: Record<string, unknown> = {
         name: form.name.trim(),
-        street_address: form.streetAddress.trim(),
-        city_state_zip: form.cityStateZip.trim(),
-        main_phone: form.mainPhone.trim(),
-        contact_name: form.contactName.trim(),
-        contact_phone: form.contactPhone.trim(),
-        contact_email: form.contactEmail.trim(),
+        country: form.country.trim(),
+        street: form.street.trim(),
+        city: form.city.trim(),
+        region: form.region.trim(),
+        postal_code: form.postalCode.trim(),
+        phone: form.mainPhone.trim(),
+        primary_contact_name: form.contactName.trim(),
+        primary_contact_phone: form.contactPhone.trim(),
+        primary_contact_email: form.contactEmail.trim(),
         submission_method: form.submissionMethod,
       };
       if (form.submissionMethod === "email") {
@@ -131,9 +150,6 @@ export default function CreateLenderModal({ open, onClose, onCreated }: Props) {
       if (form.submissionMethod === "google_sheet") {
         payload.google_sheet_id = form.googleSheetId.trim();
       }
-      // BF_PORTAL_BLOCK_v148_CREATE_LENDER_AND_MSAL_v1 — server has no
-      // /api/lenders route. Portal lender CRUD lives at /api/portal/lenders
-      // (routes/portalLenders.ts). The previous URL 404'd every Create click.
       const resp = await api.post<{ id: string }>("/api/portal/lenders", payload);
       onCreated?.(resp?.id ?? "");
       setForm(EMPTY);
@@ -152,12 +168,35 @@ export default function CreateLenderModal({ open, onClose, onCreated }: Props) {
           <input data-testid="lender-name" value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder="Enter lender name" style={inputStyle} />
         </Field>
 
-        <Field label="Lender Address *" error={errors.streetAddress}>
-          <input data-testid="lender-street" value={form.streetAddress} onChange={(e) => set({ streetAddress: e.target.value })} placeholder="Enter street address" style={inputStyle} />
+        <Field label="Street Address *" error={errors.street}>
+          <input data-testid="lender-street" value={form.street} onChange={(e) => set({ street: e.target.value })} placeholder="123 Main St" style={inputStyle} />
         </Field>
-        <Field label="" error={errors.cityStateZip}>
-          <input data-testid="lender-citystatezip" value={form.cityStateZip} onChange={(e) => set({ cityStateZip: e.target.value })} placeholder="City, State / Province, ZIP / Postal Code" style={inputStyle} />
-        </Field>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="City *" error={errors.city}>
+            <input data-testid="lender-city" value={form.city} onChange={(e) => set({ city: e.target.value })} placeholder="City" style={inputStyle} />
+          </Field>
+          <Field label="Province / State *" error={errors.region}>
+            <input data-testid="lender-region" value={form.region} onChange={(e) => set({ region: e.target.value })} placeholder="Province / State" style={inputStyle} />
+          </Field>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="Postal Code / ZIP *" error={errors.postalCode}>
+            <input data-testid="lender-postal" value={form.postalCode} onChange={(e) => set({ postalCode: e.target.value })} placeholder="A1A 1A1 / 12345" style={inputStyle} />
+          </Field>
+          <Field label="Country *" error={errors.country}>
+            <Select
+              label=""
+              hideLabel
+              data-testid="lender-country"
+              value={form.country}
+              onChange={(e) => set({ country: e.target.value })}
+              options={[
+                { value: "Canada", label: "Canada" },
+                { value: "United States", label: "United States" },
+              ]}
+            />
+          </Field>
+        </div>
 
         <Field label="Lender Main Phone Number *" error={errors.mainPhone}>
           <input data-testid="lender-mainphone" value={form.mainPhone} onChange={(e) => set({ mainPhone: e.target.value })} placeholder="(___) ___-____" style={inputStyle} />
@@ -180,6 +219,7 @@ export default function CreateLenderModal({ open, onClose, onCreated }: Props) {
           <Select
             label=""
             hideLabel
+            data-testid="submission-method"
             value={form.submissionMethod}
             onChange={(e) => set({ submissionMethod: e.target.value as Method })}
             options={[
