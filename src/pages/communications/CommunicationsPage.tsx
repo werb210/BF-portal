@@ -29,6 +29,7 @@ function VoicemailAudio({ id }: { id: string }) {
   return <span style={{ fontSize: 12, color: "#94a3b8" }}>{failed ? "Voicemail unavailable" : "Loading voicemail\u2026"}</span>;
 }
 import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
+import { startOutboundPstn } from "@/dialer/actions";
 // BF_PORTAL_BLOCK_v312_COMPOSER_PULLDOWNS_v1
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
@@ -709,6 +710,41 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#000" }}>{selected.name}</div>
                 {selected.phone && <div style={{ fontSize: 12, color: "#3c3c43" }}>{selected.phone}</div>}
               </div>
+              {(() => {
+                const callPhone = selected.phone ?? selected.phone_e164 ?? selected.mobile ?? null;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (callPhone) {
+                        void startOutboundPstn(callPhone, {
+                          contactId: String(selected.id ?? ""),
+                          contactName: selected.name,
+                          source: "communications_thread",
+                        });
+                      }
+                    }}
+                    disabled={!callPhone}
+                    title={callPhone ? `Call ${selected.name}` : "No phone number on file"}
+                    style={{
+                      marginLeft: "auto",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "6px 14px",
+                      borderRadius: 8,
+                      border: "none",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: callPhone ? "pointer" : "not-allowed",
+                      background: callPhone ? "#2563eb" : "#c7c7cc",
+                      color: "#fff",
+                    }}
+                  >
+                    Call
+                  </button>
+                );
+              })()}
             </div>
 
             {/* Messages */}
