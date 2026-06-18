@@ -172,6 +172,8 @@ function CreateLenderModal({
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
     name: lender?.name ?? "",
+    applicationUrl: ((lender as any)?.applicationUrl ?? (lender as any)?.application_url ?? "") as string,
+    announcement: ((lender as any)?.announcement ?? "") as string,
     street: lender?.address?.street ?? "",
     city: lender?.address?.city ?? "",
     region: "",
@@ -235,6 +237,8 @@ function CreateLenderModal({
     try {
       const payload = {
         name: form.name.trim(),
+        application_url: form.applicationUrl.trim() || null,
+        announcement: form.announcement.trim() || null,
         street: form.street.trim() || null,
         city: form.city.trim() || null,
         region: form.region.trim() || null,
@@ -301,6 +305,14 @@ function CreateLenderModal({
             <input placeholder="Enter lender name" value={form.name} onChange={(e) => set("name", e.target.value)}
               style={inputStyle(!!errors.name)} />
             {errors.name && <p style={errorStyle}>{errors.name}</p>}
+          </div>
+
+          {/* BF_PORTAL_BLOCK_vC — Application URL + Announcement */}
+          <div>
+            <label style={labelStyle}>Application URL</label>
+            <input placeholder="https://lender.com/apply" value={form.applicationUrl} onChange={(e) => set("applicationUrl", e.target.value)} style={{ ...inputStyle(), marginBottom: 8 }} />
+            <label style={labelStyle}>Announcement</label>
+            <input placeholder="Short note shown with this lender" value={form.announcement} onChange={(e) => set("announcement", e.target.value)} style={inputStyle()} />
           </div>
 
           {/* Lender Address */}
