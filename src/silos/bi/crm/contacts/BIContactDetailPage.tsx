@@ -22,6 +22,7 @@ import { api } from "@/api";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { ActionBar } from "@/components/crm/ActionBar"; // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
+import { ContactEmailFeed, ContactCallFeed } from "@/components/crm/ContactCommsFeeds";
 import type { TimelineItem } from "@/api/crm";
 import toast from "react-hot-toast";
 
@@ -492,6 +493,9 @@ export default function BIContactDetailPage() {
             through the shared tabbed timeline so the BI card matches BF.
             Data is unchanged; <ActivityTimeline> is controlled via items. */}
         <ActivityTimeline items={timelineItems} />
+
+        <ContactEmailFeed contactId={id} />
+        <ContactCallFeed contactId={id} />
 
         {contact.notes && (
           <div style={{ ...panel, marginTop: 16 }}>
