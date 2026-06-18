@@ -3,6 +3,7 @@ import { BrowserAuthError } from "@azure/msal-browser";
 import api from "@/api";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
+import ThemeToggle from "@/components/settings/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { microsoftAuthConfig } from "@/config/microsoftAuth";
 import { initializeMsalClient, msalClient } from "@/auth/msal";
@@ -389,6 +390,7 @@ const ProfileSettings = () => {
         <h2>My profile</h2>
         <p>Update your name, phone, and avatar. OAuth connections open in a new window.</p>
       </header>
+      <ThemeToggle />
       {formError && <ErrorBanner message={formError} />}
       {microsoftError && <ErrorBanner message={microsoftError} />}
 

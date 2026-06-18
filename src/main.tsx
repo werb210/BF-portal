@@ -17,6 +17,9 @@ import ErrorBoundary from "@/components/system/ErrorBoundary";
 import App from "./App";
 import "./index.css";
 import "./styles/light-inputs.css";
+import { initTheme } from "@/theme/theme";
+
+initTheme();
 
 (window as any).__SILO__ = getActiveSilo();
 
