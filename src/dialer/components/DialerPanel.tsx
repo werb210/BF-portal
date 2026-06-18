@@ -393,7 +393,7 @@ export default function DialerPanel() {
               type="tel"
               autoFocus
               inputMode="tel"
-              pattern="[+0-9 ()-]*"
+              pattern="[+0-9 \(\)\-]*"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") void startOutboundPstn(phone, st.ctx); }}
