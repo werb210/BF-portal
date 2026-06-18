@@ -56,9 +56,11 @@ async function quietFetch<T>(fn: () => Promise<T>): Promise<T | null> {
 }
 
 export async function fetchContactMarketing(contactId: string): Promise<ApolloContactPayload | null> {
+  if (!contactId) return null;
   return quietFetch(() => api.get<ApolloContactPayload>(`/api/v1/bi/contacts/${contactId}/marketing`));
 }
 
 export async function triggerEnrichment(contactId: string, force = false): Promise<{ cached: boolean; apollo_data: unknown } | null> {
+  if (!contactId) return null;
   return quietFetch(() => api.post(`/api/v1/bi/contacts/${contactId}/enrich${force ? "?force=1" : ""}`));
 }
