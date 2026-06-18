@@ -68,6 +68,7 @@ const STAFF_DOC_CATEGORIES: string[] = [
 export default function DocumentsTab({ applicationId }: Props) {
   const { user } = useAuth();
   const canManage = canWrite((user as { role?: string | null } | null)?.role ?? null);
+  const isAdmin = ((user as { role?: string | null } | null)?.role ?? "") === "Admin";
 
   const [docs, setDocs]       = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,6 +195,18 @@ export default function DocumentsTab({ applicationId }: Props) {
     }
   }
 
+  async function handleDelete(docId: string) {
+    if (!applicationId) return;
+    if (typeof window !== "undefined" && !window.confirm("Delete this document permanently? This also removes the stored file.")) return;
+    setActionError(null);
+    try {
+      await api.delete(`/api/applications/${applicationId}/documents/${docId}`);
+      await reload();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Delete failed");
+    }
+  }
+
   const grouped = useMemo(() => groupAndSortDocs(docs), [docs]);
   const counts = useMemo(() => countByStatus(docs), [docs]);
 
@@ -267,6 +280,8 @@ export default function DocumentsTab({ applicationId }: Props) {
                   }}
                   onRejectChange={(v) => setRejectDraft((r) => ({ ...r, [doc.documentId]: v }))}
                   onRejectSubmit={() => handleReject(doc.documentId)}
+                  isAdmin={isAdmin}
+                  onDelete={() => handleDelete(doc.documentId)}
                 />
               ))}
             </div>
@@ -290,6 +305,8 @@ function DocRow(props: {
   onRejectCancel: () => void;
   onRejectChange: (v: string) => void;
   onRejectSubmit: () => void;
+  isAdmin: boolean;
+  onDelete: () => void;
 }) {
   const { doc, canManage, working, previewing, rejectOpen, rejectDraft } = props;
   const status = (doc.status ?? "pending").toLowerCase() as DocStatus;
@@ -346,6 +363,16 @@ function DocRow(props: {
               {isRejected ? "✕ Rejected" : "Reject"}
             </button>
           </>
+        )}
+        {props.isAdmin && (
+          <button
+            type="button"
+            onClick={props.onDelete}
+            title="Permanently delete this document (admin only)"
+            style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #dc2626", background: "#fff", color: "#dc2626", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          >
+            Delete
+          </button>
         )}
       </div>
 
