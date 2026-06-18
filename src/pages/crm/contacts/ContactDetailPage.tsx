@@ -5,6 +5,7 @@ import { api } from "@/api";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
 import ContactApplicationDetails from "@/components/crm/ContactApplicationDetails";
+import { ContactEmailFeed, ContactCallFeed } from "@/components/crm/ContactCommsFeeds";
 import { EntityEditModal } from "@/components/EntityEditModal";
 import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
 import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
@@ -100,6 +101,8 @@ export default function ContactDetailPage() {
       <main>
         <ActivityTimeline scope={scope} refreshKey={refreshKey} />
         <div style={{ marginTop: 16, border: "1px solid #eaf0f6", borderRadius: 6, padding: 16 }}><MarketingTab contactId={id} /></div>
+        <ContactEmailFeed contactId={id} />
+        <ContactCallFeed contactId={id} />
       </main>
 
       <aside style={rail}>
