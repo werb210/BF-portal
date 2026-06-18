@@ -205,6 +205,7 @@ export type ContactRow = {
   role?: string | null;
   ownership_percent?: number | null;
   is_primary_applicant?: boolean | null;
+  applicationIds?: string[];
   created_at: string;
 };
 

@@ -4,6 +4,7 @@ import { crmApi, type ContactRow, type Scope } from "@/api/crm";
 import { api } from "@/api";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
+import ContactApplicationDetails from "@/components/crm/ContactApplicationDetails";
 import { EntityEditModal } from "@/components/EntityEditModal";
 import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
 import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
@@ -85,6 +86,7 @@ export default function ContactDetailPage() {
           contactName={contact.name}
           onChanged={() => setRefreshKey(k => k + 1)}
         />
+        <ContactApplicationDetails applicationIds={contact.applicationIds} />
         <div style={fieldsBlock}>
           <Field label="Email"   value={contact.email ?? null} />
           <Field label="Phone"   value={contact.phone ?? null} />
