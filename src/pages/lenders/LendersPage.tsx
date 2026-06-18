@@ -173,7 +173,10 @@ function CreateLenderModal({
   const [form, setForm] = useState({
     name: lender?.name ?? "",
     street: lender?.address?.street ?? "",
-    cityStateZip: "",
+    city: lender?.address?.city ?? "",
+    region: "",
+    postalCode: "",
+    country: ((lender as any)?.country ?? lender?.address?.country ?? "CA") as string,
     phone: lender?.phone ?? "",
     contactName: lender?.primaryContact?.name ?? "",
     contactPhone: lender?.primaryContact?.phone ?? "",
@@ -233,9 +236,10 @@ function CreateLenderModal({
       const payload = {
         name: form.name.trim(),
         street: form.street.trim() || null,
-        city: null,
-        region: null,
-        postalCode: null,
+        city: form.city.trim() || null,
+        region: form.region.trim() || null,
+        postalCode: form.postalCode.trim() || null,
+        country: form.country,
         phone: form.phone.trim(),
         submissionMethod: form.submissionMethod as SubmissionMethod,
         submissionEmail: form.submissionMethod === "EMAIL" ? (form.submissionEmail.trim() || null) : null,
@@ -304,8 +308,17 @@ function CreateLenderModal({
             <label style={labelStyle}>Lender Address <span style={{ color: "#ef4444" }}>*</span></label>
             <input placeholder="Enter street address" value={form.street} onChange={(e) => set("street", e.target.value)}
               style={{ ...inputStyle(), marginBottom: 8 }} />
-            <input placeholder="City, State / Province, ZIP / Postal Code" value={form.cityStateZip}
-              onChange={(e) => set("cityStateZip", e.target.value)} style={inputStyle()} />
+            <input placeholder="City" value={form.city} onChange={(e) => set("city", e.target.value)}
+              style={{ ...inputStyle(), marginBottom: 8 }} />
+            <input placeholder="State / Province" value={form.region} onChange={(e) => set("region", e.target.value)}
+              style={{ ...inputStyle(), marginBottom: 8 }} />
+            <input placeholder="ZIP / Postal Code" value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)}
+              style={{ ...inputStyle(), marginBottom: 8 }} />
+            <select value={form.country} onChange={(e) => set("country", e.target.value)} style={inputStyle()}>
+              <option value="CA">Canada</option>
+              <option value="US">United States</option>
+              <option value="BOTH">Both (CA + US)</option>
+            </select>
           </div>
 
           {/* Phone */}
