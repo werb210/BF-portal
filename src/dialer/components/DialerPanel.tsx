@@ -373,6 +373,17 @@ export default function DialerPanel() {
       {/* IDLE — dialpad to place a new call */}
       {!liveAny && !incoming && (
         <>
+          {(st.status === "error" || (!st.device && st.status !== "preflight")) && (
+            <div style={{ margin: "12px 20px 0", padding: "10px 12px", borderRadius: 10, background: T.amberSoft, border: `1px solid ${T.amber}`, color: T.text, fontSize: 12, lineHeight: 1.4 }}>
+              <strong>Phone not ready.</strong>{" "}
+              {st.error === "no_voice_token" ? "Could not get a voice token from the server."
+                : st.error === "device_not_registered" ? "The phone engine did not finish registering — reload the page."
+                : st.error === "mic_permission_denied" ? "Microphone permission is blocked — allow it in the browser, then reload."
+                : st.error === "bootstrap_failed" ? "The dialer failed to start. Reload the page; if it persists, the voice service is down."
+                : st.error ? `Reason: ${st.error}`
+                : "The phone engine has not registered yet — reload the page."}
+            </div>
+          )}
           <div style={{ padding: "18px 20px 4px", textAlign: "center" }}>
             <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 0.6 }}>Enter a number</div>
             <div style={{ fontSize: 28, fontFamily: T.mono, marginTop: 6, minHeight: 36 }}>{phone || "+1"}</div>
