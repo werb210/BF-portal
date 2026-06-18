@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNotificationsStore } from "@/state/notifications.store";
 import BusinessUnitSelector from "@/components/BusinessUnitSelector";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
-import MayaStatus from "@/components/MayaStatus";
 import { api } from "@/api";
 
 type TopbarProps = {
@@ -27,7 +26,6 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const unreadCount = useNotificationsStore((state) => state.notifications.filter((item) => !item.read).length);
   const [isCenterOpen, setIsCenterOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [productionStatus, setProductionStatus] = useState("checking");
   const [presence, setPresence] = useState<"available" | "busy" | "offline">("available");
 
   const firstName = (user as { first_name?: string; firstName?: string; name?: string } | null)?.first_name
@@ -43,12 +41,6 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
     if (resolvedFirstName?.trim()) return resolvedFirstName.trim().charAt(0).toUpperCase();
     return getInitials((user as { name?: string } | null)?.name);
   }, [user]);
-
-  useEffect(() => {
-    api<{ status?: string }>("/api/_int/health")
-      .then((result) => setProductionStatus(result.status ?? "ok"))
-      .catch(() => setProductionStatus("degraded"));
-  }, []);
 
   // BF_HEARTBEAT_AUTH_GUARD_v34 — skip heartbeat when no JWT is present.
   // Without this, the 30s interval keeps firing after JWT expiry and the
@@ -121,8 +113,14 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         >
           ☰
         </button>
-        <div>
-          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 2 }}>Welcome back</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Profile" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
+          ) : (
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1d4ed8", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 12 }}>
+              {avatarInitials}
+            </div>
+          )}
           <h1 className="topbar__title" style={{ color: "#0b1220", margin: 0, fontSize: 20, fontWeight: 700 }}>
             {greeting}
           </h1>
@@ -130,12 +128,6 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
       </div>
       <div className="topbar__right">
         <BusinessUnitSelector />
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${productionStatus === "ok" ? "bg-emerald-600" : productionStatus === "checking" ? "bg-amber-500" : "bg-red-600"}`}
-          aria-label="Production readiness status"
-        >
-          Prod: {productionStatus}
-        </span>
         <button
           onClick={() => void togglePresence()}
           title={`Status: ${presence} — click to toggle`}
@@ -157,7 +149,6 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: presence === "available" ? "#22c55e" : "#f59e0b", flexShrink: 0 }} />
           {presence === "available" ? "Available" : "Busy"}
         </button>
-        <MayaStatus />
         <div className="relative">
           <button
             type="button"
