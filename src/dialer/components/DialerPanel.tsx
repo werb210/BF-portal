@@ -393,6 +393,10 @@ export default function DialerPanel() {
               type="tel"
               autoFocus
               inputMode="tel"
+              name="dialer-phone"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
               pattern="[+0-9 \(\)\-]*"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
