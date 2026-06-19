@@ -429,8 +429,17 @@ export default function O365ComposeModal({
       // token (and legacy pasted booking URL) into the styled booking button.
       let body_html = bodyRef.current?.innerHTML ?? composeBody;
       if (bookingUrl) {
+        // BF_PORTAL_BOOKING_BUTTON_NO_DOUBLE_WRAP_v1 — the toolbar "Book a meeting"
+        // button already inserts a full <a href="bookingUrl" ...> anchor. Replacing
+        // every bare occurrence of bookingUrl with the whole button nested a button
+        // inside that anchor's href and mangled the tag (raw `">Book a meeting` leaked
+        // as text). Replace the token always; only buttonize a BARE pasted URL when it
+        // isn't already wrapped in an anchor href.
         const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
-        body_html = body_html.split("{{meeting_link}}").join(bookingButton).split(bookingUrl).join(bookingButton);
+        body_html = body_html.split("{{meeting_link}}").join(bookingButton);
+        if (!body_html.includes(`href="${bookingUrl}"`)) {
+          body_html = body_html.split(bookingUrl).join(bookingButton);
+        }
       } else {
         body_html = body_html.split("{{meeting_link}}").join("");
       }
