@@ -331,7 +331,8 @@ export default function LendersTab({ applicationId }: Props) {
       )}
 
       {/* BF_PORTAL_BLOCK_v741_COLLATERAL_GATE — show only once Accord is checked, under the lenders. */}
-      {matches.some((m) => selected.includes(m.id) && /accord/i.test(m.lenderName ?? "")) && (
+      {/* BF_PORTAL_COLLATERAL_LOC_ONLY_v1 — Accord Collateral & Facility is an LOC requirement only. */}
+      {matches.some((m) => selected.includes(m.id) && /accord/i.test(m.lenderName ?? "") && String(m.productCategory ?? "").toUpperCase() === "LOC") && (
         <CollateralFacilitySection applicationId={id} />
       )}
 
