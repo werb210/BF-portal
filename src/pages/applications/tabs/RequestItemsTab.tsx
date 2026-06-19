@@ -1,32 +1,20 @@
-// BF_PORTAL_BLOCK_v821_REQUEST_ITEMS_TAB — staff checks any of the canonical 13
-// documents + 7 forms; "Request from Client" POSTs to /api/applications/:id/
-// request-steps, which posts CMP task buttons + one SMS and advances the card to
-// "Additional Steps Required". Docs go as free-text in `documents[]`; forms map
-// to the endpoint's fixed form ids.
-import { useState } from "react";
-import type { CSSProperties, Dispatch, SetStateAction } from "react";
+// BF_PORTAL_REQUEST_ITEMS_DYNAMIC_v1 — The "Required documents" column now reflects this
+// deal's dynamic Step-5 resolved required set (GET /api/portal/applications/:id/request-items),
+// pre-checked. An ADMIN unchecking a document waives it for this application (POST/DELETE
+// /api/portal/applications/:id/document-waivers): the doc is removed from the client's upload
+// list and no longer blocks sending to a lender. Non-admins see the boxes but cannot waive.
+// The Forms column and "Request from Client" (POST /api/applications/:id/request-steps) are
+// unchanged — it requests the still-required (checked, non-waived) docs + checked forms.
+import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { api } from "@/api";
+import { useAuth } from "@/hooks/useAuth";
+import { resolveUserRole } from "@/utils/roles";
 
 interface Props { applicationId?: string }
 
-// Canonical 13 staff document labels (exact).
-const DOCUMENTS: string[] = [
-  "3 years accountant prepared financials",
-  "3 years business tax returns",
-  "PnL – Interim financials",
-  "Balance Sheet – Interim financials",
-  "A/R",
-  "A/P",
-  "2 pieces of Government Issued ID",
-  "VOID cheque or PAD",
-  "2 years personal tax returns (T1 generals)",
-  "Corporate structure / org chart",
-  "Business plan / projections",
-  "Lease agreement (if applicable)",
-  "Other",
-];
+type ReqDoc = { document_type: string; label: string };
 
-// 7 form items (exact labels) -> endpoint form ids.
 const FORMS: Array<{ id: string; label: string }> = [
   { id: "networth", label: "Personal net worth" },
   { id: "debt", label: "Debt stack" },
@@ -37,34 +25,113 @@ const FORMS: Array<{ id: string; label: string }> = [
   { id: "advisors", label: "Professional advisors (CPA / lawyer / insurance)" },
 ];
 
+const norm = (s: string) => String(s ?? "").trim().toLowerCase();
+
 export default function RequestItemsTab({ applicationId }: Props) {
-  const [docs, setDocs] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+  const isAdmin =
+    resolveUserRole((user as { role?: string | null } | null)?.role ?? null) === "Admin";
+
+  const [required, setRequired] = useState<ReqDoc[]>([]);
+  const [waived, setWaived] = useState<Set<string>>(new Set());
+  const [loaded, setLoaded] = useState(false);
   const [forms, setForms] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [waiveBusy, setWaiveBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
-  if (!applicationId) return <div className="ui-empty">Select an application to request items.</div>;
+  useEffect(() => {
+    if (!applicationId) return;
+    let cancelled = false;
+    setLoaded(false);
+    api
+      .get(`/api/portal/applications/${applicationId}/request-items`)
+      .then((r: any) => {
+        if (cancelled) return;
+        setRequired(Array.isArray(r?.required) ? r.required : []);
+        setWaived(new Set((Array.isArray(r?.waived) ? r.waived : []).map(norm)));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRequired([]);
+        setWaived(new Set());
+      })
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [applicationId]);
 
-  const toggle = (set: Dispatch<SetStateAction<Set<string>>>, key: string) =>
-    set((prev) => {
+  if (!applicationId)
+    return <div className="ui-empty">Select an application to request items.</div>;
+
+  const isChecked = (dt: string) => !waived.has(norm(dt));
+
+  const toggleWaive = async (dt: string) => {
+    if (!isAdmin || waiveBusy) return;
+    const key = norm(dt);
+    const currentlyChecked = !waived.has(key);
+    setWaiveBusy(dt);
+    setError(null);
+    setDone(null);
+    setWaived((prev) => {
       const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
+      if (currentlyChecked) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+    try {
+      if (currentlyChecked) {
+        await api.post(`/api/portal/applications/${applicationId}/document-waivers`, {
+          document_type: dt,
+        });
+      } else {
+        await api.delete(
+          `/api/portal/applications/${applicationId}/document-waivers/${encodeURIComponent(dt)}`,
+        );
+      }
+    } catch (e: any) {
+      setWaived((prev) => {
+        const next = new Set(prev);
+        if (currentlyChecked) next.delete(key);
+        else next.add(key);
+        return next;
+      });
+      setError(e?.message || "Failed to update waiver.");
+    } finally {
+      setWaiveBusy(null);
+    }
+  };
+
+  const toggleForm = (key: string) =>
+    setForms((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
 
-  const total = docs.size + forms.size;
+  const checkedDocs = required.filter((d) => isChecked(d.document_type));
+  const total = checkedDocs.length + forms.size;
 
   const submit = async () => {
-    if (total === 0) { setError("Check at least one document or form."); return; }
-    setBusy(true); setError(null); setDone(null);
+    if (total === 0) {
+      setError("Nothing to request — every required document is waived.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setDone(null);
     try {
       await api.post(`/api/applications/${applicationId}/request-steps`, {
         forms: Array.from(forms),
-        documents: Array.from(docs),
+        documents: checkedDocs.map((d) => d.label),
       });
       setDone(`Requested ${total} item${total === 1 ? "" : "s"} from the client.`);
-      setDocs(new Set()); setForms(new Set());
+      setForms(new Set());
     } catch (e: any) {
       setError(e?.message || "Failed to send request.");
     } finally {
@@ -72,47 +139,105 @@ export default function RequestItemsTab({ applicationId }: Props) {
     }
   };
 
-  // BF_PORTAL_BLOCK_v834_REQUEST_ITEMS_COLOR_AND_LAYOUT — explicit dark text so
-  // labels are never white-on-white in the dark-themed shell.
-  const chip = (active: boolean): CSSProperties => ({
-    display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
-    border: `1px solid ${active ? "#2563eb" : "#e2e8f0"}`, borderRadius: 8,
-    background: active ? "#eff6ff" : "#fff", cursor: "pointer", fontSize: 14,
+  const chip = (active: boolean, disabled = false): CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "10px 12px",
+    border: `1px solid ${active ? "#2563eb" : "#e2e8f0"}`,
+    borderRadius: 8,
+    background: active ? "#eff6ff" : "#fff",
+    cursor: disabled ? "default" : "pointer",
+    fontSize: 14,
     color: "#0f172a",
+    opacity: disabled ? 0.9 : 1,
   });
 
   return (
     <div style={{ maxWidth: 1100 }}>
       <h3 style={{ margin: "4px 0 4px" }}>Request Items</h3>
       <p style={{ color: "#64748b", fontSize: 13, marginTop: 0 }}>
-        Check the documents and forms you need. The client receives each as a task
-        in their portal (with one SMS), and the application moves to “Additional Steps Required”.
+        Required documents for this deal are pre-checked.{" "}
+        {isAdmin
+          ? "Uncheck a document to waive it for this application — it is removed from the client’s upload list and no longer blocks sending to a lender."
+          : "Only Admins can waive a required document."}{" "}
+        “Request from Client” sends the checked items as tasks (one SMS) and moves the card to
+        “Additional Steps Required”.
       </p>
 
-      {/* BF_PORTAL_BLOCK_v834_REQUEST_ITEMS_COLOR_AND_LAYOUT — 3 columns:
-          required documents fill the left two columns, forms sit in the
-          third column on the right. */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, alignItems: "start" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "2fr 1fr",
+          gap: 24,
+          alignItems: "start",
+        }}
+      >
         <div>
-          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "#94a3b8", fontWeight: 700, margin: "16px 0 8px" }}>
+          <div
+            style={{
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              color: "#94a3b8",
+              fontWeight: 700,
+              margin: "16px 0 8px",
+            }}
+          >
             Required documents
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {DOCUMENTS.map((d) => (
-              <div key={d} onClick={() => toggle(setDocs, d)} style={chip(docs.has(d))}>
-                <input type="checkbox" readOnly checked={docs.has(d)} /> <span style={{ color: "#0f172a" }}>{d}</span>
-              </div>
-            ))}
-          </div>
+          {!loaded ? (
+            <div style={{ color: "#94a3b8", fontSize: 13 }}>Loading…</div>
+          ) : required.length === 0 ? (
+            <div style={{ color: "#16a34a", fontSize: 13 }} data-testid="no-required-docs">
+              ✓ No outstanding required documents for this deal.
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {required.map((d) => {
+                const checked = isChecked(d.document_type);
+                const disabled = !isAdmin || waiveBusy === d.document_type;
+                return (
+                  <div
+                    key={d.document_type}
+                    onClick={() => toggleWaive(d.document_type)}
+                    style={chip(checked, disabled)}
+                    title={
+                      isAdmin
+                        ? checked
+                          ? "Uncheck to waive this document for this application"
+                          : "Waived — re-check to require it again"
+                        : "Only Admins can waive documents"
+                    }
+                  >
+                    <input type="checkbox" readOnly checked={checked} disabled={disabled} />{" "}
+                    <span style={{ color: "#0f172a", textDecoration: checked ? "none" : "line-through" }}>
+                      {d.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div>
-          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "#94a3b8", fontWeight: 700, margin: "16px 0 8px" }}>
+          <div
+            style={{
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              color: "#94a3b8",
+              fontWeight: 700,
+              margin: "16px 0 8px",
+            }}
+          >
             Forms
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
             {FORMS.map((f) => (
-              <div key={f.id} onClick={() => toggle(setForms, f.id)} style={chip(forms.has(f.id))}>
-                <input type="checkbox" readOnly checked={forms.has(f.id)} /> <span style={{ color: "#0f172a" }}>{f.label}</span>
+              <div key={f.id} onClick={() => toggleForm(f.id)} style={chip(forms.has(f.id))}>
+                <input type="checkbox" readOnly checked={forms.has(f.id)} />{" "}
+                <span style={{ color: "#0f172a" }}>{f.label}</span>
               </div>
             ))}
           </div>
@@ -127,9 +252,13 @@ export default function RequestItemsTab({ applicationId }: Props) {
           onClick={submit}
           disabled={busy || total === 0}
           style={{
-            padding: "10px 18px", borderRadius: 8, border: "none",
-            background: busy || total === 0 ? "#93c5fd" : "#2563eb", color: "#fff",
-            fontWeight: 600, cursor: busy || total === 0 ? "default" : "pointer",
+            padding: "10px 18px",
+            borderRadius: 8,
+            border: "none",
+            background: busy || total === 0 ? "#93c5fd" : "#2563eb",
+            color: "#fff",
+            fontWeight: 600,
+            cursor: busy || total === 0 ? "default" : "pointer",
           }}
         >
           {busy ? "Sending…" : `Request from Client${total ? ` (${total})` : ""}`}
