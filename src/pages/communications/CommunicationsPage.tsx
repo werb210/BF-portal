@@ -2426,6 +2426,9 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [searchResults, setSearchResults] = useState<TeamMessage[] | null>(null);
+  const [recording, setRecording] = useState(false); // BF_PORTAL_TEAM_VOICE_v1
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recChunksRef = useRef<Blob[]>([]);
   const [showNew, setShowNew] = useState(false);
   const activeIdRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null); // BF_PORTAL_TEAM_ATTACH_v1
@@ -2696,6 +2699,44 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   }
 
   // BF_PORTAL_TEAM_ATTACH_v1 — read picked files into base64 data URLs (5MB cap each).
+  // BF_PORTAL_TEAM_VOICE_v1 — record a voice note, stage it as an audio attachment.
+  async function toggleRecord() {
+    if (recording) {
+      try { mediaRecorderRef.current?.stop(); } catch { /* ignore */ }
+      return;
+    }
+    if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
+    let stream: MediaStream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch { return; }
+    const mime = MediaRecorder.isTypeSupported("audio/webm")
+      ? "audio/webm"
+      : (MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "");
+    const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    recChunksRef.current = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) recChunksRef.current.push(e.data); };
+    rec.onstop = () => {
+      try { stream.getTracks().forEach((t) => t.stop()); } catch { /* ignore */ }
+      const type = rec.mimeType || mime || "audio/webm";
+      const blob = new Blob(recChunksRef.current, { type });
+      recChunksRef.current = [];
+      setRecording(false);
+      if (blob.size === 0) return;
+      if (blob.size > 5 * 1024 * 1024) { window.alert("Voice note too long (max ~5MB)."); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = typeof reader.result === "string" ? reader.result : "";
+        if (!dataUrl) return;
+        const ext = type.includes("mp4") ? "m4a" : "webm";
+        setAtts((prev) => [...prev, { name: `Voice note.${ext}`, contentType: type, dataUrl }]);
+      };
+      reader.readAsDataURL(blob);
+    };
+    mediaRecorderRef.current = rec;
+    setRecording(true);
+    rec.start();
+  }
+
   async function onPickFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     const picked: TeamAttachment[] = [];
@@ -2797,6 +2838,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                             <a key={i} href={a.dataUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: m.body || i > 0 ? 6 : 0 }}>
                               <img src={a.dataUrl} alt={a.name} style={{ maxWidth: 220, maxHeight: 220, borderRadius: 8, display: "block" }} />
                             </a>
+                          ) : a.contentType.startsWith("audio/") ? (
+                            <audio key={i} controls src={a.dataUrl} style={{ display: "block", marginTop: 6, maxWidth: 240 }} />
                           ) : (
                             <a key={i} href={a.dataUrl} download={a.name} style={{ display: "block", marginTop: 6, fontSize: 13, color: "inherit", textDecoration: "underline" }}>{a.name}</a>
                           )
@@ -2870,7 +2913,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {atts.map((a, i) => (
                     <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 6, padding: "4px 8px", fontSize: 12, color: "var(--ui-text)" }}>
-                      {a.contentType.startsWith("image/") ? "\u{1F5BC}\uFE0F" : "\u{1F4C4}"} {a.name}
+                      {a.contentType.startsWith("image/") ? "\u{1F5BC}\uFE0F" : a.contentType.startsWith("audio/") ? "\u{1F3A4}" : "\u{1F4C4}"} {a.name}
                       <button onClick={() => setAtts((prev) => prev.filter((_, j) => j !== i))} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", fontSize: 14, lineHeight: 1 }} aria-label="Remove attachment">{"\u00D7"}</button>
                     </span>
                   ))}
@@ -2879,6 +2922,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
               <div style={{ display: "flex", gap: 8 }}>
                 <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={(e) => { void onPickFiles(e.target.files); e.target.value = ""; }} />
                 <button onClick={() => fileRef.current?.click()} title="Attach file" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{"\u{1F4CE}"}</button>
+                <button onClick={() => void toggleRecord()} title={recording ? "Stop recording" : "Record voice note"} style={{ padding: "10px 12px", background: recording ? "#ff3b30" : "var(--ui-surface-muted)", color: recording ? "#fff" : "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{recording ? "\u{23F9}\uFE0F" : "\u{1F3A4}"}</button>
                 <input value={draft} onChange={(e) => onDraftChange(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
                 <button onClick={() => void send()} disabled={editing ? !draft.trim() : (!draft.trim() && atts.length === 0)} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>{editing ? "Save" : "Send"}</button>
               </div>
