@@ -4,6 +4,7 @@ import { api } from "@/api";
 import { crmApi, type CompanyRow, type ContactRow, type Scope } from "@/api/crm";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
+import { CompanyBusinessFields } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_COMPANY_BUSINESS_v1
 import { AuthContext } from "@/auth/AuthContext";
 import { canDelete } from "@/auth/canDelete";
 import { EntityEditModal } from "@/components/EntityEditModal";
@@ -58,6 +59,14 @@ export default function CompanyDetailPage() {
     };
   }, [contacts]);
 
+  // BF_PORTAL_CRM_COMPANY_BUSINESS_v1 — Step-3 business data lives on the linked
+  // application; take the primary applicant's app first, then any contact's.
+  const applicationIds = useMemo(() => {
+    const ordered = [...grouped.primary, ...contacts];
+    const ids = ordered.flatMap((c) => c.applicationIds ?? []);
+    return Array.from(new Set(ids));
+  }, [grouped.primary, contacts]);
+
   if (err) return <div style={{ padding: 24, color: "#b00020" }}>{err}</div>;
   if (!company) return <div style={{ padding: 24 }}>Loading…</div>;
 
@@ -97,6 +106,7 @@ export default function CompanyDetailPage() {
           <Field label="Owner" value={company.owner_name ?? null} />
           <Field label="Created" value={company.created_at ? new Date(company.created_at).toLocaleString() : null} />
         </div>
+        <CompanyBusinessFields applicationIds={applicationIds} />
       </aside>
 
       <main>

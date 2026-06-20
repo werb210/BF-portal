@@ -181,6 +181,120 @@ export function ContactAdvisors({ applicationIds }: { applicationIds?: string[] 
   );
 }
 
+// BF_PORTAL_CRM_COMPANY_BUSINESS_v1 — CompanyBusinessFields (LEFT on the company
+// card) renders the linked application's Step-3 business fields (md.company /
+// md.business), parallel to ContactApplicantFields on the contact card.
+const BUSINESS_LABELS: Record<string, string> = {
+  legalName: "Legal Name",
+  name: "Business Name",
+  businessName: "Business Name",
+  operatingName: "Operating Name",
+  dba: "DBA",
+  structure: "Business Structure",
+  entityType: "Entity Type",
+  industry: "Industry",
+  naics: "NAICS",
+  ein: "EIN",
+  bn: "Business Number",
+  businessNumber: "Business Number",
+  incorporationDate: "Incorporated",
+  dateEstablished: "Date Established",
+  yearsInBusiness: "Years in Business",
+  annualRevenue: "Annual Revenue",
+  monthlyRevenue: "Monthly Revenue",
+  numEmployees: "Employees",
+  employees: "Employees",
+  website: "Website",
+  phone: "Business Phone",
+  email: "Business Email",
+  street: "Street Address",
+  city: "City",
+  state: "Province / State",
+  province: "Province / State",
+  zip: "Postal / ZIP",
+  postalCode: "Postal / ZIP",
+  country: "Country",
+};
+
+function humanizeKey(k: string): string {
+  return k
+    .replace(/[_-]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function pickBusiness(raw: unknown): Record<string, any> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const d = raw as Record<string, any>;
+  const flat =
+    d.application && typeof d.application === "object"
+      ? (d.application as Record<string, any>)
+      : d;
+  const b = flat.businessDetails ?? flat.business ?? d.businessDetails ?? d.business ?? null;
+  return b && typeof b === "object" && !Array.isArray(b) ? (b as Record<string, any>) : null;
+}
+
+function BusinessRows({ data }: { data: Record<string, any> }) {
+  const isScalar = (v: any) =>
+    v != null &&
+    (typeof v === "string" || typeof v === "number" || typeof v === "boolean") &&
+    String(v).trim() !== "";
+  const known = Object.keys(BUSINESS_LABELS).filter((k) => isScalar(data[k]));
+  const knownSet = new Set(known);
+  const extra = Object.keys(data).filter((k) => !knownSet.has(k) && isScalar(data[k]));
+  const seenLabel = new Set<string>();
+  const rows = [...known, ...extra]
+    .map((k) => [BUSINESS_LABELS[k] ?? humanizeKey(k), data[k]] as const)
+    .filter(([label]) => {
+      if (seenLabel.has(label)) return false;
+      seenLabel.add(label);
+      return true;
+    });
+  if (rows.length === 0) return null;
+  return (
+    <>
+      {rows.map(([label, v]) => (
+        <div
+          key={label}
+          style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "2px 0" }}
+        >
+          <span style={{ color: "var(--ui-text-muted)" }}>{label}</span>
+          <span style={{ color: "var(--ui-text)", textAlign: "right" }}>{String(v)}</span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+export function CompanyBusinessFields({ applicationIds }: { applicationIds?: string[] }) {
+  const appId = applicationIds?.[0] ?? null;
+  const [business, setBusiness] = useState<Record<string, any> | null>(null);
+
+  useEffect(() => {
+    if (!appId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = await fetchPortalApplication<unknown>(appId);
+        if (!cancelled) setBusiness(pickBusiness(raw));
+      } catch {
+        if (!cancelled) setBusiness(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [appId]);
+
+  if (!appId || !business) return null;
+  return (
+    <div style={{ marginTop: 16, borderTop: "1px solid var(--ui-border)", paddingTop: 12 }}>
+      <div style={sectionLabel}>Business</div>
+      <BusinessRows data={business} />
+    </div>
+  );
+}
+
 // Back-compat default export (renders both, for any other caller).
 export default function ContactApplicationDetails(props: { applicationIds?: string[] }) {
   return (
