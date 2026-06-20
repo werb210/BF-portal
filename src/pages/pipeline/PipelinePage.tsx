@@ -172,9 +172,9 @@ export default function PipelinePage() {
           return (
             <div key={stage} style={{ minWidth: 260, maxWidth: 260, flexShrink: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
-                padding: "6px 2px", borderBottom: `2px solid ${COLORS[stage]}` }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: COLORS[stage] }}>{stage}</span>
-                <span style={{ fontSize: 11, background: COLORS[stage] + "22", color: COLORS[stage],
+                padding: "6px 2px", borderBottom: "2px solid var(--ui-text-muted)" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ui-text-muted)" }}>{stage}</span>
+                <span style={{ fontSize: 11, background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)",
                   borderRadius: 20, padding: "1px 8px", fontWeight: 600 }}>
                   {col.length}
                 </span>
@@ -266,7 +266,18 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
       equipment_financing: "Equipment", equipment: "Equipment", equipment_finance: "Equipment",
       working_capital: "Working Capital", term_loan: "Term Loan", factoring: "Factoring",
     };
-    return map[k] ?? raw.replace(/[_-]+/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+    // BF_PORTAL_PIPELINE_PRODUCT_CASE_v1 — Title-case multi-word types, keep known acronyms upper.
+    const ACRONYMS = new Set(["LOC", "ABL", "PO", "MCA", "SBA", "CMP", "AR", "AP"]);
+    return (
+      map[k] ??
+      raw
+        .replace(/[_-]+/g, " ")
+        .toLowerCase()
+        .split(/\s+/)
+        .map((w) => (ACRONYMS.has(w.toUpperCase()) ? w.toUpperCase() : w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+        .join(" ")
+        .trim()
+    );
   })();
   const lastTouch = relativeTime(card.created_at);
   const stage_age = stageAge(card.stage_entered_at);
