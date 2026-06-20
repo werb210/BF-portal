@@ -63,6 +63,23 @@ function stageOf(status: string | null): Stage | typeof ARCHIVE_STAGE {
   return LEGACY_MAP[status] ?? "new";
 }
 
+// BF_PORTAL_BI_OUTREACH_COUNTRY_BADGE_v1 — Canada and the US share the +1 country code, so the
+// contact's country is derived from the NANP area code. Returns "CDN" for Canadian area codes,
+// "US" for other +1 numbers, null when there is no usable phone (Andrew markets to CDN only).
+const CDN_AREA_CODES = new Set([
+  "204","226","236","249","250","263","289","306","343","354","365","367","368","382","387",
+  "403","416","418","428","431","437","438","450","468","474","506","514","519","524","548",
+  "579","581","584","587","604","613","639","647","672","683","705","709","742","753","778",
+  "780","782","807","819","825","867","873","879","902","905",
+]);
+function countryFromPhone(phone: string | null): "CDN" | "US" | null {
+  if (!phone) return null;
+  let nanp = phone.replace(/[^0-9]/g, "");
+  if (nanp.length === 11 && nanp.startsWith("1")) nanp = nanp.slice(1);
+  if (nanp.length !== 10) return null;
+  return CDN_AREA_CODES.has(nanp.slice(0, 3)) ? "CDN" : "US";
+}
+
 const EVENT_TYPES = ["call", "demo", "sms", "email", "note"] as const;
 type EventType = (typeof EVENT_TYPES)[number];
 
@@ -639,11 +656,29 @@ function BoardColumn(props: {
             <div className="text-xs text-white/40 truncate">
               {c.email ?? c.phone_e164 ?? "—"}
             </div>
-            {c.outreach_segment && (
-              <span className="mt-1 inline-block text-[10px] uppercase tracking-wide text-white/40">
-                {c.outreach_segment}
-              </span>
-            )}
+            <div className="mt-1 flex items-center justify-between gap-2">
+              {c.outreach_segment ? (
+                <span className="inline-block text-[10px] uppercase tracking-wide text-white/40">
+                  {c.outreach_segment}
+                </span>
+              ) : (
+                <span />
+              )}
+              {/* BF_PORTAL_BI_OUTREACH_COUNTRY_BADGE_v1 — contact country, bottom-right of card. */}
+              {(() => {
+                const country = countryFromPhone(c.phone_e164);
+                return country ? (
+                  <span
+                    className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                      country === "CDN" ? "bg-red-500/15 text-red-300" : "bg-blue-500/15 text-blue-300"
+                    }`}
+                    title={country === "CDN" ? "Canada" : "United States"}
+                  >
+                    {country}
+                  </span>
+                ) : null;
+              })()}
+            </div>
           </div>
         ))}
       </div>
