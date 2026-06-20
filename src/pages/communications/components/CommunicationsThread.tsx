@@ -49,6 +49,9 @@ function pickAttachments(r: CommRow) {
     const secs = r.mediaDurationSeconds;
     const label = secs ? `Voicemail (${Math.round(secs)}s)` : "Voicemail";
     base.unshift({ name: label, contentType: "audio/mpeg", dataUrl: r.mediaUrl });
+  } else if (r.mediaUrl) {
+    // BF_PORTAL_SMS_MEDIA_v1 — inbound MMS image (proxied through BF-Server).
+    base.unshift({ name: "Image", contentType: "image/*", dataUrl: r.mediaUrl });
   }
   return base.length ? base : undefined;
 }

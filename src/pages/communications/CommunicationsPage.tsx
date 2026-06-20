@@ -70,6 +70,7 @@ type Message = {
   body: string;
   created_at: string;
   staff_name?: string | null;
+  media_url?: string | null; // BF_PORTAL_SMS_MEDIA_v1
 };
 type Issue = {
   id: string;
@@ -127,6 +128,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     created_at: string;
     from_number?: string;
     to_number?: string;
+    media_url?: string | null; // BF_PORTAL_SMS_MEDIA_v1
   }>>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -771,6 +773,11 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   authorRole: m.direction === "outbound" ? "self" : "other",
                   authorName: m.direction === "outbound" ? "You" : selected.name,
                   created_at: m.created_at,
+                  // BF_PORTAL_SMS_MEDIA_v1 — inbound MMS image via the BF-Server proxy
+                  // (Twilio media needs Basic auth; token rides the query for <img>).
+                  mediaUrl: m.media_url
+                    ? `${API_BASE}/api/communications/messages/${m.id}/media?token=${encodeURIComponent(getAuthToken() ?? "")}`
+                    : null,
                 }))}
                 emptyText="No messages yet. Send the first one."
               />
