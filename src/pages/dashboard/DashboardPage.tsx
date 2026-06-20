@@ -39,11 +39,11 @@ const DashboardPage = () => {
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
       <div className="grid gap-3 grid-cols-1 md:grid-cols-5">
-        <div className="drawer-section"><div className="drawer-section__title !text-slate-900">Active Applications</div><div className="text-slate-950 font-semibold">{fmt(metrics?.activeApplications)}</div></div>
-        <div className="drawer-section"><div className="drawer-section__title !text-slate-900">Pipeline by Stage</div><div className="text-slate-950" style={{ fontSize: 12 }}>{stageStr}</div></div>
-        <div className="drawer-section"><div className="drawer-section__title !text-slate-900">Deals Won This Month</div><div className="text-slate-950 font-semibold">{fmt(metrics?.dealsWonThisMonth)}</div></div>
-        <div className="drawer-section"><div className="drawer-section__title !text-slate-900">Commission Earned</div><div className="text-slate-950 font-semibold">{metrics?.commissionEarned !== undefined ? `$${fmt(metrics.commissionEarned)}` : "—"}</div></div>
-        <div className="drawer-section"><div className="drawer-section__title !text-slate-900">New Leads Today</div><div className="text-slate-950 font-semibold">{fmt(metrics?.newLeadsToday)}</div></div>
+        <div className="drawer-section"><div className="drawer-section__title">Active Applications</div><div className="font-semibold" style={{ color: "var(--ui-text)" }}>{fmt(metrics?.activeApplications)}</div></div>
+        <div className="drawer-section"><div className="drawer-section__title">Pipeline by Stage</div><div style={{ fontSize: 12, color: "var(--ui-text)" }}>{stageStr}</div></div>
+        <div className="drawer-section"><div className="drawer-section__title">Deals Won This Month</div><div className="font-semibold" style={{ color: "var(--ui-text)" }}>{fmt(metrics?.dealsWonThisMonth)}</div></div>
+        <div className="drawer-section"><div className="drawer-section__title">Commission Earned</div><div className="font-semibold" style={{ color: "var(--ui-text)" }}>{metrics?.commissionEarned !== undefined ? `$${fmt(metrics.commissionEarned)}` : "—"}</div></div>
+        <div className="drawer-section"><div className="drawer-section__title">New Leads Today</div><div className="font-semibold" style={{ color: "var(--ui-text)" }}>{fmt(metrics?.newLeadsToday)}</div></div>
       </div>
     </div>
   );
