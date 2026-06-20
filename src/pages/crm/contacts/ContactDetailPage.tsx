@@ -94,10 +94,12 @@ export default function ContactDetailPage() {
           <Field label="Stage"   value={contact.lifecycle_stage ?? null} />
           <Field label="Owner"   value={contact.owner_name ?? null} />
           <Field label="Created" value={contact.created_at ? new Date(contact.created_at).toLocaleString() : null} />
+          {contact.source && <Field label="Source" value={contact.source} />}
+          {contact.tags && contact.tags.length > 0 && <Field label="Tags" value={contact.tags.join(", ")} />}
         </div>
       </aside>
 
-      <main>
+      <main style={{ minWidth: 0 }}>
         <UnifiedTimeline contactId={id} scope={scope} refreshKey={refreshKey} />
         <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}><MarketingTab contactId={id} /></div>
       </main>
@@ -157,7 +159,7 @@ function Field({ label, value }: { label: string; value: string | null }) {
 }
 
 const layout: CSSProperties = {
-  display: "grid", gridTemplateColumns: "320px 1fr 320px", gap: 16,
+  display: "grid", gridTemplateColumns: "260px minmax(0, 1fr) 220px", gap: 12,
   padding: 16, background: "var(--ui-surface-strong)", color: "var(--ui-text)",
 };
 const rail: CSSProperties = {

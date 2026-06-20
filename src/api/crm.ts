@@ -191,6 +191,7 @@ export type ContactRow = {
   id: string;
   name: string;
   tags?: string[] | null; // BF_PORTAL_BLOCK_v811_TAGS_COLUMN
+  source?: string | null; // BF_PORTAL_CONTACT_SOURCE_v1
   first_name?: string;
   last_name?: string;
   email?: string;
