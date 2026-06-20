@@ -711,7 +711,7 @@ export default function O365ComposeModal({
 
         {composeError && <div style={{ color: "#b00020", fontSize: 13 }}>{composeError}</div>}
 
-        <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", position: "sticky", bottom: 0, background: "#fff", paddingTop: 12, marginTop: 4, borderTop: "1px solid #e2e8f0", zIndex: 6 }}>
           <div style={{ fontSize: 12, color: "#64748b" }}>
             {draftId ? "Outlook draft linked" : ""}
             {draftSavedAt ? ` · Saved ${new Date(draftSavedAt).toLocaleTimeString()}` : ""}
