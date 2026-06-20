@@ -2353,7 +2353,9 @@ function MayaTab() {
 // ── Team tab (internal staff chat, WebSocket-backed) ─────────────────────────
 // BF_PORTAL_BLOCK_v752_TEAM_TAB
 type TeamAttachment = { name: string; contentType: string; dataUrl: string }; // BF_PORTAL_TEAM_ATTACH_v1
-type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string; attachments?: TeamAttachment[] | null };
+type TeamReaction = { emoji: string; user_ids: string[] }; // BF_PORTAL_TEAM_LIFECYCLE_v1
+type TeamReplyPreview = { id: string; sender_id: string | null; body: string };
+type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string; attachments?: TeamAttachment[] | null; edited_at?: string | null; deleted_at?: string | null; reply_to_id?: string | null; reactions?: TeamReaction[]; reply_to?: TeamReplyPreview | null };
 type TeamChannel = {
   id: string;
   kind: string;
@@ -2386,6 +2388,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const [messages, setMessages] = useState<TeamMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [atts, setAtts] = useState<TeamAttachment[]>([]); // BF_PORTAL_TEAM_ATTACH_v1
+  const [replyTo, setReplyTo] = useState<TeamMessage | null>(null); // BF_PORTAL_TEAM_LIFECYCLE_v1
+  const [editing, setEditing] = useState<TeamMessage | null>(null);
   const [showNew, setShowNew] = useState(false);
   const activeIdRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null); // BF_PORTAL_TEAM_ATTACH_v1
@@ -2452,6 +2456,14 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
             void api.post(`/api/team/channels/${data.channel_id}/read`, {}).catch(() => undefined);
           }
           void loadChannels();
+        } else if (data?.type === "message_update") {
+          if (data.channel_id === activeIdRef.current && data.message) {
+            setMessages((prev) => prev.map((m) => (m.id === data.message.id ? data.message : m)));
+          }
+        } else if (data?.type === "reaction") {
+          if (data.channel_id === activeIdRef.current && data.message_id) {
+            setMessages((prev) => prev.map((m) => (m.id === data.message_id ? { ...m, reactions: data.reactions ?? [] } : m)));
+          }
         } else if (data?.type === "channel") {
           void loadChannels();
         }
@@ -2507,15 +2519,58 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
 
   async function send() {
     const body = draft.trim();
-    if ((!body && atts.length === 0) || !activeId) return;
+    if (!activeId) return;
+    // BF_PORTAL_TEAM_LIFECYCLE_v1 — in edit mode, save the open message instead of sending.
+    if (editing) {
+      if (!body) return;
+      const target = editing;
+      setDraft("");
+      setEditing(null);
+      try {
+        const r = await api.patch<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages/${target.id}`, { body });
+        const message = r?.message;
+        if (message) setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m)));
+      } catch { /* ignore */ }
+      return;
+    }
+    if (!body && atts.length === 0) return;
     const outAtts = atts;
+    const replyId = replyTo?.id ?? null;
     setDraft("");
     setAtts([]);
+    setReplyTo(null);
     try {
-      const r = await api.post<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages`, { body, attachments: outAtts });
+      const r = await api.post<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages`, { body, attachments: outAtts, reply_to_id: replyId });
       const message = r?.message;
       if (message) setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
       void loadChannels();
+    } catch { /* ignore */ }
+  }
+
+  // BF_PORTAL_TEAM_LIFECYCLE_v1 — reactions, edit, delete.
+  const QUICK_REACTS = ["\u{1F44D}", "\u2764\uFE0F", "\u2705"];
+  async function toggleReaction(m: TeamMessage, emoji: string) {
+    if (!activeId) return;
+    const reacted = (m.reactions ?? []).some((r) => r.emoji === emoji && r.user_ids.includes(myId ?? ""));
+    try {
+      const r = reacted
+        ? await api.delete<{ reactions?: TeamReaction[] }>(`/api/team/channels/${activeId}/messages/${m.id}/reactions?emoji=${encodeURIComponent(emoji)}`)
+        : await api.post<{ reactions?: TeamReaction[] }>(`/api/team/channels/${activeId}/messages/${m.id}/reactions`, { emoji });
+      const reactions = r?.reactions ?? [];
+      setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, reactions } : x)));
+    } catch { /* ignore */ }
+  }
+  function startEdit(m: TeamMessage) {
+    setEditing(m);
+    setReplyTo(null);
+    setDraft(m.body);
+  }
+  async function del(m: TeamMessage) {
+    if (!activeId || !window.confirm("Delete this message?")) return;
+    try {
+      const r = await api.delete<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages/${m.id}`);
+      const message = r?.message;
+      if (message) setMessages((prev) => prev.map((x) => (x.id === message.id ? message : x)));
     } catch { /* ignore */ }
   }
 
@@ -2578,24 +2633,64 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 return (
                   <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "70%" }}>
                     {!mine && <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginBottom: 2 }}>{userName(m.sender_id)}</div>}
-                    <div style={{ background: mine ? "#007aff" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                      {m.body && <div>{m.body}</div>}
-                      {(m.attachments ?? []).map((a, i) => (
-                        a.contentType.startsWith("image/") ? (
-                          <a key={i} href={a.dataUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: m.body || i > 0 ? 6 : 0 }}>
-                            <img src={a.dataUrl} alt={a.name} style={{ maxWidth: 220, maxHeight: 220, borderRadius: 8, display: "block" }} />
-                          </a>
-                        ) : (
-                          <a key={i} href={a.dataUrl} download={a.name} style={{ display: "block", marginTop: 6, fontSize: 13, color: "inherit", textDecoration: "underline" }}>{a.name}</a>
-                        )
-                      ))}
-                    </div>
+                    {m.reply_to && (
+                      <div style={{ fontSize: 12, color: "var(--ui-text-muted)", borderLeft: "2px solid var(--ui-border)", paddingLeft: 8, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 260 }}>
+                        {userName(m.reply_to.sender_id)}: {m.reply_to.body || "\u2026"}
+                      </div>
+                    )}
+                    {m.deleted_at ? (
+                      <div style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 13, fontStyle: "italic" }}>Message deleted</div>
+                    ) : (
+                      <div style={{ background: mine ? "#007aff" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                        {m.body && <div>{m.body}</div>}
+                        {(m.attachments ?? []).map((a, i) => (
+                          a.contentType.startsWith("image/") ? (
+                            <a key={i} href={a.dataUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: m.body || i > 0 ? 6 : 0 }}>
+                              <img src={a.dataUrl} alt={a.name} style={{ maxWidth: 220, maxHeight: 220, borderRadius: 8, display: "block" }} />
+                            </a>
+                          ) : (
+                            <a key={i} href={a.dataUrl} download={a.name} style={{ display: "block", marginTop: 6, fontSize: 13, color: "inherit", textDecoration: "underline" }}>{a.name}</a>
+                          )
+                        ))}
+                        {m.edited_at && <div style={{ fontSize: 10, opacity: 0.7, marginTop: 2 }}>edited</div>}
+                      </div>
+                    )}
+                    {!m.deleted_at && (m.reactions ?? []).length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4, justifyContent: mine ? "flex-end" : "flex-start" }}>
+                        {(m.reactions ?? []).map((r) => {
+                          const onByMe = r.user_ids.includes(myId ?? "");
+                          return (
+                            <button key={r.emoji} onClick={() => void toggleReaction(m, r.emoji)} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, padding: "1px 6px", borderRadius: 999, cursor: "pointer", border: onByMe ? "1px solid #007aff" : "1px solid var(--ui-border)", background: onByMe ? "#eff6ff" : "var(--ui-surface-strong)", color: "var(--ui-text)" }}>
+                              {r.emoji} {r.user_ids.length}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {!m.deleted_at && (
+                      <div style={{ display: "flex", gap: 8, marginTop: 3, opacity: 0.55, justifyContent: mine ? "flex-end" : "flex-start" }}>
+                        {QUICK_REACTS.map((e) => (
+                          <button key={e} onClick={() => void toggleReaction(m, e)} title="React" style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1 }}>{e}</button>
+                        ))}
+                        <button onClick={() => { setReplyTo(m); setEditing(null); }} title="Reply" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Reply</button>
+                        {mine && <button onClick={() => startEdit(m)} title="Edit" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Edit</button>}
+                        {mine && <button onClick={() => void del(m)} title="Delete" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Delete</button>}
+                      </div>
+                    )}
                   </div>
                 );
               })}
               <div ref={bottomRef} />
             </div>
             <div style={{ borderTop: "1px solid var(--ui-border)", padding: 12, paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "var(--ui-surface-strong)", display: "flex", flexDirection: "column", gap: 8 }}>
+              {(replyTo || editing) && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 12, color: "var(--ui-text-muted)", background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 6, padding: "4px 8px" }}>
+                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {editing ? "Editing message" : `Replying to ${userName(replyTo?.sender_id ?? null)}`}
+                  </span>
+                  <button onClick={() => { setReplyTo(null); setEditing(null); setDraft(""); }} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", fontSize: 14, lineHeight: 1 }} aria-label="Cancel">{"\u00D7"}</button>
+                </div>
+              )}
               {atts.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {atts.map((a, i) => (
@@ -2610,7 +2705,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={(e) => { void onPickFiles(e.target.files); e.target.value = ""; }} />
                 <button onClick={() => fileRef.current?.click()} title="Attach file" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{"\u{1F4CE}"}</button>
                 <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
-                <button onClick={() => void send()} disabled={!draft.trim() && atts.length === 0} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>Send</button>
+                <button onClick={() => void send()} disabled={editing ? !draft.trim() : (!draft.trim() && atts.length === 0)} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>{editing ? "Save" : "Send"}</button>
               </div>
             </div>
           </>
