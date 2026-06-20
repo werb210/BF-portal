@@ -2389,6 +2389,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const [showNew, setShowNew] = useState(false);
   const activeIdRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null); // BF_PORTAL_TEAM_ATTACH_v1
+  const bottomRef = useRef<HTMLDivElement | null>(null); // BF_PORTAL_TEAM_SCROLL_v1
   activeIdRef.current = activeId;
   const myId = teamCurrentUserId();
 
@@ -2498,6 +2499,12 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
     return () => clearInterval(id);
   }, [loadChannels]);
 
+  // BF_PORTAL_TEAM_SCROLL_v1 — keep the newest message in view on send/receive/switch.
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ block: "end" }));
+    return () => cancelAnimationFrame(raf);
+  }, [messages, activeId]);
+
   async function send() {
     const body = draft.trim();
     if ((!body && atts.length === 0) || !activeId) return;
@@ -2586,6 +2593,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                   </div>
                 );
               })}
+              <div ref={bottomRef} />
             </div>
             <div style={{ borderTop: "1px solid var(--ui-border)", padding: 12, paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "var(--ui-surface-strong)", display: "flex", flexDirection: "column", gap: 8 }}>
               {atts.length > 0 && (
