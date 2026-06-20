@@ -2352,7 +2352,8 @@ function MayaTab() {
 
 // ── Team tab (internal staff chat, WebSocket-backed) ─────────────────────────
 // BF_PORTAL_BLOCK_v752_TEAM_TAB
-type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string };
+type TeamAttachment = { name: string; contentType: string; dataUrl: string }; // BF_PORTAL_TEAM_ATTACH_v1
+type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string; attachments?: TeamAttachment[] | null };
 type TeamChannel = {
   id: string;
   kind: string;
@@ -2384,8 +2385,10 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<TeamMessage[]>([]);
   const [draft, setDraft] = useState("");
+  const [atts, setAtts] = useState<TeamAttachment[]>([]); // BF_PORTAL_TEAM_ATTACH_v1
   const [showNew, setShowNew] = useState(false);
   const activeIdRef = useRef<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null); // BF_PORTAL_TEAM_ATTACH_v1
   activeIdRef.current = activeId;
   const myId = teamCurrentUserId();
 
@@ -2497,14 +2500,33 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
 
   async function send() {
     const body = draft.trim();
-    if (!body || !activeId) return;
+    if ((!body && atts.length === 0) || !activeId) return;
+    const outAtts = atts;
     setDraft("");
+    setAtts([]);
     try {
-      const r = await api.post<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages`, { body });
+      const r = await api.post<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages`, { body, attachments: outAtts });
       const message = r?.message;
       if (message) setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
       void loadChannels();
     } catch { /* ignore */ }
+  }
+
+  // BF_PORTAL_TEAM_ATTACH_v1 — read picked files into base64 data URLs (5MB cap each).
+  async function onPickFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const picked: TeamAttachment[] = [];
+    for (const f of Array.from(files).slice(0, 10)) {
+      if (f.size > 5_000_000) continue;
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? ""));
+        reader.onerror = () => reject(new Error("read failed"));
+        reader.readAsDataURL(f);
+      }).catch(() => "");
+      if (dataUrl) picked.push({ name: f.name, contentType: f.type || "application/octet-stream", dataUrl });
+    }
+    if (picked.length) setAtts((prev) => [...prev, ...picked].slice(0, 10));
   }
 
   function channelLabel(c: TeamChannel): string {
@@ -2549,14 +2571,39 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 return (
                   <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "70%" }}>
                     {!mine && <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginBottom: 2 }}>{userName(m.sender_id)}</div>}
-                    <div style={{ background: mine ? "#007aff" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.body}</div>
+                    <div style={{ background: mine ? "#007aff" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                      {m.body && <div>{m.body}</div>}
+                      {(m.attachments ?? []).map((a, i) => (
+                        a.contentType.startsWith("image/") ? (
+                          <a key={i} href={a.dataUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: m.body || i > 0 ? 6 : 0 }}>
+                            <img src={a.dataUrl} alt={a.name} style={{ maxWidth: 220, maxHeight: 220, borderRadius: 8, display: "block" }} />
+                          </a>
+                        ) : (
+                          <a key={i} href={a.dataUrl} download={a.name} style={{ display: "block", marginTop: 6, fontSize: 13, color: "inherit", textDecoration: "underline" }}>{a.name}</a>
+                        )
+                      ))}
+                    </div>
                   </div>
                 );
               })}
             </div>
-            <div style={{ borderTop: "1px solid var(--ui-border)", padding: 12, paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "var(--ui-surface-strong)", display: "flex", gap: 8 }}>
-              <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
-              <button onClick={() => void send()} disabled={!draft.trim()} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>Send</button>
+            <div style={{ borderTop: "1px solid var(--ui-border)", padding: 12, paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "var(--ui-surface-strong)", display: "flex", flexDirection: "column", gap: 8 }}>
+              {atts.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {atts.map((a, i) => (
+                    <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 6, padding: "4px 8px", fontSize: 12, color: "var(--ui-text)" }}>
+                      {a.contentType.startsWith("image/") ? "\u{1F5BC}\uFE0F" : "\u{1F4C4}"} {a.name}
+                      <button onClick={() => setAtts((prev) => prev.filter((_, j) => j !== i))} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", fontSize: 14, lineHeight: 1 }} aria-label="Remove attachment">{"\u00D7"}</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={(e) => { void onPickFiles(e.target.files); e.target.value = ""; }} />
+                <button onClick={() => fileRef.current?.click()} title="Attach file" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{"\u{1F4CE}"}</button>
+                <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
+                <button onClick={() => void send()} disabled={!draft.trim() && atts.length === 0} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>Send</button>
+              </div>
             </div>
           </>
         )}
