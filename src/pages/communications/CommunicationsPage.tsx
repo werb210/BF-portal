@@ -2390,12 +2390,45 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const [atts, setAtts] = useState<TeamAttachment[]>([]); // BF_PORTAL_TEAM_ATTACH_v1
   const [replyTo, setReplyTo] = useState<TeamMessage | null>(null); // BF_PORTAL_TEAM_LIFECYCLE_v1
   const [editing, setEditing] = useState<TeamMessage | null>(null);
+  const [typingIds, setTypingIds] = useState<string[]>([]); // BF_PORTAL_TEAM_PRESENCE_v1
+  const [reads, setReads] = useState<Record<string, string | null>>({});
+  const [presence, setPresence] = useState<Record<string, string>>({});
+  const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const lastTypingSent = useRef(0);
   const [showNew, setShowNew] = useState(false);
   const activeIdRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null); // BF_PORTAL_TEAM_ATTACH_v1
   const bottomRef = useRef<HTMLDivElement | null>(null); // BF_PORTAL_TEAM_SCROLL_v1
   activeIdRef.current = activeId;
   const myId = teamCurrentUserId();
+
+  // BF_PORTAL_TEAM_PRESENCE_v1 — typing ping + read/presence fetches.
+  function notifyTyping() {
+    if (!activeId) return;
+    const now = Date.now();
+    if (now - lastTypingSent.current < 2500) return;
+    lastTypingSent.current = now;
+    void api.post(`/api/team/channels/${activeId}/typing`, {}).catch(() => undefined);
+  }
+  const fetchReads = useCallback((cid: string) => {
+    void api<{ reads?: Array<{ user_id: string; last_read_at: string | null }> }>(`/api/team/channels/${cid}/reads`)
+      .then((r) => {
+        if (activeIdRef.current !== cid) return;
+        const map: Record<string, string | null> = {};
+        for (const row of r?.reads ?? []) map[row.user_id] = row.last_read_at;
+        setReads(map);
+      })
+      .catch(() => undefined);
+  }, []);
+  const fetchPresence = useCallback(() => {
+    void api<{ presence?: Array<{ user_id: string; status: string }> }>(`/api/team/presence`)
+      .then((r) => {
+        const map: Record<string, string> = {};
+        for (const row of r?.presence ?? []) map[row.user_id] = row.status;
+        setPresence(map);
+      })
+      .catch(() => undefined);
+  }, []);
 
   const userName = useCallback((id: string | null): string => {
     if (!id) return "Staff";
@@ -2433,10 +2466,11 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
     (async () => {
       try { const r = await api<{ messages?: TeamMessage[] }>(`/api/team/channels/${activeId}/messages`); if (!cancelled) setMessages(Array.isArray(r?.messages) ? r.messages : []); } catch { /* ignore */ }
       try { await api.post(`/api/team/channels/${activeId}/read`, {}); } catch { /* ignore */ }
+      if (!cancelled) { fetchReads(activeId); fetchPresence(); } // BF_PORTAL_TEAM_PRESENCE_v1
       void loadChannels();
     })();
     return () => { cancelled = true; };
-  }, [activeId, loadChannels]);
+  }, [activeId, loadChannels, fetchReads, fetchPresence]);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -2464,6 +2498,20 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
           if (data.channel_id === activeIdRef.current && data.message_id) {
             setMessages((prev) => prev.map((m) => (m.id === data.message_id ? { ...m, reactions: data.reactions ?? [] } : m)));
           }
+        } else if (data?.type === "typing") {
+          if (data.channel_id === activeIdRef.current && data.user_id && data.user_id !== myId) {
+            const uid = String(data.user_id);
+            setTypingIds((prev) => (prev.includes(uid) ? prev : [...prev, uid]));
+            if (typingTimers.current[uid]) clearTimeout(typingTimers.current[uid]);
+            typingTimers.current[uid] = setTimeout(() => {
+              setTypingIds((prev) => prev.filter((x) => x !== uid));
+              delete typingTimers.current[uid];
+            }, 4000);
+          }
+        } else if (data?.type === "read") {
+          if (data.channel_id === activeIdRef.current && data.user_id) {
+            setReads((prev) => ({ ...prev, [String(data.user_id)]: data.last_read_at ?? new Date().toISOString() }));
+          }
         } else if (data?.type === "channel") {
           void loadChannels();
         }
@@ -2486,7 +2534,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
     }
     connect();
     return () => { closed = true; if (timer) clearTimeout(timer); try { ws?.close(); } catch { /* ignore */ } };
-  }, [loadChannels]);
+  }, [loadChannels, myId]);
 
   // BF_PORTAL_BLOCK_v804_TEAM_POLL — gentle fallback auto-refresh so messages and unread
   // counts stay current even when the WebSocket drops (Azure SWA / flaky networks). Fixed
@@ -2496,8 +2544,10 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   useEffect(() => {
     const id = setInterval(() => {
       void loadChannels();
+      fetchPresence();
       const aid = activeIdRef.current;
       if (!aid) return;
+      fetchReads(aid);
       void api<{ messages?: TeamMessage[] }>(`/api/team/channels/${aid}/messages`)
         .then((r) => {
           if (activeIdRef.current !== aid) return; // channel changed mid-flight
@@ -2509,7 +2559,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
         .catch(() => undefined);
     }, 8000);
     return () => clearInterval(id);
-  }, [loadChannels]);
+  }, [loadChannels, fetchPresence, fetchReads]);
 
   // BF_PORTAL_TEAM_SCROLL_v1 — keep the newest message in view on send/receive/switch.
   useEffect(() => {
@@ -2610,8 +2660,14 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
         {channels.map((c) => (
           <div key={c.id} onClick={() => setActiveId(c.id)} style={{ padding: "10px 16px", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: c.id === activeId ? "#eff6ff" : "transparent", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ui-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {c.kind === "channel" ? "# " : ""}{channelLabel(c)}
+              <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ui-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
+                {c.kind === "dm" && (() => {
+                  const other = c.member_ids.find((id) => id !== myId);
+                  const st = other ? (presence[other] ?? "offline") : "offline";
+                  const color = st === "available" ? "#34c759" : st === "busy" ? "#ff9500" : "#c7c7cc";
+                  return <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flex: "0 0 auto" }} aria-label={st} />;
+                })()}
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{c.kind === "channel" ? "# " : ""}{channelLabel(c)}</span>
               </div>
               {c.last_message && <div style={{ fontSize: 12, color: "var(--ui-text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.last_message.body}</div>}
             </div>
@@ -2680,9 +2736,22 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                   </div>
                 );
               })}
+              {(() => {
+                const lastMine = [...messages].reverse().find((m) => m.sender_id === myId && !m.deleted_at);
+                if (!lastMine || !active) return null;
+                const seenBy = active.member_ids.filter((uid) => uid !== myId && reads[uid] && new Date(reads[uid] as string).getTime() >= new Date(lastMine.created_at).getTime());
+                if (seenBy.length === 0) return null;
+                const label = active.kind === "dm" ? "Seen" : `Seen by ${seenBy.map((uid) => userName(uid)).join(", ")}`;
+                return <div style={{ fontSize: 11, color: "var(--ui-text-muted)", alignSelf: "flex-end", marginTop: 2 }}>{label}</div>;
+              })()}
               <div ref={bottomRef} />
             </div>
             <div style={{ borderTop: "1px solid var(--ui-border)", padding: 12, paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "var(--ui-surface-strong)", display: "flex", flexDirection: "column", gap: 8 }}>
+              {typingIds.filter((id) => id !== myId).length > 0 && (
+                <div style={{ fontSize: 12, color: "var(--ui-text-muted)", fontStyle: "italic" }}>
+                  {typingIds.filter((id) => id !== myId).map((id) => userName(id)).join(", ")} {typingIds.filter((id) => id !== myId).length > 1 ? "are" : "is"} typing{"\u2026"}
+                </div>
+              )}
               {(replyTo || editing) && (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 12, color: "var(--ui-text-muted)", background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 6, padding: "4px 8px" }}>
                   <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -2704,7 +2773,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
               <div style={{ display: "flex", gap: 8 }}>
                 <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={(e) => { void onPickFiles(e.target.files); e.target.value = ""; }} />
                 <button onClick={() => fileRef.current?.click()} title="Attach file" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{"\u{1F4CE}"}</button>
-                <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
+                <input value={draft} onChange={(e) => { setDraft(e.target.value); notifyTyping(); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
                 <button onClick={() => void send()} disabled={editing ? !draft.trim() : (!draft.trim() && atts.length === 0)} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>{editing ? "Save" : "Send"}</button>
               </div>
             </div>
