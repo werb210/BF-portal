@@ -74,7 +74,7 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, goog
         <NotePopup scope={scope} onClose={close} onCreated={() => { onAction?.("note"); onChanged?.(); }} />
       )}
       {open === "email" && (
-        <O365ComposeModal logScope={scope} open initialTo={contactEmail ?? ""} onClose={close} onSent={() => { onAction?.("email"); onChanged?.(); }} />
+        <O365ComposeModal logScope={scope} open initialTo={contactEmail ?? ""} recipientName={contactName ?? undefined} onClose={close} onSent={() => { onAction?.("email"); onChanged?.(); }} />
       )}
       {open === "call" && scope.kind !== "contact" && (
         <CallPopup scope={scope} defaultPhone={contactPhone} onClose={close} onLogged={() => { onAction?.("call"); onChanged?.(); }} />
