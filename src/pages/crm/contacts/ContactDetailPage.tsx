@@ -4,7 +4,7 @@ import { crmApi, type ContactRow, type Scope } from "@/api/crm";
 import { api } from "@/api";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
-import ContactApplicationDetails from "@/components/crm/ContactApplicationDetails";
+import { ContactApplicantFields, ContactAdvisors } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_CONTACT_PANELS_v1
 import { ContactEmailFeed, ContactCallFeed } from "@/components/crm/ContactCommsFeeds";
 import { EntityEditModal } from "@/components/EntityEditModal";
 import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
@@ -87,7 +87,7 @@ export default function ContactDetailPage() {
           contactName={contact.name}
           onChanged={() => setRefreshKey(k => k + 1)}
         />
-        <ContactApplicationDetails applicationIds={contact.applicationIds} />
+        <ContactApplicantFields applicationIds={contact.applicationIds} />
         <div style={fieldsBlock}>
           <Field label="Email"   value={contact.email ?? null} />
           <Field label="Phone"   value={contact.phone ?? null} />
@@ -114,6 +114,7 @@ export default function ContactDetailPage() {
         ) : (
           <div style={subtle}>No associated company.</div>
         )}
+        <ContactAdvisors applicationIds={contact.applicationIds} />
       </aside>
       </div>
 
