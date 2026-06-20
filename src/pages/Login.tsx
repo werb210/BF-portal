@@ -166,7 +166,7 @@ export default function Login() {
             data-testid="start-otp-button"
             type="submit"
             disabled={!normalizedPhone || isSubmitting}
-            className="w-full py-3.5 px-5 text-[17px] font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-3.5 px-5 text-[17px] font-bold text-slate-900 bg-amber-500 hover:bg-amber-600 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Sending…" : "Send code →"}
           </button>

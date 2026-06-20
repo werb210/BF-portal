@@ -182,7 +182,7 @@ describe("SMS layout", () => {
 
     await waitFor(() => {
       expect(screen.getAllByText("Jordan Lee").length).toBeGreaterThan(1);
-      expect(screen.getByPlaceholderText("iMessage")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Text message")).toBeInTheDocument();
     });
   });
 });

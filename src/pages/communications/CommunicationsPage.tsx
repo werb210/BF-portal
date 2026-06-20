@@ -809,7 +809,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                       void send();
                     }
                   }}
-                  placeholder="iMessage"
+                  placeholder="Text message"
                   rows={1}
                   style={{
                     width: "100%",
@@ -2546,7 +2546,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 );
               })}
             </div>
-            <div style={{ borderTop: "1px solid #e2e8f0", padding: 12, background: "#fff", display: "flex", gap: 8 }}>
+            <div style={{ borderTop: "1px solid #e2e8f0", padding: 12, paddingRight: 88, background: "#fff", display: "flex", gap: 8 }}>
               <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14 }} />
               <button onClick={() => void send()} disabled={!draft.trim()} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>Send</button>
             </div>
