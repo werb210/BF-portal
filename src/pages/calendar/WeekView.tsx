@@ -29,13 +29,13 @@ const WeekView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date
       style={{
         overflowY: "auto",
         maxHeight: "calc(100vh - 300px)",
-        border: "1px solid #e2e8f0",
+        border: "1px solid var(--ui-border)",
         borderRadius: 10,
-        background: "#fff",
+        background: "var(--ui-surface-strong)",
       }}
     >
       <div style={{ display: "grid", gridTemplateColumns: "60px repeat(7, 1fr)", minWidth: 900 }}>
-        <div style={{ borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }} />
+        <div style={{ borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)" }} />
         {days.map((day) => {
           const isToday = day.toDateString() === today;
           return (
@@ -43,12 +43,12 @@ const WeekView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date
               key={`head-${day.toISOString()}`}
               style={{
                 padding: "10px 8px",
-                borderBottom: "1px solid #e2e8f0",
-                borderLeft: "1px solid #e2e8f0",
+                borderBottom: "1px solid var(--ui-border)",
+                borderLeft: "1px solid var(--ui-border)",
                 textAlign: "center",
                 fontWeight: 700,
-                color: isToday ? "#2563eb" : "#334155",
-                background: isToday ? "#eff6ff" : "#f8fafc",
+                color: isToday ? "#2563eb" : "var(--ui-text-muted)",
+                background: isToday ? "#eff6ff" : "var(--ui-surface-muted)",
               }}
             >
               {day.toLocaleDateString(undefined, { weekday: "short" })} {day.getDate()}
@@ -63,8 +63,8 @@ const WeekView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date
               style={{
                 minHeight: 64,
                 padding: "8px 6px",
-                borderBottom: "1px solid #e2e8f0",
-                color: "#64748b",
+                borderBottom: "1px solid var(--ui-border)",
+                color: "var(--ui-text-muted)",
                 fontSize: 12,
                 textAlign: "right",
               }}
@@ -79,10 +79,10 @@ const WeekView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date
                   key={`${day.toISOString()}-${hour}`}
                   style={{
                     minHeight: 64,
-                    borderBottom: "1px solid #e2e8f0",
-                    borderLeft: "1px solid #e2e8f0",
+                    borderBottom: "1px solid var(--ui-border)",
+                    borderLeft: "1px solid var(--ui-border)",
                     padding: 6,
-                    background: "#fff",
+                    background: "var(--ui-surface-strong)",
                   }}
                 >
                   {events.map((event) => (
