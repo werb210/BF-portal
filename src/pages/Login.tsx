@@ -146,9 +146,13 @@ export default function Login() {
           <input
             id="staff-login-phone"
             data-testid="phone-input"
-            type="tel"
+            type="text"
             inputMode="tel"
-            autoComplete="tel"
+            name="otp-phone"
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-form-type="other"
             autoFocus
             placeholder="(555) 000-0000"
             value={phone}
