@@ -60,6 +60,20 @@ function escapeToHtml(s: string): string {
     .replace(/\n/g, "<br/>");
 }
 
+// BF_PORTAL_BOOKING_BUTTON_SANITIZE_v1 — collapse a mangled/nested "Book a meeting" anchor
+// (from the prior double-wrap bug) back to a single clean button whenever a body is loaded
+// into the editor (init / reply / edit-sent / draft), so a half-broken body can't carry the
+// raw `">Book a meeting` artifact forward.
+const BOOKING_BTN_STYLE =
+  "display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif";
+function sanitizeBookingHtml(html: string): string {
+  if (!html || html.indexOf("Book a meeting") === -1) return html;
+  return html.replace(
+    /<a href="<a href="([^"]*)"[^>]*>Book a meeting<\/a>"[^>]*>Book a meeting<\/a>/g,
+    (_m, url) => `<a href="${url}" style="${BOOKING_BTN_STYLE}">Book a meeting</a>`,
+  );
+}
+
 const tbBtn: CSSProperties = {
   padding: "3px 9px",
   border: "1px solid #cbd6e2",
@@ -130,7 +144,7 @@ export default function O365ComposeModal({
     setShowCcBcc(false);
     setComposeFrom(defaultFrom);
     setComposeSubject(initialSubject);
-    const initHtml = /<[a-z][\s\S]*>/i.test(initialBody) ? initialBody : escapeToHtml(initialBody);
+    const initHtml = sanitizeBookingHtml(/<[a-z][\s\S]*>/i.test(initialBody) ? initialBody : escapeToHtml(initialBody));
     setComposeBody(initHtml);
     if (bodyRef.current) bodyRef.current.innerHTML = initHtml;
     setRequestReadReceipt(false);
@@ -378,7 +392,7 @@ export default function O365ComposeModal({
       const to = normalizeDraftRecipients(draft?.to ?? draft?.toRecipients);
       const cc = normalizeDraftRecipients(draft?.cc ?? draft?.ccRecipients);
       const bcc = normalizeDraftRecipients(draft?.bcc ?? draft?.bccRecipients);
-      const html = draft?.body_html ?? draft?.bodyHtml ?? draft?.body?.content ?? draft?.body_text ?? draft?.bodyPreview ?? "";
+      const html = sanitizeBookingHtml(draft?.body_html ?? draft?.bodyHtml ?? draft?.body?.content ?? draft?.body_text ?? draft?.bodyPreview ?? "");
       setDraftId(nextDraftId);
       setComposeTo(to.join(", "));
       setComposeCc(cc.join(", "));
