@@ -40,7 +40,7 @@ function fmtMoney(n: number | null | undefined): string {
 }
 
 function MethodBadge({ m }: { m: SubmissionMethod }) {
-  if (!m) return <span style={{ color: "#9ca3af" }}>—</span>;
+  if (!m) return <span style={{ color: "var(--ui-text-muted)" }}>—</span>;
   const map: Record<Exclude<SubmissionMethod, null>, { label: string; bg: string; fg: string }> = {
     email:        { label: "Email",        bg: "#dbeafe", fg: "#1e40af" },
     api:          { label: "API",          bg: "#dcfce7", fg: "#166534" },
@@ -55,7 +55,7 @@ function MethodBadge({ m }: { m: SubmissionMethod }) {
 }
 
 function LikelihoodPill({ l }: { l: Likelihood }) {
-  if (!l) return <span style={{ color: "#9ca3af" }}>—</span>;
+  if (!l) return <span style={{ color: "var(--ui-text-muted)" }}>—</span>;
   const map: Record<Exclude<Likelihood, null>, { label: string; bg: string; fg: string }> = {
     high:   { label: "High",   bg: "#dcfce7", fg: "#166534" },
     medium: { label: "Medium", bg: "#fef3c7", fg: "#78350f" },
@@ -213,30 +213,30 @@ export default function LendersTab({ applicationId }: Props) {
     return (
       <div data-testid="lenders-locked" style={{ padding: 24 }}>
         <div style={{
-          background: "#f1f5f9",
-          border: "1px solid #cbd5e1",
+          background: "var(--ui-surface-muted)",
+          border: "1px solid var(--ui-border)",
           borderRadius: 12,
           padding: "20px 24px",
           maxWidth: 640,
         }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ui-text)", marginBottom: 6 }}>
             Lender matching is locked
           </div>
-          <div style={{ fontSize: 13, color: "#475569", marginBottom: 16, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 13, color: "var(--ui-text-muted)", marginBottom: 16, lineHeight: 1.5 }}>
             Lender matches are computed once all required documents are accepted. Until
             then the inputs aren\'t stable enough to recommend lenders.
           </div>
           {outstanding.length > 0 ? (
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ui-text-muted)", marginBottom: 8 }}>
                 Outstanding ({outstanding.length})
               </div>
-              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "#0f172a" }}>
+              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "var(--ui-text)" }}>
                 {outstanding.map((c) => <li key={c} style={{ marginBottom: 4 }}>{c}</li>)}
               </ul>
             </div>
           ) : (
-            <div style={{ fontSize: 13, color: "#64748b", fontStyle: "italic" }}>
+            <div style={{ fontSize: 13, color: "var(--ui-text-muted)", fontStyle: "italic" }}>
               Awaiting required-document list.
             </div>
           )}
@@ -316,13 +316,13 @@ export default function LendersTab({ applicationId }: Props) {
             setPage(1);
           }}
           placeholder="Search lenders"
-          style={{ flex: 1, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6 }}
+          style={{ flex: 1, padding: "8px 12px", border: "1px solid var(--ui-border)", borderRadius: 6 }}
         />
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+      <div style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-          <thead style={{ background: "#f9fafb" }}>
+          <thead style={{ background: "var(--ui-surface-muted)" }}>
             <tr>
               <th style={{ width: 32, padding: "8px 10px" }}></th>
               <th style={{ textAlign: "left", padding: "8px 10px" }}>Lender</th>
@@ -336,13 +336,13 @@ export default function LendersTab({ applicationId }: Props) {
           <tbody>
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: 20, color: "#9ca3af", textAlign: "center" }}>
+                <td colSpan={7} style={{ padding: 20, color: "var(--ui-text-muted)", textAlign: "center" }}>
                   No matching lenders.
                 </td>
               </tr>
             ) : (
               visible.map((r) => (
-                <tr key={r.id} data-testid={`lender-row-${r.id}`} style={{ borderTop: "1px solid #f3f4f6" }}>
+                <tr key={r.id} data-testid={`lender-row-${r.id}`} style={{ borderTop: "1px solid var(--ui-border-soft)" }}>
                   <td style={{ padding: "8px 10px" }}>
                     <input
                       type="checkbox"
@@ -354,9 +354,9 @@ export default function LendersTab({ applicationId }: Props) {
                   <td style={{ padding: "8px 10px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       {r.logoUrl ? (
-                        <img src={r.logoUrl} alt={r.name} style={{ width: 28, height: 28, objectFit: "contain", border: "1px solid #e5e7eb", borderRadius: 4 }} />
+                        <img src={r.logoUrl} alt={r.name} style={{ width: 28, height: 28, objectFit: "contain", border: "1px solid var(--ui-border)", borderRadius: 4 }} />
                       ) : (
-                        <div style={{ width: 28, height: 28, background: "#e5e7eb", borderRadius: 4 }} />
+                        <div style={{ width: 28, height: 28, background: "var(--ui-surface-muted)", borderRadius: 4 }} />
                       )}
                       <div>
                         <div style={{ fontWeight: 600 }}>{r.name}</div>
@@ -374,14 +374,14 @@ export default function LendersTab({ applicationId }: Props) {
                       type="button"
                       data-testid={`lender-files-${r.id}`}
                       onClick={() => setFilesOpen(filesOpen === r.id ? null : r.id)}
-                      style={{ padding: "4px 10px", border: "1px solid #d1d5db", background: "#fff", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+                      style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
                     >
                       {r.files?.length ?? 0} file{(r.files?.length ?? 0) === 1 ? "" : "s"} ▾
                     </button>
                     {filesOpen === r.id ? (
-                      <div role="menu" style={{ position: "absolute", left: 0, top: "calc(100% + 4px)", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 1, minWidth: 200, padding: 8 }}>
+                      <div role="menu" style={{ position: "absolute", left: 0, top: "calc(100% + 4px)", background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 1, minWidth: 200, padding: 8 }}>
                         {(r.files ?? []).length === 0 ? (
-                          <div style={{ color: "#9ca3af", fontSize: 12, padding: "4px 6px" }}>No files yet.</div>
+                          <div style={{ color: "var(--ui-text-muted)", fontSize: 12, padding: "4px 6px" }}>No files yet.</div>
                         ) : (
                           (r.files ?? []).map((f) => (
                             <a key={f.id} href={f.url ?? "#"} target="_blank" rel="noopener noreferrer" style={{ display: "block", padding: "4px 6px", color: "#111", textDecoration: "none", fontSize: 12 }}>
@@ -389,7 +389,7 @@ export default function LendersTab({ applicationId }: Props) {
                             </a>
                           ))
                         )}
-                        <label style={{ display: "block", padding: "6px", borderTop: "1px solid #f3f4f6", marginTop: 6, color: "#2563eb", cursor: "pointer", fontSize: 12 }}>
+                        <label style={{ display: "block", padding: "6px", borderTop: "1px solid var(--ui-border-soft)", marginTop: 6, color: "#2563eb", cursor: "pointer", fontSize: 12 }}>
                           ⬆ Upload Term Sheet
                           <input
                             type="file"
@@ -405,8 +405,8 @@ export default function LendersTab({ applicationId }: Props) {
                     ) : null}
                   </td>
                   <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>
-                    <button type="button" style={{ padding: "4px 10px", border: "1px solid #d1d5db", background: "#fff", borderRadius: 6, cursor: "pointer", fontSize: 12, marginRight: 4 }}>Detail</button>
-                    <button type="button" style={{ padding: "4px 10px", border: "1px solid #fecaca", color: "#b91c1c", background: "#fff", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Delete</button>
+                    <button type="button" style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", borderRadius: 6, cursor: "pointer", fontSize: 12, marginRight: 4 }}>Detail</button>
+                    <button type="button" style={{ padding: "4px 10px", border: "1px solid #fecaca", color: "#b91c1c", background: "var(--ui-surface-strong)", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>Delete</button>
                   </td>
                 </tr>
               ))
@@ -416,12 +416,12 @@ export default function LendersTab({ applicationId }: Props) {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
-        <div style={{ fontSize: 12, color: "#6b7280" }}>
+        <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
           Page {page} of {pageCount} · {filtered.length} lender{filtered.length === 1 ? "" : "s"}
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} style={{ padding: "4px 10px", border: "1px solid #d1d5db", background: "#fff", borderRadius: 6, cursor: page > 1 ? "pointer" : "not-allowed", fontSize: 12, opacity: page > 1 ? 1 : 0.5 }}>‹ Prev</button>
-          <button type="button" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)} style={{ padding: "4px 10px", border: "1px solid #d1d5db", background: "#fff", borderRadius: 6, cursor: page < pageCount ? "pointer" : "not-allowed", fontSize: 12, opacity: page < pageCount ? 1 : 0.5 }}>Next ›</button>
+          <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", borderRadius: 6, cursor: page > 1 ? "pointer" : "not-allowed", fontSize: 12, opacity: page > 1 ? 1 : 0.5 }}>‹ Prev</button>
+          <button type="button" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)} style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", borderRadius: 6, cursor: page < pageCount ? "pointer" : "not-allowed", fontSize: 12, opacity: page < pageCount ? 1 : 0.5 }}>Next ›</button>
         </div>
       </div>
 

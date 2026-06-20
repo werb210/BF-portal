@@ -99,8 +99,8 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
       <div
         style={{
           padding: "10px 20px",
-          borderBottom: "1px solid #e5e7eb",
-          background: "#fff",
+          borderBottom: "1px solid var(--ui-border)",
+          background: "var(--ui-surface-strong)",
           flexShrink: 0,
         }}
       >
@@ -127,9 +127,9 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
           display: "flex",
           gap: 16,
           padding: "12px 20px",
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom: "1px solid var(--ui-border)",
           overflowX: "auto",
-          background: "#fff",
+          background: "var(--ui-surface-strong)",
           flexShrink: 0,
           alignItems: "stretch",
         }}

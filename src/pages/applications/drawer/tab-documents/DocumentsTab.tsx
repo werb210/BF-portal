@@ -76,11 +76,11 @@ function StatusPill({ s }: { s: DocStatus }) {
 //   {expandedFiles.has(file.id) && <OcrPreviewBlock state={ocrCache[file.id]} />}
 function OcrPreviewBlock({ state }: { state?: { ocr_text?: string; ocr_tables?: unknown[]; loading?: boolean; error?: string } }) {
   if (!state) return null;
-  if (state.loading) return <div style={{ padding: "8px 12px", fontSize: 12, color: "#64748b" }}>Loading OCR result…</div>;
+  if (state.loading) return <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--ui-text-muted)" }}>Loading OCR result…</div>;
   if (state.error) return <div style={{ padding: "8px 12px", fontSize: 12, color: "#b91c1c" }}>OCR error: {state.error}</div>;
-  if (!state.ocr_text && !state.ocr_tables?.length) return <div style={{ padding: "8px 12px", fontSize: 12, color: "#64748b" }}>OCR has no extracted text for this file.</div>;
+  if (!state.ocr_text && !state.ocr_tables?.length) return <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--ui-text-muted)" }}>OCR has no extracted text for this file.</div>;
   return (
-    <div style={{ padding: "8px 12px", background: "#f8fafc", borderTop: "1px solid #e2e8f0", fontSize: 12 }}>
+    <div style={{ padding: "8px 12px", background: "var(--ui-surface-muted)", borderTop: "1px solid var(--ui-border)", fontSize: 12 }}>
       {state.ocr_text && (
         <div style={{ whiteSpace: "pre-wrap", maxHeight: 320, overflowY: "auto", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
           {state.ocr_text.slice(0, 4000)}
@@ -88,7 +88,7 @@ function OcrPreviewBlock({ state }: { state?: { ocr_text?: string; ocr_tables?: 
         </div>
       )}
       {Array.isArray(state.ocr_tables) && state.ocr_tables.length > 0 && (
-        <div style={{ marginTop: 8, color: "#475569" }}>{state.ocr_tables.length} extracted table(s).</div>
+        <div style={{ marginTop: 8, color: "var(--ui-text-muted)" }}>{state.ocr_tables.length} extracted table(s).</div>
       )}
     </div>
   );
@@ -253,9 +253,9 @@ export default function DocumentsTab({ applicationId }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search documents"
-            style={{ flex: 1, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6 }}
+            style={{ flex: 1, padding: "8px 12px", border: "1px solid var(--ui-border)", borderRadius: 6 }}
           />
-          <div role="tablist" style={{ display: "flex", border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden" }}>
+          <div role="tablist" style={{ display: "flex", border: "1px solid var(--ui-border)", borderRadius: 6, overflow: "hidden" }}>
             <button
               role="tab"
               aria-selected={filter === "required"}
@@ -277,14 +277,14 @@ export default function DocumentsTab({ applicationId }: Props) {
           </div>
         </div>
 
-        <div data-testid="docs-list" style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
+        <div data-testid="docs-list" style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8 }}>
           {visible.length === 0 ? (
-            <div style={{ padding: 24, color: "#6b7280" }}>No documents in this view.</div>
+            <div style={{ padding: 24, color: "var(--ui-text-muted)" }}>No documents in this view.</div>
           ) : (
             visible.map((c) => {
               const isOpen = openKeys.has(c.key);
               return (
-                <div key={c.key} data-testid={`doc-cat-${c.key}`} style={{ borderBottom: "1px solid #e5e7eb" }}>
+                <div key={c.key} data-testid={`doc-cat-${c.key}`} style={{ borderBottom: "1px solid var(--ui-border)" }}>
                   <button
                     type="button"
                     onClick={() => toggle(c.key)}
@@ -293,18 +293,18 @@ export default function DocumentsTab({ applicationId }: Props) {
                     <span style={{ fontWeight: 600 }}>
                       📁 {c.label} {c.required ? <span style={{ color: "#b91c1c" }}>*</span> : null}
                     </span>
-                    <span style={{ color: "#6b7280", fontSize: 12 }}>
+                    <span style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>
                       {c.files.length} file{c.files.length === 1 ? "" : "s"} · {isOpen ? "▾" : "▸"}
                     </span>
                   </button>
                   {isOpen && (
                     <div style={{ padding: "0 14px 12px" }}>
                       {c.files.length === 0 ? (
-                        <div style={{ padding: 8, color: "#9ca3af", fontStyle: "italic" }}>No files uploaded.</div>
+                        <div style={{ padding: 8, color: "var(--ui-text-muted)", fontStyle: "italic" }}>No files uploaded.</div>
                       ) : (
                         c.files.map((f) => (
                           // v188: row expand for OCR preview
-                          <div key={f.id} style={{ borderTop: "1px solid #f3f4f6" }}>
+                          <div key={f.id} style={{ borderTop: "1px solid var(--ui-border-soft)" }}>
                             <div data-testid={`doc-file-${f.id}`} style={{ display: "flex", alignItems: "center", padding: "8px 6px", gap: 12 }}>
                               <button
                                 type="button"
@@ -313,10 +313,10 @@ export default function DocumentsTab({ applicationId }: Props) {
                                 title={expandedFiles.has(f.id) ? "Hide OCR text" : "Show OCR text"}
                                 style={{ flex: 2, minWidth: 0, textAlign: "left", background: "transparent", border: 0, padding: 0, cursor: "pointer" }}
                               >
-                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#0f172a" }}>
+                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--ui-text)" }}>
                                   {expandedFiles.has(f.id) ? "▾" : "▸"} {f.filename}
                                 </div>
-                                <div style={{ fontSize: 11, color: "#6b7280" }}>
+                                <div style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>
                                   {fmtDate(f.uploadedAt)} · {fmtSize(f.size ?? null)}
                                 </div>
                               </button>
@@ -326,12 +326,12 @@ export default function DocumentsTab({ applicationId }: Props) {
                                 type="button"
                                 data-testid={`doc-actions-${f.id}`}
                                 onClick={() => setActionFor(actionFor === f.id ? null : f.id)}
-                                style={{ padding: "6px 10px", border: "1px solid #d1d5db", background: "#fff", borderRadius: 6, cursor: "pointer" }}
+                                style={{ padding: "6px 10px", border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", borderRadius: 6, cursor: "pointer" }}
                               >
                                 Actions ▾
                               </button>
                               {actionFor === f.id ? (
-                                <div role="menu" style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 1, minWidth: 140 }}>
+                                <div role="menu" style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 1, minWidth: 140 }}>
                                   {f.url ? (
                                     <a href={f.url} target="_blank" rel="noopener noreferrer" role="menuitem" style={{ display: "block", padding: "8px 12px", color: "#111", textDecoration: "none" }}>View</a>
                                   ) : null}
@@ -379,7 +379,7 @@ export default function DocumentsTab({ applicationId }: Props) {
       </div>
 
       <aside>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 14, marginBottom: 12 }}>
+        <div style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8, padding: 14, marginBottom: 12 }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 14 }}>Status Summary</h3>
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 4, fontSize: 13 }}>
             <li>✅ Accepted: <strong>{counts.accepted}</strong></li>

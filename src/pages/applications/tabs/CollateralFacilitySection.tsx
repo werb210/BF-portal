@@ -35,14 +35,14 @@ const emptyData = (): CollateralData => ({
 });
 
 const s = {
-  wrap: { marginTop: 24, padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 } as const,
-  title: { fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" } as const,
-  sub: { fontSize: 12, color: "#64748b", marginBottom: 12 } as const,
+  wrap: { marginTop: 24, padding: 16, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8 } as const,
+  title: { fontSize: 16, fontWeight: 700, color: "var(--ui-text)", margin: "0 0 4px" } as const,
+  sub: { fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 12 } as const,
   table: { width: "100%", borderCollapse: "collapse" as const } as const,
-  th: { textAlign: "left" as const, padding: "6px 8px", fontSize: 11, fontWeight: 600, color: "#475569", borderBottom: "1px solid #e5e7eb" } as const,
-  td: { padding: "4px 8px", borderBottom: "1px solid #f1f5f9", color: "#0f172a" } as const, // BF_PORTAL_BLOCK_v723_COLLATERAL_TEXT_COLOR_v1
-  input: { width: "100%", padding: "6px 8px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 4, boxSizing: "border-box" as const, color: "#0f172a", background: "#fff" } as const, // BF_PORTAL_BLOCK_v723_COLLATERAL_TEXT_COLOR_v1
-  addBtn: { marginTop: 8, border: "1px solid #cbd5e1", background: "#fff", padding: "6px 12px", borderRadius: 6, fontSize: 13, cursor: "pointer", color: "#0f172a" } as const,
+  th: { textAlign: "left" as const, padding: "6px 8px", fontSize: 11, fontWeight: 600, color: "var(--ui-text-muted)", borderBottom: "1px solid var(--ui-border)" } as const,
+  td: { padding: "4px 8px", borderBottom: "1px solid var(--ui-border-soft)", color: "var(--ui-text)" } as const, // BF_PORTAL_BLOCK_v723_COLLATERAL_TEXT_COLOR_v1
+  input: { width: "100%", padding: "6px 8px", fontSize: 13, border: "1px solid var(--ui-border)", borderRadius: 4, boxSizing: "border-box" as const, color: "var(--ui-text)", background: "var(--ui-surface-strong)" } as const, // BF_PORTAL_BLOCK_v723_COLLATERAL_TEXT_COLOR_v1
+  addBtn: { marginTop: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", padding: "6px 12px", borderRadius: 6, fontSize: 13, cursor: "pointer", color: "var(--ui-text)" } as const,
 };
 
 export default function CollateralFacilitySection({ applicationId }: { applicationId: string }) {

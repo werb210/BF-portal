@@ -123,17 +123,17 @@ function SectionTable({
   onChange: (lineId: string, period: Period, value: number | null) => void;
 }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 12 }}>
-      <div style={{ padding: "10px 14px", borderBottom: "1px solid #e5e7eb", fontWeight: 600 }}>{section.title}</div>
+    <div style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8, marginBottom: 12 }}>
+      <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--ui-border)", fontWeight: 600 }}>{section.title}</div>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }} data-testid={`fin-section-${section.id}`}>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", padding: "6px 10px", borderBottom: "1px solid #f3f4f6", color: "#6b7280", fontWeight: 600 }}>
+              <th style={{ textAlign: "left", padding: "6px 10px", borderBottom: "1px solid var(--ui-border-soft)", color: "var(--ui-text-muted)", fontWeight: 600 }}>
                 Line
               </th>
               {periods.map((p) => (
-                <th key={p} style={{ textAlign: "right", padding: "6px 10px", borderBottom: "1px solid #f3f4f6", color: "#6b7280", fontWeight: 600 }}>
+                <th key={p} style={{ textAlign: "right", padding: "6px 10px", borderBottom: "1px solid var(--ui-border-soft)", color: "var(--ui-text-muted)", fontWeight: 600 }}>
                   {periodLabel(p)}
                 </th>
               ))}
@@ -142,16 +142,16 @@ function SectionTable({
           <tbody>
             {section.lines.length === 0 ? (
               <tr>
-                <td colSpan={periods.length + 1} style={{ padding: 14, color: "#9ca3af" }}>
+                <td colSpan={periods.length + 1} style={{ padding: 14, color: "var(--ui-text-muted)" }}>
                   No data.
                 </td>
               </tr>
             ) : (
               section.lines.map((ln) => (
                 <tr key={ln.id} data-testid={`fin-line-${ln.id}`}>
-                  <td style={{ padding: "4px 10px", borderBottom: "1px solid #f9fafb" }}>{ln.label}</td>
+                  <td style={{ padding: "4px 10px", borderBottom: "1px solid var(--ui-border-soft)" }}>{ln.label}</td>
                   {periods.map((p) => (
-                    <td key={p} style={{ padding: 0, borderBottom: "1px solid #f9fafb" }}>
+                    <td key={p} style={{ padding: 0, borderBottom: "1px solid var(--ui-border-soft)" }}>
                       <CellInput
                         value={ln.values[p] ?? null}
                         onCommit={(v) => onChange(ln.id, p, v)}
@@ -233,19 +233,19 @@ export default function FinancialTab({ applicationId }: Props) {
         <SectionTable section={data.balance_sheet} periods={data.periods} onChange={(id, p, v) => onCellChange("balance_sheet", id, p, v)} />
         <SectionTable section={data.cash_flow} periods={data.periods} onChange={(id, p, v) => onCellChange("cash_flow", id, p, v)} />
 
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 12 }}>
-          <div style={{ padding: "10px 14px", borderBottom: "1px solid #e5e7eb", fontWeight: 600 }}>Debt Summary</div>
+        <div style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8, marginBottom: 12 }}>
+          <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--ui-border)", fontWeight: 600 }}>Debt Summary</div>
           {data.debt.length === 0 ? (
-            <div style={{ padding: 14, color: "#9ca3af" }}>No debt rows.</div>
+            <div style={{ padding: 14, color: "var(--ui-text-muted)" }}>No debt rows.</div>
           ) : (
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: "left", padding: "6px 10px", borderBottom: "1px solid #f3f4f6", color: "#6b7280" }}>Lender</th>
-                  <th style={{ textAlign: "left", padding: "6px 10px", borderBottom: "1px solid #f3f4f6", color: "#6b7280" }}>Type</th>
-                  <th style={{ textAlign: "right", padding: "6px 10px", borderBottom: "1px solid #f3f4f6", color: "#6b7280" }}>Balance</th>
-                  <th style={{ textAlign: "right", padding: "6px 10px", borderBottom: "1px solid #f3f4f6", color: "#6b7280" }}>Monthly</th>
-                  <th style={{ textAlign: "right", padding: "6px 10px", borderBottom: "1px solid #f3f4f6", color: "#6b7280" }}>Rate</th>
+                  <th style={{ textAlign: "left", padding: "6px 10px", borderBottom: "1px solid var(--ui-border-soft)", color: "var(--ui-text-muted)" }}>Lender</th>
+                  <th style={{ textAlign: "left", padding: "6px 10px", borderBottom: "1px solid var(--ui-border-soft)", color: "var(--ui-text-muted)" }}>Type</th>
+                  <th style={{ textAlign: "right", padding: "6px 10px", borderBottom: "1px solid var(--ui-border-soft)", color: "var(--ui-text-muted)" }}>Balance</th>
+                  <th style={{ textAlign: "right", padding: "6px 10px", borderBottom: "1px solid var(--ui-border-soft)", color: "var(--ui-text-muted)" }}>Monthly</th>
+                  <th style={{ textAlign: "right", padding: "6px 10px", borderBottom: "1px solid var(--ui-border-soft)", color: "var(--ui-text-muted)" }}>Rate</th>
                 </tr>
               </thead>
               <tbody>
@@ -278,7 +278,7 @@ export default function FinancialTab({ applicationId }: Props) {
       </div>
 
       <aside>
-        <div data-testid="fin-ratios" style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 14, marginBottom: 12 }}>
+        <div data-testid="fin-ratios" style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8, padding: 14, marginBottom: 12 }}>
           <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>Ratios</h3>
           <dl style={{ margin: 0, display: "grid", gridTemplateColumns: "1fr auto", gap: "6px 12px", fontSize: 13 }}>
             <dt>DSCR</dt><dd style={{ margin: 0, fontWeight: 600 }} data-testid="ratio-dscr">{fmtRatio(data.ratios.dscr)}</dd>
@@ -287,7 +287,7 @@ export default function FinancialTab({ applicationId }: Props) {
             <dt>Debt / Equity</dt><dd style={{ margin: 0, fontWeight: 600 }} data-testid="ratio-de">{fmtRatio(data.ratios.debt_to_equity)}</dd>
           </dl>
         </div>
-        <div style={{ fontSize: 11, color: "#6b7280", textAlign: "right" }}>
+        <div style={{ fontSize: 11, color: "var(--ui-text-muted)", textAlign: "right" }}>
           {saving ? "Saving…" : "All changes saved."}
         </div>
       </aside>
