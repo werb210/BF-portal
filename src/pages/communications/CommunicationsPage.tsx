@@ -782,7 +782,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
             <div
               style={{
                 padding: "8px 16px 12px 16px",
-                paddingRight: 88,
+                paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))",
                 borderTop: "1px solid #f0f0f5",
                 display: "flex",
                 alignItems: "flex-end",
@@ -1313,7 +1313,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
             {selected && (
               <>
                 <ComposerPulldowns channel="message" onInsertText={(text) => setDraft((previous) => previous + (previous && !previous.endsWith(" ") ? " " : "") + text)} />
-                <div style={{ borderTop: "1px solid var(--ui-border)", padding: "10px 16px", paddingRight: 88, display: "flex", gap: 8, background: "var(--ui-surface-strong)" }}>
+                <div style={{ borderTop: "1px solid var(--ui-border)", padding: "10px 16px", paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))", display: "flex", gap: 8, background: "var(--ui-surface-strong)" }}>
                   <textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
@@ -2547,7 +2547,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 );
               })}
             </div>
-            <div style={{ borderTop: "1px solid var(--ui-border)", padding: 12, paddingRight: 88, background: "var(--ui-surface-strong)", display: "flex", gap: 8 }}>
+            <div style={{ borderTop: "1px solid var(--ui-border)", padding: 12, paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "var(--ui-surface-strong)", display: "flex", gap: 8 }}>
               <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
               <button onClick={() => void send()} disabled={!draft.trim()} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>Send</button>
             </div>
