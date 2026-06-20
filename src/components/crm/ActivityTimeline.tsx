@@ -59,8 +59,8 @@ export function ActivityTimeline({ scope, refreshKey, items: itemsProp }: {
             <span style={kindBadge(item.kind)}>{item.kind}</span>
             <time style={ts}>{new Date(item.ts).toLocaleString()}</time>
           </header>
-          {item.title && <div style={{ fontWeight: 500, color: "#000" }}>{item.title}</div>}
-          {item.body && <div style={{ color: "#33475b", marginTop: 4, whiteSpace: "pre-wrap" }}>{item.body}</div>}
+          {item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{item.title}</div>}
+          {item.body && <div style={{ color: "var(--ui-text-muted)", marginTop: 4, whiteSpace: "pre-wrap" }}>{item.body}</div>}
           {item.extra && <div style={extra}>{item.extra}</div>}
         </article>
       ))}
@@ -82,15 +82,15 @@ function Tab({ id, label, current, onClick }: {
   );
 }
 
-const container: CSSProperties = { background: "#f5f8fa", borderRadius: 6, padding: 16 };
-const tabs: CSSProperties = { display: "flex", gap: 16, borderBottom: "1px solid #cbd6e2", marginBottom: 16 };
-const empty: CSSProperties = { color: "#7c98b6", textAlign: "center", padding: 32 };
+const container: CSSProperties = { background: "var(--ui-surface-muted)", borderRadius: 6, padding: 16 };
+const tabs: CSSProperties = { display: "flex", gap: 16, borderBottom: "1px solid var(--ui-border)", marginBottom: 16 };
+const empty: CSSProperties = { color: "var(--ui-text-muted)", textAlign: "center", padding: 32 };
 const card: CSSProperties = {
-  background: "#fff", borderRadius: 4, padding: 12, marginBottom: 8, border: "1px solid #eaf0f6",
+  background: "var(--ui-surface-strong)", borderRadius: 4, padding: 12, marginBottom: 8, border: "1px solid var(--ui-border-soft)",
 };
 const cardHeader: CSSProperties = { display: "flex", justifyContent: "space-between", marginBottom: 4 };
-const ts: CSSProperties = { color: "#7c98b6", fontSize: 12 };
-const extra: CSSProperties = { color: "#7c98b6", fontSize: 12, marginTop: 4 };
+const ts: CSSProperties = { color: "var(--ui-text-muted)", fontSize: 12 };
+const extra: CSSProperties = { color: "var(--ui-text-muted)", fontSize: 12, marginTop: 4 };
 
 function kindBadge(kind: TimelineItem["kind"]): CSSProperties {
   const palette: Record<TimelineItem["kind"], { bg: string; fg: string }> = {
