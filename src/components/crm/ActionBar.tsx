@@ -98,6 +98,6 @@ function ActionBtn({ label, onClick, testId, danger, disabled }: { label: string
 
 const row: CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 };
 const btn: CSSProperties = {
-  background: "#fff", color: "#33475b", border: "1px solid #cbd6e2",
-  borderRadius: 4, padding: "6px 12px", cursor: "pointer", fontSize: 13,
+  background: "var(--ui-surface-strong)", color: "var(--ui-text)", border: "1px solid var(--ui-border)",
+  borderRadius: 6, padding: "10px 14px", minHeight: 44, cursor: "pointer", fontSize: 13,
 };
