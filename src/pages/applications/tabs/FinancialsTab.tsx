@@ -62,7 +62,7 @@ function renderFinancialValue(labelKey: string, rawValue: unknown): ReactNode {
   if (nonNumericTokens <= 3) return text || "—";
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-      <span title={text} style={{ color: "#9ca3af" }}>—</span>
+      <span title={text} style={{ color: "var(--ui-text-muted)" }}>—</span>
       <span style={pivotStyles.ocrUncertainBadge}>OCR uncertain</span>
     </span>
   );
@@ -216,7 +216,7 @@ const pivotStyles: Record<string, CSSProperties> = {
   wrapper: { overflowX: "auto", border: "1px solid rgba(148, 163, 184, 0.3)", borderRadius: 10, background: "rgba(15, 23, 42, 0.02)" },
   table: { width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: 720 },
   thBase: { background: "rgba(15, 23, 42, 0.95)", color: "rgba(248, 250, 252, 0.96)", borderBottom: "1px solid rgba(148, 163, 184, 0.45)", padding: "8px 12px", fontSize: 12, textAlign: "left" as const, verticalAlign: "top" as const },
-  tdBase: { background: "rgba(15, 23, 42, 0.03)", color: "#0f172a", borderBottom: "1px solid rgba(148, 163, 184, 0.2)", borderRight: "1px solid rgba(148, 163, 184, 0.2)", padding: "8px 12px", fontSize: 12, verticalAlign: "top" as const, minWidth: 200, maxWidth: 260, width: 240, wordBreak: "break-word" as const },
+  tdBase: { background: "rgba(15, 23, 42, 0.03)", color: "var(--ui-text)", borderBottom: "1px solid rgba(148, 163, 184, 0.2)", borderRight: "1px solid rgba(148, 163, 184, 0.2)", padding: "8px 12px", fontSize: 12, verticalAlign: "top" as const, minWidth: 200, maxWidth: 260, width: 240, wordBreak: "break-word" as const },
   fieldHeader: { position: "sticky" as const, left: 0, zIndex: 5, minWidth: 220, borderRight: "1px solid rgba(148, 163, 184, 0.45)" },
   docHeader: { position: "sticky" as const, top: 0, zIndex: 4, minWidth: 200, maxWidth: 260, width: 240, padding: "8px 12px", verticalAlign: "top" as const, borderRight: "1px solid rgba(148, 163, 184, 0.45)" },
   fieldCell: { position: "sticky" as const, left: 0, zIndex: 3, fontWeight: 600, color: "rgba(15, 23, 42, 0.92)", background: "rgba(248, 250, 252, 0.97)", borderRight: "1px solid rgba(148, 163, 184, 0.3)" },
@@ -224,9 +224,9 @@ const pivotStyles: Record<string, CSSProperties> = {
   docHeaderPills: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const, marginBottom: 6 },
   docHeaderDate: { color: "rgba(226, 232, 240, 0.9)", fontSize: 11 },
   valueWrap: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  valueText: { color: "#0f172a", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const },
+  valueText: { color: "var(--ui-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const },
   emptyDash: { color: "rgba(71, 85, 105, 0.85)" },
-  ocrUncertainBadge: { borderRadius: 999, background: "rgba(156, 163, 175, 0.16)", color: "#6b7280", padding: "1px 5px", fontSize: 10, fontWeight: 700 },
+  ocrUncertainBadge: { borderRadius: 999, background: "rgba(156, 163, 175, 0.16)", color: "var(--ui-text-muted)", padding: "1px 5px", fontSize: 10, fontWeight: 700 },
 };
 
 
@@ -277,28 +277,28 @@ function fmtDate(v: string | null): string {
 
 const styles: Record<string, CSSProperties> = {
   page: { padding: "16px 4px", maxWidth: 1200 },
-  placeholder: { padding: 24, color: "#64748b" },
+  placeholder: { padding: 24, color: "var(--ui-text-muted)" },
   error: { padding: 24, color: "#b91c1c" },
   headerRow: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16, gap: 12 },
-  title: { fontSize: 20, fontWeight: 700, margin: 0, color: "#0f172a" },
-  subtitle: { fontSize: 13, color: "#64748b", margin: 0 },
-  emptyAll: { padding: 32, color: "#475569", lineHeight: 1.5, textAlign: "center", border: "1px dashed #e2e8f0", borderRadius: 8, background: "#f8fafc" },
+  title: { fontSize: 20, fontWeight: 700, margin: 0, color: "var(--ui-text)" },
+  subtitle: { fontSize: 13, color: "var(--ui-text-muted)", margin: 0 },
+  emptyAll: { padding: 32, color: "var(--ui-text-muted)", lineHeight: 1.5, textAlign: "center", border: "1px dashed var(--ui-border)", borderRadius: 8, background: "var(--ui-surface-muted)" },
 
-  section: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "12px 16px", marginBottom: 12, boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)" },
-  sectionTitle: { fontSize: 13, fontWeight: 700, margin: "0 0 12px", color: "#0f172a", display: "flex", alignItems: "center", gap: 8 },
-  sectionCount: { color: "#94a3b8", fontSize: 12, fontWeight: 500 },
+  section: { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: "12px 16px", marginBottom: 12, boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)" },
+  sectionTitle: { fontSize: 13, fontWeight: 700, margin: "0 0 12px", color: "var(--ui-text)", display: "flex", alignItems: "center", gap: 8 },
+  sectionCount: { color: "var(--ui-text-muted)", fontSize: 12, fontWeight: 500 },
   docList: { display: "flex", flexDirection: "column", gap: 12 },
 
-  docCard: { border: "1px solid #e5e7eb", borderRadius: 8, padding: 12, background: "#fff" },
-  docHeader: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" as const, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #f1f5f9" },
-  filename: { fontWeight: 600, color: "#0f172a", fontSize: 13, flex: 1, minWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const },
-  docMetaRight: { fontSize: 11, color: "#94a3b8", marginLeft: "auto" },
-  docNote: { padding: "8px 0", fontSize: 12, color: "#64748b", fontStyle: "italic" },
+  docCard: { border: "1px solid var(--ui-border)", borderRadius: 8, padding: 12, background: "var(--ui-surface-strong)" },
+  docHeader: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" as const, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid var(--ui-border-soft)" },
+  filename: { fontWeight: 600, color: "var(--ui-text)", fontSize: 13, flex: 1, minWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const },
+  docMetaRight: { fontSize: 11, color: "var(--ui-text-muted)", marginLeft: "auto" },
+  docNote: { padding: "8px 0", fontSize: 12, color: "var(--ui-text-muted)", fontStyle: "italic" },
 
   fieldsTable: { display: "grid", gridTemplateColumns: "max-content 1fr auto", gap: "6px 16px", fontSize: 13 },
   fieldRow: { display: "contents" },
-  fieldLabel: { color: "#475569", fontWeight: 600 },
-  fieldValue: { color: "#0f172a", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const },
+  fieldLabel: { color: "var(--ui-text-muted)", fontWeight: 600 },
+  fieldValue: { color: "var(--ui-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const },
 
   pillBase: { padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.04em" },
   pillGreen: { background: "#dcfce7", color: "#166534" },

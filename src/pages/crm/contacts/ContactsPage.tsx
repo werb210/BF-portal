@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
+import { contactDisplayName } from "@/utils/contactName";
 import { crmApi, type ContactRow } from "@/api/crm";
 import { canDelete } from "@/auth/canDelete";
 import { useSilo } from "@/hooks/useSilo";
@@ -155,7 +156,7 @@ export default function ContactsPage() {
         </td>
       )}
       <td style={tdStyle}>
-        <Link to={`/crm/contacts/${r.id}`} style={linkStyle}>{r.name || "(no name)"}</Link>
+        <Link to={`/crm/contacts/${r.id}`} style={linkStyle}>{contactDisplayName(r.name, { company: r.company_name, email: r.email })}</Link>
       </td>
       {!hiddenCols.has("company_name") && <td style={tdStyle}>{r.company_name ?? "—"}</td>}
       {!hiddenCols.has("tags") && (

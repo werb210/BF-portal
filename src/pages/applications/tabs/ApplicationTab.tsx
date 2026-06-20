@@ -229,8 +229,8 @@ export default function ApplicationTab({ application }: Props) {
             disabled={!v817_canRemind}
             title={v817_remindTitle}
             style={v817_canRemind
-              ? { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid #1d4ed8", background: "#fff", color: "#1d4ed8", fontWeight: 600, cursor: "pointer", fontSize: 14 }
-              : { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#f8fafc", color: "#94a3b8", fontWeight: 600, cursor: "not-allowed", fontSize: 14 }}
+              ? { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid #1d4ed8", background: "var(--ui-surface-strong)", color: "#1d4ed8", fontWeight: 600, cursor: "pointer", fontSize: 14 }
+              : { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", fontWeight: 600, cursor: "not-allowed", fontSize: 14 }}
             data-testid="remind-client"
           >
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -255,15 +255,15 @@ export default function ApplicationTab({ application }: Props) {
         </div>
       </div>
 
-      <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
+      <div style={{ background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ui-text)", marginBottom: 8 }}>
           Client Tasks
           {v784_tasks && v784_tasks.summary.total > 0 ? ` · ${v784_tasks.summary.complete} of ${v784_tasks.summary.total} complete` : ""}
         </div>
         {v784_err && <div style={{ color: "#b91c1c", fontSize: 13 }}>{v784_err}</div>}
-        {!v784_tasks && !v784_err && <div style={{ color: "#64748b", fontSize: 13 }}>Loading…</div>}
+        {!v784_tasks && !v784_err && <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>Loading…</div>}
         {v784_tasks && v784_tasks.summary.total === 0 && (
-          <div style={{ color: "#64748b", fontSize: 13 }}>No client tasks tracked for this application.</div>
+          <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>No client tasks tracked for this application.</div>
         )}
         {v784_tasks && v784_tasks.summary.total > 0 && (
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 4 }}>
@@ -510,8 +510,8 @@ function LegBanner({ kind, parentId }: { kind: "equipment" | "closing_costs"; pa
 }
 
 const styles: Record<string, CSSProperties> = {
-  page: { color: "#0f172a", maxWidth: 1200 },
-  loading: { padding: 40, textAlign: "center", color: "#64748b" },
+  page: { color: "var(--ui-text)", maxWidth: 1200 },
+  loading: { padding: 40, textAlign: "center", color: "var(--ui-text-muted)" },
   headerRow: {
     display: "flex",
     justifyContent: "space-between",
@@ -520,8 +520,8 @@ const styles: Record<string, CSSProperties> = {
     gap: 16,
     flexWrap: "wrap",
   },
-  title: { fontSize: 24, fontWeight: 700, margin: 0, color: "#0f172a", lineHeight: 1.2 },
-  subtitle: { fontSize: 13, color: "#64748b", marginTop: 4 },
+  title: { fontSize: 24, fontWeight: 700, margin: 0, color: "var(--ui-text)", lineHeight: 1.2 },
+  subtitle: { fontSize: 13, color: "var(--ui-text-muted)", marginTop: 4 },
   statusPill: {
     background: "#dbeafe",
     color: "#1e40af",
@@ -534,8 +534,8 @@ const styles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap",
   },
   sectionGroup: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "var(--ui-surface-strong)",
+    border: "1px solid var(--ui-border)",
     borderRadius: 12,
     padding: "16px 20px",
     marginBottom: 16,
@@ -547,8 +547,8 @@ const styles: Record<string, CSSProperties> = {
     margin: "0 0 12px",
     textTransform: "uppercase",
     letterSpacing: "0.08em",
-    color: "#475569",
-    borderBottom: "1px solid #f1f5f9",
+    color: "var(--ui-text-muted)",
+    borderBottom: "1px solid var(--ui-border-soft)",
     paddingBottom: 8,
   },
   sectionGrid: {
@@ -560,35 +560,35 @@ const styles: Record<string, CSSProperties> = {
   fieldLabel: {
     fontSize: 11,
     fontWeight: 600,
-    color: "#64748b",
+    color: "var(--ui-text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.04em",
   },
   fieldValue: {
     fontSize: 14,
-    color: "#0f172a",
+    color: "var(--ui-text)",
     fontWeight: 500,
     overflow: "hidden",
     textOverflow: "ellipsis",
   },
-  fieldValueHighlight: { fontSize: 18, color: "#0f172a", fontWeight: 700 },
+  fieldValueHighlight: { fontSize: 18, color: "var(--ui-text)", fontWeight: 700 },
   link: { color: "#2563eb", textDecoration: "none" },
   ownerList: { display: "flex", flexDirection: "column", gap: 12, gridColumn: "1 / -1" },
-  ownerCard: { background: "#f8fafc", borderRadius: 8, padding: "12px 14px", border: "1px solid #e2e8f0" },
-  ownerHeader: { fontSize: 14, fontWeight: 700, marginBottom: 8, color: "#0f172a" },
+  ownerCard: { background: "var(--ui-surface-muted)", borderRadius: 8, padding: "12px 14px", border: "1px solid var(--ui-border)" },
+  ownerHeader: { fontSize: 14, fontWeight: 700, marginBottom: 8, color: "var(--ui-text)" },
   ownerFields: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
     gap: "6px 16px",
   },
   compactField: { display: "flex", gap: 6, fontSize: 13, alignItems: "baseline" },
-  compactLabel: { color: "#64748b", fontWeight: 600 },
-  compactValue: { color: "#0f172a", fontWeight: 500 },
-  empty: { color: "#94a3b8", fontSize: 14, fontStyle: "italic", gridColumn: "1 / -1" },
+  compactLabel: { color: "var(--ui-text-muted)", fontWeight: 600 },
+  compactValue: { color: "var(--ui-text)", fontWeight: 500 },
+  empty: { color: "var(--ui-text-muted)", fontSize: 14, fontStyle: "italic", gridColumn: "1 / -1" },
   footer: {
     marginTop: 16,
     fontSize: 12,
-    color: "#94a3b8",
+    color: "var(--ui-text-muted)",
     fontStyle: "italic",
     textAlign: "center",
   },
@@ -611,8 +611,8 @@ const styles: Record<string, CSSProperties> = {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    background: "#e2e8f0",
-    color: "#94a3b8",
+    background: "var(--ui-surface-muted)",
+    color: "var(--ui-text-muted)",
     border: 0,
     borderRadius: 8,
     padding: "8px 14px",

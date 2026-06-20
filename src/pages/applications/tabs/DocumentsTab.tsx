@@ -232,16 +232,16 @@ export default function DocumentsTab({ applicationId }: Props) {
       </header>
       {uploadOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={() => setUploadOpen(false)}>
-          <div style={{ background: "#fff", borderRadius: 12, padding: 20, width: 460, maxWidth: "92vw", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 12 }}>Upload document</div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Category</label>
-            <select value={uploadCat} onChange={(e) => setUploadCat(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1", margin: "4px 0 12px", fontSize: 14 }}>
+          <div style={{ background: "var(--ui-surface-strong)", borderRadius: 12, padding: 20, width: 460, maxWidth: "92vw", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ui-text)", marginBottom: 12 }}>Upload document</div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--ui-text-muted)" }}>Category</label>
+            <select value={uploadCat} onChange={(e) => setUploadCat(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--ui-border)", margin: "4px 0 12px", fontSize: 14 }}>
               {STAFF_DOC_CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
             </select>
             <input ref={uploadFileRef} type="file" multiple accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" style={{ display: "block", marginBottom: 12 }} />
             {uploadErr && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 10 }} role="status">{uploadErr}</div>}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button type="button" onClick={() => setUploadOpen(false)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <button type="button" onClick={() => setUploadOpen(false)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text-muted)", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
               <button type="button" disabled={uploading} onClick={() => void doStaffUpload()} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#1d4ed8", color: "#fff", fontWeight: 600, cursor: uploading ? "default" : "pointer", opacity: uploading ? 0.6 : 1 }}>{uploading ? "Uploading…" : "Upload"}</button>
             </div>
           </div>
@@ -369,7 +369,7 @@ function DocRow(props: {
             type="button"
             onClick={props.onDelete}
             title="Permanently delete this document (admin only)"
-            style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #dc2626", background: "#fff", color: "#dc2626", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #dc2626", background: "var(--ui-surface-strong)", color: "#dc2626", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
           >
             Delete
           </button>
@@ -505,43 +505,43 @@ function fmtDate(v: string | null): string {
 
 const styles: Record<string, CSSProperties> = {
   page: { padding: "16px 4px", maxWidth: 1200 },
-  placeholder: { padding: 24, color: "#64748b" },
+  placeholder: { padding: 24, color: "var(--ui-text-muted)" },
   error: { padding: 24, color: "#b91c1c" },
   headerRow: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 },
-  title: { fontSize: 20, fontWeight: 700, margin: 0, color: "#0f172a" },
-  subtitle: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#64748b", marginTop: 6, flexWrap: "wrap" as const },
+  title: { fontSize: 20, fontWeight: 700, margin: 0, color: "var(--ui-text)" },
+  subtitle: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ui-text-muted)", marginTop: 6, flexWrap: "wrap" as const },
   subtitleSep: { opacity: 0.4 },
-  subtitleTotal: { color: "#0f172a", fontWeight: 600 },
+  subtitleTotal: { color: "var(--ui-text)", fontWeight: 600 },
   actionError: { color: "#b91c1c", padding: "8px 12px", background: "#fef2f2", borderRadius: 6, marginBottom: 12, fontSize: 13 },
-  emptyAll: { padding: 24, color: "#94a3b8", fontStyle: "italic", textAlign: "center", border: "1px dashed #e2e8f0", borderRadius: 8 },
+  emptyAll: { padding: 24, color: "var(--ui-text-muted)", fontStyle: "italic", textAlign: "center", border: "1px dashed var(--ui-border)", borderRadius: 8 },
 
-  section: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "12px 16px 4px", marginBottom: 12, boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)" },
-  sectionTitle: { fontSize: 12, fontWeight: 700, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#475569", borderBottom: "1px solid #f1f5f9", paddingBottom: 8 },
-  sectionCount: { marginLeft: 8, color: "#94a3b8", fontSize: 12, fontWeight: 600 },
+  section: { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: "12px 16px 4px", marginBottom: 12, boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)" },
+  sectionTitle: { fontSize: 12, fontWeight: 700, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--ui-text-muted)", borderBottom: "1px solid var(--ui-border-soft)", paddingBottom: 8 },
+  sectionCount: { marginLeft: 8, color: "var(--ui-text-muted)", fontSize: 12, fontWeight: 600 },
   docList: { display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 },
 
-  docRow: { display: "grid", gridTemplateColumns: "1fr auto", gap: 16, padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 8, alignItems: "center", background: "#fff" },
+  docRow: { display: "grid", gridTemplateColumns: "1fr auto", gap: 16, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, alignItems: "center", background: "var(--ui-surface-strong)" },
   docMain: { minWidth: 0 },
   docTopLine: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" as const },
-  filename: { fontWeight: 600, color: "#0f172a", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, maxWidth: 380 },
-  docMeta: { fontSize: 12, color: "#64748b", marginTop: 4 },
-  categoryTag: { background: "#f1f5f9", color: "#475569", padding: "2px 6px", borderRadius: 4, fontWeight: 600, fontSize: 11 },
+  filename: { fontWeight: 600, color: "var(--ui-text)", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, maxWidth: 380 },
+  docMeta: { fontSize: 12, color: "var(--ui-text-muted)", marginTop: 4 },
+  categoryTag: { background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", padding: "2px 6px", borderRadius: 4, fontWeight: 600, fontSize: 11 },
   rejectionReason: { marginTop: 8, padding: "6px 10px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 12, color: "#7f1d1d" },
 
   docActions: { display: "flex", gap: 6, alignItems: "center" },
-  previewButtonDisabled: { padding: "5px 10px", background: "#f1f5f9", color: "#94a3b8", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" },
+  previewButtonDisabled: { padding: "5px 10px", background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" },
   // BF_PORTAL_BLOCK_v184_DOC_PREVIEW_WIRE_UP_v1
-  previewButton: { padding: "5px 10px", background: "#fff", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
+  previewButton: { padding: "5px 10px", background: "var(--ui-surface-strong)", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
   previewButtonLoading: { padding: "5px 10px", background: "#dbeafe", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "wait", fontFamily: "inherit" },
   acceptButton: { padding: "5px 10px", background: "#16a34a", color: "#fff", border: 0, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
   acceptButtonDone: { padding: "5px 10px", background: "#dcfce7", color: "#166534", border: "1px solid #86efac", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "default", fontFamily: "inherit" },
-  rejectButton: { padding: "5px 10px", background: "#fff", color: "#b91c1c", border: "1px solid #fecaca", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
+  rejectButton: { padding: "5px 10px", background: "var(--ui-surface-strong)", color: "#b91c1c", border: "1px solid #fecaca", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
   rejectButtonDone: { padding: "5px 10px", background: "#fee2e2", color: "#7f1d1d", border: "1px solid #fca5a5", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
 
   rejectFormRow: { gridColumn: "1 / -1", marginTop: 8, display: "flex", flexDirection: "column", gap: 6 },
-  rejectTextarea: { width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, fontFamily: "inherit", resize: "vertical" as const },
+  rejectTextarea: { width: "100%", padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13, fontFamily: "inherit", resize: "vertical" as const },
   rejectFormActions: { display: "flex", justifyContent: "flex-end", gap: 6 },
-  cancelButton: { padding: "5px 12px", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
+  cancelButton: { padding: "5px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
   confirmRejectButton: { padding: "5px 12px", background: "#dc2626", color: "#fff", border: 0, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
 
   pillBase: { padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.04em" },
@@ -593,7 +593,7 @@ export function ReocrToolbar({ applicationId }: { applicationId?: string | null 
     <div style={{
       display: "flex", alignItems: "center", gap: 12,
       padding: "8px 12px", marginBottom: 12,
-      background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 6,
+      background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 6,
     }}>
       <button
         type="button"
@@ -608,9 +608,9 @@ export function ReocrToolbar({ applicationId }: { applicationId?: string | null 
         {busy ? "Enqueueing…" : "Re-run OCR on all documents"}
       </button>
       {result ? (
-        <span style={{ fontSize: 12, color: "#475569" }}>{result}</span>
+        <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{result}</span>
       ) : (
-        <span style={{ fontSize: 12, color: "#94a3b8" }}>
+        <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
           Forces fresh OCR jobs for every document on this application.
         </span>
       )}

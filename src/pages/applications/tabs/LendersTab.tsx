@@ -27,26 +27,26 @@ type Props = { applicationId?: string | null };
 
 const styles = {
   page: { padding: 20, paddingBottom: 100 } as const,
-  header: { fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" } as const,
-  subhead: { fontSize: 13, color: "#64748b", marginBottom: 16 } as const,
+  header: { fontSize: 22, fontWeight: 700, color: "var(--ui-text)", margin: "0 0 4px" } as const,
+  subhead: { fontSize: 13, color: "var(--ui-text-muted)", marginBottom: 16 } as const,
   banner: { padding: "10px 14px", borderRadius: 6, fontSize: 13, marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 } as const,
   bannerStale: { background: "#fffbeb", border: "1px solid #fde68a", color: "#92400e" } as const,
   bannerError: { background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c" } as const,
-  table: { width: "100%", borderCollapse: "collapse" as const, background: "#fff", borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" } as const,
-  th: { textAlign: "left" as const, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: "#475569", background: "#f8fafc", borderBottom: "1px solid #e5e7eb" } as const,
-  td: { padding: "12px 14px", fontSize: 13, color: "#0f172a", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" as const } as const,
+  table: { width: "100%", borderCollapse: "collapse" as const, background: "var(--ui-surface-strong)", borderRadius: 8, overflow: "hidden", border: "1px solid var(--ui-border)" } as const,
+  th: { textAlign: "left" as const, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: "var(--ui-text-muted)", background: "var(--ui-surface-muted)", borderBottom: "1px solid var(--ui-border)" } as const,
+  td: { padding: "12px 14px", fontSize: 13, color: "var(--ui-text)", borderBottom: "1px solid var(--ui-border-soft)", verticalAlign: "middle" as const } as const,
   pill: { display: "inline-block", padding: "2px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600 } as const,
-  btn: { border: "1px solid #cbd5e1", background: "#fff", padding: "6px 12px", borderRadius: 6, fontSize: 13, cursor: "pointer", color: "#0f172a", fontFamily: "inherit" } as const,
+  btn: { border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", padding: "6px 12px", borderRadius: 6, fontSize: 13, cursor: "pointer", color: "var(--ui-text)", fontFamily: "inherit" } as const,
   btnPrimary: { border: 0, background: "#2563eb", color: "#fff", padding: "10px 16px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" } as const,
-  btnPrimaryDisabled: { border: 0, background: "#cbd5e1", color: "#fff", padding: "10px 16px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" } as const,
-  filesMenu: { position: "absolute" as const, top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", padding: 8, minWidth: 220, zIndex: 10 } as const,
-  filesMenuItem: { display: "block", padding: "6px 8px", fontSize: 13, color: "#0f172a", textDecoration: "none", borderRadius: 4 } as const,
-  empty: { padding: 32, textAlign: "center" as const, fontSize: 14, color: "#64748b", background: "#f8fafc", borderRadius: 8, border: "1px dashed #cbd5e1" } as const,
-  lockedCard: { padding: 20, background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 8 } as const,
-  lockedTitle: { fontWeight: 700, color: "#0f172a", fontSize: 15, marginBottom: 6 } as const,
-  lockedHint: { fontSize: 13, color: "#64748b", marginBottom: 12 } as const,
-  lockedItem: { fontSize: 13, color: "#0f172a", padding: "6px 0", borderBottom: "1px dashed #e5e7eb" } as const,
-  footer: { position: "sticky" as const, bottom: 0, marginTop: 16, padding: "12px 20px", background: "#fff", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", gap: 8 } as const,
+  btnPrimaryDisabled: { border: 0, background: "var(--ui-surface-muted)", color: "#fff", padding: "10px 16px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" } as const,
+  filesMenu: { position: "absolute" as const, top: "calc(100% + 4px)", left: 0, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", padding: 8, minWidth: 220, zIndex: 10 } as const,
+  filesMenuItem: { display: "block", padding: "6px 8px", fontSize: 13, color: "var(--ui-text)", textDecoration: "none", borderRadius: 4 } as const,
+  empty: { padding: 32, textAlign: "center" as const, fontSize: 14, color: "var(--ui-text-muted)", background: "var(--ui-surface-muted)", borderRadius: 8, border: "1px dashed var(--ui-border)" } as const,
+  lockedCard: { padding: 20, background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 8 } as const,
+  lockedTitle: { fontWeight: 700, color: "var(--ui-text)", fontSize: 15, marginBottom: 6 } as const,
+  lockedHint: { fontSize: 13, color: "var(--ui-text-muted)", marginBottom: 12 } as const,
+  lockedItem: { fontSize: 13, color: "var(--ui-text)", padding: "6px 0", borderBottom: "1px dashed var(--ui-border-soft)" } as const,
+  footer: { position: "sticky" as const, bottom: 0, marginTop: 16, padding: "12px 20px", background: "var(--ui-surface-strong)", borderTop: "1px solid var(--ui-border)", display: "flex", justifyContent: "flex-end", gap: 8 } as const,
 };
 
 function formatAmount(n: number | null | undefined): string {
@@ -75,7 +75,7 @@ function formatLikelihood(match: LenderMatch): string {
 }
 
 function likelihoodColors(pct: number | null): { bg: string; fg: string } {
-  if (pct === null) return { bg: "#f1f5f9", fg: "#475569" };
+  if (pct === null) return { bg: "var(--ui-surface-muted)", fg: "var(--ui-text-muted)" };
   if (pct >= 80) return { bg: "#dcfce7", fg: "#166534" };
   if (pct >= 60) return { bg: "#fef3c7", fg: "#92400e" };
   return { bg: "#fee2e2", fg: "#991b1b" };
@@ -261,7 +261,7 @@ export default function LendersTab({ applicationId }: Props) {
                   </td>
                   <td style={styles.td}>
                     <div style={{ fontWeight: 700 }}>{m.lenderName ?? "—"}</div>
-                    {m.productName ? <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{m.productName}</div> : null}
+                    {m.productName ? <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2 }}>{m.productName}</div> : null}
                   </td>
                   <td style={styles.td}>{m.productCategory ?? "—"}</td>
                   <td style={styles.td}>{formatRange(m)}</td>
@@ -284,7 +284,7 @@ export default function LendersTab({ applicationId }: Props) {
                       {filesOpen && (
                         <div role="menu" data-testid={`lender-files-menu-${m.id}`} style={styles.filesMenu}>
                           {fileCount === 0 ? (
-                            <div style={{ ...styles.filesMenuItem, color: "#94a3b8" }}>No files yet.</div>
+                            <div style={{ ...styles.filesMenuItem, color: "var(--ui-text-muted)" }}>No files yet.</div>
                           ) : (
                             (files ?? []).map((f) => (
                               <a key={f.id} href={f.url ?? "#"} target="_blank" rel="noopener noreferrer" style={styles.filesMenuItem}>
@@ -292,7 +292,7 @@ export default function LendersTab({ applicationId }: Props) {
                               </a>
                             ))
                           )}
-                          <label style={{ ...styles.filesMenuItem, cursor: "pointer", color: "#2563eb", marginTop: 6, borderTop: "1px solid #f1f5f9", paddingTop: 8 }}>
+                          <label style={{ ...styles.filesMenuItem, cursor: "pointer", color: "#2563eb", marginTop: 6, borderTop: "1px solid var(--ui-border-soft)", paddingTop: 8 }}>
                             {isUploading ? "Uploading…" : "⬆ Upload Term Sheet"}
                             <input
                               type="file"

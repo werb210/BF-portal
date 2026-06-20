@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/api";
+import { contactDisplayName } from "@/utils/contactName";
 import { getAuthToken } from "@/lib/authToken"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
 import { API_BASE } from "@/config/api"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
 import { withO365Refresh } from "@/api/o365Interceptor";
@@ -204,7 +205,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
         setContactMeta(meta);
         const mapped = convo.map((row) => ({
           id: row.thread_key ?? row.contact_id ?? "",
-          name: row.display_name ?? row.phone ?? "Unknown",
+          name: contactDisplayName(row.display_name, { phone: row.phone }),
           phone: row.phone ?? null,
           latest: row.last_at ?? "",
         })).filter((c) => c.id);
@@ -929,7 +930,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
           .filter((c) => c.contact_id || c.thread_key)
           .map((c) => ({
             contactId: (c.contact_id ?? c.thread_key) as string,
-            name: c.display_name ?? c.phone ?? "Unknown",
+            name: contactDisplayName(c.display_name, { phone: c.phone, email: c.email }),
             phone: c.phone,
             lastAt: c.last_at,
             lastBody: c.last_body,
@@ -946,7 +947,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
             const items = Array.isArray(crm) ? crm : (crm as { items?: Array<{ id: string; name?: string | null; phone?: string | null; email?: string | null }> }).items ?? [];
             mapped = items.map((c) => ({
               contactId: c.id,
-              name: c.name ?? c.email ?? c.phone ?? "Unknown",
+              name: contactDisplayName(c.name, { email: c.email, phone: c.phone }),
               phone: c.phone ?? null,
               lastAt: null,
               lastBody: null,
@@ -981,7 +982,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
           .filter((c) => c.contact_id || c.thread_key)
           .map((c) => ({
             contactId: (c.contact_id ?? c.thread_key) as string,
-            name: c.display_name ?? c.phone ?? "Unknown",
+            name: contactDisplayName(c.display_name, { phone: c.phone, email: c.email }),
             phone: c.phone,
             lastAt: c.last_at,
             lastBody: c.last_body,
