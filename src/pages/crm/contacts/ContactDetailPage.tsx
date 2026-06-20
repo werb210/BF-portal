@@ -100,7 +100,7 @@ export default function ContactDetailPage() {
 
       <main>
         <ActivityTimeline scope={scope} refreshKey={refreshKey} />
-        <div style={{ marginTop: 16, border: "1px solid #eaf0f6", borderRadius: 6, padding: 16 }}><MarketingTab contactId={id} /></div>
+        <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}><MarketingTab contactId={id} /></div>
         <ContactEmailFeed contactId={id} />
         <ContactCallFeed contactId={id} />
       </main>
@@ -154,22 +154,22 @@ function Field({ label, value }: { label: string; value: string | null }) {
   return (
     <div style={{ marginBottom: 8 }}>
       <div style={fieldLabel}>{label}</div>
-      <div style={{ color: "#000" }}>{value || "—"}</div>
+      <div style={{ color: "var(--ui-text)" }}>{value || "—"}</div>
     </div>
   );
 }
 
 const layout: CSSProperties = {
   display: "grid", gridTemplateColumns: "320px 1fr 320px", gap: 16,
-  padding: 16, background: "#fff", color: "#000",
+  padding: 16, background: "var(--ui-surface-strong)", color: "var(--ui-text)",
 };
 const rail: CSSProperties = {
-  background: "#fff", border: "1px solid #eaf0f6", borderRadius: 6, padding: 16,
+  background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16,
 };
-const subtle: CSSProperties = { color: "#516f90", fontSize: 13, marginBottom: 12 };
-const fieldsBlock: CSSProperties = { marginTop: 16, paddingTop: 16, borderTop: "1px solid #eaf0f6" };
-const fieldLabel: CSSProperties = { fontSize: 11, color: "#7c98b6", textTransform: "uppercase" };
-const roleBadge: CSSProperties = { background: "#e5e7eb", color: "#111827", padding: "2px 8px", borderRadius: 999, fontSize: 12, fontWeight: 600 };
+const subtle: CSSProperties = { color: "var(--ui-text-muted)", fontSize: 13, marginBottom: 12 };
+const fieldsBlock: CSSProperties = { marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--ui-border-soft)" };
+const fieldLabel: CSSProperties = { fontSize: 11, color: "var(--ui-text-muted)", textTransform: "uppercase" };
+const roleBadge: CSSProperties = { background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "2px 8px", borderRadius: 999, fontSize: 12, fontWeight: 600 };
 
 function formatRole(role?: string | null) {
   const value = String(role ?? "unknown").toLowerCase();
@@ -180,4 +180,4 @@ function formatRole(role?: string | null) {
   return "Unknown";
 }
 
-const actionBtn: CSSProperties = { border: "1px solid #cbd5e1", background: "#fff", color: "#0f172a", borderRadius: 6, padding: "6px 12px", fontSize: 13, cursor: "pointer" };
+const actionBtn: CSSProperties = { border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", borderRadius: 6, padding: "6px 12px", fontSize: 13, cursor: "pointer" };
