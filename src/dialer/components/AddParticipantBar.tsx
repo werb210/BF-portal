@@ -18,6 +18,7 @@ export function AddParticipantBar({ conferenceId }: { conferenceId: string | nul
   return (
     <div style={{ display: "flex", gap: 6, padding: "0 12px" }}>
       <input value={v} onChange={(e) => setV(e.target.value)} placeholder="Add by phone or staff identity"
+        autoComplete="off" data-1p-ignore data-lpignore="true" data-form-type="other"
         onKeyDown={(e) => e.key === "Enter" && submit()}
         style={{ flex: 1, background: "#1f2937", border: "1px solid #374151", borderRadius: 8, padding: "8px 10px", color: "#fff", fontSize: 13 }} />
       <button onClick={submit} disabled={busy || !v.trim()} style={{

@@ -390,13 +390,14 @@ export default function DialerPanel() {
           </div>
           <div style={{ padding: "0 24px 8px" }}>
             <input
-              type="tel"
+              type="text"
               autoFocus
               inputMode="tel"
               name="dialer-phone"
               autoComplete="off"
               data-1p-ignore
               data-lpignore="true"
+              data-form-type="other"
               pattern="[+0-9 \(\)\-]*"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
