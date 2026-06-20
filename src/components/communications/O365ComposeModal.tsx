@@ -95,6 +95,7 @@ export default function O365ComposeModal({
   onClose,
   onSent,
   logScope,
+  recipientName,
 }: {
   open: boolean;
   initialTo?: string;
@@ -106,6 +107,7 @@ export default function O365ComposeModal({
   onClose: () => void;
   onSent?: () => void;
   logScope?: { kind: "contact" | "company"; id: string }; // BF_PORTAL_BLOCK_v734
+  recipientName?: string; // BF_PORTAL_TEMPLATE_FIRSTNAME_v1
 }) {
   const [composeTo, setComposeTo] = useState(initialTo);
   const [composeCc, setComposeCc] = useState("");
@@ -311,7 +313,9 @@ export default function O365ComposeModal({
     const template = templates.find((item) => item.id === nextTemplateId);
     if (!template) return;
     if (template.subject) setComposeSubject(template.subject);
-    const html = template.body_html ?? (template.body_text ? escapeToHtml(template.body_text) : "");
+    const firstName = (recipientName ?? "").trim().split(/[\s.]+/).filter(Boolean)[0] ?? "";
+    let html = template.body_html ?? (template.body_text ? escapeToHtml(template.body_text) : "");
+    html = html.split("{{first_name}}").join(firstName);
     if (html) insertHtmlAtCursor(html);
   }
 
@@ -442,6 +446,8 @@ export default function O365ComposeModal({
       // Rich-text editor: the body is already HTML. Convert any {{meeting_link}}
       // token (and legacy pasted booking URL) into the styled booking button.
       let body_html = bodyRef.current?.innerHTML ?? composeBody;
+      const firstName = (recipientName ?? "").trim().split(/[\s.]+/).filter(Boolean)[0] ?? "";
+      body_html = body_html.split("{{first_name}}").join(firstName);
       if (bookingUrl) {
         // BF_PORTAL_BOOKING_BUTTON_NO_DOUBLE_WRAP_v1 — the toolbar "Book a meeting"
         // button already inserts a full <a href="bookingUrl" ...> anchor. Replacing
