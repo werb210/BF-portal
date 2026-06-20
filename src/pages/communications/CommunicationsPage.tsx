@@ -831,8 +831,8 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 onClick={() => void send()}
                 disabled={!draft.trim() || sending}
                 style={{
-                  width: 34,
-                  height: 34,
+                  width: 44,
+                  height: 44,
                   borderRadius: "50%",
                   border: "none",
                   background: draft.trim() ? "#007aff" : "var(--ui-surface-muted)",

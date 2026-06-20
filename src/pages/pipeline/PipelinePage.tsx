@@ -198,8 +198,8 @@ export default function PipelinePage() {
                     onRefresh={load} />
                 ))}
                 {col.length === 0 && (
-                  <div style={{ fontSize: 12, color: "#475569", textAlign: "center", padding: "14px 0" }}>
-                    Empty
+                  <div style={{ fontSize: 12, color: "var(--ui-text-muted)", textAlign: "center", padding: "20px 8px", border: "1px dashed var(--ui-border)", borderRadius: 8 }}>
+                    No applications
                   </div>
                 )}
               </div>
@@ -309,13 +309,13 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
             <button type="button" aria-label="Call client" title={callBusy ? "Looking up phone…" : "Call client"}
               onClick={(e) => { e.stopPropagation(); void handleCall(); }}
               disabled={busy || callBusy}
-              style={{ border: 0, background: "transparent", color: callBusy ? "#475569" : "#94a3b8", cursor: (busy || callBusy) ? "default" : "pointer", padding: "4px 6px", display: "inline-flex", alignItems: "center", borderRadius: 4 }}>
+              style={{ border: 0, background: "transparent", color: callBusy ? "#475569" : "#94a3b8", cursor: (busy || callBusy) ? "default" : "pointer", padding: "4px 6px", display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44, borderRadius: 4 }}>
               <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
               </svg>
             </button>
             <button type="button" aria-label="Delete card" onClick={(e) => { e.stopPropagation(); onDelete(card.id); }} disabled={busy}
-              style={{ border: 0, background: "transparent", color: "#94a3b8", cursor: busy ? "default" : "pointer", fontSize: 18, lineHeight: 1 }}>×</button>
+              style={{ border: 0, background: "transparent", color: "#94a3b8", cursor: busy ? "default" : "pointer", fontSize: 18, lineHeight: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44 }}>×</button>
           </div>
         </div>
 
