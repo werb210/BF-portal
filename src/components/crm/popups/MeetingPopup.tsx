@@ -1,42 +1,26 @@
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import { PopupShell, popupInputStyle } from "./PopupShell";
 import { crmApi, type Scope } from "@/api/crm";
 
 // BF_PORTAL_BLOCK_v336_MEETING_TYPE_v1
 type MeetingType = "teams" | "phone" | "inperson";
 
-const PUBLIC_BOOKINGS_URL = (import.meta.env.VITE_BOOKINGS_URL as string | undefined) ?? "";
-
-export function MeetingPopup({ scope, onClose, onCreated, defaultPhone }: {
-  scope: Scope; onClose: () => void; onCreated: () => void; defaultPhone?: string;
+// BF_PORTAL_MEETING_NO_PUBLIC_BOOKING_v1 — public self-book banner removed;
+// the contact's email is pre-filled as an attendee so the invite is sent.
+export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultEmail }: {
+  scope: Scope; onClose: () => void; onCreated: () => void; defaultPhone?: string; defaultEmail?: string;
 }): JSX.Element {
   const [title, setTitle] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [location, setLocation] = useState("");
-  const [attendees, setAttendees] = useState("");
+  const [attendees, setAttendees] = useState(defaultEmail ?? "");
   const [description, setDescription] = useState("");
   const [internalNote, setInternalNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
-  // BF_PORTAL_BLOCK_v336_MEETING_TYPE_v1 — Teams meeting vs phone call vs in person
   const [meetingType, setMeetingType] = useState<MeetingType>("teams");
   const [phone, setPhone] = useState(defaultPhone ?? "");
-
-  async function copyBookingsLink(): Promise<void> {
-    if (!PUBLIC_BOOKINGS_URL) {
-      setErr("Bookings page URL is not configured. Set VITE_BOOKINGS_URL.");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(PUBLIC_BOOKINGS_URL);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    } catch {
-      window.prompt("Copy this link:", PUBLIC_BOOKINGS_URL);
-    }
-  }
 
   async function save(): Promise<void> {
     setSaving(true); setErr(null);
@@ -77,16 +61,6 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone }: {
         onClick: save,
       }}
     >
-      <div style={bookingsBanner}>
-        <div>
-          <strong>Public bookings page</strong>
-          <div style={{ fontSize: 12, color: "#516f90" }}>Send this link to clients to self-book a time.</div>
-        </div>
-        <button onClick={copyBookingsLink} style={copyBtn}>
-          {linkCopied ? "✓ Copied" : "Copy link"}
-        </button>
-      </div>
-
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -103,7 +77,6 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone }: {
         placeholder="Attendees (comma-separated emails)"
         style={{ ...popupInputStyle, marginBottom: 8 }}
       />
-      {/* BF_PORTAL_BLOCK_v336_MEETING_TYPE_v1 */}
       <select value={meetingType} onChange={(e) => setMeetingType(e.target.value as MeetingType)} style={{ ...popupInputStyle, marginBottom: 8 }}>
         <option value="teams">Microsoft Teams meeting (auto link)</option>
         <option value="phone">Phone call (we call the client)</option>
@@ -136,12 +109,3 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone }: {
     </PopupShell>
   );
 }
-
-const bookingsBanner: CSSProperties = {
-  display: "flex", justifyContent: "space-between", alignItems: "center",
-  padding: 8, marginBottom: 12, background: "#f5f8fa", borderRadius: 4,
-};
-const copyBtn: CSSProperties = {
-  background: "#0091ae", color: "#fff", border: "none",
-  padding: "6px 12px", borderRadius: 4, cursor: "pointer",
-};

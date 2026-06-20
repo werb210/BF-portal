@@ -157,17 +157,9 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         }}
         className="app-sidebar"
       >
-        {/* Brand header */}
-        <div style={{ marginBottom: 24, padding: "0 4px", display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/images/Header.png" alt="Boreal" style={{ height: 52, width: "auto" }} />
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "#0b1220", lineHeight: 1.2 }}>
-              {brand.label}
-            </div>
-            <div style={{ fontSize: 10, color: brand.accent, fontWeight: 600, letterSpacing: "0.05em" }}>
-              {activeSilo}
-            </div>
-          </div>
+        {/* Brand header — mountain logo only (BF_PORTAL_BRAND_LOGO_ONLY_v1) */}
+        <div style={{ marginBottom: 24, padding: "0 4px", display: "flex", alignItems: "center" }}>
+          <img src="/images/Header.png" alt="Boreal Financial" style={{ height: 52, width: "auto" }} />
         </div>
 
         <NavContent />
