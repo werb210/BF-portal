@@ -38,7 +38,7 @@ const STEP4_FIELDS: Array<[string, string]> = [
 const sectionLabel = {
   fontSize: 12,
   fontWeight: 700 as const,
-  color: "#6b7280",
+  color: "var(--ui-text-muted)",
   textTransform: "uppercase" as const,
   letterSpacing: 0.4,
   marginBottom: 6,
@@ -68,8 +68,8 @@ function FieldRows({ data }: { data: Record<string, any> }) {
           key={label}
           style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "2px 0" }}
         >
-          <span style={{ color: "#6b7280" }}>{label}</span>
-          <span style={{ color: "#111827", textAlign: "right" }}>{String(v)}</span>
+          <span style={{ color: "var(--ui-text-muted)" }}>{label}</span>
+          <span style={{ color: "var(--ui-text)", textAlign: "right" }}>{String(v)}</span>
         </div>
       ))}
     </>
@@ -107,7 +107,7 @@ export function ContactApplicantFields({ applicationIds }: { applicationIds?: st
       : null;
 
   return (
-    <div style={{ marginTop: 16, borderTop: "1px solid #e5e7eb", paddingTop: 12 }}>
+    <div style={{ marginTop: 16, borderTop: "1px solid var(--ui-border)", paddingTop: 12 }}>
       <div style={sectionLabel}>Applicant</div>
       <FieldRows data={applicant} />
       {partner && (
@@ -167,14 +167,14 @@ export function ContactAdvisors({ applicationIds }: { applicationIds?: string[] 
     <div style={{ marginTop: 16 }}>
       <h3 style={{ marginTop: 0 }}>Advisors</h3>
       {advisorRows.map((r) => (
-        <div key={r.key} style={{ fontSize: 13, padding: "4px 0", borderBottom: "1px solid #f3f4f6" }}>
-          <div style={{ fontWeight: 600, color: "#111827" }}>
+        <div key={r.key} style={{ fontSize: 13, padding: "4px 0", borderBottom: "1px solid var(--ui-border-soft)" }}>
+          <div style={{ fontWeight: 600, color: "var(--ui-text)" }}>
             {r.label}
             {r.v.firm ? ` — ${String(r.v.firm)}` : ""}
           </div>
-          {r.v.contact ? <div style={{ color: "#374151" }}>{String(r.v.contact)}</div> : null}
+          {r.v.contact ? <div style={{ color: "var(--ui-text)" }}>{String(r.v.contact)}</div> : null}
           {r.v.email ? <div style={{ color: "#0091ae" }}>{String(r.v.email)}</div> : null}
-          {r.v.phone ? <div style={{ color: "#374151" }}>{String(r.v.phone)}</div> : null}
+          {r.v.phone ? <div style={{ color: "var(--ui-text)" }}>{String(r.v.phone)}</div> : null}
         </div>
       ))}
     </div>

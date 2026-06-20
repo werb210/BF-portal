@@ -142,13 +142,13 @@ function PeopleSection({ title, contacts }: { title: string; contacts: ContactRo
   return (
     <section style={{ marginBottom: 12 }}>
       <div style={fieldLabel}>{title}</div>
-      {contacts.length === 0 && <div style={{ color: "#64748b", fontSize: 13 }}>—</div>}
+      {contacts.length === 0 && <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>—</div>}
       {contacts.map((c) => (
-        <div key={c.id} style={{ marginTop: 6, borderBottom: "1px solid #eef2f7", paddingBottom: 6 }}>
+        <div key={c.id} style={{ marginTop: 6, borderBottom: "1px solid var(--ui-border-soft)", paddingBottom: 6 }}>
           <Link to={`/crm/contacts/${c.id}`} style={{ color: "#0091ae", fontWeight: 600 }}>{c.name}</Link>
-          {c.email ? <div style={{ fontSize: 12, color: "#334155" }}>{c.email}</div> : null}
-          {c.phone ? <div style={{ fontSize: 12, color: "#334155" }}>{c.phone}</div> : null}
-          {typeof c.ownership_percent === "number" ? <div style={{ fontSize: 12, color: "#334155" }}>Ownership: {c.ownership_percent}%</div> : null}
+          {c.email ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{c.email}</div> : null}
+          {c.phone ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{c.phone}</div> : null}
+          {typeof c.ownership_percent === "number" ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Ownership: {c.ownership_percent}%</div> : null}
         </div>
       ))}
     </section>
@@ -156,12 +156,12 @@ function PeopleSection({ title, contacts }: { title: string; contacts: ContactRo
 }
 
 function Field({ label, value }: { label: string; value: string | null }) {
-  return <div style={{ marginBottom: 8 }}><div style={fieldLabel}>{label}</div><div style={{ color: "#000" }}>{value || "—"}</div></div>;
+  return <div style={{ marginBottom: 8 }}><div style={fieldLabel}>{label}</div><div style={{ color: "var(--ui-text)" }}>{value || "—"}</div></div>;
 }
 
-const layout: CSSProperties = { display: "grid", gridTemplateColumns: "320px 1fr 320px", gap: 16, padding: 16, background: "#fff", color: "#000" };
-const rail: CSSProperties = { background: "#fff", border: "1px solid #eaf0f6", borderRadius: 6, padding: 16 };
-const subtle: CSSProperties = { color: "#516f90", fontSize: 13, marginBottom: 12 };
-const fieldsBlock: CSSProperties = { marginTop: 16, paddingTop: 16, borderTop: "1px solid #eaf0f6" };
-const fieldLabel: CSSProperties = { fontSize: 11, color: "#7c98b6", textTransform: "uppercase" };
-const actionBtn: CSSProperties = { border: "1px solid #cbd5e1", background: "#fff", color: "#0f172a", borderRadius: 6, padding: "6px 12px", fontSize: 13, cursor: "pointer" };
+const layout: CSSProperties = { display: "grid", gridTemplateColumns: "320px 1fr 320px", gap: 16, padding: 16, background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
+const rail: CSSProperties = { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 };
+const subtle: CSSProperties = { color: "var(--ui-text-muted)", fontSize: 13, marginBottom: 12 };
+const fieldsBlock: CSSProperties = { marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--ui-border-soft)" };
+const fieldLabel: CSSProperties = { fontSize: 11, color: "var(--ui-text-muted)", textTransform: "uppercase" };
+const actionBtn: CSSProperties = { border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", borderRadius: 6, padding: "6px 12px", fontSize: 13, cursor: "pointer" };
