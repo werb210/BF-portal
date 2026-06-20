@@ -3,9 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { crmApi, type ContactRow, type Scope } from "@/api/crm";
 import { api } from "@/api";
 import { ActionBar } from "@/components/crm/ActionBar";
-import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
+import { UnifiedTimeline } from "@/components/crm/UnifiedTimeline"; // BF_PORTAL_UNIFIED_TIMELINE_v1
 import { ContactApplicantFields, ContactAdvisors } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_CONTACT_PANELS_v1
-import { ContactEmailFeed, ContactCallFeed } from "@/components/crm/ContactCommsFeeds";
 import { EntityEditModal } from "@/components/EntityEditModal";
 import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
 import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
@@ -99,10 +98,8 @@ export default function ContactDetailPage() {
       </aside>
 
       <main>
-        <ActivityTimeline scope={scope} refreshKey={refreshKey} />
+        <UnifiedTimeline contactId={id} scope={scope} refreshKey={refreshKey} />
         <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}><MarketingTab contactId={id} /></div>
-        <ContactEmailFeed contactId={id} />
-        <ContactCallFeed contactId={id} />
       </main>
 
       <aside style={rail}>
