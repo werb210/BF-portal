@@ -316,6 +316,10 @@ export default function O365ComposeModal({
     const firstName = (recipientName ?? "").trim().split(/[\s.]+/).filter(Boolean)[0] ?? "";
     let html = template.body_html ?? (template.body_text ? escapeToHtml(template.body_text) : "");
     html = html.split("{{first_name}}").join(firstName);
+    if (bookingUrl) {
+      const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+      html = html.split("{{meeting_link}}").join(bookingButton);
+    }
     if (html) insertHtmlAtCursor(html);
   }
 
