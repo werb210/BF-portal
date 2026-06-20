@@ -1469,7 +1469,6 @@ export default function LendersPage() {
                 <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)" }}>Products</th>
                 {[
                   ["Status", "status"],
-                  ["Active", "active"],
                 ].map(([h, key]) => (
                   <th key={h} onClick={() => cycleSort(key as "name" | "status" | "active")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)", cursor: "pointer" }}>{h}{sortKey === key ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
                 ))}
@@ -1478,10 +1477,10 @@ export default function LendersPage() {
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "var(--ui-text-muted)" }}>Loading…</td></tr>
+                <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", color: "var(--ui-text-muted)" }}>Loading…</td></tr>
               )}
               {!isLoading && paginated.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "var(--ui-text-muted)" }}>No lenders found</td></tr>
+                <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", color: "var(--ui-text-muted)" }}>No lenders found</td></tr>
               )}
               {paginated.map((l) => {
                 const isSelected = selected?.id === l.id;
@@ -1503,7 +1502,6 @@ export default function LendersPage() {
                     <td style={{ padding: "10px 12px" }}>
                       <StatusBadge active={l.active} status={l.status} />
                     </td>
-                    <td style={{ padding: "10px 12px", color: "var(--ui-text-muted)" }}>{l.active ? "Yes" : "No"}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <button
                         type="button"

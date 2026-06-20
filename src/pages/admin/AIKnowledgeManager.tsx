@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AIService } from "@/services/aiService";
+import { api } from "@/api";
 
 type KnowledgeItem = { id: string; title?: string; source_type?: string };
 
@@ -7,6 +8,8 @@ export default function AIKnowledgeManager() {
   const [items, setItems] = useState<KnowledgeItem[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [retraining, setRetraining] = useState(false);
+  const [retrainMsg, setRetrainMsg] = useState<string | null>(null);
 
   async function load() {
     const res = await AIService.listKnowledge();
@@ -26,6 +29,21 @@ export default function AIKnowledgeManager() {
     await load();
   }
 
+  async function retrainProducts() {
+    setRetraining(true);
+    setRetrainMsg(null);
+    try {
+      const res = await api.post<{ ok?: boolean; ingested?: number; deleted?: number }>(
+        "/api/admin/reingest-products",
+      );
+      setRetrainMsg(`Maya retrained on ${res?.ingested ?? 0} products.`);
+    } catch (e) {
+      setRetrainMsg(e instanceof Error ? e.message : "Retrain failed");
+    } finally {
+      setRetraining(false);
+    }
+  }
+
   useEffect(() => {
     void load();
   }, []);
@@ -40,6 +58,21 @@ export default function AIKnowledgeManager() {
         <button onClick={() => void save()} className="bg-blue-600 text-white px-4 py-2 rounded">
           Save Knowledge
         </button>
+      </div>
+
+      <div className="space-y-2 border-t pt-4">
+        <h2 className="font-semibold">Maya product knowledge</h2>
+        <p className="text-sm text-gray-600">
+          Rebuild Maya&apos;s product embeddings from the current lender_products table. Run once after seeding or editing products.
+        </p>
+        <button
+          onClick={() => void retrainProducts()}
+          disabled={retraining}
+          className="bg-emerald-600 text-white px-4 py-2 rounded disabled:opacity-50"
+        >
+          {retraining ? "Retraining…" : "Retrain Maya on products"}
+        </button>
+        {retrainMsg && <p className="text-sm text-gray-700">{retrainMsg}</p>}
       </div>
 
       <div>
