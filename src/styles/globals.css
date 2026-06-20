@@ -9,6 +9,8 @@
   --ui-surface: var(--panel-bg);
   --ui-surface-strong: #ffffff;
   --ui-surface-muted: #eef1f5;
+  --ui-border: #cbd6e2;
+  --ui-border-soft: #eaf0f6;
   --ui-text: var(--text-primary);
   --ui-text-muted: #475569;
   --ui-text-soft: #1f2937;
@@ -28,6 +30,8 @@
     --ui-surface: var(--panel-bg);
     --ui-surface-strong: rgba(17, 25, 40, 0.96);
     --ui-surface-muted: rgba(15, 23, 42, 0.55);
+    --ui-border: rgba(148, 163, 184, 0.22);
+    --ui-border-soft: rgba(148, 163, 184, 0.14);
     --ui-text: var(--text-primary);
     --ui-text-muted: #94a3b8;
     --ui-text-soft: #cbd5f5;
@@ -44,6 +48,8 @@
   --text-primary: #e6e8ee;
   --ui-surface-strong: rgba(17, 25, 40, 0.96);
   --ui-surface-muted: rgba(15, 23, 42, 0.55);
+  --ui-border: rgba(148, 163, 184, 0.22);
+  --ui-border-soft: rgba(148, 163, 184, 0.14);
   --ui-text-muted: #94a3b8;
   --ui-text-soft: #cbd5f5;
   --ui-shadow-soft: 0 12px 30px rgba(2, 6, 23, 0.45);
@@ -55,6 +61,8 @@
   --text-primary: #0b1220;
   --ui-surface-strong: #ffffff;
   --ui-surface-muted: #eef1f5;
+  --ui-border: #cbd6e2;
+  --ui-border-soft: #eaf0f6;
   --ui-text-muted: #475569;
   --ui-text-soft: #1f2937;
   --ui-shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
