@@ -28,7 +28,7 @@ describe("Add Event modal", () => {
     const end = screen.getByLabelText(/End/i);
     expect(start).toHaveAttribute("type", "datetime-local");
     expect(end).toHaveAttribute("type", "datetime-local");
-    expect((start as HTMLInputElement).style.color).toBe("rgb(0, 0, 0)");
+    expect((start as HTMLInputElement).style.color).toBe("var(--ui-text)");
   });
 });
 

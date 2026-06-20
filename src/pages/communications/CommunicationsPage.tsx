@@ -26,7 +26,7 @@ function VoicemailAudio({ id }: { id: string }) {
     return () => { cancelled = true; };
   }, [id]);
   if (url) return <audio controls preload="auto" src={url} style={{ width: "100%", maxWidth: 420 }} />;
-  return <span style={{ fontSize: 12, color: "#94a3b8" }}>{failed ? "Voicemail unavailable" : "Loading voicemail\u2026"}</span>;
+  return <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{failed ? "Voicemail unavailable" : "Loading voicemail\u2026"}</span>;
 }
 import CommunicationsThread from "@/pages/communications/components/CommunicationsThread";
 import { startOutboundPstn } from "@/dialer/actions";
@@ -450,15 +450,15 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
   }, [forcedContact?.id]);
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0, height: "100%", overflow: "hidden", background: "#f5f5f7" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0, height: "100%", overflow: "hidden", background: "var(--ui-surface-muted)" }}>
       {/* ── Left — conversation list ── */}
       <div
         style={{
           width: 320,
-          borderRight: "1px solid #e0e0e5",
+          borderRight: "1px solid var(--ui-border)",
           display: "flex",
           flexDirection: "column",
-          background: "#fff",
+          background: "var(--ui-surface-strong)",
           height: "100%",
           minHeight: 0,
         }}
@@ -466,7 +466,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
         {/* Search + New */}
         <div style={{ padding: "12px 12px 8px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontWeight: 700, fontSize: 17, color: "#000", flex: 1 }}>Messages</span>
+            <span style={{ fontWeight: 700, fontSize: 17, color: "var(--ui-text)", flex: 1 }}>Messages</span>
             <button
               onClick={() => { setMulti((m) => !m); setPicked(new Set()); setBcResult(null); }}
               style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#007aff", padding: "0 8px", fontWeight: 600 }}
@@ -490,11 +490,11 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
               padding: "7px 12px",
               borderRadius: 10,
               border: "none",
-              background: "#f0f0f5",
+              background: "var(--ui-surface-muted)",
               fontSize: 14,
               outline: "none",
               boxSizing: "border-box",
-              color: "#000",
+              color: "var(--ui-text)",
             }}
           />
         </div>
@@ -510,7 +510,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 />
                 Select all ({filtered.length})
               </label>
-              <span style={{ marginLeft: "auto", fontSize: 13, color: "#8e8e93" }}>{picked.size} selected</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--ui-text-muted)" }}>{picked.size} selected</span>
             </div>
             {picked.size > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -519,7 +519,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   onChange={(e) => setBcBody(e.target.value)}
                   placeholder={`Message ${picked.size} contact(s) individually…`}
                   rows={2}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d1d6", fontSize: 14, boxSizing: "border-box", resize: "vertical", color: "#000" }}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d1d6", fontSize: 14, boxSizing: "border-box", resize: "vertical", color: "var(--ui-text)" }}
                 />
                 <button
                   disabled={!bcBody.trim() || bcSending}
@@ -536,7 +536,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
 
         {/* New thread input */}
         {showNewThread && (
-          <div style={{ padding: "8px 12px", background: "#f8f8f8", borderBottom: "1px solid #e0e0e5" }}>
+          <div style={{ padding: "8px 12px", background: "#f8f8f8", borderBottom: "1px solid var(--ui-border)" }}>
             <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>Enter phone number</div>
             <div style={{ display: "flex", gap: 6 }}>
               <input
@@ -547,9 +547,9 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   flex: 1,
                   padding: "6px 10px",
                   borderRadius: 8,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--ui-border)",
                   fontSize: 13,
-                  color: "#000",
+                  color: "var(--ui-text)",
                   outline: "none",
                 }}
               />
@@ -578,12 +578,12 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 onClick={() => setShowNewThread(false)}
                 style={{
                   padding: "6px 10px",
-                  background: "#e5e5ea",
+                  background: "var(--ui-surface-muted)",
                   border: "none",
                   borderRadius: 8,
                   fontSize: 13,
                   cursor: "pointer",
-                  color: "#000",
+                  color: "var(--ui-text)",
                 }}
               >
                 ✕
@@ -595,7 +595,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
         {/* Thread list */}
         <div style={{ flex: 1, overflowY: "auto" }}>
           {filtered.length === 0 && (
-            <div style={{ padding: "20px 16px", textAlign: "center", color: "#8e8e93", fontSize: 14 }}>
+            <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--ui-text-muted)", fontSize: 14 }}>
               {contacts.length === 0 ? "No CRM contacts with phone numbers yet. Add a contact with a phone in CRM to start an SMS thread." : (hasSentMessages ? "No conversations match this filter." : "No conversations yet - click a contact to start one.")}
             </div>
           )}
@@ -640,14 +640,14 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 <Avatar name={c.name} size={44} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                    <span style={{ fontWeight: hasUnread ? 700 : 600, fontSize: 15, color: "#000" }}>{c.name}</span>
-                    {last && <span style={{ fontSize: 11, color: hasUnread ? "#2563eb" : "#8e8e93", flexShrink: 0, fontWeight: hasUnread ? 600 : 400 }}>{timeLabel(last.created_at)}</span>}
+                    <span style={{ fontWeight: hasUnread ? 700 : 600, fontSize: 15, color: "var(--ui-text)" }}>{c.name}</span>
+                    {last && <span style={{ fontSize: 11, color: hasUnread ? "#2563eb" : "var(--ui-text-muted)", flexShrink: 0, fontWeight: hasUnread ? 600 : 400 }}>{timeLabel(last.created_at)}</span>}
                   </div>
                   {last ? (
                     <div
                       style={{
                         fontSize: 13,
-                        color: hasUnread ? "#1e293b" : "#8e8e93",
+                        color: hasUnread ? "var(--ui-text)" : "var(--ui-text-muted)",
                         fontWeight: hasUnread ? 500 : 400,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -658,7 +658,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                       {last.body}
                     </div>
                   ) : (
-                    <div style={{ fontSize: 13, color: "#c7c7cc" }}>{c.phone}</div>
+                    <div style={{ fontSize: 13, color: "var(--ui-border)" }}>{c.phone}</div>
                   )}
                 </div>
                 {hasUnread && (
@@ -673,7 +673,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
       </div>
 
       {/* ── Right — thread ── */}
-      <div style={{ display: "flex", flexDirection: "column", background: "#fff", minWidth: 0, minHeight: 0, height: "100%", overflow: "hidden" }}>
+      <div style={{ display: "flex", flexDirection: "column", background: "var(--ui-surface-strong)", minWidth: 0, minHeight: 0, height: "100%", overflow: "hidden" }}>
         {!selected ? (
           <div
             style={{
@@ -682,12 +682,12 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              color: "#8e8e93",
+              color: "var(--ui-text-muted)",
               gap: 8,
             }}
           >
             <div style={{ fontSize: 40 }}>💬</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#000" }}>No conversation selected</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ui-text)" }}>No conversation selected</div>
             <div style={{ fontSize: 14 }}>Choose from the list or start a new message</div>
           </div>
         ) : (
@@ -700,14 +700,14 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                background: "#f5f5f7",
-                color: "#000",
+                background: "var(--ui-surface-muted)",
+                color: "var(--ui-text)",
                 flexShrink: 0,
               }}
             >
               <Avatar name={selected.name} size={36} />
               <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "#000" }}>{selected.name}</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>{selected.name}</div>
                 {selected.phone && <div style={{ fontSize: 12, color: "#3c3c43" }}>{selected.phone}</div>}
               </div>
               {(() => {
@@ -737,7 +737,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                       fontSize: 13,
                       fontWeight: 600,
                       cursor: callPhone ? "pointer" : "not-allowed",
-                      background: callPhone ? "#2563eb" : "#c7c7cc",
+                      background: callPhone ? "#2563eb" : "var(--ui-border)",
                       color: "#fff",
                     }}
                   >
@@ -758,7 +758,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
-                background: "#fff",
+                background: "var(--ui-surface-strong)",
                 minHeight: 0,
               }}
             >
@@ -786,14 +786,14 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 display: "flex",
                 alignItems: "flex-end",
                 gap: 10,
-                background: "#fff",
+                background: "var(--ui-surface-strong)",
                 flexShrink: 0,
               }}
             >
               <div
                 style={{
                   flex: 1,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--ui-border)",
                   borderRadius: 20,
                   padding: "6px 14px",
                   background: "#f9f9f9",
@@ -818,7 +818,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                     outline: "none",
                     fontSize: 15,
                     resize: "none",
-                    color: "#000",
+                    color: "var(--ui-text)",
                     fontFamily: "inherit",
                     lineHeight: 1.4,
                     maxHeight: 100,
@@ -834,7 +834,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   height: 34,
                   borderRadius: "50%",
                   border: "none",
-                  background: draft.trim() ? "#007aff" : "#e5e5ea",
+                  background: draft.trim() ? "#007aff" : "var(--ui-surface-muted)",
                   color: "#fff",
                   fontSize: 18,
                   cursor: draft.trim() ? "pointer" : "default",
@@ -1151,7 +1151,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0 }}>
-      <div style={{ borderRight: "1px solid #e2e8f0", padding: 12, overflowY: "auto" }}>
+      <div style={{ borderRight: "1px solid var(--ui-border)", padding: 12, overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <h3 style={{ margin: 0 }}>Messages</h3>
@@ -1201,7 +1201,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                   onChange={(e) => setBcBody(e.target.value)}
                   placeholder={`Message ${picked.size} contact(s) individually…`}
                   rows={2}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box", resize: "vertical", color: "#000" }}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--ui-border)", fontSize: 13, boxSizing: "border-box", resize: "vertical", color: "var(--ui-text)" }}
                 />
                 <button
                   type="button"
@@ -1248,7 +1248,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 padding: "10px 8px",
                 borderBottom: "1px solid #eef2f7",
                 cursor: "pointer",
-                color: "#000",
+                color: "var(--ui-text)",
                 display: "flex",
                 flexDirection: "column",
                 gap: 2,
@@ -1257,24 +1257,24 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <div style={{ fontWeight: c.unread > 0 ? 700 : 600, fontSize: 14 }}>{c.name}</div>
-                <div style={{ fontSize: 11, color: "#94a3b8" }}>{fmtAt(c.lastAt)}</div>
+                <div style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>{fmtAt(c.lastAt)}</div>
               </div>
               {c.lastBody && (
-                <div style={{ fontSize: 12, color: c.unread > 0 ? "#1e293b" : "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: 12, color: c.unread > 0 ? "var(--ui-text)" : "var(--ui-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {c.lastBody}
                 </div>
               )}
             </button>
           </div>
         ))}
-        {rows.length === 0 && <div style={{ color: "#8e8e93", padding: 12 }}>No contacts in this silo yet.</div>}
+        {rows.length === 0 && <div style={{ color: "var(--ui-text-muted)", padding: 12 }}>No contacts in this silo yet.</div>}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, height: "100%", overflow: "hidden", background: "#fff" }}>
-        {!selected && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#8e8e93", flex: 1 }}>Choose a contact.</div>}
+      <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, height: "100%", overflow: "hidden", background: "var(--ui-surface-strong)" }}>
+        {!selected && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ui-text-muted)", flex: 1 }}>Choose a contact.</div>}
         {selected && (
           <>
-            <div style={{ padding: "12px 20px", borderBottom: "1px solid #f0f0f5", background: "#f5f5f7" }}>
-              <div style={{ fontWeight: 700, fontSize: 15, color: "#000" }}>{selected.name}</div>
+            <div style={{ padding: "12px 20px", borderBottom: "1px solid #f0f0f5", background: "var(--ui-surface-muted)" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>{selected.name}</div>
               {selected.phone && <div style={{ fontSize: 12, color: "#3c3c43" }}>{selected.phone}</div>}
               {!applicationId && (
                 <div style={{ fontSize: 11, color: "#b45309", marginTop: 4 }}>
@@ -1284,7 +1284,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", minHeight: 0 }}>
               {loadingThread ? (
-                <div style={{ color: "#8e8e93" }}>Loading…</div>
+                <div style={{ color: "var(--ui-text-muted)" }}>Loading…</div>
               ) : (
                 <CommunicationsThread
                   messages={messages.map((m) => ({
@@ -1299,7 +1299,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 />
               )}
               {otherTyping && (
-                <div style={{ fontSize: 12, color: "#64748b", padding: "4px 0", fontStyle: "italic" }}>
+                <div style={{ fontSize: 12, color: "var(--ui-text-muted)", padding: "4px 0", fontStyle: "italic" }}>
                   {selected.name} is typing…
                 </div>
               )}
@@ -1312,7 +1312,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
             {selected && (
               <>
                 <ComposerPulldowns channel="message" onInsertText={(text) => setDraft((previous) => previous + (previous && !previous.endsWith(" ") ? " " : "") + text)} />
-                <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 16px", paddingRight: 88, display: "flex", gap: 8, background: "#fff" }}>
+                <div style={{ borderTop: "1px solid var(--ui-border)", padding: "10px 16px", paddingRight: 88, display: "flex", gap: 8, background: "var(--ui-surface-strong)" }}>
                   <textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
@@ -1324,14 +1324,14 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                     }}
                     rows={2}
                     placeholder="Message the client…  (⌘/Ctrl+Enter to send.  Insert form links like #networth, #debt, #upload.)"
-                    style={{ flex: 1, resize: "none", border: "1px solid #d1d5db", borderRadius: 8, padding: 10, fontSize: 14, color: "#000", background: "#fff" }}
+                    style={{ flex: 1, resize: "none", border: "1px solid var(--ui-border)", borderRadius: 8, padding: 10, fontSize: 14, color: "var(--ui-text)", background: "var(--ui-surface-strong)" }}
                   />
                   <button
                     onClick={() => void send()}
                     disabled={!draft.trim() || sending}
                     style={{
                       alignSelf: "flex-end",
-                      background: draft.trim() && !sending ? "#2563eb" : "#94a3b8",
+                      background: draft.trim() && !sending ? "#2563eb" : "var(--ui-text-muted)",
                       color: "#fff",
                       border: 0,
                       borderRadius: 8,
@@ -1350,10 +1350,10 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
       </div>
       {open && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 70 }}>
-          <div style={{ width: "min(560px, 92vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
+          <div style={{ width: "min(560px, 92vw)", background: "var(--ui-surface-strong)", borderRadius: 12, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>New SMS</h3>
-            <label style={{ display: "block", marginBottom: 8 }}>Phone<textarea value={to} onChange={(e) => setTo(e.target.value)} rows={2} style={{ background: "#fff", color: "#000", border: "1px solid #d1d5db", padding: 10, borderRadius: 8, fontSize: 14, width: "100%", minHeight: 80 }} /></label>
-            <label style={{ display: "block", marginBottom: 8 }}>Message<textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} style={{ background: "#fff", color: "#000", border: "1px solid #d1d5db", padding: 10, borderRadius: 8, fontSize: 14, width: "100%", minHeight: 80 }} /></label>
+            <label style={{ display: "block", marginBottom: 8 }}>Phone<textarea value={to} onChange={(e) => setTo(e.target.value)} rows={2} style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", padding: 10, borderRadius: 8, fontSize: 14, width: "100%", minHeight: 80 }} /></label>
+            <label style={{ display: "block", marginBottom: 8 }}>Message<textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", padding: 10, borderRadius: 8, fontSize: 14, width: "100%", minHeight: 80 }} /></label>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={async () => {
                 if (!to.trim() || !body.trim()) return;
@@ -1678,7 +1678,7 @@ function InboxTab() {
   }, []);
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, height: "100%", background: "#fff", color: "#000", position: "relative" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, height: "100%", background: "var(--ui-surface-strong)", color: "var(--ui-text)", position: "relative" }}>
       {/* BF_PORTAL_BLOCK_v213_INBOX_RECONNECT_M365_v2 — reconnect banner */}
       {needsReconnect && (
         <div style={{
@@ -1714,9 +1714,9 @@ function InboxTab() {
           </button>
         </div>
       )}
-      <div style={{ borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
+      <div style={{ borderRight: "1px solid var(--ui-border)", display: "flex", flexDirection: "column" }}>
         {/* BF_PORTAL_BLOCK_77_INBOX_COMPOSE_v1 - Compose button + modal. */}
-        <div style={{ padding: 12, borderBottom: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ padding: 12, borderBottom: "1px solid var(--ui-border)", display: "flex", flexDirection: "column", gap: 8 }}>
           <button
             type="button"
             onClick={() => setComposeOpen(true)}
@@ -1727,7 +1727,7 @@ function InboxTab() {
           <select
             value={active}
             onChange={(e) => setActive(e.target.value)}
-            style={{ width: "100%", padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000" }}
+            style={{ width: "100%", padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}
           >
             {mailboxOptions.map(o => <option key={o.value || "self"} value={o.value}>{o.label}</option>)}
             {mailboxOptions.length === 0 && <option value="">No mailbox available</option>}
@@ -1736,18 +1736,18 @@ function InboxTab() {
             type="button"
             onClick={() => setReconnectAttempts((n) => n + 1)}
             disabled={loading}
-            style={{ width: "100%", padding: "6px 10px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#f8fafc", color: "#33475b", fontSize: 12, cursor: loading ? "default" : "pointer" }}
+            style={{ width: "100%", padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", fontSize: 12, cursor: loading ? "default" : "pointer" }}
           >
             {loading ? "Refreshing…" : "↻ Refresh inbox"}
           </button>
-          <div style={{ fontSize: 10, color: "#94a3b8", textAlign: "center" }}>Auto-refreshes every 20s</div>
+          <div style={{ fontSize: 10, color: "var(--ui-text-muted)", textAlign: "center" }}>Auto-refreshes every 20s</div>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
-          {loading && <div style={{ padding: 16, color: "#7c98b6" }}>Loading…</div>}
+          {loading && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Loading…</div>}
           {err && <div style={{ padding: 16, color: "#b00020" }}>{err}</div>}
           {!loading && !err && messages.length === 0 && (
-            <div style={{ padding: 16, color: "#7c98b6" }}>Nothing in this inbox.</div>
+            <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Nothing in this inbox.</div>
           )}
           {/* BF_PORTAL_BLOCK_v833_INBOX_SEARCH_FOLDERS_THREAD — search + folder */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid #f0f4f8" }}>
@@ -1756,12 +1756,12 @@ function InboxTab() {
               value={queryInput}
               onChange={(e) => setQueryInput(e.target.value)}
               placeholder="Search mail…"
-              style={{ flex: 1, fontSize: 13, padding: "4px 8px", borderRadius: 4, border: "1px solid #e2e8f0" }}
+              style={{ flex: 1, fontSize: 13, padding: "4px 8px", borderRadius: 4, border: "1px solid var(--ui-border)" }}
             />
             <select
               value={folder}
               onChange={(e) => setFolder(e.target.value === "sent" ? "sent" : e.target.value === "all" ? "all" : "inbox")}
-              style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid #e2e8f0" }}
+              style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--ui-border)" }}
             >
               <option value="inbox">Inbox</option>
               <option value="sent">Sent</option>
@@ -1770,7 +1770,7 @@ function InboxTab() {
           </div>
           {/* BF_PORTAL_BLOCK_v823_INBOX_READTOGGLE_SORT_BADGE — sort + unread badge */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 12px", borderBottom: "1px solid #f0f4f8" }}>
-            <span style={{ fontSize: 12, color: "#7c98b6" }}>
+            <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
               {unreadCount > 0 ? `${unreadCount} unread` : "All read"}
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1778,14 +1778,14 @@ function InboxTab() {
               <button
                 type="button"
                 onClick={() => { setBulkMode((v) => !v); setSelectedIds(new Set()); }}
-                style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #e2e8f0", background: bulkMode ? "#eaf2fb" : "#fff", cursor: "pointer" }}
+                style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: bulkMode ? "#eaf2fb" : "var(--ui-surface-strong)", cursor: "pointer" }}
               >
                 {bulkMode ? "Cancel" : "Select"}
               </button>
               <select
                 value={sortDir}
                 onChange={(e) => setSortDir(e.target.value === "asc" ? "asc" : "desc")}
-                style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid #e2e8f0" }}
+                style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--ui-border)" }}
               >
                 <option value="desc">Newest first</option>
                 <option value="asc">Oldest first</option>
@@ -1793,12 +1793,12 @@ function InboxTab() {
             </div>
           </div>
           {bulkMode && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid #f0f4f8", background: "#f8fafc" }}>
-              <span style={{ fontSize: 12, color: "#7c98b6" }}>{selectedIds.size} selected</span>
-              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(true)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark read</button>
-              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(false)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark unread</button>
-              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkFlag()} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Flag</button>
-              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkDelete()} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #fecaca", background: "#fff", color: "#dc2626", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Delete</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid #f0f4f8", background: "var(--ui-surface-muted)" }}>
+              <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{selectedIds.size} selected</span>
+              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(true)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark read</button>
+              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(false)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark unread</button>
+              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkFlag()} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Flag</button>
+              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkDelete()} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #fecaca", background: "var(--ui-surface-strong)", color: "#dc2626", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Delete</button>
             </div>
           )}
           {messages.map(m => {
@@ -1818,11 +1818,11 @@ function InboxTab() {
                   display: "block", flex: 1, width: "100%", textAlign: "left",
                   padding: "12px 88px 12px 12px", border: "none",
                   background: selectedId === m.id ? "#eaf2fb" : "transparent",
-                  cursor: "pointer", color: "#000",
+                  cursor: "pointer", color: "var(--ui-text)",
                   fontWeight: m.isRead ? 400 : 600,
                 }}
               >
-                <div style={{ fontSize: 13, color: "#33475b" }}>
+                <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>
                   {m.from?.emailAddress?.name || m.from?.emailAddress?.address || "(unknown)"}
                 </div>
                 <div style={{ fontSize: 14, marginTop: 2 }}>
@@ -1833,11 +1833,11 @@ function InboxTab() {
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 12, color: "#7c98b6", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {m.bodyPreview || ""}
                 </div>
                 {m.receivedDateTime && (
-                  <div style={{ fontSize: 11, color: "#7c98b6", marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2 }}>
                     {new Date(m.receivedDateTime).toLocaleString()}
                   </div>
                 )}
@@ -1848,7 +1848,7 @@ function InboxTab() {
                 title={isFlagged ? "Remove flag" : "Flag email"}
                 style={{
                   position: "absolute", right: 72, top: "50%", transform: "translateY(-50%)",
-                  border: "none", background: "transparent", color: isFlagged ? "#f59e0b" : "#94a3b8",
+                  border: "none", background: "transparent", color: isFlagged ? "#f59e0b" : "var(--ui-text-muted)",
                   fontSize: 16, cursor: "pointer", padding: "4px 6px", borderRadius: 4,
                 }}
               >
@@ -1886,12 +1886,12 @@ function InboxTab() {
       </div>
 
       <div style={{ padding: 16, overflowY: "auto" }}>
-        {!selectedId && <div style={{ color: "#8e8e93" }}>Select an email.</div>}
-        {selectedId && !selected && <div style={{ color: "#8e8e93" }}>Loading…</div>}
+        {!selectedId && <div style={{ color: "var(--ui-text-muted)" }}>Select an email.</div>}
+        {selectedId && !selected && <div style={{ color: "var(--ui-text-muted)" }}>Loading…</div>}
         {selected && (
           <article>
             <h2 style={{ marginTop: 0 }}>{selected.subject || "(no subject)"}</h2>
-            <div style={{ color: "#516f90", fontSize: 13, marginBottom: 16 }}>
+            <div style={{ color: "var(--ui-text-muted)", fontSize: 13, marginBottom: 16 }}>
               {selected.from?.emailAddress?.name || selected.from?.emailAddress?.address || ""}
               {selected.receivedDateTime && (
                 <span style={{ marginLeft: 8 }}>· {new Date(selected.receivedDateTime).toLocaleString()}</span>
@@ -1918,7 +1918,7 @@ function InboxTab() {
 ${orig}`;
                 const btnStyle: React.CSSProperties = {
                   padding: "7px 16px", border: "1px solid #0066cc", borderRadius: 6,
-                  background: "#fff", color: "#0066cc", fontWeight: 600, fontSize: 13, cursor: "pointer",
+                  background: "var(--ui-surface-strong)", color: "#0066cc", fontWeight: 600, fontSize: 13, cursor: "pointer",
                 };
                 const openCompose = (to: string, subject: string) => {
                   setReplyCtx({ to, subject, body: quoted });
@@ -1997,21 +1997,21 @@ function IssuesTab() {
 
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-      <div style={{ width: 300, borderRight: "1px solid #e2e8f0", overflowY: "auto", background: "#fff" }}>
+      <div style={{ width: 300, borderRight: "1px solid var(--ui-border)", overflowY: "auto", background: "var(--ui-surface-strong)" }}>
         <div
           style={{
             padding: "12px 16px",
-            borderBottom: "1px solid #e2e8f0",
+            borderBottom: "1px solid var(--ui-border)",
             fontWeight: 700,
             fontSize: 15,
-            color: "#0f172a",
+            color: "var(--ui-text)",
           }}
         >
           Reported Issues
         </div>
-        {loading && <div style={{ padding: 16, color: "#8e8e93", fontSize: 13 }}>Loading…</div>}
+        {loading && <div style={{ padding: 16, color: "var(--ui-text-muted)", fontSize: 13 }}>Loading…</div>}
         {!loading && issues.length === 0 && (
-          <div style={{ padding: 20, color: "#8e8e93", fontSize: 13 }}>
+          <div style={{ padding: 20, color: "var(--ui-text-muted)", fontSize: 13 }}>
             No issues yet. Client portal "Report an Issue" submissions appear here.
           </div>
         )}
@@ -2028,7 +2028,7 @@ function IssuesTab() {
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-              <span style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{issue.title || "Untitled"}</span>
+              <span style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)" }}>{issue.title || "Untitled"}</span>
               <span
                 style={{
                   fontSize: 10,
@@ -2042,19 +2042,19 @@ function IssuesTab() {
                 {issue.status}
               </span>
             </div>
-            <div style={{ fontSize: 11, color: "#8e8e93" }}>{new Date(issue.created_at).toLocaleString()}</div>
+            <div style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>{new Date(issue.created_at).toLocaleString()}</div>
           </div>
         ))}
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: 24, background: "#f8fafc" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: 24, background: "var(--ui-surface-muted)" }}>
         {!selected ? (
-          <div style={{ color: "#8e8e93", fontSize: 14, marginTop: 40, textAlign: "center" }}>
+          <div style={{ color: "var(--ui-text-muted)", fontSize: 14, marginTop: 40, textAlign: "center" }}>
             Select an issue to view details
           </div>
         ) : (
           <>
-            <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{selected.title || "Untitled"}</h3>
-            <div style={{ fontSize: 12, color: "#8e8e93", marginBottom: 16 }}>
+            <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 700, color: "var(--ui-text)" }}>{selected.title || "Untitled"}</h3>
+            <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 16 }}>
               {new Date(selected.created_at).toLocaleString()}
             </div>
             {selected.status !== "resolved" && selected.status !== "closed" && (
@@ -2070,13 +2070,13 @@ function IssuesTab() {
             {selected.description && (
               <div
                 style={{
-                  background: "#fff",
+                  background: "var(--ui-surface-strong)",
                   borderRadius: 10,
                   padding: "12px 16px",
                   fontSize: 14,
-                  color: "#374151",
+                  color: "var(--ui-text)",
                   marginBottom: 16,
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid var(--ui-border)",
                 }}
               >
                 {selected.description}
@@ -2084,11 +2084,11 @@ function IssuesTab() {
             )}
             {selected.screenshot_url && (
               <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 8 }}>SCREENSHOT</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ui-text-muted)", marginBottom: 8 }}>SCREENSHOT</div>
                 <img
                   src={selected.screenshot_url}
                   alt="Issue screenshot"
-                  style={{ maxWidth: "100%", borderRadius: 8, border: "1px solid #e2e8f0" }}
+                  style={{ maxWidth: "100%", borderRadius: 8, border: "1px solid var(--ui-border)" }}
                 />
               </div>
             )}
@@ -2174,7 +2174,7 @@ export default function CommunicationsPage() {
         flexDirection: "column",
         height: "100%",
         overflow: "hidden",
-        background: "#fff",
+        background: "var(--ui-surface-strong)",
       }}
     >
       {/* Sub-nav */}
@@ -2182,7 +2182,7 @@ export default function CommunicationsPage() {
         style={{
           display: "flex",
           borderBottom: "2px solid #e2e8f0",
-          background: "#fff",
+          background: "var(--ui-surface-strong)",
           flexShrink: 0,
           padding: "0 4px",
         }}
@@ -2198,7 +2198,7 @@ export default function CommunicationsPage() {
               fontSize: 14,
               fontWeight: tab === t.id ? 700 : 500,
               cursor: "pointer",
-              color: tab === t.id ? "#007aff" : "#6b7280",
+              color: tab === t.id ? "#007aff" : "var(--ui-text-muted)",
               borderBottom: tab === t.id ? "2px solid #007aff" : "2px solid transparent",
               marginBottom: -2,
               transition: "all 0.1s",
@@ -2290,24 +2290,24 @@ function MayaTab() {
 
   return (
     <div style={{ display: "flex", height: "100%" }}>
-      <div style={{ width: 340, borderRight: "1px solid #e2e8f0", overflowY: "auto" }}>
+      <div style={{ width: 340, borderRight: "1px solid var(--ui-border)", overflowY: "auto" }}>
         {loading ? (
-          <div style={{ padding: 16, color: "#64748b" }}>Loading Maya conversations…</div>
+          <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Loading Maya conversations…</div>
         ) : sessions.length === 0 ? (
-          <div style={{ padding: 16, color: "#64748b" }}>No Maya conversations yet.</div>
+          <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>No Maya conversations yet.</div>
         ) : sessions.map((s) => (
           <button
             key={s.id}
             onClick={() => setSelected(s.id)}
-            style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 14px", border: 0, borderBottom: "1px solid #f1f5f9", background: selected === s.id ? "#eff6ff" : "#fff", cursor: "pointer" }}
+            style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 14px", border: 0, borderBottom: "1px solid #f1f5f9", background: selected === s.id ? "#eff6ff" : "var(--ui-surface-strong)", cursor: "pointer" }}
           >
-            <div style={{ fontWeight: 600, fontSize: 13, color: "#0f172a" }}>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)" }}>
               {s.source || "Maya chat"}{s.status ? ` · ${s.status}` : ""}
             </div>
-            <div style={{ fontSize: 12, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 12, color: "var(--ui-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {s.last_message || `${s.message_count} messages`}
             </div>
-            <div style={{ fontSize: 11, color: "#94a3b8" }}>
+            <div style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>
               {s.message_count} messages{s.last_message_at ? ` · ${new Date(s.last_message_at).toLocaleString()}` : ""}
             </div>
           </button>
@@ -2315,21 +2315,21 @@ function MayaTab() {
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
         {!selected ? (
-          <div style={{ color: "#64748b" }}>Select a Maya conversation to review it.</div>
+          <div style={{ color: "var(--ui-text-muted)" }}>Select a Maya conversation to review it.</div>
         ) : loadingMsgs ? (
-          <div style={{ color: "#64748b" }}>Loading…</div>
+          <div style={{ color: "var(--ui-text-muted)" }}>Loading…</div>
         ) : messages.length === 0 ? (
-          <div style={{ color: "#64748b" }}>No messages in this conversation.</div>
+          <div style={{ color: "var(--ui-text-muted)" }}>No messages in this conversation.</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {messages.map((m) => {
               const isUser = m.role === "user";
               return (
                 <div key={m.id} style={{ alignSelf: isUser ? "flex-end" : "flex-start", maxWidth: "75%" }}>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 2, textAlign: isUser ? "right" : "left" }}>
+                  <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginBottom: 2, textAlign: isUser ? "right" : "left" }}>
                     {isUser ? "Visitor" : m.role === "ai" ? "Maya" : m.role}
                   </div>
-                  <div style={{ background: isUser ? "#2563eb" : "#f1f5f9", color: isUser ? "#fff" : "#0f172a", padding: "8px 12px", borderRadius: 12, fontSize: 14, whiteSpace: "pre-wrap" }}>
+                  <div style={{ background: isUser ? "#2563eb" : "var(--ui-border-soft)", color: isUser ? "#fff" : "var(--ui-text)", padding: "8px 12px", borderRadius: 12, fontSize: 14, whiteSpace: "pre-wrap" }}>
                     {m.message}
                   </div>
                 </div>
@@ -2509,30 +2509,30 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
 
   return (
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-      <div style={{ width: 280, borderRight: "1px solid #e2e8f0", overflowY: "auto", background: "#fff", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>Team</span>
+      <div style={{ width: 280, borderRight: "1px solid var(--ui-border)", overflowY: "auto", background: "var(--ui-surface-strong)", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--ui-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>Team</span>
           <button onClick={() => setShowNew(true)} style={{ fontSize: 13, color: "#007aff", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+ New</button>
         </div>
-        {channels.length === 0 && <div style={{ padding: 20, color: "#8e8e93", fontSize: 13 }}>No conversations yet. Tap &quot;+ New&quot; to start one.</div>}
+        {channels.length === 0 && <div style={{ padding: 20, color: "var(--ui-text-muted)", fontSize: 13 }}>No conversations yet. Tap &quot;+ New&quot; to start one.</div>}
         {channels.map((c) => (
           <div key={c.id} onClick={() => setActiveId(c.id)} style={{ padding: "10px 16px", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: c.id === activeId ? "#eff6ff" : "transparent", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ui-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {c.kind === "channel" ? "# " : ""}{channelLabel(c)}
               </div>
-              {c.last_message && <div style={{ fontSize: 12, color: "#8e8e93", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.last_message.body}</div>}
+              {c.last_message && <div style={{ fontSize: 12, color: "var(--ui-text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.last_message.body}</div>}
             </div>
             {c.unread_count > 0 && <span style={{ background: "#ff3b30", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "0 6px", minWidth: 18, height: 18, lineHeight: "18px", textAlign: "center" }}>{c.unread_count}</span>}
           </div>
         ))}
       </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#f8fafc" }}>
-        {!active && <div style={{ margin: "auto", color: "#8e8e93", fontSize: 14 }}>Select a conversation</div>}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "var(--ui-surface-muted)" }}>
+        {!active && <div style={{ margin: "auto", color: "var(--ui-text-muted)", fontSize: 14 }}>Select a conversation</div>}
         {active && (
           <>
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", fontWeight: 700, color: "#0f172a", background: "#fff" }}>
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--ui-border)", fontWeight: 700, color: "var(--ui-text)", background: "var(--ui-surface-strong)" }}>
               {active.kind === "channel" ? "# " : ""}{channelLabel(active)}
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2540,14 +2540,14 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 const mine = m.sender_id === myId;
                 return (
                   <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "70%" }}>
-                    {!mine && <div style={{ fontSize: 11, color: "#8e8e93", marginBottom: 2 }}>{userName(m.sender_id)}</div>}
-                    <div style={{ background: mine ? "#007aff" : "#fff", color: mine ? "#fff" : "#0f172a", border: mine ? "none" : "1px solid #e2e8f0", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.body}</div>
+                    {!mine && <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginBottom: 2 }}>{userName(m.sender_id)}</div>}
+                    <div style={{ background: mine ? "#007aff" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.body}</div>
                   </div>
                 );
               })}
             </div>
-            <div style={{ borderTop: "1px solid #e2e8f0", padding: 12, paddingRight: 88, background: "#fff", display: "flex", gap: 8 }}>
-              <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14 }} />
+            <div style={{ borderTop: "1px solid var(--ui-border)", padding: 12, paddingRight: 88, background: "var(--ui-surface-strong)", display: "flex", gap: 8 }}>
+              <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
               <button onClick={() => void send()} disabled={!draft.trim()} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>Send</button>
             </div>
           </>
@@ -2588,26 +2588,26 @@ function NewTeamChatModal({ users, onClose, onCreated }: { users: TeamUser[]; on
 
   return (
     <div onClick={onClose} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: 420, maxHeight: "80vh", background: "#fff", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 12, overflow: "hidden" }}>
-        <div style={{ fontWeight: 700, fontSize: 16, color: "#0f172a" }}>New conversation</div>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: 420, maxHeight: "80vh", background: "var(--ui-surface-strong)", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 12, overflow: "hidden" }}>
+        <div style={{ fontWeight: 700, fontSize: 16, color: "var(--ui-text)" }}>New conversation</div>
         <div style={{ display: "flex", gap: 6 }}>
           {(["dm", "group", "channel"] as const).map((m) => (
-            <button key={m} onClick={() => { setMode(m); setPicked(new Set()); }} style={{ flex: 1, padding: "6px 0", borderRadius: 8, border: mode === m ? "1px solid #007aff" : "1px solid #cbd5e1", background: mode === m ? "#eff6ff" : "#fff", color: mode === m ? "#007aff" : "#475569", fontWeight: 600, fontSize: 13, cursor: "pointer", textTransform: "capitalize" }}>{m === "dm" ? "Direct" : m}</button>
+            <button key={m} onClick={() => { setMode(m); setPicked(new Set()); }} style={{ flex: 1, padding: "6px 0", borderRadius: 8, border: mode === m ? "1px solid #007aff" : "1px solid var(--ui-border)", background: mode === m ? "#eff6ff" : "var(--ui-surface-strong)", color: mode === m ? "#007aff" : "var(--ui-text-muted)", fontWeight: 600, fontSize: 13, cursor: "pointer", textTransform: "capitalize" }}>{m === "dm" ? "Direct" : m}</button>
           ))}
         </div>
-        {mode !== "dm" && <input value={name} onChange={(e) => setName(e.target.value)} placeholder={mode === "channel" ? "Channel name" : "Group name (optional)"} style={{ padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14 }} />}
-        <div style={{ fontSize: 12, color: "#8e8e93" }}>{mode === "dm" ? "Pick one person" : "Pick people"}</div>
-        <div style={{ overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8, maxHeight: 280 }}>
+        {mode !== "dm" && <input value={name} onChange={(e) => setName(e.target.value)} placeholder={mode === "channel" ? "Channel name" : "Group name (optional)"} style={{ padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />}
+        <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{mode === "dm" ? "Pick one person" : "Pick people"}</div>
+        <div style={{ overflowY: "auto", border: "1px solid var(--ui-border)", borderRadius: 8, maxHeight: 280 }}>
           {users.map((u) => (
-            <div key={u.id} onClick={() => toggle(u.id)} style={{ padding: "8px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", background: picked.has(u.id) ? "#eff6ff" : "#fff" }}>
-              <span style={{ fontSize: 14, color: "#0f172a" }}>{u.name}</span>
+            <div key={u.id} onClick={() => toggle(u.id)} style={{ padding: "8px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", background: picked.has(u.id) ? "#eff6ff" : "var(--ui-surface-strong)" }}>
+              <span style={{ fontSize: 14, color: "var(--ui-text)" }}>{u.name}</span>
               {picked.has(u.id) && <span style={{ color: "#007aff" }}>✓</span>}
             </div>
           ))}
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-          <button onClick={onClose} style={{ padding: "8px 16px", border: "1px solid #cbd5e1", background: "#fff", borderRadius: 8, cursor: "pointer" }}>Cancel</button>
-          <button onClick={() => void create()} disabled={!canCreate || busy} style={{ padding: "8px 16px", border: "none", background: canCreate ? "#007aff" : "#cbd5e1", color: "#fff", borderRadius: 8, fontWeight: 600, cursor: canCreate ? "pointer" : "default" }}>{busy ? "Creating…" : "Create"}</button>
+          <button onClick={onClose} style={{ padding: "8px 16px", border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", borderRadius: 8, cursor: "pointer" }}>Cancel</button>
+          <button onClick={() => void create()} disabled={!canCreate || busy} style={{ padding: "8px 16px", border: "none", background: canCreate ? "#007aff" : "var(--ui-border)", color: "#fff", borderRadius: 8, fontWeight: 600, cursor: canCreate ? "pointer" : "default" }}>{busy ? "Creating…" : "Create"}</button>
         </div>
       </div>
     </div>
@@ -2633,21 +2633,21 @@ function VoicemailTab() {
   return (
     <div style={{ padding: 16, overflowY: "auto" }}>
       <h3 style={{ marginTop: 0 }}>Voicemails</h3>
-      {loading && <div style={{ color: "#8e8e93" }}>Loading…</div>}
+      {loading && <div style={{ color: "var(--ui-text-muted)" }}>Loading…</div>}
       {err && <div style={{ color: "#b00020" }}>{err}</div>}
-      {!loading && !err && items.length === 0 && <div style={{ color: "#7c98b6" }}>No voicemails.</div>}
+      {!loading && !err && items.length === 0 && <div style={{ color: "var(--ui-text-muted)" }}>No voicemails.</div>}
       {items.map((vm) => (
         <div key={vm.id} style={{ borderBottom: "1px solid #f0f4f8", padding: "12px 0" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#33475b" }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ui-text-muted)" }}>
             {vm.contact_name || vm.contact_phone || "Unknown caller"}
           </div>
-          <div style={{ fontSize: 12, color: "#7c98b6", marginBottom: 6 }}>
+          <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 6 }}>
             {vm.created_at ? new Date(vm.created_at).toLocaleString() : ""}
           </div>
           {vm.recording_url ? (
             <VoicemailAudio id={vm.id} />
           ) : (
-            <span style={{ fontSize: 12, color: "#94a3b8" }}>No recording</span>
+            <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>No recording</span>
           )}
         </div>
       ))}

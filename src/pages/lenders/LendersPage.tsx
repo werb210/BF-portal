@@ -83,9 +83,9 @@ function StatusBadge({ active, status }: { active?: boolean; status?: string }) 
         borderRadius: 20,
         fontSize: 12,
         fontWeight: 600,
-        background: isActive ? "#22c55e22" : isInactive ? "#e2e8f0" : "#e2e8f0",
-        color: isActive ? "#16a34a" : isInactive ? "#475569" : "#475569",
-        border: `1px solid ${isActive ? "#22c55e44" : "#cbd5e1"}`,
+        background: isActive ? "#22c55e22" : isInactive ? "var(--ui-border)" : "var(--ui-border)",
+        color: isActive ? "#16a34a" : isInactive ? "var(--ui-text-muted)" : "var(--ui-text-muted)",
+        border: `1px solid ${isActive ? "#22c55e44" : "var(--ui-border)"}`,
         whiteSpace: "nowrap",
       }}
     >
@@ -119,20 +119,20 @@ function SubmissionDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         style={{
-          width: "100%", padding: "10px 14px", border: "1px solid #d1d5db",
-          borderRadius: 8, background: "#fff", textAlign: "left", fontSize: 14,
-          color: value ? "#111827" : "#9ca3af",
+          width: "100%", padding: "10px 14px", border: "1px solid var(--ui-border)",
+          borderRadius: 8, background: "var(--ui-surface-strong)", textAlign: "left", fontSize: 14,
+          color: value ? "var(--ui-text)" : "var(--ui-text-muted)",
           display: "flex", justifyContent: "space-between", alignItems: "center",
           cursor: "pointer",
         }}
       >
         <span>{value ? SUBMISSION_LABELS[value] : "Select method..."}</span>
-        <span style={{ color: "#6b7280" }}>▾</span>
+        <span style={{ color: "var(--ui-text-muted)" }}>▾</span>
       </button>
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
-          background: "#fff", border: "1px solid #d1d5db", borderRadius: 8,
+          background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8,
           boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 100, padding: "8px 0",
         }}>
           {(["EMAIL", "API", "GOOGLE_SHEET"] as SubmissionMethod[]).map((method) => (
@@ -141,7 +141,7 @@ function SubmissionDropdown({
               style={{
                 display: "flex", alignItems: "center", gap: 10,
                 padding: "8px 14px", cursor: "pointer", fontSize: 14,
-                color: "#111827",
+                color: "var(--ui-text)",
               }}
             >
               <input
@@ -271,13 +271,13 @@ function CreateLenderModal({
   }
 
   const inputStyle = (hasError?: boolean): React.CSSProperties => ({
-    width: "100%", padding: "10px 14px", border: `1px solid ${hasError ? "#ef4444" : "#d1d5db"}`,
-    borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", color: "#111827",
-    background: "#fff",
+    width: "100%", padding: "10px 14px", border: `1px solid ${hasError ? "#ef4444" : "var(--ui-border)"}`,
+    borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", color: "var(--ui-text)",
+    background: "var(--ui-surface-strong)",
   });
 
   const labelStyle: React.CSSProperties = {
-    fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6,
+    fontSize: 13, fontWeight: 600, color: "var(--ui-text)", display: "block", marginBottom: 6,
   };
 
   const errorStyle: React.CSSProperties = { fontSize: 12, color: "#ef4444", marginTop: 3 };
@@ -286,11 +286,11 @@ function CreateLenderModal({
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.5)" }} onClick={onClose} />
       <div style={{
-        position: "relative", background: "#fff", borderRadius: 16, width: "min(680px, 95vw)",
+        position: "relative", background: "var(--ui-surface-strong)", borderRadius: 16, width: "min(680px, 95vw)",
         maxHeight: "90vh", overflowY: "auto", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
       }}>
-        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "#6b7280", cursor: "pointer" }}>×</button>
-        <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "#111827" }}>{lender ? "Edit Lender" : "Create New Lender"}</h2>
+        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "var(--ui-text-muted)", cursor: "pointer" }}>×</button>
+        <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "var(--ui-text)" }}>{lender ? "Edit Lender" : "Create New Lender"}</h2>
 
         {serverError && (
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 16, color: "#dc2626", fontSize: 13 }}>
@@ -343,7 +343,7 @@ function CreateLenderModal({
 
           {/* Primary Contact */}
           <div>
-            <p style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: "4px 0 12px" }}>Primary Contact</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: "var(--ui-text)", margin: "4px 0 12px" }}>Primary Contact</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={labelStyle}>Contact Person <span style={{ color: "#ef4444" }}>*</span></label>
@@ -692,12 +692,12 @@ function CreateProductModal({
   }
 
   const inputStyle = (hasError?: boolean): React.CSSProperties => ({
-    width: "100%", padding: "10px 14px", border: `1px solid ${hasError ? "#ef4444" : "#d1d5db"}`,
-    borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", color: "#111827", background: "#fff",
+    width: "100%", padding: "10px 14px", border: `1px solid ${hasError ? "#ef4444" : "var(--ui-border)"}`,
+    borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", color: "var(--ui-text)", background: "var(--ui-surface-strong)",
   });
-  const labelStyle: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 };
+  const labelStyle: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: "var(--ui-text)", display: "block", marginBottom: 6 };
   const errorStyle: React.CSSProperties = { fontSize: 12, color: "#ef4444", marginTop: 3 };
-  const sectionStyle: React.CSSProperties = { padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" };
+  const sectionStyle: React.CSSProperties = { padding: "12px 14px", background: "var(--ui-surface-muted)", borderRadius: 8, border: "1px solid var(--ui-border)" };
 
   // BF_PORTAL_BLOCK_TWO_STAGE_v1 -- DocCheckbox now optionally renders
   // a Stage 1 / Stage 2 toggle when the doc is in coreTypes and
@@ -711,7 +711,7 @@ function CreateProductModal({
     hasForm?: boolean;
   }) {
     return (
-      <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: locked ? "default" : "pointer", fontSize: 13, color: "#374151", padding: "3px 0" }}>
+      <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: locked ? "default" : "pointer", fontSize: 13, color: "var(--ui-text)", padding: "3px 0" }}>
         <input
           type="checkbox"
           checked={checkedDocs.has(id)}
@@ -739,9 +739,9 @@ function CreateProductModal({
                   fontSize: 11,
                   fontWeight: 600,
                   borderRadius: 4,
-                  border: docStages.get(id) === s ? "1px solid #2563eb" : "1px solid #d1d5db",
-                  background: docStages.get(id) === s ? "#2563eb" : "#fff",
-                  color: docStages.get(id) === s ? "#fff" : "#6b7280",
+                  border: docStages.get(id) === s ? "1px solid #2563eb" : "1px solid var(--ui-border)",
+                  background: docStages.get(id) === s ? "#2563eb" : "var(--ui-surface-strong)",
+                  color: docStages.get(id) === s ? "#fff" : "var(--ui-text-muted)",
                   cursor: "pointer",
                 }}
               >
@@ -751,7 +751,7 @@ function CreateProductModal({
           </div>
         )}
         {locked && (
-          <span style={{ marginLeft: 8, padding: "2px 6px", fontSize: 10, fontWeight: 600, borderRadius: 3, background: "#f3f4f6", color: "#6b7280" }}>
+          <span style={{ marginLeft: 8, padding: "2px 6px", fontSize: 10, fontWeight: 600, borderRadius: 3, background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)" }}>
             Stage 1 (locked)
           </span>
         )}
@@ -763,11 +763,11 @@ function CreateProductModal({
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.5)" }} onClick={onClose} />
       <div style={{
-        position: "relative", background: "#fff", borderRadius: 16, width: "min(680px, 95vw)",
+        position: "relative", background: "var(--ui-surface-strong)", borderRadius: 16, width: "min(680px, 95vw)",
         maxHeight: "90vh", overflowY: "auto", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
       }}>
-        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "#6b7280", cursor: "pointer" }}>×</button>
-        <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "#111827" }}>{product ? "Edit Product" : "Create New Product"}</h2>
+        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "var(--ui-text-muted)", cursor: "pointer" }}>×</button>
+        <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "var(--ui-text)" }}>{product ? "Edit Product" : "Create New Product"}</h2>
 
         {serverError && (
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 16, color: "#dc2626", fontSize: 13 }}>
@@ -831,7 +831,7 @@ function CreateProductModal({
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <input placeholder="Minimum amount" value={form.minAmount} onChange={(e) => set("minAmount", formatDollar(e.target.value))}
                 style={{ ...inputStyle(!!errors.amount), flex: 1 }} />
-              <span style={{ color: "#9ca3af", fontSize: 18, flexShrink: 0 }}>—</span>
+              <span style={{ color: "var(--ui-text-muted)", fontSize: 18, flexShrink: 0 }}>—</span>
               <input placeholder="Maximum amount" value={form.maxAmount} onChange={(e) => set("maxAmount", formatDollar(e.target.value))}
                 style={{ ...inputStyle(), flex: 1 }} />
             </div>
@@ -860,7 +860,7 @@ function CreateProductModal({
                 placeholder={form.rateKind === "factor" ? "e.g. 1.24" : form.rateKind === "monthly" ? "e.g. 1.0" : "e.g. 4.99"}
                 value={form.minRate} onChange={(e) => set("minRate", e.target.value)}
                 style={{ ...inputStyle(), flex: 1 }} type="text" inputMode="decimal" />
-              <span style={{ color: "#9ca3af", fontSize: 18, flexShrink: 0 }}>—</span>
+              <span style={{ color: "var(--ui-text-muted)", fontSize: 18, flexShrink: 0 }}>—</span>
               <input
                 placeholder={form.rateKind === "factor" ? "e.g. 1.45" : form.rateKind === "monthly" ? "e.g. 3.0" : "e.g. 19.99"}
                 value={form.maxRate} onChange={(e) => set("maxRate", e.target.value)}
@@ -868,7 +868,7 @@ function CreateProductModal({
             </div>
             {(form.rateKind === "monthly" || form.rateKind === "factor") && (
               <div style={{ marginTop: 8 }}>
-                <label style={{ ...labelStyle, fontSize: 12, color: "#64748b" }}>
+                <label style={{ ...labelStyle, fontSize: 12, color: "var(--ui-text-muted)" }}>
                   Rate period (days) — optional; defaults: 30 monthly, 180 factor
                 </label>
                 <input
@@ -881,7 +881,7 @@ function CreateProductModal({
 
           {/* BF_LP_FORM_FIELDS_v36 — Term Min + Max, Commission, Min Credit Score */}
           <div>
-            <label style={labelStyle}>Term <span style={{ color: "#9ca3af", fontWeight: 400 }}>(months)</span></label>
+            <label style={labelStyle}>Term <span style={{ color: "var(--ui-text-muted)", fontWeight: 400 }}>(months)</span></label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, alignItems: "center" }}>
               <input
                 placeholder="e.g. 6"
@@ -890,7 +890,7 @@ function CreateProductModal({
                 onChange={(e) => set("termMin", e.target.value.replace(/[^0-9]/g, ""))}
                 style={inputStyle()}
               />
-              <span style={{ color: "#6b7280" }}>—</span>
+              <span style={{ color: "var(--ui-text-muted)" }}>—</span>
               <input
                 placeholder="e.g. 24"
                 inputMode="numeric"
@@ -902,7 +902,7 @@ function CreateProductModal({
           </div>
 
           <div>
-            <label style={labelStyle}>Commission <span style={{ color: "#9ca3af", fontWeight: 400 }}>(%, internal)</span></label>
+            <label style={labelStyle}>Commission <span style={{ color: "var(--ui-text-muted)", fontWeight: 400 }}>(%, internal)</span></label>
             <input
               placeholder="e.g. 1.5"
               inputMode="decimal"
@@ -928,7 +928,7 @@ function CreateProductModal({
 
           {/* Eligibility Notes */}
           <div>
-            <label style={labelStyle}>Eligibility Notes <span style={{ color: "#6b7280", fontWeight: 400 }}>(Optional)</span></label>
+            <label style={labelStyle}>Eligibility Notes <span style={{ color: "var(--ui-text-muted)", fontWeight: 400 }}>(Optional)</span></label>
             <textarea placeholder="Enter any eligibility requirements" value={form.eligibilityNotes}
               onChange={(e) => set("eligibilityNotes", e.target.value)} rows={3}
               style={{ ...inputStyle(), resize: "vertical" }} />
@@ -936,7 +936,7 @@ function CreateProductModal({
 
           {/* BF_PORTAL_BLOCK_v627_LENDER_PRODUCT_RATE_KIND_v1 — Documents Required */}
           <div>
-            <label style={labelStyle}>Documents Required <span style={{ color: "#6b7280", fontWeight: 400 }}>(Semicolon-separated)</span></label>
+            <label style={labelStyle}>Documents Required <span style={{ color: "var(--ui-text-muted)", fontWeight: 400 }}>(Semicolon-separated)</span></label>
             <textarea
               placeholder="e.g. Bank Statements; Profit and Loss Statement; Balance Sheet; Personal Financial Statement"
               value={form.documentsRequired}
@@ -944,14 +944,14 @@ function CreateProductModal({
               rows={3}
               style={{ ...inputStyle(), resize: "vertical" }}
             />
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 4 }}>
               List the document names separated by semicolons — matches the seed file format from the lender PDFs.
             </div>
           </div>
 
           {/* SignNow Template ID */}
           <div>
-            <label style={labelStyle}>SignNow Template ID <span style={{ color: "#6b7280", fontWeight: 400 }}>(Optional)</span></label>
+            <label style={labelStyle}>SignNow Template ID <span style={{ color: "var(--ui-text-muted)", fontWeight: 400 }}>(Optional)</span></label>
             <input placeholder="Enter SignNow template ID" value={form.signnowTemplateId}
               onChange={(e) => set("signnowTemplateId", e.target.value)} style={inputStyle()} />
           </div>
@@ -982,7 +982,7 @@ function CreateProductModal({
             {/* BF_PORTAL_BLOCK_v98_v3 — short canonical code "MEDIA" */}
             {form.category !== "MEDIA" && (
               <div style={{ ...sectionStyle, marginBottom: 10 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Core Underwriting Pack</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ui-text)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Core Underwriting Pack</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
                   {coreTypes.map((d) => (
                     <DocCheckbox
@@ -1015,17 +1015,17 @@ function CreateProductModal({
               onClick={() => set("active", !form.active)}
               style={{
                 width: 44, height: 24, borderRadius: 12, position: "relative", cursor: "pointer",
-                background: form.active ? "#2563eb" : "#d1d5db", transition: "background 0.2s",
+                background: form.active ? "#2563eb" : "var(--ui-border)", transition: "background 0.2s",
                 flexShrink: 0,
               }}
             >
               <div style={{
                 position: "absolute", top: 2, left: form.active ? 22 : 2, width: 20, height: 20,
-                borderRadius: "50%", background: "#fff", transition: "left 0.2s",
+                borderRadius: "50%", background: "var(--ui-surface-strong)", transition: "left 0.2s",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
               }} />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>Active</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ui-text)" }}>Active</span>
           </label>
         </div>
 
@@ -1125,11 +1125,11 @@ function ProductsPanel({
   }
 
   return (
-    <div style={{ flex: 1, background: "#f8fafc", display: "flex", flexDirection: "column", overflowY: "auto" }}>
+    <div style={{ flex: 1, background: "var(--ui-surface-muted)", display: "flex", flexDirection: "column", overflowY: "auto" }}>
       {/* Header — always visible */}
-      <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid #e2e8f0", background: "#fff" }}>
+      <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--ui-text)" }}>
             Lender Products{lender ? ` (selected: ${lender.name})` : ""}
           </h2>
           <button onClick={onAddProduct}
@@ -1142,11 +1142,11 @@ function ProductsPanel({
         <div style={{ display: "flex", gap: 8 }}>
           <input value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search products…"
-            style={{ flex: 1, padding: "7px 12px", border: "1px solid #d1d5db",
+            style={{ flex: 1, padding: "7px 12px", border: "1px solid var(--ui-border)",
               borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
           <select value={countryFilter} onChange={(e) => setCountryFilter(e.target.value as "ALL" | "US" | "CA")}
             aria-label="Filter products by country"
-            style={{ padding: "7px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, background: "#fff", outline: "none", cursor: "pointer" }}>
+            style={{ padding: "7px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 13, background: "var(--ui-surface-strong)", outline: "none", cursor: "pointer" }}>
             <option value="ALL">All countries</option>
             <option value="US">United States</option>
             <option value="CA">Canada</option>
@@ -1154,7 +1154,7 @@ function ProductsPanel({
           {/* BF_PORTAL_BLOCK_v709_LP_CATEGORY_FILTER_v1 — category filter beside country */}
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
             aria-label="Filter products by category"
-            style={{ padding: "7px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, background: "#fff", outline: "none", cursor: "pointer" }}>
+            style={{ padding: "7px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 13, background: "var(--ui-surface-strong)", outline: "none", cursor: "pointer" }}>
             <option value="ALL">All categories</option>
             {CATEGORY_ORDER.map((c) => (
               <option key={c} value={c}>{CATEGORY_LABELS[c] ?? c}</option>
@@ -1173,22 +1173,22 @@ function ProductsPanel({
           </div>
         )}
 
-        {isLoading && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>Loading products…</div>}
+        {isLoading && <div style={{ padding: 20, textAlign: "center", color: "var(--ui-text-muted)", fontSize: 14 }}>Loading products…</div>}
 
         {!isLoading && grouped.length === 0 && (
-          <div style={{ padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
+          <div style={{ padding: 32, textAlign: "center", color: "var(--ui-text-muted)", fontSize: 14 }}>
             {search ? `No products matching "${search}"` : "No products yet. Click \"+ Create Product\" to create one."}
           </div>
         )}
 
         {/* v190: flat product table — Lender | Country | Min | Max | Active | Edit */}
         {!isLoading && filtered.length > 0 && (
-          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+          <div style={{ background: "var(--ui-surface-strong)", borderRadius: 10, border: "1px solid var(--ui-border)", overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: "2px solid #f1f5f9", background: "#f8fafc" }}>
+                <tr style={{ borderBottom: "2px solid #f1f5f9", background: "var(--ui-surface-muted)" }}>
                   {["Lender", "Country", "Min", "Max", "Active", ""].map((h) => (
-                    <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#1e293b", fontSize: 12 }}>{h}</th>
+                    <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text)", fontSize: 12 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1201,16 +1201,16 @@ function ProductsPanel({
                   const rows: React.ReactNode[] = [];
                   for (const cat of ordered) {
                     const items = byCat.get(cat) ?? []; if (!items.length) continue;
-                    rows.push(<tr key={`cat-${cat}`} style={{ background: "#f1f5f9" }}><td colSpan={6} style={{ padding: "8px 12px", fontWeight: 700, color: "#0f172a", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>{CATEGORY_LABELS[cat] ?? cat} <span style={{ color: "#64748b", fontWeight: 500, marginLeft: 6 }}>({items.length})</span></td></tr>);
+                    rows.push(<tr key={`cat-${cat}`} style={{ background: "var(--ui-surface-muted)" }}><td colSpan={6} style={{ padding: "8px 12px", fontWeight: 700, color: "var(--ui-text)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>{CATEGORY_LABELS[cat] ?? cat} <span style={{ color: "var(--ui-text-muted)", fontWeight: 500, marginLeft: 6 }}>({items.length})</span></td></tr>);
                     for (const p of items) {
                       const ld = lenders.find((x) => x.id === (p.lenderId ?? p.lender_id));
                       const country = /* BF_PORTAL_BLOCK_v695_PRODUCT_COUNTRY_COLUMN_v1 */ (() => { const v = String((p as any).country ?? "").trim().toUpperCase(); if (v === "CA" || v === "CANADA") return "Canada"; if (v === "US" || v === "USA" || v === "UNITED STATES") return "United States"; if (v === "BOTH") return "Both"; return v ? String((p as any).country) : "—"; })();
                       rows.push(
                         <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 500 }}>{ld?.name ?? "—"}</td>
-                          <td style={{ padding: "10px 12px", color: "#334155" }}>{country}</td>
-                          <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 600 }}>{formatAmount(p.minAmount) || "—"}</td>
-                          <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 600 }}>{formatAmount(p.maxAmount) || "—"}</td>
+                          <td style={{ padding: "10px 12px", color: "var(--ui-text)", fontWeight: 500 }}>{ld?.name ?? "—"}</td>
+                          <td style={{ padding: "10px 12px", color: "var(--ui-text-muted)" }}>{country}</td>
+                          <td style={{ padding: "10px 12px", color: "var(--ui-text)", fontWeight: 600 }}>{formatAmount(p.minAmount) || "—"}</td>
+                          <td style={{ padding: "10px 12px", color: "var(--ui-text)", fontWeight: 600 }}>{formatAmount(p.maxAmount) || "—"}</td>
                           <td style={{ padding: "10px 12px" }}>
                             <StatusBadge active={(p.is_active ?? p.active)} status={p.status} />
                           </td>
@@ -1218,7 +1218,7 @@ function ProductsPanel({
                             <button
                               type="button"
                               onClick={() => onEditProduct(p)}
-                              style={{ padding: "5px 12px", border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
+                              style={{ padding: "5px 12px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
                             >Edit</button>
                           </td>
                         </tr>
@@ -1234,17 +1234,17 @@ function ProductsPanel({
         {false && grouped.map(([cat, items]) => {
           const isOpen = !collapsed.has(cat);
           return (
-            <div key={cat} style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+            <div key={cat} style={{ background: "var(--ui-surface-strong)", borderRadius: 10, border: "1px solid var(--ui-border)", overflow: "hidden" }}>
               {/* (legacy grouped render — disabled by v190; kept to avoid breaking diff anchors) */}
               <div
                 onClick={() => toggleCollapse(cat)}
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", cursor: "pointer", userSelect: "none" }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#6b7280", fontSize: 12 }}>{isOpen ? "▼" : "▶"}</span>
-                  <span style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>{CATEGORY_LABELS[cat] ?? cat}</span>
+                  <span style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{isOpen ? "▼" : "▶"}</span>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>{CATEGORY_LABELS[cat] ?? cat}</span>
                 </div>
-                <span style={{ fontSize: 12, color: "#94a3b8" }}>{items.length} products</span>
+                <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{items.length} products</span>
               </div>
 
               {/* Products */}
@@ -1253,21 +1253,21 @@ function ProductsPanel({
                   key={p.id}
                   style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 16px 10px 32px", borderTop: "1px solid #f1f5f9", fontSize: 13 }}
                 >
-                  <span style={{ flex: 1, color: "#1e293b", fontWeight: 500 }}>{(p as any).productName || (p as any).name}</span>
+                  <span style={{ flex: 1, color: "var(--ui-text)", fontWeight: 500 }}>{(p as any).productName || (p as any).name}</span>
                   {formatAmount(p.minAmount) && (
-                    <span style={{ color: "#374151", fontWeight: 600 }}>{formatAmount(p.minAmount)}</span>
+                    <span style={{ color: "var(--ui-text)", fontWeight: 600 }}>{formatAmount(p.minAmount)}</span>
                   )}
                   {formatTerm(p) && (
-                    <span style={{ color: "#64748b" }}>{formatTerm(p)}</span>
+                    <span style={{ color: "var(--ui-text-muted)" }}>{formatTerm(p)}</span>
                   )}
                   {formatRateRange(p.interestRateMin, p.interestRateMax) && (
-                    <span style={{ color: "#374151" }}>{formatRateRange(p.interestRateMin, p.interestRateMax)}</span>
+                    <span style={{ color: "var(--ui-text)" }}>{formatRateRange(p.interestRateMin, p.interestRateMax)}</span>
                   )}
                   <StatusBadge active={(p as { is_active?: boolean; active?: boolean }).is_active ?? p.active} status={(p as { status?: string }).status} />
                   <button
                     type="button"
                     onClick={() => onEditProduct(p)}
-                    style={{ padding: "5px 10px", border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
+                    style={{ padding: "5px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
                   >
                     Edit
                   </button>
@@ -1436,18 +1436,18 @@ export default function LendersPage() {
   return (
     <div style={{ display: "flex", height: "calc(100vh - 80px)", overflow: "hidden" }}>
       {/* ── Left panel — lender list ── */}
-      <div style={{ width: 440, minWidth: 340, borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", background: "#fff" }}>
+      <div style={{ width: 440, minWidth: 340, borderRight: "1px solid var(--ui-border)", display: "flex", flexDirection: "column", background: "var(--ui-surface-strong)" }}>
         {/* Header */}
         <div style={{ padding: "20px 20px 14px" }}>
-          <h1 style={{ margin: "0 0 14px", fontSize: 22, fontWeight: 700, color: "#0f172a" }}>Lenders</h1>
+          <h1 style={{ margin: "0 0 14px", fontSize: 22, fontWeight: 700, color: "var(--ui-text)" }}>Lenders</h1>
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ flex: 1, position: "relative" }}>
-              <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", fontSize: 14 }}>🔍</span>
+              <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ui-text-muted)", fontSize: 14 }}>🔍</span>
               <input
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 placeholder="Search lenders..."
-                style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box", color: "#111827" }}
+                style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box", color: "var(--ui-text)" }}
               />
             </div>
             <button
@@ -1465,23 +1465,23 @@ export default function LendersPage() {
             <thead>
               <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
                 {/* BF_PORTAL_BLOCK_v709_LP_PRODUCT_COUNTS_v1 — Products column between Name and Status */}
-                <th onClick={() => cycleSort("name")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc", cursor: "pointer" }}>Lender Name{sortKey === "name" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
-                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc" }}>Products</th>
+                <th onClick={() => cycleSort("name")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)", cursor: "pointer" }}>Lender Name{sortKey === "name" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
+                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)" }}>Products</th>
                 {[
                   ["Status", "status"],
                   ["Active", "active"],
                 ].map(([h, key]) => (
-                  <th key={h} onClick={() => cycleSort(key as "name" | "status" | "active")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc", cursor: "pointer" }}>{h}{sortKey === key ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
+                  <th key={h} onClick={() => cycleSort(key as "name" | "status" | "active")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)", cursor: "pointer" }}>{h}{sortKey === key ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
                 ))}
-                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "#64748b", fontSize: 12, background: "#f8fafc" }}>Actions</th>
+                <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Loading…</td></tr>
+                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "var(--ui-text-muted)" }}>Loading…</td></tr>
               )}
               {!isLoading && paginated.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No lenders found</td></tr>
+                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "var(--ui-text-muted)" }}>No lenders found</td></tr>
               )}
               {paginated.map((l) => {
                 const isSelected = selected?.id === l.id;
@@ -1497,13 +1497,13 @@ export default function LendersPage() {
                       transition: "background 0.1s",
                     }}
                   >
-                    <td style={{ padding: "10px 12px", fontWeight: isSelected ? 600 : 400, color: "#1e293b" }}>{l.name}</td>
+                    <td style={{ padding: "10px 12px", fontWeight: isSelected ? 600 : 400, color: "var(--ui-text)" }}>{l.name}</td>
                     {/* BF_PORTAL_BLOCK_v709_LP_PRODUCT_COUNTS_v1 */}
-                    <td style={{ padding: "10px 12px", color: "#64748b", fontWeight: 600 }}>{productCountByLender.get(l.id) ?? 0}</td>
+                    <td style={{ padding: "10px 12px", color: "var(--ui-text-muted)", fontWeight: 600 }}>{productCountByLender.get(l.id) ?? 0}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <StatusBadge active={l.active} status={l.status} />
                     </td>
-                    <td style={{ padding: "10px 12px", color: "#64748b" }}>{l.active ? "Yes" : "No"}</td>
+                    <td style={{ padding: "10px 12px", color: "var(--ui-text-muted)" }}>{l.active ? "Yes" : "No"}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <button
                         type="button"
@@ -1511,7 +1511,7 @@ export default function LendersPage() {
                           event.stopPropagation();
                           setEditingLender(l);
                         }}
-                        style={{ padding: "5px 10px", border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
+                        style={{ padding: "5px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
                       >
                         Edit
                       </button>
@@ -1524,14 +1524,14 @@ export default function LendersPage() {
         </div>
 
         {/* Pagination */}
-        <div style={{ padding: "10px 16px", borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "#64748b" }}>
+        <div style={{ padding: "10px 16px", borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "var(--ui-text-muted)" }}>
           <span>{filtered.length === 0 ? "0" : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)}`} of {filtered.length}</span>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <button onClick={() => setPage(1)} disabled={page === 1} style={{ padding: "3px 7px", border: "1px solid #e2e8f0", borderRadius: 5, cursor: page === 1 ? "default" : "pointer", background: "#fff", opacity: page === 1 ? 0.4 : 1 }}>«</button>
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: "3px 7px", border: "1px solid #e2e8f0", borderRadius: 5, cursor: page === 1 ? "default" : "pointer", background: "#fff", opacity: page === 1 ? 0.4 : 1 }}>‹</button>
-            <span style={{ padding: "3px 10px", background: "#f1f5f9", borderRadius: 5, fontWeight: 600 }}>{page}</span>
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ padding: "3px 7px", border: "1px solid #e2e8f0", borderRadius: 5, cursor: page === totalPages ? "default" : "pointer", background: "#fff", opacity: page === totalPages ? 0.4 : 1 }}>›</button>
-            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} style={{ padding: "3px 7px", border: "1px solid #e2e8f0", borderRadius: 5, cursor: page === totalPages ? "default" : "pointer", background: "#fff", opacity: page === totalPages ? 0.4 : 1 }}>»</button>
+            <button onClick={() => setPage(1)} disabled={page === 1} style={{ padding: "3px 7px", border: "1px solid var(--ui-border)", borderRadius: 5, cursor: page === 1 ? "default" : "pointer", background: "var(--ui-surface-strong)", opacity: page === 1 ? 0.4 : 1 }}>«</button>
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: "3px 7px", border: "1px solid var(--ui-border)", borderRadius: 5, cursor: page === 1 ? "default" : "pointer", background: "var(--ui-surface-strong)", opacity: page === 1 ? 0.4 : 1 }}>‹</button>
+            <span style={{ padding: "3px 10px", background: "var(--ui-surface-muted)", borderRadius: 5, fontWeight: 600 }}>{page}</span>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ padding: "3px 7px", border: "1px solid var(--ui-border)", borderRadius: 5, cursor: page === totalPages ? "default" : "pointer", background: "var(--ui-surface-strong)", opacity: page === totalPages ? 0.4 : 1 }}>›</button>
+            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} style={{ padding: "3px 7px", border: "1px solid var(--ui-border)", borderRadius: 5, cursor: page === totalPages ? "default" : "pointer", background: "var(--ui-surface-strong)", opacity: page === totalPages ? 0.4 : 1 }}>»</button>
           </div>
         </div>
       </div>

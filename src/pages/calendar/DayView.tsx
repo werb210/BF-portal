@@ -23,14 +23,14 @@ const DayView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date;
     <div
       className="calendar-view calendar-view--day"
       style={{
-        border: "1px solid #e2e8f0",
+        border: "1px solid var(--ui-border)",
         borderRadius: 10,
         overflowY: "auto",
         maxHeight: "calc(100vh - 300px)",
-        background: "#fff",
+        background: "var(--ui-surface-strong)",
       }}
     >
-      <div style={{ padding: "12px 14px", borderBottom: "1px solid #e2e8f0", fontWeight: 700 }}>
+      <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ui-border)", fontWeight: 700 }}>
         {date.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
       </div>
       {HOURS.map((hour) => {
@@ -40,7 +40,7 @@ const DayView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date;
             key={hour}
             style={{ display: "grid", gridTemplateColumns: "80px 1fr", minHeight: 64, borderBottom: "1px solid #f1f5f9" }}
           >
-            <div style={{ padding: "10px 8px", textAlign: "right", color: "#64748b", fontSize: 12 }}>{formatHourLabel(hour)}</div>
+            <div style={{ padding: "10px 8px", textAlign: "right", color: "var(--ui-text-muted)", fontSize: 12 }}>{formatHourLabel(hour)}</div>
             <div style={{ padding: 8 }}>
               {events.map((event) => (
                 (() => {

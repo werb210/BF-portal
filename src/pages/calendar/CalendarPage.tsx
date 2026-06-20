@@ -256,13 +256,13 @@ function CalendarContent() {
 
   return (
     <div className="page" style={{ display: "grid", gridTemplateColumns: "65% 35%", gap: 16, minHeight: "calc(100vh - 160px)" }}>
-      <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}>
+      <section style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: 12 }}>
         {/* BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — the default rbc-toolbar label
             was being suppressed by a global stylesheet. Render the month/year
             ourselves so staff actually knows what they're looking at. */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h2 style={{ margin: 0, fontSize: 20 }}>
-            Calendar — <span style={{ color: "#475569", fontWeight: 500 }}>{format(currentDate, view === "day" ? "EEEE, MMMM d, yyyy" : view === "week" ? "'Week of' MMMM d, yyyy" : "MMMM yyyy")}</span>
+            Calendar — <span style={{ color: "var(--ui-text-muted)", fontWeight: 500 }}>{format(currentDate, view === "day" ? "EEEE, MMMM d, yyyy" : view === "week" ? "'Week of' MMMM d, yyyy" : "MMMM yyyy")}</span>
           </h2>
           <button onClick={() => setShowEventForm(true)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2563eb", background: "#2563eb", color: "#fff" }}>
             Add Event
@@ -284,13 +284,13 @@ function CalendarContent() {
         <div style={{ height: 700, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", gap: 8, padding: "0 0 8px 0" }}>
             {/* BF_PORTAL_BLOCK_v712 — prev / today / next, scoped to the active view */}
-            <button onClick={() => setCurrentDate((d) => { const x = new Date(d); if (view === "month") x.setMonth(x.getMonth() - 1); else if (view === "year") x.setFullYear(x.getFullYear() - 1); else x.setDate(x.getDate() - (view === "work_week" ? 7 : 1)); return x; })} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: "#fff", color: "#0f172a", fontSize: 13, cursor: "pointer" }}>‹ Prev</button>
-            <button onClick={() => setCurrentDate(new Date())} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: "#fff", color: "#0f172a", fontSize: 13, cursor: "pointer" }}>Today</button>
-            <button onClick={() => setCurrentDate((d) => { const x = new Date(d); if (view === "month") x.setMonth(x.getMonth() + 1); else if (view === "year") x.setFullYear(x.getFullYear() + 1); else x.setDate(x.getDate() + (view === "work_week" ? 7 : 1)); return x; })} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: "#fff", color: "#0f172a", fontSize: 13, cursor: "pointer" }}>Next ›</button>
-            <button onClick={() => setView("day")}    style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "day" ? "#0066cc" : "#fff", color: view === "day" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Day</button>
-            <button onClick={() => setView("work_week")} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "work_week" ? "#0066cc" : "#fff", color: view === "work_week" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Week</button>
-            <button onClick={() => setView("month")}  style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "month" ? "#0066cc" : "#fff", color: view === "month" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Month</button>
-            <button onClick={() => setView("year")}   style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #cbd6e2", background: view === "year" ? "#0066cc" : "#fff", color: view === "year" ? "#fff" : "#0f172a", fontSize: 13, cursor: "pointer" }}>Year</button>
+            <button onClick={() => setCurrentDate((d) => { const x = new Date(d); if (view === "month") x.setMonth(x.getMonth() - 1); else if (view === "year") x.setFullYear(x.getFullYear() - 1); else x.setDate(x.getDate() - (view === "work_week" ? 7 : 1)); return x; })} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>‹ Prev</button>
+            <button onClick={() => setCurrentDate(new Date())} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Today</button>
+            <button onClick={() => setCurrentDate((d) => { const x = new Date(d); if (view === "month") x.setMonth(x.getMonth() + 1); else if (view === "year") x.setFullYear(x.getFullYear() + 1); else x.setDate(x.getDate() + (view === "work_week" ? 7 : 1)); return x; })} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Next ›</button>
+            <button onClick={() => setView("day")}    style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "day" ? "#0066cc" : "var(--ui-surface-strong)", color: view === "day" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Day</button>
+            <button onClick={() => setView("work_week")} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "work_week" ? "#0066cc" : "var(--ui-surface-strong)", color: view === "work_week" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Week</button>
+            <button onClick={() => setView("month")}  style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "month" ? "#0066cc" : "var(--ui-surface-strong)", color: view === "month" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Month</button>
+            <button onClick={() => setView("year")}   style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "year" ? "#0066cc" : "var(--ui-surface-strong)", color: view === "year" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Year</button>
           </div>
 
           {view === "year" ? (
@@ -327,7 +327,7 @@ function CalendarContent() {
               }}
               eventPropGetter={(event: CalendarEvent) => {
                 const isTask = ((event.resource as any)?.__kind === "task");
-                return { style: { backgroundColor: isTask ? "#fed7aa" : "#2563eb", borderColor: isTask ? "#c2410c" : "#1d4ed8", color: isTask ? "#9a3412" : "#fff" } };
+                return { style: { backgroundColor: isTask ? "#fed7aa" : "#2563eb", borderColor: isTask ? "#c2410c" : "#1d4ed8", color: isTask ? "#9a3412" : "var(--ui-surface-strong)" } };
               }}
               popup
               toolbar={false}
@@ -336,7 +336,7 @@ function CalendarContent() {
         </div>
       </section>
 
-      <aside style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, overflowY: "auto" }}>
+      <aside style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: 12, overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ margin: 0 }}>Tasks</h3>
           <button onClick={() => setShowTaskForm(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #0f766e", background: "#0f766e", color: "#fff" }}>
@@ -350,8 +350,8 @@ function CalendarContent() {
         {[
           ["Overdue", groupedTasks.overdue, "#dc2626"],
           ["Due Today", groupedTasks.dueToday, "#f97316"],
-          ["Upcoming", groupedTasks.upcoming, "#0f172a"],
-          ["No Due Date", groupedTasks.noDueDate, "#64748b"],
+          ["Upcoming", groupedTasks.upcoming, "var(--ui-text)"],
+          ["No Due Date", groupedTasks.noDueDate, "var(--ui-text-muted)"],
           ["Completed", groupedTasks.completed, "#10b981"],
         ].map(([label, items, color]) => (
           <div key={label as string} style={{ marginBottom: 14 }}>
@@ -368,19 +368,19 @@ function CalendarContent() {
               <h4 style={{ margin: "0 0 8px", color: color as string, fontSize: 14 }}>{label as string}</h4>
             )}
             {label === "Completed" && !completedExpanded ? null : (items as CalendarTask[]).length === 0 ? (
-              <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>None</p>
+              <p style={{ color: "var(--ui-text-muted)", fontSize: 13, margin: 0 }}>None</p>
             ) : (
               (items as CalendarTask[]).map((task) => (
                 <div key={task.id ?? `${task.title}-${task.due_date}`} onClick={() => setSelectedTask(task)} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f5f9", alignItems: "flex-start", cursor: "pointer" }}>
                   <input type="checkbox" style={{ marginTop: 3 }} checked={task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed)} onChange={(e) => { e.stopPropagation(); task.id && completeTaskMutation.mutate(task); }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: "#0f172a", wordBreak: "break-word" }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ui-text)", wordBreak: "break-word" }}>
                       {(typeof task.title === "string" && task.title.trim()) ? task.title : "Untitled task"}
                     </div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>
+                    <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
                       Due: {(task.dueAt ?? task.due_date ?? task.dueDate) ? new Date(task.dueAt ?? task.due_date ?? task.dueDate ?? "").toLocaleString() : "-"}
                     </div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>Assigned to: {(() => {
+                    <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Assigned to: {(() => {
                       const assigneeName = task.assignee_name ?? task.assigneeName;
                       const assigneeEmail = task.assignee_email ?? task.assigneeEmail;
                       return assigneeName || assigneeEmail || "-";
@@ -395,7 +395,7 @@ function CalendarContent() {
 
       {selectedEvent && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
-          <div style={{ width: "min(560px, 90vw)", background: "#fff", color: "#0f172a", borderRadius: 12, padding: 16 }}>
+          <div style={{ width: "min(560px, 90vw)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", borderRadius: 12, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>{selectedEvent.title}</h3>
             <p><strong>Date/Time:</strong> {selectedEvent.start.toLocaleString()} - {selectedEvent.end.toLocaleString()}</p>
             <p><strong>Attendees:</strong> {Array.isArray(selectedEvent.resource.attendees) ? selectedEvent.resource.attendees.join(", ") : (selectedEvent.resource.attendees ?? "—")}</p>
@@ -425,7 +425,7 @@ function CalendarContent() {
               if (!text) return "—";
               return text.length > 600 ? text.slice(0, 600) + "…" : text;
             })()}</p>
-            <button onClick={() => setSelectedEvent(null)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}>
+            <button onClick={() => setSelectedEvent(null)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)" }}>
               Close
             </button>
           </div>
@@ -433,7 +433,7 @@ function CalendarContent() {
       )}
       {selectedTask && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "grid", placeItems: "center", zIndex: 1000 }}>
-          <div style={{ background: "#fff", color: "#0f172a", borderRadius: 10, padding: 16, width: "min(520px, 92vw)" }}>
+          <div style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text)", borderRadius: 10, padding: 16, width: "min(520px, 92vw)" }}>
             <h3 style={{ marginTop: 0 }}>{selectedTask.title ?? "Untitled task"}</h3>
             <p><strong>Notes:</strong> {selectedTask.notes ?? "-"}</p>
             <p><strong>Due date:</strong> {(selectedTask.dueAt ?? selectedTask.due_date ?? selectedTask.dueDate) ? new Date(selectedTask.dueAt ?? selectedTask.due_date ?? selectedTask.dueDate ?? "").toLocaleString() : "-"}</p>
@@ -450,7 +450,7 @@ function CalendarContent() {
 
       {showEventForm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
-          <div style={{ width: "min(560px, 90vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
+          <div style={{ width: "min(560px, 90vw)", background: "var(--ui-surface-strong)", borderRadius: 12, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>Add Event</h3>
             <label style={fieldRow}>
               <span style={fieldLabel}>Title</span>
@@ -511,7 +511,7 @@ function CalendarContent() {
 
       {showTaskForm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
-          <div style={{ width: "min(560px, 90vw)", background: "#fff", borderRadius: 12, padding: 16 }}>
+          <div style={{ width: "min(560px, 90vw)", background: "var(--ui-surface-strong)", borderRadius: 12, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>Add Task</h3>
             <label style={fieldRow}>
               <span style={fieldLabel}>Title</span>
@@ -585,15 +585,15 @@ function CalendarContent() {
 const fieldRow: CSSProperties = { display: "block", marginBottom: 12 };
 const fieldLabel: CSSProperties = {
   display: "block", fontSize: 12, fontWeight: 600,
-  color: "#33475b", marginBottom: 4,
+  color: "var(--ui-text-muted)", marginBottom: 4,
 };
 const calInputStyle: CSSProperties = {
   width: "100%",
-  border: "1px solid #d1d5db",
+  border: "1px solid var(--ui-border)",
   padding: "8px 10px",
   borderRadius: 8,
-  background: "#fff",
-  color: "#000",
+  background: "var(--ui-surface-strong)",
+  color: "var(--ui-text)",
   colorScheme: "light",
   fontSize: 14,
 };
@@ -646,21 +646,21 @@ function YearView({
   }
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, background: "#fff" }}>
+    <div style={{ flex: 1, overflowY: "auto", border: "1px solid var(--ui-border)", borderRadius: 8, padding: 16, background: "var(--ui-surface-strong)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <button onClick={onPrevYear} style={{ padding: "6px 12px", border: "1px solid #cbd6e2", borderRadius: 6, background: "#fff", cursor: "pointer" }}>← {year - 1}</button>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#0f172a" }}>{year}</h2>
-        <button onClick={onNextYear} style={{ padding: "6px 12px", border: "1px solid #cbd6e2", borderRadius: 6, background: "#fff", cursor: "pointer" }}>{year + 1} →</button>
+        <button onClick={onPrevYear} style={{ padding: "6px 12px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", cursor: "pointer" }}>← {year - 1}</button>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "var(--ui-text)" }}>{year}</h2>
+        <button onClick={onNextYear} style={{ padding: "6px 12px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", cursor: "pointer" }}>{year + 1} →</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
         {months.map((m) => {
           const name = new Date(year, m, 1).toLocaleDateString(undefined, { month: "long" });
           return (
-            <div key={m} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, color: "#0f172a", marginBottom: 6 }}>{name}</div>
+            <div key={m} style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: 10 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)", marginBottom: 6 }}>{name}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, fontSize: 11 }}>
                 {dayLetters.map((l, i) => (
-                  <div key={`h-${m}-${i}`} style={{ textAlign: "center", color: "#94a3b8", fontWeight: 600, padding: "2px 0" }}>{l}</div>
+                  <div key={`h-${m}-${i}`} style={{ textAlign: "center", color: "var(--ui-text-muted)", fontWeight: 600, padding: "2px 0" }}>{l}</div>
                 ))}
                 {monthCells(m).map((cell) => {
                   if (cell.day == null) return <div key={cell.key} />;
@@ -677,7 +677,7 @@ function YearView({
                         padding: "4px 0",
                         border: 0,
                         background: isToday ? "#dbeafe" : "transparent",
-                        color: isToday ? "#1d4ed8" : "#0f172a",
+                        color: isToday ? "#1d4ed8" : "var(--ui-text)",
                         fontWeight: isToday ? 700 : 400,
                         cursor: "pointer",
                         borderRadius: 4,
