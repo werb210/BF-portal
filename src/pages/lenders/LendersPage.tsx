@@ -1067,9 +1067,11 @@ function ProductsPanel({
   });
 
   const filtered = products.filter((p) => {
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
     const name = ((p as any).productName || (p as any).name || "").toLowerCase();
-    if (!name.includes(q)) return false;
+    // BF_PORTAL_LP_SEARCH_BY_LENDER_v1 — match product name OR lender name
+    const ldName = (lenders.find((x) => x.id === ((p as any).lenderId ?? (p as any).lender_id))?.name ?? "").toLowerCase();
+    if (q && !name.includes(q) && !ldName.includes(q)) return false;
     // BF_PORTAL_BLOCK_v698_LP_COUNTRY_FILTER_v1 — All / US / Canada (BOTH matches either)
     if (countryFilter !== "ALL") {
       const cv = String((p as any).country ?? "").trim().toUpperCase();
@@ -1193,15 +1195,26 @@ function ProductsPanel({
                 </tr>
               </thead>
               <tbody>
-                {/* v193_category_groups */}
+                {/* BF_PORTAL_LP_COLLAPSIBLE_ALPHA_v1 — collapsible category groups, lenders A→Z */}
                 {(() => {
+                  const lenderNameOf = (p: any) => (lenders.find((x) => x.id === (p.lenderId ?? p.lender_id))?.name ?? "");
                   const byCat = new Map<string, any[]>();
                   for (const p of filtered) { const cat = (p as any).category ?? "TERM_LOAN"; if (!byCat.has(cat)) byCat.set(cat, []); byCat.get(cat)!.push(p); }
                   const ordered = CATEGORY_ORDER.filter((c) => byCat.has(c)).concat(Array.from(byCat.keys()).filter((c) => !CATEGORY_ORDER.includes(c)));
                   const rows: React.ReactNode[] = [];
                   for (const cat of ordered) {
-                    const items = byCat.get(cat) ?? []; if (!items.length) continue;
-                    rows.push(<tr key={`cat-${cat}`} style={{ background: "var(--ui-surface-muted)" }}><td colSpan={6} style={{ padding: "8px 12px", fontWeight: 700, color: "var(--ui-text)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>{CATEGORY_LABELS[cat] ?? cat} <span style={{ color: "var(--ui-text-muted)", fontWeight: 500, marginLeft: 6 }}>({items.length})</span></td></tr>);
+                    const items = (byCat.get(cat) ?? []).slice().sort((a, b) => lenderNameOf(a).localeCompare(lenderNameOf(b), undefined, { sensitivity: "base" }));
+                    if (!items.length) continue;
+                    const isCollapsed = collapsed.has(cat);
+                    rows.push(
+                      <tr key={`cat-${cat}`} onClick={() => toggleCollapse(cat)} style={{ background: "var(--ui-surface-muted)", cursor: "pointer" }}>
+                        <td colSpan={6} style={{ padding: "8px 12px", fontWeight: 700, color: "var(--ui-text)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, userSelect: "none" }}>
+                          <span style={{ display: "inline-block", width: 14, color: "var(--ui-text-muted)" }}>{isCollapsed ? "▸" : "▾"}</span>
+                          {CATEGORY_LABELS[cat] ?? cat} <span style={{ color: "var(--ui-text-muted)", fontWeight: 500, marginLeft: 6 }}>({items.length})</span>
+                        </td>
+                      </tr>
+                    );
+                    if (isCollapsed) continue;
                     for (const p of items) {
                       const ld = lenders.find((x) => x.id === (p.lenderId ?? p.lender_id));
                       const country = /* BF_PORTAL_BLOCK_v695_PRODUCT_COUNTRY_COLUMN_v1 */ (() => { const v = String((p as any).country ?? "").trim().toUpperCase(); if (v === "CA" || v === "CANADA") return "Canada"; if (v === "US" || v === "USA" || v === "UNITED STATES") return "United States"; if (v === "BOTH") return "Both"; return v ? String((p as any).country) : "—"; })();
