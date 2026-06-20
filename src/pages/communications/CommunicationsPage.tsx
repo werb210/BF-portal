@@ -2355,7 +2355,7 @@ function MayaTab() {
 type TeamAttachment = { name: string; contentType: string; dataUrl: string }; // BF_PORTAL_TEAM_ATTACH_v1
 type TeamReaction = { emoji: string; user_ids: string[] }; // BF_PORTAL_TEAM_LIFECYCLE_v1
 type TeamReplyPreview = { id: string; sender_id: string | null; body: string };
-type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string; attachments?: TeamAttachment[] | null; edited_at?: string | null; deleted_at?: string | null; reply_to_id?: string | null; reactions?: TeamReaction[]; reply_to?: TeamReplyPreview | null };
+type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string; attachments?: TeamAttachment[] | null; edited_at?: string | null; deleted_at?: string | null; reply_to_id?: string | null; reactions?: TeamReaction[]; reply_to?: TeamReplyPreview | null; mentions?: string[] | null; pinned_at?: string | null };
 type TeamChannel = {
   id: string;
   kind: string;
@@ -2367,6 +2367,7 @@ type TeamChannel = {
   last_read_at: string | null;
   last_message: TeamMessage | null;
   unread_count: number;
+  has_mention?: boolean; // BF_PORTAL_TEAM_MENTIONS_v1
 };
 type TeamUser = { id: string; name: string; email: string | null };
 
@@ -2379,6 +2380,30 @@ function teamCurrentUserId(): string | null {
   } catch {
     return null;
   }
+}
+
+// BF_PORTAL_TEAM_MENTIONS_v1 — underline @Name tokens that match a member's name.
+function highlightMentions(text: string, names: string[]): React.ReactNode {
+  const valid = names.filter(Boolean).sort((a, b) => b.length - a.length);
+  if (valid.length === 0) return text;
+  const out: React.ReactNode[] = [];
+  let i = 0, k = 0, buf = "";
+  while (i < text.length) {
+    if (text[i] === "@") {
+      const rest = text.slice(i + 1);
+      const hit = valid.find((n) => rest.startsWith(n));
+      if (hit) {
+        if (buf) { out.push(<span key={k++}>{buf}</span>); buf = ""; }
+        out.push(<span key={k++} style={{ fontWeight: 700, textDecoration: "underline" }}>{"@" + hit}</span>);
+        i += 1 + hit.length;
+        continue;
+      }
+    }
+    buf += text[i];
+    i += 1;
+  }
+  if (buf) out.push(<span key={k++}>{buf}</span>);
+  return out.length ? out : text;
 }
 
 function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
@@ -2395,6 +2420,12 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const [presence, setPresence] = useState<Record<string, string>>({});
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const lastTypingSent = useRef(0);
+  const [mentionIds, setMentionIds] = useState<string[]>([]); // BF_PORTAL_TEAM_MENTIONS_v1
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [pins, setPins] = useState<TeamMessage[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState("");
+  const [searchResults, setSearchResults] = useState<TeamMessage[] | null>(null);
   const [showNew, setShowNew] = useState(false);
   const activeIdRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null); // BF_PORTAL_TEAM_ATTACH_v1
@@ -2403,6 +2434,42 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const myId = teamCurrentUserId();
 
   // BF_PORTAL_TEAM_PRESENCE_v1 — typing ping + read/presence fetches.
+  const fetchPins = useCallback((cid: string) => {
+    void api<{ pins?: TeamMessage[] }>(`/api/team/channels/${cid}/pins`)
+      .then((r) => { if (activeIdRef.current === cid) setPins(Array.isArray(r?.pins) ? r.pins : []); })
+      .catch(() => undefined);
+  }, []);
+  const runSearch = useCallback((cid: string, q: string) => {
+    if (!q.trim()) { setSearchResults(null); return; }
+    void api<{ messages?: TeamMessage[] }>(`/api/team/channels/${cid}/search`, { params: { q } })
+      .then((r) => { if (activeIdRef.current === cid) setSearchResults(Array.isArray(r?.messages) ? r.messages : []); })
+      .catch(() => setSearchResults([]));
+  }, []);
+  async function togglePin(m: TeamMessage) {
+    if (!activeId) return;
+    try {
+      const r = await api.post<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages/${m.id}/pin`, { pinned: !m.pinned_at });
+      const message = r?.message;
+      if (message) { setMessages((prev) => prev.map((x) => (x.id === message.id ? message : x))); fetchPins(activeId); }
+    } catch { /* ignore */ }
+  }
+  function onDraftChange(value: string) {
+    setDraft(value);
+    notifyTyping();
+    const mm = /@([\w.'-]*)$/.exec(value);
+    setMentionQuery(mm ? (mm[1] ?? "") : null);
+  }
+  function pickMention(u: TeamUser) {
+    setDraft((prev) => prev.replace(/@([\w.'-]*)$/, `@${u.name} `));
+    setMentionIds((prev) => (prev.includes(u.id) ? prev : [...prev, u.id]));
+    setMentionQuery(null);
+  }
+  useEffect(() => {
+    if (!activeId) return;
+    const t = setTimeout(() => runSearch(activeId, searchQ), 250);
+    return () => clearTimeout(t);
+  }, [searchQ, activeId, runSearch]);
+
   function notifyTyping() {
     if (!activeId) return;
     const now = Date.now();
@@ -2466,11 +2533,11 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
     (async () => {
       try { const r = await api<{ messages?: TeamMessage[] }>(`/api/team/channels/${activeId}/messages`); if (!cancelled) setMessages(Array.isArray(r?.messages) ? r.messages : []); } catch { /* ignore */ }
       try { await api.post(`/api/team/channels/${activeId}/read`, {}); } catch { /* ignore */ }
-      if (!cancelled) { fetchReads(activeId); fetchPresence(); } // BF_PORTAL_TEAM_PRESENCE_v1
+      if (!cancelled) { fetchReads(activeId); fetchPresence(); fetchPins(activeId); setSearchQ(""); setSearchResults(null); setSearchOpen(false); }
       void loadChannels();
     })();
     return () => { cancelled = true; };
-  }, [activeId, loadChannels, fetchReads, fetchPresence]);
+  }, [activeId, loadChannels, fetchReads, fetchPresence, fetchPins]);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -2493,6 +2560,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
         } else if (data?.type === "message_update") {
           if (data.channel_id === activeIdRef.current && data.message) {
             setMessages((prev) => prev.map((m) => (m.id === data.message.id ? data.message : m)));
+            fetchPins(data.channel_id);
           }
         } else if (data?.type === "reaction") {
           if (data.channel_id === activeIdRef.current && data.message_id) {
@@ -2586,11 +2654,14 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
     if (!body && atts.length === 0) return;
     const outAtts = atts;
     const replyId = replyTo?.id ?? null;
+    const outMentions = mentionIds.filter((id) => body.includes(`@${userName(id)}`));
     setDraft("");
     setAtts([]);
     setReplyTo(null);
+    setMentionIds([]);
+    setMentionQuery(null);
     try {
-      const r = await api.post<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages`, { body, attachments: outAtts, reply_to_id: replyId });
+      const r = await api.post<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages`, { body, attachments: outAtts, reply_to_id: replyId, mentions: outMentions });
       const message = r?.message;
       if (message) setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
       void loadChannels();
@@ -2648,6 +2719,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   }
 
   const active = channels.find((c) => c.id === activeId) ?? null;
+  const memberNames = active ? active.member_ids.map((id) => userName(id)).filter(Boolean) : [];
+  const view = searchQ.trim() && searchResults ? searchResults : messages;
 
   return (
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
@@ -2671,6 +2744,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
               </div>
               {c.last_message && <div style={{ fontSize: 12, color: "var(--ui-text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.last_message.body}</div>}
             </div>
+            {c.has_mention && <span style={{ background: "#007aff", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "0 5px", minWidth: 18, height: 18, lineHeight: "18px", textAlign: "center" }} aria-label="mention">@</span>}
             {c.unread_count > 0 && <span style={{ background: "#ff3b30", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "0 6px", minWidth: 18, height: 18, lineHeight: "18px", textAlign: "center" }}>{c.unread_count}</span>}
           </div>
         ))}
@@ -2680,11 +2754,30 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
         {!active && <div style={{ margin: "auto", color: "var(--ui-text-muted)", fontSize: 14 }}>Select a conversation</div>}
         {active && (
           <>
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--ui-border)", fontWeight: 700, color: "var(--ui-text)", background: "var(--ui-surface-strong)" }}>
-              {active.kind === "channel" ? "# " : ""}{channelLabel(active)}
+            <div style={{ borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)" }}>
+              <div style={{ padding: "12px 16px", fontWeight: 700, color: "var(--ui-text)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{active.kind === "channel" ? "# " : ""}{channelLabel(active)}</span>
+                <button onClick={() => { setSearchOpen((v) => !v); setSearchQ(""); setSearchResults(null); }} title="Search" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", fontSize: 16 }}>{"\u{1F50D}"}</button>
+              </div>
+              {searchOpen && (
+                <div style={{ padding: "0 16px 10px" }}>
+                  <input value={searchQ} onChange={(e) => setSearchQ(e.target.value)} placeholder="Search this conversation…" style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 13, boxSizing: "border-box" }} />
+                </div>
+              )}
+              {pins.length > 0 && !searchQ.trim() && (
+                <div style={{ padding: "0 16px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                  {pins.map((p) => (
+                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ui-text-muted)" }}>
+                      <span>{"\u{1F4CC}"}</span>
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName(p.sender_id)}: {p.body || "[media]"}</span>
+                      <button onClick={() => void togglePin(p)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", fontSize: 13 }} aria-label="Unpin">{"\u00D7"}</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-              {messages.map((m) => {
+              {view.map((m) => {
                 const mine = m.sender_id === myId;
                 return (
                   <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "70%" }}>
@@ -2698,7 +2791,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                       <div style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 13, fontStyle: "italic" }}>Message deleted</div>
                     ) : (
                       <div style={{ background: mine ? "#007aff" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                        {m.body && <div>{m.body}</div>}
+                        {m.body && <div>{highlightMentions(m.body, memberNames)}</div>}
                         {(m.attachments ?? []).map((a, i) => (
                           a.contentType.startsWith("image/") ? (
                             <a key={i} href={a.dataUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: m.body || i > 0 ? 6 : 0 }}>
@@ -2729,6 +2822,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                           <button key={e} onClick={() => void toggleReaction(m, e)} title="React" style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1 }}>{e}</button>
                         ))}
                         <button onClick={() => { setReplyTo(m); setEditing(null); }} title="Reply" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Reply</button>
+                        <button onClick={() => void togglePin(m)} title={m.pinned_at ? "Unpin" : "Pin"} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>{m.pinned_at ? "Unpin" : "Pin"}</button>
                         {mine && <button onClick={() => startEdit(m)} title="Edit" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Edit</button>}
                         {mine && <button onClick={() => void del(m)} title="Delete" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Delete</button>}
                       </div>
@@ -2747,6 +2841,18 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
               <div ref={bottomRef} />
             </div>
             <div style={{ borderTop: "1px solid var(--ui-border)", padding: 12, paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "var(--ui-surface-strong)", display: "flex", flexDirection: "column", gap: 8 }}>
+              {mentionQuery !== null && (() => {
+                const q = mentionQuery.toLowerCase();
+                const matches = users.filter((u) => u.id !== myId && (active?.member_ids.includes(u.id) ?? true) && u.name.toLowerCase().includes(q)).slice(0, 6);
+                if (matches.length === 0) return null;
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 180, overflowY: "auto", border: "1px solid var(--ui-border)", borderRadius: 8, background: "var(--ui-surface-strong)" }}>
+                    {matches.map((u) => (
+                      <button key={u.id} onClick={() => pickMention(u)} style={{ textAlign: "left", background: "transparent", border: "none", cursor: "pointer", padding: "6px 10px", fontSize: 13, color: "var(--ui-text)" }}>@{u.name}</button>
+                    ))}
+                  </div>
+                );
+              })()}
               {typingIds.filter((id) => id !== myId).length > 0 && (
                 <div style={{ fontSize: 12, color: "var(--ui-text-muted)", fontStyle: "italic" }}>
                   {typingIds.filter((id) => id !== myId).map((id) => userName(id)).join(", ")} {typingIds.filter((id) => id !== myId).length > 1 ? "are" : "is"} typing{"\u2026"}
@@ -2773,7 +2879,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
               <div style={{ display: "flex", gap: 8 }}>
                 <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={(e) => { void onPickFiles(e.target.files); e.target.value = ""; }} />
                 <button onClick={() => fileRef.current?.click()} title="Attach file" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{"\u{1F4CE}"}</button>
-                <input value={draft} onChange={(e) => { setDraft(e.target.value); notifyTyping(); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
+                <input value={draft} onChange={(e) => onDraftChange(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
                 <button onClick={() => void send()} disabled={editing ? !draft.trim() : (!draft.trim() && atts.length === 0)} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>{editing ? "Save" : "Send"}</button>
               </div>
             </div>
