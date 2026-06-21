@@ -162,13 +162,20 @@ describe("LendersTab v186 polish", () => {
     expect(screen.getByTestId("upload-term-sheet-p1")).toBeInTheDocument();
   });
 
-  it("upload input calls uploadLenderTermSheet", async () => {
+  it("upload modal calls uploadLenderTermSheet", async () => {
     (uploadLenderTermSheet as any).mockResolvedValue({ ok: true });
     render(withClient(<LendersTab applicationId="app-up" />));
     await screen.findByText("Alpha");
     fireEvent.click(screen.getByTestId("lender-files-p1"));
     const file = new File(["hello"], "ts.pdf", { type: "application/pdf" });
     fireEvent.change(screen.getByTestId("upload-term-sheet-p1"), { target: { files: [file] } });
-    await waitFor(() => expect(uploadLenderTermSheet).toHaveBeenCalledWith("app-up", "p1", file));
+    await screen.findByTestId("term-sheet-modal");
+    fireEvent.click(screen.getByTestId("term-sheet-submit"));
+    await waitFor(() => {
+      const call = (uploadLenderTermSheet as any).mock.calls[0];
+      expect(call[0]).toBe("app-up");
+      expect(call[1]).toBe("p1");
+      expect(call[2]).toBe(file);
+    });
   });
 });
