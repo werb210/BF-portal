@@ -47,6 +47,13 @@ const styles = {
   lockedHint: { fontSize: 13, color: "var(--ui-text-muted)", marginBottom: 12 } as const,
   lockedItem: { fontSize: 13, color: "var(--ui-text)", padding: "6px 0", borderBottom: "1px dashed var(--ui-border-soft)" } as const,
   footer: { position: "sticky" as const, bottom: 0, marginTop: 16, padding: "12px 20px", background: "var(--ui-surface-strong)", borderTop: "1px solid var(--ui-border)", display: "flex", justifyContent: "flex-end", gap: 8 } as const,
+  modalOverlay: { position: "fixed" as const, inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 } as const,
+  modalCard: { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 10, padding: 20, width: 420, maxWidth: "100%", maxHeight: "90vh", overflowY: "auto" as const, boxShadow: "0 12px 40px rgba(0,0,0,0.2)" } as const,
+  modalTitle: { fontSize: 16, fontWeight: 700, color: "var(--ui-text)", marginBottom: 4 } as const,
+  modalHint: { fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 14 } as const,
+  modalLabel: { display: "block", fontSize: 12, fontWeight: 600, color: "var(--ui-text-muted)", marginBottom: 10 } as const,
+  modalInput: { display: "block", width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface)", color: "var(--ui-text)", fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" as const } as const,
+  modalActions: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 } as const,
 };
 
 function formatAmount(n: number | null | undefined): string {
@@ -104,6 +111,14 @@ export default function LendersTab({ applicationId }: Props) {
   const [filesOpenFor, setFilesOpenFor] = useState<string | null>(null);
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [termSheetFor, setTermSheetFor] = useState<{ matchId: string; lenderName: string } | null>(null);
+  const [tsFile, setTsFile] = useState<File | null>(null);
+  const [tsAmount, setTsAmount] = useState("");
+  const [tsRate, setTsRate] = useState("");
+  const [tsTerm, setTsTerm] = useState("");
+  const [tsPayment, setTsPayment] = useState("");
+  const [tsExpiry, setTsExpiry] = useState("");
+  const [tsNotes, setTsNotes] = useState("");
   const filesRootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -162,13 +177,32 @@ export default function LendersTab({ applicationId }: Props) {
     }
   };
 
-  const handleUploadTermSheet = async (matchId: string, file: File) => {
-    if (!file || !id) return;
-    setUploadingFor(matchId);
+  const resetTermSheet = () => {
+    setTermSheetFor(null);
+    setTsFile(null);
+    setTsAmount("");
+    setTsRate("");
+    setTsTerm("");
+    setTsPayment("");
+    setTsExpiry("");
+    setTsNotes("");
+  };
+
+  const handleSubmitTermSheet = async () => {
+    if (!termSheetFor || !tsFile || !id) return;
+    setUploadingFor(termSheetFor.matchId);
     setUploadError(null);
     try {
-      await uploadLenderTermSheet(id, matchId, file);
+      await uploadLenderTermSheet(id, termSheetFor.matchId, tsFile, {
+        amount: tsAmount,
+        rate_factor: tsRate,
+        term: tsTerm,
+        payment_frequency: tsPayment,
+        expiry_date: tsExpiry,
+        notes: tsNotes,
+      });
       await queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
+      resetTermSheet();
     } catch (err) {
       setUploadError(getErrorMessage(err, "Term sheet upload failed."));
     } finally {
@@ -301,7 +335,11 @@ export default function LendersTab({ applicationId }: Props) {
                               style={{ display: "none" }}
                               onChange={(e) => {
                                 const f = e.target.files?.[0];
-                                if (f) void handleUploadTermSheet(m.id, f);
+                                if (f) {
+                                  setTsFile(f);
+                                  setTermSheetFor({ matchId: m.id, lenderName: m.lenderName ?? "lender" });
+                                  setFilesOpenFor(null);
+                                }
                                 e.currentTarget.value = "";
                               }}
                             />
@@ -346,6 +384,51 @@ export default function LendersTab({ applicationId }: Props) {
           {sending ? "Sending…" : `Send (${selectedIds.length})`}
         </button>
       </div>
+
+      {termSheetFor && (
+        <div style={styles.modalOverlay} role="dialog" aria-modal="true" data-testid="term-sheet-modal">
+          <div style={styles.modalCard}>
+            <div style={styles.modalTitle}>Term sheet — {termSheetFor.lenderName}</div>
+            <div style={styles.modalHint}>{tsFile ? tsFile.name : "No file selected"}</div>
+            <label style={styles.modalLabel}>Offer amount ($)
+              <input type="number" value={tsAmount} onChange={(e) => setTsAmount(e.target.value)} style={styles.modalInput} placeholder="250000" />
+            </label>
+            <label style={styles.modalLabel}>Rate / factor
+              <input type="text" value={tsRate} onChange={(e) => setTsRate(e.target.value)} style={styles.modalInput} placeholder="8.50% or 1.30 factor" />
+            </label>
+            <label style={styles.modalLabel}>Term
+              <input type="text" value={tsTerm} onChange={(e) => setTsTerm(e.target.value)} style={styles.modalInput} placeholder="5 years" />
+            </label>
+            <label style={styles.modalLabel}>Payment frequency
+              <select value={tsPayment} onChange={(e) => setTsPayment(e.target.value)} style={styles.modalInput}>
+                <option value="">—</option>
+                <option value="Monthly">Monthly</option>
+                <option value="Bi-weekly">Bi-weekly</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Daily">Daily</option>
+              </select>
+            </label>
+            <label style={styles.modalLabel}>Expiry date
+              <input type="date" value={tsExpiry} onChange={(e) => setTsExpiry(e.target.value)} style={styles.modalInput} />
+            </label>
+            <label style={styles.modalLabel}>Notes
+              <textarea value={tsNotes} onChange={(e) => setTsNotes(e.target.value)} style={{ ...styles.modalInput, minHeight: 60, resize: "vertical" as const }} />
+            </label>
+            <div style={styles.modalActions}>
+              <button type="button" onClick={resetTermSheet} disabled={uploadingFor === termSheetFor.matchId} style={styles.btn}>Cancel</button>
+              <button
+                type="button"
+                data-testid="term-sheet-submit"
+                onClick={() => void handleSubmitTermSheet()}
+                disabled={!tsFile || uploadingFor === termSheetFor.matchId}
+                style={(!tsFile || uploadingFor === termSheetFor.matchId) ? styles.btnPrimaryDisabled : styles.btnPrimary}
+              >
+                {uploadingFor === termSheetFor.matchId ? "Uploading…" : "Upload term sheet"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -698,11 +698,27 @@ export const deleteLenderProductRequirement = (productId: string, requirementId:
   api.delete(`/api/portal/lender-products/${productId}/requirements/${requirementId}`);
 
 // BF_PORTAL_BLOCK_v186_LENDERS_TAB_POLISH_v1 — uploadLenderTermSheet
-export const uploadLenderTermSheet = (applicationId: string, lenderId: string, file: File) => {
+export type TermSheetFields = {
+  amount?: string | number | null;
+  rate_factor?: string | null;
+  term?: string | null;
+  payment_frequency?: string | null;
+  expiry_date?: string | null;
+  notes?: string | null;
+};
+export const uploadLenderTermSheet = (applicationId: string, lenderId: string, file: File, fields?: TermSheetFields) => {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("kind", "term_sheet");
   fd.append("filename", file.name);
   fd.append("size", String(file.size));
-  return api.post<{ ok: boolean; documentId?: string }>(`/api/applications/${encodeURIComponent(applicationId)}/lenders/${encodeURIComponent(lenderId)}/files`, fd);
+  if (fields) {
+    if (fields.amount !== undefined && fields.amount !== null && String(fields.amount).trim() !== "") fd.append("amount", String(fields.amount).trim());
+    if (fields.rate_factor && fields.rate_factor.trim()) fd.append("rate_factor", fields.rate_factor.trim());
+    if (fields.term && fields.term.trim()) fd.append("term", fields.term.trim());
+    if (fields.payment_frequency && fields.payment_frequency.trim()) fd.append("payment_frequency", fields.payment_frequency.trim());
+    if (fields.expiry_date && fields.expiry_date.trim()) fd.append("expiry_date", fields.expiry_date.trim());
+    if (fields.notes && fields.notes.trim()) fd.append("notes", fields.notes.trim());
+  }
+  return api.post<{ ok: boolean; offer_id?: string }>(`/api/applications/${encodeURIComponent(applicationId)}/lenders/${encodeURIComponent(lenderId)}/files`, fd);
 };
