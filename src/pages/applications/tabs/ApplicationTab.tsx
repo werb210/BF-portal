@@ -66,6 +66,33 @@ function readFlatPartner(applicant: AnyRecord, fdApplicant: AnyRecord): AnyRecor
   return hasAny ? flat : null;
 }
 
+// BF_PORTAL_BLOCK_v_SIGNING_INDICATOR_v1 — staff-facing signing-state chip in the
+// application header, driven by the server's derived /details `signing.status`:
+//   signed | started (SignNow group minted) | ready (lender finalized, awaiting) | not_started.
+const SIGNING_FALLBACK = { label: "Sign: not started", bg: "#f1f5f9", fg: "#475569" };
+export function signingBadgeView(status?: string): { label: string; bg: string; fg: string } {
+  const map: Record<string, { label: string; bg: string; fg: string }> = {
+    signed: { label: "Signed", bg: "#dcfce7", fg: "#166534" },
+    started: { label: "Signing started", bg: "#fef3c7", fg: "#92400e" },
+    ready: { label: "Ready to sign", bg: "#e0e7ff", fg: "#3730a3" },
+    not_started: SIGNING_FALLBACK,
+  };
+  return map[String(status ?? "not_started")] ?? SIGNING_FALLBACK;
+}
+
+function SigningBadge({ status }: { status?: string }) {
+  const v = signingBadgeView(status);
+  return (
+    <span
+      data-testid="signing-badge"
+      data-status={String(status ?? "not_started")}
+      style={{ background: v.bg, color: v.fg, borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap" }}
+    >
+      {v.label}
+    </span>
+  );
+}
+
 export default function ApplicationTab({ application }: Props) {
   // BF_PORTAL_BLOCK_v784_TASK_CHECKLIST — client task completion for staff.
   const v784_appId = application ? String((application as any).id ?? "") : "";
@@ -251,6 +278,7 @@ export default function ApplicationTab({ application }: Props) {
             </svg>
             <span>Call Client</span>
           </button>
+          <SigningBadge status={(application as any)?.signing?.status} />
           <span style={styles.statusPill}>{fmt(application.stage, "—")}</span>
         </div>
       </div>
