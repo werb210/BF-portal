@@ -52,7 +52,10 @@ export default function RequestItemsTab({ applicationId }: Props) {
   const [required, setRequired] = useState<ReqDoc[]>([]);
   const [waived, setWaived] = useState<Set<string>>(new Set());
   const [manual, setManual] = useState<Set<string>>(new Set()); // optional docs, by norm(label)
-  const [forms, setForms] = useState<Set<string>>(new Set());
+  const [requestedForms, setRequestedForms] = useState<Set<string>>(new Set());
+  const [formsWaived, setFormsWaived] = useState<Set<string>>(new Set());
+  const [formsManual, setFormsManual] = useState<Set<string>>(new Set());
+  const [formWaiveBusy, setFormWaiveBusy] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [waiveBusy, setWaiveBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,11 +70,15 @@ export default function RequestItemsTab({ applicationId }: Props) {
         if (cancelled) return;
         setRequired(Array.isArray(r?.required) ? r.required : []);
         setWaived(new Set((Array.isArray(r?.waived) ? r.waived : []).map(norm)));
+        setRequestedForms(new Set((Array.isArray(r?.forms) ? r.forms : []).map((x: any) => String(x).trim().toLowerCase())));
+        setFormsWaived(new Set((Array.isArray(r?.formsWaived) ? r.formsWaived : []).map((x: any) => String(x).trim().toLowerCase())));
       })
       .catch(() => {
         if (cancelled) return;
         setRequired([]);
         setWaived(new Set());
+        setRequestedForms(new Set());
+        setFormsWaived(new Set());
       });
     return () => {
       cancelled = true;
@@ -157,16 +164,49 @@ export default function RequestItemsTab({ applicationId }: Props) {
     }
   };
 
-  const toggleForm = (key: string) =>
-    setForms((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const onToggleForm = async (id: string) => {
+    if (requestedForms.has(id)) {
+      if (!isAdmin || formWaiveBusy) return;
+      const key = `form:${id}`;
+      const currentlyChecked = !formsWaived.has(id);
+      setFormWaiveBusy(id);
+      setError(null);
+      setDone(null);
+      setFormsWaived((prev) => {
+        const next = new Set(prev);
+        if (currentlyChecked) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+      try {
+        if (currentlyChecked) {
+          await api.post(`/api/portal/applications/${applicationId}/document-waivers`, { document_type: key });
+        } else {
+          await api.delete(`/api/portal/applications/${applicationId}/document-waivers/${encodeURIComponent(key)}`);
+        }
+      } catch (e: any) {
+        setFormsWaived((prev) => {
+          const next = new Set(prev);
+          if (currentlyChecked) next.delete(id);
+          else next.add(id);
+          return next;
+        });
+        setError(e?.message || "Failed to update waiver.");
+      } finally {
+        setFormWaiveBusy(null);
+      }
+    } else {
+      setFormsManual((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    }
+  };
 
   const checkedDocs = docItems.filter(isChecked);
-  const total = checkedDocs.length + forms.size;
+  const total = checkedDocs.length + formsManual.size;
 
   const submit = async () => {
     if (total === 0) {
@@ -178,11 +218,12 @@ export default function RequestItemsTab({ applicationId }: Props) {
     setDone(null);
     try {
       await api.post(`/api/applications/${applicationId}/request-steps`, {
-        forms: Array.from(forms),
+        forms: Array.from(formsManual),
         documents: checkedDocs.map((d) => d.label),
       });
       setDone(`Requested ${total} item${total === 1 ? "" : "s"} from the client.`);
-      setForms(new Set());
+      setRequestedForms((prev) => new Set([...Array.from(prev), ...Array.from(formsManual)]));
+      setFormsManual(new Set());
       setManual(new Set());
     } catch (e: any) {
       setError(e?.message || "Failed to send request.");
@@ -254,12 +295,30 @@ export default function RequestItemsTab({ applicationId }: Props) {
             Forms
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
-            {FORMS.map((f) => (
-              <div key={f.id} onClick={() => toggleForm(f.id)} style={chip(forms.has(f.id), false)}>
-                <input type="checkbox" readOnly checked={forms.has(f.id)} />{" "}
-                <span style={{ color: "#0f172a" }}>{f.label}</span>
-              </div>
-            ))}
+            {FORMS.map((f) => {
+              const isRequested = requestedForms.has(f.id);
+              const checked = isRequested ? !formsWaived.has(f.id) : formsManual.has(f.id);
+              const disabled = isRequested ? (!isAdmin || formWaiveBusy === f.id) : false;
+              return (
+                <div
+                  key={f.id}
+                  onClick={() => onToggleForm(f.id)}
+                  style={chip(checked, disabled)}
+                  title={
+                    isRequested
+                      ? isAdmin
+                        ? checked
+                          ? "Requested for this deal — uncheck to waive"
+                          : "Waived — re-check to require it again"
+                        : "Requested for this deal (only Admins can waive)"
+                      : "Optional — check to also request from the client"
+                  }
+                >
+                  <input type="checkbox" readOnly checked={checked} disabled={disabled} />{" "}
+                  <span style={{ color: "#0f172a" }}>{f.label}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
