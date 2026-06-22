@@ -39,6 +39,56 @@ type DocumentRow = {
 
 type PortalApplicationResponse = { documents?: DocumentRow[] };
 
+// BF_PORTAL_BLOCK_v_DOC_FRAUD_SCAN_v1 — staff-triggered tamper scan UI. Calls the
+// server analyzer (POST /api/portal/documents/:id/fraud-scan) and shows an explainable
+// level badge + reasons. Signals only — never a verdict; staff decide.
+type FraudSignal = { code: string; label: string; severity: "low" | "medium" | "high"; detail: string };
+type FraudScanResult = { level: "clean" | "low" | "medium" | "high"; signals: FraudSignal[]; note: string | null; kind?: string; duplicateCount?: number };
+type FraudScanState = { loading?: boolean; result?: FraudScanResult; error?: string };
+
+export function fraudBadgeView(level: string | undefined): { label: string; bg: string; fg: string } {
+  switch (level) {
+    case "high": return { label: "High risk", bg: "#fee2e2", fg: "#991b1b" };
+    case "medium": return { label: "Review", bg: "#fef3c7", fg: "#92400e" };
+    case "low": return { label: "Low", bg: "#f1f5f9", fg: "#475569" };
+    case "clean": return { label: "No tamper signals", bg: "#dcfce7", fg: "#166534" };
+    default: return { label: "Scan", bg: "#e2e8f0", fg: "#334155" };
+  }
+}
+
+function FraudScanRow({ scan, open, onToggle }: { scan: FraudScanState | undefined; open: boolean; onToggle: () => void }) {
+  if (!scan) return null;
+  if (scan.error) return <div style={{ marginTop: 8, fontSize: 13, color: "#b91c1c" }}>{scan.error}</div>;
+  if (!scan.result) return null;
+  const r = scan.result;
+  const v = fraudBadgeView(r.level);
+  return (
+    <div style={{ marginTop: 8 }}>
+      <button type="button" onClick={onToggle} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: 0, cursor: "pointer", padding: 0 }} data-testid="doc-fraud-toggle">
+        <span style={{ background: v.bg, color: v.fg, borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }} data-testid="doc-fraud-badge">{v.label}</span>
+        {r.signals.length > 0 ? <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{open ? "Hide" : "Show"} {r.signals.length} reason{r.signals.length === 1 ? "" : "s"}</span> : null}
+      </button>
+      {open ? (
+        <div style={{ marginTop: 8, border: "1px solid var(--ui-border)", borderRadius: 8, padding: "10px 12px", background: "var(--ui-surface-muted)" }}>
+          {r.signals.length === 0 ? (
+            <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>No tamper signals found in the document metadata.</div>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              {r.signals.map((sig) => (
+                <li key={sig.code} style={{ fontSize: 13, marginBottom: 4 }}>
+                  <strong style={{ color: sig.severity === "high" ? "#991b1b" : sig.severity === "medium" ? "#92400e" : "#475569" }}>{sig.label}</strong> — {sig.detail}
+                </li>
+              ))}
+            </ul>
+          )}
+          {r.note ? <div style={{ marginTop: 8, fontSize: 12, color: "var(--ui-text-muted)", fontStyle: "italic" }}>{r.note}</div> : null}
+          <div style={{ marginTop: 8, fontSize: 11, color: "var(--ui-text-muted)" }}>Signals for review only — not a verdict. Staff decide.</div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 const CATEGORY_GROUPS = [
   { id: "banking",     label: "Banking",              matches: (c: string) => /bank|statement/i.test(c) },
   { id: "financials",  label: "Financial Statements", matches: (c: string) => /financial|income|p_?l|profit|balance/i.test(c) },
@@ -116,6 +166,19 @@ export default function DocumentsTab({ applicationId }: Props) {
   }
   // BF_PORTAL_BLOCK_v184_DOC_PREVIEW_WIRE_UP_v1
   const [previewing, setPreviewing] = useState<Record<string, boolean>>({});
+  // BF_PORTAL_BLOCK_v_DOC_FRAUD_SCAN_v1
+  const [scan, setScan] = useState<Record<string, FraudScanState>>({});
+  const [scanOpen, setScanOpen] = useState<Record<string, boolean>>({});
+  const handleScan = useCallback(async (docId: string) => {
+    setScan((s) => ({ ...s, [docId]: { loading: true } }));
+    setScanOpen((o) => ({ ...o, [docId]: true }));
+    try {
+      const r = await api.post<FraudScanResult>(`/api/portal/documents/${docId}/fraud-scan`, {});
+      setScan((s) => ({ ...s, [docId]: { result: r } }));
+    } catch {
+      setScan((s) => ({ ...s, [docId]: { error: "Scan failed — try again." } }));
+    }
+  }, []);
 
   async function handlePreview(docId: string, filename: string | null) {
     if (previewing[docId]) return;
@@ -282,6 +345,10 @@ export default function DocumentsTab({ applicationId }: Props) {
                   onRejectSubmit={() => handleReject(doc.documentId)}
                   isAdmin={isAdmin}
                   onDelete={() => handleDelete(doc.documentId)}
+                  scan={scan[doc.documentId]}
+                  scanOpen={!!scanOpen[doc.documentId]}
+                  onScan={() => void handleScan(doc.documentId)}
+                  onToggleScan={() => setScanOpen((o) => ({ ...o, [doc.documentId]: !o[doc.documentId] }))}
                 />
               ))}
             </div>
@@ -307,6 +374,10 @@ function DocRow(props: {
   onRejectSubmit: () => void;
   isAdmin: boolean;
   onDelete: () => void;
+  scan: FraudScanState | undefined;
+  scanOpen: boolean;
+  onScan: () => void;
+  onToggleScan: () => void;
 }) {
   const { doc, canManage, working, previewing, rejectOpen, rejectDraft } = props;
   const status = (doc.status ?? "pending").toLowerCase() as DocStatus;
@@ -342,6 +413,16 @@ function DocRow(props: {
         >
           {previewing ? "Opening…" : "Preview"}
         </button>
+        <button
+          type="button"
+          onClick={props.onScan}
+          disabled={props.scan?.loading}
+          title="Check this document's metadata for tamper signals"
+          style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, fontWeight: 600, cursor: props.scan?.loading ? "default" : "pointer" }}
+          data-testid="doc-fraud-scan"
+        >
+          {props.scan?.loading ? "Scanning…" : "Scan for tampering"}
+        </button>
         {canManage && !rejectOpen && (
           <>
             <button
@@ -374,6 +455,7 @@ function DocRow(props: {
             Delete
           </button>
         )}
+        <FraudScanRow scan={props.scan} open={props.scanOpen} onToggle={props.onToggleScan} />
       </div>
 
       {canManage && rejectOpen && (
@@ -617,4 +699,3 @@ export function ReocrToolbar({ applicationId }: { applicationId?: string | null 
     </div>
   );
 }
-
