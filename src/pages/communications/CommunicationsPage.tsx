@@ -93,7 +93,7 @@ function Avatar({ name, size = 38 }: { name: string; size?: number }) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
-  const colors = ["#2563eb", "#7c3aed", "#059669", "#d97706", "#dc2626", "#0891b2"];
+  const colors = ["var(--ui-accent-blue)", "#7c3aed", "#059669", "#d97706", "#dc2626", "#0891b2"];
   const color = colors[name.charCodeAt(0) % colors.length];
   return (
     <div
@@ -472,14 +472,14 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
             <span style={{ fontWeight: 700, fontSize: 17, color: "var(--ui-text)", flex: 1 }}>Messages</span>
             <button
               onClick={() => { setMulti((m) => !m); setPicked(new Set()); setBcResult(null); }}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#007aff", padding: "0 8px", fontWeight: 600 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--ui-accent-blue)", padding: "0 8px", fontWeight: 600 }}
             >
               {multi ? "Cancel" : "Select"}
             </button>
             <button
               onClick={() => setShowNewThread(true)}
               title="New Message"
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#007aff", padding: 0 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "var(--ui-accent-blue)", padding: 0 }}
             >
               ✏️
             </button>
@@ -505,7 +505,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
         {multi && (
           <div style={{ padding: "0 12px 8px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <label style={{ fontSize: 13, color: "#007aff", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <label style={{ fontSize: 13, color: "var(--ui-accent-blue)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 <input
                   type="checkbox"
                   checked={filtered.length > 0 && filtered.every((c) => picked.has(String(c.id)))}
@@ -522,12 +522,12 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   onChange={(e) => setBcBody(e.target.value)}
                   placeholder={`Message ${picked.size} contact(s) individually…`}
                   rows={2}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d1d6", fontSize: 14, boxSizing: "border-box", resize: "vertical", color: "var(--ui-text)" }}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--ui-border)", fontSize: 14, boxSizing: "border-box", resize: "vertical", color: "var(--ui-text)" }}
                 />
                 <button
                   disabled={!bcBody.trim() || bcSending}
                   onClick={() => void sendBroadcast()}
-                  style={{ alignSelf: "flex-end", padding: "7px 16px", background: bcBody.trim() && !bcSending ? "#007aff" : "#b5d3ff", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: bcBody.trim() && !bcSending ? "pointer" : "not-allowed" }}
+                  style={{ alignSelf: "flex-end", padding: "7px 16px", background: bcBody.trim() && !bcSending ? "var(--ui-accent-blue)" : "rgba(47, 168, 106, 0.35)", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: bcBody.trim() && !bcSending ? "pointer" : "not-allowed" }}
                 >
                   {bcSending ? "Sending…" : `Send to ${picked.size}`}
                 </button>
@@ -539,8 +539,8 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
 
         {/* New thread input */}
         {showNewThread && (
-          <div style={{ padding: "8px 12px", background: "#f8f8f8", borderBottom: "1px solid var(--ui-border)" }}>
-            <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>Enter phone number</div>
+          <div style={{ padding: "8px 12px", background: "var(--ui-surface)", borderBottom: "1px solid var(--ui-border)" }}>
+            <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 4 }}>Enter phone number</div>
             <div style={{ display: "flex", gap: 6 }}>
               <input
                 value={newThreadPhone}
@@ -567,7 +567,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 }}
                 style={{
                   padding: "6px 12px",
-                  background: "#007aff",
+                  background: "var(--ui-accent-blue)",
                   border: "none",
                   borderRadius: 8,
                   color: "#fff",
@@ -621,11 +621,11 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   gap: 12,
                   padding: "10px 16px",
                   cursor: "pointer",
-                  background: isSelected ? "#e8f0fe" : (hasUnread ? "#eff6ff" : "transparent"),
+                  background: isSelected ? "rgba(47, 168, 106, 0.12)" : (hasUnread ? "rgba(47, 168, 106, 0.12)" : "transparent"),
                   // BF_PORTAL_BLOCK_v639_UNREAD_CLEAR_v1 — subtle left accent for
                   // unread instead of a heavy 4-sided box (which read as an error).
-                  borderLeft: hasUnread ? "3px solid #2563eb" : "3px solid transparent",
-                  borderBottom: "1px solid #f0f0f5",
+                  borderLeft: hasUnread ? "3px solid var(--ui-accent-blue)" : "3px solid transparent",
+                  borderBottom: "1px solid var(--ui-surface-muted)",
                   transition: "background 0.2s ease-out, border-color 0.2s ease-out",
                   position: "relative",
                 }}
@@ -644,7 +644,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                     <span style={{ fontWeight: hasUnread ? 700 : 600, fontSize: 15, color: "var(--ui-text)" }}>{c.name}</span>
-                    {last && <span style={{ fontSize: 11, color: hasUnread ? "#2563eb" : "var(--ui-text-muted)", flexShrink: 0, fontWeight: hasUnread ? 600 : 400 }}>{timeLabel(last.created_at)}</span>}
+                    {last && <span style={{ fontSize: 11, color: hasUnread ? "var(--ui-accent-blue)" : "var(--ui-text-muted)", flexShrink: 0, fontWeight: hasUnread ? 600 : 400 }}>{timeLabel(last.created_at)}</span>}
                   </div>
                   {last ? (
                     <div
@@ -665,7 +665,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   )}
                 </div>
                 {hasUnread && (
-                  <div style={{ position: "absolute", top: 6, right: 8, minWidth: 18, height: 18, borderRadius: 9, background: "#2563eb", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }} aria-label={`${unread} unread`}>
+                  <div style={{ position: "absolute", top: 6, right: 8, minWidth: 18, height: 18, borderRadius: 9, background: "var(--ui-accent-blue)", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }} aria-label={`${unread} unread`}>
                     {unread > 99 ? "99+" : unread}
                   </div>
                 )}
@@ -699,7 +699,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
             <div
               style={{
                 padding: "12px 20px",
-                borderBottom: "1px solid #f0f0f5",
+                borderBottom: "1px solid var(--ui-surface-muted)",
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
@@ -711,7 +711,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
               <Avatar name={selected.name} size={36} />
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>{selected.name}</div>
-                {selected.phone && <div style={{ fontSize: 12, color: "#3c3c43" }}>{selected.phone}</div>}
+                {selected.phone && <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{selected.phone}</div>}
               </div>
               {(() => {
                 const callPhone = selected.phone ?? selected.phone_e164 ?? selected.mobile ?? null;
@@ -740,7 +740,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                       fontSize: 13,
                       fontWeight: 600,
                       cursor: callPhone ? "pointer" : "not-allowed",
-                      background: callPhone ? "#2563eb" : "var(--ui-border)",
+                      background: callPhone ? "var(--ui-accent-blue)" : "var(--ui-border)",
                       color: "#fff",
                     }}
                   >
@@ -790,7 +790,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
               style={{
                 padding: "8px 16px 12px 16px",
                 paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))",
-                borderTop: "1px solid #f0f0f5",
+                borderTop: "1px solid var(--ui-surface-muted)",
                 display: "flex",
                 alignItems: "flex-end",
                 gap: 10,
@@ -804,7 +804,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   border: "1px solid var(--ui-border)",
                   borderRadius: 20,
                   padding: "6px 14px",
-                  background: "#f9f9f9",
+                  background: "var(--ui-surface)",
                 }}
               >
                 <textarea
@@ -842,7 +842,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   height: 44,
                   borderRadius: "50%",
                   border: "none",
-                  background: draft.trim() ? "#007aff" : "var(--ui-surface-muted)",
+                  background: draft.trim() ? "var(--ui-accent-blue)" : "var(--ui-surface-muted)",
                   color: "#fff",
                   fontSize: 18,
                   cursor: draft.trim() ? "pointer" : "default",
@@ -1170,7 +1170,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 setPicked(new Set());
                 setBcResult(null);
               }}
-              style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0 }}
+              style={{ background: "none", border: "none", color: "var(--ui-accent-blue)", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0 }}
             >
               {multi ? "Cancel" : "Select"}
             </button>
@@ -1186,7 +1186,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 await Promise.all(ids.map((id) => api.post("/api/communications/messages/mark-read", { contactId: id }).catch(() => undefined)));
                 setRows((prev) => prev.map((r) => ({ ...r, unread: 0 })));
               }}
-              style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0 }}
+              style={{ background: "none", border: "none", color: "var(--ui-accent-blue)", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0 }}
             >
               Mark all read
             </button>
@@ -1194,7 +1194,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
         </div>
         {multi && (
           <div style={{ marginBottom: 10 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#2563eb", cursor: "pointer", marginBottom: 6 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ui-accent-blue)", cursor: "pointer", marginBottom: 6 }}>
               <input
                 type="checkbox"
                 checked={rows.length > 0 && rows.every((r) => picked.has(r.contactId))}
@@ -1215,7 +1215,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                   type="button"
                   disabled={!bcBody.trim() || bcSending}
                   onClick={() => void sendBroadcast()}
-                  style={{ alignSelf: "flex-end", padding: "6px 14px", background: bcBody.trim() && !bcSending ? "#2563eb" : "#93c5fd", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: bcBody.trim() && !bcSending ? "pointer" : "not-allowed" }}
+                  style={{ alignSelf: "flex-end", padding: "6px 14px", background: bcBody.trim() && !bcSending ? "var(--ui-accent-blue)" : "#7FD9AC", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: bcBody.trim() && !bcSending ? "pointer" : "not-allowed" }}
                 >
                   {bcSending ? "Sending…" : `Send to ${picked.size}`}
                 </button>
@@ -1248,13 +1248,13 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 textAlign: "left",
                 // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — unread contacts
                 // get a bold left border (no numeric badge per Todd's #9).
-                borderLeft: c.unread > 0 ? "4px solid #2563eb" : "4px solid transparent",
+                borderLeft: c.unread > 0 ? "4px solid var(--ui-accent-blue)" : "4px solid transparent",
                 border: 0,
                 // BF_PORTAL_BLOCK_v638_MESSAGES_USABILITY_v1 — require a real contactId
                 // on both sides so null-id rows (e.g. duplicates) do not all highlight.
-                background: (!!selected?.contactId && selected?.contactId === c.contactId) ? "#f0f9ff" : "transparent",
+                background: (!!selected?.contactId && selected?.contactId === c.contactId) ? "rgba(47, 168, 106, 0.12)" : "transparent",
                 padding: "10px 8px",
-                borderBottom: "1px solid #eef2f7",
+                borderBottom: "1px solid var(--ui-surface-muted)",
                 cursor: "pointer",
                 color: "var(--ui-text)",
                 display: "flex",
@@ -1281,9 +1281,9 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
         {!selected && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ui-text-muted)", flex: 1 }}>Choose a contact.</div>}
         {selected && (
           <>
-            <div style={{ padding: "12px 20px", borderBottom: "1px solid #f0f0f5", background: "var(--ui-surface-muted)" }}>
+            <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--ui-surface-muted)", background: "var(--ui-surface-muted)" }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>{selected.name}</div>
-              {selected.phone && <div style={{ fontSize: 12, color: "#3c3c43" }}>{selected.phone}</div>}
+              {selected.phone && <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{selected.phone}</div>}
               {!applicationId && (
                 <div style={{ fontSize: 11, color: "#b45309", marginTop: 4 }}>
                   No active application linked to this contact yet — messages can still be sent.
@@ -1339,7 +1339,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                     disabled={!draft.trim() || sending}
                     style={{
                       alignSelf: "flex-end",
-                      background: draft.trim() && !sending ? "#2563eb" : "var(--ui-text-muted)",
+                      background: draft.trim() && !sending ? "var(--ui-accent-blue)" : "var(--ui-text-muted)",
                       color: "#fff",
                       border: 0,
                       borderRadius: 8,
@@ -1711,7 +1711,7 @@ function InboxTab() {
               padding: "8px 14px",
               border: "none",
               borderRadius: 4,
-              background: reconnecting ? "#a78bfa" : "#0066cc",
+              background: reconnecting ? "#a78bfa" : "var(--ui-accent-blue)",
               color: "#fff",
               fontSize: 13,
               fontWeight: 600,
@@ -1728,7 +1728,7 @@ function InboxTab() {
           <button
             type="button"
             onClick={() => setComposeOpen(true)}
-            style={{ width: "100%", padding: "8px 12px", border: "none", borderRadius: 4, background: "#0066cc", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+            style={{ width: "100%", padding: "8px 12px", border: "none", borderRadius: 4, background: "var(--ui-accent-blue)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
           >
             + Compose
           </button>
@@ -1758,7 +1758,7 @@ function InboxTab() {
             <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Nothing in this inbox.</div>
           )}
           {/* BF_PORTAL_BLOCK_v833_INBOX_SEARCH_FOLDERS_THREAD — search + folder */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid #f0f4f8" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid var(--ui-surface-muted)" }}>
             <input
               type="search"
               value={queryInput}
@@ -1777,7 +1777,7 @@ function InboxTab() {
             </select>
           </div>
           {/* BF_PORTAL_BLOCK_v823_INBOX_READTOGGLE_SORT_BADGE — sort + unread badge */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 12px", borderBottom: "1px solid #f0f4f8" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 12px", borderBottom: "1px solid var(--ui-surface-muted)" }}>
             <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
               {unreadCount > 0 ? `${unreadCount} unread` : "All read"}
             </span>
@@ -1786,7 +1786,7 @@ function InboxTab() {
               <button
                 type="button"
                 onClick={() => { setBulkMode((v) => !v); setSelectedIds(new Set()); }}
-                style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: bulkMode ? "#eaf2fb" : "var(--ui-surface-strong)", cursor: "pointer" }}
+                style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: bulkMode ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-strong)", cursor: "pointer" }}
               >
                 {bulkMode ? "Cancel" : "Select"}
               </button>
@@ -1801,7 +1801,7 @@ function InboxTab() {
             </div>
           </div>
           {bulkMode && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid #f0f4f8", background: "var(--ui-surface-muted)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid var(--ui-surface-muted)", background: "var(--ui-surface-muted)" }}>
               <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{selectedIds.size} selected</span>
               <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(true)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark read</button>
               <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(false)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark unread</button>
@@ -1813,7 +1813,7 @@ function InboxTab() {
             const isFlagged = m.flag?.flagStatus === "flagged";
             const threadCount = m.conversationId ? (threadCounts.get(m.conversationId) ?? 1) : 1;
             return (
-            <div key={m.id} style={{ position: "relative", borderBottom: "1px solid #f0f4f8", display: "flex", alignItems: "stretch" }}>
+            <div key={m.id} style={{ position: "relative", borderBottom: "1px solid var(--ui-surface-muted)", display: "flex", alignItems: "stretch" }}>
               {bulkMode && (
                 <label style={{ display: "flex", alignItems: "center", padding: "0 8px", cursor: "pointer" }} onClick={(ev) => ev.stopPropagation()}>
                   <input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => togglePick(m.id)} />
@@ -1825,7 +1825,7 @@ function InboxTab() {
                 style={{
                   display: "block", flex: 1, width: "100%", textAlign: "left",
                   padding: "12px 88px 12px 12px", border: "none",
-                  background: selectedId === m.id ? "#eaf2fb" : "transparent",
+                  background: selectedId === m.id ? "rgba(47, 168, 106, 0.12)" : "transparent",
                   cursor: "pointer", color: "var(--ui-text)",
                   fontWeight: m.isRead ? 400 : 600,
                 }}
@@ -1836,7 +1836,7 @@ function InboxTab() {
                 <div style={{ fontSize: 14, marginTop: 2 }}>
                   {m.subject || "(no subject)"}
                   {threadCount > 1 && (
-                    <span style={{ marginLeft: 6, fontSize: 11, color: "#0066cc", background: "#eaf2fb", borderRadius: 8, padding: "0 6px" }}>
+                    <span style={{ marginLeft: 6, fontSize: 11, color: "var(--ui-accent-blue)", background: "rgba(47, 168, 106, 0.12)", borderRadius: 8, padding: "0 6px" }}>
                       {threadCount}
                     </span>
                   )}
@@ -1868,7 +1868,7 @@ function InboxTab() {
                 title={m.isRead === false ? "Mark as read" : "Mark as unread"}
                 style={{
                   position: "absolute", right: 40, top: "50%", transform: "translateY(-50%)",
-                  border: "none", background: "transparent", color: "#0066cc",
+                  border: "none", background: "transparent", color: "var(--ui-accent-blue)",
                   fontSize: 14, cursor: "pointer", padding: "4px 6px", borderRadius: 4,
                 }}
               >
@@ -1925,8 +1925,8 @@ function InboxTab() {
 ----- Original message -----
 ${orig}`;
                 const btnStyle: React.CSSProperties = {
-                  padding: "7px 16px", border: "1px solid #0066cc", borderRadius: 6,
-                  background: "var(--ui-surface-strong)", color: "#0066cc", fontWeight: 600, fontSize: 13, cursor: "pointer",
+                  padding: "7px 16px", border: "1px solid var(--ui-accent-blue)", borderRadius: 6,
+                  background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, fontSize: 13, cursor: "pointer",
                 };
                 const openCompose = (to: string, subject: string) => {
                   setReplyCtx({ to, subject, body: quoted });
@@ -2001,7 +2001,7 @@ function IssuesTab() {
   }, []);
 
   const statusColor = (s: string) =>
-    s === "resolved" ? "#22c55e" : s === "in_progress" ? "#f59e0b" : "#3b82f6";
+    s === "resolved" ? "#22c55e" : s === "in_progress" ? "#f59e0b" : "var(--ui-accent-blue)";
 
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -2030,9 +2030,9 @@ function IssuesTab() {
             style={{
               padding: "10px 16px",
               cursor: "pointer",
-              borderBottom: "1px solid #f1f5f9",
-              background: selected?.id === issue.id ? "#eff6ff" : "transparent",
-              borderLeft: selected?.id === issue.id ? "3px solid #2563eb" : "3px solid transparent",
+              borderBottom: "1px solid var(--ui-surface-muted)",
+              background: selected?.id === issue.id ? "rgba(47, 168, 106, 0.12)" : "transparent",
+              borderLeft: selected?.id === issue.id ? "3px solid var(--ui-accent-blue)" : "3px solid transparent",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
@@ -2189,7 +2189,7 @@ export default function CommunicationsPage() {
       <div
         style={{
           display: "flex",
-          borderBottom: "2px solid #e2e8f0",
+          borderBottom: "2px solid var(--ui-border)",
           background: "var(--ui-surface-strong)",
           flexShrink: 0,
           padding: "0 4px",
@@ -2206,8 +2206,8 @@ export default function CommunicationsPage() {
               fontSize: 14,
               fontWeight: tab === t.id ? 700 : 500,
               cursor: "pointer",
-              color: tab === t.id ? "#007aff" : "var(--ui-text-muted)",
-              borderBottom: tab === t.id ? "2px solid #007aff" : "2px solid transparent",
+              color: tab === t.id ? "var(--ui-accent-blue)" : "var(--ui-text-muted)",
+              borderBottom: tab === t.id ? "2px solid var(--ui-accent-blue)" : "2px solid transparent",
               marginBottom: -2,
               transition: "all 0.1s",
               display: "inline-flex",
@@ -2307,7 +2307,7 @@ function MayaTab() {
           <button
             key={s.id}
             onClick={() => setSelected(s.id)}
-            style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 14px", border: 0, borderBottom: "1px solid #f1f5f9", background: selected === s.id ? "#eff6ff" : "var(--ui-surface-strong)", cursor: "pointer" }}
+            style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 14px", border: 0, borderBottom: "1px solid var(--ui-surface-muted)", background: selected === s.id ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-strong)", cursor: "pointer" }}
           >
             <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)" }}>
               {s.source || "Maya chat"}{s.status ? ` · ${s.status}` : ""}
@@ -2337,7 +2337,7 @@ function MayaTab() {
                   <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginBottom: 2, textAlign: isUser ? "right" : "left" }}>
                     {isUser ? "Visitor" : m.role === "ai" ? "Maya" : m.role}
                   </div>
-                  <div style={{ background: isUser ? "#2563eb" : "var(--ui-border-soft)", color: isUser ? "#fff" : "var(--ui-text)", padding: "8px 12px", borderRadius: 12, fontSize: 14, whiteSpace: "pre-wrap" }}>
+                  <div style={{ background: isUser ? "var(--ui-accent-blue)" : "var(--ui-border-soft)", color: isUser ? "#fff" : "var(--ui-text)", padding: "8px 12px", borderRadius: 12, fontSize: 14, whiteSpace: "pre-wrap" }}>
                     {m.message}
                   </div>
                 </div>
@@ -2768,24 +2768,24 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
       <div style={{ width: 280, borderRight: "1px solid var(--ui-border)", overflowY: "auto", background: "var(--ui-surface-strong)", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--ui-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>Team</span>
-          <button onClick={() => setShowNew(true)} style={{ fontSize: 13, color: "#007aff", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+ New</button>
+          <button onClick={() => setShowNew(true)} style={{ fontSize: 13, color: "var(--ui-accent-blue)", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+ New</button>
         </div>
         {channels.length === 0 && <div style={{ padding: 20, color: "var(--ui-text-muted)", fontSize: 13 }}>No conversations yet. Tap &quot;+ New&quot; to start one.</div>}
         {channels.map((c) => (
-          <div key={c.id} onClick={() => setActiveId(c.id)} style={{ padding: "10px 16px", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: c.id === activeId ? "#eff6ff" : "transparent", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <div key={c.id} onClick={() => setActiveId(c.id)} style={{ padding: "10px 16px", cursor: "pointer", borderBottom: "1px solid var(--ui-surface-muted)", background: c.id === activeId ? "rgba(47, 168, 106, 0.12)" : "transparent", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ui-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
                 {c.kind === "dm" && (() => {
                   const other = c.member_ids.find((id) => id !== myId);
                   const st = other ? (presence[other] ?? "offline") : "offline";
-                  const color = st === "available" ? "#34c759" : st === "busy" ? "#ff9500" : "#c7c7cc";
+                  const color = st === "available" ? "#34c759" : st === "busy" ? "#ff9500" : "var(--ui-border)";
                   return <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flex: "0 0 auto" }} aria-label={st} />;
                 })()}
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{c.kind === "channel" ? "# " : ""}{channelLabel(c)}</span>
               </div>
               {c.last_message && <div style={{ fontSize: 12, color: "var(--ui-text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.last_message.body}</div>}
             </div>
-            {c.has_mention && <span style={{ background: "#007aff", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "0 5px", minWidth: 18, height: 18, lineHeight: "18px", textAlign: "center" }} aria-label="mention">@</span>}
+            {c.has_mention && <span style={{ background: "var(--ui-accent-blue)", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "0 5px", minWidth: 18, height: 18, lineHeight: "18px", textAlign: "center" }} aria-label="mention">@</span>}
             {c.unread_count > 0 && <span style={{ background: "#ff3b30", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "0 6px", minWidth: 18, height: 18, lineHeight: "18px", textAlign: "center" }}>{c.unread_count}</span>}
           </div>
         ))}
@@ -2831,7 +2831,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                     {m.deleted_at ? (
                       <div style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 13, fontStyle: "italic" }}>Message deleted</div>
                     ) : (
-                      <div style={{ background: mine ? "#007aff" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                      <div style={{ background: mine ? "var(--ui-accent-blue)" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                         {m.body && <div>{highlightMentions(m.body, memberNames)}</div>}
                         {(m.attachments ?? []).map((a, i) => (
                           a.contentType.startsWith("image/") ? (
@@ -2852,7 +2852,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                         {(m.reactions ?? []).map((r) => {
                           const onByMe = r.user_ids.includes(myId ?? "");
                           return (
-                            <button key={r.emoji} onClick={() => void toggleReaction(m, r.emoji)} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, padding: "1px 6px", borderRadius: 999, cursor: "pointer", border: onByMe ? "1px solid #007aff" : "1px solid var(--ui-border)", background: onByMe ? "#eff6ff" : "var(--ui-surface-strong)", color: "var(--ui-text)" }}>
+                            <button key={r.emoji} onClick={() => void toggleReaction(m, r.emoji)} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, padding: "1px 6px", borderRadius: 999, cursor: "pointer", border: onByMe ? "1px solid var(--ui-accent-blue)" : "1px solid var(--ui-border)", background: onByMe ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-strong)", color: "var(--ui-text)" }}>
                               {r.emoji} {r.user_ids.length}
                             </button>
                           );
@@ -2924,7 +2924,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 <button onClick={() => fileRef.current?.click()} title="Attach file" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{"\u{1F4CE}"}</button>
                 <button onClick={() => void toggleRecord()} title={recording ? "Stop recording" : "Record voice note"} style={{ padding: "10px 12px", background: recording ? "#ff3b30" : "var(--ui-surface-muted)", color: recording ? "#fff" : "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{recording ? "\u{23F9}\uFE0F" : "\u{1F3A4}"}</button>
                 <input value={draft} onChange={(e) => onDraftChange(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
-                <button onClick={() => void send()} disabled={editing ? !draft.trim() : (!draft.trim() && atts.length === 0)} style={{ padding: "10px 18px", background: "#007aff", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>{editing ? "Save" : "Send"}</button>
+                <button onClick={() => void send()} disabled={editing ? !draft.trim() : (!draft.trim() && atts.length === 0)} style={{ padding: "10px 18px", background: "var(--ui-accent-blue)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>{editing ? "Save" : "Send"}</button>
               </div>
             </div>
           </>
@@ -2969,22 +2969,22 @@ function NewTeamChatModal({ users, onClose, onCreated }: { users: TeamUser[]; on
         <div style={{ fontWeight: 700, fontSize: 16, color: "var(--ui-text)" }}>New conversation</div>
         <div style={{ display: "flex", gap: 6 }}>
           {(["dm", "group", "channel"] as const).map((m) => (
-            <button key={m} onClick={() => { setMode(m); setPicked(new Set()); }} style={{ flex: 1, padding: "6px 0", borderRadius: 8, border: mode === m ? "1px solid #007aff" : "1px solid var(--ui-border)", background: mode === m ? "#eff6ff" : "var(--ui-surface-strong)", color: mode === m ? "#007aff" : "var(--ui-text-muted)", fontWeight: 600, fontSize: 13, cursor: "pointer", textTransform: "capitalize" }}>{m === "dm" ? "Direct" : m}</button>
+            <button key={m} onClick={() => { setMode(m); setPicked(new Set()); }} style={{ flex: 1, padding: "6px 0", borderRadius: 8, border: mode === m ? "1px solid var(--ui-accent-blue)" : "1px solid var(--ui-border)", background: mode === m ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-strong)", color: mode === m ? "var(--ui-accent-blue)" : "var(--ui-text-muted)", fontWeight: 600, fontSize: 13, cursor: "pointer", textTransform: "capitalize" }}>{m === "dm" ? "Direct" : m}</button>
           ))}
         </div>
         {mode !== "dm" && <input value={name} onChange={(e) => setName(e.target.value)} placeholder={mode === "channel" ? "Channel name" : "Group name (optional)"} style={{ padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />}
         <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{mode === "dm" ? "Pick one person" : "Pick people"}</div>
         <div style={{ overflowY: "auto", border: "1px solid var(--ui-border)", borderRadius: 8, maxHeight: 280 }}>
           {users.map((u) => (
-            <div key={u.id} onClick={() => toggle(u.id)} style={{ padding: "8px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", background: picked.has(u.id) ? "#eff6ff" : "var(--ui-surface-strong)" }}>
+            <div key={u.id} onClick={() => toggle(u.id)} style={{ padding: "8px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--ui-surface-muted)", background: picked.has(u.id) ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-strong)" }}>
               <span style={{ fontSize: 14, color: "var(--ui-text)" }}>{u.name}</span>
-              {picked.has(u.id) && <span style={{ color: "#007aff" }}>✓</span>}
+              {picked.has(u.id) && <span style={{ color: "var(--ui-accent-blue)" }}>✓</span>}
             </div>
           ))}
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
           <button onClick={onClose} style={{ padding: "8px 16px", border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", borderRadius: 8, cursor: "pointer" }}>Cancel</button>
-          <button onClick={() => void create()} disabled={!canCreate || busy} style={{ padding: "8px 16px", border: "none", background: canCreate ? "#007aff" : "var(--ui-border)", color: "#fff", borderRadius: 8, fontWeight: 600, cursor: canCreate ? "pointer" : "default" }}>{busy ? "Creating…" : "Create"}</button>
+          <button onClick={() => void create()} disabled={!canCreate || busy} style={{ padding: "8px 16px", border: "none", background: canCreate ? "var(--ui-accent-blue)" : "var(--ui-border)", color: "#fff", borderRadius: 8, fontWeight: 600, cursor: canCreate ? "pointer" : "default" }}>{busy ? "Creating…" : "Create"}</button>
         </div>
       </div>
     </div>
@@ -3014,7 +3014,7 @@ function VoicemailTab() {
       {err && <div style={{ color: "#b00020" }}>{err}</div>}
       {!loading && !err && items.length === 0 && <div style={{ color: "var(--ui-text-muted)" }}>No voicemails.</div>}
       {items.map((vm) => (
-        <div key={vm.id} style={{ borderBottom: "1px solid #f0f4f8", padding: "12px 0" }}>
+        <div key={vm.id} style={{ borderBottom: "1px solid var(--ui-surface-muted)", padding: "12px 0" }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ui-text-muted)" }}>
             {vm.contact_name || vm.contact_phone || "Unknown caller"}
           </div>
