@@ -92,7 +92,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
       </div>
       <div className="drawer__content" style={{ display: "flex", flexDirection: "row", height: "100%", overflow: "hidden", gap: 0 }}>
         <section style={{ width: 280, minWidth: 280, borderRight: "1px solid #e2e8f0", overflowY: "auto", padding: 16 }}>
-          <div style={{ width: 72, height: 72, borderRadius: 999, background: "#dbeafe", color: "#1d4ed8", display: "grid", placeItems: "center", fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
+          <div style={{ width: 72, height: 72, borderRadius: 999, background: "#dbeafe", color: "var(--ui-accent-blue)", display: "grid", placeItems: "center", fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
             {initials}
           </div>
           <h2 style={{ margin: 0, fontSize: 22 }}>{contact.name}</h2>
@@ -162,7 +162,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
                     borderRadius: 999,
                     padding: "4px 10px",
                     background: activeFilter === filter ? "#dbeafe" : "#fff",
-                    color: activeFilter === filter ? "#1d4ed8" : "#475569",
+                    color: activeFilter === filter ? "var(--ui-accent-blue)" : "#475569",
                     fontWeight: 600,
                     cursor: "pointer"
                   }}

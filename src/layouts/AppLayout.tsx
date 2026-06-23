@@ -58,7 +58,7 @@ const SLF_NAV: NavItem[] = [
 const SILO_NAV: Record<string, NavItem[]> = { BF: BF_NAV, BI: BI_NAV, SLF: SLF_NAV };
 
 const SILO_BRAND: Record<string, { label: string; accent: string }> = {
-  BF:  { label: "Boreal Financial",    accent: "#2563eb" },
+  BF:  { label: "Boreal Financial",    accent: "var(--ui-accent-blue)" },
   BI:  { label: "Boreal Insurance",    accent: "#7c3aed" },
   SLF: { label: "Site Level Finance",  accent: "#d97706" },
 };

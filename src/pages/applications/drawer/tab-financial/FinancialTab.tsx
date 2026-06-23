@@ -97,7 +97,7 @@ function CellInput({
           setEditing(false);
         }
       }}
-      style={{ width: "100%", border: "1px solid #2563eb", borderRadius: 4, padding: "2px 6px", fontSize: 13, textAlign: "right" }}
+      style={{ width: "100%", border: "1px solid var(--ui-accent-blue)", borderRadius: 4, padding: "2px 6px", fontSize: 13, textAlign: "right" }}
     />
   ) : (
     <button

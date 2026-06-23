@@ -197,7 +197,7 @@ export default function ApplicationTab({ application }: Props) {
       `<p>Hello ${v817_esc(v817_clientFirst || "there")},</p>` +
       `<p>I wanted to remind you to complete the following items still required to finalize your application package:</p>` +
       `<ul>${items}</ul>` +
-      `<p><a href="${V817_CLIENT_PORTAL_URL}" style="display:inline-block;padding:10px 18px;background:#1d4ed8;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:600;">Complete your application</a></p>` +
+      `<p><a href="${V817_CLIENT_PORTAL_URL}" style="display:inline-block;padding:10px 18px;background:var(--ui-accent-blue);color:#ffffff;border-radius:6px;text-decoration:none;font-weight:600;">Complete your application</a></p>` +
       `<p>If you have any questions or need assistance, please contact me directly.</p>`
     );
   }
@@ -256,7 +256,7 @@ export default function ApplicationTab({ application }: Props) {
             disabled={!v817_canRemind}
             title={v817_remindTitle}
             style={v817_canRemind
-              ? { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid #1d4ed8", background: "var(--ui-surface-strong)", color: "#1d4ed8", fontWeight: 600, cursor: "pointer", fontSize: 14 }
+              ? { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer", fontSize: 14 }
               : { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", fontWeight: 600, cursor: "not-allowed", fontSize: 14 }}
             data-testid="remind-client"
           >
@@ -552,7 +552,7 @@ const styles: Record<string, CSSProperties> = {
   subtitle: { fontSize: 13, color: "var(--ui-text-muted)", marginTop: 4 },
   statusPill: {
     background: "#dbeafe",
-    color: "#1e40af",
+    color: "var(--ui-accent-blue)",
     borderRadius: 999,
     padding: "4px 12px",
     fontSize: 12,
@@ -600,7 +600,7 @@ const styles: Record<string, CSSProperties> = {
     textOverflow: "ellipsis",
   },
   fieldValueHighlight: { fontSize: 18, color: "var(--ui-text)", fontWeight: 700 },
-  link: { color: "#2563eb", textDecoration: "none" },
+  link: { color: "var(--ui-accent-blue)", textDecoration: "none" },
   ownerList: { display: "flex", flexDirection: "column", gap: 12, gridColumn: "1 / -1" },
   ownerCard: { background: "var(--ui-surface-muted)", borderRadius: 8, padding: "12px 14px", border: "1px solid var(--ui-border)" },
   ownerHeader: { fontSize: 14, fontWeight: 700, marginBottom: 8, color: "var(--ui-text)" },
@@ -624,7 +624,7 @@ const styles: Record<string, CSSProperties> = {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    background: "#2563eb",
+    background: "var(--ui-accent-blue)",
     color: "#fff",
     border: 0,
     borderRadius: 8,
@@ -655,7 +655,7 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     gap: 8,
     background: "#dbeafe",
-    color: "#1e3a8a",
+    color: "var(--ui-accent-blue)",
     border: "1px solid #93c5fd",
     borderRadius: 8,
     padding: "10px 14px",

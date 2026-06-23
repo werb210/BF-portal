@@ -13,8 +13,8 @@ export type BankingTrendMonth = {
 const colors = {
   text: "#0f172a",
   muted: "#64748b",
-  accent: "#1e3a8a",
-  accentLight: "#3b82f6",
+  accent: "var(--ui-accent-blue)",
+  accentLight: "var(--ui-accent-blue)",
   amber: "#f59e0b",
   grid: "#f1f5f9",
 };

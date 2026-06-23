@@ -124,7 +124,7 @@ export function ContactCallFeed({ contactId }: { contactId: string }) {
               <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6 }}>No recording.</div>
             )}
             {(c.transcript_summary || c.transcript_text) && (
-              <button type="button" onClick={() => setOpenId(isOpen ? null : c.conference_id)} style={{ marginTop: 6, background: "transparent", border: "none", color: "#1d4ed8", fontSize: 13, cursor: "pointer", padding: 0 }}>
+              <button type="button" onClick={() => setOpenId(isOpen ? null : c.conference_id)} style={{ marginTop: 6, background: "transparent", border: "none", color: "var(--ui-accent-blue)", fontSize: 13, cursor: "pointer", padding: 0 }}>
                 {isOpen ? "Hide transcript" : "Show transcript"}
               </button>
             )}

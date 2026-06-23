@@ -20,7 +20,7 @@ const ContactRow = ({ contact, onSelect, onCall }: ContactRowProps) => {
   const normalizedStatus = leadStatus.toLowerCase();
   const statusStyle: CSSProperties =
     normalizedStatus === "new"
-      ? { background: "#dbeafe", color: "#1d4ed8" }
+      ? { background: "#dbeafe", color: "var(--ui-accent-blue)" }
       : normalizedStatus === "qualified"
         ? { background: "#dcfce7", color: "#15803d" }
         : normalizedStatus === "lost"
@@ -31,7 +31,7 @@ const ContactRow = ({ contact, onSelect, onCall }: ContactRowProps) => {
     <tr data-testid={`contact-row-${contact.id}`} onClick={() => onSelect(contact)} style={{ cursor: "pointer" }}>
       <td>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 999, background: "#dbeafe", color: "#1d4ed8", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 999, background: "#dbeafe", color: "var(--ui-accent-blue)", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700 }}>
             {contact.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
           </div>
           <a href="#" onClick={(e) => e.preventDefault()}>{contact.name}</a>

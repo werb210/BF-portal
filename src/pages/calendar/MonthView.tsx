@@ -63,7 +63,7 @@ const MonthView = ({
                   key={event.id}
                   className="calendar-event small"
                   onClick={() => isTask ? onTaskClick?.(resource.task) : onEventClick?.(event)}
-                  style={{ background: isTask ? "#fed7aa" : "#dbeafe", color: isTask ? "#9a3412" : "#1e40af", borderRadius: 6, padding: "4px 6px", marginTop: 4, cursor: "pointer" }}
+                  style={{ background: isTask ? "#fed7aa" : "#dbeafe", color: isTask ? "#9a3412" : "var(--ui-accent-blue)", borderRadius: 6, padding: "4px 6px", marginTop: 4, cursor: "pointer" }}
                 >
                   <div className="calendar-event__title">{isTask ? "✓ " : ""}{event.title}</div>
                 </div>

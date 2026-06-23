@@ -31,7 +31,7 @@ export function TransferBar({ conferenceId, initiatorPid }: { conferenceId: stri
           autoComplete="off" data-1p-ignore data-lpignore="true" data-form-type="other"
           onKeyDown={(e) => e.key === "Enter" && submit()}
           style={{ flex: 1, background: "#1f2937", border: "1px solid #374151", borderRadius: 8, padding: "8px 10px", color: "#fff", fontSize: 13 }} />
-        <button onClick={submit} style={{ ...btnSmall, background: "#2563eb" }}>Go</button>
+        <button onClick={submit} style={{ ...btnSmall, background: "var(--ui-accent-blue)" }}>Go</button>
         <button onClick={() => setOpen(false)} style={btnSmall}>Cancel</button>
       </div>
     </div>

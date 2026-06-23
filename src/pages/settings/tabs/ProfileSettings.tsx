@@ -500,7 +500,7 @@ const ProfileSettings = () => {
                 }
               }
             }}
-            style={{ padding: "8px 16px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}
+            style={{ padding: "8px 16px", background: "var(--ui-accent-blue)", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}
           >
             Set up a passkey
           </button>
@@ -530,7 +530,7 @@ const ProfileSettings = () => {
             }
           }}
           style={{
-            padding: "8px 16px", background: "#2563eb", color: "#fff",
+            padding: "8px 16px", background: "var(--ui-accent-blue)", color: "#fff",
             border: "none", borderRadius: 4, cursor: "pointer",
           }}
         >

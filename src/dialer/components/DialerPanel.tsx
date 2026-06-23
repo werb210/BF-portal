@@ -33,7 +33,7 @@ const T = {
   text: "#f5f5f7",
   textMuted: "rgba(245,245,247,0.55)",
   textDim: "rgba(245,245,247,0.35)",
-  accent: "#3b82f6",
+  accent: "var(--ui-accent-blue)",
   green: "#10b981",
   red: "#ef4444",
   amber: "#f59e0b",

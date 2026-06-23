@@ -42,7 +42,7 @@ function fmtMoney(n: number | null | undefined): string {
 function MethodBadge({ m }: { m: SubmissionMethod }) {
   if (!m) return <span style={{ color: "var(--ui-text-muted)" }}>—</span>;
   const map: Record<Exclude<SubmissionMethod, null>, { label: string; bg: string; fg: string }> = {
-    email:        { label: "Email",        bg: "#dbeafe", fg: "#1e40af" },
+    email:        { label: "Email",        bg: "#dbeafe", fg: "var(--ui-accent-blue)" },
     api:          { label: "API",          bg: "#dcfce7", fg: "#166534" },
     google_sheet: { label: "Google Sheet", bg: "#fef3c7", fg: "#78350f" },
   };
@@ -297,7 +297,7 @@ export default function LendersTab({ applicationId }: Props) {
                   type="button"
                   data-testid={`confirm-acceptance-${o.id}`}
                   onClick={() => void confirmAcceptance(o.id)}
-                  style={{ padding: "4px 10px", border: "none", background: "#2563eb", color: "#fff", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+                  style={{ padding: "4px 10px", border: "none", background: "var(--ui-accent-blue)", color: "#fff", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
                 >
                   Confirm acceptance
                 </button>
@@ -361,7 +361,7 @@ export default function LendersTab({ applicationId }: Props) {
                       <div>
                         <div style={{ fontWeight: 600 }}>{r.name}</div>
                         {r.primary ? (
-                          <span style={{ background: "#dbeafe", color: "#1e40af", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>PRIMARY</span>
+                          <span style={{ background: "#dbeafe", color: "var(--ui-accent-blue)", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>PRIMARY</span>
                         ) : null}
                       </div>
                     </div>
@@ -389,7 +389,7 @@ export default function LendersTab({ applicationId }: Props) {
                             </a>
                           ))
                         )}
-                        <label style={{ display: "block", padding: "6px", borderTop: "1px solid var(--ui-border-soft)", marginTop: 6, color: "#2563eb", cursor: "pointer", fontSize: 12 }}>
+                        <label style={{ display: "block", padding: "6px", borderTop: "1px solid var(--ui-border-soft)", marginTop: 6, color: "var(--ui-accent-blue)", cursor: "pointer", fontSize: 12 }}>
                           ⬆ Upload Term Sheet
                           <input
                             type="file"
@@ -432,7 +432,7 @@ export default function LendersTab({ applicationId }: Props) {
           data-testid="send-to-selected"
           disabled={selected.size === 0 || sending}
           onClick={() => void sendSelected()}
-          style={{ padding: "8px 14px", border: "none", background: selected.size > 0 ? "#2563eb" : "#9ca3af", color: "#fff", borderRadius: 6, cursor: selected.size > 0 ? "pointer" : "not-allowed", fontWeight: 600 }}
+          style={{ padding: "8px 14px", border: "none", background: selected.size > 0 ? "var(--ui-accent-blue)" : "#9ca3af", color: "#fff", borderRadius: 6, cursor: selected.size > 0 ? "pointer" : "not-allowed", fontWeight: 600 }}
         >
           {sending ? "Sending…" : `Send to ${selected.size} selected lender${selected.size === 1 ? "" : "s"}`}
         </button>

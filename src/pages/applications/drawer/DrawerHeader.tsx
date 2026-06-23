@@ -80,7 +80,7 @@ const DrawerHeader = ({
               padding: "4px 10px",
               borderRadius: 6,
               textDecoration: "none",
-              background: "#2563eb",
+              background: "var(--ui-accent-blue)",
               color: "#ffffff",
               fontWeight: 600,
             }}

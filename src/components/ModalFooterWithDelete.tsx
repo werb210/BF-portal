@@ -72,7 +72,7 @@ const footer: CSSProperties = {
 };
 const primaryBtn: CSSProperties = {
   padding: "8px 16px",
-  background: "#2563eb",
+  background: "var(--ui-accent-blue)",
   color: "#fff",
   border: "none",
   borderRadius: 4,
