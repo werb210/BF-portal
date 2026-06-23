@@ -264,7 +264,7 @@ function CalendarContent() {
           <h2 style={{ margin: 0, fontSize: 20 }}>
             Calendar — <span style={{ color: "var(--ui-text-muted)", fontWeight: 500 }}>{format(currentDate, view === "day" ? "EEEE, MMMM d, yyyy" : view === "week" ? "'Week of' MMMM d, yyyy" : "MMMM yyyy")}</span>
           </h2>
-          <button onClick={() => setShowEventForm(true)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2563eb", background: "#2563eb", color: "#fff" }}>
+          <button onClick={() => setShowEventForm(true)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-accent-blue)", color: "#fff" }}>
             Add Event
           </button>
         </div>
@@ -272,14 +272,14 @@ function CalendarContent() {
         {/* BF_PORTAL_BLOCK_v623_MEGAFIX_v1 — force date-cell visibility.
             Day numbers (1-31) weren't appearing in non-boundary rows. */}
         <style>{`
-          .rbc-date-cell { display: block !important; padding: 4px 8px !important; text-align: right; font-size: 13px; color: #1e293b; }
+          .rbc-date-cell { display: block !important; padding: 4px 8px !important; text-align: right; font-size: 13px; color: var(--ui-text); }
           .rbc-date-cell > a, .rbc-date-cell > button { color: inherit !important; text-decoration: none; pointer-events: auto; }
-          .rbc-date-cell.rbc-now > a, .rbc-date-cell.rbc-now > button { font-weight: 700; color: #2563eb; }
-          .rbc-off-range-bg { background: #f5f7fb; }
-          .rbc-off-range .rbc-button-link { color: #94a3b8 !important; }
+          .rbc-date-cell.rbc-now > a, .rbc-date-cell.rbc-now > button { font-weight: 700; color: var(--ui-accent-blue); }
+          .rbc-off-range-bg { background: var(--ui-surface); }
+          .rbc-off-range .rbc-button-link { color: var(--ui-text-muted) !important; }
           .rbc-event { cursor: pointer; }
           .rbc-time-view .rbc-time-header-content { font-size: 12px; }
-          .rbc-time-slot { font-size: 11px; color: #475569; }
+          .rbc-time-slot { font-size: 11px; color: var(--ui-text-muted); }
         `}</style>
         <div style={{ height: 700, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", gap: 8, padding: "0 0 8px 0" }}>
@@ -287,10 +287,10 @@ function CalendarContent() {
             <button onClick={() => setCurrentDate((d) => { const x = new Date(d); if (view === "month") x.setMonth(x.getMonth() - 1); else if (view === "year") x.setFullYear(x.getFullYear() - 1); else x.setDate(x.getDate() - (view === "work_week" ? 7 : 1)); return x; })} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>‹ Prev</button>
             <button onClick={() => setCurrentDate(new Date())} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Today</button>
             <button onClick={() => setCurrentDate((d) => { const x = new Date(d); if (view === "month") x.setMonth(x.getMonth() + 1); else if (view === "year") x.setFullYear(x.getFullYear() + 1); else x.setDate(x.getDate() + (view === "work_week" ? 7 : 1)); return x; })} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Next ›</button>
-            <button onClick={() => setView("day")}    style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "day" ? "#0066cc" : "var(--ui-surface-strong)", color: view === "day" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Day</button>
-            <button onClick={() => setView("work_week")} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "work_week" ? "#0066cc" : "var(--ui-surface-strong)", color: view === "work_week" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Week</button>
-            <button onClick={() => setView("month")}  style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "month" ? "#0066cc" : "var(--ui-surface-strong)", color: view === "month" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Month</button>
-            <button onClick={() => setView("year")}   style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "year" ? "#0066cc" : "var(--ui-surface-strong)", color: view === "year" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Year</button>
+            <button onClick={() => setView("day")}    style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "day" ? "var(--ui-accent-blue)" : "var(--ui-surface-strong)", color: view === "day" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Day</button>
+            <button onClick={() => setView("work_week")} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "work_week" ? "var(--ui-accent-blue)" : "var(--ui-surface-strong)", color: view === "work_week" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Week</button>
+            <button onClick={() => setView("month")}  style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "month" ? "var(--ui-accent-blue)" : "var(--ui-surface-strong)", color: view === "month" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Month</button>
+            <button onClick={() => setView("year")}   style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: view === "year" ? "var(--ui-accent-blue)" : "var(--ui-surface-strong)", color: view === "year" ? "#fff" : "var(--ui-text)", fontSize: 13, cursor: "pointer" }}>Year</button>
           </div>
 
           {view === "year" ? (
@@ -327,7 +327,7 @@ function CalendarContent() {
               }}
               eventPropGetter={(event: CalendarEvent) => {
                 const isTask = ((event.resource as any)?.__kind === "task");
-                return { style: { backgroundColor: isTask ? "#fed7aa" : "#2563eb", borderColor: isTask ? "#c2410c" : "#1d4ed8", color: isTask ? "#9a3412" : "var(--ui-surface-strong)" } };
+                return { style: { backgroundColor: isTask ? "#fed7aa" : "var(--ui-accent-blue)", borderColor: isTask ? "#c2410c" : "var(--ui-accent-blue)", color: isTask ? "#9a3412" : "var(--ui-surface-strong)" } };
               }}
               popup
               toolbar={false}
@@ -371,7 +371,7 @@ function CalendarContent() {
               <p style={{ color: "var(--ui-text-muted)", fontSize: 13, margin: 0 }}>None</p>
             ) : (
               (items as CalendarTask[]).map((task) => (
-                <div key={task.id ?? `${task.title}-${task.due_date}`} onClick={() => setSelectedTask(task)} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f5f9", alignItems: "flex-start", cursor: "pointer" }}>
+                <div key={task.id ?? `${task.title}-${task.due_date}`} onClick={() => setSelectedTask(task)} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--ui-border)", alignItems: "flex-start", cursor: "pointer" }}>
                   <input type="checkbox" style={{ marginTop: 3 }} checked={task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed)} onChange={(e) => { e.stopPropagation(); task.id && completeTaskMutation.mutate(task); }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ui-text)", wordBreak: "break-word" }}>
@@ -501,7 +501,7 @@ function CalendarContent() {
             </label>
             <div style={{ display: "flex", gap: 8 }}>
               {eventForm.title.trim() && eventForm.start && eventForm.end ? (
-                <button onClick={() => createEventMutation.mutate(eventForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2563eb", background: "#2563eb", color: "#fff" }}>Save</button>
+                <button onClick={() => createEventMutation.mutate(eventForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-accent-blue)", color: "#fff" }}>Save</button>
               ) : null}
               <SecondaryButton onClick={() => setShowEventForm(false)}>Cancel</SecondaryButton>
             </div>
@@ -676,8 +676,8 @@ function YearView({
                         textAlign: "center",
                         padding: "4px 0",
                         border: 0,
-                        background: isToday ? "#dbeafe" : "transparent",
-                        color: isToday ? "#1d4ed8" : "var(--ui-text)",
+                        background: isToday ? "rgba(47, 168, 106, 0.12)" : "transparent",
+                        color: isToday ? "var(--ui-accent-blue)" : "var(--ui-text)",
                         fontWeight: isToday ? 700 : 400,
                         cursor: "pointer",
                         borderRadius: 4,
@@ -686,7 +686,7 @@ function YearView({
                     >
                       {cell.day}
                       {hasEvent && (
-                        <span style={{ position: "absolute", bottom: 2, left: "50%", transform: "translateX(-50%)", width: 4, height: 4, borderRadius: "50%", background: "#2563eb" }} />
+                        <span style={{ position: "absolute", bottom: 2, left: "50%", transform: "translateX(-50%)", width: 4, height: 4, borderRadius: "50%", background: "var(--ui-accent-blue)" }} />
                       )}
                     </button>
                   );
