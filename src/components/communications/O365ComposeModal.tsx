@@ -65,7 +65,7 @@ function escapeToHtml(s: string): string {
 // into the editor (init / reply / edit-sent / draft), so a half-broken body can't carry the
 // raw `">Book a meeting` artifact forward.
 const BOOKING_BTN_STYLE =
-  "display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif";
+  "display:inline-block;margin:4px 0;padding:10px 18px;background:var(--ui-accent-blue);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif";
 function sanitizeBookingHtml(html: string): string {
   if (!html || html.indexOf("Book a meeting") === -1) return html;
   return html.replace(
@@ -76,9 +76,9 @@ function sanitizeBookingHtml(html: string): string {
 
 const tbBtn: CSSProperties = {
   padding: "3px 9px",
-  border: "1px solid #cbd6e2",
+  border: "1px solid var(--ui-border)",
   borderRadius: 4,
-  background: "#fff",
+  background: "var(--ui-surface-strong)",
   cursor: "pointer",
   fontSize: 13,
   lineHeight: 1.2,
@@ -317,7 +317,7 @@ export default function O365ComposeModal({
     let html = template.body_html ?? (template.body_text ? escapeToHtml(template.body_text) : "");
     html = html.split("{{first_name}}").join(firstName);
     if (bookingUrl) {
-      const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+      const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:var(--ui-accent-blue);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
       html = html.split("{{meeting_link}}").join(bookingButton);
     }
     if (html) insertHtmlAtCursor(html);
@@ -325,7 +325,7 @@ export default function O365ComposeModal({
 
   function insertBookingUrl() {
     if (!bookingUrl) return;
-    const btn = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+    const btn = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:var(--ui-accent-blue);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
     insertHtmlAtCursor(btn + "<br/>");
   }
 
@@ -459,7 +459,7 @@ export default function O365ComposeModal({
         // inside that anchor's href and mangled the tag (raw `">Book a meeting` leaked
         // as text). Replace the token always; only buttonize a BARE pasted URL when it
         // isn't already wrapped in an anchor href.
-        const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+        const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:var(--ui-accent-blue);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
         body_html = body_html.split("{{meeting_link}}").join(bookingButton);
         if (!body_html.includes(`href="${bookingUrl}"`)) {
           body_html = body_html.split(bookingUrl).join(bookingButton);
@@ -536,7 +536,7 @@ export default function O365ComposeModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ background: "#fff", borderRadius: 8, padding: 20, width: "min(680px, 92vw)", maxHeight: "92vh", overflow: "auto", color: "#000", display: "flex", flexDirection: "column", gap: 10 }}
+        style={{ background: "var(--ui-surface-strong)", borderRadius: 8, padding: 20, width: "min(680px, 92vw)", maxHeight: "92vh", overflow: "auto", color: "var(--ui-text)", display: "flex", flexDirection: "column", gap: 10 }}
       >
         <h3 style={{ margin: 0, fontSize: 18 }}>New message</h3>
 
@@ -545,7 +545,7 @@ export default function O365ComposeModal({
             value=""
             onChange={(e) => { const id = e.target.value; if (id) void loadDraft(id); }}
             disabled={composeSending || savingDraft}
-            style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14, background: "#fff" }}
+            style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14, background: "var(--ui-surface-strong)" }}
             aria-label="Open a saved draft"
           >
             <option value="">Open a saved draft…</option>
@@ -560,7 +560,7 @@ export default function O365ComposeModal({
         <select
           value={composeFrom}
           onChange={(e) => setComposeFrom(e.target.value)}
-          style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14, background: "#fff" }}
+          style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14, background: "var(--ui-surface-strong)" }}
         >
           {/* BF_PORTAL_BLOCK_v730 — fall back to self-fetched mailboxes */}
           {(fromOptions.length ? fromOptions : selfMailboxes).map((option) => (
@@ -569,23 +569,23 @@ export default function O365ComposeModal({
           {fromOptions.length === 0 && selfMailboxes.length === 0 && <option value="">No mailbox available</option>}
         </select>
 
-        <input type="text" placeholder="To (comma-separated)" value={composeTo} onChange={(e) => setComposeTo(e.target.value)} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14 }} />
+        <input type="text" placeholder="To (comma-separated)" value={composeTo} onChange={(e) => setComposeTo(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14 }} />
 
         {showCcBcc ? (
           <>
-            <input type="text" placeholder="Cc (comma-separated)" value={composeCc} onChange={(e) => setComposeCc(e.target.value)} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14 }} />
-            <input type="text" placeholder="Bcc (comma-separated)" value={composeBcc} onChange={(e) => setComposeBcc(e.target.value)} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14 }} />
+            <input type="text" placeholder="Cc (comma-separated)" value={composeCc} onChange={(e) => setComposeCc(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14 }} />
+            <input type="text" placeholder="Bcc (comma-separated)" value={composeBcc} onChange={(e) => setComposeBcc(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14 }} />
           </>
         ) : (
-          <button type="button" onClick={() => setShowCcBcc(true)} style={{ alignSelf: "flex-start", padding: "4px 8px", border: "none", background: "transparent", color: "#0066cc", cursor: "pointer", fontSize: 13 }}>+ Cc / Bcc</button>
+          <button type="button" onClick={() => setShowCcBcc(true)} style={{ alignSelf: "flex-start", padding: "4px 8px", border: "none", background: "transparent", color: "var(--ui-accent-blue)", cursor: "pointer", fontSize: 13 }}>+ Cc / Bcc</button>
         )}
 
-        <input type="text" placeholder="Subject" value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 14 }} />
+        <input type="text" placeholder="Subject" value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14 }} />
 
-        <style>{`[contenteditable][data-placeholder]:empty:before{content:attr(data-placeholder);color:#9aa5b4;}[contenteditable] ul,[contenteditable] ol{margin:4px 0 4px 22px;padding:0;}`}</style>
+        <style>{`[contenteditable][data-placeholder]:empty:before{content:attr(data-placeholder);color:var(--ui-text-muted);}[contenteditable] ul,[contenteditable] ol{margin:4px 0 4px 22px;padding:0;}`}</style>
         {/* BF_PORTAL_BLOCK_v740_TOOLBAR_STICKY */}
-        <div style={{ border: "1px solid #cbd6e2", borderRadius: 4 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, padding: 5, borderBottom: "1px solid #e2e8f0", background: "#f8fafc", position: "sticky", top: 0, zIndex: 5, borderTopLeftRadius: 4, borderTopRightRadius: 4 }}>
+        <div style={{ border: "1px solid var(--ui-border)", borderRadius: 4 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, padding: 5, borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", position: "sticky", top: 0, zIndex: 5, borderTopLeftRadius: 4, borderTopRightRadius: 4 }}>
             <button type="button" title="Bold" onMouseDown={(e) => { e.preventDefault(); exec("bold"); }} style={tbBtn}><b>B</b></button>
             <button type="button" title="Italic" onMouseDown={(e) => { e.preventDefault(); exec("italic"); }} style={tbBtn}><i>I</i></button>
             <button type="button" title="Underline" onMouseDown={(e) => { e.preventDefault(); exec("underline"); }} style={tbBtn}><u>U</u></button>
@@ -609,26 +609,26 @@ export default function O365ComposeModal({
             <select
               value={linkAppId}
               onChange={(e) => setLinkAppId(e.target.value)}
-              style={{ padding: 6, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 13, flex: 1 }}
+              style={{ padding: 6, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 13, flex: 1 }}
             >
               <option value="">Link to application…</option>
               {appOptions.map((a) => (
                 <option key={a.id} value={a.id}>{a.label}</option>
               ))}
             </select>
-            <button type="button" onClick={insertAppLink} disabled={!linkAppId} style={{ padding: "6px 10px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: linkAppId ? "pointer" : "default", fontSize: 13 }}>Insert link</button>
+            <button type="button" onClick={insertAppLink} disabled={!linkAppId} style={{ padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", cursor: linkAppId ? "pointer" : "default", fontSize: 13 }}>Insert link</button>
           </div>
         )}
 
         {/* BF_PORTAL_BLOCK_v694_COMMS — templates, booking URL, and collateral. */}
         {(templates.length > 0 || bookingUrl || collateral.length > 0) && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 10, border: "1px solid #e2e8f0", borderRadius: 6, background: "#f8fafc" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 10, border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-muted)" }}>
             {templates.length > 0 && (
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <select
                   value={templateId}
                   onChange={(e) => applyTemplate(e.target.value)}
-                  style={{ padding: 6, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 13, flex: 1, background: "#fff" }}
+                  style={{ padding: 6, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 13, flex: 1, background: "var(--ui-surface-strong)" }}
                 >
                   <option value="">Insert template…</option>
                   {templates.map((template) => (
@@ -638,16 +638,16 @@ export default function O365ComposeModal({
               </div>
             )}
             {bookingUrl && (
-              <button type="button" onClick={insertBookingUrl} style={{ alignSelf: "flex-start", padding: "6px 10px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: "pointer", fontSize: 13 }}>Insert booking button</button>
+              <button type="button" onClick={insertBookingUrl} style={{ alignSelf: "flex-start", padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", cursor: "pointer", fontSize: 13 }}>Insert booking button</button>
             )}
             {collateral.length > 0 && (
               /* BF_PORTAL_BLOCK_v698_COLLATERAL_PULLDOWN_v1 — dropdown picker + removable chips (was checkboxes) */
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>Collateral to include</span>
+                <span style={{ fontSize: 12, color: "var(--ui-text-muted)", fontWeight: 600 }}>Collateral to include</span>
                 <select
                   value=""
                   onChange={(e) => { const id = e.target.value; if (id) toggleCollateral(id); }}
-                  style={{ padding: 6, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 13, background: "#fff" }}
+                  style={{ padding: 6, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 13, background: "var(--ui-surface-strong)" }}
                   aria-label="Add collateral"
                 >
                   <option value="">Add collateral…</option>
@@ -661,9 +661,9 @@ export default function O365ComposeModal({
                       const item = collateral.find((c) => c.id === id);
                       if (!item) return null;
                       return (
-                        <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#334155", background: "#e2e8f0", borderRadius: 12, padding: "2px 8px" }} title={item.description ?? item.url ?? undefined}>
+                        <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--ui-text)", background: "var(--ui-border)", borderRadius: 12, padding: "2px 8px" }} title={item.description ?? item.url ?? undefined}>
                           {item.name}
-                          <button type="button" onClick={() => toggleCollateral(id)} aria-label={`Remove ${item.name}`} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", padding: 0, lineHeight: 1, fontSize: 13 }}>✕</button>
+                          <button type="button" onClick={() => toggleCollateral(id)} aria-label={`Remove ${item.name}`} style={{ background: "transparent", border: "none", color: "var(--ui-text-muted)", cursor: "pointer", padding: 0, lineHeight: 1, fontSize: 13 }}>✕</button>
                         </span>
                       );
                     })}
@@ -677,26 +677,26 @@ export default function O365ComposeModal({
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input ref={fileRef} type="file" multiple onChange={(e) => void handleFiles(e.target.files)} style={{ display: "none" }} />
-            <button type="button" onClick={() => fileRef.current?.click()} style={{ padding: "6px 10px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: "pointer", fontSize: 13 }}>📎 Attach file</button>
-            <span style={{ fontSize: 12, color: "#64748b" }}>
+            <button type="button" onClick={() => fileRef.current?.click()} style={{ padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", cursor: "pointer", fontSize: 13 }}>📎 Attach file</button>
+            <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
               {attachments.length === 0
                 ? "Up to 10 files, 3MB each"
                 : `${attachments.length} file${attachments.length === 1 ? "" : "s"} · ${sizeKb} KB`}
             </span>
           </div>
           {attachments.length > 0 && (
-            <ul style={{ margin: 0, padding: "4px 8px", listStyle: "none", border: "1px dashed #cbd6e2", borderRadius: 4, background: "#f9fafb" }}>
+            <ul style={{ margin: 0, padding: "4px 8px", listStyle: "none", border: "1px dashed var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-muted)" }}>
               {attachments.map((a, idx) => (
                 <li key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, padding: "2px 0" }}>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name} <span style={{ color: "#94a3b8" }}>({Math.round(a.size / 1024)} KB)</span></span>
-                  <button type="button" onClick={() => removeAttachment(idx)} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", padding: "0 4px" }} aria-label={`Remove ${a.name}`}>✕</button>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name} <span style={{ color: "var(--ui-text-muted)" }}>({Math.round(a.size / 1024)} KB)</span></span>
+                  <button type="button" onClick={() => removeAttachment(idx)} style={{ background: "transparent", border: "none", color: "var(--ui-text-muted)", cursor: "pointer", padding: "0 4px" }} aria-label={`Remove ${a.name}`}>✕</button>
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", fontSize: 13, color: "#334155" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", fontSize: 13, color: "var(--ui-text)" }}>
           <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }} title="Asks the recipient's mail client to confirm when they open it. Recipients can decline, and many (e.g. most Gmail) never send one.">
             <input type="checkbox" checked={requestReadReceipt} onChange={(e) => setRequestReadReceipt(e.target.checked)} />
             Request read receipt
@@ -707,7 +707,7 @@ export default function O365ComposeModal({
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
             Importance
-            <select value={importance} onChange={(e) => setImportance(e.target.value as "low" | "normal" | "high")} style={{ padding: 4, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 13, background: "#fff" }}>
+            <select value={importance} onChange={(e) => setImportance(e.target.value as "low" | "normal" | "high")} style={{ padding: 4, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 13, background: "var(--ui-surface-strong)" }}>
               <option value="low">Low</option>
               <option value="normal">Normal</option>
               <option value="high">High</option>
@@ -715,26 +715,26 @@ export default function O365ComposeModal({
           </label>
         </div>
 
-        <div style={{ fontSize: 11, color: "#94a3b8", fontStyle: "italic" }}>
+        <div style={{ fontSize: 11, color: "var(--ui-text-muted)", fontStyle: "italic" }}>
           Your email signature is added automatically.
         </div>
 
         {composeError && <div style={{ color: "#b00020", fontSize: 13 }}>{composeError}</div>}
 
-        <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", position: "sticky", bottom: 0, background: "#fff", paddingTop: 12, marginTop: 4, borderTop: "1px solid #e2e8f0", zIndex: 6 }}>
-          <div style={{ fontSize: 12, color: "#64748b" }}>
+        <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", position: "sticky", bottom: 0, background: "var(--ui-surface-strong)", paddingTop: 12, marginTop: 4, borderTop: "1px solid var(--ui-border)", zIndex: 6 }}>
+          <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
             {draftId ? "Outlook draft linked" : ""}
             {draftSavedAt ? ` · Saved ${new Date(draftSavedAt).toLocaleTimeString()}` : ""}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#334155" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ui-text)" }}>
               Schedule
-              <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} disabled={composeSending || savingDraft} style={{ padding: 4, border: "1px solid #cbd6e2", borderRadius: 4, fontSize: 13 }} />
+              <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} disabled={composeSending || savingDraft} style={{ padding: 4, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 13 }} />
             </label>
-            <button type="button" disabled={composeSending || savingDraft || !scheduleAt} onClick={() => { const iso = scheduleAt ? new Date(scheduleAt).toISOString() : ""; if (iso) void sendComposed(iso); }} style={{ padding: "8px 14px", border: "1px solid #2563eb", borderRadius: 4, background: "#fff", color: "#2563eb", fontWeight: 600, cursor: composeSending || savingDraft || !scheduleAt ? "default" : "pointer" }}>Schedule send</button>
-            <button type="button" onClick={onClose} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: composeSending || savingDraft ? "default" : "pointer" }}>Cancel</button>
-            <button type="button" onClick={() => void saveDraft()} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", cursor: composeSending || savingDraft ? "default" : "pointer" }}>{savingDraft ? "Saving..." : "Save draft"}</button>
-            <button type="button" onClick={() => void sendComposed()} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "none", borderRadius: 4, background: "#0066cc", color: "#fff", fontWeight: 600, cursor: composeSending || savingDraft ? "default" : "pointer" }}>{composeSending ? "Sending..." : "Send"}</button>
+            <button type="button" disabled={composeSending || savingDraft || !scheduleAt} onClick={() => { const iso = scheduleAt ? new Date(scheduleAt).toISOString() : ""; if (iso) void sendComposed(iso); }} style={{ padding: "8px 14px", border: "1px solid var(--ui-accent-blue)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: composeSending || savingDraft || !scheduleAt ? "default" : "pointer" }}>Schedule send</button>
+            <button type="button" onClick={onClose} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", cursor: composeSending || savingDraft ? "default" : "pointer" }}>Cancel</button>
+            <button type="button" onClick={() => void saveDraft()} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", cursor: composeSending || savingDraft ? "default" : "pointer" }}>{savingDraft ? "Saving..." : "Save draft"}</button>
+            <button type="button" onClick={() => void sendComposed()} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "none", borderRadius: 4, background: "var(--ui-accent-blue)", color: "#fff", fontWeight: 600, cursor: composeSending || savingDraft ? "default" : "pointer" }}>{composeSending ? "Sending..." : "Send"}</button>
           </div>
         </div>
       </div>
