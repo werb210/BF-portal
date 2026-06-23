@@ -9,7 +9,10 @@ export function getThemeChoice(): ThemeChoice {
   } catch {
     /* ignore */
   }
-  return "system";
+  // BF_PORTAL_BLOCK_v_THEME_DIALER_v1 — default to the dialer dark look for users with no saved
+  // preference. Light/System remain available via the Settings toggle
+  // (persisted), so this is fully reversible.
+  return "dark";
 }
 
 export function applyTheme(choice: ThemeChoice): void {
