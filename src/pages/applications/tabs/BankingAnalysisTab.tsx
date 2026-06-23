@@ -55,8 +55,8 @@ interface Props {
 
 const C = {
   text: "#0f172a",
-  muted: "#64748b",
-  border: "#e5e7eb",
+  muted: "var(--ui-text-muted)",
+  border: "var(--ui-border)",
   panel: "#fff",
 };
 
@@ -122,12 +122,12 @@ const styles = {
   } as React.CSSProperties,
   td: {
     padding: "8px 6px",
-    borderBottom: "1px solid #f1f5f9",
+    borderBottom: "1px solid var(--ui-surface-muted)",
   } as React.CSSProperties,
 };
 
 function bannerStyle(kind: "ok" | "wait" | "missing"): React.CSSProperties {
-  const bg = kind === "ok" ? "#ecfdf5" : kind === "wait" ? "#eff6ff" : "#fff7ed";
+  const bg = kind === "ok" ? "#ecfdf5" : kind === "wait" ? "rgba(47, 168, 106, 0.12)" : "#fff7ed";
   const fg = kind === "ok" ? "#065f46" : kind === "wait" ? "var(--ui-accent-blue)" : "#9a3412";
   return {
     padding: 12,
@@ -457,10 +457,10 @@ function DiagnosticPanel({ applicationId }: { applicationId?: string | null }) {
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>
+      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ui-text)", marginBottom: 8 }}>
         Banking analysis: no data yet
       </div>
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
+      <div style={{ fontSize: 13, color: "var(--ui-text-muted)", marginBottom: 16 }}>
         Banking analysis runs after bank statements are uploaded and processed by OCR.
         If this is taking too long, here is what is happening behind the scenes:
       </div>
@@ -469,20 +469,20 @@ function DiagnosticPanel({ applicationId }: { applicationId?: string | null }) {
           Could not fetch diagnostic: {err}
         </div>
       ) : !diag ? (
-        <div style={{ fontSize: 13, color: "#64748b" }}>Loading diagnostic…</div>
+        <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Loading diagnostic…</div>
       ) : (
-        <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 8, padding: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>
+        <div style={{ background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 8, padding: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ui-text)", marginBottom: 8 }}>
             Diagnosis
           </div>
-          <div style={{ fontSize: 13, color: "#0f172a", marginBottom: 16, padding: 10, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 4 }}>
+          <div style={{ fontSize: 13, color: "var(--ui-text)", marginBottom: 16, padding: 10, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 4 }}>
             {(diag && diag.diagnosis) || "(no diagnosis returned)"}
           </div>
           <details>
-            <summary style={{ cursor: "pointer", fontSize: 13, color: "#475569" }}>
+            <summary style={{ cursor: "pointer", fontSize: 13, color: "var(--ui-text-muted)" }}>
               Raw diagnostic data
             </summary>
-            <pre style={{ marginTop: 8, padding: 12, background: "#0f172a", color: "#e2e8f0", borderRadius: 4, fontSize: 11, overflowX: "auto" }}>
+            <pre style={{ marginTop: 8, padding: 12, background: "#0f172a", color: "var(--ui-border)", borderRadius: 4, fontSize: 11, overflowX: "auto" }}>
               {JSON.stringify(diag, null, 2)}
             </pre>
           </details>

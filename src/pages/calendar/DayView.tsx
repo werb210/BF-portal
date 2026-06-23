@@ -38,7 +38,7 @@ const DayView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date;
         return (
           <div
             key={hour}
-            style={{ display: "grid", gridTemplateColumns: "80px 1fr", minHeight: 64, borderBottom: "1px solid #f1f5f9" }}
+            style={{ display: "grid", gridTemplateColumns: "80px 1fr", minHeight: 64, borderBottom: "1px solid var(--ui-surface-muted)" }}
           >
             <div style={{ padding: "10px 8px", textAlign: "right", color: "var(--ui-text-muted)", fontSize: 12 }}>{formatHourLabel(hour)}</div>
             <div style={{ padding: 8 }}>
@@ -51,7 +51,7 @@ const DayView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date;
                       key={event.id}
                       onClick={() => isTask ? onTaskClick?.(resource.task) : onEventClick?.(event)}
                       style={{
-                        background: isTask ? "#fed7aa" : "#dbeafe",
+                        background: isTask ? "#fed7aa" : "rgba(47, 168, 106, 0.12)",
                         borderLeft: `3px solid ${isTask ? "#c2410c" : "var(--ui-accent-blue)"}`,
                         borderRadius: 6,
                         padding: "6px 8px",

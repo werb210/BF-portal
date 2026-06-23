@@ -173,9 +173,9 @@ export default function KnowledgeManager() {
             if (f) void uploadFile(f);
           }}
           style={{
-            background: "#ffffff",
+            background: "var(--ui-surface-strong)",
             color: "#000000",
-            border: "1px solid #cbd6e2",
+            border: "1px solid var(--ui-border)",
             borderRadius: 4,
             padding: 8,
             width: "100%",
@@ -193,7 +193,7 @@ export default function KnowledgeManager() {
             placeholder="https://example.com/page-maya-should-learn"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            style={{ flex: 1, background: "#ffffff", color: "#000000", border: "1px solid #cbd6e2", borderRadius: 4, padding: 8 }}
+            style={{ flex: 1, background: "var(--ui-surface-strong)", color: "#000000", border: "1px solid var(--ui-border)", borderRadius: 4, padding: 8 }}
           />
           <Button onClick={() => void submitUrl()} disabled={busy || !url.trim()}>
             {busy ? "Fetching…" : "Fetch & index"}
@@ -211,9 +211,9 @@ export default function KnowledgeManager() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           style={{
-            background: "#ffffff",
+            background: "var(--ui-surface-strong)",
             color: "#000000",
-            border: "1px solid #cbd6e2",
+            border: "1px solid var(--ui-border)",
             borderRadius: 4,
             padding: 8,
             width: "100%",
@@ -226,9 +226,9 @@ export default function KnowledgeManager() {
           onChange={(e) => setText(e.target.value)}
           rows={5}
           style={{
-            background: "#ffffff",
+            background: "var(--ui-surface-strong)",
             color: "#000000",
-            border: "1px solid #cbd6e2",
+            border: "1px solid var(--ui-border)",
             borderRadius: 4,
             padding: 8,
             width: "100%",

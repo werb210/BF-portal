@@ -85,27 +85,27 @@ export default function MayaChat() {
 
 const panelStyle: CSSProperties = {
   width: "100%", maxWidth: 360, minHeight: 360, maxHeight: 520,
-  background: "#fff", color: "#000", borderRadius: 12,
+  background: "var(--ui-surface-strong)", color: "var(--ui-text)", borderRadius: 12,
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
   display: "flex", flexDirection: "column",
-  border: "1px solid #e2e8f0",
+  border: "1px solid var(--ui-border)",
 };
 const headerStyle: CSSProperties = {
   display: "flex", justifyContent: "space-between", alignItems: "center",
-  padding: 12, borderBottom: "1px solid #e2e8f0",
+  padding: 12, borderBottom: "1px solid var(--ui-border)",
 };
 const listStyle: CSSProperties = {
   flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8,
 };
 const bubbleStyle = (role: "user" | "maya"): CSSProperties => ({
   alignSelf: role === "user" ? "flex-end" : "flex-start",
-  background: role === "user" ? "var(--ui-accent-blue)" : "#f1f5f9",
+  background: role === "user" ? "var(--ui-accent-blue)" : "var(--ui-surface-muted)",
   color: role === "user" ? "#fff" : "#000",
   padding: "8px 12px", borderRadius: 12, maxWidth: "85%", whiteSpace: "pre-wrap", lineHeight: 1.4,
 });
-const composerStyle: CSSProperties = { padding: 12, borderTop: "1px solid #e2e8f0" };
+const composerStyle: CSSProperties = { padding: 12, borderTop: "1px solid var(--ui-border)" };
 const inputStyle: CSSProperties = {
-  flex: 1, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, color: "#000", background: "#fff",
+  flex: 1, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, color: "var(--ui-text)", background: "var(--ui-surface-strong)",
 };
 const primaryBtn: CSSProperties = {
   background: "var(--ui-accent-blue)", color: "#fff", border: "none",

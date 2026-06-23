@@ -42,7 +42,7 @@ function fmtMoney(n: number | null | undefined): string {
 function MethodBadge({ m }: { m: SubmissionMethod }) {
   if (!m) return <span style={{ color: "var(--ui-text-muted)" }}>—</span>;
   const map: Record<Exclude<SubmissionMethod, null>, { label: string; bg: string; fg: string }> = {
-    email:        { label: "Email",        bg: "#dbeafe", fg: "var(--ui-accent-blue)" },
+    email:        { label: "Email",        bg: "rgba(47, 168, 106, 0.12)", fg: "var(--ui-accent-blue)" },
     api:          { label: "API",          bg: "#dcfce7", fg: "#166534" },
     google_sheet: { label: "Google Sheet", bg: "#fef3c7", fg: "#78350f" },
   };
@@ -361,7 +361,7 @@ export default function LendersTab({ applicationId }: Props) {
                       <div>
                         <div style={{ fontWeight: 600 }}>{r.name}</div>
                         {r.primary ? (
-                          <span style={{ background: "#dbeafe", color: "var(--ui-accent-blue)", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>PRIMARY</span>
+                          <span style={{ background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>PRIMARY</span>
                         ) : null}
                       </div>
                     </div>
@@ -384,7 +384,7 @@ export default function LendersTab({ applicationId }: Props) {
                           <div style={{ color: "var(--ui-text-muted)", fontSize: 12, padding: "4px 6px" }}>No files yet.</div>
                         ) : (
                           (r.files ?? []).map((f) => (
-                            <a key={f.id} href={f.url ?? "#"} target="_blank" rel="noopener noreferrer" style={{ display: "block", padding: "4px 6px", color: "#111", textDecoration: "none", fontSize: 12 }}>
+                            <a key={f.id} href={f.url ?? "#"} target="_blank" rel="noopener noreferrer" style={{ display: "block", padding: "4px 6px", color: "var(--ui-text)", textDecoration: "none", fontSize: 12 }}>
                               {f.filename}
                             </a>
                           ))

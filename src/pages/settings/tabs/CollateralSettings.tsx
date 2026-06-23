@@ -92,7 +92,7 @@ export default function CollateralSettings() {
       {error && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 12 }}>{error}</div>}
 
       {isAdmin && (
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16, marginBottom: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: 16, marginBottom: 16, display: "flex", flexDirection: "column", gap: 10 }}>
           <label style={{ fontSize: 13 }}>
             Display name (optional)
             <br />
@@ -101,7 +101,7 @@ export default function CollateralSettings() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Boreal One-Pager"
-              style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4 }}
+              style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid var(--ui-border)", marginTop: 4 }}
             />
           </label>
           <input ref={fileRef} type="file" accept="application/pdf" onChange={() => setError(null)} style={{ fontSize: 13 }} />
@@ -123,19 +123,19 @@ export default function CollateralSettings() {
             {assets.map((a) => (
               <li
                 key={a.id}
-                style={{ border: "1px solid #eef2f7", borderRadius: 6, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}
+                style={{ border: "1px solid var(--ui-surface-muted)", borderRadius: 6, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}
               >
                 <span style={{ fontSize: 14 }}>
                   <strong>{a.name}</strong>{" "}
                   {a.size_bytes != null && (
-                    <span style={{ fontSize: 12, color: "#94a3b8" }}>· {Math.round(a.size_bytes / 1024)} KB</span>
+                    <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>· {Math.round(a.size_bytes / 1024)} KB</span>
                   )}
                 </span>
                 {isAdmin && (
                   <button
                     type="button"
                     onClick={() => void remove(a.id)}
-                    style={{ padding: "4px 10px", border: "1px solid #f0c4c4", borderRadius: 6, background: "#fff", color: "#b00020", cursor: "pointer", fontSize: 13 }}
+                    style={{ padding: "4px 10px", border: "1px solid #f0c4c4", borderRadius: 6, background: "var(--ui-surface-strong)", color: "#b00020", cursor: "pointer", fontSize: 13 }}
                   >
                     Delete
                   </button>

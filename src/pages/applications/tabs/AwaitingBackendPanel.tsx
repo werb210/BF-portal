@@ -10,14 +10,14 @@ export default function AwaitingBackendPanel({
   expectedShape: ReactNode;
 }) {
   return (
-    <div style={{ border: "1px dashed #cbd5e1", borderRadius: 10, background: "#f8fafc", padding: 20 }}>
+    <div style={{ border: "1px dashed var(--ui-border)", borderRadius: 10, background: "var(--ui-surface-muted)", padding: 20 }}>
       <h2 style={{ marginTop: 0 }}>{tab}</h2>
-      <p style={{ color: "#475569" }}>{description}</p>
+      <p style={{ color: "var(--ui-text-muted)" }}>{description}</p>
       <div style={{ marginTop: 14 }}>
-        <div style={{ fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "#64748b", marginBottom: 8 }}>
+        <div style={{ fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--ui-text-muted)", marginBottom: 8 }}>
           Expected payload shape
         </div>
-        <pre style={{ margin: 0, padding: 12, borderRadius: 8, background: "#0f172a", color: "#e2e8f0", overflowX: "auto" }}>
+        <pre style={{ margin: 0, padding: 12, borderRadius: 8, background: "#0f172a", color: "var(--ui-border)", overflowX: "auto" }}>
           {expectedShape}
         </pre>
       </div>

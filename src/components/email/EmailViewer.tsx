@@ -21,7 +21,7 @@ function fwdPrefix(subject: string): string {
 }
 function quotedBody(m: EmailMessage): string {
   const esc = (v: string) => (v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return `<br/><br/><hr/><div style="color:#64748b;font-size:12px">From: ${esc(m.from)}<br/>To: ${esc(m.to)}<br/>Subject: ${esc(m.subject)}</div><br/>${m.body ?? ""}`;
+  return `<br/><br/><hr/><div style="color:var(--ui-text-muted);font-size:12px">From: ${esc(m.from)}<br/>To: ${esc(m.to)}<br/>Subject: ${esc(m.subject)}</div><br/>${m.body ?? ""}`;
 }
 function dedupeEmails(list: string[]): string {
   const seen = new Set<string>();

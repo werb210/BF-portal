@@ -43,8 +43,8 @@ export function PopupShell(props: {
 }
 
 export const popupInputStyle: CSSProperties = {
-  width: "100%", padding: 8, border: "1px solid #cbd6e2", borderRadius: 4,
-  background: "#fff", color: "#000", fontSize: 14, fontFamily: "inherit",
+  width: "100%", padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4,
+  background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 14, fontFamily: "inherit",
 };
 
 const overlay: CSSProperties = {
@@ -52,7 +52,7 @@ const overlay: CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100,
 };
 const panel: CSSProperties = {
-  background: "#fff", color: "#000", maxHeight: "85vh",
+  background: "var(--ui-surface-strong)", color: "var(--ui-text)", maxHeight: "85vh",
   borderRadius: 8, display: "flex", flexDirection: "column",
   boxShadow: "0 16px 40px rgba(0,0,0,0.3)", overflow: "hidden",
 };

@@ -111,7 +111,7 @@ const overlay: CSSProperties = {
   padding: 16,
 };
 const card: CSSProperties = {
-  background: "#fff",
+  background: "var(--ui-surface-strong)",
   borderRadius: 12,
   width: "min(720px, 100%)",
   maxHeight: "90vh",
@@ -129,8 +129,8 @@ const btnPrimary: CSSProperties = {
   cursor: "pointer",
 };
 const btnGhost: CSSProperties = {
-  background: "#fff",
-  border: "1px solid #cbd5e1",
+  background: "var(--ui-surface-strong)",
+  border: "1px solid var(--ui-border)",
   padding: "9px 16px",
   borderRadius: 8,
   cursor: "pointer",
@@ -211,10 +211,10 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
     <div style={overlay} onClick={onClose}>
       <div style={card} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 18, color: "#0f172a" }}>Import contacts from CSV</h2>
+          <h2 style={{ margin: 0, fontSize: 18, color: "var(--ui-text)" }}>Import contacts from CSV</h2>
           <button
             onClick={onClose}
-            style={{ border: 0, background: "transparent", fontSize: 22, cursor: "pointer", color: "#64748b" }}
+            style={{ border: 0, background: "transparent", fontSize: 22, cursor: "pointer", color: "var(--ui-text-muted)" }}
           >
             ×
           </button>
@@ -242,7 +242,7 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
           </div>
         ) : headers.length === 0 ? (
           <div>
-            <p style={{ color: "#475569", fontSize: 14, marginTop: 0 }}>
+            <p style={{ color: "var(--ui-text-muted)", fontSize: 14, marginTop: 0 }}>
               In HubSpot: Contacts → Export → CSV. Then choose that file here. We match on email — existing contacts
               are updated, new ones are created, and they&apos;ll be assigned to you.
             </p>
@@ -261,17 +261,17 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
           </div>
         ) : (
           <div>
-            <div style={{ fontSize: 13, color: "#475569", marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: "var(--ui-text-muted)", marginBottom: 12 }}>
               <strong>{fileName}</strong> — {dataRows.length} rows. Confirm how columns map:
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               {FIELDS.map((f) => (
                 <label key={f.key} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
-                  <span style={{ color: "#0f172a", fontWeight: 600 }}>{f.label}</span>
+                  <span style={{ color: "var(--ui-text)", fontWeight: 600 }}>{f.label}</span>
                   <select
                     value={mapping[f.key]}
                     onChange={(e) => setMapping((m) => ({ ...m, [f.key]: Number(e.target.value) }))}
-                    style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #cbd5e1" }}
+                    style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid var(--ui-border)" }}
                   >
                     <option value={-1}>— not imported —</option>
                     {headers.map((h, idx) => (
@@ -282,16 +282,16 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
               ))}
             </div>
 
-            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>Preview (first 3):</div>
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 6 }}>Preview (first 3):</div>
+            <div style={{ border: "1px solid var(--ui-border)", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
               {rows.slice(0, 3).map((r, idx) => (
                 <div
                   key={idx}
                   style={{
                     padding: "8px 12px",
-                    borderTop: idx ? "1px solid #f1f5f9" : 0,
+                    borderTop: idx ? "1px solid var(--ui-surface-muted)" : 0,
                     fontSize: 13,
-                    color: "#334155",
+                    color: "var(--ui-text)",
                   }}
                 >
                   {[r.first_name, r.last_name].filter(Boolean).join(" ") || r.name || "(no name)"} ·{" "}

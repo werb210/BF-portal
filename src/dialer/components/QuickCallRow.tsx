@@ -77,7 +77,7 @@ export default function QuickCallRow() {
                 key={i}
                 value={id ?? ""}
                 onChange={(e) => assign(i, e.target.value)}
-                style={{ width: "100%", fontSize: 11, padding: "6px 4px", borderRadius: 8, background: "rgba(255,255,255,0.06)", color: "#e5e7eb", border: "1px solid rgba(255,255,255,0.2)" }}
+                style={{ width: "100%", fontSize: 11, padding: "6px 4px", borderRadius: 8, background: "rgba(255,255,255,0.06)", color: "var(--ui-border)", border: "1px solid rgba(255,255,255,0.2)" }}
               >
                 <option value="">— empty —</option>
                 {data.staff.map((st) => (

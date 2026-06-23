@@ -151,20 +151,20 @@ export default function PipelinePage() {
   }
 
   if (loading) return (
-    <div style={{ padding: 32, color: "#94a3b8", fontSize: 14 }}>Loading pipeline…</div>
+    <div style={{ padding: 32, color: "var(--ui-text-muted)", fontSize: 14 }}>Loading pipeline…</div>
   );
 
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: 0 }}>Sales Pipeline</h1>
-          <label style={{ fontSize: 13, color: "#334155", display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--ui-text)", margin: 0 }}>Sales Pipeline</h1>
+          <label style={{ fontSize: 13, color: "var(--ui-text)", display: "inline-flex", alignItems: "center", gap: 6 }}>
             <input type="checkbox" checked={showDrafts} onChange={(event) => setShowDrafts(event.target.checked)} />
             Show drafts
           </label>
         </div>
-        <span style={{ fontSize: 13, color: "#64748b" }}>{cards.length} applications</span>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{cards.length} applications</span>
       </div>
       <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 16, alignItems: "flex-start" }}>
         {STAGES.map((stage) => {
@@ -300,36 +300,36 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
       <div onClick={onOpen} style={{ cursor: "pointer", marginBottom: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 13, color: "#f1f5f9", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{name}</div>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-surface-muted)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{name}</div>
             {card.contact_name && (
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
+              <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
             <button type="button" aria-label="Call client" title={callBusy ? "Looking up phone…" : "Call client"}
               onClick={(e) => { e.stopPropagation(); void handleCall(); }}
               disabled={busy || callBusy}
-              style={{ border: 0, background: "transparent", color: callBusy ? "#475569" : "#94a3b8", cursor: (busy || callBusy) ? "default" : "pointer", padding: "4px 6px", display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44, borderRadius: 4 }}>
+              style={{ border: 0, background: "transparent", color: callBusy ? "var(--ui-text-muted)" : "var(--ui-text-muted)", cursor: (busy || callBusy) ? "default" : "pointer", padding: "4px 6px", display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44, borderRadius: 4 }}>
               <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
               </svg>
             </button>
             <button type="button" aria-label="Delete card" onClick={(e) => { e.stopPropagation(); onDelete(card.id); }} disabled={busy}
-              style={{ border: 0, background: "transparent", color: "#94a3b8", cursor: busy ? "default" : "pointer", fontSize: 18, lineHeight: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44 }}>×</button>
+              style={{ border: 0, background: "transparent", color: "var(--ui-text-muted)", cursor: busy ? "default" : "pointer", fontSize: 18, lineHeight: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44 }}>×</button>
           </div>
         </div>
 
         {/* Amount + owner row */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: "#94a3b8", marginBottom: 6 }}>
-          <span style={{ fontWeight: 600, color: "#cbd5e1" }}>{amount ?? "—"}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: "var(--ui-text-muted)", marginBottom: 6 }}>
+          <span style={{ fontWeight: 600, color: "var(--ui-border)" }}>{amount ?? "—"}</span>
           {hasOwner && (
-            <span title={ownerTitle || "Owner"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 999, background: "#334155", color: "#e2e8f0", fontSize: 9, fontWeight: 700 }}>{ownerInitials}</span>
+            <span title={ownerTitle || "Owner"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 999, background: "#334155", color: "var(--ui-border)", fontSize: 9, fontWeight: 700 }}>{ownerInitials}</span>
           )}
         </div>
 
         {/* BF_PORTAL_BLOCK_v776 — product category under the amount */}
         {productCat && (
-          <div style={{ fontSize: 11, color: "#cbd5e1", marginBottom: 6 }}>{productCat}</div>
+          <div style={{ fontSize: 11, color: "var(--ui-border)", marginBottom: 6 }}>{productCat}</div>
         )}
 
         {/* Pills row: doc progress, stage age */}
@@ -342,7 +342,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
             )}
             {stage_age && (
               <span style={{ display: "inline-block", padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 600,
-                background: stage_age.warn ? "#fef3c7" : "#1e293b", color: stage_age.warn ? "#92400e" : "#94a3b8", border: stage_age.warn ? "0" : "1px solid #475569" }}>
+                background: stage_age.warn ? "#fef3c7" : "#1e293b", color: stage_age.warn ? "#92400e" : "var(--ui-text-muted)", border: stage_age.warn ? "0" : "1px solid var(--ui-text-muted)" }}>
                 {stage_age.label}
               </span>
             )}
@@ -351,7 +351,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
 
         {/* Footer: last touch */}
         {lastTouch && (
-          <div style={{ fontSize: 10, color: "#64748b" }}>{lastTouch}</div>
+          <div style={{ fontSize: 10, color: "var(--ui-text-muted)" }}>{lastTouch}</div>
         )}
       </div>
 

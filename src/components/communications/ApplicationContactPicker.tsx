@@ -73,11 +73,11 @@ export default function ApplicationContactPicker({ onSelect }: Props) {
                 padding: "8px 12px",
                 cursor: "pointer",
                 fontSize: 13,
-                color: "#cbd5e1",
+                color: "var(--ui-border)",
                 borderBottom: "1px solid #0f172a"
               }}
             >
-              {r.name ?? "Unnamed"} <span style={{ color: "#64748b", fontSize: 11 }}>· {r.pipeline_state}</span>
+              {r.name ?? "Unnamed"} <span style={{ color: "var(--ui-text-muted)", fontSize: 11 }}>· {r.pipeline_state}</span>
             </div>
           ))}
         </div>

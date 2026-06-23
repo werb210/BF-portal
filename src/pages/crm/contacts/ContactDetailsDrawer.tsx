@@ -91,12 +91,12 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
         <Button variant="secondary" onClick={onClose}>Close</Button>
       </div>
       <div className="drawer__content" style={{ display: "flex", flexDirection: "row", height: "100%", overflow: "hidden", gap: 0 }}>
-        <section style={{ width: 280, minWidth: 280, borderRight: "1px solid #e2e8f0", overflowY: "auto", padding: 16 }}>
-          <div style={{ width: 72, height: 72, borderRadius: 999, background: "#dbeafe", color: "var(--ui-accent-blue)", display: "grid", placeItems: "center", fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
+        <section style={{ width: 280, minWidth: 280, borderRight: "1px solid var(--ui-border)", overflowY: "auto", padding: 16 }}>
+          <div style={{ width: 72, height: 72, borderRadius: 999, background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)", display: "grid", placeItems: "center", fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
             {initials}
           </div>
           <h2 style={{ margin: 0, fontSize: 22 }}>{contact.name}</h2>
-          <p style={{ margin: "4px 0", color: "#475569" }}>{(contact as Contact & { job_title?: string }).job_title ?? "—"}</p>
+          <p style={{ margin: "4px 0", color: "var(--ui-text-muted)" }}>{(contact as Contact & { job_title?: string }).job_title ?? "—"}</p>
           <a href="#" onClick={(e) => e.preventDefault()}>{companies[0]?.name ?? (contact as Contact & { company_name?: string }).company_name ?? "—"}</a>
 
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
@@ -140,7 +140,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
             <div style={{ marginTop: 14 }}>
               <h4 style={{ marginBottom: 8 }}>Applications</h4>
               {applications.map((app) => (
-                <div key={app.id} style={{ padding: "6px 8px", border: "1px solid #e2e8f0", borderRadius: 6, marginBottom: 6 }}>
+                <div key={app.id} style={{ padding: "6px 8px", border: "1px solid var(--ui-border)", borderRadius: 6, marginBottom: 6 }}>
                   <strong>{app.id}</strong> — {app.stage}
                 </div>
               ))}
@@ -158,11 +158,11 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
                   type="button"
                   onClick={() => setActiveFilter(filter)}
                   style={{
-                    border: "1px solid #cbd5e1",
+                    border: "1px solid var(--ui-border)",
                     borderRadius: 999,
                     padding: "4px 10px",
-                    background: activeFilter === filter ? "#dbeafe" : "#fff",
-                    color: activeFilter === filter ? "var(--ui-accent-blue)" : "#475569",
+                    background: activeFilter === filter ? "rgba(47, 168, 106, 0.12)" : "#fff",
+                    color: activeFilter === filter ? "var(--ui-accent-blue)" : "var(--ui-text-muted)",
                     fontWeight: 600,
                     cursor: "pointer"
                   }}

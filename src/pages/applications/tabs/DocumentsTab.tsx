@@ -50,9 +50,9 @@ export function fraudBadgeView(level: string | undefined): { label: string; bg: 
   switch (level) {
     case "high": return { label: "High risk", bg: "#fee2e2", fg: "#991b1b" };
     case "medium": return { label: "Review", bg: "#fef3c7", fg: "#92400e" };
-    case "low": return { label: "Low", bg: "#f1f5f9", fg: "#475569" };
+    case "low": return { label: "Low", bg: "var(--ui-surface-muted)", fg: "var(--ui-text-muted)" };
     case "clean": return { label: "No tamper signals", bg: "#dcfce7", fg: "#166534" };
-    default: return { label: "Scan", bg: "#e2e8f0", fg: "#334155" };
+    default: return { label: "Scan", bg: "var(--ui-border)", fg: "#334155" };
   }
 }
 
@@ -76,7 +76,7 @@ function FraudScanRow({ scan, open, onToggle }: { scan: FraudScanState | undefin
             <ul style={{ margin: 0, paddingLeft: 18 }}>
               {r.signals.map((sig) => (
                 <li key={sig.code} style={{ fontSize: 13, marginBottom: 4 }}>
-                  <strong style={{ color: sig.severity === "high" ? "#991b1b" : sig.severity === "medium" ? "#92400e" : "#475569" }}>{sig.label}</strong> — {sig.detail}
+                  <strong style={{ color: sig.severity === "high" ? "#991b1b" : sig.severity === "medium" ? "#92400e" : "var(--ui-text-muted)" }}>{sig.label}</strong> — {sig.detail}
                 </li>
               ))}
             </ul>
@@ -614,7 +614,7 @@ const styles: Record<string, CSSProperties> = {
   previewButtonDisabled: { padding: "5px 10px", background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" },
   // BF_PORTAL_BLOCK_v184_DOC_PREVIEW_WIRE_UP_v1
   previewButton: { padding: "5px 10px", background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
-  previewButtonLoading: { padding: "5px 10px", background: "#dbeafe", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "wait", fontFamily: "inherit" },
+  previewButtonLoading: { padding: "5px 10px", background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "wait", fontFamily: "inherit" },
   acceptButton: { padding: "5px 10px", background: "#16a34a", color: "#fff", border: 0, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
   acceptButtonDone: { padding: "5px 10px", background: "#dcfce7", color: "#166534", border: "1px solid #86efac", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "default", fontFamily: "inherit" },
   rejectButton: { padding: "5px 10px", background: "var(--ui-surface-strong)", color: "#b91c1c", border: "1px solid #fecaca", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
@@ -636,7 +636,7 @@ const styles: Record<string, CSSProperties> = {
   ocrBase: { padding: "1px 7px", borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.04em" },
   ocrGreen: { background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0" },
   ocrRed:   { background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5" },
-  ocrBlue:  { background: "#eff6ff", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe" },
+  ocrBlue:  { background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe" },
 };
 
 // BF_PORTAL_BLOCK_v192_REOCR_BUTTON_v1
@@ -683,7 +683,7 @@ export function ReocrToolbar({ applicationId }: { applicationId?: string | null 
         disabled={busy}
         style={{
           padding: "6px 12px", fontSize: 13, fontWeight: 500,
-          background: busy ? "#cbd5e1" : "#0ea5e9", color: "white",
+          background: busy ? "var(--ui-border)" : "#0ea5e9", color: "white",
           border: "none", borderRadius: 4, cursor: busy ? "wait" : "pointer",
         }}
       >

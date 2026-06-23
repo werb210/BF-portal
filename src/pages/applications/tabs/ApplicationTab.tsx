@@ -69,7 +69,7 @@ function readFlatPartner(applicant: AnyRecord, fdApplicant: AnyRecord): AnyRecor
 // BF_PORTAL_BLOCK_v_SIGNING_INDICATOR_v1 — staff-facing signing-state chip in the
 // application header, driven by the server's derived /details `signing.status`:
 //   signed | started (SignNow group minted) | ready (lender finalized, awaiting) | not_started.
-const SIGNING_FALLBACK = { label: "Sign: not started", bg: "#f1f5f9", fg: "#475569" };
+const SIGNING_FALLBACK = { label: "Sign: not started", bg: "var(--ui-surface-muted)", fg: "var(--ui-text-muted)" };
 export function signingBadgeView(status?: string): { label: string; bg: string; fg: string } {
   const map: Record<string, { label: string; bg: string; fg: string }> = {
     signed: { label: "Signed", bg: "#dcfce7", fg: "#166534" },
@@ -297,7 +297,7 @@ export default function ApplicationTab({ application }: Props) {
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 4 }}>
             {v784_tasks.tasks.map((t) => (
               <li key={t.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                <span aria-hidden style={{ display: "inline-flex", width: 16, height: 16, borderRadius: "50%", alignItems: "center", justifyContent: "center", fontSize: 11, lineHeight: 1, color: "#fff", background: t.complete ? "#16a34a" : "#cbd5e1" }}>{t.complete ? "✓" : ""}</span>
+                <span aria-hidden style={{ display: "inline-flex", width: 16, height: 16, borderRadius: "50%", alignItems: "center", justifyContent: "center", fontSize: 11, lineHeight: 1, color: "#fff", background: t.complete ? "#16a34a" : "var(--ui-border)" }}>{t.complete ? "✓" : ""}</span>
                 <span style={{ color: t.complete ? "#16a34a" : "#334155" }}>{t.label}</span>
               </li>
             ))}
@@ -551,7 +551,7 @@ const styles: Record<string, CSSProperties> = {
   title: { fontSize: 24, fontWeight: 700, margin: 0, color: "var(--ui-text)", lineHeight: 1.2 },
   subtitle: { fontSize: 13, color: "var(--ui-text-muted)", marginTop: 4 },
   statusPill: {
-    background: "#dbeafe",
+    background: "rgba(47, 168, 106, 0.12)",
     color: "var(--ui-accent-blue)",
     borderRadius: 999,
     padding: "4px 12px",
@@ -654,7 +654,7 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: 8,
-    background: "#dbeafe",
+    background: "rgba(47, 168, 106, 0.12)",
     color: "var(--ui-accent-blue)",
     border: "1px solid #93c5fd",
     borderRadius: 8,

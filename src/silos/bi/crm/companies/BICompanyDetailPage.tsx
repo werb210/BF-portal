@@ -178,13 +178,13 @@ export default function BICompanyDetailPage() {
 
   if (err)
     return (
-      <div style={{ padding: 24, color: "#b00020", background: "#fff", borderRadius: 8 }}>
+      <div style={{ padding: 24, color: "#b00020", background: "var(--ui-surface-strong)", borderRadius: 8 }}>
         {err}
       </div>
     );
   if (loading || !data?.company)
     return (
-      <div style={{ padding: 24, background: "#fff", borderRadius: 8 }}>Loading…</div>
+      <div style={{ padding: 24, background: "var(--ui-surface-strong)", borderRadius: 8 }}>Loading…</div>
     );
 
   const co = data.company;
@@ -405,10 +405,10 @@ export default function BICompanyDetailPage() {
                   <div style={{ fontSize: 12, color: "#516f90" }}>{c.title}</div>
                 )}
                 {c.email && (
-                  <div style={{ fontSize: 12, color: "#334155" }}>{c.email}</div>
+                  <div style={{ fontSize: 12, color: "var(--ui-text)" }}>{c.email}</div>
                 )}
                 {c.phone_e164 && (
-                  <div style={{ fontSize: 12, color: "#334155" }}>{c.phone_e164}</div>
+                  <div style={{ fontSize: 12, color: "var(--ui-text)" }}>{c.phone_e164}</div>
                 )}
                 {c.outreach_status && (
                   <div style={{ fontSize: 11, color: "#7c98b6", marginTop: 2 }}>
@@ -428,7 +428,7 @@ function Field({ label, value }: { label: string; value: string | null }) {
   return (
     <div style={{ marginBottom: 8 }}>
       <div style={fieldLabel}>{label}</div>
-      <div style={{ color: "#000" }}>{value || "—"}</div>
+      <div style={{ color: "var(--ui-text)" }}>{value || "—"}</div>
     </div>
   );
 }
@@ -449,10 +449,10 @@ function FieldEdit(props: {
           width: "100%",
           marginTop: 4,
           padding: 8,
-          border: "1px solid #cbd6e2",
+          border: "1px solid var(--ui-border)",
           borderRadius: 4,
-          background: "#fff",
-          color: "#000",
+          background: "var(--ui-surface-strong)",
+          color: "var(--ui-text)",
           fontSize: 13,
         }}
         aria-label={props.label}
@@ -466,19 +466,19 @@ const layout: CSSProperties = {
   gridTemplateColumns: "320px 1fr 320px",
   gap: 16,
   padding: 16,
-  background: "#fff",
-  color: "#000",
+  background: "var(--ui-surface-strong)",
+  color: "var(--ui-text)",
   borderRadius: 8,
 };
 const rail: CSSProperties = {
-  background: "#fff",
+  background: "var(--ui-surface-strong)",
   border: "1px solid #eaf0f6",
   borderRadius: 6,
   padding: 16,
 };
 const mainCol: CSSProperties = { minWidth: 0 };
 const panel: CSSProperties = {
-  background: "#fff",
+  background: "var(--ui-surface-strong)",
   border: "1px solid #eaf0f6",
   borderRadius: 6,
   padding: 0,
@@ -492,7 +492,7 @@ const panelHeader: CSSProperties = {
   background: "#f5f8fa",
 };
 const badge: CSSProperties = {
-  background: "#e5e7eb",
+  background: "var(--ui-border)",
   color: "#111827",
   padding: "2px 8px",
   borderRadius: 999,
@@ -523,9 +523,9 @@ const fieldLabel: CSSProperties = {
   textTransform: "uppercase",
 };
 const actionBtn: CSSProperties = {
-  border: "1px solid #cbd5e1",
-  background: "#fff",
-  color: "#0f172a",
+  border: "1px solid var(--ui-border)",
+  background: "var(--ui-surface-strong)",
+  color: "var(--ui-text)",
   borderRadius: 6,
   padding: "6px 12px",
   fontSize: 13,
@@ -537,5 +537,5 @@ const appRow: CSSProperties = {
 };
 const contactRow: CSSProperties = {
   padding: "8px 0",
-  borderBottom: "1px solid #eef2f7",
+  borderBottom: "1px solid var(--ui-surface-muted)",
 };

@@ -11,7 +11,7 @@ export function TranscriptStream({ segments }: { segments: TranscriptSegment[] }
   return (
     <div ref={ref} style={{ maxHeight: 160, overflowY: "auto", padding: "6px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
       {segments.map((s, i) => (
-        <div key={i} style={{ fontSize: 12, color: s.final ? "#e5e7eb" : "#9ca3af", lineHeight: 1.4 }}>
+        <div key={i} style={{ fontSize: 12, color: s.final ? "var(--ui-border)" : "#9ca3af", lineHeight: 1.4 }}>
           {s.text}
         </div>
       ))}

@@ -19,7 +19,7 @@ export default function RegionSelect({ country, value, onChange, id, name }: Pro
       name={name}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 8, background: "#fff", color: "#000" }}
+      style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 8, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}
     >
       <option value="">Select region</option>
       {options.map((region) => (

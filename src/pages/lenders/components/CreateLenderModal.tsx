@@ -88,7 +88,7 @@ function validate(s: FormState): Record<string, string> {
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "8px 12px",
-  border: "1px solid #d1d5db",
+  border: "1px solid var(--ui-border)",
   borderRadius: 6,
   fontSize: 14,
 };

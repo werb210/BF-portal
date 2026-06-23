@@ -57,7 +57,7 @@ export function ContactEmailFeed({ contactId }: { contactId: string }) {
                   title={`email-${e.id}`}
                   sandbox=""
                   srcDoc={e.body_html ?? "<p>(no content)</p>"}
-                  style={{ width: "100%", minHeight: 200, border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff" }}
+                  style={{ width: "100%", minHeight: 200, border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)" }}
                 />
               </div>
             )}

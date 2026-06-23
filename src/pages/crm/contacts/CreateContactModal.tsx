@@ -179,5 +179,5 @@ export default function CreateContactModal({ open = true, onClose, onSaved }: Pr
 }
 
 const overlay: CSSProperties = { position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 };
-const modal: CSSProperties = { width: "min(760px, 95vw)", maxHeight: "90vh", overflowY: "auto", background: "#fff", borderRadius: 12, padding: 16 };
-const input: CSSProperties = { width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 8, background: "#fff", color: "#000" };
+const modal: CSSProperties = { width: "min(760px, 95vw)", maxHeight: "90vh", overflowY: "auto", background: "var(--ui-surface-strong)", borderRadius: 12, padding: 16 };
+const input: CSSProperties = { width: "100%", padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 8, background: "var(--ui-surface-strong)", color: "var(--ui-text)" };

@@ -80,7 +80,7 @@ const primaryBtn: CSSProperties = {
 };
 const dangerBtn: CSSProperties = {
   padding: "8px 16px",
-  background: "#fff",
+  background: "var(--ui-surface-strong)",
   color: "#dc2626",
   border: "1px solid #dc2626",
   borderRadius: 4,

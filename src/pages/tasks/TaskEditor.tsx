@@ -99,10 +99,10 @@ export default TaskEditor;
 const taskFieldStyle: CSSProperties = {
   width: "100%",
   padding: 8,
-  border: "1px solid #cbd6e2",
+  border: "1px solid var(--ui-border)",
   borderRadius: 4,
-  background: "#fff",
-  color: "#000",
+  background: "var(--ui-surface-strong)",
+  color: "var(--ui-text)",
   fontSize: 14,
   fontFamily: "inherit",
 };

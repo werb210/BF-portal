@@ -126,7 +126,7 @@ export default function TemplatesSettings() {
       )}
 
       {editing && (
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16, marginBottom: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: 16, marginBottom: 16, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <label style={{ fontSize: 13 }}>
               Channel
@@ -134,7 +134,7 @@ export default function TemplatesSettings() {
               <select
                 value={editing.channel}
                 onChange={(e) => setEditing({ ...editing, channel: e.target.value as Channel })}
-                style={{ padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4 }}
+                style={{ padding: 8, borderRadius: 6, border: "1px solid var(--ui-border)", marginTop: 4 }}
               >
                 <option value="email">Email</option>
                 <option value="message">Message</option>
@@ -148,7 +148,7 @@ export default function TemplatesSettings() {
                 type="text"
                 value={editing.name}
                 onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-                style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4 }}
+                style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid var(--ui-border)", marginTop: 4 }}
               />
             </label>
           </div>
@@ -161,7 +161,7 @@ export default function TemplatesSettings() {
                 type="text"
                 value={editing.subject ?? ""}
                 onChange={(e) => setEditing({ ...editing, subject: e.target.value })}
-                style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4 }}
+                style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid var(--ui-border)", marginTop: 4 }}
               />
             </label>
           )}
@@ -185,7 +185,7 @@ export default function TemplatesSettings() {
                   return { ...prev, body_text: cur + (cur && !cur.endsWith(" ") && !cur.endsWith("\n") ? " " : "") + tok };
                 });
               }}
-              style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4, fontFamily: "inherit", fontSize: 13, background: "#fff" }}
+              style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid var(--ui-border)", marginTop: 4, fontFamily: "inherit", fontSize: 13, background: "var(--ui-surface-strong)" }}
             >
               <option value="">Insert a token…</option>
               {TOKENS.map((t) => (
@@ -207,7 +207,7 @@ export default function TemplatesSettings() {
                     : { ...editing, body_text: e.target.value }
                 )
               }
-              style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb", marginTop: 4, fontFamily: "inherit", fontSize: 13 }}
+              style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid var(--ui-border)", marginTop: 4, fontFamily: "inherit", fontSize: 13 }}
             />
           </label>
 
@@ -227,7 +227,7 @@ export default function TemplatesSettings() {
             <button
               type="button"
               onClick={() => setEditing(null)}
-              style={{ padding: "8px 14px", border: "1px solid #cbd6e2", borderRadius: 6, background: "#fff", cursor: "pointer" }}
+              style={{ padding: "8px 14px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", cursor: "pointer" }}
             >
               Cancel
             </button>
@@ -245,11 +245,11 @@ export default function TemplatesSettings() {
             {templates.map((t) => (
               <li
                 key={t.id}
-                style={{ border: "1px solid #eef2f7", borderRadius: 6, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}
+                style={{ border: "1px solid var(--ui-surface-muted)", borderRadius: 6, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}
               >
                 <span style={{ fontSize: 14 }}>
                   <strong>{t.name}</strong>{" "}
-                  <span style={{ fontSize: 12, color: "#94a3b8" }}>
+                  <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
                     · {t.channel}
                     {t.shared ? " · shared" : " · personal"}
                   </span>
@@ -269,14 +269,14 @@ export default function TemplatesSettings() {
                         owner_user_id: t.owner_user_id,
                       })
                     }
-                    style={{ padding: "4px 10px", border: "1px solid #cbd6e2", borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13 }}
+                    style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", cursor: "pointer", fontSize: 13 }}
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     onClick={() => void remove(t.id)}
-                    style={{ padding: "4px 10px", border: "1px solid #f0c4c4", borderRadius: 6, background: "#fff", color: "#b00020", cursor: "pointer", fontSize: 13 }}
+                    style={{ padding: "4px 10px", border: "1px solid #f0c4c4", borderRadius: 6, background: "var(--ui-surface-strong)", color: "#b00020", cursor: "pointer", fontSize: 13 }}
                   >
                     Delete
                   </button>
