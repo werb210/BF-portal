@@ -722,7 +722,7 @@ function CreateProductModal({
         <span style={{ opacity: locked ? 0.6 : 1, flex: 1 }}>
           {label}
           {hasForm && (
-            <span style={{ marginLeft: 6, padding: "1px 6px", fontSize: 10, fontWeight: 600, borderRadius: 3, background: "#dbeafe", color: "#1e40af" }}>
+            <span style={{ marginLeft: 6, padding: "1px 6px", fontSize: 10, fontWeight: 600, borderRadius: 3, background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)" }}>
               📝 form
             </span>
           )}
@@ -739,8 +739,8 @@ function CreateProductModal({
                   fontSize: 11,
                   fontWeight: 600,
                   borderRadius: 4,
-                  border: docStages.get(id) === s ? "1px solid #2563eb" : "1px solid var(--ui-border)",
-                  background: docStages.get(id) === s ? "#2563eb" : "var(--ui-surface-strong)",
+                  border: docStages.get(id) === s ? "1px solid var(--ui-accent-blue)" : "1px solid var(--ui-border)",
+                  background: docStages.get(id) === s ? "var(--ui-accent-blue)" : "var(--ui-surface-strong)",
                   color: docStages.get(id) === s ? "#fff" : "var(--ui-text-muted)",
                   cursor: "pointer",
                 }}
@@ -967,7 +967,7 @@ function CreateProductModal({
                 no photo ID. Hide the entire Always-Required block for MEDIA. */}
             {form.category !== "MEDIA" && (
               <div style={{ ...sectionStyle, marginBottom: 10 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ui-accent-blue)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
                 <DocCheckbox id={alwaysRequiredDoc.key} label={alwaysRequiredDoc.label} locked />
                 {form.category === equipmentFinanceAlwaysRequiredDoc.category && (
                   <DocCheckbox id={equipmentFinanceAlwaysRequiredDoc.key} label={equipmentFinanceAlwaysRequiredDoc.label} locked />
@@ -1015,7 +1015,7 @@ function CreateProductModal({
               onClick={() => set("active", !form.active)}
               style={{
                 width: 44, height: 24, borderRadius: 12, position: "relative", cursor: "pointer",
-                background: form.active ? "#2563eb" : "var(--ui-border)", transition: "background 0.2s",
+                background: form.active ? "var(--ui-accent-blue)" : "var(--ui-border)", transition: "background 0.2s",
                 flexShrink: 0,
               }}
             >
@@ -1135,7 +1135,7 @@ function ProductsPanel({
             Lender Products{lender ? ` (selected: ${lender.name})` : ""}
           </h2>
           <button onClick={onAddProduct}
-            style={{ padding: "8px 16px", background: "#2563eb", border: "none", borderRadius: 8,
+            style={{ padding: "8px 16px", background: "var(--ui-accent-blue)", border: "none", borderRadius: 8,
               fontSize: 13, fontWeight: 600, color: "#fff", cursor: "pointer" }}>
             + Create Product
           </button>
@@ -1188,7 +1188,7 @@ function ProductsPanel({
           <div style={{ background: "var(--ui-surface-strong)", borderRadius: 10, border: "1px solid var(--ui-border)", overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: "2px solid #f1f5f9", background: "var(--ui-surface-muted)" }}>
+                <tr style={{ borderBottom: "2px solid var(--ui-border)", background: "var(--ui-surface-muted)" }}>
                   {["Lender", "Country", "Min", "Max", "Active", ""].map((h) => (
                     <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text)", fontSize: 12 }}>{h}</th>
                   ))}
@@ -1219,7 +1219,7 @@ function ProductsPanel({
                       const ld = lenders.find((x) => x.id === (p.lenderId ?? p.lender_id));
                       const country = /* BF_PORTAL_BLOCK_v695_PRODUCT_COUNTRY_COLUMN_v1 */ (() => { const v = String((p as any).country ?? "").trim().toUpperCase(); if (v === "CA" || v === "CANADA") return "Canada"; if (v === "US" || v === "USA" || v === "UNITED STATES") return "United States"; if (v === "BOTH") return "Both"; return v ? String((p as any).country) : "—"; })();
                       rows.push(
-                        <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <tr key={p.id} style={{ borderBottom: "1px solid var(--ui-border)" }}>
                           <td style={{ padding: "10px 12px", color: "var(--ui-text)", fontWeight: 500 }}>{ld?.name ?? "—"}</td>
                           <td style={{ padding: "10px 12px", color: "var(--ui-text-muted)" }}>{country}</td>
                           <td style={{ padding: "10px 12px", color: "var(--ui-text)", fontWeight: 600 }}>{formatAmount(p.minAmount) || "—"}</td>
@@ -1231,7 +1231,7 @@ function ProductsPanel({
                             <button
                               type="button"
                               onClick={() => onEditProduct(p)}
-                              style={{ padding: "5px 12px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
+                              style={{ padding: "5px 12px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer" }}
                             >Edit</button>
                           </td>
                         </tr>
@@ -1264,7 +1264,7 @@ function ProductsPanel({
               {isOpen && items.map((p) => (
                 <div
                   key={p.id}
-                  style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 16px 10px 32px", borderTop: "1px solid #f1f5f9", fontSize: 13 }}
+                  style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 16px 10px 32px", borderTop: "1px solid var(--ui-border)", fontSize: 13 }}
                 >
                   <span style={{ flex: 1, color: "var(--ui-text)", fontWeight: 500 }}>{(p as any).productName || (p as any).name}</span>
                   {formatAmount(p.minAmount) && (
@@ -1280,7 +1280,7 @@ function ProductsPanel({
                   <button
                     type="button"
                     onClick={() => onEditProduct(p)}
-                    style={{ padding: "5px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
+                    style={{ padding: "5px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer" }}
                   >
                     Edit
                   </button>
@@ -1465,7 +1465,7 @@ export default function LendersPage() {
             </div>
             <button
               onClick={() => setShowCreateLender(true)}
-              style={{ padding: "8px 16px", background: "#2563eb", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}
+              style={{ padding: "8px 16px", background: "var(--ui-accent-blue)", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}
             >
               Create lender
             </button>
@@ -1476,7 +1476,7 @@ export default function LendersPage() {
         <div style={{ flex: 1, overflowY: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
+              <tr style={{ borderBottom: "2px solid var(--ui-border)" }}>
                 {/* BF_PORTAL_BLOCK_v709_LP_PRODUCT_COUNTS_v1 — Products column between Name and Status */}
                 <th onClick={() => cycleSort("name")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)", cursor: "pointer" }}>Lender Name{sortKey === "name" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
                 <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)" }}>Products</th>
@@ -1503,9 +1503,9 @@ export default function LendersPage() {
                     onClick={() => setSelected(l)}
                     style={{
                       cursor: "pointer",
-                      background: isSelected ? "#eff6ff" : "transparent",
-                      borderLeft: isSelected ? "3px solid #2563eb" : "3px solid transparent",
-                      borderBottom: "1px solid #f1f5f9",
+                      background: isSelected ? "rgba(47, 168, 106, 0.12)" : "transparent",
+                      borderLeft: isSelected ? "3px solid var(--ui-accent-blue)" : "3px solid transparent",
+                      borderBottom: "1px solid var(--ui-border)",
                       transition: "background 0.1s",
                     }}
                   >
@@ -1522,7 +1522,7 @@ export default function LendersPage() {
                           event.stopPropagation();
                           setEditingLender(l);
                         }}
-                        style={{ padding: "5px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "#1d4ed8", fontWeight: 600, cursor: "pointer" }}
+                        style={{ padding: "5px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer" }}
                       >
                         Edit
                       </button>
@@ -1535,7 +1535,7 @@ export default function LendersPage() {
         </div>
 
         {/* Pagination */}
-        <div style={{ padding: "10px 16px", borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "var(--ui-text-muted)" }}>
+        <div style={{ padding: "10px 16px", borderTop: "1px solid var(--ui-border)", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "var(--ui-text-muted)" }}>
           <span>{filtered.length === 0 ? "0" : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)}`} of {filtered.length}</span>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <button onClick={() => setPage(1)} disabled={page === 1} style={{ padding: "3px 7px", border: "1px solid var(--ui-border)", borderRadius: 5, cursor: page === 1 ? "default" : "pointer", background: "var(--ui-surface-strong)", opacity: page === 1 ? 0.4 : 1 }}>«</button>
