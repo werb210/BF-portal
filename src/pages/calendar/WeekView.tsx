@@ -47,8 +47,8 @@ const WeekView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date
                 borderLeft: "1px solid var(--ui-border)",
                 textAlign: "center",
                 fontWeight: 700,
-                color: isToday ? "#2563eb" : "var(--ui-text-muted)",
-                background: isToday ? "#eff6ff" : "var(--ui-surface-muted)",
+                color: isToday ? "var(--ui-accent-blue)" : "var(--ui-text-muted)",
+                background: isToday ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-muted)",
               }}
             >
               {day.toLocaleDateString(undefined, { weekday: "short" })} {day.getDate()}
@@ -96,14 +96,14 @@ const WeekView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date
                           style={{
                             padding: "6px 8px",
                             borderRadius: 6,
-                            background: isTask ? "#fed7aa" : "#dbeafe",
-                            borderLeft: `3px solid ${isTask ? "#c2410c" : "#2563eb"}`,
+                            background: isTask ? "#fed7aa" : "rgba(47, 168, 106, 0.12)",
+                            borderLeft: `3px solid ${isTask ? "#c2410c" : "var(--ui-accent-blue)"}`,
                             marginBottom: 4,
                             cursor: "pointer",
                           }}
                         >
-                          <div style={{ fontSize: 12, fontWeight: 700, color: isTask ? "#9a3412" : "#1e3a8a" }}>{isTask ? "✓ " : ""}{event.title}</div>
-                          <div style={{ fontSize: 11, color: isTask ? "#9a3412" : "#1d4ed8" }}>{formatTimeRange(event.start, event.end)}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: isTask ? "#9a3412" : "var(--ui-accent-blue)" }}>{isTask ? "✓ " : ""}{event.title}</div>
+                          <div style={{ fontSize: 11, color: isTask ? "#9a3412" : "var(--ui-accent-blue)" }}>{formatTimeRange(event.start, event.end)}</div>
                         </div>
                       );
                     })()
