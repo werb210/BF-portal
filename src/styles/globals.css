@@ -14,7 +14,7 @@
   --ui-text: var(--text-primary);
   --ui-text-muted: #475569;
   --ui-text-soft: #1f2937;
-  --ui-accent-blue: #3b82f6;
+  --ui-accent-blue: #2FA86A;
   --ui-accent-gold: #f59e0b;
   --ui-accent-red: #ef4444;
   --ui-shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
@@ -23,37 +23,39 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-primary: #0b1220;
-    --panel-bg: #121826;
-    --text-primary: #e6e8ee;
+    /* BF_PORTAL_BLOCK_v_THEME_DIALER_v1 — dialer/CMP dark palette */
+    --bg-primary: #0A0B0D;
+    --panel-bg: #121419;
+    --text-primary: #F2F4F7;
     --ui-bg: var(--bg-primary);
     --ui-surface: var(--panel-bg);
-    --ui-surface-strong: rgba(17, 25, 40, 0.96);
-    --ui-surface-muted: rgba(15, 23, 42, 0.55);
-    --ui-border: rgba(148, 163, 184, 0.22);
-    --ui-border-soft: rgba(148, 163, 184, 0.14);
+    --ui-surface-strong: #181B21;
+    --ui-surface-muted: #1F232B;
+    --ui-border: rgba(255, 255, 255, 0.12);
+    --ui-border-soft: rgba(255, 255, 255, 0.07);
     --ui-text: var(--text-primary);
-    --ui-text-muted: #94a3b8;
-    --ui-text-soft: #cbd5f5;
-    --ui-shadow-soft: 0 12px 30px rgba(2, 6, 23, 0.45);
-    --ui-shadow-strong: 0 18px 40px rgba(2, 6, 23, 0.65);
+    --ui-text-muted: #8B919C;
+    --ui-text-soft: #C9CED6;
+    --ui-shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.45);
+    --ui-shadow-strong: 0 18px 40px rgba(0, 0, 0, 0.65);
   }
 }
 
 /* #43 — manual theme override. data-theme on <html> wins over the system
    media query above, so the Settings toggle can force Light or Dark. */
 :root[data-theme="dark"] {
-  --bg-primary: #0b1220;
-  --panel-bg: #121826;
-  --text-primary: #e6e8ee;
-  --ui-surface-strong: rgba(17, 25, 40, 0.96);
-  --ui-surface-muted: rgba(15, 23, 42, 0.55);
-  --ui-border: rgba(148, 163, 184, 0.22);
-  --ui-border-soft: rgba(148, 163, 184, 0.14);
-  --ui-text-muted: #94a3b8;
-  --ui-text-soft: #cbd5f5;
-  --ui-shadow-soft: 0 12px 30px rgba(2, 6, 23, 0.45);
-  --ui-shadow-strong: 0 18px 40px rgba(2, 6, 23, 0.65);
+  /* BF_PORTAL_BLOCK_v_THEME_DIALER_v1 — dialer/CMP dark palette */
+  --bg-primary: #0A0B0D;
+  --panel-bg: #121419;
+  --text-primary: #F2F4F7;
+  --ui-surface-strong: #181B21;
+  --ui-surface-muted: #1F232B;
+  --ui-border: rgba(255, 255, 255, 0.12);
+  --ui-border-soft: rgba(255, 255, 255, 0.07);
+  --ui-text-muted: #8B919C;
+  --ui-text-soft: #C9CED6;
+  --ui-shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.45);
+  --ui-shadow-strong: 0 18px 40px rgba(0, 0, 0, 0.65);
 }
 :root[data-theme="light"] {
   --bg-primary: #ffffff;
@@ -225,9 +227,9 @@ a,
 }
 
 .sidebar__link--active {
-  background-color: rgba(59, 130, 246, 0.24);
+  background-color: rgba(47, 168, 106, 0.24);
   color: var(--ui-text);
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(47, 168, 106, 0.35);
 }
 
 .topbar {
@@ -287,7 +289,7 @@ a,
 }
 
 .topbar__icon-button:hover {
-  background: rgba(59, 130, 246, 0.2);
+  background: rgba(47, 168, 106, 0.2);
 }
 
 .topbar__user {
@@ -428,8 +430,8 @@ a,
 }
 
 .dialer__status-pill--active {
-  background: rgba(59, 130, 246, 0.25);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.25);
+  color: #A7E9C6;
 }
 
 .dialer__status-pill--ended,
@@ -439,13 +441,13 @@ a,
 }
 
 .dialer__status-pill--completed {
-  background: rgba(59, 130, 246, 0.22);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.22);
+  color: #A7E9C6;
 }
 
 .dialer__status-pill--voicemail {
-  background: rgba(59, 130, 246, 0.18);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.18);
+  color: #A7E9C6;
 }
 
 .dialer__timer {
@@ -499,8 +501,8 @@ a,
 }
 
 .dialer__control--active {
-  background: rgba(59, 130, 246, 0.2);
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.45);
+  background: rgba(47, 168, 106, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(47, 168, 106, 0.45);
 }
 
 .dialer__control-icon {
@@ -594,7 +596,7 @@ a,
   padding: 10px 16px;
   border-radius: 8px;
   border: none;
-  background-color: rgba(59, 130, 246, 0.9);
+  background-color: rgba(47, 168, 106, 0.9);
   color: var(--ui-text);
   cursor: pointer;
   font-weight: 600;
@@ -604,7 +606,7 @@ a,
 }
 
 .ui-button:hover {
-  background-color: rgba(59, 130, 246, 1);
+  background-color: rgba(47, 168, 106, 1);
 }
 
 .ui-button:disabled {
@@ -702,7 +704,7 @@ a,
   align-items: center;
   justify-content: center;
   padding: 32px 16px;
-  background: radial-gradient(circle at top, rgba(59, 130, 246, 0.15), transparent 45%),
+  background: radial-gradient(circle at top, rgba(47, 168, 106, 0.15), transparent 45%),
     var(--bg-primary);
 }
 
@@ -748,7 +750,7 @@ a,
   width: 100%;
   border-radius: 12px;
   padding: 12px 16px;
-  background: rgba(59, 130, 246, 0.95);
+  background: rgba(47, 168, 106, 0.95);
   color: var(--ui-text);
   font-weight: 600;
 }
@@ -756,7 +758,7 @@ a,
 .login-link {
   border: none;
   background: transparent;
-  color: #93c5fd;
+  color: #7FD9AC;
   font-weight: 600;
   text-align: left;
   padding: 0;
@@ -832,8 +834,8 @@ a,
 
 .settings-tab.is-active {
   background: transparent;
-  color: #3b82f6;
-  border-bottom: 2px solid #3b82f6;
+  color: #2FA86A;
+  border-bottom: 2px solid #2FA86A;
   box-shadow: none;
 }
 
@@ -1062,7 +1064,7 @@ a,
 }
 
 .otp-input:focus {
-  outline: 2px solid rgba(59, 130, 246, 0.8);
+  outline: 2px solid rgba(47, 168, 106, 0.8);
   outline-offset: 1px;
 }
 
@@ -1090,8 +1092,8 @@ a,
 }
 
 .status-pill--active {
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.2);
+  color: #A7E9C6;
 }
 
 .status-pill--disabled {
@@ -1489,8 +1491,8 @@ a,
 }
 
 .pipeline-column__body--over {
-  background: rgba(59, 130, 246, 0.15);
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35);
+  background: rgba(47, 168, 106, 0.15);
+  box-shadow: inset 0 0 0 1px rgba(47, 168, 106, 0.35);
 }
 
 .pipeline-column__body--blocked {
@@ -1518,7 +1520,7 @@ a,
 }
 
 .pipeline-card--selected {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4), var(--ui-shadow-soft);
+  box-shadow: 0 0 0 2px rgba(47, 168, 106, 0.4), var(--ui-shadow-soft);
 }
 
 .pipeline-card__select {
@@ -1531,7 +1533,7 @@ a,
 .pipeline-card__select input {
   width: 16px;
   height: 16px;
-  accent-color: #3b82f6;
+  accent-color: #2FA86A;
 }
 
 .pipeline-card--readonly {
@@ -1553,8 +1555,8 @@ a,
   margin: 0 0 8px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.18);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.18);
+  color: #A7E9C6;
   font-size: 11px;
   font-weight: 600;
 }
@@ -1574,17 +1576,17 @@ a,
 
 .pipeline-card__call {
   border: none;
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.2);
+  color: #A7E9C6;
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 12px;
   cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(47, 168, 106, 0.3);
 }
 
 .pipeline-card__call:hover {
-  background: rgba(59, 130, 246, 0.3);
+  background: rgba(47, 168, 106, 0.3);
 }
 
 .pipeline-card__title {
@@ -1635,8 +1637,8 @@ a,
 }
 
 .pipeline-card__pill {
-  background: rgba(59, 130, 246, 0.18);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.18);
+  color: #A7E9C6;
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 12px;
@@ -1674,8 +1676,8 @@ a,
 }
 
 .pipeline-card__indicator--active {
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.2);
+  color: #A7E9C6;
 }
 
 .pipeline-card__indicator--muted {
@@ -1989,9 +1991,9 @@ a,
 }
 
 .application-drawer__tab.active {
-  background: rgba(59, 130, 246, 0.22);
+  background: rgba(47, 168, 106, 0.22);
   color: var(--ui-text);
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(47, 168, 106, 0.4);
 }
 
 .application-drawer__tab-badge {
@@ -2068,9 +2070,9 @@ a,
   font-size: 12px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.4);
+  background: rgba(47, 168, 106, 0.2);
+  color: #A7E9C6;
+  box-shadow: inset 0 0 0 1px rgba(47, 168, 106, 0.4);
 }
 
 .application-shell__placeholder {
@@ -2171,8 +2173,8 @@ a,
   align-items: center;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.2);
+  color: #A7E9C6;
   font-size: 11px;
   font-weight: 600;
 }
@@ -2353,8 +2355,8 @@ a,
 }
 
 .drawer-chip {
-  background: rgba(59, 130, 246, 0.18);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.18);
+  color: #A7E9C6;
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 12px;
@@ -2414,7 +2416,7 @@ a,
   background: none;
   border: none;
   padding: 0;
-  color: #93c5fd;
+  color: #7FD9AC;
   font-weight: 600;
   cursor: pointer;
 }
@@ -2436,8 +2438,8 @@ a,
 }
 
 .status-pill--active {
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.2);
+  color: #A7E9C6;
 }
 
 .status-pill--paused {
@@ -2446,8 +2448,8 @@ a,
 }
 
 .status-pill--sent {
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.2);
+  color: #A7E9C6;
 }
 
 .status-pill--failed {
@@ -2466,18 +2468,18 @@ a,
 }
 
 .status-pill--submission-google-sheet {
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.2);
+  color: #A7E9C6;
 }
 
 .status-pill--submission-api {
-  background: rgba(59, 130, 246, 0.18);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.18);
+  color: #A7E9C6;
 }
 
 .status-pill--submission-email {
-  background: rgba(59, 130, 246, 0.18);
-  color: #bfdbfe;
+  background: rgba(47, 168, 106, 0.18);
+  color: #A7E9C6;
 }
 
 .status-pill--submission-manual {
@@ -2592,7 +2594,7 @@ a,
   height: 18px;
   border-radius: 9999px;
   border: 2px solid #d1d5db;
-  border-top-color: #1d4ed8;
+  border-top-color: #2FA86A;
   animation: spin 0.8s linear infinite;
 }
 
@@ -2789,8 +2791,8 @@ input[type="checkbox"] {
 }
 
 input[type="checkbox"]:checked {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #2FA86A;
+  border-color: #2FA86A;
 }
 
 input[type="checkbox"]:checked::after {
