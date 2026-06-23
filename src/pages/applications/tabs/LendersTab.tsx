@@ -37,7 +37,7 @@ const styles = {
   td: { padding: "12px 14px", fontSize: 13, color: "var(--ui-text)", borderBottom: "1px solid var(--ui-border-soft)", verticalAlign: "middle" as const } as const,
   pill: { display: "inline-block", padding: "2px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600 } as const,
   btn: { border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", padding: "6px 12px", borderRadius: 6, fontSize: 13, cursor: "pointer", color: "var(--ui-text)", fontFamily: "inherit" } as const,
-  btnPrimary: { border: 0, background: "#2563eb", color: "#fff", padding: "10px 16px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" } as const,
+  btnPrimary: { border: 0, background: "var(--ui-accent-blue)", color: "#fff", padding: "10px 16px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" } as const,
   btnPrimaryDisabled: { border: 0, background: "var(--ui-surface-muted)", color: "#fff", padding: "10px 16px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" } as const,
   filesMenu: { position: "absolute" as const, top: "calc(100% + 4px)", left: 0, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", padding: 8, minWidth: 220, zIndex: 10 } as const,
   filesMenuItem: { display: "block", padding: "6px 8px", fontSize: 13, color: "var(--ui-text)", textDecoration: "none", borderRadius: 4 } as const,
@@ -326,7 +326,7 @@ export default function LendersTab({ applicationId }: Props) {
                               </a>
                             ))
                           )}
-                          <label style={{ ...styles.filesMenuItem, cursor: "pointer", color: "#2563eb", marginTop: 6, borderTop: "1px solid var(--ui-border-soft)", paddingTop: 8 }}>
+                          <label style={{ ...styles.filesMenuItem, cursor: "pointer", color: "var(--ui-accent-blue)", marginTop: 6, borderTop: "1px solid var(--ui-border-soft)", paddingTop: 8 }}>
                             {isUploading ? "Uploading…" : "⬆ Upload Term Sheet"}
                             <input
                               type="file"

@@ -183,7 +183,7 @@ function CallCard({ call, isOpen, onToggle }: { call: CallRow; isOpen: boolean; 
         <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6 }}>No recording.</div>
       )}
       {hasTranscript && (
-        <button type="button" onClick={onToggle} style={{ marginTop: 6, background: "transparent", border: "none", color: "#1d4ed8", fontSize: 13, cursor: "pointer", padding: 0 }}>
+        <button type="button" onClick={onToggle} style={{ marginTop: 6, background: "transparent", border: "none", color: "var(--ui-accent-blue)", fontSize: 13, cursor: "pointer", padding: 0 }}>
           {isOpen ? "Hide transcript" : "Show transcript"}
         </button>
       )}

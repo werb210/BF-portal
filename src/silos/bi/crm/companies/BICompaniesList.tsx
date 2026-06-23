@@ -254,7 +254,7 @@ export default function BICompaniesList() {
           <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={tagBtn}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
           <button disabled={busyMass !== null} onClick={() => void massTagActive()} style={tagBtn} data-testid="bi-companies-tag-active">Tag Active</button>
           <select disabled={busyMass !== null} value="" onChange={(e) => { const v = e.target.value; if (v) void massAssign(v); }} style={tagBox} data-testid="bi-companies-assign"><option value="">Assign owner…</option>{owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}</select>
-          <button disabled={bfBusy} onClick={() => void importToBf()} style={{ padding: "6px 12px", borderRadius: 6, background: "#1d4ed8", color: "#fff", border: 0, cursor: bfBusy ? "default" : "pointer", fontSize: 13, fontWeight: 600, opacity: bfBusy ? 0.6 : 1 }} data-testid="bi-companies-import-to-bf">{bfBusy ? "Importing…" : "Import to BF"}</button>
+          <button disabled={bfBusy} onClick={() => void importToBf()} style={{ padding: "6px 12px", borderRadius: 6, background: "var(--ui-accent-blue)", color: "#fff", border: 0, cursor: bfBusy ? "default" : "pointer", fontSize: 13, fontWeight: 600, opacity: bfBusy ? 0.6 : 1 }} data-testid="bi-companies-import-to-bf">{bfBusy ? "Importing…" : "Import to BF"}</button>
           <button onClick={() => setSelected(new Set())} style={clearBtn}>Clear</button>
         </div>
       )}
@@ -262,8 +262,8 @@ export default function BICompaniesList() {
       {/* BF_PORTAL_BLOCK_v698_CRM_PAGER_TOP_v1 — top pager */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage}</span>
-        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
-        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
       <table style={table}>
         <thead>
@@ -292,8 +292,8 @@ export default function BICompaniesList() {
       {/* BF_PORTAL_BLOCK_v696_CRM_PAGER_v1 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
         <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage}</span>
-        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
-        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
     </div>
   );
@@ -314,7 +314,7 @@ const createBar: CSSProperties = { background: "#f5f8fa", border: "1px solid #cb
 const massBar: CSSProperties = { display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" };
 const delBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
 const tagBox: CSSProperties = { padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 };
-const tagBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#2563eb", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
+const tagBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "var(--ui-accent-blue)", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
 const clearBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#fff", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 13 };
 const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "#fff" };
 const theadRow: CSSProperties = { borderBottom: "1px solid #cbd6e2", background: "#f5f8fa" };

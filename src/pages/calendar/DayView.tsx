@@ -52,15 +52,15 @@ const DayView = ({ date, localEvents, onEventClick, onTaskClick }: { date: Date;
                       onClick={() => isTask ? onTaskClick?.(resource.task) : onEventClick?.(event)}
                       style={{
                         background: isTask ? "#fed7aa" : "#dbeafe",
-                        borderLeft: `3px solid ${isTask ? "#c2410c" : "#2563eb"}`,
+                        borderLeft: `3px solid ${isTask ? "#c2410c" : "var(--ui-accent-blue)"}`,
                         borderRadius: 6,
                         padding: "6px 8px",
                         marginBottom: 4,
                         cursor: "pointer",
                       }}
                     >
-                      <div style={{ fontWeight: 700, color: isTask ? "#9a3412" : "#1e40af", fontSize: 13 }}>{isTask ? "✓ " : ""}{event.title}</div>
-                      <div style={{ color: isTask ? "#9a3412" : "#1d4ed8", fontSize: 12 }}>{formatTimeRange(event.start, event.end)}</div>
+                      <div style={{ fontWeight: 700, color: isTask ? "#9a3412" : "var(--ui-accent-blue)", fontSize: 13 }}>{isTask ? "✓ " : ""}{event.title}</div>
+                      <div style={{ color: isTask ? "#9a3412" : "var(--ui-accent-blue)", fontSize: 12 }}>{formatTimeRange(event.start, event.end)}</div>
                     </div>
                   );
                 })()

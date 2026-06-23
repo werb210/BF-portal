@@ -53,7 +53,7 @@ export default function ContactDetailPage() {
       <aside style={rail}>
         <Link
           to="/crm/contacts"
-          style={{ color: "#1d4ed8", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}
+          style={{ color: "var(--ui-accent-blue)", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}
         >← Back to contacts</Link>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}><h2 style={{ marginTop: 0, marginBottom: 0 }}>{contact.name}</h2><span style={roleBadge}>{formatRole(contact.role)}</span></div>
         {contact.job_title && <div style={subtle}>{contact.job_title}</div>}

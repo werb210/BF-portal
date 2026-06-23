@@ -265,8 +265,8 @@ export default function BIContactsList() {
       {/* BF_PORTAL_BLOCK_v698_CRM_PAGER_TOP_v1 — top pager */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage}</span>
-        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
-        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
       <table style={table}>
         <thead>
@@ -294,8 +294,8 @@ export default function BIContactsList() {
       {/* BF_PORTAL_BLOCK_v696_CRM_PAGER_v1 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
         <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage}</span>
-        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
-        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "#1d4ed8", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
     </div>
   );

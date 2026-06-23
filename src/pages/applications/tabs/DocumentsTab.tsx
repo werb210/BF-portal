@@ -291,7 +291,7 @@ export default function DocumentsTab({ applicationId }: Props) {
             <span style={styles.subtitleTotal}>{docs.length} total</span>
           </div>
         </div>
-        <button type="button" onClick={() => { setUploadErr(null); setUploadOpen(true); }} style={{ background: "#1d4ed8", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", whiteSpace: "nowrap" }} data-testid="staff-upload-document">{/* BF_PORTAL_BLOCK_v820_STAFF_UPLOAD */}Upload document</button>
+        <button type="button" onClick={() => { setUploadErr(null); setUploadOpen(true); }} style={{ background: "var(--ui-accent-blue)", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", whiteSpace: "nowrap" }} data-testid="staff-upload-document">{/* BF_PORTAL_BLOCK_v820_STAFF_UPLOAD */}Upload document</button>
       </header>
       {uploadOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={() => setUploadOpen(false)}>
@@ -305,7 +305,7 @@ export default function DocumentsTab({ applicationId }: Props) {
             {uploadErr && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 10 }} role="status">{uploadErr}</div>}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button type="button" onClick={() => setUploadOpen(false)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text-muted)", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-              <button type="button" disabled={uploading} onClick={() => void doStaffUpload()} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#1d4ed8", color: "#fff", fontWeight: 600, cursor: uploading ? "default" : "pointer", opacity: uploading ? 0.6 : 1 }}>{uploading ? "Uploading…" : "Upload"}</button>
+              <button type="button" disabled={uploading} onClick={() => void doStaffUpload()} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "var(--ui-accent-blue)", color: "#fff", fontWeight: 600, cursor: uploading ? "default" : "pointer", opacity: uploading ? 0.6 : 1 }}>{uploading ? "Uploading…" : "Upload"}</button>
             </div>
           </div>
         </div>
@@ -613,8 +613,8 @@ const styles: Record<string, CSSProperties> = {
   docActions: { display: "flex", gap: 6, alignItems: "center" },
   previewButtonDisabled: { padding: "5px 10px", background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" },
   // BF_PORTAL_BLOCK_v184_DOC_PREVIEW_WIRE_UP_v1
-  previewButton: { padding: "5px 10px", background: "var(--ui-surface-strong)", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
-  previewButtonLoading: { padding: "5px 10px", background: "#dbeafe", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "wait", fontFamily: "inherit" },
+  previewButton: { padding: "5px 10px", background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
+  previewButtonLoading: { padding: "5px 10px", background: "#dbeafe", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "wait", fontFamily: "inherit" },
   acceptButton: { padding: "5px 10px", background: "#16a34a", color: "#fff", border: 0, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
   acceptButtonDone: { padding: "5px 10px", background: "#dcfce7", color: "#166534", border: "1px solid #86efac", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "default", fontFamily: "inherit" },
   rejectButton: { padding: "5px 10px", background: "var(--ui-surface-strong)", color: "#b91c1c", border: "1px solid #fecaca", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
@@ -636,7 +636,7 @@ const styles: Record<string, CSSProperties> = {
   ocrBase: { padding: "1px 7px", borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.04em" },
   ocrGreen: { background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0" },
   ocrRed:   { background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5" },
-  ocrBlue:  { background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" },
+  ocrBlue:  { background: "#eff6ff", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe" },
 };
 
 // BF_PORTAL_BLOCK_v192_REOCR_BUTTON_v1

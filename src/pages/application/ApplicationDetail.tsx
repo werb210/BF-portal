@@ -110,7 +110,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
           style={{
             border: 0,
             background: "transparent",
-            color: "#2563eb",
+            color: "var(--ui-accent-blue)",
             fontSize: 13,
             cursor: "pointer",
             padding: 0,
@@ -143,9 +143,9 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
               onClick={() => navigate(`/applications/${applicationId}/${tab.key}`)}
               style={{
                 border: 0,
-                borderBottom: active ? "2px solid #2563eb" : "2px solid transparent",
+                borderBottom: active ? "2px solid var(--ui-accent-blue)" : "2px solid transparent",
                 background: "transparent",
-                color: active ? "#2563eb" : "#334155",
+                color: active ? "var(--ui-accent-blue)" : "#334155",
                 fontWeight: active ? 700 : 500,
                 paddingTop: 6,
                 paddingBottom: 8,

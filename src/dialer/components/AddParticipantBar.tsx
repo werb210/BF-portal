@@ -22,7 +22,7 @@ export function AddParticipantBar({ conferenceId }: { conferenceId: string | nul
         onKeyDown={(e) => e.key === "Enter" && submit()}
         style={{ flex: 1, background: "#1f2937", border: "1px solid #374151", borderRadius: 8, padding: "8px 10px", color: "#fff", fontSize: 13 }} />
       <button onClick={submit} disabled={busy || !v.trim()} style={{
-        background: "#2563eb", border: "none", borderRadius: 8, color: "#fff",
+        background: "var(--ui-accent-blue)", border: "none", borderRadius: 8, color: "#fff",
         padding: "8px 12px", cursor: busy ? "default" : "pointer", fontWeight: 700, fontSize: 13,
       }}>Add</button>
     </div>

@@ -637,7 +637,7 @@ function TagEditor({ contact, onSaved }: { contact: { id: string; tags: string[]
             aria-label="Edit tags"
           />
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button type="button" onClick={() => void save()} disabled={saving} style={{ ...actionBtn, background: "#1d4ed8", color: "#fff", borderColor: "#1d4ed8" }}>{saving ? "Saving…" : "Save"}</button>
+            <button type="button" onClick={() => void save()} disabled={saving} style={{ ...actionBtn, background: "var(--ui-accent-blue)", color: "#fff", borderColor: "var(--ui-accent-blue)" }}>{saving ? "Saving…" : "Save"}</button>
             <button type="button" onClick={cancelEdit} disabled={saving} style={actionBtn}>Cancel</button>
           </div>
           {error && <div style={{ marginTop: 8, color: "#f87171", fontSize: 12 }}>{error}</div>}
@@ -691,7 +691,7 @@ const panelHeader: CSSProperties = {
   background: "#f5f8fa",
 };
 const backLink: CSSProperties = {
-  color: "#1d4ed8",
+  color: "var(--ui-accent-blue)",
   fontSize: 14,
   display: "inline-flex",
   alignItems: "center",

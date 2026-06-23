@@ -261,7 +261,7 @@ export default function DocumentsTab({ applicationId }: Props) {
               aria-selected={filter === "required"}
               data-testid="docs-filter-required"
               onClick={() => setFilter("required")}
-              style={{ padding: "8px 12px", border: "none", background: filter === "required" ? "#2563eb" : "#fff", color: filter === "required" ? "#fff" : "#374151", cursor: "pointer" }}
+              style={{ padding: "8px 12px", border: "none", background: filter === "required" ? "var(--ui-accent-blue)" : "#fff", color: filter === "required" ? "#fff" : "#374151", cursor: "pointer" }}
             >
               Required documents
             </button>
@@ -270,7 +270,7 @@ export default function DocumentsTab({ applicationId }: Props) {
               aria-selected={filter === "other"}
               data-testid="docs-filter-other"
               onClick={() => setFilter("other")}
-              style={{ padding: "8px 12px", border: "none", background: filter === "other" ? "#2563eb" : "#fff", color: filter === "other" ? "#fff" : "#374151", cursor: "pointer" }}
+              style={{ padding: "8px 12px", border: "none", background: filter === "other" ? "var(--ui-accent-blue)" : "#fff", color: filter === "other" ? "#fff" : "#374151", cursor: "pointer" }}
             >
               Other documents
             </button>

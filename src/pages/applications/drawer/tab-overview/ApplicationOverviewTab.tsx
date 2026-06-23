@@ -17,7 +17,7 @@ const STAGE_COLORS: Record<string, string> = {
   "In Review": "#f59e0b",
   "Documents Required": "#ef4444",
   "Additional Steps Required": "#f97316",
-  "Off to Lender": "#3b82f6",
+  "Off to Lender": "var(--ui-accent-blue)",
   Offer: "#16a34a"
 };
 

@@ -69,7 +69,7 @@ function AnalyticsFunnel() {
         <div className="space-y-2">
           {steps.map((s) => {
             const width = top > 0 ? Math.max(2, Math.round((s.count / top) * 100)) : 0;
-            return <div key={s.key}><div className="flex items-center justify-between text-sm" style={{ color: "var(--ui-text)" }}><span>{s.label}</span><span style={{ color: "var(--ui-text-muted)" }}>{s.count} · {s.pctOfStart}% of start{s.dropFromPrev > 0 ? ` · −${s.dropFromPrev}% vs prev` : ""}</span></div><div style={{ height: 10, borderRadius: 6, background: "var(--ui-border)", overflow: "hidden", marginTop: 4 }}><div style={{ width: `${width}%`, height: "100%", background: "#2563eb" }} /></div></div>;
+            return <div key={s.key}><div className="flex items-center justify-between text-sm" style={{ color: "var(--ui-text)" }}><span>{s.label}</span><span style={{ color: "var(--ui-text-muted)" }}>{s.count} · {s.pctOfStart}% of start{s.dropFromPrev > 0 ? ` · −${s.dropFromPrev}% vs prev` : ""}</span></div><div style={{ height: 10, borderRadius: 6, background: "var(--ui-border)", overflow: "hidden", marginTop: 4 }}><div style={{ width: `${width}%`, height: "100%", background: "var(--ui-accent-blue)" }} /></div></div>;
           })}
         </div>
       )}

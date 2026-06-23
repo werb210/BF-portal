@@ -99,7 +99,7 @@ const listStyle: CSSProperties = {
 };
 const bubbleStyle = (role: "user" | "maya"): CSSProperties => ({
   alignSelf: role === "user" ? "flex-end" : "flex-start",
-  background: role === "user" ? "#2563eb" : "#f1f5f9",
+  background: role === "user" ? "var(--ui-accent-blue)" : "#f1f5f9",
   color: role === "user" ? "#fff" : "#000",
   padding: "8px 12px", borderRadius: 12, maxWidth: "85%", whiteSpace: "pre-wrap", lineHeight: 1.4,
 });
@@ -108,6 +108,6 @@ const inputStyle: CSSProperties = {
   flex: 1, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, color: "#000", background: "#fff",
 };
 const primaryBtn: CSSProperties = {
-  background: "#2563eb", color: "#fff", border: "none",
+  background: "var(--ui-accent-blue)", color: "#fff", border: "none",
   padding: "8px 16px", borderRadius: 4, cursor: "pointer",
 };

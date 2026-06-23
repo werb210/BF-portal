@@ -500,7 +500,7 @@ const badge: CSSProperties = {
   fontWeight: 600,
 };
 const backLink: CSSProperties = {
-  color: "#1d4ed8",
+  color: "var(--ui-accent-blue)",
   fontSize: 14,
   display: "inline-flex",
   alignItems: "center",

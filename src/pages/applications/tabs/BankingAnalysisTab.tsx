@@ -128,7 +128,7 @@ const styles = {
 
 function bannerStyle(kind: "ok" | "wait" | "missing"): React.CSSProperties {
   const bg = kind === "ok" ? "#ecfdf5" : kind === "wait" ? "#eff6ff" : "#fff7ed";
-  const fg = kind === "ok" ? "#065f46" : kind === "wait" ? "#1e40af" : "#9a3412";
+  const fg = kind === "ok" ? "#065f46" : kind === "wait" ? "var(--ui-accent-blue)" : "#9a3412";
   return {
     padding: 12,
     borderRadius: 8,
