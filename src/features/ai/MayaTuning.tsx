@@ -100,8 +100,8 @@ export default function MayaTuning() {
   }
 
   const inputStyle: CSSProperties = {
-    width: "100%", background: "#ffffff", color: "#000000",
-    border: "1px solid #cbd6e2", borderRadius: 4, padding: 8, marginTop: 4,
+    width: "100%", background: "var(--ui-surface-strong)", color: "#000000",
+    border: "1px solid var(--ui-border)", borderRadius: 4, padding: 8, marginTop: 4,
   };
 
   return (

@@ -604,7 +604,7 @@ function EmailSignaturePanel() {
           disabled={!loaded}
           aria-label="Email signature HTML"
           placeholder={loaded ? "<p>Best,<br>Your Name<br>Boreal Financial</p>" : "Loading…"}
-          style={{ width: "100%", padding: 8, fontFamily: "monospace", fontSize: 12, borderRadius: 6, border: "1px solid #e5e7eb" }}
+          style={{ width: "100%", padding: 8, fontFamily: "monospace", fontSize: 12, borderRadius: 6, border: "1px solid var(--ui-border)" }}
         />
         <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
           <Button type="button" onClick={() => void save()} disabled={!loaded || saving}>
@@ -681,7 +681,7 @@ function SharedMailboxSignaturePanel() {
           onChange={(e) => setAddress(e.target.value)}
           disabled={!loaded}
           aria-label="Shared mailbox"
-          style={{ marginBottom: 8, padding: 6, borderRadius: 6, border: "1px solid #e5e7eb", fontSize: 13 }}
+          style={{ marginBottom: 8, padding: 6, borderRadius: 6, border: "1px solid var(--ui-border)", fontSize: 13 }}
         >
           {shared.map((m) => (
             <option key={m.address} value={m.address}>{m.display_name} ({m.address})</option>
@@ -694,7 +694,7 @@ function SharedMailboxSignaturePanel() {
           disabled={!loaded || !address}
           aria-label="Shared mailbox signature HTML"
           placeholder="<p>Boreal Financial<br>submissions@boreal.financial</p>"
-          style={{ width: "100%", padding: 8, fontFamily: "monospace", fontSize: 12, borderRadius: 6, border: "1px solid #e5e7eb" }}
+          style={{ width: "100%", padding: 8, fontFamily: "monospace", fontSize: 12, borderRadius: 6, border: "1px solid var(--ui-border)" }}
         />
         <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
           <Button type="button" onClick={() => void save()} disabled={!loaded || !address || saving}>
@@ -759,7 +759,7 @@ function BookingUrlPanel() {
           disabled={!loaded}
           aria-label="Booking URL"
           placeholder={loaded ? "https://calendly.com/your-name/intro" : "Loading…"}
-          style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #e5e7eb" }}
+          style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid var(--ui-border)" }}
         />
         <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
           <Button type="button" onClick={() => void save()} disabled={!loaded || saving}>

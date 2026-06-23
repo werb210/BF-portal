@@ -308,7 +308,7 @@ const styles: Record<string, CSSProperties> = {
   ocrBase: { padding: "1px 7px", borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.04em" },
   ocrGreen: { background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0" },
   ocrRed:   { background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5" },
-  ocrBlue:  { background: "#eff6ff", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe" },
+  ocrBlue:  { background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe" },
 
   confBase: { padding: "1px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700, textAlign: "center" as const, minWidth: 36 },
   confHigh: { background: "#dcfce7", color: "#166534" },

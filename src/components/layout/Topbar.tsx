@@ -103,7 +103,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   }
 
   return (
-    <header className="topbar" style={{ color: "#0f172a", height: 68, minHeight: 68, maxHeight: 68 }}>
+    <header className="topbar" style={{ color: "var(--ui-text)", height: 68, minHeight: 68, maxHeight: 68 }}>
       <div className="topbar__left" style={{ gap: 12 }}>
         <button
           type="button"
@@ -121,7 +121,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
               {avatarInitials}
             </div>
           )}
-          <h1 className="topbar__title" style={{ color: "#0b1220", margin: 0, fontSize: 20, fontWeight: 700 }}>
+          <h1 className="topbar__title" style={{ color: "var(--ui-text)", margin: 0, fontSize: 20, fontWeight: 700 }}>
             {greeting}
           </h1>
         </div>
@@ -182,8 +182,8 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
             )}
           </button>
           {isUserMenuOpen && (
-            <div style={{ position: "absolute", right: 0, top: 42, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, minWidth: 150, boxShadow: "0 10px 24px rgba(2, 6, 23, 0.12)", zIndex: 20 }}>
-              <Link to="/settings/profile" onClick={() => setIsUserMenuOpen(false)} style={{ display: "block", padding: "10px 12px", color: "#0f172a", textDecoration: "none", fontSize: 13 }}>
+            <div style={{ position: "absolute", right: 0, top: 42, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 10, minWidth: 150, boxShadow: "0 10px 24px rgba(2, 6, 23, 0.12)", zIndex: 20 }}>
+              <Link to="/settings/profile" onClick={() => setIsUserMenuOpen(false)} style={{ display: "block", padding: "10px 12px", color: "var(--ui-text)", textDecoration: "none", fontSize: 13 }}>
                 My Profile
               </Link>
               <button type="button" onClick={logout} style={{ width: "100%", textAlign: "left", border: "none", background: "transparent", padding: "10px 12px", fontSize: 13, cursor: "pointer", color: "#dc2626" }}>

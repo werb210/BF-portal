@@ -40,9 +40,9 @@ const selectStyle: CSSProperties = {
   fontSize: 13,
   padding: "6px 8px",
   borderRadius: 8,
-  border: "1px solid #d1d5db",
-  background: "#fff",
-  color: "#334155",
+  border: "1px solid var(--ui-border)",
+  background: "var(--ui-surface-strong)",
+  color: "var(--ui-text)",
 };
 
 // BF_PORTAL_BLOCK_v742_TEMPLATE_CHANNEL — scope templates to the composer channel.
@@ -90,7 +90,7 @@ export default function ComposerPulldowns({ onInsertText, channel }: { onInsertT
   }
 
   return (
-    <div style={{ display: "flex", gap: 8, padding: "6px 16px", borderTop: "1px solid #f0f0f5", background: "#fff" }}>
+    <div style={{ display: "flex", gap: 8, padding: "6px 16px", borderTop: "1px solid var(--ui-surface-muted)", background: "var(--ui-surface-strong)" }}>
       <select
         aria-label="Insert template"
         value={templateId}

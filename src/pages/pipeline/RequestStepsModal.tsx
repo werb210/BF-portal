@@ -87,7 +87,7 @@ export default function RequestStepsModal({
     fontSize: 12,
     fontWeight: 600,
     cursor: "pointer",
-    border: `1px solid ${active ? "#f97316" : "#cbd5e1"}`,
+    border: `1px solid ${active ? "#f97316" : "var(--ui-border)"}`,
     background: active ? "#fff7ed" : "#fff",
     color: active ? "#c2410c" : "#334155",
     userSelect: "none",
@@ -100,24 +100,24 @@ export default function RequestStepsModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 520, maxHeight: "85vh", overflowY: "auto", background: "#fff", borderRadius: 14, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}
+        style={{ width: "100%", maxWidth: 520, maxHeight: "85vh", overflowY: "auto", background: "var(--ui-surface-strong)", borderRadius: 14, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-          <h2 style={{ fontSize: 17, fontWeight: 700, color: "#0f172a", margin: 0 }}>Request additional steps</h2>
-          <button onClick={onClose} style={{ border: "none", background: "transparent", fontSize: 20, color: "#94a3b8", cursor: "pointer", lineHeight: 1 }}>×</button>
+          <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--ui-text)", margin: 0 }}>Request additional steps</h2>
+          <button onClick={onClose} style={{ border: "none", background: "transparent", fontSize: 20, color: "var(--ui-text-muted)", cursor: "pointer", lineHeight: 1 }}>×</button>
         </div>
-        <p style={{ fontSize: 12, color: "#64748b", marginTop: 0, marginBottom: 16 }}>
+        <p style={{ fontSize: 12, color: "var(--ui-text-muted)", marginTop: 0, marginBottom: 16 }}>
           {applicationName ? `${applicationName} — ` : ""}selected items appear as task buttons in the client portal and the client gets one text to log in and complete them.
         </p>
 
-        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "#94a3b8", fontWeight: 700, marginBottom: 8 }}>Forms</div>
+        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--ui-text-muted)", fontWeight: 700, marginBottom: 8 }}>Forms</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
           {FORMS.map((f) => (
             <span key={f.id} onClick={() => toggleForm(f.id)} style={chip(forms.has(f.id))}>{f.label}</span>
           ))}
         </div>
 
-        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "#94a3b8", fontWeight: 700, marginBottom: 8 }}>Documents to upload</div>
+        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--ui-text-muted)", fontWeight: 700, marginBottom: 8 }}>Documents to upload</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
           {DOC_PRESETS.map((d) => (
             <span key={d} onClick={() => toggleDoc(d)} style={chip(docs.includes(d))}>{d}</span>
@@ -132,15 +132,15 @@ export default function RequestStepsModal({
             placeholder="Add another document…"
             onChange={(e) => setCustom(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
-            style={{ flex: 1, padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 13 }}
+            style={{ flex: 1, padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 13 }}
           />
-          <button onClick={addCustom} style={{ padding: "8px 14px", border: "1px solid #cbd5e1", borderRadius: 8, background: "#f8fafc", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#334155" }}>Add</button>
+          <button onClick={addCustom} style={{ padding: "8px 14px", border: "1px solid var(--ui-border)", borderRadius: 8, background: "var(--ui-surface-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--ui-text)" }}>Add</button>
         </div>
 
         {error && <p style={{ color: "#dc2626", fontSize: 12, margin: "0 0 10px" }}>{error}</p>}
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-          <button onClick={onClose} disabled={busy} style={{ padding: "9px 16px", border: "1px solid #cbd5e1", borderRadius: 8, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#334155" }}>Cancel</button>
+          <button onClick={onClose} disabled={busy} style={{ padding: "9px 16px", border: "1px solid var(--ui-border)", borderRadius: 8, background: "var(--ui-surface-strong)", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--ui-text)" }}>Cancel</button>
           <button
             onClick={submit}
             disabled={!total || busy}

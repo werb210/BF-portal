@@ -683,7 +683,7 @@ const LenderProductsContent = () => {
                     >
                       <span
                         style={{
-                          color: "#64748b",
+                          color: "var(--ui-text-muted)",
                           display: "inline-block",
                           fontSize: 12,
                           transform: isCategoryCollapsed ? "rotate(-90deg)" : "none",
@@ -693,7 +693,7 @@ const LenderProductsContent = () => {
                         ▼
                       </span>
                       {PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category]}
-                      <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 500 }}>
+                      <span style={{ color: "var(--ui-text-muted)", fontSize: 12, fontWeight: 500 }}>
                         ({productsInCategory.length})
                       </span>
                     </h3>

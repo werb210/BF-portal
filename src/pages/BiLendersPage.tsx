@@ -67,7 +67,7 @@ export default function BiLendersPage() {
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
           <h1 style={{ margin: 0 }}>BI Lenders</h1>
-          <small style={{ color: "var(--ui-text-muted, #64748b)" }}>
+          <small style={{ color: "var(--ui-text-muted, var(--ui-text-muted))" }}>
             Partner banks that submit PGI applications to Boreal Insurance.
           </small>
         </div>
@@ -79,7 +79,7 @@ export default function BiLendersPage() {
       {err && <div style={{ marginBottom: 12, color: "#dc2626" }}>{err}</div>}
 
       {showForm && (
-        <form onSubmit={onCreate} style={{ display: "grid", gap: 8, padding: 16, marginBottom: 16, background: "var(--ui-bg-subtle, #f8fafc)", borderRadius: 6 }}>
+        <form onSubmit={onCreate} style={{ display: "grid", gap: 8, padding: 16, marginBottom: 16, background: "var(--ui-bg-subtle, var(--ui-surface-muted))", borderRadius: 6 }}>
           <input placeholder="Company name *" required value={form.company_name ?? ""} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
           <input placeholder="Contact full name *" required value={form.contact_full_name ?? ""} onChange={(e) => setForm({ ...form, contact_full_name: e.target.value })} />
           <input type="email" placeholder="Contact email *" required value={form.contact_email ?? ""} onChange={(e) => setForm({ ...form, contact_email: e.target.value })} />
@@ -95,9 +95,9 @@ export default function BiLendersPage() {
       {loading && <p>Loading…</p>}
       {!loading && lenders.length === 0 && <p>No BI lenders yet. Click "+ New BI Lender" above.</p>}
       {!loading && lenders.length > 0 && (
-        <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: 8 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", background: "var(--ui-surface-strong)", borderRadius: 8 }}>
           <thead>
-            <tr style={{ borderBottom: "1px solid #e5e7eb", textAlign: "left" }}>
+            <tr style={{ borderBottom: "1px solid var(--ui-border)", textAlign: "left" }}>
               <th style={{ padding: 12 }}>Company</th>
               <th style={{ padding: 12 }}>Contact</th>
               <th style={{ padding: 12 }}>Country</th>
@@ -107,9 +107,9 @@ export default function BiLendersPage() {
           </thead>
           <tbody>
             {lenders.map((l) => (
-              <tr key={l.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+              <tr key={l.id} style={{ borderBottom: "1px solid var(--ui-surface-muted)" }}>
                 <td style={{ padding: 12 }}>{l.company_name}</td>
-                <td style={{ padding: 12 }}>{l.contact_full_name}<br /><small style={{ color: "#64748b" }}>{l.contact_email}</small></td>
+                <td style={{ padding: 12 }}>{l.contact_full_name}<br /><small style={{ color: "var(--ui-text-muted)" }}>{l.contact_email}</small></td>
                 <td style={{ padding: 12 }}>{l.country}</td>
                 <td style={{ padding: 12 }}>{l.is_active ? "Active" : "Inactive"}</td>
                 <td style={{ padding: 12 }}><button type="button" onClick={() => openKeys(l)}>Manage</button></td>
@@ -120,7 +120,7 @@ export default function BiLendersPage() {
       )}
 
       {keysFor && (
-        <div style={{ marginTop: 24, padding: 16, border: "1px solid #e5e7eb", borderRadius: 8 }}>
+        <div style={{ marginTop: 24, padding: 16, border: "1px solid var(--ui-border)", borderRadius: 8 }}>
           <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <h3 style={{ margin: 0 }}>API keys — {keysFor.company_name}</h3>
             <div style={{ display: "flex", gap: 8 }}>
@@ -140,7 +140,7 @@ export default function BiLendersPage() {
           {keys.length > 0 && (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid #e5e7eb", textAlign: "left" }}>
+                <tr style={{ borderBottom: "1px solid var(--ui-border)", textAlign: "left" }}>
                   <th style={{ padding: 8 }}>Prefix</th>
                   <th style={{ padding: 8 }}>Status</th>
                   <th style={{ padding: 8 }}>Last used</th>
@@ -150,7 +150,7 @@ export default function BiLendersPage() {
               </thead>
               <tbody>
                 {keys.map((k) => (
-                  <tr key={k.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                  <tr key={k.id} style={{ borderBottom: "1px solid var(--ui-surface-muted)" }}>
                     <td style={{ padding: 8, fontFamily: "ui-monospace" }}>{k.prefix}…</td>
                     <td style={{ padding: 8 }}>{k.active ? "Active" : "Revoked"}</td>
                     <td style={{ padding: 8 }}>{k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : "—"}</td>

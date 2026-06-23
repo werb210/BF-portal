@@ -8,9 +8,9 @@ export default function SecondaryButton(props: Props) {
       type="button"
       {...props}
       style={{
-        background: "#fff",
-        color: "#000",
-        border: "1px solid #d1d5db",
+        background: "var(--ui-surface-strong)",
+        color: "var(--ui-text)",
+        border: "1px solid var(--ui-border)",
         padding: "8px 14px",
         borderRadius: 8,
         fontWeight: 500,

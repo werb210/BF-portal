@@ -46,7 +46,7 @@ export default function PhoneInput({ value, onChange, country = "US", id, name, 
         onChange(toE164(raw, country));
       }}
       placeholder={placeholder ?? "(555) 555-5555"}
-      style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 8, background: "#fff", color: "#000" }}
+      style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 8, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}
     />
   );
 }

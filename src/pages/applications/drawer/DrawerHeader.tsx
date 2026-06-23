@@ -115,7 +115,7 @@ const DrawerHeader = ({
                       display: "inline-block",
                       padding: "2px 8px",
                       borderRadius: 999,
-                      background: "#eef2ff",
+                      background: "rgba(47, 168, 106, 0.12)",
                       color: "#3730a3",
                       fontSize: 12,
                       textDecoration: "none"

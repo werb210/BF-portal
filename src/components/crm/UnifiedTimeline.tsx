@@ -157,7 +157,7 @@ function EmailCard({ email, isOpen, onToggle }: { email: EmailRow; isOpen: boole
             title={`email-${email.id}`}
             sandbox=""
             srcDoc={email.body_html ?? "<p>(no content)</p>"}
-            style={{ width: "100%", minHeight: 200, border: "1px solid var(--ui-border)", borderRadius: 6, background: "#fff" }}
+            style={{ width: "100%", minHeight: 200, border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)" }}
           />
         </div>
       )}

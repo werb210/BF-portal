@@ -30,7 +30,7 @@ const MessageThread = ({ messages }: { messages: MessageRecord[] }) => (
                   padding: "4px 10px",
                   fontSize: 11,
                   fontWeight: 600,
-                  background: "#dbeafe",
+                  background: "rgba(47, 168, 106, 0.12)",
                   color: "var(--ui-accent-blue)",
                   borderRadius: 12,
                 }}

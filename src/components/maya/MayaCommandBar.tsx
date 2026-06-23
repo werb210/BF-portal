@@ -141,8 +141,8 @@ export default function MayaCommandBar() {
         rows={2}
         style={{
           width: "100%", resize: "none", boxSizing: "border-box",
-          background: "#ffffff", color: "#0f172a",
-          border: "1px solid #cbd6e2", borderRadius: 8, padding: "8px 10px",
+          background: "var(--ui-surface-strong)", color: "var(--ui-text)",
+          border: "1px solid var(--ui-border)", borderRadius: 8, padding: "8px 10px",
           fontSize: 13, fontFamily: "inherit",
         }}
       />
@@ -153,8 +153,8 @@ export default function MayaCommandBar() {
           title={listening ? "Stop" : "Speak"}
           style={{
             width: 40, height: 34, borderRadius: 8,
-            border: "1px solid #cbd6e2",
-            background: listening ? "#dc2626" : "#f1f5f9",
+            border: "1px solid var(--ui-border)",
+            background: listening ? "#dc2626" : "var(--ui-surface-muted)",
             color: listening ? "#fff" : "#0f172a", cursor: "pointer",
           }}
         >
@@ -171,9 +171,9 @@ export default function MayaCommandBar() {
           title={muted ? "Maya voice off — tap to turn on" : "Maya voice on — tap to mute"}
           style={{
             width: 40, height: 34, borderRadius: 8,
-            border: "1px solid #cbd6e2",
-            background: muted ? "#f1f5f9" : "#dbeafe",
-            color: "#0f172a", cursor: "pointer",
+            border: "1px solid var(--ui-border)",
+            background: muted ? "var(--ui-surface-muted)" : "rgba(47, 168, 106, 0.12)",
+            color: "var(--ui-text)", cursor: "pointer",
           }}
         >
           {muted ? "\u{1F507}" : "\u{1F50A}"}

@@ -333,7 +333,7 @@ export default function DocumentsTab({ applicationId }: Props) {
                               {actionFor === f.id ? (
                                 <div role="menu" style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 1, minWidth: 140 }}>
                                   {f.url ? (
-                                    <a href={f.url} target="_blank" rel="noopener noreferrer" role="menuitem" style={{ display: "block", padding: "8px 12px", color: "#111", textDecoration: "none" }}>View</a>
+                                    <a href={f.url} target="_blank" rel="noopener noreferrer" role="menuitem" style={{ display: "block", padding: "8px 12px", color: "var(--ui-text)", textDecoration: "none" }}>View</a>
                                   ) : null}
                                   <button
                                     type="button"

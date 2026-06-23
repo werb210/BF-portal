@@ -12,11 +12,11 @@ export type BankingTrendMonth = {
 
 const colors = {
   text: "#0f172a",
-  muted: "#64748b",
+  muted: "var(--ui-text-muted)",
   accent: "var(--ui-accent-blue)",
   accentLight: "var(--ui-accent-blue)",
   amber: "#f59e0b",
-  grid: "#f1f5f9",
+  grid: "var(--ui-surface-muted)",
 };
 
 function fmtMonth(m: string): string {

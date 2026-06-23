@@ -128,7 +128,7 @@ export default function CompaniesImportModal({ onClose, onImported }: { onClose:
         <input ref={fileRef} type="file" accept=".csv,text/csv" style={{ display: "none" }} onChange={onPick} />
         {headers.length > 0 && (
           <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>{mapped.length} row(s) ready · map columns:</div>
+            <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 6 }}>{mapped.length} row(s) ready · map columns:</div>
             {FIELDS.map((f) => (
               <div key={f.key} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
                 <span style={{ width: 220, fontSize: 13 }}>{f.label}</span>
@@ -151,6 +151,6 @@ export default function CompaniesImportModal({ onClose, onImported }: { onClose:
 }
 
 const overlay: CSSProperties = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 };
-const panel: CSSProperties = { background: "#fff", color: "#000", borderRadius: 10, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflow: "auto" };
+const panel: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", borderRadius: 10, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflow: "auto" };
 const btn: CSSProperties = { background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: "pointer" };
-const btnGhost: CSSProperties = { background: "#fff", color: "#33475b", border: "1px solid #cbd6e2", borderRadius: 8, padding: "8px 14px", cursor: "pointer" };
+const btnGhost: CSSProperties = { background: "var(--ui-surface-strong)", color: "#33475b", border: "1px solid var(--ui-border)", borderRadius: 8, padding: "8px 14px", cursor: "pointer" };

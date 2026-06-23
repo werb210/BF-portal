@@ -20,18 +20,18 @@ const ContactRow = ({ contact, onSelect, onCall }: ContactRowProps) => {
   const normalizedStatus = leadStatus.toLowerCase();
   const statusStyle: CSSProperties =
     normalizedStatus === "new"
-      ? { background: "#dbeafe", color: "var(--ui-accent-blue)" }
+      ? { background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)" }
       : normalizedStatus === "qualified"
         ? { background: "#dcfce7", color: "#15803d" }
         : normalizedStatus === "lost"
           ? { background: "#fee2e2", color: "#dc2626" }
-          : { background: "#f1f5f9", color: "#475569" };
+          : { background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)" };
 
   return (
     <tr data-testid={`contact-row-${contact.id}`} onClick={() => onSelect(contact)} style={{ cursor: "pointer" }}>
       <td>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 999, background: "#dbeafe", color: "var(--ui-accent-blue)", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 999, background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700 }}>
             {contact.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
           </div>
           <a href="#" onClick={(e) => e.preventDefault()}>{contact.name}</a>

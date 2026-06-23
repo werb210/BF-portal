@@ -56,7 +56,7 @@ export default function ApplicationOverviewTab({ application }: Props) {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ background: "#f9fafb", borderRadius: 10, padding: "14px 16px", border: "1px solid #e5e7eb" }}>
+    <div style={{ background: "var(--ui-surface-muted)", borderRadius: 10, padding: "14px 16px", border: "1px solid var(--ui-border)" }}>
       <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{value}</div>
     </div>

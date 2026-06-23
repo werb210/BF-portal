@@ -17,7 +17,7 @@ export default function CrmListPage(): JSX.Element {
   );
 }
 
-const page: CSSProperties = { background: "#fff", color: "#000" };
+const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
 const toggleRow: CSSProperties = {
   display: "flex", gap: 8, padding: "16px 24px 0 24px",
   borderBottom: "1px solid #eaf0f6",

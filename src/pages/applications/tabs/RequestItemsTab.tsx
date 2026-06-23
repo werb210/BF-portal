@@ -237,12 +237,12 @@ export default function RequestItemsTab({ applicationId }: Props) {
     alignItems: "center",
     gap: 8,
     padding: "10px 12px",
-    border: `1px solid ${active ? "var(--ui-accent-blue)" : "#e2e8f0"}`,
+    border: `1px solid ${active ? "var(--ui-accent-blue)" : "var(--ui-border)"}`,
     borderRadius: 8,
-    background: active ? "#eff6ff" : "#fff",
+    background: active ? "rgba(47, 168, 106, 0.12)" : "#fff",
     cursor: disabled ? "default" : "pointer",
     fontSize: 14,
-    color: "#0f172a",
+    color: "var(--ui-text)",
   });
 
   const labelCol = "uppercase" as const;
@@ -250,7 +250,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
   return (
     <div style={{ maxWidth: 1100 }}>
       <h3 style={{ margin: "4px 0 4px" }}>Request Items</h3>
-      <p style={{ color: "#64748b", fontSize: 13, marginTop: 0 }}>
+      <p style={{ color: "var(--ui-text-muted)", fontSize: 13, marginTop: 0 }}>
         Documents this deal’s Step 5 requires are pre-checked.{" "}
         {isAdmin
           ? "Uncheck a pre-checked document to waive it for this application — it’s removed from the client’s upload list and no longer blocks sending to a lender."
@@ -261,7 +261,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, alignItems: "start" }}>
         <div>
-          <div style={{ fontSize: 11, textTransform: labelCol, letterSpacing: 0.5, color: "#94a3b8", fontWeight: 700, margin: "16px 0 8px" }}>
+          <div style={{ fontSize: 11, textTransform: labelCol, letterSpacing: 0.5, color: "var(--ui-text-muted)", fontWeight: 700, margin: "16px 0 8px" }}>
             Required documents
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -284,14 +284,14 @@ export default function RequestItemsTab({ applicationId }: Props) {
                   }
                 >
                   <input type="checkbox" readOnly checked={checked} disabled={disabled} />{" "}
-                  <span style={{ color: "#0f172a" }}>{it.label}</span>
+                  <span style={{ color: "var(--ui-text)" }}>{it.label}</span>
                 </div>
               );
             })}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 11, textTransform: labelCol, letterSpacing: 0.5, color: "#94a3b8", fontWeight: 700, margin: "16px 0 8px" }}>
+          <div style={{ fontSize: 11, textTransform: labelCol, letterSpacing: 0.5, color: "var(--ui-text-muted)", fontWeight: 700, margin: "16px 0 8px" }}>
             Forms
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
@@ -315,7 +315,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
                   }
                 >
                   <input type="checkbox" readOnly checked={checked} disabled={disabled} />{" "}
-                  <span style={{ color: "#0f172a" }}>{f.label}</span>
+                  <span style={{ color: "var(--ui-text)" }}>{f.label}</span>
                 </div>
               );
             })}

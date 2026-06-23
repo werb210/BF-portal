@@ -104,11 +104,11 @@ const BusinessUnitSelector = () => {
               fontSize: 12,
               fontWeight: isActive ? 700 : 500,
               lineHeight: "20px",
-              color: isActive ? accent : "#64748b",
+              color: isActive ? accent : "var(--ui-text-muted)",
               background: isActive ? "#ffffff" : "transparent",
               border: isActive
                 ? `2px solid ${accent}`
-                : "1px solid #e2e8f0",
+                : "1px solid var(--ui-border)",
               // Compensate for the 1px border so heights stay equal.
               boxSizing: "border-box",
               borderRadius: 6,
@@ -119,13 +119,13 @@ const BusinessUnitSelector = () => {
             onMouseEnter={(event) => {
               if (!isActive) {
                 event.currentTarget.style.color = "#0f172a";
-                event.currentTarget.style.borderColor = "#cbd5e1";
+                event.currentTarget.style.borderColor = "var(--ui-border)";
               }
             }}
             onMouseLeave={(event) => {
               if (!isActive) {
-                event.currentTarget.style.color = "#64748b";
-                event.currentTarget.style.borderColor = "#e2e8f0";
+                event.currentTarget.style.color = "var(--ui-text-muted)";
+                event.currentTarget.style.borderColor = "var(--ui-border)";
               }
             }}
           >

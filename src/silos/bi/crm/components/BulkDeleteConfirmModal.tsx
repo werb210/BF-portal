@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
 export default function BulkDeleteConfirmModal({ open, title, body, error, onCancel, onConfirm }: { open: boolean; title: string; body: string; error?: string | null; onCancel: () => void; onConfirm: () => void }) { if (!open) return null; return <div style={overlay}><div style={modal}><h3>{title}</h3><p>{body}</p>{error && <div style={{ color: "#b91c1c", fontSize: 13 }}>{error}</div>}<div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}><button type="button" onClick={onCancel}>Cancel</button><button type="button" style={danger} onClick={onConfirm}>Delete</button></div></div></div>; }
 const overlay: CSSProperties = { position: "fixed", inset: 0, background: "rgba(15,23,42,0.35)", zIndex: 20, display: "grid", placeItems: "center" };
-const modal: CSSProperties = { background: "#fff", padding: 16, borderRadius: 8, width: 500, maxWidth: "92vw", display: "flex", flexDirection: "column", gap: 10 };
+const modal: CSSProperties = { background: "var(--ui-surface-strong)", padding: 16, borderRadius: 8, width: 500, maxWidth: "92vw", display: "flex", flexDirection: "column", gap: 10 };
 const danger: CSSProperties = { border: 0, background: "#dc2626", color: "#fff", borderRadius: 6, padding: "8px 12px" };

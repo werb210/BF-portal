@@ -24,14 +24,14 @@ const MonthView = ({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(7, 1fr)",
-          border: "1px solid #e2e8f0",
+          border: "1px solid var(--ui-border)",
           borderBottom: "none",
           borderRadius: "10px 10px 0 0",
           overflow: "hidden",
         }}
       >
         {WEEKDAYS.map((label) => (
-          <div key={label} style={{ padding: "8px 10px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontWeight: 700, fontSize: 12, color: "#475569" }}>
+          <div key={label} style={{ padding: "8px 10px", background: "var(--ui-surface-muted)", borderBottom: "1px solid var(--ui-border)", fontWeight: 700, fontSize: 12, color: "var(--ui-text-muted)" }}>
             {label}
           </div>
         ))}
@@ -47,14 +47,14 @@ const MonthView = ({
               className="calendar-month-grid__cell"
               style={{
                 minHeight: 80,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--ui-border)",
                 borderTop: "none",
                 borderLeftWidth: 0,
                 padding: 8,
-                background: isCurrentMonth ? "#fff" : "#f8fafc",
+                background: isCurrentMonth ? "#fff" : "var(--ui-surface-muted)",
               }}
             >
-              <div className="calendar-month-grid__header" style={{ fontWeight: 700, color: isCurrentMonth ? "#0f172a" : "#94a3b8" }}>{day.getDate()}</div>
+              <div className="calendar-month-grid__header" style={{ fontWeight: 700, color: isCurrentMonth ? "#0f172a" : "var(--ui-text-muted)" }}>{day.getDate()}</div>
               {events.slice(0, 3).map((event) => {
                 const resource = (event as any).resource;
                 const isTask = resource?.__kind === "task";
@@ -63,7 +63,7 @@ const MonthView = ({
                   key={event.id}
                   className="calendar-event small"
                   onClick={() => isTask ? onTaskClick?.(resource.task) : onEventClick?.(event)}
-                  style={{ background: isTask ? "#fed7aa" : "#dbeafe", color: isTask ? "#9a3412" : "var(--ui-accent-blue)", borderRadius: 6, padding: "4px 6px", marginTop: 4, cursor: "pointer" }}
+                  style={{ background: isTask ? "#fed7aa" : "rgba(47, 168, 106, 0.12)", color: isTask ? "#9a3412" : "var(--ui-accent-blue)", borderRadius: 6, padding: "4px 6px", marginTop: 4, cursor: "pointer" }}
                 >
                   <div className="calendar-event__title">{isTask ? "✓ " : ""}{event.title}</div>
                 </div>

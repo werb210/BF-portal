@@ -68,7 +68,7 @@ export default function BIContactsList() {
     fontSize: 12, padding: "3px 10px", borderRadius: 999,
     border: active ? "1px solid #6366f1" : "1px solid #334155",
     background: active ? "#4f46e5" : "transparent",
-    color: active ? "#fff" : "#cbd5e1", cursor: "pointer", whiteSpace: "nowrap",
+    color: active ? "#fff" : "var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap",
   });
   function toggleTag(t: string) { // BF_PORTAL_BLOCK_v749_VIEWBY
     setTagFilter((p) => { const n = new Set(p); if (n.has(t)) n.delete(t); else n.add(t); return n; });
@@ -200,11 +200,11 @@ export default function BIContactsList() {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} />
         <button type="button" onClick={() => exportRowsToCsv("bi-contacts.csv", rows as any)} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">Export</button>
-        <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #334155", background: "transparent", color: "#cbd5e1", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
+        <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #334155", background: "transparent", color: "var(--ui-border)", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
-        <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
+        <div style={{ fontSize: 13, color: "var(--ui-text-muted)", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
         <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1 }}>{importing ? "Importing…" : "Import"}</button>
         <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-crm-import-input" />
@@ -214,7 +214,7 @@ export default function BIContactsList() {
       {importMsg && <div style={{ fontSize: 12, color: "#34d399", padding: "0 0 8px" }} role="status">{importMsg}</div>}
       {/* BF_PORTAL_BLOCK_v749_VIEWBY — View-by tag filter (multi-select) */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 0 10px" }}>
-        <span style={{ fontSize: 12, color: "#94a3b8", alignSelf: "center", marginRight: 2 }}>View by:</span>
+        <span style={{ fontSize: 12, color: "var(--ui-text-muted)", alignSelf: "center", marginRight: 2 }}>View by:</span>
         <button type="button" onClick={() => { setTagFilter(new Set()); setCrmPage(1); }} style={chipBtn(tagFilter.size === 0)}>All</button>
         <button type="button" onClick={() => toggleTag("__none__")} style={chipBtn(tagFilter.has("__none__"))}>Untagged</button>
         {tagOptions.map((t) => (
@@ -246,13 +246,13 @@ export default function BIContactsList() {
 
       {createOpen && (
         <div onClick={() => !creating && setCreateOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, padding: 20, width: 380, maxWidth: "90vw", color: "#e2e8f0" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, padding: 20, width: 380, maxWidth: "90vw", color: "var(--ui-border)" }}>
             <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>New BI contact</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <input value={createForm.full_name} onChange={(e) => setCreateForm((f) => ({ ...f, full_name: e.target.value }))} placeholder="Full name" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13 }} />
-              <input value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13 }} />
-              <input value={createForm.phone_e164} onChange={(e) => setCreateForm((f) => ({ ...f, phone_e164: e.target.value }))} placeholder="Phone (E.164)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13 }} />
-              <input value={createForm.title} onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title (optional)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13 }} />
+              <input value={createForm.full_name} onChange={(e) => setCreateForm((f) => ({ ...f, full_name: e.target.value }))} placeholder="Full name" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-border)", fontSize: 13 }} />
+              <input value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-border)", fontSize: 13 }} />
+              <input value={createForm.phone_e164} onChange={(e) => setCreateForm((f) => ({ ...f, phone_e164: e.target.value }))} placeholder="Phone (E.164)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-border)", fontSize: 13 }} />
+              <input value={createForm.title} onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title (optional)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-border)", fontSize: 13 }} />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14 }}>
               <button type="button" disabled={creating} onClick={() => setCreateOpen(false)} style={clearBtn}>Cancel</button>
@@ -264,9 +264,9 @@ export default function BIContactsList() {
 
       {/* BF_PORTAL_BLOCK_v698_CRM_PAGER_TOP_v1 — top pager */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginBottom: 12 }}>
-        <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage}</span>
-        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
-        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Page {crmPage}</span>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
       <table style={table}>
         <thead>
@@ -293,9 +293,9 @@ export default function BIContactsList() {
       </table>
       {/* BF_PORTAL_BLOCK_v696_CRM_PAGER_v1 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-        <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage}</span>
-        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
-        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Page {crmPage}</span>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
     </div>
   );
@@ -305,18 +305,18 @@ function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => 
   return <th onClick={onClick} style={thStyle}>{children}</th>;
 }
 
-const page: CSSProperties = { background: "#fff", color: "#000", padding: 24, borderRadius: 8 };
+const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24, borderRadius: 8 };
 const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16, alignItems: "center" };
-const searchInput: CSSProperties = { flex: 1, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000" };
+const searchInput: CSSProperties = { flex: 1, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
 const massBar: CSSProperties = { display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" };
 const delBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
-const tagBox: CSSProperties = { padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 };
-const clearBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#fff", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 13 };
-const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "#fff" };
-const theadRow: CSSProperties = { borderBottom: "1px solid #cbd6e2", background: "#f5f8fa" };
+const tagBox: CSSProperties = { padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13 };
+const clearBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", cursor: "pointer", fontSize: 13 };
+const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "var(--ui-surface-strong)" };
+const theadRow: CSSProperties = { borderBottom: "1px solid var(--ui-border)", background: "#f5f8fa" };
 const thStyle: CSSProperties = { padding: 12, textAlign: "left", cursor: "pointer", color: "#33475b", textTransform: "uppercase", fontSize: 12, userSelect: "none" };
-const tdStyle: CSSProperties = { padding: 12, color: "#000" };
+const tdStyle: CSSProperties = { padding: 12, color: "var(--ui-text)" };
 const trStyle: CSSProperties = { borderBottom: "1px solid #eaf0f6" };
 const linkStyle: CSSProperties = { color: "#0091ae", textDecoration: "none" };
 const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "#7c98b6" };
-const tagChip: CSSProperties = { display: "inline-block", fontSize: 11, color: "#1e293b", background: "#e2e8f0", borderRadius: 10, padding: "1px 8px" }; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1
+const tagChip: CSSProperties = { display: "inline-block", fontSize: 11, color: "var(--ui-text)", background: "var(--ui-border)", borderRadius: 10, padding: "1px 8px" }; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1

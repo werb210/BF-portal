@@ -72,7 +72,7 @@ const SettingsPage = () => {
             </div>
           ) : (
             <div className="settings-layout">
-              <div className="settings-tabs" role="tablist" aria-label="Settings tabs" style={{ display: "flex", flexDirection: "row", gap: 4, borderBottom: "1px solid #e2e8f0", marginBottom: 24, flexWrap: "wrap" }}>
+              <div className="settings-tabs" role="tablist" aria-label="Settings tabs" style={{ display: "flex", flexDirection: "row", gap: 4, borderBottom: "1px solid var(--ui-border)", marginBottom: 24, flexWrap: "wrap" }}>
                 {availableTabs.map((tab) => (
                   <button
                     key={tab.id}

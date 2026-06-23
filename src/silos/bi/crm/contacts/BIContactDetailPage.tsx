@@ -75,19 +75,19 @@ function EngagementSection({ contactId }: { contactId: string | undefined }) {
   }, [contactId]);
   const icon = (t: string) => t === "opened" ? "👁" : t === "clicked" ? "🖱" : t === "replied" ? "↩" : t === "bounced" ? "✕" : t === "delivered" ? "✓" : "•";
   return (
-    <section style={{ marginTop: 16, padding: 12, border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff" }}>
+    <section style={{ marginTop: 16, padding: 12, border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)" }}>
       <h3 style={{ margin: 0, marginBottom: 8, fontSize: 14 }}>Apollo engagement</h3>
       {error && <div style={{ color: "#b91c1c", fontSize: 12 }}>{error}</div>}
-      {events === null && <div style={{ color: "#94a3b8", fontSize: 12 }}>Loading</div>}
-      {events !== null && events.length === 0 && <div style={{ color: "#94a3b8", fontSize: 12, fontStyle: "italic" }}>No engagement events yet.</div>}
+      {events === null && <div style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>Loading</div>}
+      {events !== null && events.length === 0 && <div style={{ color: "var(--ui-text-muted)", fontSize: 12, fontStyle: "italic" }}>No engagement events yet.</div>}
       {events !== null && events.length > 0 && (
         <ul style={{ listStyle: "none", padding: 0, margin: 0, maxHeight: 240, overflowY: "auto" }}>
           {events.map((e) => (
-            <li key={e.id} style={{ padding: "6px 0", borderBottom: "1px solid #f1f5f9", fontSize: 12 }}>
+            <li key={e.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--ui-surface-muted)", fontSize: 12 }}>
               <span style={{ marginRight: 6 }}>{icon(e.event_type)}</span>
               <strong>{e.event_type}</strong>
-              {e.sequence_name && <span style={{ color: "#64748b" }}> · {e.sequence_name}</span>}
-              <span style={{ float: "right", color: "#94a3b8" }}>{new Date(e.occurred_at).toLocaleString()}</span>
+              {e.sequence_name && <span style={{ color: "var(--ui-text-muted)" }}> · {e.sequence_name}</span>}
+              <span style={{ float: "right", color: "var(--ui-text-muted)" }}>{new Date(e.occurred_at).toLocaleString()}</span>
             </li>
           ))}
         </ul>
@@ -403,13 +403,13 @@ export default function BIContactDetailPage() {
 
   if (err)
     return (
-      <div style={{ padding: 24, color: "#b00020", background: "#fff", borderRadius: 8 }}>
+      <div style={{ padding: 24, color: "#b00020", background: "var(--ui-surface-strong)", borderRadius: 8 }}>
         {err}
       </div>
     );
   if (loading || !contact)
     return (
-      <div style={{ padding: 24, background: "#fff", borderRadius: 8 }}>Loading…</div>
+      <div style={{ padding: 24, background: "var(--ui-surface-strong)", borderRadius: 8 }}>Loading…</div>
     );
 
   const role = contact.outreach_status ?? "unknown";
@@ -468,7 +468,7 @@ export default function BIContactDetailPage() {
             <FieldEdit label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
             <div style={{ marginBottom: 8 }}>
               <div style={fieldLabel}>Notes</div>
-              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={4} style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000", fontSize: 13 }} aria-label="Notes" />
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={4} style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13 }} aria-label="Notes" />
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <button type="button" onClick={() => void saveEdit()} disabled={saving} style={{ ...actionBtn, background: "#0d9b6c", color: "#fff", borderColor: "#0d9b6c" }}>{saving ? "Saving…" : "Save"}</button>
@@ -559,7 +559,7 @@ function Field({ label, value }: { label: string; value: string | null }) {
   return (
     <div style={{ marginBottom: 8 }}>
       <div style={fieldLabel}>{label}</div>
-      <div style={{ color: "#000" }}>{value || "—"}</div>
+      <div style={{ color: "var(--ui-text)" }}>{value || "—"}</div>
     </div>
   );
 }
@@ -569,7 +569,7 @@ function FieldEdit(props: { label: string; value: string; type?: string; onChang
   return (
     <div style={{ marginBottom: 8 }}>
       <div style={fieldLabel}>{props.label}</div>
-      <input type={props.type ?? "text"} value={props.value} onChange={(e) => props.onChange(e.target.value)} style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000", fontSize: 13 }} aria-label={props.label} />
+      <input type={props.type ?? "text"} value={props.value} onChange={(e) => props.onChange(e.target.value)} style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13 }} aria-label={props.label} />
     </div>
   );
 }
@@ -633,7 +633,7 @@ function TagEditor({ contact, onSaved }: { contact: { id: string; tags: string[]
               }
             }}
             placeholder="vip, warm lead, do not call"
-            style={{ width: "100%", marginTop: 6, padding: 8, border: "1px solid rgba(148, 163, 184, 0.55)", borderRadius: 4, background: "rgba(15, 23, 42, 0.6)", color: "#e2e8f0", fontSize: 13 }}
+            style={{ width: "100%", marginTop: 6, padding: 8, border: "1px solid rgba(148, 163, 184, 0.55)", borderRadius: 4, background: "rgba(15, 23, 42, 0.6)", color: "var(--ui-border)", fontSize: 13 }}
             aria-label="Edit tags"
           />
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
@@ -649,7 +649,7 @@ function TagEditor({ contact, onSaved }: { contact: { id: string; tags: string[]
           ))}
         </div>
       ) : (
-        <div style={{ marginTop: 4, color: "#94a3b8", fontSize: 12 }}>No tags</div>
+        <div style={{ marginTop: 4, color: "var(--ui-text-muted)", fontSize: 12 }}>No tags</div>
       )}
     </div>
   );
@@ -665,19 +665,19 @@ const layout: CSSProperties = {
   gridTemplateColumns: "320px 1fr 320px",
   gap: 16,
   padding: 16,
-  background: "#fff",
-  color: "#000",
+  background: "var(--ui-surface-strong)",
+  color: "var(--ui-text)",
   borderRadius: 8,
 };
 const rail: CSSProperties = {
-  background: "#fff",
+  background: "var(--ui-surface-strong)",
   border: "1px solid #eaf0f6",
   borderRadius: 6,
   padding: 16,
 };
 const mainCol: CSSProperties = { minWidth: 0 };
 const panel: CSSProperties = {
-  background: "#fff",
+  background: "var(--ui-surface-strong)",
   border: "1px solid #eaf0f6",
   borderRadius: 6,
   padding: 0,
@@ -714,7 +714,7 @@ const fieldLabel: CSSProperties = {
   textTransform: "uppercase",
 };
 const roleBadge: CSSProperties = {
-  background: "#e5e7eb",
+  background: "var(--ui-border)",
   color: "#111827",
   padding: "2px 8px",
   borderRadius: 999,
@@ -723,9 +723,9 @@ const roleBadge: CSSProperties = {
 };
 // BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
 const actionBtn: CSSProperties = {
-  border: "1px solid #cbd5e1",
-  background: "#fff",
-  color: "#0f172a",
+  border: "1px solid var(--ui-border)",
+  background: "var(--ui-surface-strong)",
+  color: "var(--ui-text)",
   borderRadius: 6,
   padding: "6px 12px",
   fontSize: 13,

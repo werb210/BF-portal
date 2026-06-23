@@ -213,12 +213,12 @@ export default function BICompaniesList() {
       <div style={toolbar}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies" style={searchInput} aria-label="Search companies" />
         <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "contacts", label: "Contacts" }, { key: "location", label: "Location" }, { key: "owner", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} />
-        <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000" }} aria-label="Filter by owner" data-testid="bi-companies-owner-filter">
+        <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }} aria-label="Filter by owner" data-testid="bi-companies-owner-filter">
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
         <button type="button" onClick={exportCsv} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap", marginRight: 8 }} data-testid="bi-companies-export">Export</button>
-        <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
+        <div style={{ fontSize: 13, color: "var(--ui-text-muted)", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
         <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1, marginRight: 8 }} data-testid="bi-companies-import">{importing ? "Importing…" : "Import"}</button>
         <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-companies-import-input" />
@@ -228,7 +228,7 @@ export default function BICompaniesList() {
       {/* CRM_COMPANY_VIEWBY — single-tag filter chips (client-derived, monotonic). */}
       {seenTags.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 0 10px" }}>
-          <span style={{ fontSize: 12, color: "#94a3b8", alignSelf: "center", marginRight: 2 }}>View by:</span>
+          <span style={{ fontSize: 12, color: "var(--ui-text-muted)", alignSelf: "center", marginRight: 2 }}>View by:</span>
           <button type="button" onClick={() => { setTagFilter(""); setCrmPage(1); }} style={chipBtn(tagFilter === "")}>All</button>
           {seenTags.map((t) => (
             <button key={t} type="button" onClick={() => { setTagFilter(t === tagFilter ? "" : t); setCrmPage(1); }} style={chipBtn(tagFilter === t)}>{t}</button>
@@ -261,9 +261,9 @@ export default function BICompaniesList() {
 
       {/* BF_PORTAL_BLOCK_v698_CRM_PAGER_TOP_v1 — top pager */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginBottom: 12 }}>
-        <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage}</span>
-        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
-        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Page {crmPage}</span>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
       <table style={table}>
         <thead>
@@ -291,9 +291,9 @@ export default function BICompaniesList() {
       </table>
       {/* BF_PORTAL_BLOCK_v696_CRM_PAGER_v1 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-        <span style={{ fontSize: 13, color: "#64748b" }}>Page {crmPage}</span>
-        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: crmPage <= 1 ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
-        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #cbd5e1", background: !hasNext ? "#f1f5f9" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Page {crmPage}</span>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
     </div>
   );
@@ -304,23 +304,23 @@ function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => 
 }
 
 function chipBtn(active: boolean): CSSProperties {
-  return { fontSize: 12, padding: "4px 10px", borderRadius: 999, border: active ? "1px solid #0d9b6c" : "1px solid #cbd6e2", background: active ? "#0d9b6c" : "#fff", color: active ? "#fff" : "#33475b", cursor: "pointer", whiteSpace: "nowrap" };
+  return { fontSize: 12, padding: "4px 10px", borderRadius: 999, border: active ? "1px solid #0d9b6c" : "1px solid var(--ui-border)", background: active ? "#0d9b6c" : "#fff", color: active ? "#fff" : "#33475b", cursor: "pointer", whiteSpace: "nowrap" };
 }
 
-const page: CSSProperties = { background: "#fff", color: "#000", padding: 24, borderRadius: 8 };
+const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24, borderRadius: 8 };
 const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16, alignItems: "center" };
-const searchInput: CSSProperties = { flex: 1, padding: 8, border: "1px solid #cbd6e2", borderRadius: 4, background: "#fff", color: "#000" };
-const createBar: CSSProperties = { background: "#f5f8fa", border: "1px solid #cbd6e2", borderRadius: 6, padding: 12, marginBottom: 16, display: "flex", gap: 8, alignItems: "flex-end" };
+const searchInput: CSSProperties = { flex: 1, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
+const createBar: CSSProperties = { background: "#f5f8fa", border: "1px solid var(--ui-border)", borderRadius: 6, padding: 12, marginBottom: 16, display: "flex", gap: 8, alignItems: "flex-end" };
 const massBar: CSSProperties = { display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" };
 const delBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
-const tagBox: CSSProperties = { padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 };
+const tagBox: CSSProperties = { padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13 };
 const tagBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "var(--ui-accent-blue)", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
-const clearBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#fff", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: 13 };
-const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "#fff" };
-const theadRow: CSSProperties = { borderBottom: "1px solid #cbd6e2", background: "#f5f8fa" };
+const clearBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", cursor: "pointer", fontSize: 13 };
+const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "var(--ui-surface-strong)" };
+const theadRow: CSSProperties = { borderBottom: "1px solid var(--ui-border)", background: "#f5f8fa" };
 const thStyle: CSSProperties = { padding: 12, textAlign: "left", cursor: "pointer", color: "#33475b", textTransform: "uppercase", fontSize: 12, userSelect: "none" };
-const biTagChip: CSSProperties = { fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "#1e293b", color: "#cbd5e1", whiteSpace: "nowrap" }; // BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI
-const tdStyle: CSSProperties = { padding: 12, color: "#000" };
+const biTagChip: CSSProperties = { fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "#1e293b", color: "var(--ui-border)", whiteSpace: "nowrap" }; // BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI
+const tdStyle: CSSProperties = { padding: 12, color: "var(--ui-text)" };
 const trStyle: CSSProperties = { borderBottom: "1px solid #eaf0f6" };
 const linkStyle: CSSProperties = { color: "#0091ae", textDecoration: "none" };
 const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "#7c98b6" };

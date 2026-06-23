@@ -43,7 +43,7 @@ export function IOSInstallBanner() {
         bottom: 16,
         zIndex: 1000,
         background: "#0f172a",
-        color: "#f8fafc",
+        color: "var(--ui-surface-muted)",
         padding: "14px 16px",
         borderRadius: 12,
         boxShadow: "0 12px 32px rgba(15,23,42,0.35)",
@@ -66,7 +66,7 @@ export function IOSInstallBanner() {
         onClick={dismiss}
         style={{
           background: "transparent",
-          color: "#cbd5e1",
+          color: "var(--ui-border)",
           border: "1px solid #334155",
           padding: "6px 10px",
           borderRadius: 8,
