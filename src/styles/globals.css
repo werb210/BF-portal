@@ -14,7 +14,15 @@
   --ui-text: var(--text-primary);
   --ui-text-muted: #475569;
   --ui-text-soft: #1f2937;
-  --ui-accent-blue: #2FA86A;
+  /* BF_PORTAL_BLOCK_v_RESKIN_1_ACCENT_FOUNDATION_v1 — --ui-accent-blue was literally
+     green (#2FA86A) despite its name; restored to brand blue. --accent is the
+     silo-driven accent (see [data-silo] blocks at file end). --accent-neutral is the
+     carve-out color (silo switcher, Notifications, Maya) so green only ever means BI
+     and blue only ever means BF. */
+  --ui-accent-blue: #1E3A8A;
+  --accent: #1E3A8A;
+  --accent-contrast: #ffffff;
+  --accent-neutral: #64748B;
   --ui-accent-gold: #f59e0b;
   --ui-accent-red: #ef4444;
   --ui-shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
@@ -2812,3 +2820,10 @@ input[type="checkbox"]:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* BF_PORTAL_BLOCK_v_RESKIN_1_ACCENT_FOUNDATION_v1 RESKIN_1_SILO_OVERRIDES — accent IS
+   the silo signal: BF blue, BI green. Keyed on data-silo on <html> (set from
+   SiloContext). Accent is theme-independent; surfaces stay theme-driven. */
+:root[data-silo="BF"]  { --accent: #1E3A8A; --accent-contrast: #ffffff; }
+:root[data-silo="BI"]  { --accent: #2FA86A; --accent-contrast: #ffffff; }
+:root[data-silo="SLF"] { --accent: #d97706; --accent-contrast: #ffffff; }

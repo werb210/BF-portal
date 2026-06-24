@@ -8,7 +8,8 @@
 // Now: SiloProvider is a thin pass-through over useBusinessUnit. The
 // stored silo is uppercase BusinessUnit; the "silo" surface remains
 // lowercase for the legacy callers that expect "bf"|"bi"|"slf".
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useEffect } from "react";
+import { applySilo } from "@/theme/theme"; // BF_PORTAL_BLOCK_v_RESKIN_1_ACCENT_FOUNDATION_v1
 import type { ReactNode } from "react";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";
 import type { BusinessUnit } from "@/types/businessUnit";
@@ -34,6 +35,10 @@ const SiloContext = createContext<SiloContextType | undefined>(undefined);
 
 export function SiloProvider({ children }: { children: ReactNode }) {
   const { activeBusinessUnit, setActiveBusinessUnit } = useBusinessUnit();
+
+  // BF_PORTAL_BLOCK_v_RESKIN_1_ACCENT_FOUNDATION_v1 — keep <html data-silo> synced to
+  // the active silo so the CSS --accent token resolves to BF blue / BI green.
+  useEffect(() => { applySilo(activeBusinessUnit); }, [activeBusinessUnit]);
 
   const value = useMemo<SiloContextType>(
     () => ({

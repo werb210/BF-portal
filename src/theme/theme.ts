@@ -21,6 +21,14 @@ export function applyTheme(choice: ThemeChoice): void {
   else root.setAttribute("data-theme", choice);
 }
 
+// BF_PORTAL_BLOCK_v_RESKIN_1_ACCENT_FOUNDATION_v1 — set data-silo on <html> so CSS
+// resolves --accent (BF blue / BI green). Mirrors applyTheme.
+export function applySilo(silo: string | null | undefined): void {
+  const root = document.documentElement;
+  const s = (silo ?? "BF").toUpperCase();
+  root.setAttribute("data-silo", s === "BI" || s === "SLF" ? s : "BF");
+}
+
 export function setThemeChoice(choice: ThemeChoice): void {
   try { localStorage.setItem(KEY, choice); } catch { /* ignore */ }
   applyTheme(choice);
