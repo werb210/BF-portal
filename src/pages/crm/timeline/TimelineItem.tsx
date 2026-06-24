@@ -84,14 +84,21 @@ const TimelineItem = ({ event, similarCount = 0, onSelectAutomation, isSelected 
               <span className="text-xs text-rose-600">Reason: {callMetadata.failureReason}</span>
             )}
           </div>
-          <button
-            type="button"
-            className="text-left text-xs font-semibold text-slate-500"
-            disabled
-            aria-disabled="true"
-          >
-            ▶︎ Play recording (coming soon)
-          </button>
+          {/* BF_PORTAL_BLOCK_v_TIMELINE_RECORDING_v1 — wire the real recording.
+              The recordingUrl was always on callMetadata; the button was just a
+              disabled placeholder. Render a native player when present. */}
+          {callMetadata?.recordingUrl ? (
+            <audio
+              controls
+              preload="none"
+              src={callMetadata.recordingUrl}
+              className="mt-1 h-8 w-full max-w-xs"
+            >
+              Your browser does not support audio playback.
+            </audio>
+          ) : (
+            <span className="text-xs text-slate-400">No recording available</span>
+          )}
         </div>
       )}
       {similarCount > 0 && <div className="text-xs text-slate-500">+{similarCount} similar events</div>}
