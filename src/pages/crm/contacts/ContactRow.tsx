@@ -34,7 +34,8 @@ const ContactRow = ({ contact, onSelect, onCall }: ContactRowProps) => {
           <div style={{ width: 28, height: 28, borderRadius: 999, background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700 }}>
             {contact.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
           </div>
-          <a href="#" onClick={(e) => e.preventDefault()}>{contact.name}</a>
+          {/* BF_PORTAL_BLOCK_v_CRM_DEAD_LINKS_v1 — row already navigates via onSelect. */}
+          <span style={{ color: "var(--ui-accent-blue)", fontWeight: 600 }}>{contact.name}</span>
         </div>
       </td>
       <td>{raw.company_name ?? "—"}</td>
