@@ -1,18 +1,61 @@
-/* Backstop: every input / textarea / select that doesn't explicitly
-   opt out renders white-on-black. This covers any inline-styled
-   field that was accidentally inheriting the dark surface palette. */
+/* BF_PORTAL_BLOCK_v_DARK_INPUTS_v1
+   Backstop for inline-styled inputs/textareas/selects that don't opt out.
+   Previously this forced EVERY field white-on-black with !important, which
+   overrode the dark theme on every screen (Notes textarea, Request Items,
+   Banking Analysis, Credit Summary, search boxes, etc). Now it is
+   theme-aware: white in light mode, dark-surface tokens in dark mode.
+   Opt out per-field with data-dark="true". */
 
+/* Light mode (default / data-theme="light") — keep the white backstop. */
 input:not([data-dark="true"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 textarea:not([data-dark="true"]),
 select:not([data-dark="true"]) {
-  background-color: #ffffff !important;
-  color: #000000 !important;
-  border: 1px solid #cbd6e2 !important;
-  border-radius: 4px !important;
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid #cbd6e2;
+  border-radius: 4px;
 }
-
 input:not([data-dark="true"])::placeholder,
 textarea:not([data-dark="true"])::placeholder {
-  color: #7c98b6 !important;
+  color: #7c98b6;
   opacity: 1;
+}
+
+/* Dark mode — system preference. Use the dark surface tokens, not white. */
+@media (prefers-color-scheme: dark) {
+  input:not([data-dark="true"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea:not([data-dark="true"]),
+  select:not([data-dark="true"]) {
+    background-color: var(--ui-surface-input, #20242C);
+    color: var(--ui-text, #F2F4F7);
+    border: 1px solid var(--ui-border, rgba(255,255,255,0.12));
+  }
+  input:not([data-dark="true"])::placeholder,
+  textarea:not([data-dark="true"])::placeholder {
+    color: var(--ui-text-muted, #8B919C);
+    opacity: 1;
+  }
+}
+
+/* Dark mode — explicit override on <html data-theme="dark"> (wins over system). */
+:root[data-theme="dark"] input:not([data-dark="true"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root[data-theme="dark"] textarea:not([data-dark="true"]),
+:root[data-theme="dark"] select:not([data-dark="true"]) {
+  background-color: var(--ui-surface-input, #20242C);
+  color: var(--ui-text, #F2F4F7);
+  border: 1px solid var(--ui-border, rgba(255,255,255,0.12));
+}
+:root[data-theme="dark"] input:not([data-dark="true"])::placeholder,
+:root[data-theme="dark"] textarea:not([data-dark="true"])::placeholder {
+  color: var(--ui-text-muted, #8B919C);
+  opacity: 1;
+}
+
+/* Light mode — explicit override stays white (in case system is dark). */
+:root[data-theme="light"] input:not([data-dark="true"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root[data-theme="light"] textarea:not([data-dark="true"]),
+:root[data-theme="light"] select:not([data-dark="true"]) {
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid #cbd6e2;
 }
