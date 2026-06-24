@@ -155,7 +155,7 @@ export default function MayaCommandBar() {
             width: 40, height: 34, borderRadius: 8,
             border: "1px solid var(--ui-border)",
             background: listening ? "#dc2626" : "var(--ui-surface-muted)",
-            color: listening ? "#fff" : "#0f172a", cursor: "pointer",
+            color: listening ? "#fff" : "var(--ui-text-soft)", cursor: "pointer",
           }}
         >
           {listening ? "■" : "🎙"}

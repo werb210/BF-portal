@@ -66,7 +66,7 @@ export function IOSInstallBanner() {
         onClick={dismiss}
         style={{
           background: "transparent",
-          color: "var(--ui-border)",
+          color: "var(--ui-text-soft)",
           border: "1px solid #334155",
           padding: "6px 10px",
           borderRadius: 8,

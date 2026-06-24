@@ -633,7 +633,7 @@ function TagEditor({ contact, onSaved }: { contact: { id: string; tags: string[]
               }
             }}
             placeholder="vip, warm lead, do not call"
-            style={{ width: "100%", marginTop: 6, padding: 8, border: "1px solid rgba(148, 163, 184, 0.55)", borderRadius: 4, background: "rgba(15, 23, 42, 0.6)", color: "var(--ui-border)", fontSize: 13 }}
+            style={{ width: "100%", marginTop: 6, padding: 8, border: "1px solid rgba(148, 163, 184, 0.55)", borderRadius: 4, background: "rgba(15, 23, 42, 0.6)", color: "var(--ui-text)", fontSize: 13 }}
             aria-label="Edit tags"
           />
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>

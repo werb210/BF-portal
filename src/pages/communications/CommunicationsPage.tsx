@@ -661,7 +661,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                       {last.body}
                     </div>
                   ) : (
-                    <div style={{ fontSize: 13, color: "var(--ui-border)" }}>{c.phone}</div>
+                    <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{c.phone}</div>
                   )}
                 </div>
                 {hasUnread && (
