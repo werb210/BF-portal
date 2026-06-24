@@ -999,7 +999,7 @@ function CreateProductModal({
             {/* BF_PORTAL_BLOCK_v98_v3 — short canonical code "MEDIA" */}
             {form.category === "MEDIA" && (
               <div style={sectionStyle}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ui-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
                   Conditional
                 </p>
                 {conditionalTypes.map((d) => (
