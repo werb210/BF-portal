@@ -21,6 +21,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { fetchTaskStatus, type TaskStatus } from "@/api/applicationTasks";
+import { getFormResponse, type PortalFormResponse } from "@/api/formResponses";
 import { formatMoneyOrRange } from "@/utils/moneyRange"; // BF_PORTAL_BLOCK_v864_MONEY_RANGE
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v817_REMIND_CLIENT
 
@@ -98,6 +99,39 @@ export default function ApplicationTab({ application }: Props) {
   const v784_appId = application ? String((application as any).id ?? "") : "";
   const [v784_tasks, v784_setTasks] = useState<TaskStatus | null>(null);
   const [v784_err, v784_setErr] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v_FORM_VIEW_v1 — staff can expand a completed form task to read
+  // exactly what the client submitted (the data was only ever a green checkmark).
+  const [v_openForm, v_setOpenForm] = useState<string | null>(null);
+  const [v_formData, v_setFormData] = useState<Record<string, PortalFormResponse | null>>({});
+  const [v_formLoading, v_setFormLoading] = useState<string | null>(null);
+  const V_FORM_DOCTYPES: Record<string, string> = {
+    debt: "debt_stack", networth: "net_worth_statement", equipment: "equipment_list",
+    realestate: "real_estate_collateral_disclosure", cra: "cra_view_only_authorization",
+    advisors: "professional_advisors", flinks: "flinks_banking",
+  };
+  const v_flatten = (val: unknown, prefix = ""): Array<[string, string]> => {
+    const out: Array<[string, string]> = [];
+    const lbl = (k: string) => (prefix ? `${prefix}.${k}` : k);
+    if (Array.isArray(val)) val.forEach((v, i) => out.push(...v_flatten(v, `${prefix}[${i + 1}]`)));
+    else if (val && typeof val === "object") for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+      if (v && typeof v === "object") out.push(...v_flatten(v, lbl(k)));
+      else out.push([lbl(k), v === null || v === undefined ? "" : String(v)]);
+    } else out.push([prefix || "value", val === null || val === undefined ? "" : String(val)]);
+    return out;
+  };
+  const v_toggleForm = (key: string) => {
+    const docType = V_FORM_DOCTYPES[key];
+    if (!docType) return;
+    if (v_openForm === key) { v_setOpenForm(null); return; }
+    v_setOpenForm(key);
+    if (!(key in v_formData)) {
+      v_setFormLoading(key);
+      getFormResponse(applicationId, docType)
+        .then((r) => v_setFormData((p) => ({ ...p, [key]: r })))
+        .catch(() => v_setFormData((p) => ({ ...p, [key]: null })))
+        .finally(() => v_setFormLoading(null));
+    }
+  };
   const [v817_sending, v817_setSending] = useState(false);
   const [v817_note, v817_setNote] = useState<string | null>(null);
   useEffect(() => {
@@ -295,12 +329,43 @@ export default function ApplicationTab({ application }: Props) {
         )}
         {v784_tasks && v784_tasks.summary.total > 0 && (
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 4 }}>
-            {v784_tasks.tasks.map((t) => (
-              <li key={t.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                <span aria-hidden style={{ display: "inline-flex", width: 16, height: 16, borderRadius: "50%", alignItems: "center", justifyContent: "center", fontSize: 11, lineHeight: 1, color: "#fff", background: t.complete ? "#16a34a" : "var(--ui-border)" }}>{t.complete ? "✓" : ""}</span>
-                <span style={{ color: t.complete ? "#16a34a" : "#334155" }}>{t.label}</span>
+            {v784_tasks.tasks.map((t) => {
+              const viewable = t.complete && !!V_FORM_DOCTYPES[t.key];
+              const open = v_openForm === t.key;
+              const rec = v_formData[t.key];
+              const rows = open && rec?.data ? v_flatten(rec.data) : [];
+              return (
+              <li key={t.key} style={{ fontSize: 13 }}>
+                <div
+                  onClick={viewable ? () => v_toggleForm(t.key) : undefined}
+                  style={{ display: "flex", alignItems: "center", gap: 8, cursor: viewable ? "pointer" : "default" }}
+                >
+                  <span aria-hidden style={{ display: "inline-flex", width: 16, height: 16, borderRadius: "50%", alignItems: "center", justifyContent: "center", fontSize: 11, lineHeight: 1, color: "#fff", background: t.complete ? "#16a34a" : "var(--ui-border)" }}>{t.complete ? "✓" : ""}</span>
+                  <span style={{ color: t.complete ? "#16a34a" : "#334155" }}>{t.label}</span>
+                  {viewable && <span style={{ color: "var(--ui-text-muted)", fontSize: 11, marginLeft: 2 }}>{open ? "▾ Hide" : "▸ View"}</span>}
+                </div>
+                {open && (
+                  <div style={{ margin: "6px 0 4px 24px", padding: "10px 12px", background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8 }}>
+                    {v_formLoading === t.key && <div style={{ color: "var(--ui-text-muted)" }}>Loading…</div>}
+                    {v_formLoading !== t.key && !rec && <div style={{ color: "var(--ui-text-muted)" }}>No submitted data found.</div>}
+                    {v_formLoading !== t.key && rec && rows.length === 0 && <div style={{ color: "var(--ui-text-muted)" }}>Form submitted (no fields).</div>}
+                    {v_formLoading !== t.key && rows.length > 0 && (
+                      <table style={{ borderCollapse: "collapse", width: "100%" }}>
+                        <tbody>
+                          {rows.map(([k, v], i) => (
+                            <tr key={i}>
+                              <td style={{ padding: "2px 10px 2px 0", color: "var(--ui-text-muted)", verticalAlign: "top", whiteSpace: "nowrap" }}>{k}</td>
+                              <td style={{ padding: "2px 0", color: "var(--ui-text)" }}>{v}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                    {rec?.submitted_at && <div style={{ marginTop: 6, color: "var(--ui-text-muted)", fontSize: 11 }}>Submitted {new Date(rec.submitted_at).toLocaleString()}</div>}
+                  </div>
+                )}
               </li>
-            ))}
+            );})}
           </ul>
         )}
         {v784_tasks && v784_tasks.summary.allComplete && (
