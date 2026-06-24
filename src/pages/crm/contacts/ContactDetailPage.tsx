@@ -1,8 +1,8 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, useContext, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { crmApi, type ContactRow, type Scope } from "@/api/crm";
 import { api } from "@/api";
-import { useSilo } from "@/hooks/useSilo";
+import SiloContext from "@/context/SiloContext"; // BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_HOTFIX1 — defensive silo read (no throw if provider absent)
 import { ActionBar } from "@/components/crm/ActionBar";
 import { UnifiedTimeline } from "@/components/crm/UnifiedTimeline"; // BF_PORTAL_UNIFIED_TIMELINE_v1
 import { ContactApplicantFields, ContactAdvisors } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_CONTACT_PANELS_v1
@@ -13,8 +13,11 @@ import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { silo } = useSilo();
-  const isBiSilo = silo === "bi"; // BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_v1
+  // BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_HOTFIX1 — Apollo enrichment is BI-only. Read
+  // silo without the throwing useSilo() so a missing provider (e.g. in unit tests
+  // or non-silo mounts) yields non-BI rather than crashing the page.
+  const siloCtx = useContext(SiloContext);
+  const isBiSilo = String((siloCtx as any)?.silo ?? "").toUpperCase() === "BI";
   const scope: Scope = { kind: "contact", id };
   const [contact, setContact] = useState<ContactRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
