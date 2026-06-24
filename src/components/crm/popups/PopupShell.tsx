@@ -44,7 +44,7 @@ export function PopupShell(props: {
 
 export const popupInputStyle: CSSProperties = {
   width: "100%", padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4,
-  background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 14, fontFamily: "inherit",
+  background: "var(--ui-surface-input)", color: "var(--ui-text)", fontSize: 14, fontFamily: "inherit", /* RESKIN2::POPUP */
 };
 
 const overlay: CSSProperties = {

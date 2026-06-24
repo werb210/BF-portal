@@ -8,6 +8,8 @@
   --ui-bg: var(--bg-primary);
   --ui-surface: var(--panel-bg);
   --ui-surface-strong: #ffffff;
+  /* RESKIN2::ROOT — distinct input surface so fields separate from cards */
+  --ui-surface-input: #f4f6fa;
   --ui-surface-muted: #eef1f5;
   --ui-border: #cbd6e2;
   --ui-border-soft: #eaf0f6;
@@ -38,6 +40,7 @@
     --ui-bg: var(--bg-primary);
     --ui-surface: var(--panel-bg);
     --ui-surface-strong: #181B21;
+    --ui-surface-input: #20242C; /* RESKIN2::DARKMEDIA */
     --ui-surface-muted: #1F232B;
     --ui-border: rgba(255, 255, 255, 0.12);
     --ui-border-soft: rgba(255, 255, 255, 0.07);
@@ -57,6 +60,7 @@
   --panel-bg: #121419;
   --text-primary: #F2F4F7;
   --ui-surface-strong: #181B21;
+  --ui-surface-input: #20242C; /* RESKIN2::DARKTHEME */
   --ui-surface-muted: #1F232B;
   --ui-border: rgba(255, 255, 255, 0.12);
   --ui-border-soft: rgba(255, 255, 255, 0.07);
@@ -70,6 +74,7 @@
   --panel-bg: #f8f9fb;
   --text-primary: #0b1220;
   --ui-surface-strong: #ffffff;
+  --ui-surface-input: #f4f6fa; /* RESKIN2::LIGHTTHEME */
   --ui-surface-muted: #eef1f5;
   --ui-border: #cbd6e2;
   --ui-border-soft: #eaf0f6;
@@ -2387,7 +2392,7 @@ a,
   border: none;
   border-radius: 12px;
   padding: 10px 12px;
-  background: var(--ui-surface-strong);
+  background: var(--ui-surface-input); /* RESKIN2::DRAWER */
   color: var(--ui-text);
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
 }
