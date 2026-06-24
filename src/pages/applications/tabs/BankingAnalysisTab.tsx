@@ -53,11 +53,15 @@ interface Props {
   applicationId?: string;
 }
 
+// BF_PORTAL_BLOCK_v_BANKING_DARK_PANELS_v1 — text + panel were hardcoded light
+// (#0f172a on #fff), so every card in this tab rendered white-on-dark, breaking the
+// theme. Point them at the theme-aware tokens (bright text + dark surface in dark
+// mode, dark text + white in light mode).
 const C = {
-  text: "#0f172a",
+  text: "var(--ui-text)",
   muted: "var(--ui-text-muted)",
   border: "var(--ui-border)",
-  panel: "#fff",
+  panel: "var(--ui-surface-strong)",
 };
 
 const styles = {
