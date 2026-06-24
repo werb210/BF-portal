@@ -51,7 +51,7 @@ const MonthView = ({
                 borderTop: "none",
                 borderLeftWidth: 0,
                 padding: 8,
-                background: isCurrentMonth ? "#fff" : "var(--ui-surface-muted)",
+                background: isCurrentMonth ? "var(--ui-surface-input)" : "var(--ui-surface-muted)", /* RESKIN2::CALENDAR */
               }}
             >
               <div className="calendar-month-grid__header" style={{ fontWeight: 700, color: isCurrentMonth ? "#0f172a" : "var(--ui-text-muted)" }}>{day.getDate()}</div>

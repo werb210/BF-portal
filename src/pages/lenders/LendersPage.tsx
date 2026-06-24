@@ -842,7 +842,7 @@ function CreateProductModal({
           <div>
             <label style={labelStyle}>Rate kind <span style={{ color: "#ef4444" }}>*</span></label>
             <select value={form.rateKind} onChange={(e) => set("rateKind", e.target.value as "apr"|"monthly"|"factor")}
-              style={{ ...inputStyle(), background: "white", width: "100%" }}>
+              style={{ ...inputStyle(), background: "var(--ui-surface-input)", width: "100%" }}> {/* RESKIN2::LENDERS */}
               <option value="apr">APR (annual %) — term loans / equipment / working capital</option>
               <option value="monthly">Monthly % — factoring / AR / PO / ABL</option>
               <option value="factor">Factor (MCA payback, e.g. 1.24x)</option>
