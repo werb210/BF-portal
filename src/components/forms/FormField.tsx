@@ -28,7 +28,7 @@ const wrapper: CSSProperties = {
 };
 
 const labelStyle: CSSProperties = {
-  color: "#111827",
+  color: "var(--ui-text-soft)",
   fontSize: 13,
   fontWeight: 600,
 };

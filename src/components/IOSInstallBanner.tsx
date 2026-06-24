@@ -43,7 +43,7 @@ export function IOSInstallBanner() {
         bottom: 16,
         zIndex: 1000,
         background: "#0f172a",
-        color: "var(--ui-surface-muted)",
+        color: "var(--ui-text)",
         padding: "14px 16px",
         borderRadius: 12,
         boxShadow: "0 12px 32px rgba(15,23,42,0.35)",
