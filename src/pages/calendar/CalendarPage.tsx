@@ -339,7 +339,8 @@ function CalendarContent() {
       <aside style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: 12, overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ margin: 0 }}>Tasks</h3>
-          <button onClick={() => setShowTaskForm(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #0f766e", background: "#0f766e", color: "#fff" }}>
+          {/* BF_PORTAL_BLOCK_v_CALENDAR_TASK_BUTTON_v1 — was hardcoded teal #0f766e */}
+          <button onClick={() => setShowTaskForm(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "transparent", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer" }}>
             Add Task
           </button>
         </div>
