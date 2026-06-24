@@ -57,7 +57,7 @@ export default function SequencesTab({ owner }: { viewAs?: "todd" | "andrew"; ow
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Sequences</h3>
-        <button onClick={() => setShowCreate(true)} className="rounded bg-blue-500/20 hover:bg-blue-500/30 px-3 py-1.5 text-sm text-blue-200">+ New sequence</button>
+        <button onClick={() => setShowCreate(true)} className="rounded bg-emerald-500/20 hover:bg-emerald-500/30 px-3 py-1.5 text-sm text-emerald-200">+ New sequence</button>
       </div>
       {list.length === 0 && <p className="text-white/50 italic">No sequences yet.</p>}
       <ul className="space-y-2">

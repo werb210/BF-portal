@@ -609,8 +609,11 @@ a,
   padding: 10px 16px;
   border-radius: 8px;
   border: none;
-  background-color: rgba(47, 168, 106, 0.9);
-  color: var(--ui-text);
+  /* BF_PORTAL_BLOCK_v_BUTTON_ACCENT_v1 — was hardcoded green (BI accent) on EVERY
+     shared primary button regardless of silo. Use the silo-driven accent: blue in
+     BF, green in BI. */
+  background-color: var(--ui-accent-blue);
+  color: #fff;
   cursor: pointer;
   font-weight: 600;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
@@ -619,7 +622,7 @@ a,
 }
 
 .ui-button:hover {
-  background-color: rgba(47, 168, 106, 1);
+  filter: brightness(1.08);
 }
 
 .ui-button:disabled {

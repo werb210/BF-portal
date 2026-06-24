@@ -683,7 +683,7 @@ export function ReocrToolbar({ applicationId }: { applicationId?: string | null 
         disabled={busy}
         style={{
           padding: "6px 12px", fontSize: 13, fontWeight: 500,
-          background: busy ? "var(--ui-border)" : "#0ea5e9", color: "white",
+          background: busy ? "var(--ui-border)" : "var(--ui-accent-blue)", color: "white", /* v_BUTTON_ACCENT_v1 — was cyan */
           border: "none", borderRadius: 4, cursor: busy ? "wait" : "pointer",
         }}
       >
