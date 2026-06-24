@@ -18,7 +18,7 @@ const unitLabels: Record<BusinessUnit, { short: string; full: string }> = {
 };
 
 const unitAccents: Record<BusinessUnit, string> = {
-  BF: "var(--ui-accent-blue)", // matches AppLayout SILO_BRAND.BF
+  BF: "var(--accent)", // RESKIN3::SELECTOR — live silo accent (BF blue)
   BI: "#7c3aed", // matches AppLayout SILO_BRAND.BI
   SLF: "#d97706", // matches AppLayout SILO_BRAND.SLF
 };

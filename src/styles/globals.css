@@ -21,7 +21,7 @@
      silo-driven accent (see [data-silo] blocks at file end). --accent-neutral is the
      carve-out color (silo switcher, Notifications, Maya) so green only ever means BI
      and blue only ever means BF. */
-  --ui-accent-blue: #1E3A8A;
+  --ui-accent-blue: var(--accent); /* RESKIN3::ACCENT_VAR — silo-driven via --accent */
   --accent: #1E3A8A;
   --accent-contrast: #ffffff;
   --accent-neutral: #64748B;

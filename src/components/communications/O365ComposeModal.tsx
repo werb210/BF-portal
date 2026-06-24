@@ -65,7 +65,7 @@ function escapeToHtml(s: string): string {
 // into the editor (init / reply / edit-sent / draft), so a half-broken body can't carry the
 // raw `">Book a meeting` artifact forward.
 const BOOKING_BTN_STYLE =
-  "display:inline-block;margin:4px 0;padding:10px 18px;background:var(--ui-accent-blue);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif";
+  "display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif";
 function sanitizeBookingHtml(html: string): string {
   if (!html || html.indexOf("Book a meeting") === -1) return html;
   return html.replace(
@@ -317,7 +317,7 @@ export default function O365ComposeModal({
     let html = template.body_html ?? (template.body_text ? escapeToHtml(template.body_text) : "");
     html = html.split("{{first_name}}").join(firstName);
     if (bookingUrl) {
-      const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:var(--ui-accent-blue);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+      const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
       html = html.split("{{meeting_link}}").join(bookingButton);
     }
     if (html) insertHtmlAtCursor(html);
@@ -325,7 +325,7 @@ export default function O365ComposeModal({
 
   function insertBookingUrl() {
     if (!bookingUrl) return;
-    const btn = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:var(--ui-accent-blue);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+    const btn = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
     insertHtmlAtCursor(btn + "<br/>");
   }
 
@@ -459,7 +459,7 @@ export default function O365ComposeModal({
         // inside that anchor's href and mangled the tag (raw `">Book a meeting` leaked
         // as text). Replace the token always; only buttonize a BARE pasted URL when it
         // isn't already wrapped in an anchor href.
-        const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:var(--ui-accent-blue);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+        const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
         body_html = body_html.split("{{meeting_link}}").join(bookingButton);
         if (!body_html.includes(`href="${bookingUrl}"`)) {
           body_html = body_html.split(bookingUrl).join(bookingButton);

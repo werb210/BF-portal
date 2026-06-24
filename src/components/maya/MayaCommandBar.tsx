@@ -184,7 +184,7 @@ export default function MayaCommandBar() {
           disabled={busy || !text.trim()}
           style={{
             flex: 1, height: 34, borderRadius: 8, border: "none",
-            background: "var(--ui-accent-blue)", color: "#fff",
+            background: "var(--accent-neutral)", color: "#fff", /* RESKIN3::MAYA3 */
             cursor: busy || !text.trim() ? "default" : "pointer",
             opacity: busy || !text.trim() ? 0.6 : 1, fontWeight: 600,
           }}
