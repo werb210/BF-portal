@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { crmApi, type ContactRow, type Scope } from "@/api/crm";
 import { api } from "@/api";
+import { useSilo } from "@/hooks/useSilo";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { UnifiedTimeline } from "@/components/crm/UnifiedTimeline"; // BF_PORTAL_UNIFIED_TIMELINE_v1
 import { ContactApplicantFields, ContactAdvisors } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_CONTACT_PANELS_v1
@@ -12,6 +13,8 @@ import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const { silo } = useSilo();
+  const isBiSilo = silo === "bi"; // BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_v1
   const scope: Scope = { kind: "contact", id };
   const [contact, setContact] = useState<ContactRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -57,7 +60,7 @@ export default function ContactDetailPage() {
         >← Back to contacts</Link>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}><h2 style={{ marginTop: 0, marginBottom: 0 }}>{contact.name}</h2><span style={roleBadge}>{formatRole(contact.role)}</span></div>
         {contact.job_title && <div style={subtle}>{contact.job_title}</div>}
-        <MarketingHeader contactId={id} />
+        {isBiSilo && <MarketingHeader contactId={id} />}
         {contact.email && (
           <a href={`mailto:${contact.email}`} style={{ color: "#0091ae" }}>{contact.email}</a>
         )}
@@ -101,7 +104,11 @@ export default function ContactDetailPage() {
 
       <main style={{ minWidth: 0 }}>
         <UnifiedTimeline contactId={id} scope={scope} refreshKey={refreshKey} />
-        <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}><MarketingTab contactId={id} /></div>
+        {isBiSilo && (
+          <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}>
+            <MarketingTab contactId={id} />
+          </div>
+        )} {/* BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_v1_TAB */}
       </main>
 
       <aside style={rail}>
