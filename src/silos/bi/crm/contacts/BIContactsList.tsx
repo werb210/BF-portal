@@ -68,7 +68,7 @@ export default function BIContactsList() {
     fontSize: 12, padding: "3px 10px", borderRadius: 999,
     border: active ? "1px solid #6366f1" : "1px solid #334155",
     background: active ? "#4f46e5" : "transparent",
-    color: active ? "#fff" : "var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap",
+    color: active ? "#fff" : "var(--ui-text-soft)", cursor: "pointer", whiteSpace: "nowrap",
   });
   function toggleTag(t: string) { // BF_PORTAL_BLOCK_v749_VIEWBY
     setTagFilter((p) => { const n = new Set(p); if (n.has(t)) n.delete(t); else n.add(t); return n; });
@@ -200,7 +200,7 @@ export default function BIContactsList() {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} />
         <button type="button" onClick={() => exportRowsToCsv("bi-contacts.csv", rows as any)} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">Export</button>
-        <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #334155", background: "transparent", color: "var(--ui-border)", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
+        <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #334155", background: "transparent", color: "var(--ui-text)", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
@@ -246,13 +246,13 @@ export default function BIContactsList() {
 
       {createOpen && (
         <div onClick={() => !creating && setCreateOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, padding: 20, width: 380, maxWidth: "90vw", color: "var(--ui-border)" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, padding: 20, width: 380, maxWidth: "90vw", color: "var(--ui-text)" }}>
             <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>New BI contact</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <input value={createForm.full_name} onChange={(e) => setCreateForm((f) => ({ ...f, full_name: e.target.value }))} placeholder="Full name" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-border)", fontSize: 13 }} />
-              <input value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-border)", fontSize: 13 }} />
-              <input value={createForm.phone_e164} onChange={(e) => setCreateForm((f) => ({ ...f, phone_e164: e.target.value }))} placeholder="Phone (E.164)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-border)", fontSize: 13 }} />
-              <input value={createForm.title} onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title (optional)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-border)", fontSize: 13 }} />
+              <input value={createForm.full_name} onChange={(e) => setCreateForm((f) => ({ ...f, full_name: e.target.value }))} placeholder="Full name" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-text)", fontSize: 13 }} />
+              <input value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-text)", fontSize: 13 }} />
+              <input value={createForm.phone_e164} onChange={(e) => setCreateForm((f) => ({ ...f, phone_e164: e.target.value }))} placeholder="Phone (E.164)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-text)", fontSize: 13 }} />
+              <input value={createForm.title} onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title (optional)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-text)", fontSize: 13 }} />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14 }}>
               <button type="button" disabled={creating} onClick={() => setCreateOpen(false)} style={clearBtn}>Cancel</button>

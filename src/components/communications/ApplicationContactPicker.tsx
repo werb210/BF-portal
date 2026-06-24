@@ -73,7 +73,7 @@ export default function ApplicationContactPicker({ onSelect }: Props) {
                 padding: "8px 12px",
                 cursor: "pointer",
                 fontSize: 13,
-                color: "var(--ui-border)",
+                color: "var(--ui-text)",
                 borderBottom: "1px solid #0f172a"
               }}
             >
