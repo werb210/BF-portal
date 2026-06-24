@@ -383,12 +383,24 @@ function DocRow(props: {
   const status = (doc.status ?? "pending").toLowerCase() as DocStatus;
   const isRejected = status === "rejected";
   const isAccepted = status === "accepted";
+  // BF_PORTAL_BLOCK_v_DOC_NAME_CONTRAST_v1 — raw blob token (e.g. "att.kstL72...")
+  // isn't a human name; when the filename looks like a storage blob, show the
+  // category/title so staff see a meaningful label.
+  function v_friendlyDocName(d: { filename: string | null; title: string | null; category: string | null }): string {
+    const fn = (d.filename ?? "").trim();
+    const looksBlob = !fn
+      || /^att\./i.test(fn)
+      || (!/\.[a-z0-9]{2,5}$/i.test(fn) && fn.length > 24)
+      || /^[A-Za-z0-9_-]{24,}$/.test(fn);
+    if (looksBlob) return (d.title || d.category || "Document").trim();
+    return fn;
+  }
 
   return (
     <div style={styles.docRow}>
       <div style={styles.docMain}>
         <div style={styles.docTopLine}>
-          <span style={styles.filename}>{doc.filename ?? doc.title ?? "(untitled)"}</span>
+          <span style={styles.filename}>{v_friendlyDocName(doc)}</span>
           <StatusPill status={status} />
           <OcrBadge ocr={doc.ocrStatus} />
         </div>

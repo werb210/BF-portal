@@ -627,7 +627,9 @@ const styles: Record<string, CSSProperties> = {
   title: { fontSize: 24, fontWeight: 700, margin: 0, color: "var(--ui-text)", lineHeight: 1.2 },
   subtitle: { fontSize: 13, color: "var(--ui-text-muted)", marginTop: 4 },
   statusPill: {
-    background: "rgba(47, 168, 106, 0.12)",
+    // BF_PORTAL_BLOCK_v_DOC_NAME_CONTRAST_v1 — was faint green bg + blue text (washed
+    // out + mismatched). Use a readable accent-tinted chip.
+    background: "color-mix(in srgb, var(--ui-accent-blue) 16%, transparent)",
     color: "var(--ui-accent-blue)",
     borderRadius: 999,
     padding: "4px 12px",
