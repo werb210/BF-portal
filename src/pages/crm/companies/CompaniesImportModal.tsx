@@ -152,5 +152,5 @@ export default function CompaniesImportModal({ onClose, onImported }: { onClose:
 
 const overlay: CSSProperties = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 };
 const panel: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", borderRadius: 10, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflow: "auto" };
-const btn: CSSProperties = { background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: "pointer" };
+const btn: CSSProperties = { background: "var(--accent)", color: "#fff", border: 0, borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: "pointer" };
 const btnGhost: CSSProperties = { background: "var(--ui-surface-strong)", color: "#33475b", border: "1px solid var(--ui-border)", borderRadius: 8, padding: "8px 14px", cursor: "pointer" };

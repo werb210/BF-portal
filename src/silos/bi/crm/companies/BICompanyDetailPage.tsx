@@ -289,9 +289,9 @@ export default function BICompanyDetailPage() {
                 disabled={saving || !form.legal_name.trim()}
                 style={{
                   ...actionBtn,
-                  background: "#0d9b6c",
+                  background: "var(--accent)",
                   color: "#fff",
-                  borderColor: "#0d9b6c",
+                  borderColor: "var(--accent)",
                 }}
               >
                 {saving ? "Saving…" : "Save"}

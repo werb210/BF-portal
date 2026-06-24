@@ -222,7 +222,7 @@ export default function BICompaniesList() {
         <span style={{ flex: 1 }} />
         <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1, marginRight: 8 }} data-testid="bi-companies-import">{importing ? "Importing…" : "Import"}</button>
         <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-companies-import-input" />
-        <button type="button" onClick={() => setCreateOpen((v) => !v)} style={{ background: createOpen ? "#fff" : "#0d9b6c", color: createOpen ? "#0d9b6c" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: createOpen ? "1px solid #0d9b6c" : 0, cursor: "pointer" }} data-testid="bi-companies-create-toggle">{createOpen ? "Cancel" : "+ Create Company"}</button>
+        <button type="button" onClick={() => setCreateOpen((v) => !v)} style={{ background: createOpen ? "#fff" : "var(--accent)", color: createOpen ? "var(--accent)" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: createOpen ? "1px solid var(--accent)" : 0, cursor: "pointer" }} data-testid="bi-companies-create-toggle">{createOpen ? "Cancel" : "+ Create Company"}</button>
       </div>
 
       {/* CRM_COMPANY_VIEWBY — single-tag filter chips (client-derived, monotonic). */}
@@ -241,7 +241,7 @@ export default function BICompaniesList() {
         <div style={createBar} data-testid="bi-companies-create-form">
           <div style={{ flex: 2 }}><div style={fieldLabel}>Legal name *</div><input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Acme Inc" style={{ ...searchInput, marginTop: 4 }} aria-label="Legal name" /></div>
           <div style={{ flex: 1 }}><div style={fieldLabel}>Industry</div><input value={newIndustry} onChange={(e) => setNewIndustry(e.target.value)} placeholder="Optional" style={{ ...searchInput, marginTop: 4 }} aria-label="Industry" /></div>
-          <button type="button" onClick={() => void createCompany()} disabled={creating || !newName.trim()} style={{ background: "#0d9b6c", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", opacity: creating || !newName.trim() ? 0.5 : 1 }}>{creating ? "Creating…" : "Create"}</button>
+          <button type="button" onClick={() => void createCompany()} disabled={creating || !newName.trim()} style={{ background: "var(--accent)", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", opacity: creating || !newName.trim() ? 0.5 : 1 }}>{creating ? "Creating…" : "Create"}</button>
           {createError && <span style={{ color: "#b00020", fontSize: 12 }} role="status">{createError}</span>}
         </div>
       )}
@@ -304,7 +304,7 @@ function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => 
 }
 
 function chipBtn(active: boolean): CSSProperties {
-  return { fontSize: 12, padding: "4px 10px", borderRadius: 999, border: active ? "1px solid #0d9b6c" : "1px solid var(--ui-border)", background: active ? "#0d9b6c" : "#fff", color: active ? "#fff" : "#33475b", cursor: "pointer", whiteSpace: "nowrap" };
+  return { fontSize: 12, padding: "4px 10px", borderRadius: 999, border: active ? "1px solid var(--accent)" : "1px solid var(--ui-border)", background: active ? "var(--accent)" : "#fff", color: active ? "#fff" : "#33475b", cursor: "pointer", whiteSpace: "nowrap" };
 }
 
 const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24, borderRadius: 8 };

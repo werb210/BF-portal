@@ -1371,7 +1371,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 setOpen(false);
                 setTo("");
                 setBody("");
-              }} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px" }}>Send SMS</button>
+              }} style={{ background: "var(--accent)", color: "#fff", border: 0, borderRadius: 8, padding: "8px 12px" }}>Send SMS</button>
               <SecondaryButton onClick={() => setOpen(false)}>Cancel</SecondaryButton>
             </div>
           </div>
