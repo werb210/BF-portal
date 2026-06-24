@@ -57,10 +57,12 @@ const SLF_NAV: NavItem[] = [
 
 const SILO_NAV: Record<string, NavItem[]> = { BF: BF_NAV, BI: BI_NAV, SLF: SLF_NAV };
 
+// BF_PORTAL_BLOCK_v_RESKIN_1_ACCENT_FOUNDATION_v1 — accent from the silo-driven
+// --accent token (set via data-silo on <html>); BI purple retired.
 const SILO_BRAND: Record<string, { label: string; accent: string }> = {
-  BF:  { label: "Boreal Financial",    accent: "var(--ui-accent-blue)" },
-  BI:  { label: "Boreal Insurance",    accent: "#7c3aed" },
-  SLF: { label: "Site Level Finance",  accent: "#d97706" },
+  BF:  { label: "Boreal Financial",    accent: "var(--accent)" },
+  BI:  { label: "Boreal Insurance",    accent: "var(--accent)" },
+  SLF: { label: "Site Level Finance",  accent: "var(--accent)" },
 };
 
 export default function AppLayout({ children }: { children?: React.ReactNode }) {
