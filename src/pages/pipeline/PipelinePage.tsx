@@ -300,7 +300,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
       <div onClick={onOpen} style={{ cursor: "pointer", marginBottom: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-surface-muted)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{name}</div>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{name}</div>
             {card.contact_name && (
               <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
             )}
@@ -321,15 +321,15 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
 
         {/* Amount + owner row */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: "var(--ui-text-muted)", marginBottom: 6 }}>
-          <span style={{ fontWeight: 600, color: "var(--ui-border)" }}>{amount ?? "—"}</span>
+          <span style={{ fontWeight: 600, color: "var(--ui-text)" }}>{amount ?? "—"}</span>
           {hasOwner && (
-            <span title={ownerTitle || "Owner"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 999, background: "#334155", color: "var(--ui-border)", fontSize: 9, fontWeight: 700 }}>{ownerInitials}</span>
+            <span title={ownerTitle || "Owner"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 999, background: "#334155", color: "var(--ui-text)", fontSize: 9, fontWeight: 700 }}>{ownerInitials}</span>
           )}
         </div>
 
         {/* BF_PORTAL_BLOCK_v776 — product category under the amount */}
         {productCat && (
-          <div style={{ fontSize: 11, color: "var(--ui-border)", marginBottom: 6 }}>{productCat}</div>
+          <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginBottom: 6 }}>{productCat}</div>
         )}
 
         {/* Pills row: doc progress, stage age */}

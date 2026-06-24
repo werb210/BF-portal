@@ -22,6 +22,8 @@
      carve-out color (silo switcher, Notifications, Maya) so green only ever means BI
      and blue only ever means BF. */
   --ui-accent-blue: var(--accent); /* RESKIN3::ACCENT_VAR — silo-driven via --accent */
+  /* BF_PORTAL_v_CONTRAST_PASS2 — readable foreground accent for accent-colored TEXT on dark (brand accent is too dark as text). Buttons keep --ui-accent-blue as BACKGROUND. */
+  --ui-accent-fg: color-mix(in srgb, var(--accent) 50%, white);
   --accent: #1E3A8A;
   --accent-contrast: #ffffff;
   --accent-neutral: #64748B;

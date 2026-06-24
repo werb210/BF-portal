@@ -630,7 +630,7 @@ const styles: Record<string, CSSProperties> = {
     // BF_PORTAL_BLOCK_v_DOC_NAME_CONTRAST_v1 — was faint green bg + blue text (washed
     // out + mismatched). Use a readable accent-tinted chip.
     background: "color-mix(in srgb, var(--ui-accent-blue) 16%, transparent)",
-    color: "var(--ui-accent-blue)",
+    color: "var(--ui-accent-fg)",
     borderRadius: 999,
     padding: "4px 12px",
     fontSize: 12,
