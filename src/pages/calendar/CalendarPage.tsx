@@ -280,6 +280,16 @@ function CalendarContent() {
           .rbc-event { cursor: pointer; }
           .rbc-time-view .rbc-time-header-content { font-size: 12px; }
           .rbc-time-slot { font-size: 11px; color: var(--ui-text-muted); }
+          /* BF_PORTAL_v_CONTRAST_PASS2_RBC_DARK — react-big-calendar ships light CSS; dark-theme the time/month grid */
+          .rbc-time-view, .rbc-month-view, .rbc-time-content, .rbc-time-header, .rbc-time-header-content, .rbc-time-gutter, .rbc-day-slot, .rbc-day-bg, .rbc-month-row { background: var(--ui-surface-strong) !important; color: var(--ui-text); border-color: var(--ui-border) !important; }
+          .rbc-time-view, .rbc-month-view { border: 1px solid var(--ui-border) !important; }
+          .rbc-header, .rbc-time-header-gutter { background: var(--ui-surface-strong) !important; color: var(--ui-text-soft) !important; border-color: var(--ui-border) !important; }
+          .rbc-time-content > * + * > *, .rbc-timeslot-group, .rbc-day-bg + .rbc-day-bg, .rbc-month-row + .rbc-month-row, .rbc-header + .rbc-header, .rbc-time-content, .rbc-time-header-content { border-color: var(--ui-border) !important; }
+          .rbc-today { background: color-mix(in srgb, var(--ui-accent-blue) 14%, transparent) !important; }
+          .rbc-label { color: var(--ui-text-muted) !important; }
+          .rbc-current-time-indicator { background: var(--ui-accent-blue) !important; }
+          .rbc-event, .rbc-day-slot .rbc-event { background: var(--ui-accent-blue) !important; color: #fff !important; border: none !important; }
+          .rbc-show-more { background: transparent !important; color: var(--ui-accent-fg) !important; }
         `}</style>
         <div style={{ height: 700, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", gap: 8, padding: "0 0 8px 0" }}>

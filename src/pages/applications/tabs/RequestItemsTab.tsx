@@ -239,7 +239,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
     padding: "10px 12px",
     border: `1px solid ${active ? "var(--ui-accent-blue)" : "var(--ui-border)"}`,
     borderRadius: 8,
-    background: active ? "rgba(47, 168, 106, 0.12)" : "#fff",
+    background: active ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-input)",
     cursor: disabled ? "default" : "pointer",
     fontSize: 14,
     color: "var(--ui-text)",
