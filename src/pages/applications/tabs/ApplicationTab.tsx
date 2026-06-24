@@ -109,6 +109,17 @@ export default function ApplicationTab({ application }: Props) {
     realestate: "real_estate_collateral_disclosure", cra: "cra_view_only_authorization",
     advisors: "professional_advisors", flinks: "flinks_banking",
   };
+  // BF_PORTAL_BLOCK_v_FORM_LABELS_v1 — turn raw JSON key paths into readable labels:
+  // "properties[1].mortgage_balance" -> "Properties #1 — Mortgage Balance".
+  const v_humanize = (raw: string): string => {
+    const titled = (s: string) => s.replace(/[_-]+/g, " ").replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .split(" ").filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return raw.split(".").map((seg) => {
+      const m = seg.match(/^(.*?)\[(\d+)\]$/);
+      if (m) return `${titled(m[1] || "")} #${m[2]}`.trim();
+      return titled(seg);
+    }).filter(Boolean).join(" — ");
+  };
   const v_flatten = (val: unknown, prefix = ""): Array<[string, string]> => {
     const out: Array<[string, string]> = [];
     const lbl = (k: string) => (prefix ? `${prefix}.${k}` : k);
@@ -354,7 +365,7 @@ export default function ApplicationTab({ application }: Props) {
                         <tbody>
                           {rows.map(([k, v], i) => (
                             <tr key={i}>
-                              <td style={{ padding: "2px 10px 2px 0", color: "var(--ui-text-muted)", verticalAlign: "top", whiteSpace: "nowrap" }}>{k}</td>
+                              <td style={{ padding: "2px 10px 2px 0", color: "var(--ui-text-muted)", verticalAlign: "top", whiteSpace: "nowrap" }}>{v_humanize(k)}</td>
                               <td style={{ padding: "2px 0", color: "var(--ui-text)" }}>{v}</td>
                             </tr>
                           ))}
