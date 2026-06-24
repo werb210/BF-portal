@@ -301,7 +301,7 @@ export default function ApplicationTab({ application }: Props) {
             disabled={!v817_canRemind}
             title={v817_remindTitle}
             style={v817_canRemind
-              ? { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer", fontSize: 14 }
+              ? { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", fontWeight: 600, cursor: "pointer", fontSize: 14 }
               : { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", fontWeight: 600, cursor: "not-allowed", fontSize: 14 }}
             data-testid="remind-client"
           >
@@ -678,7 +678,7 @@ const styles: Record<string, CSSProperties> = {
     textOverflow: "ellipsis",
   },
   fieldValueHighlight: { fontSize: 18, color: "var(--ui-text)", fontWeight: 700 },
-  link: { color: "var(--ui-accent-blue)", textDecoration: "none" },
+  link: { color: "var(--ui-accent-fg)", textDecoration: "none" },
   ownerList: { display: "flex", flexDirection: "column", gap: 12, gridColumn: "1 / -1" },
   ownerCard: { background: "var(--ui-surface-muted)", borderRadius: 8, padding: "12px 14px", border: "1px solid var(--ui-border)" },
   ownerHeader: { fontSize: 14, fontWeight: 700, marginBottom: 8, color: "var(--ui-text)" },
@@ -733,7 +733,7 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     gap: 8,
     background: "rgba(47, 168, 106, 0.12)",
-    color: "var(--ui-accent-blue)",
+    color: "var(--ui-accent-fg)",
     border: "1px solid #93c5fd",
     borderRadius: 8,
     padding: "10px 14px",

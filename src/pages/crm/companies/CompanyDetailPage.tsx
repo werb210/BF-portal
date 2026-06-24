@@ -73,7 +73,7 @@ export default function CompanyDetailPage() {
   return (
     <div className="crm-detail-layout">
       <aside style={rail}>
-        <Link to="/crm/contacts" style={{ color: "var(--ui-accent-blue)", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}>← Back to contacts</Link>
+        <Link to="/crm/contacts" style={{ color: "var(--ui-accent-fg)", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}>← Back to contacts</Link>
         <h2 style={{ marginTop: 0 }}>{company.name}</h2>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <button type="button" onClick={() => setEditOpen(true)} style={actionBtn}>Edit</button>

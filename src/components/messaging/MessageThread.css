@@ -20,7 +20,7 @@
   padding: 8px 12px; border-radius: 14px; font-size: 14px;
   line-height: 1.4; word-wrap: break-word; white-space: pre-wrap;
 }
-.msg-bubble--self  { background: var(--ui-accent-blue); color: #fff; border-bottom-right-radius: 4px; }
+.msg-bubble--self  { background: color-mix(in srgb, var(--ui-accent-blue) 32%, var(--ui-surface-strong)); color: var(--ui-text); border-bottom-right-radius: 4px; }
 .msg-bubble--other { background: var(--ui-surface-input); color: var(--ui-text); border-bottom-left-radius: 4px; }
 .msg-meta {
   font-size: 11px; color: var(--ui-text-muted); margin-top: 4px;

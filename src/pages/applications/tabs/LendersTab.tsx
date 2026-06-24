@@ -326,7 +326,7 @@ export default function LendersTab({ applicationId }: Props) {
                               </a>
                             ))
                           )}
-                          <label style={{ ...styles.filesMenuItem, cursor: "pointer", color: "var(--ui-accent-blue)", marginTop: 6, borderTop: "1px solid var(--ui-border-soft)", paddingTop: 8 }}>
+                          <label style={{ ...styles.filesMenuItem, cursor: "pointer", color: "var(--ui-accent-fg)", marginTop: 6, borderTop: "1px solid var(--ui-border-soft)", paddingTop: 8 }}>
                             {isUploading ? "Uploading…" : "⬆ Upload Term Sheet"}
                             <input
                               type="file"
