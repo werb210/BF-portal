@@ -97,7 +97,27 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
           </div>
           <h2 style={{ margin: 0, fontSize: 22 }}>{contact.name}</h2>
           <p style={{ margin: "4px 0", color: "var(--ui-text-muted)" }}>{(contact as Contact & { job_title?: string }).job_title ?? "—"}</p>
-          <a href="#" onClick={(e) => e.preventDefault()}>{companies[0]?.name ?? (contact as Contact & { company_name?: string }).company_name ?? "—"}</a>
+          {/* BF_PORTAL_BLOCK_v_CRM_DEAD_LINKS_v1 — real navigation to the company. */}
+          {companies[0]?.id ? (
+            <a
+              href={`/crm/companies/${companies[0].id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                const companyId = companies[0]?.id;
+                if (companyId) {
+                  onClose();
+                  navigate(`/crm/companies/${companyId}`);
+                }
+              }}
+              style={{ color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer" }}
+            >
+              {companies[0].name}
+            </a>
+          ) : (
+            <span style={{ color: "var(--ui-text-muted)" }}>
+              {(contact as Contact & { company_name?: string }).company_name ?? "—"}
+            </span>
+          )}
 
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
             <Button onClick={() => {
