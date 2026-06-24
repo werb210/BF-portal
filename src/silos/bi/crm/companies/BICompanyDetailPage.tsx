@@ -191,7 +191,7 @@ export default function BICompanyDetailPage() {
   const location = [co.city, co.province].filter(Boolean).join(", ");
 
   return (
-    <div style={layout} data-testid="bi-company-detail">
+    <div className="crm-detail-layout" data-testid="bi-company-detail">
       {/* LEFT RAIL — identity + actions + fields */}
       <aside style={rail} data-testid="bi-company-rail-left">
         <Link to="/silo/bi/crm?tab=companies" style={backLink}>
@@ -461,15 +461,6 @@ function FieldEdit(props: {
   );
 }
 
-const layout: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "320px 1fr 320px",
-  gap: 16,
-  padding: 16,
-  background: "var(--ui-surface-strong)",
-  color: "var(--ui-text)",
-  borderRadius: 8,
-};
 const rail: CSSProperties = {
   background: "var(--ui-surface-strong)",
   border: "1px solid #eaf0f6",

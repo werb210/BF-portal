@@ -2832,3 +2832,18 @@ input[type="checkbox"]:disabled {
 :root[data-silo="BF"]  { --accent: #1E3A8A; --accent-contrast: #ffffff; }
 :root[data-silo="BI"]  { --accent: #2FA86A; --accent-contrast: #ffffff; }
 :root[data-silo="SLF"] { --accent: #d97706; --accent-contrast: #ffffff; }
+
+/* BF_PORTAL_BLOCK_v_RESKIN_5_RESPONSIVE_v1 — CRM detail pages used a fixed inline
+   320px 1fr 320px grid (960px min) that overflows a 768pt iPad portrait. Fluid
+   three-pane that collapses to two columns at 1024 and one at the 768 floor. */
+.crm-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) minmax(260px, 320px);
+  gap: 16px;
+  padding: 16px;
+  background: var(--ui-surface-strong);
+  color: var(--ui-text);
+  border-radius: 8px;
+}
+@media (max-width: 1024px) { .crm-detail-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 768px)  { .crm-detail-layout { grid-template-columns: 1fr; } }
