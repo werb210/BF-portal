@@ -99,7 +99,7 @@ const listStyle: CSSProperties = {
 };
 const bubbleStyle = (role: "user" | "maya"): CSSProperties => ({
   alignSelf: role === "user" ? "flex-end" : "flex-start",
-  background: role === "user" ? "var(--ui-accent-blue)" : "var(--ui-surface-muted)",
+  background: role === "user" ? "var(--accent-neutral)" : "var(--ui-surface-muted)", /* RESKIN3::MAYA1 */
   color: role === "user" ? "#fff" : "#000",
   padding: "8px 12px", borderRadius: 12, maxWidth: "85%", whiteSpace: "pre-wrap", lineHeight: 1.4,
 });
@@ -108,6 +108,6 @@ const inputStyle: CSSProperties = {
   flex: 1, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, color: "var(--ui-text)", background: "var(--ui-surface-strong)",
 };
 const primaryBtn: CSSProperties = {
-  background: "var(--ui-accent-blue)", color: "#fff", border: "none",
+  background: "var(--accent-neutral)", color: "#fff", border: "none", /* RESKIN3::MAYA2 */
   padding: "8px 16px", borderRadius: 4, cursor: "pointer",
 };

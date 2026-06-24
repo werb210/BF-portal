@@ -117,7 +117,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
           {avatarUrl ? (
             <img src={avatarUrl} alt="Profile" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
           ) : (
-            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--ui-accent-blue)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--accent-neutral)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 12 }}>
               {avatarInitials}
             </div>
           )}
@@ -176,7 +176,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
             {avatarUrl ? (
               <img src={avatarUrl} alt="Profile" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
             ) : (
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--ui-accent-blue)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--accent-neutral)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 12 }}>
                 {avatarInitials}
               </div>
             )}

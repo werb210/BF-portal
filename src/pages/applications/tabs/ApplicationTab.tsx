@@ -197,7 +197,7 @@ export default function ApplicationTab({ application }: Props) {
       `<p>Hello ${v817_esc(v817_clientFirst || "there")},</p>` +
       `<p>I wanted to remind you to complete the following items still required to finalize your application package:</p>` +
       `<ul>${items}</ul>` +
-      `<p><a href="${V817_CLIENT_PORTAL_URL}" style="display:inline-block;padding:10px 18px;background:var(--ui-accent-blue);color:#ffffff;border-radius:6px;text-decoration:none;font-weight:600;">Complete your application</a></p>` +
+      `<p><a href="${V817_CLIENT_PORTAL_URL}" style="display:inline-block;padding:10px 18px;background:#1E3A8A;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:600;">Complete your application</a></p>` +
       `<p>If you have any questions or need assistance, please contact me directly.</p>`
     );
   }
