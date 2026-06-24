@@ -71,7 +71,7 @@ export default function CompanyDetailPage() {
   if (!company) return <div style={{ padding: 24 }}>Loading…</div>;
 
   return (
-    <div style={layout}>
+    <div className="crm-detail-layout">
       <aside style={rail}>
         <Link to="/crm/contacts" style={{ color: "var(--ui-accent-blue)", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}>← Back to contacts</Link>
         <h2 style={{ marginTop: 0 }}>{company.name}</h2>
@@ -169,7 +169,6 @@ function Field({ label, value }: { label: string; value: string | null }) {
   return <div style={{ marginBottom: 8 }}><div style={fieldLabel}>{label}</div><div style={{ color: "var(--ui-text)" }}>{value || "—"}</div></div>;
 }
 
-const layout: CSSProperties = { display: "grid", gridTemplateColumns: "320px 1fr 320px", gap: 16, padding: 16, background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
 const rail: CSSProperties = { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 };
 const subtle: CSSProperties = { color: "var(--ui-text-muted)", fontSize: 13, marginBottom: 12 };
 const fieldsBlock: CSSProperties = { marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--ui-border-soft)" };

@@ -415,7 +415,7 @@ export default function BIContactDetailPage() {
   const role = contact.outreach_status ?? "unknown";
 
   return (
-    <div style={layout} data-testid="bi-contact-detail">
+    <div className="crm-detail-layout" data-testid="bi-contact-detail">
       <aside style={rail} data-testid="bi-contact-rail-left">
         <Link to={cameFromOutreach ? "/silo/bi/outreach" : "/silo/bi/crm"} style={backLink}>
           {cameFromOutreach ? "← Back to outreach" : "← Back to contacts"}
@@ -660,15 +660,6 @@ function formatStatus(value: string) {
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-const layout: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "320px 1fr 320px",
-  gap: 16,
-  padding: 16,
-  background: "var(--ui-surface-strong)",
-  color: "var(--ui-text)",
-  borderRadius: 8,
-};
 const rail: CSSProperties = {
   background: "var(--ui-surface-strong)",
   border: "1px solid #eaf0f6",
