@@ -722,7 +722,7 @@ function CreateProductModal({
         <span style={{ opacity: locked ? 0.6 : 1, flex: 1 }}>
           {label}
           {hasForm && (
-            <span style={{ marginLeft: 6, padding: "1px 6px", fontSize: 10, fontWeight: 600, borderRadius: 3, background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)" }}>
+            <span style={{ marginLeft: 6, padding: "1px 6px", fontSize: 10, fontWeight: 600, borderRadius: 3, background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-fg)" }}>
               📝 form
             </span>
           )}
@@ -967,7 +967,7 @@ function CreateProductModal({
                 no photo ID. Hide the entire Always-Required block for MEDIA. */}
             {form.category !== "MEDIA" && (
               <div style={{ ...sectionStyle, marginBottom: 10 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ui-accent-blue)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ui-accent-fg)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
                 <DocCheckbox id={alwaysRequiredDoc.key} label={alwaysRequiredDoc.label} locked />
                 {form.category === equipmentFinanceAlwaysRequiredDoc.category && (
                   <DocCheckbox id={equipmentFinanceAlwaysRequiredDoc.key} label={equipmentFinanceAlwaysRequiredDoc.label} locked />
@@ -1231,7 +1231,7 @@ function ProductsPanel({
                             <button
                               type="button"
                               onClick={() => onEditProduct(p)}
-                              style={{ padding: "5px 12px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer" }}
+                              style={{ padding: "5px 12px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", fontWeight: 600, cursor: "pointer" }}
                             >Edit</button>
                           </td>
                         </tr>
@@ -1280,7 +1280,7 @@ function ProductsPanel({
                   <button
                     type="button"
                     onClick={() => onEditProduct(p)}
-                    style={{ padding: "5px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer" }}
+                    style={{ padding: "5px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", fontWeight: 600, cursor: "pointer" }}
                   >
                     Edit
                   </button>
@@ -1522,7 +1522,7 @@ export default function LendersPage() {
                           event.stopPropagation();
                           setEditingLender(l);
                         }}
-                        style={{ padding: "5px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer" }}
+                        style={{ padding: "5px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", fontWeight: 600, cursor: "pointer" }}
                       >
                         Edit
                       </button>

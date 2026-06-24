@@ -361,7 +361,7 @@ export default function LendersTab({ applicationId }: Props) {
                       <div>
                         <div style={{ fontWeight: 600 }}>{r.name}</div>
                         {r.primary ? (
-                          <span style={{ background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>PRIMARY</span>
+                          <span style={{ background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-fg)", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>PRIMARY</span>
                         ) : null}
                       </div>
                     </div>
@@ -389,7 +389,7 @@ export default function LendersTab({ applicationId }: Props) {
                             </a>
                           ))
                         )}
-                        <label style={{ display: "block", padding: "6px", borderTop: "1px solid var(--ui-border-soft)", marginTop: 6, color: "var(--ui-accent-blue)", cursor: "pointer", fontSize: 12 }}>
+                        <label style={{ display: "block", padding: "6px", borderTop: "1px solid var(--ui-border-soft)", marginTop: 6, color: "var(--ui-accent-fg)", cursor: "pointer", fontSize: 12 }}>
                           ⬆ Upload Term Sheet
                           <input
                             type="file"

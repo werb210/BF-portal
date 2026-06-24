@@ -472,14 +472,14 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
             <span style={{ fontWeight: 700, fontSize: 17, color: "var(--ui-text)", flex: 1 }}>Messages</span>
             <button
               onClick={() => { setMulti((m) => !m); setPicked(new Set()); setBcResult(null); }}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--ui-accent-blue)", padding: "0 8px", fontWeight: 600 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--ui-accent-fg)", padding: "0 8px", fontWeight: 600 }}
             >
               {multi ? "Cancel" : "Select"}
             </button>
             <button
               onClick={() => setShowNewThread(true)}
               title="New Message"
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "var(--ui-accent-blue)", padding: 0 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "var(--ui-accent-fg)", padding: 0 }}
             >
               ✏️
             </button>
@@ -505,7 +505,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
         {multi && (
           <div style={{ padding: "0 12px 8px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <label style={{ fontSize: 13, color: "var(--ui-accent-blue)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <label style={{ fontSize: 13, color: "var(--ui-accent-fg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 <input
                   type="checkbox"
                   checked={filtered.length > 0 && filtered.every((c) => picked.has(String(c.id)))}
@@ -1170,7 +1170,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 setPicked(new Set());
                 setBcResult(null);
               }}
-              style={{ background: "none", border: "none", color: "var(--ui-accent-blue)", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0 }}
+              style={{ background: "none", border: "none", color: "var(--ui-accent-fg)", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0 }}
             >
               {multi ? "Cancel" : "Select"}
             </button>
@@ -1186,7 +1186,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                 await Promise.all(ids.map((id) => api.post("/api/communications/messages/mark-read", { contactId: id }).catch(() => undefined)));
                 setRows((prev) => prev.map((r) => ({ ...r, unread: 0 })));
               }}
-              style={{ background: "none", border: "none", color: "var(--ui-accent-blue)", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0 }}
+              style={{ background: "none", border: "none", color: "var(--ui-accent-fg)", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0 }}
             >
               Mark all read
             </button>
@@ -1194,7 +1194,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
         </div>
         {multi && (
           <div style={{ marginBottom: 10 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ui-accent-blue)", cursor: "pointer", marginBottom: 6 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ui-accent-fg)", cursor: "pointer", marginBottom: 6 }}>
               <input
                 type="checkbox"
                 checked={rows.length > 0 && rows.every((r) => picked.has(r.contactId))}
@@ -1836,7 +1836,7 @@ function InboxTab() {
                 <div style={{ fontSize: 14, marginTop: 2 }}>
                   {m.subject || "(no subject)"}
                   {threadCount > 1 && (
-                    <span style={{ marginLeft: 6, fontSize: 11, color: "var(--ui-accent-blue)", background: "rgba(47, 168, 106, 0.12)", borderRadius: 8, padding: "0 6px" }}>
+                    <span style={{ marginLeft: 6, fontSize: 11, color: "var(--ui-accent-fg)", background: "rgba(47, 168, 106, 0.12)", borderRadius: 8, padding: "0 6px" }}>
                       {threadCount}
                     </span>
                   )}
@@ -1868,7 +1868,7 @@ function InboxTab() {
                 title={m.isRead === false ? "Mark as read" : "Mark as unread"}
                 style={{
                   position: "absolute", right: 40, top: "50%", transform: "translateY(-50%)",
-                  border: "none", background: "transparent", color: "var(--ui-accent-blue)",
+                  border: "none", background: "transparent", color: "var(--ui-accent-fg)",
                   fontSize: 14, cursor: "pointer", padding: "4px 6px", borderRadius: 4,
                 }}
               >
@@ -1926,7 +1926,7 @@ function InboxTab() {
 ${orig}`;
                 const btnStyle: React.CSSProperties = {
                   padding: "7px 16px", border: "1px solid var(--ui-accent-blue)", borderRadius: 6,
-                  background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, fontSize: 13, cursor: "pointer",
+                  background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", fontWeight: 600, fontSize: 13, cursor: "pointer",
                 };
                 const openCompose = (to: string, subject: string) => {
                   setReplyCtx({ to, subject, body: quoted });
@@ -2768,7 +2768,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
       <div style={{ width: 280, borderRight: "1px solid var(--ui-border)", overflowY: "auto", background: "var(--ui-surface-strong)", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--ui-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>Team</span>
-          <button onClick={() => setShowNew(true)} style={{ fontSize: 13, color: "var(--ui-accent-blue)", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+ New</button>
+          <button onClick={() => setShowNew(true)} style={{ fontSize: 13, color: "var(--ui-accent-fg)", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+ New</button>
         </div>
         {channels.length === 0 && <div style={{ padding: 20, color: "var(--ui-text-muted)", fontSize: 13 }}>No conversations yet. Tap &quot;+ New&quot; to start one.</div>}
         {channels.map((c) => (
@@ -2978,7 +2978,7 @@ function NewTeamChatModal({ users, onClose, onCreated }: { users: TeamUser[]; on
           {users.map((u) => (
             <div key={u.id} onClick={() => toggle(u.id)} style={{ padding: "8px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--ui-surface-muted)", background: picked.has(u.id) ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-strong)" }}>
               <span style={{ fontSize: 14, color: "var(--ui-text)" }}>{u.name}</span>
-              {picked.has(u.id) && <span style={{ color: "var(--ui-accent-blue)" }}>✓</span>}
+              {picked.has(u.id) && <span style={{ color: "var(--ui-accent-fg)" }}>✓</span>}
             </div>
           ))}
         </div>

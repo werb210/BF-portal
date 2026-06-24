@@ -92,7 +92,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
       </div>
       <div className="drawer__content" style={{ display: "flex", flexDirection: "row", height: "100%", overflow: "hidden", gap: 0 }}>
         <section style={{ width: 280, minWidth: 280, borderRight: "1px solid var(--ui-border)", overflowY: "auto", padding: 16 }}>
-          <div style={{ width: 72, height: 72, borderRadius: 999, background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)", display: "grid", placeItems: "center", fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
+          <div style={{ width: 72, height: 72, borderRadius: 999, background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-fg)", display: "grid", placeItems: "center", fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
             {initials}
           </div>
           <h2 style={{ margin: 0, fontSize: 22 }}>{contact.name}</h2>
@@ -109,7 +109,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
                   navigate(`/crm/companies/${companyId}`);
                 }
               }}
-              style={{ color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer" }}
+              style={{ color: "var(--ui-accent-fg)", fontWeight: 600, cursor: "pointer" }}
             >
               {companies[0].name}
             </a>

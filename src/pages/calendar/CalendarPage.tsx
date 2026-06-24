@@ -274,7 +274,7 @@ function CalendarContent() {
         <style>{`
           .rbc-date-cell { display: block !important; padding: 4px 8px !important; text-align: right; font-size: 13px; color: var(--ui-text); }
           .rbc-date-cell > a, .rbc-date-cell > button { color: inherit !important; text-decoration: none; pointer-events: auto; }
-          .rbc-date-cell.rbc-now > a, .rbc-date-cell.rbc-now > button { font-weight: 700; color: var(--ui-accent-blue); }
+          .rbc-date-cell.rbc-now > a, .rbc-date-cell.rbc-now > button { font-weight: 700; color: var(--ui-accent-fg); }
           .rbc-off-range-bg { background: var(--ui-surface); }
           .rbc-off-range .rbc-button-link { color: var(--ui-text-muted) !important; }
           .rbc-event { cursor: pointer; }
