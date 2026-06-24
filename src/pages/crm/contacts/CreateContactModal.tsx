@@ -152,7 +152,7 @@ export default function CreateContactModal({ open = true, onClose, onSaved }: Pr
               <option value="">No company</option>
               {filteredCompanies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
             </select>
-            <button type="button" onClick={() => setShowCreateCompany(true)} style={{ marginTop: 8, border: 0, background: "transparent", color: "#0d9b6c", textAlign: "left", padding: 0 }}>+ Create company</button>
+            <button type="button" onClick={() => setShowCreateCompany(true)} style={{ marginTop: 8, border: 0, background: "transparent", color: "var(--accent)", textAlign: "left", padding: 0 }}>+ Create company</button>
           </FormField>
           <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}><input type="checkbox" checked={form.is_primary_applicant} onChange={(e) => setForm((p) => ({ ...p, is_primary_applicant: e.target.checked }))} />Primary applicant for this company?</label>
 

@@ -120,7 +120,7 @@ const card: CSSProperties = {
   boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
 };
 const btnPrimary: CSSProperties = {
-  background: "#0d9b6c",
+  background: "var(--accent)",
   color: "#fff",
   padding: "9px 16px",
   borderRadius: 8,

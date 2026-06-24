@@ -471,7 +471,7 @@ export default function BIContactDetailPage() {
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={4} style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13 }} aria-label="Notes" />
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <button type="button" onClick={() => void saveEdit()} disabled={saving} style={{ ...actionBtn, background: "#0d9b6c", color: "#fff", borderColor: "#0d9b6c" }}>{saving ? "Saving…" : "Save"}</button>
+              <button type="button" onClick={() => void saveEdit()} disabled={saving} style={{ ...actionBtn, background: "var(--accent)", color: "#fff", borderColor: "var(--accent)" }}>{saving ? "Saving…" : "Save"}</button>
               <button type="button" onClick={() => { setEditing(false); setActionError(null); setForm({ full_name: contact.full_name ?? "", email: contact.email ?? "", phone_e164: contact.phone_e164 ?? "", title: contact.title ?? "", notes: contact.notes ?? "" }); }} disabled={saving} style={actionBtn}>Cancel</button>
             </div>
           </div>

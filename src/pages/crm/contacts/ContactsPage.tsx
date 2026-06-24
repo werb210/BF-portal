@@ -226,7 +226,7 @@ export default function ContactsPage() {
         <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-contacts.csv", rows as any)}>Export</button>
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={toolbarBtn} />
         <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>
-        <button onClick={() => setCreateOpen(true)} style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
+        <button onClick={() => setCreateOpen(true)} style={{ background: "var(--accent)", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
       </div>
       {isAdmin && selected.size > 0 && (
         <div style={{ display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" }}>
@@ -239,7 +239,7 @@ export default function ContactsPage() {
             <option value="">Assign owner…</option>
             {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
           </select>
-          <button disabled={busyMass !== null || !assignOwnerId} onClick={massAssign} style={{ padding: "6px 12px", borderRadius: 6, background: "#0d9b6c", color: "#fff", border: 0, cursor: assignOwnerId ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "assign" ? "Assigning…" : "Assign"}</button>
+          <button disabled={busyMass !== null || !assignOwnerId} onClick={massAssign} style={{ padding: "6px 12px", borderRadius: 6, background: "var(--accent)", color: "#fff", border: 0, cursor: assignOwnerId ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "assign" ? "Assigning…" : "Assign"}</button>
           <button onClick={() => setSelected(new Set())} style={{ padding: "6px 12px", borderRadius: 6, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", cursor: "pointer", fontSize: 13 }}>Clear</button>
         </div>
       )}

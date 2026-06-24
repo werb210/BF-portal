@@ -208,7 +208,7 @@ export default function BIContactsList() {
         <span style={{ flex: 1 }} />
         <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1 }}>{importing ? "Importing…" : "Import"}</button>
         <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-crm-import-input" />
-        <button type="button" onClick={() => setCreateOpen(true)} style={{ background: "#0d9b6c", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", whiteSpace: "nowrap" }}>+ Create Contact</button>
+        <button type="button" onClick={() => setCreateOpen(true)} style={{ background: "var(--accent)", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", whiteSpace: "nowrap" }}>+ Create Contact</button>
       </div>
 
       {importMsg && <div style={{ fontSize: 12, color: "#34d399", padding: "0 0 8px" }} role="status">{importMsg}</div>}
@@ -256,7 +256,7 @@ export default function BIContactsList() {
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14 }}>
               <button type="button" disabled={creating} onClick={() => setCreateOpen(false)} style={clearBtn}>Cancel</button>
-              <button type="button" disabled={creating} onClick={() => void createContact()} style={{ background: "#0d9b6c", color: "#fff", border: 0, borderRadius: 6, padding: "6px 14px", fontSize: 13, cursor: "pointer" }}>{creating ? "Saving…" : "Create"}</button>
+              <button type="button" disabled={creating} onClick={() => void createContact()} style={{ background: "var(--accent)", color: "#fff", border: 0, borderRadius: 6, padding: "6px 14px", fontSize: 13, cursor: "pointer" }}>{creating ? "Saving…" : "Create"}</button>
             </div>
           </div>
         </div>
