@@ -83,8 +83,8 @@ function normStoredCountry(raw: string | null | undefined): "CDN" | "US" | null 
 }
 // Prefer the real stored country; fall back to NANP area-code inference only when
 // no usable stored value exists.
-function resolveCountry(c: { country?: string | null; phone_e164: string | null }): "CDN" | "US" | null {
-  return normStoredCountry(c.country) ?? countryFromPhone(c.phone_e164);
+function resolveCountry(c: { country?: string | null; phone_e164: string | null; email?: string | null }): "CDN" | "US" | null {
+  return normStoredCountry(c.country) ?? countryFromPhone(c.phone_e164) ?? countryFromEmail(c.email);
 }
 function countryFromPhone(phone: string | null): "CDN" | "US" | null {
   if (!phone) return null;
@@ -92,6 +92,16 @@ function countryFromPhone(phone: string | null): "CDN" | "US" | null {
   if (nanp.length === 11 && nanp.startsWith("1")) nanp = nanp.slice(1);
   if (nanp.length !== 10) return null;
   return CDN_AREA_CODES.has(nanp.slice(0, 3)) ? "CDN" : "US";
+}
+
+// BF_PORTAL_BI_OUTREACH_COUNTRY_EMAIL_v1 — last-resort hint when no stored country
+// and no usable phone: .ca -> CDN, .us/.com/.net/.org -> US. Matches the bi-server
+// ORDER BY so the badge and the global sort agree.
+function countryFromEmail(email: string | null | undefined): "CDN" | "US" | null {
+  const tld = (String(email ?? "").trim().toLowerCase().split(".").pop() ?? "");
+  if (tld === "ca") return "CDN";
+  if (["us", "com", "net", "org"].includes(tld)) return "US";
+  return null;
 }
 
 const EVENT_TYPES = ["call", "demo", "sms", "email", "note"] as const;
