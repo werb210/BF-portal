@@ -65,10 +65,11 @@ export default function SLFPipeline() {
                   <div
                     key={deal.id}
                     style={{
-                      background: "#0f172a",
+                      background: "var(--ui-surface-strong)",
                       padding: 12,
                       marginBottom: 10,
-                      borderRadius: 6
+                      borderRadius: 6,
+                      border: "1px solid var(--ui-border)"
                     }}
                   >
                     <button onClick={() => openDeal(deal.id)} style={{ display: "block", marginBottom: 6 }}>

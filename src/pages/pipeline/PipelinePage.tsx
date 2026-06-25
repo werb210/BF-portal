@@ -292,8 +292,8 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
   };
 
   return (
-    <div style={{ background: "#1e293b", borderRadius: 10, padding: 12,
-      border: stage_age?.warn ? "1px solid #f59e0b80" : "1px solid rgba(255,255,255,0.06)",
+    <div style={{ background: "var(--ui-surface-strong)", borderRadius: 10, padding: 12,
+      border: stage_age?.warn ? "1px solid #f59e0b80" : "1px solid var(--ui-border)",
       opacity: busy ? 0.6 : 1, transition: "opacity 0.15s" }}>
 
       {/* Header: name + call/delete buttons */}
@@ -323,7 +323,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: "var(--ui-text-muted)", marginBottom: 6 }}>
           <span style={{ fontWeight: 600, color: "var(--ui-text)" }}>{amount ?? "—"}</span>
           {hasOwner && (
-            <span title={ownerTitle || "Owner"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 999, background: "#334155", color: "var(--ui-text)", fontSize: 9, fontWeight: 700 }}>{ownerInitials}</span>
+            <span title={ownerTitle || "Owner"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 999, background: "#334155", color: "#fff", fontSize: 9, fontWeight: 700 }}>{ownerInitials}</span>
           )}
         </div>
 
@@ -342,7 +342,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
             )}
             {stage_age && (
               <span style={{ display: "inline-block", padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 600,
-                background: stage_age.warn ? "#fef3c7" : "#1e293b", color: stage_age.warn ? "#92400e" : "var(--ui-text-muted)", border: stage_age.warn ? "0" : "1px solid var(--ui-text-muted)" }}>
+                background: stage_age.warn ? "#fef3c7" : "transparent", color: stage_age.warn ? "#92400e" : "var(--ui-text-muted)", border: stage_age.warn ? "0" : "1px solid var(--ui-text-muted)" }}>
                 {stage_age.label}
               </span>
             )}
