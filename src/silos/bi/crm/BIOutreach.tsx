@@ -72,6 +72,20 @@ const CDN_AREA_CODES = new Set([
   "579","581","584","587","604","613","639","647","672","683","705","709","742","753","778",
   "780","782","807","819","825","867","873","879","902","905",
 ]);
+// BF_PORTAL_BI_OUTREACH_COUNTRY_FIELD_v1 — normalize the stored bi_contacts.country
+// value (Apollo/import populate it in mixed forms) to the badge's CDN/US codes.
+function normStoredCountry(raw: string | null | undefined): "CDN" | "US" | null {
+  const v = String(raw ?? "").trim().toUpperCase();
+  if (!v) return null;
+  if (["CDN", "CA", "CAN", "CANADA"].includes(v)) return "CDN";
+  if (["US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA"].includes(v)) return "US";
+  return null;
+}
+// Prefer the real stored country; fall back to NANP area-code inference only when
+// no usable stored value exists.
+function resolveCountry(c: { country?: string | null; phone_e164: string | null }): "CDN" | "US" | null {
+  return normStoredCountry(c.country) ?? countryFromPhone(c.phone_e164);
+}
 function countryFromPhone(phone: string | null): "CDN" | "US" | null {
   if (!phone) return null;
   let nanp = phone.replace(/[^0-9]/g, "");
@@ -100,6 +114,7 @@ type Contact = {
   title: string | null;
   notes: string | null;
   tags: string[] | null;
+  country?: string | null; // BF_PORTAL_BI_OUTREACH_COUNTRY_FIELD_v1 — stored bi_contacts.country
   company_name?: string | null; // BF_PORTAL_BLOCK_v749_OUTREACH_COMPANY
   outreach_status: Status | null;
   outreach_owner_id: string | null;
@@ -381,10 +396,10 @@ export default function BIOutreach() {
       (map[st] ?? map.new ?? []).push(c);
     }
     // BF_PORTAL_BI_OUTREACH_COUNTRY_SORT_v1 — order each column CDN first, then
-    // unknown (no country listed), then US. Array.sort is stable, so prior
-    // order is preserved within each country group.
+    // unknown (no country), then US — matching the on-card country badge.
+    // Array.sort is stable, so prior order is preserved within each group.
     const countryRank = (c: Contact): number => {
-      const k = countryFromPhone(c.phone_e164);
+      const k = resolveCountry(c);
       return k === "CDN" ? 0 : k === null ? 1 : 2;
     };
     for (const s of Object.keys(map)) {
@@ -676,7 +691,7 @@ function BoardColumn(props: {
               )}
               {/* BF_PORTAL_BI_OUTREACH_COUNTRY_BADGE_v1 — contact country, bottom-right of card. */}
               {(() => {
-                const country = countryFromPhone(c.phone_e164);
+                const country = resolveCountry(c);
                 return country ? (
                   <span
                     className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
