@@ -108,14 +108,16 @@ export default function LendersTab({ applicationId }: Props) {
   const { data: v_signing } = useQuery({
     queryKey: ["signing-readiness", id],
     queryFn: async () => {
-      const r = await api.get<{ data?: { snapshot?: { collateralRequired?: boolean } } } & { snapshot?: { collateralRequired?: boolean } }>(
+      const r = await api.get<{ data?: { snapshot?: { collateralRequired?: boolean }; collateralApplies?: boolean } } & { snapshot?: { collateralRequired?: boolean }; collateralApplies?: boolean }>(
         `/api/applications/${encodeURIComponent(id)}/signing-readiness`,
       );
-      return ((r as any)?.data ?? r) as { snapshot?: { collateralRequired?: boolean } };
+      return ((r as any)?.data ?? r) as { snapshot?: { collateralRequired?: boolean }; collateralApplies?: boolean };
     },
     enabled: Boolean(id),
   });
   const v_collateralRequired = Boolean(v_signing?.snapshot?.collateralRequired);
+  // BF_PORTAL_BLOCK_v_COLLATERAL_THRESHOLD_v1 — Accord LOC collateral applies only above $250k.
+  const v_collateralApplies = Boolean(v_signing?.collateralApplies);
   // BF_PORTAL_BLOCK_v_SENT_LENDERS_v1 — lenders that already received the package (sent_at), for the row marker.
   const { data: v_sentData } = useQuery({
     queryKey: ["sent-lenders", id],
@@ -407,7 +409,7 @@ export default function LendersTab({ applicationId }: Props) {
 
       {/* BF_PORTAL_BLOCK_v741_COLLATERAL_GATE — show only once Accord is checked, under the lenders. */}
       {/* BF_PORTAL_COLLATERAL_LOC_ONLY_v1 — Accord Collateral & Facility is an LOC requirement only. */}
-      {(v_collateralRequired || matches.some((m) => selected.includes(m.id) && /accord/i.test(m.lenderName ?? "") && String(m.productCategory ?? "").toUpperCase() === "LOC")) && (
+      {(v_collateralRequired || (v_collateralApplies && matches.some((m) => selected.includes(m.id) && /accord/i.test(m.lenderName ?? "") && String(m.productCategory ?? "").toUpperCase() === "LOC"))) && (
         <CollateralFacilitySection applicationId={id} />
       )}
 
