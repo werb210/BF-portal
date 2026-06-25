@@ -85,15 +85,8 @@ export default function CollateralFacilitySection({ applicationId }: { applicati
       return { ...d, classes: { ...d.classes, [key]: nextRow } };
     });
 
-  const setFacility = (idx: number, patch: Partial<Facility>) =>
-    setData((d) => {
-      const facilities = d.facilities.map((f, i): Facility => (i === idx ? { ...f, ...patch } : f));
-      return { ...d, facilities };
-    });
-
-  const addFacility = () =>
-    setData((d) => ({ ...d, facilities: [...d.facilities, { lender: "", type: "", limit: "", balance: "" }] }));
-
+  // BF_PORTAL_BLOCK_v_COLLATERAL_THRESHOLD_v1 — Existing Facilities removed; the client advisors
+  // form already captures bank / authorized limit / balance outstanding.
   if (!loaded) return <div style={s.wrap}>Loading collateral…</div>;
 
   return (
@@ -144,34 +137,6 @@ export default function CollateralFacilitySection({ applicationId }: { applicati
         </tbody>
       </table>
 
-      <h4 style={{ ...s.title, fontSize: 14, margin: "16px 0 4px" }}>Existing Facilities</h4>
-      <table style={s.table}>
-        <thead>
-          <tr>
-            <th style={s.th}>Lender</th>
-            <th style={s.th}>Type</th>
-            <th style={s.th}>Authorized Limit</th>
-            <th style={s.th}>Balance Outstanding</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.facilities.map((fac, idx) => (
-            <tr key={idx}>
-              {(["lender", "type", "limit", "balance"] as const).map((f) => (
-                <td style={s.td} key={f}>
-                  <input
-                    style={s.input}
-                    inputMode={f === "limit" || f === "balance" ? "decimal" : "text"}
-                    value={fac[f]}
-                    onChange={(e) => setFacility(idx, { [f]: e.target.value } as Partial<Facility>)}
-                  />
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <button type="button" style={s.addBtn} onClick={addFacility}>+ Add facility</button>
     </div>
   );
 }
