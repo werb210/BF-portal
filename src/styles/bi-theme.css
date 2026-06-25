@@ -31,17 +31,25 @@
 .bi-root .bg-emerald-500.text-white,
 .bi-root .bg-emerald-600.text-white,
 .bi-root .bg-brand-accent.text-white,
+.bi-root .bg-red-600.text-white,
+.bi-root .bg-red-500.text-white,
 .bi-root .bg-emerald-500 .text-white,
 .bi-root .bg-emerald-600 .text-white,
-.bi-root .bg-brand-accent .text-white { color: #fff; }
+.bi-root .bg-brand-accent .text-white,
+.bi-root .bg-red-600 .text-white,
+.bi-root .bg-red-500 .text-white { color: #fff; }
 
 .bi-root .bg-\[\#112A4D\] { background-color: var(--ui-surface); }
 
-/* BF_PORTAL_BLOCK_v_BI_CHIP_LIGHT_v1
-   Status / lead / country badges were authored dark-first: a pale tint bg
-   (bg-emerald-500/20 etc.) with pale text (text-emerald-200/300). The tint bg
-   reads fine in both modes, but the pale text washes out on the pale-tint chip
-   in LIGHT mode. Darken just the text in light mode; dark mode is unchanged. */
+/* BF_PORTAL_BLOCK_v_BI_LEGIBLE_LIGHT_v2
+   Supersedes BI_CHIP_LIGHT_v1. v1 only matched :root[data-theme="light"], so in
+   SYSTEM theme mode (no data-theme attribute + OS light) the pale chip/button text
+   was never darkened and washed out (active/paused pills, Start/Pause, + New
+   sequence, Approve/Deactivate, pipeline STAFF/Carrier/PGI badges). This fires for
+   BOTH explicit light and system light, across every pale tint colour in the silo.
+   Dark mode is never matched, so it is unchanged. */
+
+/* explicit light — <html data-theme="light"> */
 :root[data-theme="light"] .bi-root .text-emerald-200,
 :root[data-theme="light"] .bi-root .text-emerald-300,
 :root[data-theme="light"] .bi-root .text-emerald-400 { color: #047857; }
@@ -60,3 +68,43 @@
 :root[data-theme="light"] .bi-root .text-orange-300 { color: #c2410c; }
 :root[data-theme="light"] .bi-root .text-indigo-200,
 :root[data-theme="light"] .bi-root .text-indigo-300 { color: #4338ca; }
+:root[data-theme="light"] .bi-root .text-purple-200,
+:root[data-theme="light"] .bi-root .text-purple-300 { color: #6d28d9; }
+:root[data-theme="light"] .bi-root .text-cyan-200,
+:root[data-theme="light"] .bi-root .text-cyan-300 { color: #0e7490; }
+:root[data-theme="light"] .bi-root .text-slate-200,
+:root[data-theme="light"] .bi-root .text-slate-300,
+:root[data-theme="light"] .bi-root .text-slate-400 { color: #334155; }
+:root[data-theme="light"] .bi-root .text-gray-300,
+:root[data-theme="light"] .bi-root .text-gray-400 { color: #4b5563; }
+
+/* system light — no data-theme attribute + OS prefers light */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .bi-root .text-emerald-200,
+  :root:not([data-theme]) .bi-root .text-emerald-300,
+  :root:not([data-theme]) .bi-root .text-emerald-400 { color: #047857; }
+  :root:not([data-theme]) .bi-root .text-amber-200,
+  :root:not([data-theme]) .bi-root .text-amber-300 { color: #b45309; }
+  :root:not([data-theme]) .bi-root .text-red-200,
+  :root:not([data-theme]) .bi-root .text-red-300,
+  :root:not([data-theme]) .bi-root .text-red-400 { color: #b91c1c; }
+  :root:not([data-theme]) .bi-root .text-rose-200,
+  :root:not([data-theme]) .bi-root .text-rose-300 { color: #be123c; }
+  :root:not([data-theme]) .bi-root .text-blue-200,
+  :root:not([data-theme]) .bi-root .text-blue-300 { color: #1d4ed8; }
+  :root:not([data-theme]) .bi-root .text-sky-200,
+  :root:not([data-theme]) .bi-root .text-sky-300 { color: #0369a1; }
+  :root:not([data-theme]) .bi-root .text-orange-200,
+  :root:not([data-theme]) .bi-root .text-orange-300 { color: #c2410c; }
+  :root:not([data-theme]) .bi-root .text-indigo-200,
+  :root:not([data-theme]) .bi-root .text-indigo-300 { color: #4338ca; }
+  :root:not([data-theme]) .bi-root .text-purple-200,
+  :root:not([data-theme]) .bi-root .text-purple-300 { color: #6d28d9; }
+  :root:not([data-theme]) .bi-root .text-cyan-200,
+  :root:not([data-theme]) .bi-root .text-cyan-300 { color: #0e7490; }
+  :root:not([data-theme]) .bi-root .text-slate-200,
+  :root:not([data-theme]) .bi-root .text-slate-300,
+  :root:not([data-theme]) .bi-root .text-slate-400 { color: #334155; }
+  :root:not([data-theme]) .bi-root .text-gray-300,
+  :root:not([data-theme]) .bi-root .text-gray-400 { color: #4b5563; }
+}
