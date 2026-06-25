@@ -212,15 +212,15 @@ export default function BICompaniesList() {
     <div style={page} data-testid="bi-companies-list">
       <div style={toolbar}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies" style={searchInput} aria-label="Search companies" />
-        <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "contacts", label: "Contacts" }, { key: "location", label: "Location" }, { key: "owner", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} />
+        <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "contacts", label: "Contacts" }, { key: "location", label: "Location" }, { key: "owner", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} />
         <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }} aria-label="Filter by owner" data-testid="bi-companies-owner-filter">
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
-        <button type="button" onClick={exportCsv} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap", marginRight: 8 }} data-testid="bi-companies-export">Export</button>
+        <button type="button" onClick={exportCsv} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap", marginRight: 8 }} data-testid="bi-companies-export">Export</button>
         <div style={{ fontSize: 13, color: "var(--ui-text-muted)", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
-        <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1, marginRight: 8 }} data-testid="bi-companies-import">{importing ? "Importing…" : "Import"}</button>
+        <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1, marginRight: 8 }} data-testid="bi-companies-import">{importing ? "Importing…" : "Import"}</button>
         <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-companies-import-input" />
         <button type="button" onClick={() => setCreateOpen((v) => !v)} style={{ background: createOpen ? "#fff" : "var(--accent)", color: createOpen ? "var(--accent)" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: createOpen ? "1px solid var(--accent)" : 0, cursor: "pointer" }} data-testid="bi-companies-create-toggle">{createOpen ? "Cancel" : "+ Create Company"}</button>
       </div>
@@ -304,25 +304,25 @@ function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => 
 }
 
 function chipBtn(active: boolean): CSSProperties {
-  return { fontSize: 12, padding: "4px 10px", borderRadius: 999, border: active ? "1px solid var(--accent)" : "1px solid var(--ui-border)", background: active ? "var(--accent)" : "#fff", color: active ? "#fff" : "#33475b", cursor: "pointer", whiteSpace: "nowrap" };
+  return { fontSize: 12, padding: "4px 10px", borderRadius: 999, border: active ? "1px solid var(--accent)" : "1px solid var(--ui-border)", background: active ? "var(--accent)" : "#fff", color: active ? "#fff" : "var(--ui-text-muted)", cursor: "pointer", whiteSpace: "nowrap" };
 }
 
 const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24, borderRadius: 8 };
 const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16, alignItems: "center" };
 const searchInput: CSSProperties = { flex: 1, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
-const createBar: CSSProperties = { background: "#f5f8fa", border: "1px solid var(--ui-border)", borderRadius: 6, padding: 12, marginBottom: 16, display: "flex", gap: 8, alignItems: "flex-end" };
+const createBar: CSSProperties = { background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 6, padding: 12, marginBottom: 16, display: "flex", gap: 8, alignItems: "flex-end" };
 const massBar: CSSProperties = { display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" };
 const delBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
 const tagBox: CSSProperties = { padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13 };
 const tagBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "var(--ui-accent-blue)", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
 const clearBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", cursor: "pointer", fontSize: 13 };
 const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "var(--ui-surface-strong)" };
-const theadRow: CSSProperties = { borderBottom: "1px solid var(--ui-border)", background: "#f5f8fa" };
-const thStyle: CSSProperties = { padding: 12, textAlign: "left", cursor: "pointer", color: "#33475b", textTransform: "uppercase", fontSize: 12, userSelect: "none" };
-const biTagChip: CSSProperties = { fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "#1e293b", color: "var(--ui-text-soft)", whiteSpace: "nowrap" }; // BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI
+const theadRow: CSSProperties = { borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)" };
+const thStyle: CSSProperties = { padding: 12, textAlign: "left", cursor: "pointer", color: "var(--ui-text-muted)", textTransform: "uppercase", fontSize: 12, userSelect: "none" };
+const biTagChip: CSSProperties = { fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "var(--ui-surface-muted)", color: "var(--ui-text-soft)", whiteSpace: "nowrap" }; // BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI
 const tdStyle: CSSProperties = { padding: 12, color: "var(--ui-text)" };
-const trStyle: CSSProperties = { borderBottom: "1px solid #eaf0f6" };
-const linkStyle: CSSProperties = { color: "#0091ae", textDecoration: "none" };
-const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "#7c98b6" };
-const subtleCell: CSSProperties = { color: "#7c98b6", fontSize: 12, marginTop: 2 };
-const fieldLabel: CSSProperties = { fontSize: 11, color: "#7c98b6", textTransform: "uppercase" };
+const trStyle: CSSProperties = { borderBottom: "1px solid var(--ui-border-soft)" };
+const linkStyle: CSSProperties = { color: "var(--ui-accent-blue)", textDecoration: "none" };
+const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "var(--ui-text-muted)" };
+const subtleCell: CSSProperties = { color: "var(--ui-text-muted)", fontSize: 12, marginTop: 2 };
+const fieldLabel: CSSProperties = { fontSize: 11, color: "var(--ui-text-muted)", textTransform: "uppercase" };

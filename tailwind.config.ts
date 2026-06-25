@@ -6,16 +6,16 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          bg: "#020C1C",
-          bgAlt: "#071A2F",
-          surface: "#0E2239",
+          bg: "var(--ui-bg)",
+          bgAlt: "var(--ui-surface)",
+          surface: "var(--ui-surface-strong)",
           accent: "#F2994A",
           accentHover: "#E8892F",
         },
       },
       borderColor: {
-        subtle: "rgba(255,255,255,0.05)",
-        card: "rgba(255,255,255,0.1)",
+        subtle: "var(--ui-border-soft)",
+        card: "var(--ui-border)",
       },
       boxShadow: {
         soft: "0 10px 30px rgba(0,0,0,0.35)",

@@ -431,7 +431,7 @@ export default function BIContactDetailPage() {
           <button
             type="button"
             onClick={() => setEmailComposeOpen(true)}
-            style={{ color: "#0091ae", background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer" }}
+            style={{ color: "var(--ui-accent-blue)", background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer" }}
           >
             {contact.email}
           </button>
@@ -505,7 +505,7 @@ export default function BIContactDetailPage() {
             </div>
             <p
               style={{
-                color: "#33475b",
+                color: "var(--ui-text-muted)",
                 padding: 12,
                 whiteSpace: "pre-wrap",
               }}
@@ -522,7 +522,7 @@ export default function BIContactDetailPage() {
           <>
             <Link
               to={`/silo/bi/crm/companies/${contact.company_id}`}
-              style={{ color: "#0091ae" }}
+              style={{ color: "var(--ui-accent-blue)" }}
               data-testid="bi-contact-company-link"
             >
               {contact.company_name}
@@ -662,14 +662,14 @@ function formatStatus(value: string) {
 
 const rail: CSSProperties = {
   background: "var(--ui-surface-strong)",
-  border: "1px solid #eaf0f6",
+  border: "1px solid var(--ui-border-soft)",
   borderRadius: 6,
   padding: 16,
 };
 const mainCol: CSSProperties = { minWidth: 0 };
 const panel: CSSProperties = {
   background: "var(--ui-surface-strong)",
-  border: "1px solid #eaf0f6",
+  border: "1px solid var(--ui-border-soft)",
   borderRadius: 6,
   padding: 0,
 };
@@ -678,8 +678,8 @@ const panelHeader: CSSProperties = {
   alignItems: "center",
   gap: 8,
   padding: "12px 16px",
-  borderBottom: "1px solid #eaf0f6",
-  background: "#f5f8fa",
+  borderBottom: "1px solid var(--ui-border-soft)",
+  background: "var(--ui-surface-muted)",
 };
 const backLink: CSSProperties = {
   color: "var(--ui-accent-blue)",
@@ -690,23 +690,23 @@ const backLink: CSSProperties = {
   marginBottom: 12,
 };
 const subtle: CSSProperties = {
-  color: "#516f90",
+  color: "var(--ui-text-muted)",
   fontSize: 13,
   marginBottom: 12,
 };
 const fieldsBlock: CSSProperties = {
   marginTop: 16,
   paddingTop: 16,
-  borderTop: "1px solid #eaf0f6",
+  borderTop: "1px solid var(--ui-border-soft)",
 };
 const fieldLabel: CSSProperties = {
   fontSize: 11,
-  color: "#7c98b6",
+  color: "var(--ui-text-muted)",
   textTransform: "uppercase",
 };
 const roleBadge: CSSProperties = {
   background: "var(--ui-border)",
-  color: "#111827",
+  color: "var(--ui-surface)",
   padding: "2px 8px",
   borderRadius: 999,
   fontSize: 12,
@@ -723,8 +723,8 @@ const actionBtn: CSSProperties = {
   cursor: "pointer",
 };
 const tagBadge: CSSProperties = {
-  background: "#f3f4f6",
-  color: "#374151",
+  background: "var(--ui-surface-muted)",
+  color: "var(--ui-text-muted)",
   padding: "2px 8px",
   borderRadius: 999,
   fontSize: 12,

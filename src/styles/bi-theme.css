@@ -1,0 +1,38 @@
+/* BF_PORTAL_BLOCK_v_BI_THEME_AWARE_v1
+   The BI silo was built against a hardcoded dark palette (forced bg-brand-bg
+   text-white + Tailwind white utilities). Those are theme-fixed, so the silo
+   ignored the light/dark toggle. brand.* and border-card/subtle are now
+   token-backed in tailwind.config; this file maps the literal white utilities
+   to var(--ui-*) tokens, scoped to .bi-root (the BISilo wrapper). White on
+   accent buttons is re-asserted so primary actions stay legible in both modes.
+   Reversible: delete this file + its import and revert the wrapper/tailwind. */
+
+.bi-root { color: var(--ui-text); }
+.bi-root .text-white { color: var(--ui-text); }
+
+.bi-root .text-white\/90 { color: color-mix(in srgb, var(--ui-text) 90%, transparent); }
+.bi-root .text-white\/80 { color: color-mix(in srgb, var(--ui-text) 80%, transparent); }
+.bi-root .text-white\/70 { color: color-mix(in srgb, var(--ui-text) 70%, transparent); }
+.bi-root .text-white\/60 { color: color-mix(in srgb, var(--ui-text) 65%, transparent); }
+.bi-root .text-white\/50 { color: color-mix(in srgb, var(--ui-text) 60%, transparent); }
+.bi-root .text-white\/45 { color: color-mix(in srgb, var(--ui-text) 58%, transparent); }
+.bi-root .text-white\/40 { color: color-mix(in srgb, var(--ui-text) 55%, transparent); }
+.bi-root .text-white\/30 { color: color-mix(in srgb, var(--ui-text) 50%, transparent); }
+.bi-root .hover\:text-white:hover { color: var(--ui-text); }
+
+.bi-root .bg-white { background-color: var(--ui-surface-strong); }
+.bi-root .bg-white\/20 { background-color: color-mix(in srgb, var(--ui-text) 18%, transparent); }
+.bi-root .bg-white\/15 { background-color: color-mix(in srgb, var(--ui-text) 13%, transparent); }
+.bi-root .bg-white\/10 { background-color: color-mix(in srgb, var(--ui-text) 9%, transparent); }
+.bi-root .bg-white\/5  { background-color: color-mix(in srgb, var(--ui-text) 6%, transparent); }
+.bi-root .hover\:bg-white\/10:hover { background-color: color-mix(in srgb, var(--ui-text) 9%, transparent); }
+.bi-root .hover\:bg-white\/5:hover  { background-color: color-mix(in srgb, var(--ui-text) 6%, transparent); }
+
+.bi-root .bg-emerald-500.text-white,
+.bi-root .bg-emerald-600.text-white,
+.bi-root .bg-brand-accent.text-white,
+.bi-root .bg-emerald-500 .text-white,
+.bi-root .bg-emerald-600 .text-white,
+.bi-root .bg-brand-accent .text-white { color: #fff; }
+
+.bi-root .bg-\[\#112A4D\] { background-color: var(--ui-surface); }

@@ -342,7 +342,7 @@ export default function BICompanyDetailPage() {
             <span style={badge}>{co.application_count}</span>
           </div>
           {data.applications.length === 0 ? (
-            <p style={{ color: "#7c98b6", padding: 12 }}>
+            <p style={{ color: "var(--ui-text-muted)", padding: 12 }}>
               No applications linked to this company.
             </p>
           ) : (
@@ -356,18 +356,18 @@ export default function BICompanyDetailPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                     <Link
                       to={`/silo/bi/pipeline/${a.id}`}
-                      style={{ color: "#0091ae", fontWeight: 600 }}
+                      style={{ color: "var(--ui-accent-blue)", fontWeight: 600 }}
                     >
                       {a.application_code || a.id.slice(0, 8)}
                     </Link>
-                    <span style={{ color: "#516f90", fontSize: 12 }}>
+                    <span style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>
                       {new Date(a.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  <div style={{ marginTop: 4, color: "#33475b", fontSize: 13 }}>
+                  <div style={{ marginTop: 4, color: "var(--ui-text-muted)", fontSize: 13 }}>
                     {a.stage ? a.stage.replace(/_/g, " ") : "—"}
                     {a.status && (
-                      <span style={{ marginLeft: 8, color: "#7c98b6" }}>
+                      <span style={{ marginLeft: 8, color: "var(--ui-text-muted)" }}>
                         · {a.status}
                       </span>
                     )}
@@ -397,12 +397,12 @@ export default function BICompanyDetailPage() {
               >
                 <Link
                   to={`/silo/bi/crm/contacts/${c.id}`}
-                  style={{ color: "#0091ae", fontWeight: 600 }}
+                  style={{ color: "var(--ui-accent-blue)", fontWeight: 600 }}
                 >
                   {c.full_name || "(no name)"}
                 </Link>
                 {c.title && (
-                  <div style={{ fontSize: 12, color: "#516f90" }}>{c.title}</div>
+                  <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{c.title}</div>
                 )}
                 {c.email && (
                   <div style={{ fontSize: 12, color: "var(--ui-text)" }}>{c.email}</div>
@@ -411,7 +411,7 @@ export default function BICompanyDetailPage() {
                   <div style={{ fontSize: 12, color: "var(--ui-text)" }}>{c.phone_e164}</div>
                 )}
                 {c.outreach_status && (
-                  <div style={{ fontSize: 11, color: "#7c98b6", marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2 }}>
                     {c.outreach_status.replace(/_/g, " ")}
                   </div>
                 )}
@@ -463,14 +463,14 @@ function FieldEdit(props: {
 
 const rail: CSSProperties = {
   background: "var(--ui-surface-strong)",
-  border: "1px solid #eaf0f6",
+  border: "1px solid var(--ui-border-soft)",
   borderRadius: 6,
   padding: 16,
 };
 const mainCol: CSSProperties = { minWidth: 0 };
 const panel: CSSProperties = {
   background: "var(--ui-surface-strong)",
-  border: "1px solid #eaf0f6",
+  border: "1px solid var(--ui-border-soft)",
   borderRadius: 6,
   padding: 0,
 };
@@ -479,12 +479,12 @@ const panelHeader: CSSProperties = {
   alignItems: "center",
   gap: 8,
   padding: "12px 16px",
-  borderBottom: "1px solid #eaf0f6",
-  background: "#f5f8fa",
+  borderBottom: "1px solid var(--ui-border-soft)",
+  background: "var(--ui-surface-muted)",
 };
 const badge: CSSProperties = {
   background: "var(--ui-border)",
-  color: "#111827",
+  color: "var(--ui-surface)",
   padding: "2px 8px",
   borderRadius: 999,
   fontSize: 12,
@@ -499,18 +499,18 @@ const backLink: CSSProperties = {
   marginBottom: 12,
 };
 const subtle: CSSProperties = {
-  color: "#516f90",
+  color: "var(--ui-text-muted)",
   fontSize: 13,
   marginBottom: 12,
 };
 const fieldsBlock: CSSProperties = {
   marginTop: 16,
   paddingTop: 16,
-  borderTop: "1px solid #eaf0f6",
+  borderTop: "1px solid var(--ui-border-soft)",
 };
 const fieldLabel: CSSProperties = {
   fontSize: 11,
-  color: "#7c98b6",
+  color: "var(--ui-text-muted)",
   textTransform: "uppercase",
 };
 const actionBtn: CSSProperties = {
@@ -524,7 +524,7 @@ const actionBtn: CSSProperties = {
 };
 const appRow: CSSProperties = {
   padding: "12px 16px",
-  borderBottom: "1px solid #eaf0f6",
+  borderBottom: "1px solid var(--ui-border-soft)",
 };
 const contactRow: CSSProperties = {
   padding: "8px 0",
