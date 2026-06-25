@@ -380,6 +380,16 @@ export default function BIOutreach() {
       const st = stageOf(c.outreach_status);
       (map[st] ?? map.new ?? []).push(c);
     }
+    // BF_PORTAL_BI_OUTREACH_COUNTRY_SORT_v1 — order each column CDN first, then
+    // unknown (no country listed), then US. Array.sort is stable, so prior
+    // order is preserved within each country group.
+    const countryRank = (c: Contact): number => {
+      const k = countryFromPhone(c.phone_e164);
+      return k === "CDN" ? 0 : k === null ? 1 : 2;
+    };
+    for (const s of Object.keys(map)) {
+      map[s]?.sort((a, b) => countryRank(a) - countryRank(b));
+    }
     return map;
   }, [visible]);
 
