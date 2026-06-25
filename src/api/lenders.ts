@@ -38,6 +38,8 @@ export type LenderMatch = {
   amountMax?: number | null;
   // BF_PORTAL_BLOCK_v186_LENDERS_TAB_POLISH_v1 — files — present once server enriches per-lender docs.
   files?: Array<{ id: string; filename: string; url?: string | null }>;
+  // BF_PORTAL_BLOCK_v_SENT_LENDERS_v1 — present in the server match payload; used for the "Sent" marker.
+  lenderId?: string | null;
 };
 
 export type LenderSubmissionStatus = "sent" | "failed" | "pending_manual";

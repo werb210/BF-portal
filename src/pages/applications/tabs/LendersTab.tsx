@@ -116,6 +116,24 @@ export default function LendersTab({ applicationId }: Props) {
     enabled: Boolean(id),
   });
   const v_collateralRequired = Boolean(v_signing?.snapshot?.collateralRequired);
+  // BF_PORTAL_BLOCK_v_SENT_LENDERS_v1 — lenders that already received the package (sent_at), for the row marker.
+  const { data: v_sentData } = useQuery({
+    queryKey: ["sent-lenders", id],
+    queryFn: async () => {
+      const r = await api.get<{ data?: { sent?: Array<{ lenderId?: string; sentAt?: string | null }> } } & { sent?: Array<{ lenderId?: string; sentAt?: string | null }> }>(
+        `/api/applications/${encodeURIComponent(id)}/sent-lenders`,
+      );
+      return ((r as any)?.data ?? r) as { sent?: Array<{ lenderId?: string; sentAt?: string | null }> };
+    },
+    enabled: Boolean(id),
+  });
+  const v_sentMap = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const x of v_sentData?.sent ?? []) {
+      if (x?.lenderId) map.set(String(x.lenderId), x.sentAt ?? null);
+    }
+    return map;
+  }, [v_sentData]);
 
   const [selected, setSelected] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
@@ -309,6 +327,11 @@ export default function LendersTab({ applicationId }: Props) {
                   </td>
                   <td style={styles.td}>
                     <div style={{ fontWeight: 700 }}>{m.lenderName ?? "—"}</div>
+                    {m.lenderId && v_sentMap.has(String(m.lenderId)) && (
+                      <div style={{ marginTop: 2, fontSize: 11, fontWeight: 700, color: "#16a34a" }}>
+                        {"\u2713 Sent"}{v_sentMap.get(String(m.lenderId)) ? ` \u00b7 ${new Date(String(v_sentMap.get(String(m.lenderId)))).toLocaleDateString()}` : ""}
+                      </div>
+                    )}
                     {m.productName ? <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2 }}>{m.productName}</div> : null}
                   </td>
                   <td style={styles.td}>{m.productCategory ?? "—"}</td>
