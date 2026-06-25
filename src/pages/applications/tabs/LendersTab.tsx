@@ -16,6 +16,7 @@ import {
   type LenderEnvelope,
   type LenderMatch,
 } from "@/api/lenders";
+import { api } from "@/api"; // BF_PORTAL_BLOCK_v_SIGNING_RESEND_v1 — collateral-required signal
 import { getErrorMessage } from "@/utils/errors";
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
@@ -102,6 +103,19 @@ export default function LendersTab({ applicationId }: Props) {
 
   const envelope: LenderEnvelope = data ?? { status: "locked", outstanding: [], computed_at: null, matches: [] };
   const matches = envelope.matches ?? [];
+  // BF_PORTAL_BLOCK_v_SIGNING_RESEND_v1 — collateral is REQUIRED once an Accord LOC is finalized;
+  // keep the Collateral & Facility card reachable even when no match row is currently checked.
+  const { data: v_signing } = useQuery({
+    queryKey: ["signing-readiness", id],
+    queryFn: async () => {
+      const r = await api.get<{ data?: { snapshot?: { collateralRequired?: boolean } } } & { snapshot?: { collateralRequired?: boolean } }>(
+        `/api/applications/${encodeURIComponent(id)}/signing-readiness`,
+      );
+      return ((r as any)?.data ?? r) as { snapshot?: { collateralRequired?: boolean } };
+    },
+    enabled: Boolean(id),
+  });
+  const v_collateralRequired = Boolean(v_signing?.snapshot?.collateralRequired);
 
   const [selected, setSelected] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
@@ -370,7 +384,7 @@ export default function LendersTab({ applicationId }: Props) {
 
       {/* BF_PORTAL_BLOCK_v741_COLLATERAL_GATE — show only once Accord is checked, under the lenders. */}
       {/* BF_PORTAL_COLLATERAL_LOC_ONLY_v1 — Accord Collateral & Facility is an LOC requirement only. */}
-      {matches.some((m) => selected.includes(m.id) && /accord/i.test(m.lenderName ?? "") && String(m.productCategory ?? "").toUpperCase() === "LOC") && (
+      {(v_collateralRequired || matches.some((m) => selected.includes(m.id) && /accord/i.test(m.lenderName ?? "") && String(m.productCategory ?? "").toUpperCase() === "LOC")) && (
         <CollateralFacilitySection applicationId={id} />
       )}
 
