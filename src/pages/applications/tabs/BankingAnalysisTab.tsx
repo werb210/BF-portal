@@ -486,7 +486,7 @@ function DiagnosticPanel({ applicationId }: { applicationId?: string | null }) {
             <summary style={{ cursor: "pointer", fontSize: 13, color: "var(--ui-text-muted)" }}>
               Raw diagnostic data
             </summary>
-            <pre style={{ marginTop: 8, padding: 12, background: "#0f172a", color: "var(--ui-text)", borderRadius: 4, fontSize: 11, overflowX: "auto" }}>
+            <pre style={{ marginTop: 8, padding: 12, background: "var(--ui-surface-muted)", color: "var(--ui-text)", borderRadius: 4, fontSize: 11, overflowX: "auto" }}>
               {JSON.stringify(diag, null, 2)}
             </pre>
           </details>

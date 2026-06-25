@@ -41,7 +41,7 @@ export default function PreApplications() {
         {data.map((item) => (
           <div
             key={item.id}
-            className="rounded-xl border border-slate-700 bg-slate-800 p-4"
+            className="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface-strong)] p-4"
           >
             <div className="flex justify-between">
               <div>

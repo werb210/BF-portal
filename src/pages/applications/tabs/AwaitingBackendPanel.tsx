@@ -17,7 +17,7 @@ export default function AwaitingBackendPanel({
         <div style={{ fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--ui-text-muted)", marginBottom: 8 }}>
           Expected payload shape
         </div>
-        <pre style={{ margin: 0, padding: 12, borderRadius: 8, background: "#0f172a", color: "var(--ui-text)", overflowX: "auto" }}>
+        <pre style={{ margin: 0, padding: 12, borderRadius: 8, background: "var(--ui-surface-muted)", color: "var(--ui-text)", overflowX: "auto" }}>
           {expectedShape}
         </pre>
       </div>
