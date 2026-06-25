@@ -94,6 +94,21 @@ function SigningBadge({ status }: { status?: string }) {
   );
 }
 
+// BF_PORTAL_BLOCK_v_SIGNING_RESEND_v1 — human label for the server's signing block reason.
+function signingReasonLabel(reason?: string): string {
+  switch (String(reason ?? "")) {
+    case "collateral_incomplete": return "Collateral & Facility incomplete";
+    case "lender_not_finalized": return "No lender finalized yet";
+    case "docs_not_accepted": return "Documents not all accepted";
+    case "tasks_incomplete": return "Client tasks not all complete";
+    case "signing_unavailable": return "Signing service unavailable";
+    case "signed": return "Already signed";
+    case "started": return "Signing in progress";
+    case "ready": return "Ready to send";
+    default: return reason ? String(reason).replace(/_/g, " ") : "Not ready";
+  }
+}
+
 export default function ApplicationTab({ application }: Props) {
   // BF_PORTAL_BLOCK_v784_TASK_CHECKLIST — client task completion for staff.
   const v784_appId = application ? String((application as any).id ?? "") : "";
@@ -145,6 +160,9 @@ export default function ApplicationTab({ application }: Props) {
   };
   const [v817_sending, v817_setSending] = useState(false);
   const [v817_note, v817_setNote] = useState<string | null>(null);
+  const [v_sign, v_setSign] = useState<{ reason: string; canSend: boolean } | null>(null);
+  const [v_signBusy, v_setSignBusy] = useState(false);
+  const [v_signNote, v_setSignNote] = useState<string | null>(null);
   useEffect(() => {
     if (!v784_appId) return;
     let active = true;
@@ -157,6 +175,40 @@ export default function ApplicationTab({ application }: Props) {
       .catch(() => { if (active) v784_setErr("Could not load task status."); });
     return () => { active = false; };
   }, [v784_appId]);
+
+  useEffect(() => {
+    if (!v784_appId) return;
+    let active = true;
+    api
+      .get<{ data?: { reason?: string; canSend?: boolean } } & { reason?: string; canSend?: boolean }>(
+        `/api/applications/${encodeURIComponent(v784_appId)}/signing-readiness`,
+      )
+      .then((r) => {
+        if (!active) return;
+        const d = ((r as any)?.data ?? r) as { reason?: string; canSend?: boolean };
+        v_setSign({ reason: String(d?.reason ?? "unknown"), canSend: Boolean(d?.canSend) });
+      })
+      .catch(() => { /* non-fatal */ });
+    return () => { active = false; };
+  }, [v784_appId, v_signNote]);
+
+  async function v_resendSigning() {
+    if (v_signBusy || !v784_appId) return;
+    v_setSignBusy(true);
+    v_setSignNote(null);
+    try {
+      const r = await api.post<{ data?: { ok?: boolean; reason?: string } } & { ok?: boolean; reason?: string }>(
+        `/api/applications/${encodeURIComponent(v784_appId)}/resend-signing`, {},
+      );
+      const d = ((r as any)?.data ?? r) as { ok?: boolean; reason?: string };
+      if (d?.ok) v_setSignNote("Signing sent ✓");
+      else v_setSignNote(`Not sent — ${signingReasonLabel(d?.reason)}`);
+    } catch {
+      v_setSignNote("Could not send for signing");
+    } finally {
+      v_setSignBusy(false);
+    }
+  }
 
   if (!application) {
     return (
@@ -323,11 +375,33 @@ export default function ApplicationTab({ application }: Props) {
             </svg>
             <span>Call Client</span>
           </button>
+          {v_sign && v_sign.reason !== "signed" && v_sign.reason !== "started" && (
+            <button
+              type="button"
+              onClick={() => void v_resendSigning()}
+              disabled={v_signBusy}
+              title={v_sign.canSend ? "Build and send the signing package" : `Blocked: ${signingReasonLabel(v_sign.reason)}`}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-accent-blue)", color: "#fff", fontWeight: 600, cursor: v_signBusy ? "wait" : "pointer", fontSize: 14, whiteSpace: "nowrap" }}
+              data-testid="send-for-signing"
+            >
+              {v_signBusy ? "Sending…" : "Send for signing"}
+            </button>
+          )}
           <SigningBadge status={(application as any)?.signing?.status} />
           <span style={styles.statusPill}>{fmt(application.stage, "—")}</span>
         </div>
       </div>
 
+      {v_sign && v_sign.reason !== "signed" && v_sign.reason !== "started" && v_sign.reason !== "ready" && (
+        <div style={{ background: "#fef3c7", border: "1px solid #f59e0b", color: "#92400e", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 13, fontWeight: 600 }} role="status">
+          {"⚠ Signing not sent — "}{signingReasonLabel(v_sign.reason)}{"."}{v_sign.reason === "collateral_incomplete" ? " Complete the Collateral & Facility card on the Lenders tab, then Send for signing." : ""}
+        </div>
+      )}
+      {v_signNote && (
+        <div style={{ background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", color: (v_signNote.startsWith("Not sent") || v_signNote.startsWith("Could not")) ? "#b91c1c" : "#16a34a", borderRadius: 10, padding: "10px 16px", marginBottom: 16, fontSize: 13, fontWeight: 600 }} role="status">
+          {v_signNote}
+        </div>
+      )}
       <div style={{ background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ui-text)", marginBottom: 8 }}>
           Client Tasks
