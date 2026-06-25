@@ -41,7 +41,8 @@ export default function ApplicationDetail({ id, onClose }: ApplicationDetailProp
         top: 0,
         width: "400px",
         height: "100%",
-        background: "#020c1c",
+        background: "var(--ui-surface-strong)",
+        borderLeft: "1px solid var(--ui-border)",
         padding: "20px",
         overflowY: "auto"
       }}
