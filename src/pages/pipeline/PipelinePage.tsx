@@ -302,7 +302,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{name}</div>
             {card.contact_name && (
-              <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
+              <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
@@ -351,7 +351,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
 
         {/* Footer: last touch */}
         {lastTouch && (
-          <div style={{ fontSize: 10, color: "var(--ui-text-muted)" }}>{lastTouch}</div>
+          <div style={{ fontSize: 10, color: "var(--ui-text-soft)" }}>{lastTouch}</div>
         )}
       </div>
 

@@ -66,7 +66,7 @@ export default function BIContactsList() {
   const tagKey = Array.from(tagFilter).sort().join(","); // BF_PORTAL_BLOCK_v749_VIEWBY
   const chipBtn = (active: boolean): CSSProperties => ({ // BF_PORTAL_BLOCK_v749_VIEWBY
     fontSize: 12, padding: "3px 10px", borderRadius: 999,
-    border: active ? "1px solid #6366f1" : "1px solid #334155",
+    border: active ? "1px solid #6366f1" : "1px solid var(--ui-border)",
     background: active ? "#4f46e5" : "transparent",
     color: active ? "#fff" : "var(--ui-text-soft)", cursor: "pointer", whiteSpace: "nowrap",
   });
@@ -198,15 +198,15 @@ export default function BIContactsList() {
     <div style={page} data-testid="bi-contacts-list">
       <div style={toolbar}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
-        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} />
-        <button type="button" onClick={() => exportRowsToCsv("bi-contacts.csv", rows as any)} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">Export</button>
-        <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #334155", background: "transparent", color: "var(--ui-text)", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
+        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} />
+        <button type="button" onClick={() => exportRowsToCsv("bi-contacts.csv", rows as any)} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">Export</button>
+        <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "transparent", color: "var(--ui-text)", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
         <div style={{ fontSize: 13, color: "var(--ui-text-muted)", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
         <span style={{ flex: 1 }} />
-        <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "#1e293b", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid #334155", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1 }}>{importing ? "Importing…" : "Import"}</button>
+        <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1 }}>{importing ? "Importing…" : "Import"}</button>
         <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-crm-import-input" />
         <button type="button" onClick={() => setCreateOpen(true)} style={{ background: "var(--accent)", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", whiteSpace: "nowrap" }}>+ Create Contact</button>
       </div>
@@ -246,13 +246,13 @@ export default function BIContactsList() {
 
       {createOpen && (
         <div onClick={() => !creating && setCreateOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, padding: 20, width: 380, maxWidth: "90vw", color: "var(--ui-text)" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--ui-surface)", border: "1px solid var(--ui-border)", borderRadius: 10, padding: 20, width: 380, maxWidth: "90vw", color: "var(--ui-text)" }}>
             <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>New BI contact</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <input value={createForm.full_name} onChange={(e) => setCreateForm((f) => ({ ...f, full_name: e.target.value }))} placeholder="Full name" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-text)", fontSize: 13 }} />
-              <input value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-text)", fontSize: 13 }} />
-              <input value={createForm.phone_e164} onChange={(e) => setCreateForm((f) => ({ ...f, phone_e164: e.target.value }))} placeholder="Phone (E.164)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-text)", fontSize: 13 }} />
-              <input value={createForm.title} onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title (optional)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "var(--ui-text)", fontSize: 13 }} />
+              <input value={createForm.full_name} onChange={(e) => setCreateForm((f) => ({ ...f, full_name: e.target.value }))} placeholder="Full name" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text)", fontSize: 13 }} />
+              <input value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text)", fontSize: 13 }} />
+              <input value={createForm.phone_e164} onChange={(e) => setCreateForm((f) => ({ ...f, phone_e164: e.target.value }))} placeholder="Phone (E.164)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text)", fontSize: 13 }} />
+              <input value={createForm.title} onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))} placeholder="Title (optional)" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text)", fontSize: 13 }} />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14 }}>
               <button type="button" disabled={creating} onClick={() => setCreateOpen(false)} style={clearBtn}>Cancel</button>
@@ -313,10 +313,10 @@ const delBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background
 const tagBox: CSSProperties = { padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13 };
 const clearBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", cursor: "pointer", fontSize: 13 };
 const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "var(--ui-surface-strong)" };
-const theadRow: CSSProperties = { borderBottom: "1px solid var(--ui-border)", background: "#f5f8fa" };
-const thStyle: CSSProperties = { padding: 12, textAlign: "left", cursor: "pointer", color: "#33475b", textTransform: "uppercase", fontSize: 12, userSelect: "none" };
+const theadRow: CSSProperties = { borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)" };
+const thStyle: CSSProperties = { padding: 12, textAlign: "left", cursor: "pointer", color: "var(--ui-text-muted)", textTransform: "uppercase", fontSize: 12, userSelect: "none" };
 const tdStyle: CSSProperties = { padding: 12, color: "var(--ui-text)" };
-const trStyle: CSSProperties = { borderBottom: "1px solid #eaf0f6" };
-const linkStyle: CSSProperties = { color: "#0091ae", textDecoration: "none" };
-const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "#7c98b6" };
+const trStyle: CSSProperties = { borderBottom: "1px solid var(--ui-border-soft)" };
+const linkStyle: CSSProperties = { color: "var(--ui-accent-blue)", textDecoration: "none" };
+const emptyCell: CSSProperties = { padding: 24, textAlign: "center", color: "var(--ui-text-muted)" };
 const tagChip: CSSProperties = { display: "inline-block", fontSize: 11, color: "var(--ui-text)", background: "var(--ui-border)", borderRadius: 10, padding: "1px 8px" }; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1

@@ -26,7 +26,7 @@ import BIApplicationDetail from "./pipeline/BIApplicationDetail";
 
 export default function BISilo() {
   return (
-    <div className="min-h-screen bg-brand-bg text-white">
+    <div className="min-h-screen bg-brand-bg bi-root">
       <header className="bg-brand-bg border-b border-subtle">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <h2 className="text-xl font-semibold tracking-tight">Boreal Insurance — Portal</h2>
