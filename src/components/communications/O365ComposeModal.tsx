@@ -135,6 +135,7 @@ export default function O365ComposeModal({
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
   const [scheduleAt, setScheduleAt] = useState(""); // scheduleSend-marker-v320
+  const [scheduleMode, setScheduleMode] = useState(""); // schedule-dropdown-v1: "" | "1".."6" | "custom"
   const lastAutosaveKeyRef = useRef("");
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -156,6 +157,7 @@ export default function O365ComposeModal({
     setDraftSavedAt(null);
     lastAutosaveKeyRef.current = "";
     setScheduleAt("");
+    setScheduleMode("");
     setAttachments([]);
     setLinkAppId("");
     setTemplateId("");
@@ -416,6 +418,7 @@ export default function O365ComposeModal({
       if (typeof draft?.isDeliveryReceiptRequested === "boolean") setRequestDeliveryReceipt(draft.isDeliveryReceiptRequested);
       setDraftSavedAt(null);
       setScheduleAt("");
+      setScheduleMode("");
     } catch (e: any) {
       setComposeError(e?.message ?? "Couldn't open draft.");
     }
@@ -729,9 +732,21 @@ export default function O365ComposeModal({
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ui-text)" }}>
               Schedule
-              <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} disabled={composeSending || savingDraft} style={{ padding: 4, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 13 }} />
+              <select value={scheduleMode} onChange={(e) => setScheduleMode(e.target.value)} disabled={composeSending || savingDraft} style={{ padding: 4, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 13 }}>
+                <option value="">Send later...</option>
+                <option value="1">In 1 hour</option>
+                <option value="2">In 2 hours</option>
+                <option value="3">In 3 hours</option>
+                <option value="4">In 4 hours</option>
+                <option value="5">In 5 hours</option>
+                <option value="6">In 6 hours</option>
+                <option value="custom">Custom...</option>
+              </select>
+              {scheduleMode === "custom" && (
+                <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} disabled={composeSending || savingDraft} style={{ padding: 4, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 13 }} />
+              )}
             </label>
-            <button type="button" disabled={composeSending || savingDraft || !scheduleAt} onClick={() => { const iso = scheduleAt ? new Date(scheduleAt).toISOString() : ""; if (iso) void sendComposed(iso); }} style={{ padding: "8px 14px", border: "1px solid var(--ui-accent-blue)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: composeSending || savingDraft || !scheduleAt ? "default" : "pointer" }}>Schedule send</button>
+            <button type="button" disabled={composeSending || savingDraft || !scheduleMode || (scheduleMode === "custom" && !scheduleAt)} onClick={() => { let iso = ""; if (scheduleMode === "custom") { iso = scheduleAt ? new Date(scheduleAt).toISOString() : ""; } else if (scheduleMode) { iso = new Date(Date.now() + Number(scheduleMode) * 3600 * 1000).toISOString(); } if (iso) void sendComposed(iso); }} style={{ padding: "8px 14px", border: "1px solid var(--ui-accent-blue)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: (composeSending || savingDraft || !scheduleMode || (scheduleMode === "custom" && !scheduleAt)) ? "default" : "pointer" }}>Schedule send</button>
             <button type="button" onClick={onClose} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", cursor: composeSending || savingDraft ? "default" : "pointer" }}>Cancel</button>
             <button type="button" onClick={() => void saveDraft()} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", cursor: composeSending || savingDraft ? "default" : "pointer" }}>{savingDraft ? "Saving..." : "Save draft"}</button>
             <button type="button" onClick={() => void sendComposed()} disabled={composeSending || savingDraft} style={{ padding: "8px 14px", border: "none", borderRadius: 4, background: "var(--ui-accent-blue)", color: "#fff", fontWeight: 600, cursor: composeSending || savingDraft ? "default" : "pointer" }}>{composeSending ? "Sending..." : "Send"}</button>
