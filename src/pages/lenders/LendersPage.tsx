@@ -926,36 +926,6 @@ function CreateProductModal({
             </select>
           </div>
 
-          {/* Eligibility Notes */}
-          <div>
-            <label style={labelStyle}>Eligibility Notes <span style={{ color: "var(--ui-text-muted)", fontWeight: 400 }}>(Optional)</span></label>
-            <textarea placeholder="Enter any eligibility requirements" value={form.eligibilityNotes}
-              onChange={(e) => set("eligibilityNotes", e.target.value)} rows={3}
-              style={{ ...inputStyle(), resize: "vertical" }} />
-          </div>
-
-          {/* BF_PORTAL_BLOCK_v627_LENDER_PRODUCT_RATE_KIND_v1 — Documents Required */}
-          <div>
-            <label style={labelStyle}>Documents Required <span style={{ color: "var(--ui-text-muted)", fontWeight: 400 }}>(Semicolon-separated)</span></label>
-            <textarea
-              placeholder="e.g. Bank Statements; Profit and Loss Statement; Balance Sheet; Personal Financial Statement"
-              value={form.documentsRequired}
-              onChange={(e) => set("documentsRequired", e.target.value)}
-              rows={3}
-              style={{ ...inputStyle(), resize: "vertical" }}
-            />
-            <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 4 }}>
-              List the document names separated by semicolons — matches the seed file format from the lender PDFs.
-            </div>
-          </div>
-
-          {/* SignNow Template ID */}
-          <div>
-            <label style={labelStyle}>SignNow Template ID <span style={{ color: "var(--ui-text-muted)", fontWeight: 400 }}>(Optional)</span></label>
-            <input placeholder="Enter SignNow template ID" value={form.signnowTemplateId}
-              onChange={(e) => set("signnowTemplateId", e.target.value)} style={inputStyle()} />
-          </div>
-
           {/* Required Documents */}
           <div>
             <label style={{ ...labelStyle, marginBottom: 10 }}>Required Documents</label>
