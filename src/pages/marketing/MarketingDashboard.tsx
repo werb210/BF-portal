@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 
-type MarketingTab = "google-ads" | "email" | "linkedin-ads" | "analytics";
+type MarketingTab = "google-ads" | "sms" | "email" | "linkedin-ads" | "analytics";
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "google-ads", label: "Google Ads" },
+  { id: "sms", label: "SMS" },
   { id: "email", label: "Email" },
   { id: "linkedin-ads", label: "LinkedIn Ads" },
   { id: "analytics", label: "Analytics" },
@@ -397,6 +398,85 @@ function EmailComposerPanel() {
     </section>
   );
 }
+// BF_PORTAL_SMS_COMPOSER_v1 - bulk SMS + 36h fallback-email cascade (BF silo).
+type SmsSegments = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
+function SmsComposerPanel() {
+  const [seg, setSeg] = useState<SmsSegments | null>(null);
+  const [tag, setTag] = useState("__all__");
+  const [body, setBody] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [fbSubject, setFbSubject] = useState("");
+  const [fbHtml, setFbHtml] = useState("");
+  const [testTo, setTestTo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => {
+    api
+      .get<{ data?: SmsSegments } & Partial<SmsSegments>>("/api/marketing/sms/segments")
+      .then((res) => setSeg((res?.data ?? res) as SmsSegments))
+      .catch(() => setSeg({ configured: false, all: 0, segments: [] }));
+  }, []);
+  const count = tag === "__all__" ? (seg?.all ?? 0) : (seg?.segments.find((x) => x.tag === tag)?.n ?? 0);
+  const post = async (test?: string) => {
+    setBusy(true); setMsg(null);
+    try {
+      const payload: Record<string, unknown> = { body };
+      if (test) { payload.test = test; }
+      else {
+        if (tag !== "__all__") payload.tag = tag;
+        if (linkUrl.trim()) payload.linkUrl = linkUrl.trim();
+        if (fbSubject.trim()) payload.fallbackSubject = fbSubject.trim();
+        if (fbHtml.trim()) payload.fallbackHtml = fbHtml.trim();
+      }
+      const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/sms/send", payload);
+      const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; smsSent?: number; emailSent?: number; failed?: number; configured?: boolean; error?: string };
+      if (r?.configured === false) setMsg("SMS not connected yet (set the toll-free number once A2P-verified).");
+      else if (r?.error) setMsg(r.error);
+      else if (r?.test) setMsg(r.ok ? "Test sent." : `Test failed${r ? "" : ""}.`);
+      else setMsg(`SMS: ${r?.smsSent ?? 0}, fallback email: ${r?.emailSent ?? 0}${r?.failed ? `, failed: ${r.failed}` : ""}.`);
+    } catch { setMsg("Send failed."); } finally { setBusy(false); }
+  };
+  if (seg && !seg.configured) {
+    return <section className="drawer-section"><div className="drawer-section__title mb-2">SMS</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. Once your toll-free 800 number clears A2P verification, set TWILIO_SMS_FROM and bulk SMS will be available here.</p></section>;
+  }
+  return (
+    <section className="drawer-section">
+      <div className="drawer-section__title mb-2">SMS campaign</div>
+      <div className="space-y-2">
+        <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Audience
+          <select value={tag} onChange={(e) => setTag(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
+            <option value="__all__">All contacts with a mobile ({seg?.all ?? 0})</option>
+            {(seg?.segments ?? []).map((x) => <option key={x.tag} value={x.tag}>{x.tag} ({x.n})</option>)}
+          </select>
+        </label>
+        <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Message
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={400} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+        </label>
+        <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>{body.length} chars. Merge: {"{{first_name}}"} not applied to SMS; keep it short. A tracked link is appended if you add a landing page below.</p>
+        <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Landing page (optional, tracked)
+          <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://boreal.financial/..." className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+        </label>
+        <div className="border-t pt-2" style={{ borderColor: "var(--ui-border)" }}>
+          <div className="text-sm font-semibold mb-1" style={{ color: "var(--ui-text)" }}>Fallback email (sent after 36h with no click/reply, or no mobile)</div>
+          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Subject
+            <input value={fbSubject} onChange={(e) => setFbSubject(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+          </label>
+          <label className="text-sm block mt-2" style={{ color: "var(--ui-text)" }}>Body (HTML)
+            <textarea value={fbHtml} onChange={(e) => setFbHtml(e.target.value)} rows={5} className="block border rounded px-2 py-1 text-sm mt-1 w-full font-mono" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+          </label>
+        </div>
+        <div className="flex flex-wrap gap-2 items-end">
+          <label className="text-sm" style={{ color: "var(--ui-text)" }}>Test to
+            <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="+1..." className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+          </label>
+          <button type="button" disabled={busy || !body || !testTo} onClick={() => void post(testTo)} className="ui-button ui-button--secondary">Send test</button>
+          <button type="button" disabled={busy || !body || !count} onClick={() => void post()} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
+        </div>
+        {msg && <p style={{ color: "var(--ui-text-muted)" }}>{msg}</p>}
+      </div>
+    </section>
+  );
+}
 function AnalyticsFunnel() {
   const [days, setDays] = useState(90);
   const [steps, setSteps] = useState<FunnelStep[]>([]);
@@ -756,7 +836,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <EmailComposerPanel />}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <EmailComposerPanel />}{tab === "sms" && <SmsComposerPanel />}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
