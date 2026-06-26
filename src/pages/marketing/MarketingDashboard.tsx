@@ -39,6 +39,52 @@ function AdsTable({ title, rows }: { title: string; rows: AdsRow[] }) {
     </div>
   );
 }
+// BF_PORTAL_ADS_CONVERSIONS_v1 - closed-loop funded-deal conversions to Google.
+type PendingConv = { applicationId: string; gclid: string; value: number; fundedAt: string };
+function AdsConversionsPanel() {
+  const [data, setData] = useState<{ configured: boolean; count?: number; pending?: PendingConv[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const load = () => {
+    setLoading(true);
+    api
+      .get<{ data?: { configured: boolean; count?: number; pending?: PendingConv[] } } & { configured?: boolean; count?: number; pending?: PendingConv[] }>("/api/marketing/google-ads/conversions/pending")
+      .then((res) => setData((res?.data ?? res) as any))
+      .catch(() => setData({ configured: false }))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, []);
+  const upload = async () => {
+    setBusy(true); setMsg(null);
+    try {
+      const res = await api.post<{ data?: { uploaded?: number; failed?: number } } & { uploaded?: number; failed?: number }>("/api/marketing/google-ads/conversions/upload", {});
+      const r = (res?.data ?? res) as { uploaded?: number; failed?: number };
+      setMsg(`Uploaded ${r?.uploaded ?? 0}${r?.failed ? `, ${r.failed} failed` : ""}.`);
+      load();
+    } catch {
+      setMsg("Upload failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="drawer-section">
+      <div className="drawer-section__title mb-2">Closed-loop conversions</div>
+      {loading && <p style={{ color: "var(--ui-text-muted)" }}>Loading...</p>}
+      {!loading && data && !data.configured && (
+        <p style={{ color: "var(--ui-text-muted)" }}>Set GOOGLE_ADS_CONVERSION_ACTION_ID (the "Funded Deal" conversion action) to send funded deals back to Google with their value.</p>
+      )}
+      {!loading && data?.configured && (
+        <>
+          <p style={{ color: "var(--ui-text)" }}>{data.count ?? 0} funded deal(s) with a Google click ready to upload.</p>
+          <button type="button" disabled={busy || !(data.count ?? 0)} onClick={() => void upload()} className="ui-button ui-button--primary mt-2" style={{ opacity: busy || !(data.count ?? 0) ? 0.6 : 1 }}>{busy ? "Uploading..." : "Upload to Google"}</button>
+          {msg && <p style={{ color: "var(--ui-text-muted)", marginTop: 6 }}>{msg}</p>}
+        </>
+      )}
+    </section>
+  );
+}
 function GoogleAdsPanel() {
   const [days, setDays] = useState(30);
   const [report, setReport] = useState<AdsReport | null>(null);
@@ -459,7 +505,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && <GoogleAdsPanel />}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><AdsConversionsPanel /></div>)}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
