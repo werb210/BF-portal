@@ -91,9 +91,16 @@ type IcpPreview = { eligible: number; withPhone: number; byProduct: Record<strin
 function IcpBuilderPanel() {
   const [band, setBand] = useState("any");
   const [product, setProduct] = useState("");
+  const [products, setProducts] = useState<string[]>([]);
   const [preview, setPreview] = useState<IcpPreview | null>(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => {
+    api
+      .get<{ data?: { products?: string[] } } & { products?: string[] }>("/api/marketing/google-ads/icp/products")
+      .then((res) => { const d = (res?.data ?? res) as { products?: string[] }; setProducts(d?.products ?? []); })
+      .catch(() => setProducts([]));
+  }, []);
   const filters = () => {
     const f: { productCategory?: string; minAmount?: number; maxAmount?: number } = {};
     if (product.trim()) f.productCategory = product.trim();
@@ -141,8 +148,11 @@ function IcpBuilderPanel() {
             <option value="gt500">$500k+</option>
           </select>
         </label>
-        <label className="text-sm" style={{ color: "var(--ui-text)" }}>Product (optional)
-          <input value={product} onChange={(e) => setProduct(e.target.value)} placeholder="e.g. Term Loan" className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+        <label className="text-sm" style={{ color: "var(--ui-text)" }}>Product category
+          <select value={product} onChange={(e) => setProduct(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
+            <option value="">Any</option>
+            {products.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
         </label>
         <button type="button" onClick={runPreview} className="ui-button ui-button--secondary">{loading ? "..." : "Preview"}</button>
       </div>
