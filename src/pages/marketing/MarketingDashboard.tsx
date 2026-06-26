@@ -85,6 +85,83 @@ function AdsConversionsPanel() {
     </section>
   );
 }
+// BF_PORTAL_ICP_BUILDER_v1 - ideal-client engine: build + download a Customer Match seed.
+type IcpPreview = { eligible: number; withPhone: number; byProduct: Record<string, number>; byBand: Record<string, number> };
+function IcpBuilderPanel() {
+  const [band, setBand] = useState("any");
+  const [product, setProduct] = useState("");
+  const [preview, setPreview] = useState<IcpPreview | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const filters = () => {
+    const f: { productCategory?: string; minAmount?: number; maxAmount?: number } = {};
+    if (product.trim()) f.productCategory = product.trim();
+    if (band === "lt100") f.maxAmount = 99999;
+    else if (band === "100to500") { f.minAmount = 100000; f.maxAmount = 500000; }
+    else if (band === "gt500") f.minAmount = 500000;
+    return f;
+  };
+  const runPreview = () => {
+    setLoading(true); setMsg(null);
+    api
+      .get<{ data?: IcpPreview } & Partial<IcpPreview>>("/api/marketing/google-ads/icp/preview", { params: filters() })
+      .then((res) => setPreview((res?.data ?? res) as IcpPreview))
+      .catch(() => setMsg("Preview failed."))
+      .finally(() => setLoading(false));
+  };
+  const download = async (type: "seed" | "exclusion") => {
+    setMsg(null);
+    try {
+      const res = await api.post<{ data?: { csv: string; rows: number } } & { csv?: string; rows?: number }>("/api/marketing/google-ads/icp/export", { type, ...filters() });
+      const r = (res?.data ?? res) as { csv?: string; rows?: number };
+      const csv = r?.csv ?? "";
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = type === "seed" ? "customer-match-seed.csv" : "customer-match-exclusion.csv";
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setMsg(`${r?.rows ?? 0} hashed row(s) downloaded.`);
+    } catch {
+      setMsg("Export failed.");
+    }
+  };
+  return (
+    <section className="drawer-section">
+      <div className="drawer-section__title mb-2">Ideal-client builder</div>
+      <p style={{ color: "var(--ui-text-muted)", marginBottom: 8 }}>Build a seed of your funded clients to feed Google Customer Match. The download is SHA-256 hashed - no raw contact data leaves the system. Upload it in Google Ads - Audiences - Customer Match, then use it as a lookalike signal in Performance Max and as an exclusion on prospecting campaigns.</p>
+      <div className="flex flex-wrap gap-2 items-end">
+        <label className="text-sm" style={{ color: "var(--ui-text)" }}>Deal size
+          <select value={band} onChange={(e) => setBand(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
+            <option value="any">Any</option>
+            <option value="lt100">Under $100k</option>
+            <option value="100to500">$100k - $500k</option>
+            <option value="gt500">$500k+</option>
+          </select>
+        </label>
+        <label className="text-sm" style={{ color: "var(--ui-text)" }}>Product (optional)
+          <input value={product} onChange={(e) => setProduct(e.target.value)} placeholder="e.g. Term Loan" className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+        </label>
+        <button type="button" onClick={runPreview} className="ui-button ui-button--secondary">{loading ? "..." : "Preview"}</button>
+      </div>
+      {preview && (
+        <div className="mt-3 text-sm" style={{ color: "var(--ui-text)" }}>
+          <div><strong>{preview.eligible}</strong> eligible funded client(s); {preview.withPhone} with a phone.</div>
+          <div style={{ color: "var(--ui-text-muted)", marginTop: 4 }}>By product: {Object.entries(preview.byProduct).map(([k, v]) => `${k} (${v})`).join(", ") || "-"}</div>
+          <div style={{ color: "var(--ui-text-muted)" }}>By size: {Object.entries(preview.byBand).map(([k, v]) => `${k} (${v})`).join(", ") || "-"}</div>
+          {preview.eligible < 100 && <div style={{ color: "#b45309", marginTop: 4 }}>Note: Google Customer Match needs at least 100 matched members to serve.</div>}
+        </div>
+      )}
+      <div className="flex flex-wrap gap-2 mt-3">
+        <button type="button" onClick={() => void download("seed")} className="ui-button ui-button--primary">Download ideal-client seed (hashed)</button>
+        <button type="button" onClick={() => void download("exclusion")} className="ui-button ui-button--secondary">Download exclusion list (hashed)</button>
+      </div>
+      {msg && <p style={{ color: "var(--ui-text-muted)", marginTop: 6 }}>{msg}</p>}
+      <p style={{ color: "var(--ui-text-muted)", marginTop: 8, fontSize: "0.8rem" }}>Compliance: uploading client data to ad platforms is a sensitive-data action - the compliant standard is express opt-in. This list includes funded clients and excludes anyone marked opted-out.</p>
+    </section>
+  );
+}
 function GoogleAdsPanel() {
   const [days, setDays] = useState(30);
   const [report, setReport] = useState<AdsReport | null>(null);
@@ -505,7 +582,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><AdsConversionsPanel /></div>)}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
