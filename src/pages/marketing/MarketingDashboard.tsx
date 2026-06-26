@@ -220,6 +220,49 @@ function MayaSuggestionsPanel() {
     </section>
   );
 }
+// BF_PORTAL_UTM_BUILDER_v1 - campaign URL builder (consistent utm tagging).
+function UtmBuilderPanel() {
+  const [base, setBase] = useState("https://boreal.financial");
+  const [source, setSource] = useState("google");
+  const [medium, setMedium] = useState("cpc");
+  const [campaign, setCampaign] = useState("");
+  const [term, setTerm] = useState("");
+  const [content, setContent] = useState("");
+  const [copied, setCopied] = useState(false);
+  const built = (() => {
+    try {
+      const url = new URL(base.trim());
+      const set = (k: string, v: string) => { if (v.trim()) url.searchParams.set(k, v.trim()); };
+      set("utm_source", source); set("utm_medium", medium); set("utm_campaign", campaign);
+      set("utm_term", term); set("utm_content", content);
+      return url.toString();
+    } catch { return ""; }
+  })();
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(built); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+  };
+  const field = (label: string, val: string, on: (v: string) => void, ph?: string) => (
+    <label className="text-sm" style={{ color: "var(--ui-text)" }}>{label}
+      <input value={val} onChange={(e) => on(e.target.value)} placeholder={ph} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+    </label>
+  );
+  return (
+    <section className="drawer-section">
+      <div className="drawer-section__title mb-2">Campaign URL builder</div>
+      <p style={{ color: "var(--ui-text-muted)", marginBottom: 8, fontSize: "0.85rem" }}>Build consistently tagged links for ads and emails. The tags flow through the website into the application so each funded deal traces back to its campaign.</p>
+      <div className="grid grid-cols-2 gap-2">
+        {field("Destination URL", base, setBase)}
+        {field("Source", source, setSource, "google")}
+        {field("Medium", medium, setMedium, "cpc")}
+        {field("Campaign", campaign, setCampaign, "spring-term-loans")}
+        {field("Term (optional)", term, setTerm)}
+        {field("Content (optional)", content, setContent)}
+      </div>
+      <div className="mt-3 p-2 rounded text-sm break-all" style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text)", border: "1px solid var(--ui-border)" }}>{built || "Enter a valid destination URL"}</div>
+      <button type="button" onClick={() => void copy()} disabled={!built} className="ui-button ui-button--primary mt-2" style={{ opacity: built ? 1 : 0.6 }}>{copied ? "Copied" : "Copy URL"}</button>
+    </section>
+  );
+}
 function GoogleAdsPanel() {
   const [days, setDays] = useState(30);
   const [report, setReport] = useState<AdsReport | null>(null);
@@ -640,7 +683,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
