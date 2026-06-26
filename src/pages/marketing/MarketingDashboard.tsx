@@ -265,7 +265,8 @@ function Ga4Panel() {
 
 
 type ClarityMetric = { metricName: string; rows: Record<string, any>[] };
-type ClarityReport = { configured: boolean; days?: number; cached?: boolean; dashboardUrl?: string | null; metrics?: ClarityMetric[] };
+type ClarityProjectReport = { name: string; dashboardUrl?: string | null; days?: number; cached?: boolean; error?: string; metrics?: ClarityMetric[] };
+type ClarityReport = { configured: boolean; days?: number; projects?: ClarityProjectReport[] };
 
 function ClarityPanel() {
   const [report, setReport] = useState<ClarityReport | null>(null);
@@ -282,37 +283,41 @@ function ClarityPanel() {
   }, []);
   return (
     <section className="drawer-section">
-      <div className="flex items-center justify-between mb-3">
-        <div className="drawer-section__title">Behavior · Microsoft Clarity <span style={{ color: "var(--ui-text-muted)", fontWeight: 400, fontSize: 12 }}>· last 3 days</span></div>
-        {report?.configured && report?.dashboardUrl && (
-          <a href={report.dashboardUrl} target="_blank" rel="noreferrer" className="ui-button ui-button--secondary" style={{ fontSize: 12 }}>Open heatmaps & recordings →</a>
-        )}
-      </div>
+      <div className="drawer-section__title">Behavior · Microsoft Clarity <span style={{ color: "var(--ui-text-muted)", fontWeight: 400, fontSize: 12 }}>· last 3 days</span></div>
       {loading && <p style={{ color: "var(--ui-text-muted)" }}>Loading Clarity…</p>}
       {error && <p role="alert" style={{ color: "#dc2626" }}>{error}</p>}
       {!loading && !error && report && !report.configured && (
-        <p style={{ color: "var(--ui-text-muted)" }}>Microsoft Clarity isn’t connected on the server yet. Add a Clarity Data Export API token and behavior metrics — sessions, engagement, scroll depth, and frustration signals (rage clicks, dead clicks, quick-backs) — will appear here. Heatmaps and session recordings open in the Clarity dashboard.</p>
+        <p style={{ color: "var(--ui-text-muted)" }}>Microsoft Clarity isn’t connected on the server yet. Add a Clarity Data Export API token (one per project) and behavior metrics — sessions, engagement, scroll depth, and frustration signals (rage clicks, dead clicks, quick-backs) — will appear here. Heatmaps and session recordings open in the Clarity dashboard.</p>
       )}
-      {!loading && !error && report?.configured && (report.metrics ?? []).length === 0 && (
-        <p style={{ color: "var(--ui-text-muted)" }}>No Clarity data returned for the last 3 days yet.</p>
-      )}
-      {!loading && !error && report?.configured && (report.metrics ?? []).length > 0 && (
-        <div className="flex flex-wrap gap-3">
-          {(report.metrics ?? []).map((m, i) => (
-            <div key={i} style={{ flex: "1 1 240px", minWidth: 220, border: "1px solid var(--ui-border)", borderRadius: 8, padding: 10 }}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>{m.metricName}</div>
-              {(m.rows ?? []).slice(0, 8).map((row, j) => (
-                <div key={j} style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "4px 0", borderTop: j ? "1px solid var(--ui-border)" : "none" }}>
-                  {Object.entries(row).map(([k, v]) => (
-                    <span key={k} style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{k}: <strong style={{ color: "var(--ui-text)" }}>{String(v)}</strong></span>
+      {!loading && !error && report?.configured && (report.projects ?? []).map((proj, pi) => (
+        <div key={pi} style={{ marginTop: pi ? 16 : 8 }}>
+          <div className="flex items-center justify-between mb-2">
+            <div style={{ fontWeight: 600 }}>{proj.name}</div>
+            {proj.dashboardUrl && (
+              <a href={proj.dashboardUrl} target="_blank" rel="noreferrer" className="ui-button ui-button--secondary" style={{ fontSize: 12 }}>Open heatmaps & recordings →</a>
+            )}
+          </div>
+          {proj.error && <p role="alert" style={{ color: "#dc2626", fontSize: 12 }}>{proj.error}</p>}
+          {!proj.error && (proj.metrics ?? []).length === 0 && <p style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>No data in the last 3 days.</p>}
+          {!proj.error && (proj.metrics ?? []).length > 0 && (
+            <div className="flex flex-wrap gap-3">
+              {(proj.metrics ?? []).map((m, i) => (
+                <div key={i} style={{ flex: "1 1 240px", minWidth: 220, border: "1px solid var(--ui-border)", borderRadius: 8, padding: 10 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>{m.metricName}</div>
+                  {(m.rows ?? []).slice(0, 8).map((row, j) => (
+                    <div key={j} style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "4px 0", borderTop: j ? "1px solid var(--ui-border)" : "none" }}>
+                      {Object.entries(row).map(([k, v]) => (
+                        <span key={k} style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{k}: <strong style={{ color: "var(--ui-text)" }}>{String(v)}</strong></span>
+                      ))}
+                    </div>
                   ))}
                 </div>
               ))}
             </div>
-          ))}
+          )}
+          {proj.cached && <p style={{ color: "var(--ui-text-muted)", fontSize: 11, marginTop: 4 }}>Cached — Clarity allows only 10 pulls/day per project.</p>}
         </div>
-      )}
-      {report?.cached && <p style={{ color: "var(--ui-text-muted)", fontSize: 11, marginTop: 6 }}>Cached — Clarity allows only 10 pulls/day, so this refreshes periodically.</p>}
+      ))}
     </section>
   );
 }
