@@ -19,6 +19,87 @@ type FunnelStep = {
   dropFromPrev: number;
 };
 
+// BF_PORTAL_GOOGLE_ADS_v1 - Google Ads spend/performance from GET /api/marketing/google-ads.
+type AdsRow = { name: string; status?: string; cost: number; impressions: number; clicks: number; ctr: number; cpc: number; conversions: number; convValue: number };
+type AdsReport = { configured: boolean; days?: number; cached?: boolean; error?: string; totals?: { cost: number; impressions: number; clicks: number; conversions: number; convValue: number; cpa: number; roas: number }; campaigns?: AdsRow[]; keywords?: AdsRow[]; searchTerms?: AdsRow[] };
+const money = (n: number) => `$${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+function AdsTable({ title, rows }: { title: string; rows: AdsRow[] }) {
+  if (!rows || rows.length === 0) return null;
+  return (
+    <div className="mt-3">
+      <div className="text-sm font-semibold mb-1" style={{ color: "var(--ui-text)" }}>{title}</div>
+      <div className="space-y-1">
+        {rows.map((r, i) => (
+          <div key={`${r.name}-${i}`} className="flex items-center justify-between text-sm" style={{ color: "var(--ui-text)" }}>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55%" }}>{r.name}</span>
+            <span style={{ color: "var(--ui-text-muted)" }}>{money(r.cost)} &middot; {r.clicks} clicks &middot; {r.conversions} conv</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+function GoogleAdsPanel() {
+  const [days, setDays] = useState(30);
+  const [report, setReport] = useState<AdsReport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    api
+      .get<{ data?: AdsReport } & Partial<AdsReport>>("/api/marketing/google-ads", { params: { days } })
+      .then((res) => {
+        if (cancelled) return;
+        const r = (res?.data ?? res) as AdsReport;
+        setReport(r ?? { configured: false });
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load Google Ads");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [days]);
+  const t = report?.totals;
+  return (
+    <section className="drawer-section">
+      <div className="flex items-center justify-between mb-3">
+        <div className="drawer-section__title">Google Ads</div>
+        <select value={days} onChange={(e) => setDays(Number(e.target.value) || 30)} className="border rounded px-2 py-1 text-sm" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
+          <option value={7}>Last 7 days</option>
+          <option value={30}>Last 30 days</option>
+          <option value={90}>Last 90 days</option>
+        </select>
+      </div>
+      {loading && <p style={{ color: "var(--ui-text-muted)" }}>Loading Google Ads...</p>}
+      {error && <p role="alert" style={{ color: "#dc2626" }}>{error}</p>}
+      {!loading && !error && report && !report.configured && (
+        <p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. Add the Google Ads API credentials (developer token, OAuth client + refresh token, customer ID) and spend, clicks, conversions, CPA, and ROAS will appear here.</p>
+      )}
+      {!loading && !error && report?.configured && report.error && (
+        <p role="alert" style={{ color: "#dc2626" }}>Google Ads error: {report.error}</p>
+      )}
+      {!loading && !error && report?.configured && !report.error && t && (
+        <>
+          <div className="flex flex-wrap gap-2">
+            <StatCard label="Spend" value={money(t.cost)} />
+            <StatCard label="Clicks" value={String(t.clicks)} />
+            <StatCard label="Conversions" value={String(t.conversions)} />
+            <StatCard label="Cost / conv" value={money(t.cpa)} />
+            <StatCard label="ROAS" value={`${t.roas}x`} />
+          </div>
+          <AdsTable title="Top campaigns" rows={report.campaigns ?? []} />
+          <AdsTable title="Top keywords" rows={report.keywords ?? []} />
+          <AdsTable title="Top search terms" rows={report.searchTerms ?? []} />
+        </>
+      )}
+    </section>
+  );
+}
+
 function AnalyticsFunnel() {
   const [days, setDays] = useState(90);
   const [steps, setSteps] = useState<FunnelStep[]>([]);
@@ -378,7 +459,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && <section className="drawer-section"><div className="drawer-section__title">Google Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. Google Ads spend, impressions, and conversions will appear here once the Ads account is linked.</p></section>}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && <GoogleAdsPanel />}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
