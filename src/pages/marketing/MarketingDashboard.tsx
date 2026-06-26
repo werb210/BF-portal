@@ -78,6 +78,60 @@ function AnalyticsFunnel() {
 }
 
 // BF_PORTAL_MARKETING_GA4_DISPLAY_v1 — Analytics tab also renders live Google
+// BF_PORTAL_SOURCES_v1 - conversion by marketing source from GET /api/marketing/sources.
+type SourceRow = { source: string; started: number; submitted: number; conversion: number };
+function SourcesPanel() {
+  const [days, setDays] = useState(90);
+  const [sources, setSources] = useState<SourceRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    api
+      .get<{ data?: { sources?: SourceRow[] }; sources?: SourceRow[] }>("/api/marketing/sources", { params: { days } })
+      .then((res) => {
+        if (cancelled) return;
+        const next = res?.data?.sources ?? res?.sources ?? [];
+        setSources(Array.isArray(next) ? next : []);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load sources");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [days]);
+  const top = sources.reduce((m, s) => Math.max(m, s.started), 1);
+  return (
+    <section className="drawer-section">
+      <div className="flex items-center justify-between mb-3">
+        <div className="drawer-section__title">Conversion by source</div>
+        <select value={days} onChange={(e) => setDays(Number(e.target.value) || 90)} className="border rounded px-2 py-1 text-sm" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
+          <option value={30}>Last 30 days</option>
+          <option value={90}>Last 90 days</option>
+          <option value={365}>Last 365 days</option>
+        </select>
+      </div>
+      {loading && <p style={{ color: "var(--ui-text-muted)" }}>Loading sources...</p>}
+      {error && <p role="alert" style={{ color: "#dc2626" }}>{error}</p>}
+      {!loading && !error && sources.length === 0 && <p style={{ color: "var(--ui-text-muted)" }}>No attributed applications in this period yet. Tag campaign links with utm_source to see them here.</p>}
+      {!loading && !error && sources.length > 0 && (
+        <div className="space-y-2">
+          {sources.map((s) => {
+            const width = Math.max(2, Math.round((s.started / top) * 100));
+            return <div key={s.source}><div className="flex items-center justify-between text-sm" style={{ color: "var(--ui-text)" }}><span>{s.source}</span><span style={{ color: "var(--ui-text-muted)" }}>{s.submitted}/{s.started} submitted &middot; {s.conversion}%</span></div><div style={{ height: 10, borderRadius: 6, background: "var(--ui-border)", overflow: "hidden", marginTop: 4 }}><div style={{ width: `${width}%`, height: "100%", background: "var(--ui-accent-blue)" }} /></div></div>;
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 // Analytics (GA4) traffic from GET /api/marketing/ga4 (respondOk envelope).
 type Ga4Row = { dim: string; sessions: number; users: number };
 type Ga4Trend = { date: string; sessions: number };
@@ -324,7 +378,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && <section className="drawer-section"><div className="drawer-section__title">Google Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. Google Ads spend, impressions, and conversions will appear here once the Ads account is linked.</p></section>}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && <section className="drawer-section"><div className="drawer-section__title">Google Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. Google Ads spend, impressions, and conversions will appear here once the Ads account is linked.</p></section>}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
