@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 
-type MarketingTab = "google-ads" | "linkedin-ads" | "analytics";
+type MarketingTab = "google-ads" | "email" | "linkedin-ads" | "analytics";
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "google-ads", label: "Google Ads" },
+  { id: "email", label: "Email" },
   { id: "linkedin-ads", label: "LinkedIn Ads" },
   { id: "analytics", label: "Analytics" },
 ];
@@ -324,6 +325,68 @@ function GoogleAdsPanel() {
   );
 }
 
+// BF_PORTAL_EMAIL_COMPOSER_v1 - SendGrid bulk marketing email (BF silo).
+type EmailSegments = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
+function EmailComposerPanel() {
+  const [seg, setSeg] = useState<EmailSegments | null>(null);
+  const [tag, setTag] = useState("__all__");
+  const [subject, setSubject] = useState("");
+  const [html, setHtml] = useState("");
+  const [testTo, setTestTo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => {
+    api
+      .get<{ data?: EmailSegments } & Partial<EmailSegments>>("/api/marketing/email/segments")
+      .then((res) => setSeg((res?.data ?? res) as EmailSegments))
+      .catch(() => setSeg({ configured: false, all: 0, segments: [] }));
+  }, []);
+  const count = tag === "__all__" ? (seg?.all ?? 0) : (seg?.segments.find((x) => x.tag === tag)?.n ?? 0);
+  const post = async (test?: string) => {
+    setBusy(true); setMsg(null);
+    try {
+      const payload: Record<string, unknown> = { subject, html };
+      if (test) payload.test = test; else if (tag !== "__all__") payload.tag = tag;
+      const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/email/send", payload);
+      const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string };
+      if (r?.configured === false) setMsg("SendGrid not connected yet (set SENDGRID_API_KEY).");
+      else if (r?.error) setMsg(r.error);
+      else if (r?.test) setMsg(r.ok ? "Test sent." : "Test failed.");
+      else setMsg(`Sent ${r?.sent ?? 0}${r?.failed ? `, ${r.failed} failed` : ""}.`);
+    } catch { setMsg("Send failed."); } finally { setBusy(false); }
+  };
+  if (seg && !seg.configured) {
+    return <section className="drawer-section"><div className="drawer-section__title mb-2">Email</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. Set SENDGRID_API_KEY and SENDGRID_FROM, and authenticate your sending domain, to send marketing email.</p></section>;
+  }
+  return (
+    <section className="drawer-section">
+      <div className="drawer-section__title mb-2">Email campaign</div>
+      <div className="space-y-2">
+        <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Audience
+          <select value={tag} onChange={(e) => setTag(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
+            <option value="__all__">All contacts ({seg?.all ?? 0})</option>
+            {(seg?.segments ?? []).map((x) => <option key={x.tag} value={x.tag}>{x.tag} ({x.n})</option>)}
+          </select>
+        </label>
+        <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Subject
+          <input value={subject} onChange={(e) => setSubject(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+        </label>
+        <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Body (HTML)
+          <textarea value={html} onChange={(e) => setHtml(e.target.value)} rows={8} className="block border rounded px-2 py-1 text-sm mt-1 w-full font-mono" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+        </label>
+        <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Merge fields: {"{{first_name}}"}, {"{{name}}"}, {"{{company}}"}, {"{{email}}"}.</p>
+        <div className="flex flex-wrap gap-2 items-end">
+          <label className="text-sm" style={{ color: "var(--ui-text)" }}>Test to
+            <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@boreal.financial" className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+          </label>
+          <button type="button" disabled={busy || !subject || !html || !testTo} onClick={() => void post(testTo)} className="ui-button ui-button--secondary">Send test</button>
+          <button type="button" disabled={busy || !subject || !html || !count} onClick={() => void post()} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
+        </div>
+        {msg && <p style={{ color: "var(--ui-text-muted)" }}>{msg}</p>}
+      </div>
+    </section>
+  );
+}
 function AnalyticsFunnel() {
   const [days, setDays] = useState(90);
   const [steps, setSteps] = useState<FunnelStep[]>([]);
@@ -683,7 +746,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <EmailComposerPanel />}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
