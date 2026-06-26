@@ -162,6 +162,64 @@ function IcpBuilderPanel() {
     </section>
   );
 }
+// BF_PORTAL_MAYA_SUGGESTIONS_v1 - Maya campaign recommendations, human-approved.
+type AdAction = { type: string; resourceName: string; amountMicros?: number };
+type Suggestion = { id: string; kind: string; title: string; rationale: string; severity: "info" | "warn"; action: AdAction };
+function MayaSuggestionsPanel() {
+  const [items, setItems] = useState<Suggestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [configured, setConfigured] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<{ data?: { configured: boolean; suggestions: Suggestion[] } } & { configured?: boolean; suggestions?: Suggestion[] }>("/api/marketing/google-ads/suggestions")
+      .then((res) => {
+        if (cancelled) return;
+        const d = (res?.data ?? res) as { configured?: boolean; suggestions?: Suggestion[] };
+        setConfigured(d?.configured !== false);
+        setItems(d?.suggestions ?? []);
+      })
+      .catch(() => { if (!cancelled) setItems([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+  const dismiss = (id: string) => setItems((xs) => xs.filter((x) => x.id !== id));
+  const approve = async (sug: Suggestion) => {
+    setBusyId(sug.id); setMsg(null);
+    try {
+      const res = await api.post<{ data?: { ok: boolean; error?: string } } & { ok?: boolean; error?: string }>("/api/marketing/google-ads/suggestions/apply", { action: sug.action });
+      const r = (res?.data ?? res) as { ok?: boolean; error?: string };
+      if (r?.ok) { setItems((xs) => xs.filter((x) => x.id !== sug.id)); setMsg("Applied."); }
+      else setMsg(`Could not apply: ${r?.error ?? "error"}`);
+    } catch {
+      setMsg("Could not apply.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+  return (
+    <section className="drawer-section">
+      <div className="drawer-section__title mb-1">Maya's recommendations</div>
+      <p style={{ color: "var(--ui-text-muted)", marginBottom: 8, fontSize: "0.85rem" }}>Suggestions from your Google Ads data. Nothing changes until you approve it.</p>
+      {loading && <p style={{ color: "var(--ui-text-muted)" }}>Loading...</p>}
+      {!loading && !configured && <p style={{ color: "var(--ui-text-muted)" }}>Connect Google Ads to see recommendations.</p>}
+      {!loading && configured && items.length === 0 && <p style={{ color: "var(--ui-text-muted)" }}>No recommendations right now.</p>}
+      {!loading && configured && items.map((sug) => (
+        <div key={sug.id} className="border rounded p-3 mb-2" style={{ borderColor: "var(--ui-border)" }}>
+          <div className="text-sm font-semibold" style={{ color: sug.severity === "warn" ? "#b45309" : "var(--ui-text)" }}>{sug.title}</div>
+          <div className="text-sm" style={{ color: "var(--ui-text-muted)", marginTop: 2 }}>{sug.rationale}</div>
+          <div className="flex gap-2 mt-2">
+            <button type="button" disabled={busyId === sug.id} onClick={() => void approve(sug)} className="ui-button ui-button--primary" style={{ opacity: busyId === sug.id ? 0.6 : 1 }}>{busyId === sug.id ? "Applying..." : "Approve"}</button>
+            <button type="button" disabled={busyId === sug.id} onClick={() => dismiss(sug.id)} className="ui-button ui-button--secondary">Dismiss</button>
+          </div>
+        </div>
+      ))}
+      {msg && <p style={{ color: "var(--ui-text-muted)", marginTop: 4 }}>{msg}</p>}
+    </section>
+  );
+}
 function GoogleAdsPanel() {
   const [days, setDays] = useState(30);
   const [report, setReport] = useState<AdsReport | null>(null);
@@ -582,7 +640,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
