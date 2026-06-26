@@ -462,6 +462,24 @@ const ProfileSettings = () => {
           >
             {profile.microsoftConnected ? `✓ Connected: ${profile.microsoftAccountEmail ?? localProfile.email}` : "Connect Microsoft 365"}
           </Button>
+          {/* v_O365_OAUTH_v1 - durable server-side connect: captures a refresh token so
+              email stays connected (no more daily reconnects). */}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={async () => {
+              try {
+                const r = await api.get<{ url?: string }>("/api/o365-oauth/start");
+                if (r?.url) window.location.href = r.url;
+                else setMicrosoftError("Could not start Microsoft connection.");
+              } catch {
+                setMicrosoftError("Could not start Microsoft connection.");
+              }
+            }}
+            title="Connect once and stay connected (recommended)"
+          >
+            Stay connected (recommended)
+          </Button>
           {!isMicrosoftConfigured && (
             <span className="text-xs text-slate-500">Microsoft OAuth is not configured.</span>
           )}
