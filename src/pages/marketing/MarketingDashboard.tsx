@@ -80,15 +80,27 @@ function AnalyticsFunnel() {
 // BF_PORTAL_MARKETING_GA4_DISPLAY_v1 — Analytics tab also renders live Google
 // Analytics (GA4) traffic from GET /api/marketing/ga4 (respondOk envelope).
 type Ga4Row = { dim: string; sessions: number; users: number };
+type Ga4Trend = { date: string; sessions: number };
 type Ga4Report = {
   configured: boolean;
   days?: number;
-  summary?: { activeUsers: number; newUsers: number; sessions: number; pageViews: number; avgSessionSec: number };
+  cached?: boolean;
+  error?: string;
+  summary?: { activeUsers: number; newUsers: number; sessions: number; pageViews: number; avgSessionSec: number; engagementRate?: number; engagedSessions?: number };
   channels?: Ga4Row[];
   sources?: Ga4Row[];
+  campaigns?: Ga4Row[];
+  adContent?: Ga4Row[];
+  events?: Ga4Row[];
   landingPages?: Ga4Row[];
+  topPages?: Ga4Row[];
+  newVsReturning?: Ga4Row[];
   countries?: Ga4Row[];
+  cities?: Ga4Row[];
+  browsers?: Ga4Row[];
+  operatingSystems?: Ga4Row[];
   devices?: Ga4Row[];
+  trend?: Ga4Trend[];
 };
 
 function fmtDuration(sec: number): string {
@@ -106,7 +118,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function BarList({ title, rows }: { title: string; rows: Ga4Row[] }) {
+function BarList({ title, rows, unit = "sessions" }: { title: string; rows: Ga4Row[]; unit?: string }) {
   const max = rows.reduce((m, r) => Math.max(m, r.sessions), 0);
   return (
     <section className="drawer-section" style={{ flex: "1 1 320px", minWidth: 280 }}>
@@ -119,7 +131,7 @@ function BarList({ title, rows }: { title: string; rows: Ga4Row[] }) {
             <div key={`${r.dim}-${i}`}>
               <div className="flex items-center justify-between text-sm" style={{ color: "var(--ui-text)" }}>
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "62%" }} title={r.dim}>{r.dim || "(not set)"}</span>
-                <span style={{ color: "var(--ui-text-muted)", whiteSpace: "nowrap" }}>{r.sessions.toLocaleString()} · {r.users.toLocaleString()} users</span>
+                <span style={{ color: "var(--ui-text-muted)", whiteSpace: "nowrap" }}>{r.sessions.toLocaleString()} {unit} · {r.users.toLocaleString()} users</span>
               </div>
               <div style={{ height: 8, borderRadius: 6, background: "var(--ui-border)", overflow: "hidden", marginTop: 4 }}>
                 <div style={{ width: `${width}%`, height: "100%", background: "var(--ui-accent-blue)" }} />
@@ -127,6 +139,27 @@ function BarList({ title, rows }: { title: string; rows: Ga4Row[] }) {
             </div>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+function Sparkline({ data }: { data: Ga4Trend[] }) {
+  if (!data || data.length === 0) return null;
+  const w = 600, h = 56, pad = 4;
+  const max = data.reduce((m, d) => Math.max(m, d.sessions), 0) || 1;
+  const stepX = data.length > 1 ? (w - pad * 2) / (data.length - 1) : 0;
+  const pts = data.map((d, i) => `${pad + i * stepX},${h - pad - (d.sessions / max) * (h - pad * 2)}`).join(" ");
+  return (
+    <section className="drawer-section">
+      <div className="drawer-section__title">Sessions over time</div>
+      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ width: "100%", height: 64 }}>
+        <polyline points={pts} fill="none" stroke="var(--ui-accent-blue)" strokeWidth={2} />
+      </svg>
+      <div className="flex items-center justify-between" style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>
+        <span>{data[0]?.date}</span>
+        <span>peak {max.toLocaleString()} / day</span>
+        <span>{data[data.length - 1]?.date}</span>
       </div>
     </section>
   );
@@ -179,6 +212,9 @@ function Ga4Panel() {
         {!loading && !error && report && !report.configured && (
           <p style={{ color: "var(--ui-text-muted)" }}>Google Analytics isn’t connected on the server yet. Once the GA4 service account is set, live users, sessions, traffic sources, landing pages, geography, and device data will appear here.</p>
         )}
+        {!loading && !error && report?.configured && report.error && (
+          <p role="alert" style={{ color: "#dc2626" }}>Google Analytics error: {report.error}</p>
+        )}
         {!loading && !error && report?.configured && (
           <div className="flex flex-wrap gap-2">
             <StatCard label="Active users" value={(sm?.activeUsers ?? 0).toLocaleString()} />
@@ -186,18 +222,37 @@ function Ga4Panel() {
             <StatCard label="Sessions" value={(sm?.sessions ?? 0).toLocaleString()} />
             <StatCard label="Page views" value={(sm?.pageViews ?? 0).toLocaleString()} />
             <StatCard label="Avg. session" value={fmtDuration(sm?.avgSessionSec ?? 0)} />
+            <StatCard label="Engaged sessions" value={(sm?.engagedSessions ?? 0).toLocaleString()} />
+            <StatCard label="Engagement rate" value={`${sm?.engagementRate ?? 0}%`} />
           </div>
         )}
       </section>
-      {!loading && !error && report?.configured && (
+      {!loading && !error && report?.configured && !report.error && (
         <>
+          <Sparkline data={report.trend ?? []} />
           <div className="flex flex-wrap gap-3">
             <BarList title="Acquisition channels" rows={report.channels ?? []} />
             <BarList title="Top sources / mediums" rows={report.sources ?? []} />
           </div>
           <div className="flex flex-wrap gap-3">
+            <BarList title="Campaigns" rows={report.campaigns ?? []} />
+            <BarList title="Ad content (utm_content)" rows={report.adContent ?? []} />
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <BarList title="Events" rows={report.events ?? []} unit="events" />
+            <BarList title="New vs returning" rows={report.newVsReturning ?? []} />
+          </div>
+          <div className="flex flex-wrap gap-3">
             <BarList title="Top landing pages" rows={report.landingPages ?? []} />
+            <BarList title="Most viewed pages" rows={report.topPages ?? []} unit="views" />
+          </div>
+          <div className="flex flex-wrap gap-3">
             <BarList title="Countries" rows={report.countries ?? []} />
+            <BarList title="Cities" rows={report.cities ?? []} />
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <BarList title="Browsers" rows={report.browsers ?? []} />
+            <BarList title="Operating systems" rows={report.operatingSystems ?? []} />
           </div>
           <div className="flex flex-wrap gap-3">
             <BarList title="Devices" rows={report.devices ?? []} />
