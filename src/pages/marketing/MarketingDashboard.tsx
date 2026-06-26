@@ -264,9 +264,62 @@ function Ga4Panel() {
 }
 
 
+type ClarityMetric = { metricName: string; rows: Record<string, any>[] };
+type ClarityReport = { configured: boolean; days?: number; cached?: boolean; dashboardUrl?: string | null; metrics?: ClarityMetric[] };
+
+function ClarityPanel() {
+  const [report, setReport] = useState<ClarityReport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false; setLoading(true); setError(null);
+    api
+      .get<{ data?: ClarityReport } & Partial<ClarityReport>>("/api/marketing/clarity", { params: { days: 3 } })
+      .then((res) => { if (cancelled) return; const r = ((res as any)?.data ?? res) as ClarityReport; setReport(r ?? null); })
+      .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load Clarity"); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+  return (
+    <section className="drawer-section">
+      <div className="flex items-center justify-between mb-3">
+        <div className="drawer-section__title">Behavior · Microsoft Clarity <span style={{ color: "var(--ui-text-muted)", fontWeight: 400, fontSize: 12 }}>· last 3 days</span></div>
+        {report?.configured && report?.dashboardUrl && (
+          <a href={report.dashboardUrl} target="_blank" rel="noreferrer" className="ui-button ui-button--secondary" style={{ fontSize: 12 }}>Open heatmaps & recordings →</a>
+        )}
+      </div>
+      {loading && <p style={{ color: "var(--ui-text-muted)" }}>Loading Clarity…</p>}
+      {error && <p role="alert" style={{ color: "#dc2626" }}>{error}</p>}
+      {!loading && !error && report && !report.configured && (
+        <p style={{ color: "var(--ui-text-muted)" }}>Microsoft Clarity isn’t connected on the server yet. Add a Clarity Data Export API token and behavior metrics — sessions, engagement, scroll depth, and frustration signals (rage clicks, dead clicks, quick-backs) — will appear here. Heatmaps and session recordings open in the Clarity dashboard.</p>
+      )}
+      {!loading && !error && report?.configured && (report.metrics ?? []).length === 0 && (
+        <p style={{ color: "var(--ui-text-muted)" }}>No Clarity data returned for the last 3 days yet.</p>
+      )}
+      {!loading && !error && report?.configured && (report.metrics ?? []).length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {(report.metrics ?? []).map((m, i) => (
+            <div key={i} style={{ flex: "1 1 240px", minWidth: 220, border: "1px solid var(--ui-border)", borderRadius: 8, padding: 10 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>{m.metricName}</div>
+              {(m.rows ?? []).slice(0, 8).map((row, j) => (
+                <div key={j} style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "4px 0", borderTop: j ? "1px solid var(--ui-border)" : "none" }}>
+                  {Object.entries(row).map(([k, v]) => (
+                    <span key={k} style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{k}: <strong style={{ color: "var(--ui-text)" }}>{String(v)}</strong></span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+      {report?.cached && <p style={{ color: "var(--ui-text-muted)", fontSize: 11, marginTop: 6 }}>Cached — Clarity allows only 10 pulls/day, so this refreshes periodically.</p>}
+    </section>
+  );
+}
+
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && <section className="drawer-section"><div className="drawer-section__title">Google Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. Google Ads spend, impressions, and conversions will appear here once the Ads account is linked.</p></section>}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><Ga4Panel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && <section className="drawer-section"><div className="drawer-section__title">Google Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. Google Ads spend, impressions, and conversions will appear here once the Ads account is linked.</p></section>}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
