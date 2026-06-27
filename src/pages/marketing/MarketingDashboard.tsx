@@ -336,6 +336,70 @@ function GoogleAdsPanel() {
   );
 }
 
+// BF_PORTAL_LINKEDIN_ADS_v1 - LinkedIn Ads spend/performance from GET /api/marketing/linkedin-ads.
+type LiAdsTotals = { cost: number; impressions: number; clicks: number; conversions: number; ctr: number; cpc: number; cpa: number };
+type LiAdsCampaign = { name: string; cost: number; impressions: number; clicks: number; ctr: number; cpc: number; conversions: number };
+type LiAdsReportT = { configured: boolean; days?: number; cached?: boolean; error?: string; totals?: LiAdsTotals; campaigns?: LiAdsCampaign[] };
+function LinkedInAdsPanel() {
+  const [days, setDays] = useState(30);
+  const [report, setReport] = useState<LiAdsReportT | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    api
+      .get<{ data?: LiAdsReportT } & Partial<LiAdsReportT>>("/api/marketing/linkedin-ads", { params: { days } })
+      .then((res) => {
+        if (cancelled) return;
+        const r = (res?.data ?? res) as LiAdsReportT;
+        setReport(r ?? { configured: false });
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load LinkedIn Ads");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [days]);
+  const t = report?.totals;
+  return (
+    <section className="drawer-section">
+      <div className="flex items-center justify-between mb-3">
+        <div className="drawer-section__title">LinkedIn Ads</div>
+        <select value={days} onChange={(e) => setDays(Number(e.target.value) || 30)} className="border rounded px-2 py-1 text-sm" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
+          <option value={7}>Last 7 days</option>
+          <option value={30}>Last 30 days</option>
+          <option value={90}>Last 90 days</option>
+        </select>
+      </div>
+      {loading && <p style={{ color: "var(--ui-text-muted)" }}>Loading LinkedIn Ads...</p>}
+      {error && <p role="alert" style={{ color: "#dc2626" }}>{error}</p>}
+      {!loading && !error && report && !report.configured && (
+        <p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. Add the LinkedIn Advertising API credentials (OAuth client + refresh token, ad account ID) and spend, clicks, conversions, CTR, and CPC will appear here.</p>
+      )}
+      {!loading && !error && report?.configured && report.error && (
+        <p role="alert" style={{ color: "#dc2626" }}>LinkedIn Ads error: {report.error}</p>
+      )}
+      {!loading && !error && report?.configured && !report.error && t && (
+        <>
+          <div className="flex flex-wrap gap-2">
+            <StatCard label="Spend" value={money(t.cost)} />
+            <StatCard label="Impressions" value={String(t.impressions)} />
+            <StatCard label="Clicks" value={String(t.clicks)} />
+            <StatCard label="CTR" value={`${(t.ctr * 100).toFixed(2)}%`} />
+            <StatCard label="Conversions" value={String(t.conversions)} />
+            <StatCard label="Cost / conv" value={money(t.cpa)} />
+          </div>
+          <AdsTable title="Top campaigns" rows={(report.campaigns ?? []).map((c) => ({ ...c, convValue: 0 }))} />
+        </>
+      )}
+    </section>
+  );
+}
+
 // BF_PORTAL_EMAIL_COMPOSER_v1 - SendGrid bulk marketing email (BF silo).
 type EmailSegments = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
 function EmailComposerPanel() {
@@ -836,7 +900,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <EmailComposerPanel />}{tab === "sms" && <SmsComposerPanel />}{tab === "linkedin-ads" && <section className="drawer-section"><div className="drawer-section__title">LinkedIn Ads</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. LinkedIn campaign data will mirror the Google Ads panel once linked.</p></section>}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <EmailComposerPanel />}{tab === "sms" && <SmsComposerPanel />}{tab === "linkedin-ads" && <LinkedInAdsPanel />}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
