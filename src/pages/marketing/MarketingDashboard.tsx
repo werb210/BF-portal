@@ -594,6 +594,23 @@ function LinkedInSuggestionsPanel() {
 
 // BF_PORTAL_EMAIL_COMPOSER_v1 - SendGrid bulk marketing email (BF silo).
 type EmailSegments = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
+// BF_PORTAL_SEND_QUEUE_v1 - poll a background blast job and report live progress.
+type SendJob = { status?: string; total?: number; sent?: number; failed?: number; error?: string };
+async function pollSendJob(jobId: string, total: number, setMsg: (m: string) => void): Promise<void> {
+  setMsg(`Queued ${total} recipients - sending in the background...`);
+  for (let n = 0; n < 240; n++) {
+    await new Promise((r) => setTimeout(r, 5000));
+    try {
+      const res = await api.get<{ data?: SendJob } & SendJob>(`/api/marketing/send-jobs/${jobId}`);
+      const j = (res?.data ?? res) as SendJob;
+      if (!j || !j.status) continue;
+      if (j.status === "done") { setMsg(`Done: sent ${j.sent ?? 0}${j.failed ? `, ${j.failed} failed` : ""} of ${j.total ?? total}.`); return; }
+      if (j.status === "failed") { setMsg(`Send failed${j.error ? `: ${j.error}` : ""}.`); return; }
+      setMsg(`Sending in background: ${j.sent ?? 0}${j.failed ? ` (+${j.failed} failed)` : ""} of ${j.total ?? total}...`);
+    } catch { /* keep polling */ }
+  }
+  setMsg("Still sending in the background - check back shortly.");
+}
 function EmailComposerPanel() {
   const [seg, setSeg] = useState<EmailSegments | null>(null);
   const [tag, setTag] = useState("__all__");
@@ -615,10 +632,11 @@ function EmailComposerPanel() {
       const payload: Record<string, unknown> = { subject, html };
       if (test) payload.test = test; else if (tag !== "__all__") payload.tag = tag;
       const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/email/send", payload);
-      const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string };
+      const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number };
       if (r?.configured === false) setMsg("SendGrid not connected yet (set SENDGRID_API_KEY).");
       else if (r?.error) setMsg(r.error);
       else if (r?.test) setMsg(r.ok ? "Test sent." : "Test failed.");
+      else if (r?.queued) { void pollSendJob(String(r.jobId), Number(r.total ?? count), setMsg); }
       else setMsg(`Sent ${r?.sent ?? 0}${r?.failed ? `, ${r.failed} failed` : ""}.`);
     } catch { setMsg("Send failed."); } finally { setBusy(false); }
   };
@@ -685,10 +703,11 @@ function SmsComposerPanel() {
         if (fbHtml.trim()) payload.fallbackHtml = fbHtml.trim();
       }
       const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/sms/send", payload);
-      const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; smsSent?: number; emailSent?: number; failed?: number; configured?: boolean; error?: string };
+      const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; smsSent?: number; emailSent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number };
       if (r?.configured === false) setMsg("SMS not connected yet (set the toll-free number once A2P-verified).");
       else if (r?.error) setMsg(r.error);
       else if (r?.test) setMsg(r.ok ? "Test sent." : `Test failed${r ? "" : ""}.`);
+      else if (r?.queued) { void pollSendJob(String(r.jobId), Number(r.total ?? count), setMsg); }
       else setMsg(`SMS: ${r?.smsSent ?? 0}, fallback email: ${r?.emailSent ?? 0}${r?.failed ? `, failed: ${r.failed}` : ""}.`);
     } catch { setMsg("Send failed."); } finally { setBusy(false); }
   };
