@@ -263,7 +263,7 @@ export default function DocumentsTab({ applicationId }: Props) {
     if (typeof window !== "undefined" && !window.confirm("Delete this document permanently? This also removes the stored file.")) return;
     setActionError(null);
     try {
-      await api.delete(`/api/applications/${applicationId}/documents/${docId}`);
+      await api.delete(`/api/documents/${applicationId}/documents/${docId}`); // BF_PORTAL_DOC_DELETE_PATH_v1 — server route is /api/documents/:appId/documents/:docId
       await reload();
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Delete failed");
