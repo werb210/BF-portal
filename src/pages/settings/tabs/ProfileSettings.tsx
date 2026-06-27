@@ -28,6 +28,31 @@ type MeResponse = {
   phone?: string | null;
 };
 
+// BF_PORTAL_AVATAR_FIX_v1 — downscale a chosen avatar to a small JPEG data URL so
+// it can be stored as profile_image_url without a blob pipeline.
+async function fileToAvatarDataUrl(file: File, size = 256): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(new Error("read failed"));
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error("image failed"));
+    i.src = dataUrl;
+  });
+  const scale = Math.min(1, size / Math.max(img.width || size, img.height || size));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round((img.width || size) * scale));
+  canvas.height = Math.max(1, Math.round((img.height || size) * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
+
 function normalizeMeProfile(data: MeResponse | null | undefined) {
   return {
     firstName: data?.first_name ?? data?.firstName ?? "",
@@ -161,9 +186,9 @@ const ProfileSettings = () => {
       if (localProfile.phone?.trim()) payload.phone = localProfile.phone.trim();
       await api.patch("/api/users/me", payload);
       if (avatarFile) {
-        const formData = new FormData();
-        formData.append("avatar", avatarFile);
-        await api.patch("/api/users/me", formData);
+        // BF_PORTAL_AVATAR_FIX_v1 — send a downscaled data URL as profileImage (JSON).
+        const profileImage = await fileToAvatarDataUrl(avatarFile);
+        await api.patch("/api/users/me", { profileImage });
       }
       await fetchProfile();
       setStatusMessage("Profile updated");
