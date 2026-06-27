@@ -400,6 +400,52 @@ function LinkedInAdsPanel() {
   );
 }
 
+// BF_PORTAL_LINKEDIN_CONV_v1 - closed-loop funded-deal conversions to LinkedIn.
+function LinkedInConversionsPanel() {
+  const [data, setData] = useState<{ configured: boolean; count?: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const load = () => {
+    setLoading(true);
+    api
+      .get<{ data?: { configured: boolean; count?: number } } & { configured?: boolean; count?: number }>("/api/marketing/linkedin-ads/conversions/pending")
+      .then((res) => setData((res?.data ?? res) as { configured: boolean; count?: number }))
+      .catch(() => setData({ configured: false }))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, []);
+  const upload = async () => {
+    setBusy(true); setMsg(null);
+    try {
+      const res = await api.post<{ data?: { uploaded?: number; failed?: number } } & { uploaded?: number; failed?: number }>("/api/marketing/linkedin-ads/conversions/upload", {});
+      const r = (res?.data ?? res) as { uploaded?: number; failed?: number };
+      setMsg(`Uploaded ${r?.uploaded ?? 0}${r?.failed ? `, ${r.failed} failed` : ""}.`);
+      load();
+    } catch {
+      setMsg("Upload failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="drawer-section">
+      <div className="drawer-section__title mb-2">Closed-loop conversions</div>
+      {loading && <p style={{ color: "var(--ui-text-muted)" }}>Loading...</p>}
+      {!loading && data && !data.configured && (
+        <p style={{ color: "var(--ui-text-muted)" }}>Set LINKEDIN_CONVERSION_URN (your &quot;Funded Deal&quot; conversion rule) to send funded deals with a LinkedIn click back to LinkedIn with their value.</p>
+      )}
+      {!loading && data?.configured && (
+        <>
+          <p style={{ color: "var(--ui-text)" }}>{data.count ?? 0} funded deal(s) with a LinkedIn click ready to upload.</p>
+          <button type="button" disabled={busy || !(data.count ?? 0)} onClick={() => void upload()} className="ui-button ui-button--primary mt-2" style={{ opacity: busy || !(data.count ?? 0) ? 0.6 : 1 }}>{busy ? "Uploading..." : "Upload to LinkedIn"}</button>
+          {msg && <p style={{ color: "var(--ui-text-muted)", marginTop: 6 }}>{msg}</p>}
+        </>
+      )}
+    </section>
+  );
+}
+
 // BF_PORTAL_EMAIL_COMPOSER_v1 - SendGrid bulk marketing email (BF silo).
 type EmailSegments = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
 function EmailComposerPanel() {
@@ -900,7 +946,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <EmailComposerPanel />}{tab === "sms" && <SmsComposerPanel />}{tab === "linkedin-ads" && <LinkedInAdsPanel />}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <EmailComposerPanel />}{tab === "sms" && <SmsComposerPanel />}{tab === "linkedin-ads" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInConversionsPanel /></div>)}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
