@@ -127,6 +127,14 @@ export default function LenderQaSection({ applicationId }: { applicationId?: str
   const submitSet = (setId: string) => run(() => api.post(`${base}/sets/${setId}/submit`, {}));
   const withdrawSet = (setId: string) => run(() => api.post(`${base}/sets/${setId}/withdraw`, {}));
   const accept = (qid: string) => run(() => api.post(`${base}/questions/${qid}/accept`, {}));
+  // BF_PORTAL_QA_ACCEPT_ALL_v1 — accept every answered question in one click;
+  // run() reloads once at the end, then Finalize -> PDF proceeds as before.
+  const acceptAll = (set: QaSet) =>
+    run(async () => {
+      for (const q of set.questions.filter((x) => x.review_status === "answered")) {
+        await api.post(`${base}/questions/${q.id}/accept`, {});
+      }
+    });
   const doReject = (qid: string) => {
     const reason = (rejecting[qid] ?? "").trim();
     if (!reason) return;
@@ -285,6 +293,11 @@ export default function LenderQaSection({ applicationId }: { applicationId?: str
               ) : null}
               {answered.length > 0 ? (
                 <span style={S.qMeta}>{answered.length} answer(s) awaiting review</span>
+              ) : null}
+              {answered.length > 0 ? (
+                <button type="button" style={S.btnPrimary} disabled={busy} onClick={() => void acceptAll(set)}>
+                  Accept all ({answered.length})
+                </button>
               ) : null}
               {allAccepted && !isFinal ? (
                 <button type="button" style={S.btnPrimary} disabled={busy} onClick={() => void finalize(set.id)}>
