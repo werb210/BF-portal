@@ -23,6 +23,7 @@ import AccessRestricted from "@/components/auth/AccessRestricted";
 import { canWrite } from "@/auth/can";
 // BF_PORTAL_BLOCK_v303_COLLATERAL_DOCTYPES_v1
 import CollateralFacilitySection from "@/pages/applications/tabs/CollateralFacilitySection";
+import LenderQaSection from "@/pages/applications/tabs/LenderQaSection"; // BF_PORTAL_LENDER_QA_v1
 
 type Props = { applicationId?: string | null };
 
@@ -412,6 +413,8 @@ export default function LendersTab({ applicationId }: Props) {
       {(v_collateralRequired || (v_collateralApplies && matches.some((m) => selected.includes(m.id) && /accord/i.test(m.lenderName ?? "") && String(m.productCategory ?? "").toUpperCase() === "LOC"))) && (
         <CollateralFacilitySection applicationId={id} />
       )}
+
+      <LenderQaSection applicationId={id} />
 
       <div data-testid="lenders-send-footer" style={styles.footer}>
         <button
