@@ -33,8 +33,9 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
     ?? ((user as { name?: string } | null)?.name?.split(" ")[0] ?? "");
   const greeting = firstName ? `Hello, ${firstName}` : "Hello";
 
-  const avatarUrl = (user as { avatar_url?: string; profileImage?: string } | null)?.avatar_url
-    ?? (user as { profileImage?: string } | null)?.profileImage;
+  const avatarUrl = (user as { avatar_url?: string; profileImage?: string; profile_image_url?: string } | null)?.avatar_url
+    ?? (user as { profileImage?: string } | null)?.profileImage
+    ?? (user as { profile_image_url?: string } | null)?.profile_image_url; // BF_PORTAL_AVATAR_FIX_v1
   const avatarInitials = useMemo(() => {
     const resolvedFirstName = (user as { first_name?: string; firstName?: string } | null)?.first_name
       ?? (user as { firstName?: string } | null)?.firstName;
