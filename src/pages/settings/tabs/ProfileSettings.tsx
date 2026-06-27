@@ -26,6 +26,7 @@ type MeResponse = {
   lastName?: string | null;
   email?: string | null;
   phone?: string | null;
+  profile_image_url?: string | null; // BF_PORTAL_AVATAR_PREVIEW_v1
 };
 
 // BF_PORTAL_AVATAR_FIX_v1 — downscale a chosen avatar to a small JPEG data URL so
@@ -58,7 +59,8 @@ function normalizeMeProfile(data: MeResponse | null | undefined) {
     firstName: data?.first_name ?? data?.firstName ?? "",
     lastName: data?.last_name ?? data?.lastName ?? "",
     email: data?.email ?? "",
-    phone: data?.phone ?? ""
+    phone: data?.phone ?? "",
+    profileImage: data?.profile_image_url ?? "" // BF_PORTAL_AVATAR_PREVIEW_v1
   };
 }
 
@@ -117,7 +119,8 @@ const ProfileSettings = () => {
           firstName: normalized.firstName || prev.firstName,
           lastName: normalized.lastName || prev.lastName,
           email: normalized.email || prev.email,
-          phone: normalized.phone || prev.phone
+          phone: normalized.phone || prev.phone,
+          profileImage: normalized.profileImage || prev.profileImage // BF_PORTAL_AVATAR_PREVIEW_v1
         }));
       } catch (error) {
         if (!isMounted) return;
@@ -191,6 +194,13 @@ const ProfileSettings = () => {
         await api.patch("/api/users/me", { profileImage });
       }
       await fetchProfile();
+      // BF_PORTAL_AVATAR_PREVIEW_v1 — pull the stored avatar back so the preview persists after save.
+      if (avatarFile) {
+        try {
+          const me2 = await api.get<MeResponse>("/api/users/me");
+          setLocalProfile((prev) => ({ ...prev, profileImage: me2?.profile_image_url ?? prev.profileImage }));
+        } catch { /* keep local preview */ }
+      }
       setStatusMessage("Profile updated");
     } catch (error) {
       setFormError(getErrorMessage(error, "Unable to save profile."));
