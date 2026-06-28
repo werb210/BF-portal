@@ -85,6 +85,16 @@ function sanitizeBookingHtml(html: string): string {
   );
 }
 
+const tbSelect: CSSProperties = {
+  padding: "3px 6px",
+  border: "1px solid var(--ui-border)",
+  borderRadius: 4,
+  background: "var(--ui-surface-strong)",
+  color: "var(--ui-text)",
+  cursor: "pointer",
+  fontSize: 12,
+  lineHeight: 1.2,
+};
 const tbBtn: CSSProperties = {
   padding: "3px 9px",
   border: "1px solid var(--ui-border)",
@@ -138,6 +148,7 @@ export default function O365ComposeModal({
   const [composeSending, setComposeSending] = useState(false);
   const [composeError, setComposeError] = useState<string | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const savedRange = useRef<Range | null>(null); // BF_PORTAL_COMPOSE_TOOLBAR_v1
   const [requestReadReceipt, setRequestReadReceipt] = useState(false);
   const [requestDeliveryReceipt, setRequestDeliveryReceipt] = useState(false);
   const [importance, setImportance] = useState<"low" | "normal" | "high">("normal");
@@ -302,6 +313,26 @@ export default function O365ComposeModal({
     bodyRef.current?.focus();
     document.execCommand(cmd, false, value);
     syncBody();
+  }
+  // BF_PORTAL_COMPOSE_TOOLBAR_v1 - font/size/color come from <select>/<input> that steal
+  // focus from the editor, collapsing its selection. Save the editor range on interaction
+  // and restore it before applying, so formatting lands on the selected text.
+  function saveSelection(): void {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && bodyRef.current && bodyRef.current.contains(sel.anchorNode)) {
+      savedRange.current = sel.getRangeAt(0).cloneRange();
+    }
+  }
+  function applySel(cmd: string, value?: string): void {
+    bodyRef.current?.focus();
+    const sel = window.getSelection();
+    if (savedRange.current && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedRange.current);
+    }
+    document.execCommand(cmd, false, value);
+    syncBody();
+    saveSelection();
   }
   function insertHtmlAtCursor(html: string) {
     bodyRef.current?.focus();
@@ -605,9 +636,32 @@ export default function O365ComposeModal({
         {/* BF_PORTAL_BLOCK_v740_TOOLBAR_STICKY */}
         <div style={{ border: "1px solid var(--ui-border)", borderRadius: 4 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 3, padding: 5, borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", position: "sticky", top: 0, zIndex: 5, borderTopLeftRadius: 4, borderTopRightRadius: 4 }}>
+            <select title="Font" defaultValue="" onMouseDown={saveSelection} onChange={(e) => { applySel("fontName", e.target.value); e.currentTarget.selectedIndex = 0; }} style={tbSelect}>
+              <option value="" disabled>Font</option>
+              <option value="Aptos, Arial, sans-serif">Aptos</option>
+              <option value="Arial, Helvetica, sans-serif">Arial</option>
+              <option value="Calibri, sans-serif">Calibri</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="'Times New Roman', Times, serif">Times</option>
+              <option value="Verdana, sans-serif">Verdana</option>
+              <option value="'Courier New', monospace">Courier</option>
+            </select>
+            <select title="Size" defaultValue="" onMouseDown={saveSelection} onChange={(e) => { applySel("fontSize", e.target.value); e.currentTarget.selectedIndex = 0; }} style={tbSelect}>
+              <option value="" disabled>Size</option>
+              <option value="2">Small</option>
+              <option value="3">Normal</option>
+              <option value="5">Large</option>
+              <option value="6">X-Large</option>
+              <option value="7">Huge</option>
+            </select>
             <button type="button" title="Bold" onMouseDown={(e) => { e.preventDefault(); exec("bold"); }} style={tbBtn}><b>B</b></button>
             <button type="button" title="Italic" onMouseDown={(e) => { e.preventDefault(); exec("italic"); }} style={tbBtn}><i>I</i></button>
             <button type="button" title="Underline" onMouseDown={(e) => { e.preventDefault(); exec("underline"); }} style={tbBtn}><u>U</u></button>
+            <button type="button" title="Strikethrough" onMouseDown={(e) => { e.preventDefault(); exec("strikeThrough"); }} style={tbBtn}><s>S</s></button>
+            <label title="Text color" onMouseDown={saveSelection} style={{ ...tbBtn, display: "inline-flex", alignItems: "center", gap: 4, padding: "1px 6px" }}>
+              <span style={{ fontWeight: 700 }}>A</span>
+              <input type="color" defaultValue="#1E3A8A" onChange={(e) => applySel("foreColor", e.target.value)} style={{ width: 18, height: 18, border: "none", background: "transparent", padding: 0, cursor: "pointer" }} />
+            </label>
             <button type="button" title="Bulleted list" onMouseDown={(e) => { e.preventDefault(); exec("insertUnorderedList"); }} style={tbBtn}>• List</button>
             <button type="button" title="Numbered list" onMouseDown={(e) => { e.preventDefault(); exec("insertOrderedList"); }} style={tbBtn}>1. List</button>
             <button type="button" title="Insert link" onMouseDown={(e) => { e.preventDefault(); insertLinkPrompt(); }} style={tbBtn}>🔗</button>
@@ -618,6 +672,9 @@ export default function O365ComposeModal({
             contentEditable
             suppressContentEditableWarning
             onInput={syncBody}
+            onKeyUp={saveSelection}
+            onMouseUp={saveSelection}
+            onBlur={saveSelection}
             data-placeholder="Message"
             style={{ minHeight: 170, maxHeight: 340, overflowY: "auto", padding: 8, fontSize: 14, outline: "none", lineHeight: 1.45 }}
           />
