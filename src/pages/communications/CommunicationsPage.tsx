@@ -1411,6 +1411,7 @@ function InboxTab() {
   const [query, setQuery] = useState("");
   const [folder, setFolder] = useState<"inbox" | "sent" | "all">("inbox");
   const [folders, setFolders] = useState<Array<{ id: string; name: string }>>([]); // BF_PORTAL_INBOX_MOVE_v1
+  const [browseFolderId, setBrowseFolderId] = useState<string>(""); // BF_PORTAL_INBOX_FOLDER_BROWSE_v1
   // Debounce the search box so we don't hit Graph on every keystroke.
   useEffect(() => {
     const t = setTimeout(() => setQuery(queryInput.trim()), 400);
@@ -1454,7 +1455,7 @@ function InboxTab() {
     setSelected(null);
     (async () => {
       try {
-        const params = { ...(active ? { mailbox: active } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) };
+        const params = { ...(active ? { mailbox: active } : {}), sort: sortDir, ...(browseFolderId ? { folderId: browseFolderId } : { folder }), ...(query ? { q: query } : {}) };
         const r = await withO365Refresh(() =>
           api<typeof messages>("/api/crm/inbox", { params })
         );
@@ -1477,7 +1478,7 @@ function InboxTab() {
       }
     })();
     return () => { cancelled = true; };
-  }, [active, reconnectAttempts, sortDir, folder, query]);
+  }, [active, reconnectAttempts, sortDir, folder, query, browseFolderId]);
 
   // Load body when a message is selected
   useEffect(() => {
@@ -1803,13 +1804,20 @@ function InboxTab() {
               style={{ flex: 1, fontSize: 13, padding: "4px 8px", borderRadius: 4, border: "1px solid var(--ui-border)" }}
             />
             <select
-              value={folder}
-              onChange={(e) => setFolder(e.target.value === "sent" ? "sent" : e.target.value === "all" ? "all" : "inbox")}
+              value={browseFolderId ? `id:${browseFolderId}` : folder}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v.startsWith("id:")) { setBrowseFolderId(v.slice(3)); }
+                else { setBrowseFolderId(""); setFolder(v === "sent" ? "sent" : v === "all" ? "all" : "inbox"); }
+              }}
               style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--ui-border)" }}
             >
               <option value="inbox">Inbox</option>
               <option value="sent">Sent</option>
               <option value="all">All</option>
+              {folders.filter((fd) => !["inbox", "sent items"].includes(fd.name.trim().toLowerCase())).map((fd) => (
+                <option key={fd.id} value={`id:${fd.id}`}>{fd.name}</option>
+              ))}
             </select>
           </div>
           {/* BF_PORTAL_BLOCK_v823_INBOX_READTOGGLE_SORT_BADGE — sort + unread badge */}
