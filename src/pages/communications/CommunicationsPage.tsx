@@ -1395,6 +1395,8 @@ function InboxTab() {
   const [active, setActive] = useState<string>("");
   const [messages, setMessages] = useState<Array<{ id: string; subject: string; bodyPreview?: string; from?: { emailAddress?: { address: string; name?: string } }; receivedDateTime?: string; isRead?: boolean; flag?: { flagStatus?: string }; conversationId?: string }>>([]); // BF_PORTAL_BLOCK_v833_INBOX_SEARCH_FOLDERS_THREAD
   const [selectedId, setSelectedId] = useState<string>("");
+  const [attachments, setAttachments] = useState<Array<{ id: string; name: string; contentType: string; size: number }>>([]); // BF_PORTAL_INBOX_ATTACHMENTS_v1
+  const [attBusy, setAttBusy] = useState(false); // BF_PORTAL_INBOX_ATTACHMENTS_v1
   const [selected, setSelected] = useState<{ subject: string; from?: { emailAddress?: { address: string; name?: string } }; toRecipients?: Array<{ emailAddress?: { address?: string } }>; ccRecipients?: Array<{ emailAddress?: { address?: string } }>; body?: { content: string; contentType: "html" | "text" }; receivedDateTime?: string } | null>(null); // BF_PORTAL_BLOCK_v835_INBOX_REPLY_ALL_FORWARD
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1497,6 +1499,50 @@ function InboxTab() {
     })();
     return () => { cancelled = true; };
   }, [selectedId, active]);
+
+  // BF_PORTAL_INBOX_ATTACHMENTS_v1 - load the message file attachments (non-inline).
+  useEffect(() => {
+    setAttachments([]);
+    if (!selectedId) return;
+    let cancelled = false;
+    const params = active ? { mailbox: active } : {};
+    withO365Refresh(() => api<{ data?: Array<{ id: string; name: string; contentType: string; size: number }> } | Array<{ id: string; name: string; contentType: string; size: number }>>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments`, { params }))
+      .then((r) => {
+        const list = Array.isArray(r) ? r : ((r as { data?: Array<{ id: string; name: string; contentType: string; size: number }> }).data ?? []);
+        if (!cancelled) setAttachments(Array.isArray(list) ? list : []);
+      })
+      .catch(() => { if (!cancelled) setAttachments([]); });
+    return () => { cancelled = true; };
+  }, [selectedId, active]);
+
+  // BF_PORTAL_INBOX_ATTACHMENTS_v1 - download helpers. The server returns the attachment as
+  // base64 JSON; decode to a Blob and trigger a browser download.
+  const downloadOne = useCallback(async (att: { id: string; name: string; contentType: string }): Promise<void> => {
+    if (!selectedId) return;
+    const params = active ? { mailbox: active } : {};
+    const resp = await withO365Refresh(() => api<{ data?: { name?: string; contentType?: string; contentBytes?: string } } & { name?: string; contentType?: string; contentBytes?: string }>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/${encodeURIComponent(att.id)}`, { params }));
+    const d = (resp as { data?: { name?: string; contentType?: string; contentBytes?: string } }).data ?? (resp as { name?: string; contentType?: string; contentBytes?: string });
+    if (!d?.contentBytes) return;
+    const bin = atob(d.contentBytes);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const blob = new Blob([bytes], { type: d.contentType ?? att.contentType ?? "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = d.name ?? att.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, [active, selectedId]);
+
+  const downloadAllAttachments = useCallback(async (): Promise<void> => {
+    if (attBusy || !attachments.length) return;
+    setAttBusy(true);
+    try {
+      for (const att of attachments) {
+        try { await downloadOne(att); } catch { /* skip individual failures */ }
+        await new Promise((r) => setTimeout(r, 350));
+      }
+    } finally { setAttBusy(false); }
+  }, [attBusy, attachments, downloadOne]);
 
   // BF_PORTAL_BLOCK_v213_INBOX_RECONNECT_M365_v2
   // Reconnect Microsoft 365 in place — no navigation to Settings required.
@@ -1994,6 +2040,23 @@ ${orig}`;
             {selected.body?.contentType === "html"
               ? <div dangerouslySetInnerHTML={{ __html: selected.body.content }} />
               : <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{selected.body?.content ?? ""}</pre>}
+            {/* BF_PORTAL_INBOX_ATTACHMENTS_v1 */}
+            {attachments.length > 0 && (
+              <div style={{ marginTop: 20, borderTop: "1px solid var(--ui-border)", paddingTop: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <strong style={{ fontSize: 13 }}>Attachments ({attachments.length})</strong>
+                  <button type="button" disabled={attBusy} onClick={() => void downloadAllAttachments()} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 6, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", cursor: attBusy ? "default" : "pointer" }}>{attBusy ? "Downloading..." : "Download all"}</button>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {attachments.map((att) => (
+                    <button key={att.id} type="button" onClick={() => void downloadOne(att)} title={`Download ${att.name}`} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text)", cursor: "pointer", maxWidth: 280 }}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{att.name}</span>
+                      <span style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>{att.size ? `${Math.max(1, Math.round(att.size / 1024))} KB` : ""}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </article>
         )}
       </div>
