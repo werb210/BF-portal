@@ -1627,6 +1627,30 @@ function InboxTab() {
     }
   }, [active, selectedId]);
 
+  // BF_PORTAL_INBOX_SAVE_TO_CRM_v1 - manually file the open email's attachments to the
+  // sender's CRM contact (creating the contact if needed). Useful for older mail outside the
+  // background poller's window, or to file on demand.
+  const [crmSaveBusy, setCrmSaveBusy] = useState(false);
+  const [crmSaveMsg, setCrmSaveMsg] = useState<string>("");
+  const saveToCrm = useCallback(async (): Promise<void> => {
+    if (!selectedId) return;
+    setCrmSaveBusy(true);
+    setCrmSaveMsg("");
+    try {
+      const params = active ? { mailbox: active } : {};
+      const resp = await api<{ filed?: number; data?: { filed?: number } }>(
+        `/api/crm/inbox/${encodeURIComponent(selectedId)}/file-to-crm`,
+        { method: "POST", params },
+      );
+      const filed = (resp?.data?.filed ?? resp?.filed ?? 0) as number;
+      setCrmSaveMsg(filed > 0 ? `Saved ${filed} file${filed === 1 ? "" : "s"} to CRM.` : "No attachments on this email.");
+    } catch (e: unknown) {
+      setCrmSaveMsg(e instanceof Error ? e.message : "Save to CRM failed.");
+    } finally {
+      setCrmSaveBusy(false);
+    }
+  }, [selectedId, active]);
+
   // BF_PORTAL_BLOCK_v832_INBOX_FLAG_AND_BULK — flag + bulk multi-select.
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -2033,10 +2057,12 @@ ${orig}`;
                     <button type="button" style={btnStyle} onClick={() => openCompose(fromAddr, reSubj)}>Reply</button>
                     <button type="button" style={btnStyle} onClick={() => openCompose(replyAllTo.join(", "), reSubj)}>Reply All</button>
                     <button type="button" style={btnStyle} onClick={() => openCompose("", fwdSubj)}>Forward</button>
+                    <button type="button" style={btnStyle} disabled={crmSaveBusy} onClick={() => void saveToCrm()} title="Save this email's attachments to the sender's CRM contact">{crmSaveBusy ? "Saving..." : "Save to CRM"}</button>
                   </>
                 );
               })()}
             </div>
+            {crmSaveMsg && <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 12 }}>{crmSaveMsg}</div>} {/* BF_PORTAL_INBOX_SAVE_TO_CRM_v1 */}
             {selected.body?.contentType === "html"
               ? <div dangerouslySetInnerHTML={{ __html: selected.body.content }} />
               : <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{selected.body?.content ?? ""}</pre>}
