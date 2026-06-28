@@ -521,11 +521,15 @@ function CalendarContent() {
                 style={calInputStyle}
               />
             </label>
-            <div style={{ display: "flex", gap: 8 }}>
-              {eventForm.title.trim() && eventForm.start && eventForm.end ? (
+            {/* BF_PORTAL_CALENDAR_RANGE_GUARD_v1 - block save when End is not after Start */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {eventForm.title.trim() && eventForm.start && eventForm.end && new Date(eventForm.end).getTime() > new Date(eventForm.start).getTime() ? (
                 <button onClick={() => createEventMutation.mutate({ ...eventForm, start: localInputToUtcIso(eventForm.start), end: localInputToUtcIso(eventForm.end) })} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-accent-blue)", color: "#fff" }}>Save</button>
               ) : null}
               <SecondaryButton onClick={() => setShowEventForm(false)}>Cancel</SecondaryButton>
+              {!!eventForm.start && !!eventForm.end && new Date(eventForm.end).getTime() <= new Date(eventForm.start).getTime() && (
+                <span style={{ color: "#dc2626", fontSize: 12 }}>End must be after start.</span>
+              )}
             </div>
           </div>
         </div>
