@@ -352,14 +352,29 @@ export default function O365ComposeModal({
     insertHtmlAtCursor(`<a href="${url}">${url}</a><br/>`);
   }
 
+  // BF_PORTAL_TEMPLATE_FIRSTNAME_v2 - resolve {{first_name}} from the known recipient name
+  // when provided (CRM email path), else from the first To address (e.g.
+  // "maria.restor@x.com" -> "Maria"). The Communications composer does not pass
+  // recipientName, which is why the token rendered empty there.
+  function deriveFirstName(): string {
+    const toFirst = parseAddrs(composeTo)[0] ?? "";
+    const source = ((recipientName ?? "").trim()) || toFirst;
+    if (!source) return "";
+    const base = source.includes("@") ? (source.split("@")[0] ?? "") : source;
+    const token = base.split(/[\s._+\-0-9]+/).filter(Boolean)[0] ?? "";
+    return token ? token.charAt(0).toUpperCase() + token.slice(1) : "";
+  }
+
   function applyTemplate(nextTemplateId: string) {
     setTemplateId(nextTemplateId);
     const template = templates.find((item) => item.id === nextTemplateId);
     if (!template) return;
     if (template.subject) setComposeSubject(template.subject);
-    const firstName = (recipientName ?? "").trim().split(/[\s.]+/).filter(Boolean)[0] ?? "";
+    const firstName = deriveFirstName();
     let html = template.body_html ? templateBodyToHtml(template.body_html) : (template.body_text ? escapeToHtml(template.body_text) : "");
-    html = html.split("{{first_name}}").join(firstName);
+    // Keep the {{first_name}} token when no recipient is known yet so the send path can
+    // fill it once a To address is entered.
+    if (firstName) html = html.split("{{first_name}}").join(firstName);
     if (bookingUrl) {
       const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
       html = html.split("{{meeting_link}}").join(bookingButton);
@@ -500,7 +515,7 @@ export default function O365ComposeModal({
       // Rich-text editor: the body is already HTML. Convert any {{meeting_link}}
       // token (and legacy pasted booking URL) into the styled booking button.
       let body_html = bodyRef.current?.innerHTML ?? composeBody;
-      const firstName = (recipientName ?? "").trim().split(/[\s.]+/).filter(Boolean)[0] ?? "";
+      const firstName = deriveFirstName();
       body_html = body_html.split("{{first_name}}").join(firstName);
       if (bookingUrl) {
         // BF_PORTAL_BOOKING_BUTTON_NO_DOUBLE_WRAP_v1 — the toolbar "Book a meeting"
