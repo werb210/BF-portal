@@ -1410,6 +1410,7 @@ function InboxTab() {
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [folder, setFolder] = useState<"inbox" | "sent" | "all">("inbox");
+  const [folders, setFolders] = useState<Array<{ id: string; name: string }>>([]); // BF_PORTAL_INBOX_MOVE_v1
   // Debounce the search box so we don't hit Graph on every keystroke.
   useEffect(() => {
     const t = setTimeout(() => setQuery(queryInput.trim()), 400);
@@ -1636,6 +1637,41 @@ function InboxTab() {
     }
   }, [selectedIds, active, selectedId]);
 
+  // BF_PORTAL_INBOX_MOVE_v1 - load the mailbox Outlook folders for the "Move to" picker.
+  useEffect(() => {
+    let alive = true;
+    const params = active ? { mailbox: active } : {};
+    api<{ data?: Array<{ id: string; name: string }> } | Array<{ id: string; name: string }>>("/api/crm/inbox/folders/list", { params })
+      .then((r) => {
+        const list = Array.isArray(r) ? r : ((r as { data?: Array<{ id: string; name: string }> }).data ?? []);
+        if (alive) setFolders(Array.isArray(list) ? list : []);
+      })
+      .catch(() => { if (alive) setFolders([]); });
+    return () => { alive = false; };
+  }, [active]);
+
+  // BF_PORTAL_INBOX_MOVE_v1 - move selected messages to an Outlook folder, then drop them
+  // from the current list (they have left this folder). Mirrors bulkDelete.
+  const bulkMove = useCallback(async (destinationId: string): Promise<void> => {
+    const ids = Array.from(selectedIds);
+    if (!ids.length || !destinationId) return;
+    setBulkBusy(true);
+    try {
+      const params = active ? { mailbox: active } : {};
+      for (const id of ids) {
+        try {
+          await api(`/api/crm/inbox/${encodeURIComponent(id)}/move`, { method: "POST", params, body: { destinationId } });
+          setMessages((prev) => prev.filter((mm) => mm.id !== id));
+        } catch { /* skip individual failures */ }
+      }
+      setSelectedId((sid) => (ids.includes(sid) ? "" : sid));
+      setSelected((sel) => (selectedId && ids.includes(selectedId) ? null : sel));
+      setSelectedIds(new Set());
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [selectedIds, active, selectedId]);
+
   useEffect(() => {
     if (needsReconnect) return;
     const tick = setInterval(() => {
@@ -1807,6 +1843,10 @@ function InboxTab() {
               <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(false)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark unread</button>
               <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkFlag()} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Flag</button>
               <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkDelete()} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #fecaca", background: "var(--ui-surface-strong)", color: "#dc2626", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Delete</button>
+              <select disabled={bulkBusy || selectedIds.size === 0} value="" title="Move to folder" onChange={(e) => { const d = e.target.value; e.currentTarget.selectedIndex = 0; if (d) void bulkMove(d); }} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>
+                <option value="">Move to...</option>
+                {folders.map((fd) => (<option key={fd.id} value={fd.id}>{fd.name}</option>))}
+              </select>
             </div>
           )}
           {messages.map(m => {
