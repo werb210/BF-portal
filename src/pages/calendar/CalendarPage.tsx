@@ -54,6 +54,17 @@ type CalendarEvent = {
   resource: ApiCalendarEvent & { source?: "calendar" | "task"; taskId?: string; taskState?: "overdue" | "dueToday" | "upcoming" };
 };
 
+// BF_PORTAL_CALENDAR_TZ_FIX_v1 - a <input type="datetime-local"> yields a naive local
+// wall-clock string (e.g. "2026-06-29T14:00") with no timezone. The server stamps it as
+// timeZone:"UTC" and the grid re-reads it as UTC, so 2 PM local was stored and shown as
+// 8 AM. Convert the local value to a true UTC ISO instant before POSTing so the stored
+// time matches what the user picked. Empty/invalid values pass through unchanged.
+const localInputToUtcIso = (v: string): string => {
+  if (!v) return v;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? v : d.toISOString();
+};
+
 const locales = { "en-US": enUS };
 
 const localizer = dateFnsLocalizer({
@@ -512,7 +523,7 @@ function CalendarContent() {
             </label>
             <div style={{ display: "flex", gap: 8 }}>
               {eventForm.title.trim() && eventForm.start && eventForm.end ? (
-                <button onClick={() => createEventMutation.mutate(eventForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-accent-blue)", color: "#fff" }}>Save</button>
+                <button onClick={() => createEventMutation.mutate({ ...eventForm, start: localInputToUtcIso(eventForm.start), end: localInputToUtcIso(eventForm.end) })} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-accent-blue)", color: "#fff" }}>Save</button>
               ) : null}
               <SecondaryButton onClick={() => setShowEventForm(false)}>Cancel</SecondaryButton>
             </div>
