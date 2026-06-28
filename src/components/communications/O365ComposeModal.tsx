@@ -60,6 +60,17 @@ function escapeToHtml(s: string): string {
     .replace(/\n/g, "<br/>");
 }
 
+// BF_PORTAL_TEMPLATE_BODY_HTML_v1 -- the Settings > Templates editor is a plain-text
+// textarea whose content is stored verbatim in body_html, so newlines collapsed when
+// injected as HTML in the composer. Treat a body with no real HTML tags as plain text:
+// escape it and convert newlines to <br/>. Genuine HTML bodies pass through unchanged.
+function templateBodyToHtml(raw: string): string {
+  const s = raw ?? "";
+  if (!s) return "";
+  const looksLikeHtml = /<(br|p|div|ul|ol|li|a|strong|em|b|i|h[1-6]|span|table)\b/i.test(s);
+  return looksLikeHtml ? s : escapeToHtml(s);
+}
+
 // BF_PORTAL_BOOKING_BUTTON_SANITIZE_v1 — collapse a mangled/nested "Book a meeting" anchor
 // (from the prior double-wrap bug) back to a single clean button whenever a body is loaded
 // into the editor (init / reply / edit-sent / draft), so a half-broken body can't carry the
@@ -316,7 +327,7 @@ export default function O365ComposeModal({
     if (!template) return;
     if (template.subject) setComposeSubject(template.subject);
     const firstName = (recipientName ?? "").trim().split(/[\s.]+/).filter(Boolean)[0] ?? "";
-    let html = template.body_html ?? (template.body_text ? escapeToHtml(template.body_text) : "");
+    let html = template.body_html ? templateBodyToHtml(template.body_html) : (template.body_text ? escapeToHtml(template.body_text) : "");
     html = html.split("{{first_name}}").join(firstName);
     if (bookingUrl) {
       const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
