@@ -9,6 +9,7 @@ import { ContactApplicantFields, ContactAdvisors } from "@/components/crm/Contac
 import { EntityEditModal } from "@/components/EntityEditModal";
 import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
 import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
+import { ContactDocuments } from "@/components/crm/ContactDocuments"; // BF_PORTAL_CONTACT_DOCUMENTS_v1
 
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
@@ -107,6 +108,7 @@ export default function ContactDetailPage() {
 
       <main style={{ minWidth: 0 }}>
         <UnifiedTimeline contactId={id} scope={scope} refreshKey={refreshKey} />
+        <ContactDocuments contactId={id} refreshKey={refreshKey} /> {/* BF_PORTAL_CONTACT_DOCUMENTS_v1 */}
         {isBiSilo && (
           <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}>
             <MarketingTab contactId={id} />
