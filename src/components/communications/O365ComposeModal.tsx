@@ -333,7 +333,12 @@ export default function O365ComposeModal({
       const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
       html = html.split("{{meeting_link}}").join(bookingButton);
     }
-    if (html) insertHtmlAtCursor(html);
+    // BF_PORTAL_TEMPLATE_REPLACE_BODY_v1 - applying a template replaces the composer body rather
+    // than inserting at the cursor (which appended to existing text).
+    if (html && bodyRef.current) {
+      bodyRef.current.innerHTML = html;
+      syncBody();
+    }
   }
 
   function insertBookingUrl() {
