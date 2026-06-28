@@ -12,7 +12,7 @@ const WB_MANIFEST_MARKER = "__WB_MANIFEST";
 precacheAndRoute(self.__WB_MANIFEST || []);
 cleanupOutdatedCaches();
 
-// BF_PORTAL_SW_v710_NO_API_INTERCEPT — the SW must NEVER intercept /api/ calls.
+// BF_PORTAL_SW_v710_NO_API_INTERCEPT - the SW must NEVER intercept /api/ calls.
 // A prior NetworkFirst("/api/") route cached status-0 (opaque/failed) responses
 // from the cross-origin API host; once a bad entry was cached it was replayed on
 // every call, breaking the whole portal with net::ERR_FAILED while the server was
@@ -25,6 +25,7 @@ self.addEventListener("install", () => {
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     await caches.delete("bf-portal-api");
+    await caches.delete("bf-portal-images");
     await self.clients.claim();
   })());
 });
@@ -38,16 +39,22 @@ registerRoute(new NavigationRoute(navHandler, {
   denylist: [/^\/api\//, /^\/_/, /\.\w+$/]
 }));
 
-// BF_PORTAL_SW_v710_NO_API_INTERCEPT — API requests bypass the SW entirely and
+// BF_PORTAL_SW_v710_NO_API_INTERCEPT - API requests bypass the SW entirely and
 // always go straight to the network. They are authenticated + cross-origin and
 // must never be cached or replayed.
 
+// BF_PORTAL_SW_SAMEORIGIN_IMAGES_v1 - only cache SAME-ORIGIN images. Cross-origin images
+// (email logo on server.boreal.financial, hero/marketing images on
+// *.blob.core.windows.net) must bypass the SW and hit the network, exactly like
+// /api/. A prior CacheFirst here cached a status-0 (failed) cross-origin logo
+// response and replayed it as net::ERR_FAILED. Same-origin images are always 200,
+// so status 0 is dropped from the cacheable list to prevent re-poisoning.
 registerRoute(
-  ({ request }) => request.destination === "image",
+  ({ request, url }) => request.destination === "image" && url.origin === self.location.origin,
   new CacheFirst({
     cacheName: "bf-portal-images",
     plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new CacheableResponsePlugin({ statuses: [200] }),
       new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 })
     ]
   })
@@ -102,7 +109,7 @@ self.addEventListener("sync", (event: any) => {
   }
 });
 
-// BF_PORTAL_SW_OFFLINE_FALLBACK_v1 — when an uncached document navigation fails
+// BF_PORTAL_SW_OFFLINE_FALLBACK_v1 - when an uncached document navigation fails
 // (offline), serve the precached offline.html instead of the browser error page.
 setCatchHandler(async ({ request }) => {
   if (request.destination === "document") {
