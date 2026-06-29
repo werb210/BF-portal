@@ -38,6 +38,7 @@ type Card = {
   stage_entered_at?: string | null;
   doc_progress?: DocProgress;
   contact_name?: string | null;
+  contact_id?: string | null;
   productCategory?: string | null;
   product_category?: string | null;
 };
@@ -225,6 +226,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
   const [callBusy, setCallBusy] = useState(false);
   const [stepsOpen, setStepsOpen] = useState(false); // BF_PORTAL_BLOCK_v793_REQUEST_STEPS
   const cardName = card.business_legal_name ?? card.name ?? "Unnamed";
+  const navigate = useNavigate();
   // BF_PORTAL_BLOCK_v225_DIALER_CLEAN_SLATE_v1 -- look up phone via API,
   // then hand off to the OS dialer with a tel: link.
   async function handleCall() {
@@ -302,7 +304,17 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{name}</div>
             {card.contact_name && (
-              <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
+              card.contact_id ? (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); navigate(`/crm/contacts/${card.contact_id}`); }}
+                  title="Open CRM contact"
+                  style={{ display: "block", maxWidth: "100%", textAlign: "left", background: "transparent", border: 0, padding: 0, cursor: "pointer", fontSize: 11, color: "var(--ui-accent-blue)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: "underline" }}>
+                  {card.contact_name}
+                </button>
+              ) : (
+                <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
+              )
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
