@@ -12,6 +12,7 @@ const STEP4_FIELDS: Array<[string, string]> = [
   ["firstName", "First Name"],
   ["lastName", "Last Name"],
   ["fullName", "Full Name"],
+  ["title", "Title / Role"],
   ["email", "Email"],
   ["phone", "Mobile Phone"],
   ["homePhone", "Home Phone"],
@@ -32,7 +33,10 @@ const STEP4_FIELDS: Array<[string, string]> = [
   ["ownRent", "Own or Rent"],
   ["propertyValue", "Property Value"],
   ["mortgageBalance", "Mortgage Value"],
-  ["creditScore", "Credit Score Range"],
+  ["creditScoreRange", "Credit Score Range"],
+  ["bankruptcyFiled", "Bankruptcy / Proposal Filed"],
+  ["bankruptcyWhen", "Bankruptcy / Proposal When"],
+  ["additionalShareholders", "Additional Shareholders"],
 ];
 
 const sectionLabel = {
@@ -101,21 +105,41 @@ export function ContactApplicantFields({ applicationIds }: { applicationIds?: st
     ([k]) => applicant[k] != null && String(applicant[k]).trim() !== "",
   );
   if (!hasAny) return null;
-  const partner =
-    applicant.partner && typeof applicant.partner === "object"
-      ? (applicant.partner as Record<string, any>)
-      : null;
-
   return (
     <div style={{ marginTop: 16, borderTop: "1px solid var(--ui-border)", paddingTop: 12 }}>
       <div style={sectionLabel}>Applicant</div>
       <FieldRows data={applicant} />
-      {partner && (
-        <div style={{ marginTop: 12 }}>
-          <div style={sectionLabel}>Partner</div>
-          <FieldRows data={partner} />
-        </div>
-      )}
+    </div>
+  );
+}
+
+// BF_PORTAL_CRM_CONTACT_PARTNERS_v1 - Partners render on the RIGHT rail (parallel
+// to Company / Advisors), reading the linked application's applicant.partner.
+export function ContactPartners({ applicationIds }: { applicationIds?: string[] }) {
+  const appId = applicationIds?.[0] ?? null;
+  const [partner, setPartner] = useState<Record<string, any> | null>(null);
+  useEffect(() => {
+    if (!appId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = await fetchPortalApplication<unknown>(appId);
+        const appl = pickApplicant(raw);
+        const p = appl?.partner && typeof appl.partner === "object" ? (appl.partner as Record<string, any>) : null;
+        if (!cancelled) setPartner(p);
+      } catch {
+        if (!cancelled) setPartner(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [appId]);
+  if (!appId || !partner) return null;
+  const hasAny = STEP4_FIELDS.some(([k]) => partner[k] != null && String(partner[k]).trim() !== "");
+  if (!hasAny) return null;
+  return (
+    <div style={{ marginTop: 16 }}>
+      <h3 style={{ marginTop: 0 }}>Partners</h3>
+      <FieldRows data={partner} />
     </div>
   );
 }
