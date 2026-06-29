@@ -543,7 +543,7 @@ export default function ApplicationTab({ application }: Props) {
 
       <SectionGroup title="Applicant">
         <Field label="Name" value={fmt(joinName(applicant) || "—")} />
-        <Field label="Title" value={fmt(applicant.title)} />
+        <Field label="Title" value={fmt(applicant.title || fdApplicant.title)} />
         <Field label="Phone" value={fmt(applicant.phone ?? applicant.phoneNumber)} />
         <Field label="Email" value={applicant.email ? <Email value={String(applicant.email)} /> : "—"} />
         <Field label="Date of Birth" value={maskDob(applicant.dateOfBirth ?? applicant.dob)} />
