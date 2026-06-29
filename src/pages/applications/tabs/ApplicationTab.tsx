@@ -522,7 +522,7 @@ export default function ApplicationTab({ application }: Props) {
         <Field label="Start Date" value={fmtDate(business.startDate)} />
         <Field label="Time in Business" value={fmt(business.timeInBusiness ?? fp.yearsInBusiness ?? fp.salesHistory)} />
         <Field label="Number of Employees" value={fmt(business.numberOfEmployees ?? business.employees)} />
-        <Field label="Annual Revenue" value={fmtMoney(business.annualRevenue ?? fp.annualRevenue ?? business.estimatedRevenue ?? fp.revenueLast12Months)} />
+        <Field label="Annual Revenue" value={fmtMoney(business.annualRevenue ?? business.estimatedRevenue ?? fp.annualRevenue ?? fp.revenueLast12Months)} /> {/* v_REVENUE_STEP3_FIRST: step-3 actual before step-1 estimate */}
         <Field label="Monthly Revenue" value={fmtMoney(business.monthlyRevenue ?? fp.monthlyRevenue)} />
         {/* BF_PORTAL_BLOCK_v608_THREE_FIXES_v1 — Tax ID / EIN removed per Todd. */}
       </SectionGroup>
