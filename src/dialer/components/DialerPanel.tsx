@@ -237,7 +237,7 @@ const AGENT_NOTES: string[] = [
 ];
 
 function IntakeScript() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   return (
     <div style={{ borderTop: `1px solid ${T.border}`, background: T.surface }}>
       <button onClick={() => setOpen((o) => !o)}
