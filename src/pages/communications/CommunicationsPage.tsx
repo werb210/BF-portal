@@ -1632,6 +1632,8 @@ function InboxTab() {
   // background poller's window, or to file on demand.
   const [crmSaveBusy, setCrmSaveBusy] = useState(false);
   const [crmSaveMsg, setCrmSaveMsg] = useState<string>("");
+  const [crmOneBusy, setCrmOneBusy] = useState<string>(""); // BF_PORTAL_INBOX_FILE_ONE_TO_CRM_v1
+  const [crmOneMsg, setCrmOneMsg] = useState<string>("");   // BF_PORTAL_INBOX_FILE_ONE_TO_CRM_v1
   const saveToCrm = useCallback(async (): Promise<void> => {
     if (!selectedId) return;
     setCrmSaveBusy(true);
@@ -1648,6 +1650,26 @@ function InboxTab() {
       setCrmSaveMsg(e instanceof Error ? e.message : "Save to CRM failed.");
     } finally {
       setCrmSaveBusy(false);
+    }
+  }, [selectedId, active]);
+
+  // BF_PORTAL_INBOX_FILE_ONE_TO_CRM_v1: add a single attachment to the sender's CRM contact.
+  const fileOneToCrm = useCallback(async (att: { id: string; name: string }): Promise<void> => {
+    if (!selectedId) return;
+    setCrmOneBusy(att.id);
+    setCrmOneMsg("");
+    try {
+      const params = active ? { mailbox: active } : {};
+      const resp = await api<{ filed?: number; data?: { filed?: number } }>(
+        `/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/${encodeURIComponent(att.id)}/file-to-crm`,
+        { method: "POST", params },
+      );
+      const filed = (resp?.data?.filed ?? resp?.filed ?? 0) as number;
+      setCrmOneMsg(filed > 0 ? `Added "${att.name}" to CRM.` : `"${att.name}" is already in CRM.`);
+    } catch (e: unknown) {
+      setCrmOneMsg(e instanceof Error ? e.message : "Add to contact failed.");
+    } finally {
+      setCrmOneBusy("");
     }
   }, [selectedId, active]);
 
@@ -2075,12 +2097,16 @@ ${orig}`;
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {attachments.map((att) => (
-                    <button key={att.id} type="button" onClick={() => void downloadOne(att)} title={`Download ${att.name}`} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text)", cursor: "pointer", maxWidth: 280 }}>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{att.name}</span>
-                      <span style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>{att.size ? `${Math.max(1, Math.round(att.size / 1024))} KB` : ""}</span>
-                    </button>
+                    <div key={att.id} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <button type="button" onClick={() => void downloadOne(att)} title={`Download ${att.name}`} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text)", cursor: "pointer", maxWidth: 280 }}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{att.name}</span>
+                        <span style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>{att.size ? `${Math.max(1, Math.round(att.size / 1024))} KB` : ""}</span>
+                      </button>
+                      <button type="button" disabled={crmOneBusy === att.id} onClick={() => void fileOneToCrm(att)} title="Add this file to the sender's CRM contact" style={{ fontSize: 12, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", cursor: crmOneBusy === att.id ? "default" : "pointer", whiteSpace: "nowrap" }}>{crmOneBusy === att.id ? "Adding..." : "+ CRM"}</button>
+                    </div>
                   ))}
                 </div>
+                {crmOneMsg && <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginTop: 8 }}>{crmOneMsg}</div>} {/* BF_PORTAL_INBOX_FILE_ONE_TO_CRM_v1 */}
               </div>
             )}
           </article>
