@@ -39,6 +39,8 @@ type Card = {
   doc_progress?: DocProgress;
   contact_name?: string | null;
   contact_id?: string | null;
+  partner_name?: string | null;
+  partner_contact_id?: string | null;
   productCategory?: string | null;
   product_category?: string | null;
 };
@@ -314,6 +316,20 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
                 </button>
               ) : (
                 <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
+              )
+            )}
+            {/* v_PARTNER_NAME_LINK: partner name -> their CRM contact, mirrors the applicant link */}
+            {card.partner_name && (
+              card.partner_contact_id ? (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); navigate(`/crm/contacts/${card.partner_contact_id}`); }}
+                  title="Open partner CRM contact"
+                  style={{ display: "block", maxWidth: "100%", textAlign: "left", background: "transparent", border: 0, padding: 0, cursor: "pointer", fontSize: 11, color: "var(--ui-accent-blue)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: "underline" }}>
+                  {card.partner_name}
+                </button>
+              ) : (
+                <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.partner_name}</div>
               )
             )}
           </div>
