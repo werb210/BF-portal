@@ -163,6 +163,7 @@ export default function ApplicationTab({ application }: Props) {
   const [v_sign, v_setSign] = useState<{ reason: string; canSend: boolean } | null>(null);
   const [v_signBusy, v_setSignBusy] = useState(false);
   const [v_signNote, v_setSignNote] = useState<string | null>(null);
+  const [v_resetBusy, v_setResetBusy] = useState(false); // BF_PORTAL_RESET_SIGNING_v1
   useEffect(() => {
     if (!v784_appId) return;
     let active = true;
@@ -192,6 +193,21 @@ export default function ApplicationTab({ application }: Props) {
     return () => { active = false; };
   }, [v784_appId, v_signNote]);
 
+  // BF_PORTAL_RESET_SIGNING_v1 - clear a wedged SignNow session so a fresh "Send for signing"
+  // can run. Calls the admin reset route; refuses server-side on already-signed apps.
+  async function v_resetSigning() {
+    if (v_resetBusy || !v784_appId) return;
+    if (!window.confirm("Reset the signing session? This clears the current SignNow session so you can Send for signing again. It does not affect an already-signed application.")) return;
+    v_setResetBusy(true);
+    try {
+      await api(`/api/admin/applications/${encodeURIComponent(v784_appId)}/reset-signing`, { method: "POST" });
+      v_setSignNote("Signing session reset. Click Send for signing to start fresh.");
+    } catch (e: unknown) {
+      v_setSignNote(e instanceof Error ? e.message : "Reset failed.");
+    } finally {
+      v_setResetBusy(false);
+    }
+  }
   async function v_resendSigning() {
     if (v_signBusy || !v784_appId) return;
     v_setSignBusy(true);
@@ -387,6 +403,18 @@ export default function ApplicationTab({ application }: Props) {
               {v_signBusy ? "Sending…" : "Send for signing"}
             </button>
           )}
+          {v_signNote && (v_signNote.startsWith("Not sent") || v_signNote.startsWith("Could not")) && (
+            <button
+              type="button"
+              onClick={() => void v_resetSigning()}
+              disabled={v_resetBusy}
+              title="Clear the wedged SignNow session so you can Send for signing again"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid #b91c1c", background: "var(--ui-surface-strong)", color: "#b91c1c", fontWeight: 600, cursor: v_resetBusy ? "wait" : "pointer", fontSize: 14, whiteSpace: "nowrap" }}
+              data-testid="reset-signing"
+            >
+              {v_resetBusy ? "Resetting..." : "Reset signing"}
+            </button>
+          )} {/* BF_PORTAL_RESET_SIGNING_v1 */}
           <SigningBadge status={(application as any)?.signing?.status} />
           <span style={styles.statusPill}>{fmt(application.stage, "—")}</span>
         </div>
