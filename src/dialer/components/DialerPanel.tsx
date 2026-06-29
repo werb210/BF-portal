@@ -165,6 +165,120 @@ function RecordingPill({ recording, paused, onToggle, disabled }: {
   );
 }
 
+type ScriptSection = { n: string; title: string; say?: string[]; capture?: string; note?: string };
+
+const INTAKE_SCRIPT: ScriptSection[] = [
+  { n: "0", title: "Recording consent (read first)",
+    say: [`This call is recorded for quality and accuracy. Is that okay to continue?`],
+    capture: `recording_consent (yes/no)`,
+    note: `If no: stop recording, offer unrecorded or a secure link, log the refusal.` },
+  { n: "1", title: "Greeting",
+    say: [`Thank you for calling Boreal Financial. My name is ___ - how can I help you today?`,
+          `If financing: I will ask a few quick questions to match you with the lenders and products most likely to approve - about five minutes.`] },
+  { n: "2", title: "Contact and business identity",
+    say: [`Your full name? Company name? Your position with the company?`,
+          `Is the business incorporated, a sole proprietorship, or a partnership?`,
+          `Are you the sole owner, or are there other owners or partners?`,
+          `Best mobile number? (this is also the number used to access the secure application)`,
+          `Best email address?`],
+    capture: `contact_name, business_name, title, entity_type, ownership, phone (login), email` },
+  { n: "3", title: "Business profile",
+    say: [`In a sentence, what does the company do?`,
+          `How long operating? Which province and city? How many employees?`],
+    capture: `description, time_in_business, province/city, employees` },
+  { n: "4", title: "Funding request",
+    say: [`How much funding are you looking for?`,
+          `READ BACK: So that is $___, correct?`,
+          `What will the funds be used for? (working capital, equipment, expansion, inventory, payroll, acquisition, commercial real estate, debt consolidation, media/entertainment, factoring/receivables, purchase orders, other)`],
+    capture: `amount_requested (read back), use_of_funds (drives routing)` },
+  { n: "5", title: "Timing",
+    say: [`When do you need the funds? (immediately / within 30 days / 1-3 months / just exploring)`],
+    capture: `urgency` },
+  { n: "6", title: "Existing financing",
+    say: [`Any of these in place now? Bank/term loans, lines of credit, merchant cash advances, equipment leases, factoring, government loans (CSBFP/BDC).`],
+    capture: `existing_debt (all that apply)` },
+  { n: "7", title: "Financial overview",
+    say: [`Approximate annual revenue last year?`,
+          `READ BACK: So roughly $___, correct?`,
+          `Is the business currently profitable?`,
+          `Any bankruptcies, consumer proposals, CRA/tax arrears, or judgments - business or owners?`],
+    capture: `annual_revenue (read back), profitable, credit_issues` },
+  { n: "8", title: "Collateral",
+    say: [`Any assets to support the financing? Equipment, real estate, accounts receivable, inventory, or none.`],
+    capture: `collateral (all that apply)` },
+  { n: "9", title: "Route-specific (ask the matching block)",
+    say: [`Media: signed contracts, broadcaster/distribution agreements, or approved tax credits?`,
+          `Real estate: property type, approximate value, owned or being purchased?`,
+          `Equipment: what equipment, approximate cost, new or used?`,
+          `Factoring: main customers and outstanding receivables?`],
+    capture: `route-specific detail` },
+  { n: "10", title: "Decision-makers",
+    say: [`Will all decision-makers and owners be available to take part?`],
+    capture: `decision_makers_available` },
+  { n: "11", title: "Documents and secure link",
+    say: [`We will typically need recent financial statements, bank statements, government ID, and corporate documents.`,
+          `Nothing to send now - I will text a secure link to your mobile; you upload there and complete the application. It is protected by a one-time code sent to your phone.`],
+    capture: `consent_to_contact (CASL, yes) to text/email the link` },
+  { n: "12", title: "Appointment and next steps",
+    say: [`Want a specialist to call at a particular time, or is now-onward fine?`,
+          `Once reviewed, a specialist reaches out with next steps and the strongest-fit lenders.`],
+    capture: `preferred_callback` },
+  { n: "13", title: "Close",
+    say: [`Anything else you would like us to know before we begin?`,
+          `Thank you - sending your secure link now; we will begin reviewing right away.`],
+    capture: `notes` },
+];
+
+const AGENT_NOTES: string[] = [
+  "Read back amount and revenue before recording them.",
+  "Use of funds drives routing: media -> Media Funding, equipment -> Equipment, factoring -> Factoring, real estate -> Commercial Mortgage, general -> Working Capital, POs -> PO, new business -> Startup.",
+  "$1M+ routes to the senior broker queue.",
+  "No documents by voice - always the secure OTP link.",
+];
+
+function IntakeScript() {
+  const [open, setOpen] = useState(true);
+  return (
+    <div style={{ borderTop: `1px solid ${T.border}`, background: T.surface }}>
+      <button onClick={() => setOpen((o) => !o)}
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 20px", background: "transparent", border: "none", color: T.text, cursor: "pointer" }}
+        title="Toggle intake script" aria-expanded={open}>
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase", color: T.textMuted }}>Intake script</span>
+        <span style={{ display: "grid", placeItems: "center", color: T.textMuted, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+          <Icon d="M6 9l6 6 6-6" size={16} />
+        </span>
+      </button>
+      {open && (
+        <div style={{ maxHeight: 260, overflowY: "auto", padding: "0 20px 14px" }}>
+          {INTAKE_SCRIPT.map((s) => (
+            <div key={s.n} style={{ marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: T.accent, minWidth: 16 }}>{s.n}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: T.text, letterSpacing: 0.3, textTransform: "uppercase" }}>{s.title}</span>
+              </div>
+              {s.say?.map((line, i) => (
+                <div key={i} style={{ fontSize: 12.5, lineHeight: 1.45, color: T.text, marginLeft: 24, marginBottom: 3 }}>{line}</div>
+              ))}
+              {s.capture ? (
+                <div style={{ fontSize: 11, lineHeight: 1.4, color: T.textMuted, marginLeft: 24, marginTop: 2 }}>Capture: {s.capture}</div>
+              ) : null}
+              {s.note ? (
+                <div style={{ fontSize: 11, lineHeight: 1.4, color: T.textDim, marginLeft: 24, marginTop: 2, fontStyle: "italic" }}>{s.note}</div>
+              ) : null}
+            </div>
+          ))}
+          <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 4, paddingTop: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, letterSpacing: 0.6, textTransform: "uppercase", marginBottom: 4 }}>Agent notes</div>
+            {AGENT_NOTES.map((nt, i) => (
+              <div key={i} style={{ fontSize: 11, lineHeight: 1.4, color: T.textDim, marginBottom: 3 }}>- {nt}</div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 type Expander = "none" | "keypad" | "add" | "merge" | "transfer";
 
 export default function DialerPanel() {
@@ -300,6 +414,7 @@ export default function DialerPanel() {
               onClick={() => me && conf && dialerApi.holdParticipant(conf.id, me.id, !me.on_hold)}
               disabled={!me || !conf} />
           </div>
+          <IntakeScript />
           <TranscriptFooter transcript={st.transcript} />
         </>
       )}
@@ -366,6 +481,7 @@ export default function DialerPanel() {
             </div>
           </div>
 
+          <IntakeScript />
           <TranscriptFooter transcript={st.transcript} />
         </>
       )}
