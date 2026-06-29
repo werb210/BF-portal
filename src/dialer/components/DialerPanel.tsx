@@ -117,29 +117,12 @@ function DTMFKeypad({ onPress, compact }: { onPress: (d: string) => void; compac
   );
 }
 
-const SMART_REPLIES = [
-  "Let me look into that for you",
-  "I'll get in touch with the team",
-  "I'll review and get back to you",
-];
-
 function TranscriptFooter({ transcript }: { transcript: { text: string; final: boolean }[] }) {
+  if (transcript.length === 0) return null;
   const tail = transcript.slice(-3).map((s) => s.text).join(" ");
   return (
     <div style={{ padding: "12px 20px 16px", borderTop: `1px solid ${T.border}`, background: T.surface }}>
-      <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 8, lineHeight: 1.4, minHeight: 16 }}>
-        {transcript.length === 0 ? "Call transcript will appear here" : tail}
-      </div>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {SMART_REPLIES.map((r) => (
-          <span key={r} style={{ padding: "5px 10px", borderRadius: 12, fontSize: 11, background: T.surfaceAlt, color: T.textMuted, border: `1px solid ${T.border}`, cursor: "default" }}>
-            {r}
-          </span>
-        ))}
-      </div>
-      <div style={{ fontSize: 9.5, color: T.textDim, marginTop: 8, letterSpacing: 0.3 }}>
-        * Transcript and smart replies will only display on answered calls
-      </div>
+      <div style={{ fontSize: 11, color: T.textMuted, lineHeight: 1.4 }}>{tail}</div>
     </div>
   );
 }
