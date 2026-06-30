@@ -680,8 +680,6 @@ function SmsComposerPanel() {
   const [tag, setTag] = useState("__all__");
   const [body, setBody] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
-  const [fbSubject, setFbSubject] = useState("");
-  const [fbHtml, setFbHtml] = useState("");
   const [testTo, setTestTo] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -700,8 +698,6 @@ function SmsComposerPanel() {
       else {
         if (tag !== "__all__") payload.tag = tag;
         if (linkUrl.trim()) payload.linkUrl = linkUrl.trim();
-        if (fbSubject.trim()) payload.fallbackSubject = fbSubject.trim();
-        if (fbHtml.trim()) payload.fallbackHtml = fbHtml.trim();
       }
       const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/sms/send", payload);
       const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; smsSent?: number; emailSent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number };
@@ -709,7 +705,7 @@ function SmsComposerPanel() {
       else if (r?.error) setMsg(r.error);
       else if (r?.test) setMsg(r.ok ? "Test sent." : `Test failed${r ? "" : ""}.`);
       else if (r?.queued) { void pollSendJob(String(r.jobId), Number(r.total ?? count), setMsg); }
-      else setMsg(`SMS: ${r?.smsSent ?? 0}, fallback email: ${r?.emailSent ?? 0}${r?.failed ? `, failed: ${r.failed}` : ""}.`);
+      else setMsg(`SMS: ${r?.smsSent ?? 0}${r?.failed ? `, failed: ${r.failed}` : ""}.`);
     } catch { setMsg("Send failed."); } finally { setBusy(false); }
   };
   if (seg && !seg.configured) {
@@ -732,15 +728,6 @@ function SmsComposerPanel() {
         <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Landing page (optional, tracked)
           <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://boreal.financial/..." className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
         </label>
-        <div className="border-t pt-2" style={{ borderColor: "var(--ui-border)" }}>
-          <div className="text-sm font-semibold mb-1" style={{ color: "var(--ui-text)" }}>Fallback email (sent after 36h with no click/reply, or no mobile)</div>
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Subject
-            <input value={fbSubject} onChange={(e) => setFbSubject(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
-          </label>
-          <label className="text-sm block mt-2" style={{ color: "var(--ui-text)" }}>Body (HTML)
-            <textarea value={fbHtml} onChange={(e) => setFbHtml(e.target.value)} rows={5} className="block border rounded px-2 py-1 text-sm mt-1 w-full font-mono" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
-          </label>
-        </div>
         <div className="flex flex-wrap gap-2 items-end">
           <label className="text-sm" style={{ color: "var(--ui-text)" }}>Test to
             <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="+1..." className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
