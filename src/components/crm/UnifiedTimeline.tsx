@@ -1,4 +1,4 @@
-// BF_PORTAL_UNIFIED_TIMELINE_v1 — single chronological activity feed for a
+// BF_PORTAL_UNIFIED_TIMELINE_v1 - single chronological activity feed for a
 // contact. Merges notes/tasks/meetings (crmApi.timeline) with rich emails
 // (expandable body + read status) and calls (audio playback + transcript),
 // newest-first. Replaces the old stacked ActivityTimeline + bottom
@@ -6,6 +6,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { crmApi, type Scope, type TimelineItem } from "@/api/crm";
 import { api } from "@/api";
+import { API_BASE } from "@/config/api"; // BF_PORTAL_RECORDING_PROXY_v1
+import { getAuthToken } from "@/lib/authToken";
 
 type EmailRow = {
   id: string;
@@ -101,7 +103,7 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
         <Tab id="meeting" label="Meetings" current={filter} onClick={setFilter} />
       </div>
 
-      {loading && <div style={empty}>Loading…</div>}
+      {loading && <div style={empty}>Loading...</div>}
       {err && <div style={{ ...empty, color: "#b00020" }}>{err}</div>}
       {!loading && !err && filtered.length === 0 && <div style={empty}>No activity yet.</div>}
 
@@ -155,7 +157,7 @@ function EmailCard({ email, isOpen, onToggle }: { email: EmailRow; isOpen: boole
       {isOpen && (
         <div style={{ marginTop: 8 }}>
           <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 6 }}>
-            From {email.from_address || "—"} · To {(email.to_addresses ?? []).join(", ") || "—"}
+            From {email.from_address || "-"} * To {(email.to_addresses ?? []).join(", ") || "-"}
             {(() => {
               // BF_PORTAL_EMAIL_OPEN_DETAIL_v1: count + each open's date/time.
               const list = (email.opens && email.opens.length > 0)
@@ -191,7 +193,7 @@ function CallCard({ call, isOpen, onToggle }: { call: CallRow; isOpen: boolean; 
   const fmtDur = (s?: number | null) => {
     if (!s || s <= 0) return "";
     const m = Math.floor(s / 60); const sec = s % 60;
-    return ` · ${m}:${String(sec).padStart(2, "0")}`;
+    return ` * ${m}:${String(sec).padStart(2, "0")}`;
   };
   const hasTranscript = Boolean(call.transcript_summary || call.transcript_text);
   return (
@@ -200,7 +202,7 @@ function CallCard({ call, isOpen, onToggle }: { call: CallRow; isOpen: boolean; 
         {call.direction || "call"}{fmtDur(call.recording_duration_sec)}
       </div>
       {call.recording_url ? (
-        <audio controls preload="none" src={call.recording_url} style={{ width: "100%", marginTop: 8, height: 36 }} />
+        <audio controls preload="none" src={`${API_BASE}/api/communications/recordings/by-conference/${call.conference_id}/media?token=${encodeURIComponent(getAuthToken() ?? "")}`} style={{ width: "100%", marginTop: 8, height: 36 }} />
       ) : (
         <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6 }}>No recording.</div>
       )}
