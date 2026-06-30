@@ -771,10 +771,10 @@ function SmsComposerPanel() {
 }
 // BF_PORTAL_BLOCK_v205_SEQUENCES — drip sequence builder + list.
 function SequencesPanel() {
-  type SeqStepDraft = { channel: "email" | "sms"; waitValue: number; waitUnit: "minutes" | "hours" | "days"; condition: string; subject: string; body: string; linkUrl: string };
+  type SeqStepDraft = { channel: "email" | "sms"; waitValue: number; waitUnit: "minutes" | "hours" | "days"; condition: string; templateId: string };
   type SeqRow = { id: string; name: string; audience_tag: string | null; status: string; steps: number; enrolled: number; active: number; completed: number };
   type TplRow = { id: string; channel: string; name: string; body: string | null; subject: string | null; link_url: string | null };
-  const NEW_STEP: SeqStepDraft = { channel: "email", waitValue: 0, waitUnit: "minutes", condition: "always", subject: "", body: "", linkUrl: "" };
+  const NEW_STEP: SeqStepDraft = { channel: "email", waitValue: 0, waitUnit: "minutes", condition: "always", templateId: "" };
   const cls = "block border rounded px-2 py-1 text-sm mt-1 w-full";
   const ist = { color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" } as const;
 
@@ -804,17 +804,16 @@ function SequencesPanel() {
   const setStep = (i: number, patch: Partial<SeqStepDraft>) => setSteps((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
   const addStep = () => setSteps((prev) => [...prev, { ...NEW_STEP, waitValue: 1, waitUnit: "days" }]);
   const removeStep = (i: number) => setSteps((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
-  const applyTpl = (i: number, t: TplRow | undefined) => { if (t) setStep(i, { subject: t.subject ?? "", body: t.body ?? "", linkUrl: t.link_url ?? "" }); };
 
   const save = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || steps.some((s) => !s.templateId)) return;
     setBusy(true); setMsg(null);
     try {
       await api.post("/api/marketing/sequences", {
         name: name.trim(),
         audienceTag: audience || null,
         stopOnReply,
-        steps: steps.map((s) => ({ channel: s.channel, waitMinutes: toMinutes(Number(s.waitValue) || 0, s.waitUnit), condition: s.condition, subject: s.subject || null, body: s.body || null, linkUrl: s.linkUrl || null })),
+        steps: steps.map((s) => ({ channel: s.channel, waitMinutes: toMinutes(Number(s.waitValue) || 0, s.waitUnit), condition: s.condition, templateId: s.templateId || null })),
       });
       setName(""); setAudience(""); setStopOnReply(true); setSteps([{ ...NEW_STEP }]);
       setMsg("Saved as draft. Activate it below to start enrolling contacts."); load();
@@ -854,7 +853,7 @@ function SequencesPanel() {
                   <div className="flex flex-wrap gap-2 items-end">
                     <span className="text-sm font-semibold" style={{ color: "var(--ui-text)" }}>Step {i + 1}</span>
                     <label className="text-sm" style={{ color: "var(--ui-text)" }}>Channel
-                      <select value={s.channel} onChange={(e) => setStep(i, { channel: e.target.value as "email" | "sms" })} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
+                      <select value={s.channel} onChange={(e) => setStep(i, { channel: e.target.value as "email" | "sms", templateId: "" })} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
                         <option value="email">Email</option>
                         <option value="sms">SMS</option>
                       </select>
@@ -877,22 +876,16 @@ function SequencesPanel() {
                         <option value="if_no_reply">No reply yet</option>
                       </select>
                     </label>
-                    {stepTpls.length > 0 && (
-                      <label className="text-sm" style={{ color: "var(--ui-text)" }}>Template
-                        <select onChange={(e) => applyTpl(i, stepTpls.find((t) => t.id === e.target.value))} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
-                          <option value="">&mdash;</option>
-                          {stepTpls.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                      </label>
-                    )}
                     {steps.length > 1 && <button type="button" onClick={() => removeStep(i)} className="ui-button ui-button--secondary">Remove</button>}
                   </div>
-                  {s.channel === "email" && (
-                    <input value={s.subject} onChange={(e) => setStep(i, { subject: e.target.value })} placeholder="Subject" className={cls} style={ist} />
-                  )}
-                  <textarea value={s.body} onChange={(e) => setStep(i, { body: e.target.value })} rows={s.channel === "email" ? 4 : 2} placeholder={s.channel === "email" ? "Email body" : "SMS message"} className={cls} style={ist} />
-                  {s.channel === "sms" && (
-                    <input value={s.linkUrl} onChange={(e) => setStep(i, { linkUrl: e.target.value })} placeholder="Tracked link (optional)" className={cls} style={ist} />
+                  <label className="text-sm block" style={{ color: "var(--ui-text)" }}>{s.channel === "sms" ? "SMS template" : "Email template"}
+                    <select value={s.templateId} onChange={(e) => setStep(i, { templateId: e.target.value })} className={cls} style={ist}>
+                      <option value="">Select a template</option>
+                      {stepTpls.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </label>
+                  {stepTpls.length === 0 && (
+                    <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>No {s.channel === "sms" ? "SMS" : "email"} templates yet &mdash; save one in the {s.channel === "sms" ? "SMS" : "Email"} tab first.</p>
                   )}
                 </div>
               );
@@ -900,7 +893,7 @@ function SequencesPanel() {
             <button type="button" onClick={addStep} className="ui-button ui-button--secondary">+ Add step</button>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" disabled={busy || !name.trim()} onClick={() => void save()} className="ui-button ui-button--primary">{busy ? "Saving..." : "Save sequence"}</button>
+            <button type="button" disabled={busy || !name.trim() || steps.some((s) => !s.templateId)} onClick={() => void save()} className="ui-button ui-button--primary">{busy ? "Saving..." : "Save sequence"}</button>
             {msg && <span className="text-sm" style={{ color: "var(--ui-text-muted)" }}>{msg}</span>}
           </div>
         </div>
