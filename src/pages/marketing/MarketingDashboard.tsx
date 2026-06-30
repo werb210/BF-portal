@@ -921,6 +921,55 @@ function SequencesPanel() {
   );
 }
 
+// BF_PORTAL_BLOCK_v207_SEQUENCE_PERF — per-sequence performance (attributable metrics).
+function SequencePerfPanel() {
+  type Row = { id: string; name: string; status: string; enrolled: number; active: number; completed: number; replied: number; emails_sent: number; sms_sent: number; sms_clicks: number; unsubscribed: number };
+  const [rows, setRows] = useState<Row[]>([]);
+  useEffect(() => {
+    api.get<{ data?: { items?: Row[] }; items?: Row[] }>("/api/marketing/sequences")
+      .then((r) => setRows(r?.data?.items ?? r?.items ?? [])).catch(() => setRows([]));
+  }, []);
+  if (rows.length === 0) return null;
+  const th = "text-right px-2";
+  return (
+    <section className="drawer-section">
+      <div className="drawer-section__title mb-2">Sequence performance</div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={{ color: "var(--ui-text)" }}>
+          <thead>
+            <tr style={{ color: "var(--ui-text-muted)" }}>
+              <th className="text-left py-1 pr-3">Sequence</th>
+              <th className={th}>Enrolled</th>
+              <th className={th}>Active</th>
+              <th className={th}>Done</th>
+              <th className={th}>Replied</th>
+              <th className={th}>Emails</th>
+              <th className={th}>SMS</th>
+              <th className={th}>SMS clicks</th>
+              <th className={th}>Unsub</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} style={{ borderTop: "1px solid var(--ui-border)" }}>
+                <td className="py-1 pr-3">{r.name} <span style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>({r.status})</span></td>
+                <td className={th}>{r.enrolled}</td>
+                <td className={th}>{r.active}</td>
+                <td className={th}>{r.completed}</td>
+                <td className={th}>{r.replied}</td>
+                <td className={th}>{r.emails_sent}</td>
+                <td className={th}>{r.sms_sent}</td>
+                <td className={th}>{r.sms_clicks}</td>
+                <td className={th}>{r.unsubscribed}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function AnalyticsFunnel() {
   const [days, setDays] = useState(90);
   const [steps, setSteps] = useState<FunnelStep[]>([]);
@@ -1280,7 +1329,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <BrandedEmailComposer />}{tab === "sms" && <SmsComposerPanel />}{tab === "sequences" && <SequencesPanel />}{tab === "linkedin-ads" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <BrandedEmailComposer />}{tab === "sms" && <SmsComposerPanel />}{tab === "sequences" && <SequencesPanel />}{tab === "linkedin-ads" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SequencePerfPanel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
