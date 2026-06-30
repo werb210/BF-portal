@@ -923,7 +923,7 @@ function SequencesPanel() {
 
 // BF_PORTAL_BLOCK_v207_SEQUENCE_PERF — per-sequence performance (attributable metrics).
 function SequencePerfPanel() {
-  type Row = { id: string; name: string; status: string; enrolled: number; active: number; completed: number; replied: number; emails_sent: number; sms_sent: number; sms_clicks: number; unsubscribed: number };
+  type Row = { id: string; name: string; status: string; enrolled: number; active: number; completed: number; replied: number; emails_sent: number; email_opens: number; email_clicks: number; sms_sent: number; sms_clicks: number; unsubscribed: number };
   const [rows, setRows] = useState<Row[]>([]);
   useEffect(() => {
     api.get<{ data?: { items?: Row[] }; items?: Row[] }>("/api/marketing/sequences")
@@ -944,6 +944,8 @@ function SequencePerfPanel() {
               <th className={th}>Done</th>
               <th className={th}>Replied</th>
               <th className={th}>Emails</th>
+              <th className={th}>Opens</th>
+              <th className={th}>Clicks</th>
               <th className={th}>SMS</th>
               <th className={th}>SMS clicks</th>
               <th className={th}>Unsub</th>
@@ -958,6 +960,8 @@ function SequencePerfPanel() {
                 <td className={th}>{r.completed}</td>
                 <td className={th}>{r.replied}</td>
                 <td className={th}>{r.emails_sent}</td>
+                <td className={th}>{r.email_opens}</td>
+                <td className={th}>{r.email_clicks}</td>
                 <td className={th}>{r.sms_sent}</td>
                 <td className={th}>{r.sms_clicks}</td>
                 <td className={th}>{r.unsubscribed}</td>
