@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { api } from "@/api";
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; // BF_PORTAL_BRANDED_EMAIL_COMPOSER_MOUNT_v1
 
-type MarketingTab = "google-ads" | "sms" | "email" | "linkedin-ads" | "analytics";
+type MarketingTab = "google-ads" | "sms" | "email" | "sequences" | "linkedin-ads" | "analytics";
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "google-ads", label: "Google Ads" },
   { id: "sms", label: "SMS" },
   { id: "email", label: "Email" },
+  { id: "sequences", label: "Sequences" },
   { id: "linkedin-ads", label: "LinkedIn Ads" },
   { id: "analytics", label: "Analytics" },
 ];
@@ -768,6 +769,165 @@ function SmsComposerPanel() {
     </section>
   );
 }
+// BF_PORTAL_BLOCK_v205_SEQUENCES — drip sequence builder + list.
+function SequencesPanel() {
+  type SeqStepDraft = { channel: "email" | "sms"; waitValue: number; waitUnit: "minutes" | "hours" | "days"; condition: string; subject: string; body: string; linkUrl: string };
+  type SeqRow = { id: string; name: string; audience_tag: string | null; status: string; steps: number; enrolled: number; active: number; completed: number };
+  type TplRow = { id: string; channel: string; name: string; body: string | null; subject: string | null; link_url: string | null };
+  const NEW_STEP: SeqStepDraft = { channel: "email", waitValue: 0, waitUnit: "minutes", condition: "always", subject: "", body: "", linkUrl: "" };
+  const cls = "block border rounded px-2 py-1 text-sm mt-1 w-full";
+  const ist = { color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" } as const;
+
+  const [rows, setRows] = useState<SeqRow[]>([]);
+  const [segs, setSegs] = useState<{ tag: string; n: number }[]>([]);
+  const [tpls, setTpls] = useState<TplRow[]>([]);
+  const [name, setName] = useState("");
+  const [audience, setAudience] = useState("");
+  const [stopOnReply, setStopOnReply] = useState(true);
+  const [steps, setSteps] = useState<SeqStepDraft[]>([{ ...NEW_STEP }]);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const load = () => {
+    api.get<{ data?: { items?: SeqRow[] }; items?: SeqRow[] }>("/api/marketing/sequences")
+      .then((r) => setRows(r?.data?.items ?? r?.items ?? [])).catch(() => setRows([]));
+  };
+  useEffect(() => {
+    load();
+    api.get<{ data?: { segments?: { tag: string; n: number }[] }; segments?: { tag: string; n: number }[] }>("/api/marketing/sms/segments")
+      .then((r) => setSegs(r?.data?.segments ?? r?.segments ?? [])).catch(() => setSegs([]));
+    api.get<{ data?: { items?: TplRow[] }; items?: TplRow[] }>("/api/marketing/templates")
+      .then((r) => setTpls(r?.data?.items ?? r?.items ?? [])).catch(() => setTpls([]));
+  }, []);
+
+  const toMinutes = (v: number, u: string) => (u === "days" ? v * 1440 : u === "hours" ? v * 60 : v);
+  const setStep = (i: number, patch: Partial<SeqStepDraft>) => setSteps((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  const addStep = () => setSteps((prev) => [...prev, { ...NEW_STEP, waitValue: 1, waitUnit: "days" }]);
+  const removeStep = (i: number) => setSteps((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
+  const applyTpl = (i: number, t: TplRow | undefined) => { if (t) setStep(i, { subject: t.subject ?? "", body: t.body ?? "", linkUrl: t.link_url ?? "" }); };
+
+  const save = async () => {
+    if (!name.trim()) return;
+    setBusy(true); setMsg(null);
+    try {
+      await api.post("/api/marketing/sequences", {
+        name: name.trim(),
+        audienceTag: audience || null,
+        stopOnReply,
+        steps: steps.map((s) => ({ channel: s.channel, waitMinutes: toMinutes(Number(s.waitValue) || 0, s.waitUnit), condition: s.condition, subject: s.subject || null, body: s.body || null, linkUrl: s.linkUrl || null })),
+      });
+      setName(""); setAudience(""); setStopOnReply(true); setSteps([{ ...NEW_STEP }]);
+      setMsg("Saved as draft. Activate it below to start enrolling contacts."); load();
+    } catch { setMsg("Save failed."); } finally { setBusy(false); }
+  };
+  const activate = async (id: string) => {
+    setMsg(null);
+    try { const r = await api.post<{ data?: { enrolled?: number }; enrolled?: number }>(`/api/marketing/sequences/${id}/activate`, {}); setMsg(`Activated - ${r?.data?.enrolled ?? r?.enrolled ?? 0} contacts enrolled.`); }
+    catch { setMsg("Activate failed."); }
+    load();
+  };
+  const pause = async (id: string) => { try { await api.post(`/api/marketing/sequences/${id}/pause`, {}); } catch { /* noop */ } load(); };
+  const del = async (id: string) => { try { await api.delete(`/api/marketing/sequences/${id}`); } catch { /* noop */ } load(); };
+
+  return (
+    <div className="space-y-4">
+      <section className="drawer-section">
+        <div className="drawer-section__title mb-2">New sequence</div>
+        <div className="space-y-2">
+          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Name
+            <input value={name} onChange={(e) => setName(e.target.value)} className={cls} style={ist} />
+          </label>
+          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Audience
+            <select value={audience} onChange={(e) => setAudience(e.target.value)} className={cls} style={ist}>
+              <option value="">All contacts</option>
+              {segs.map((s) => <option key={s.tag} value={s.tag}>{s.tag} ({s.n})</option>)}
+            </select>
+          </label>
+          <label className="text-sm flex items-center gap-2" style={{ color: "var(--ui-text)" }}>
+            <input type="checkbox" checked={stopOnReply} onChange={(e) => setStopOnReply(e.target.checked)} /> Stop a contact&apos;s sequence if they reply
+          </label>
+          <div className="space-y-3">
+            {steps.map((s, i) => {
+              const stepTpls = tpls.filter((t) => t.channel === s.channel);
+              return (
+                <div key={i} className="border rounded p-2 space-y-2" style={{ borderColor: "var(--ui-border)" }}>
+                  <div className="flex flex-wrap gap-2 items-end">
+                    <span className="text-sm font-semibold" style={{ color: "var(--ui-text)" }}>Step {i + 1}</span>
+                    <label className="text-sm" style={{ color: "var(--ui-text)" }}>Channel
+                      <select value={s.channel} onChange={(e) => setStep(i, { channel: e.target.value as "email" | "sms" })} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
+                        <option value="email">Email</option>
+                        <option value="sms">SMS</option>
+                      </select>
+                    </label>
+                    <label className="text-sm" style={{ color: "var(--ui-text)" }}>Wait
+                      <span className="flex gap-1 mt-1">
+                        <input type="number" min={0} value={s.waitValue} onChange={(e) => setStep(i, { waitValue: Number(e.target.value) })} className="border rounded px-2 py-1 text-sm w-16" style={ist} />
+                        <select value={s.waitUnit} onChange={(e) => setStep(i, { waitUnit: e.target.value as "minutes" | "hours" | "days" })} className="border rounded px-2 py-1 text-sm" style={ist}>
+                          <option value="minutes">min</option>
+                          <option value="hours">hrs</option>
+                          <option value="days">days</option>
+                        </select>
+                      </span>
+                    </label>
+                    <label className="text-sm" style={{ color: "var(--ui-text)" }}>Send if
+                      <select value={s.condition} onChange={(e) => setStep(i, { condition: e.target.value })} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
+                        <option value="always">Always</option>
+                        <option value="if_no_open">No open yet</option>
+                        <option value="if_no_click">No click yet</option>
+                        <option value="if_no_reply">No reply yet</option>
+                      </select>
+                    </label>
+                    {stepTpls.length > 0 && (
+                      <label className="text-sm" style={{ color: "var(--ui-text)" }}>Template
+                        <select onChange={(e) => applyTpl(i, stepTpls.find((t) => t.id === e.target.value))} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
+                          <option value="">&mdash;</option>
+                          {stepTpls.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                      </label>
+                    )}
+                    {steps.length > 1 && <button type="button" onClick={() => removeStep(i)} className="ui-button ui-button--secondary">Remove</button>}
+                  </div>
+                  {s.channel === "email" && (
+                    <input value={s.subject} onChange={(e) => setStep(i, { subject: e.target.value })} placeholder="Subject" className={cls} style={ist} />
+                  )}
+                  <textarea value={s.body} onChange={(e) => setStep(i, { body: e.target.value })} rows={s.channel === "email" ? 4 : 2} placeholder={s.channel === "email" ? "Email body" : "SMS message"} className={cls} style={ist} />
+                  {s.channel === "sms" && (
+                    <input value={s.linkUrl} onChange={(e) => setStep(i, { linkUrl: e.target.value })} placeholder="Tracked link (optional)" className={cls} style={ist} />
+                  )}
+                </div>
+              );
+            })}
+            <button type="button" onClick={addStep} className="ui-button ui-button--secondary">+ Add step</button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button type="button" disabled={busy || !name.trim()} onClick={() => void save()} className="ui-button ui-button--primary">{busy ? "Saving..." : "Save sequence"}</button>
+            {msg && <span className="text-sm" style={{ color: "var(--ui-text-muted)" }}>{msg}</span>}
+          </div>
+        </div>
+      </section>
+
+      <section className="drawer-section">
+        <div className="drawer-section__title mb-2">Sequences</div>
+        {rows.length === 0 && <p style={{ color: "var(--ui-text-muted)" }}>No sequences yet.</p>}
+        <div className="space-y-2">
+          {rows.map((r) => (
+            <div key={r.id} className="flex flex-wrap items-center gap-3 border rounded px-3 py-2" style={{ borderColor: "var(--ui-border)" }}>
+              <span className="text-sm font-semibold" style={{ color: "var(--ui-text)" }}>{r.name}</span>
+              <span className="text-xs px-2 py-0.5 rounded" style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text-muted)" }}>{r.status}</span>
+              <span className="text-xs" style={{ color: "var(--ui-text-muted)" }}>{r.steps} steps &middot; {r.enrolled} enrolled &middot; {r.active} active &middot; {r.completed} done</span>
+              <span className="flex gap-2 ml-auto">
+                {r.status !== "active" && <button type="button" onClick={() => void activate(r.id)} className="ui-button ui-button--primary">Activate</button>}
+                {r.status === "active" && <button type="button" onClick={() => void pause(r.id)} className="ui-button ui-button--secondary">Pause</button>}
+                <button type="button" onClick={() => void del(r.id)} className="ui-button ui-button--secondary">Delete</button>
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function AnalyticsFunnel() {
   const [days, setDays] = useState(90);
   const [steps, setSteps] = useState<FunnelStep[]>([]);
@@ -1127,7 +1287,7 @@ function ClarityPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <BrandedEmailComposer />}{tab === "sms" && <SmsComposerPanel />}{tab === "linkedin-ads" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <BrandedEmailComposer />}{tab === "sms" && <SmsComposerPanel />}{tab === "sequences" && <SequencesPanel />}{tab === "linkedin-ads" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
 };
 
 export default MarketingDashboard;
