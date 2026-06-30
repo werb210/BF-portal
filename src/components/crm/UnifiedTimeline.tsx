@@ -15,6 +15,9 @@ type EmailRow = {
   to_addresses?: string[] | null;
   opened_at?: string | null;
   created_at?: string | null;
+  // BF_PORTAL_EMAIL_OPEN_DETAIL_v1
+  open_count?: number | null;
+  opens?: Array<{ opened_at: string }> | null;
 };
 
 type CallRow = {
@@ -143,15 +146,34 @@ function EmailCard({ email, isOpen, onToggle }: { email: EmailRow; isOpen: boole
         style={{ width: "100%", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}
       >
         <span style={{ fontWeight: 600, color: "var(--ui-text)", fontSize: 14 }}>{email.subject || "(no subject)"}</span>
-        <span style={{ fontSize: 12, color: email.opened_at ? "#059669" : "#9ca3af", whiteSpace: "nowrap" }}>
-          {email.opened_at ? "Opened" : "Sent"}
+        <span style={{ fontSize: 12, color: ((email.open_count ?? 0) > 0 || email.opened_at) ? "#059669" : "#9ca3af", whiteSpace: "nowrap" }}>
+          {(email.open_count ?? 0) > 0
+            ? `Opened${(email.open_count ?? 0) > 1 ? ` ${email.open_count}x` : ""}`
+            : email.opened_at ? "Opened" : "Sent"}
         </span>
       </button>
       {isOpen && (
         <div style={{ marginTop: 8 }}>
           <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 6 }}>
             From {email.from_address || "—"} · To {(email.to_addresses ?? []).join(", ") || "—"}
-            {email.opened_at ? ` · opened ${new Date(email.opened_at).toLocaleString()}` : ""}
+            {(() => {
+              // BF_PORTAL_EMAIL_OPEN_DETAIL_v1: count + each open's date/time.
+              const list = (email.opens && email.opens.length > 0)
+                ? email.opens
+                : (email.opened_at ? [{ opened_at: email.opened_at }] : []);
+              if (list.length === 0) return null;
+              const n = email.open_count ?? list.length;
+              return (
+                <div style={{ marginTop: 4 }}>
+                  Opened {n} time{n === 1 ? "" : "s"}:
+                  {list.map((o, i) => (
+                    <span key={i} style={{ display: "block", marginLeft: 8 }}>
+                      {new Date(o.opened_at).toLocaleString()}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
           <iframe
             title={`email-${email.id}`}
