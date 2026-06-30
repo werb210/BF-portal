@@ -675,6 +675,7 @@ function EmailComposerPanel() {
 }
 // BF_PORTAL_SMS_COMPOSER_v1 - bulk SMS + 36h fallback-email cascade (BF silo).
 type SmsSegments = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
+type SmsTemplateRow = { id: string; name: string; body: string | null; link_url: string | null }; // BF_PORTAL_BLOCK_v204_SMS_TEMPLATES
 function SmsComposerPanel() {
   const [seg, setSeg] = useState<SmsSegments | null>(null);
   const [tag, setTag] = useState("__all__");
@@ -683,11 +684,25 @@ function SmsComposerPanel() {
   const [testTo, setTestTo] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v204_SMS_TEMPLATES
+  const [templates, setTemplates] = useState<SmsTemplateRow[]>([]);
+  const [tplName, setTplName] = useState("");
+  const loadTemplates = () => {
+    api.get<{ data?: { items?: SmsTemplateRow[] }; items?: SmsTemplateRow[] }>("/api/marketing/templates?channel=sms")
+      .then((res) => setTemplates(res?.data?.items ?? res?.items ?? []))
+      .catch(() => setTemplates([]));
+  };
+  const saveTemplate = async () => {
+    if (!tplName.trim() || !body.trim()) return;
+    await api.post("/api/marketing/templates", { channel: "sms", name: tplName.trim(), body, linkUrl: linkUrl.trim() || null });
+    setTplName(""); loadTemplates();
+  };
   useEffect(() => {
     api
       .get<{ data?: SmsSegments } & Partial<SmsSegments>>("/api/marketing/sms/segments")
       .then((res) => setSeg((res?.data ?? res) as SmsSegments))
       .catch(() => setSeg({ configured: false, all: 0, segments: [] }));
+    loadTemplates();
   }, []);
   const count = tag === "__all__" ? (seg?.all ?? 0) : (seg?.segments.find((x) => x.tag === tag)?.n ?? 0);
   const post = async (test?: string) => {
@@ -728,6 +743,19 @@ function SmsComposerPanel() {
         <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Landing page (optional, tracked)
           <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://boreal.financial/..." className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
         </label>
+        {/* BF_PORTAL_BLOCK_v204_SMS_TEMPLATES */}
+        <div className="border-t pt-2 flex flex-wrap gap-2 items-end" style={{ borderColor: "var(--ui-border)" }}>
+          <label className="text-sm" style={{ color: "var(--ui-text)" }}>Load template
+            <select onChange={(e) => { const t = templates.find((x) => x.id === e.target.value); if (t) { setBody(t.body ?? ""); setLinkUrl(t.link_url ?? ""); } }} className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
+              <option value="">&mdash; select &mdash;</option>
+              {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+          <label className="text-sm" style={{ color: "var(--ui-text)" }}>Save as
+            <input value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="template name" className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
+          </label>
+          <button type="button" disabled={!tplName.trim() || !body.trim()} onClick={() => void saveTemplate()} className="ui-button ui-button--secondary">Save template</button>
+        </div>
         <div className="flex flex-wrap gap-2 items-end">
           <label className="text-sm" style={{ color: "var(--ui-text)" }}>Test to
             <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="+1..." className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
