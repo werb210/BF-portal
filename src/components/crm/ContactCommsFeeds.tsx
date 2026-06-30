@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
+import { API_BASE } from "@/config/api"; // BF_PORTAL_RECORDING_PROXY_v1
+import { getAuthToken } from "@/lib/authToken";
 
 type EmailRow = {
   id: string;
@@ -44,14 +46,14 @@ export function ContactEmailFeed({ contactId }: { contactId: string }) {
             >
               <span style={{ fontWeight: 600, color: "#111827", fontSize: 14 }}>{e.subject || "(no subject)"}</span>
               <span style={{ fontSize: 12, color: e.opened_at ? "#059669" : "#9ca3af", whiteSpace: "nowrap" }}>
-                {e.opened_at ? "Opened" : "Sent"}{e.created_at ? ` · ${new Date(e.created_at).toLocaleDateString()}` : ""}
+                {e.opened_at ? "Opened" : "Sent"}{e.created_at ? ` * ${new Date(e.created_at).toLocaleDateString()}` : ""}
               </span>
             </button>
             {isOpen && (
               <div style={{ marginTop: 8 }}>
                 <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
-                  From {e.from_address || "—"} · To {(e.to_addresses ?? []).join(", ") || "—"}
-                  {e.opened_at ? ` · opened ${new Date(e.opened_at).toLocaleString()}` : ""}
+                  From {e.from_address || "-"} * To {(e.to_addresses ?? []).join(", ") || "-"}
+                  {e.opened_at ? ` * opened ${new Date(e.opened_at).toLocaleString()}` : ""}
                 </div>
                 <iframe
                   title={`email-${e.id}`}
@@ -101,7 +103,7 @@ export function ContactCallFeed({ contactId }: { contactId: string }) {
   const fmtDur = (s?: number | null) => {
     if (!s || s <= 0) return "";
     const m = Math.floor(s / 60); const sec = s % 60;
-    return ` · ${m}:${String(sec).padStart(2, "0")}`;
+    return ` * ${m}:${String(sec).padStart(2, "0")}`;
   };
 
   return (
@@ -119,7 +121,7 @@ export function ContactCallFeed({ contactId }: { contactId: string }) {
               <span style={{ fontSize: 12, color: "#9ca3af", whiteSpace: "nowrap" }}>{when ? new Date(when).toLocaleString() : ""}</span>
             </div>
             {c.recording_url ? (
-              <audio controls preload="none" src={c.recording_url} style={{ width: "100%", marginTop: 8, height: 36 }} />
+              <audio controls preload="none" src={`${API_BASE}/api/communications/recordings/by-conference/${c.conference_id}/media?token=${encodeURIComponent(getAuthToken() ?? "")}`} style={{ width: "100%", marginTop: 8, height: 36 }} />
             ) : (
               <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6 }}>No recording.</div>
             )}
