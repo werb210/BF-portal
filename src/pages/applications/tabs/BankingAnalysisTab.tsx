@@ -226,6 +226,17 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
     );
   }
 
+  if ((data as any).status === "needs_review") {
+    const d: any = data;
+    return (
+      <div style={{ border: "1px solid #fde68a", background: "#fffbeb", color: "#78350f", padding: 16, borderRadius: 8, margin: 16 }}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>Automated banking analysis withheld — manual review required.</div>
+        <div style={{ fontSize: 13, marginBottom: 8 }}>The parsed transactions did not reconcile against the statement balances, so the computed figures are unreliable and are not shown. Review the statements directly before quoting any numbers to the applicant or a lender.</div>
+        <div style={{ fontSize: 12, fontFamily: "monospace", whiteSpace: "pre-wrap", opacity: 0.85 }}>{d.lastError || ""}</div>
+      </div>
+    );
+  }
+
   const months = ((data.monthGroups ?? []) as unknown) as BankingTrendMonth[];
   const accounts = data.accounts ?? [];
   const unusual = data.riskFlags?.unusualTransactions ?? [];
