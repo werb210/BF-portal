@@ -21,6 +21,7 @@ export default function BrandedEmailComposer() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [preview, setPreview] = useState("");
+  const [libName, setLibName] = useState(""); // BF_PORTAL_BLOCK_v206_EMAIL_LIB
   const heroRef = useRef<HTMLInputElement>(null);
   const img2Ref = useRef<HTMLInputElement>(null);
 
@@ -65,6 +66,13 @@ export default function BrandedEmailComposer() {
     try { await api.post("/api/marketing/email/template", tpl); setMsg("Template saved."); }
     catch { setMsg("Save failed."); }
     finally { setSaving(false); }
+  };
+
+  // BF_PORTAL_BLOCK_v206_EMAIL_LIB - save a named email template to the shared library.
+  const saveNamed = async () => {
+    if (!libName.trim() || !subject.trim()) return;
+    try { await api.post("/api/marketing/templates", { channel: "email", name: libName.trim(), subject, body: tpl.body, html: preview }); setLibName(""); setMsg("Email template saved to library."); }
+    catch { setMsg("Save failed."); }
   };
 
   const send = async (test?: string) => {
@@ -136,6 +144,8 @@ export default function BrandedEmailComposer() {
           <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Merge fields: {"{{first_name}}"}, {"{{name}}"}, {"{{company}}"}, {"{{email}}"}. Logo, colours and footer are fixed.</p>
           <div className="flex flex-wrap gap-2 items-end">
             <button type="button" disabled={saving} onClick={() => void save()} className="ui-button ui-button--secondary">{saving ? "Saving..." : "Save template"}</button>
+            <input value={libName} onChange={(e) => setLibName(e.target.value)} placeholder="Template name" className="block border rounded px-2 py-1 text-sm" style={inputStyle} />
+            <button type="button" disabled={!libName.trim() || !subject} onClick={() => void saveNamed()} className="ui-button ui-button--secondary">Save as template</button>
             <label className="text-sm" style={{ color: "var(--ui-text)" }}>Test to
               <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@boreal.financial" className="block border rounded px-2 py-1 text-sm mt-1" style={inputStyle} />
             </label>
