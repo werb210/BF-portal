@@ -40,15 +40,15 @@ const Q_LABEL: Record<string, string> = {
 const S: Record<string, React.CSSProperties> = {
   wrap: { marginTop: 28, borderTop: "1px solid var(--ui-border, #e5e7eb)", paddingTop: 20 },
   head: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  title: { fontSize: 18, fontWeight: 700 },
+  title: { fontSize: 18, fontWeight: 700, color: "var(--ui-text, #0f172a)" },
   sub: { fontSize: 13, color: "var(--ui-text-muted, #6b7280)", marginTop: 2 },
   card: { border: "1px solid var(--ui-border, #e5e7eb)", borderRadius: 10, padding: 16, marginTop: 14 },
   cardHead: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 },
   badge: { fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 999, background: "#f1f5f9", color: "#334155" },
   q: { padding: "10px 0", borderTop: "1px solid var(--ui-border, #f1f5f9)" },
-  qPrompt: { fontWeight: 600, fontSize: 14 },
+  qPrompt: { fontWeight: 600, fontSize: 14, color: "var(--ui-text, #0f172a)" },
   qMeta: { fontSize: 12, color: "var(--ui-text-muted, #6b7280)", marginTop: 2 },
-  answer: { marginTop: 6, fontSize: 14, whiteSpace: "pre-wrap" as const },
+  answer: { marginTop: 6, fontSize: 14, color: "var(--ui-text, #0f172a)", whiteSpace: "pre-wrap" as const },
   reason: { marginTop: 6, fontSize: 13, color: "#b45309" },
   row: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" as const, marginTop: 8 },
   input: { flex: 1, minWidth: 200, padding: "8px 10px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 8 },
@@ -202,7 +202,7 @@ export default function LenderQaSection({ applicationId }: { applicationId?: str
         return (
           <div key={set.id} style={S.card}>
             <div style={S.cardHead}>
-              <div style={{ fontWeight: 700 }}>Round {set.round}</div>
+              <div style={{ fontWeight: 700, color: "var(--ui-text, #0f172a)" }}>Round {set.round}</div>
               <span style={S.badge}>{SET_LABEL[set.status] ?? set.status}</span>
             </div>
 
