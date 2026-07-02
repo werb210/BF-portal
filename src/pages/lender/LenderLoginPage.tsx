@@ -20,7 +20,7 @@ export default function LenderLoginPage() {
     setLoading(true);
     setErr(null);
     try {
-      await api("/api/v1/otp/request", {
+      await api("/api/auth/otp/start", {
         method: "POST",
         body: JSON.stringify({ name, email, phone, userType: "lender" })
       });
@@ -40,7 +40,7 @@ export default function LenderLoginPage() {
         token: string;
         user: { id: string; name: string | null; email: string | null; phone: string; userType: string };
         profileComplete?: boolean;
-      }>("/api/v1/otp/verify", {
+      }>("/api/auth/otp/verify", {
         method: "POST",
         body: JSON.stringify({ phone, code })
       });
