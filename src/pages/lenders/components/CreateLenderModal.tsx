@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import { api } from "@/api";
 import { getErrorMessage } from "@/utils/errors";
+import { Field, inputStyle } from "./lenderFieldShared"; // LENDER_FIELD_SHARED_v1
 
 type Method = "email" | "api" | "google_sheet";
 
@@ -83,32 +84,6 @@ function validate(s: FormState): Record<string, string> {
     e.googleSheetId = "Google Sheet ID is required.";
   }
   return e;
-}
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 12px",
-  border: "1px solid var(--ui-border)",
-  borderRadius: 6,
-  fontSize: 14,
-};
-
-function Field(p: { label: string; error?: string; children: React.ReactNode }) {
-  return (
-    <div className="ui-field" style={{ marginBottom: 12 }}>
-      {p.label ? (
-        <label className="ui-field__label" style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
-          {p.label}
-        </label>
-      ) : null}
-      {p.children}
-      {p.error ? (
-        <div className="ui-field__error" style={{ color: "#b91c1c", fontSize: 12, marginTop: 2 }}>
-          {p.error}
-        </div>
-      ) : null}
-    </div>
-  );
 }
 
 export default function CreateLenderModal({ open, onClose, onCreated }: Props) {
