@@ -44,7 +44,7 @@ export default function LenderLoginPage() {
       });
       sessionStorage.setItem("lender_token", r.token);
       sessionStorage.setItem("lender_user", JSON.stringify(r.user));
-      navigate(r.profileComplete === false ? "/lender-portal/profile" : "/lender-portal/deals");
+      navigate("/lender-portal"); // LENDER_PORTAL_ONE_PAGE_v1
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Invalid code");
     } finally {

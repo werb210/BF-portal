@@ -62,7 +62,6 @@ import ReferrerLoginPage from "@/pages/referrer/ReferrerLoginPage";
 import BISilo from "@/silos/bi/BISilo";
 import LenderPortalPage from "@/pages/lender/LenderPortalPage";
 import LenderLoginPage from "@/pages/lender/LenderLoginPage";
-import LenderProfilePage from "@/pages/lender/LenderProfilePage";
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
@@ -146,10 +145,12 @@ const AppRoutes = () => {
         <Route path="/referrer/login" element={<ReferrerLoginPage />} />
         <Route path="/referrer/*" element={<ReferrerPortalLayout />} />
         <Route path="/lender-portal/login" element={<LenderLoginPage />} />
-        <Route path="/lender-portal/profile" element={<LenderProfilePage />} />
-        <Route path="/lender-portal/deals" element={<LenderPortalPage />} />
-        <Route path="/lender-portal/deals/:id" element={<LenderPortalPage />} />
-        <Route path="/lender-portal/products" element={<LenderPortalPage />} />
+        {/* LENDER_PORTAL_ONE_PAGE_v1 - single page; legacy paths redirect */}
+        <Route path="/lender-portal" element={<LenderPortalPage />} />
+        <Route path="/lender-portal/profile" element={<Navigate to="/lender-portal" replace />} />
+        <Route path="/lender-portal/deals" element={<Navigate to="/lender-portal" replace />} />
+        <Route path="/lender-portal/deals/:id" element={<Navigate to="/lender-portal" replace />} />
+        <Route path="/lender-portal/products" element={<Navigate to="/lender-portal" replace />} />
         <Route element={token ? <AuthenticatedShell /> : <Navigate to="/login" replace />}>
           <Route path="/" element={<Navigate to="/portal" replace />} />
         <Route path="/applications" element={<Navigate to="/pipeline" replace />} />
