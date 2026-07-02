@@ -4,8 +4,6 @@ import { api } from "@/api";
 
 export default function ReferrerLoginPage() {
   const [step, setStep] = useState<"enter" | "verify">("enter");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -13,8 +11,8 @@ export default function ReferrerLoginPage() {
   const navigate = useNavigate();
 
   async function sendCode() {
-    if (!name || !email || !phone) {
-      setErr("Name, email, and phone required.");
+    if (!phone) {
+      setErr("Phone number required.");
       return;
     }
     setLoading(true);
@@ -22,7 +20,7 @@ export default function ReferrerLoginPage() {
     try {
       await api("/api/auth/otp/start", {
         method: "POST",
-        body: JSON.stringify({ name, email, phone, userType: "referrer" })
+        body: JSON.stringify({ phone, userType: "referrer" })
       });
       setStep("verify");
     } catch (e) {
@@ -60,15 +58,11 @@ export default function ReferrerLoginPage() {
         <h1 className="text-xl font-semibold">Referrer Portal</h1>
         {step === "enter" && (
           <>
-            <input className="w-full border rounded p-2" placeholder="Full Name"
-              value={name} onChange={(e) => setName(e.target.value)} />
-            <input className="w-full border rounded p-2" type="email" placeholder="Email"
-              value={email} onChange={(e) => setEmail(e.target.value)} />
             <input className="w-full border rounded p-2" type="tel" placeholder="+1XXXXXXXXXX"
               value={phone} onChange={(e) => setPhone(e.target.value)} />
             {err && <p className="text-sm text-red-600">{err}</p>}
             <button className="ui-button ui-button--primary w-full"
-              disabled={loading || !name || !email || !phone} onClick={sendCode}>
+              disabled={loading || !phone} onClick={sendCode}>
               Send code
             </button>
           </>
