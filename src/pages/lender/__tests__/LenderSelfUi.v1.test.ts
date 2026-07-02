@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
-const profile = readFileSync(fileURLToPath(new URL("../LenderProfilePage.tsx", import.meta.url)), "utf-8");
-const portal = readFileSync(fileURLToPath(new URL("../LenderPortalPage.tsx", import.meta.url)), "utf-8");
+const dir = join(process.cwd(), "src", "pages", "lender");
+const profile = readFileSync(join(dir, "LenderProfilePage.tsx"), "utf-8");
+const portal = readFileSync(join(dir, "LenderPortalPage.tsx"), "utf-8");
 describe("BF lender portal UI targets the real /api/lender endpoints", () => {
   it("profile uses GET+PATCH /api/lender/me (no BI/v1)", () => {
     expect(profile).toContain("/api/lender/me");
