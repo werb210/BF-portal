@@ -18,6 +18,7 @@ export default function BrandedEmailComposer() {
   const [tpl, setTpl] = useState<Tpl>(DEFAULTS);
   const [testTo, setTestTo] = useState("");
   const [busy, setBusy] = useState(false);
+  const [landingUrl, setLandingUrl] = useState(""); // BF_PORTAL_EMAIL_LANDING_v1
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [preview, setPreview] = useState("");
@@ -71,7 +72,13 @@ export default function BrandedEmailComposer() {
   // BF_PORTAL_BLOCK_v206_EMAIL_LIB - save a named email template to the shared library.
   const saveNamed = async () => {
     if (!libName.trim() || !subject.trim()) return;
-    try { await api.post("/api/marketing/templates", { channel: "email", name: libName.trim(), subject, body: tpl.body, html: preview }); setLibName(""); setMsg("Email template saved to library."); }
+    try {
+      const res = await api.post<{ data?: { landingUrl?: string } } & { landingUrl?: string }>("/api/marketing/templates", { channel: "email", name: libName.trim(), subject, body: tpl.body, html: preview });
+      const url = (res?.data?.landingUrl ?? res?.landingUrl) || "";
+      setLibName("");
+      if (url) { setLandingUrl(url); setMsg("Email template saved. Copy the landing page URL below into your SMS template."); }
+      else { setMsg("Email template saved to library."); }
+    }
     catch { setMsg("Save failed."); }
   };
 
@@ -153,6 +160,15 @@ export default function BrandedEmailComposer() {
             <button type="button" disabled={busy || !subject || !count} onClick={() => void send()} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
           </div>
           {msg ? <p style={{ color: "var(--ui-text-muted)" }}>{msg}</p> : null}
+          {landingUrl ? (
+            <div className="mt-2">
+              <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Landing page URL (paste into your SMS template's landing page field):</p>
+              <div className="flex gap-2 items-center mt-1">
+                <input readOnly value={landingUrl} onFocus={(e) => e.currentTarget.select()} className="block border rounded px-2 py-1 text-sm w-full" style={inputStyle} />
+                <button type="button" className="ui-button ui-button--secondary" onClick={() => { void navigator.clipboard?.writeText(landingUrl); setMsg("Landing URL copied."); }}>Copy</button>
+              </div>
+            </div>
+          ) : null}
         </div>
         <div className="md:w-1/2">
           <div className="text-sm mb-1" style={{ color: "var(--ui-text-muted)" }}>Preview</div>
