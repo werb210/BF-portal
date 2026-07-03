@@ -5,7 +5,11 @@ import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 const portal = readFileSync(join(process.cwd(), "src", "pages", "lender", "LenderPortalPage.tsx"), "utf-8");
 const app = readFileSync(join(process.cwd(), "src", "App.tsx"), "utf-8");
+const login = readFileSync(join(process.cwd(), "src", "pages", "lender", "LenderLoginPage.tsx"), "utf-8");
 describe("BF lender portal one-page UI", () => {
+  it("login verify identifies as a lender so the server mints a Lender token", () => {
+    expect(login).toContain('userType: "lender"');
+  });
   it("targets the real /api/lender endpoints (me, products, uploads)", () => {
     expect(portal).toContain("/api/lender/me");
     expect(portal).toContain("/api/lender/products");

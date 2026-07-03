@@ -40,7 +40,7 @@ export default function LenderLoginPage() {
         profileComplete?: boolean;
       }>("/api/auth/otp/verify", {
         method: "POST",
-        body: JSON.stringify({ phone, code })
+        body: JSON.stringify({ phone, code, userType: "lender" }) // BF_SERVER_LENDER_OTP_v1
       });
       sessionStorage.setItem("lender_token", r.token);
       sessionStorage.setItem("lender_user", JSON.stringify(r.user));
