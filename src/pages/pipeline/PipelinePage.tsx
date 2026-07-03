@@ -47,11 +47,18 @@ type Card = {
 
 function isDraftLikeApplication(card: Card): boolean {
   if (!card) return false;
+  // BF_PORTAL_DRAFTLIKE_SUBMITTED_EXEMPT_v1 - only actual drafts can be junk.
+  // A SUBMITTED application that still carries a placeholder name (server-side
+  // name promotion missed) was being hidden from the board entirely while its
+  // detail page worked (app 544b5a65 "Bismillah Grocers"). If the card is in a
+  // real pipeline stage, always show it; the server now renders placeholder
+  // names as the company name / "Unnamed application".
+  const state = String(card.pipeline_state ?? "").toLowerCase();
+  const isRealStage = state !== "" && state !== "draft" && state !== "new";
   const name = String(card.business_legal_name ?? card.name ?? "").trim().toLowerCase();
-  if (!name || name === "draft" || name === "draft application") return true;
+  if (!name || name === "draft" || name === "draft application") return !isRealStage;
   const dateMs = new Date(card.created_at).getTime();
   const invalidDate = Number.isNaN(dateMs);
-  const state = String(card.pipeline_state ?? "").toLowerCase();
   return invalidDate && (state === "received" || state === "draft" || state === "new");
 }
 
