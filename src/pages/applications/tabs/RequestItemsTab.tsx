@@ -16,6 +16,12 @@ interface Props { applicationId?: string }
 type ReqDoc = { document_type: string; label: string };
 
 const CATALOG_DOCS: string[] = [
+  // BF_PORTAL_CATALOG_BANK_STATEMENTS_v1 - the most-requested document was only
+  // visible when the deal's Step-5 required set happened to include it (i.e. a
+  // lender product was finalized). With no lender finalized the required set is
+  // empty and staff had NO way to request banking. Canonical label matches the
+  // lender-product catalog / fraud classifier / package builder exactly.
+  "6 months business banking statements",
   "3 years accountant prepared financials",
   "3 years business tax returns",
   "PnL – Interim financials",
