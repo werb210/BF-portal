@@ -11,9 +11,36 @@ const DEFAULTS: Tpl = {
   image2Url: "", image2Link: "",
 };
 
+// EMAIL_AUDIENCE_INCL_EXCL_v1 - multi-select tag checkbox list.
+function TagPicker({ title, hint, tags, selected, onToggle }: {
+  title: string; hint: string; tags: { tag: string; n: number }[]; selected: string[]; onToggle: (tag: string) => void;
+}) {
+  return (
+    <div>
+      <div style={{ color: "var(--ui-text)", fontSize: "0.8rem", fontWeight: 600 }}>{title}</div>
+      <div style={{ color: "var(--ui-text-muted)", fontSize: "0.72rem", marginBottom: 4 }}>{hint}</div>
+      <div className="border rounded" style={{ borderColor: "var(--ui-border)", background: "var(--ui-surface-strong)", maxHeight: 140, overflowY: "auto", padding: "4px 8px" }}>
+        {tags.length === 0 && <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem", margin: "4px 0" }}>No tags yet.</p>}
+        {tags.map((x) => (
+          <label key={x.tag} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", color: "var(--ui-text)", padding: "2px 0", cursor: "pointer" }}>
+            <input type="checkbox" checked={selected.includes(x.tag)} onChange={() => onToggle(x.tag)} />
+            <span style={{ flex: 1 }}>{x.tag}</span>
+            <span style={{ color: "var(--ui-text-muted)" }}>({x.n})</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function BrandedEmailComposer() {
   const [seg, setSeg] = useState<Seg | null>(null);
-  const [tag, setTag] = useState("__all__");
+  // EMAIL_AUDIENCE_INCL_EXCL_v1 - multi-tag audience. Include empty = all
+  // contacts; a contact needs AT LEAST ONE include tag; any exclude tag
+  // removes the contact (exclude wins).
+  const [include, setInclude] = useState<string[]>([]);
+  const [exclude, setExclude] = useState<string[]>([]);
+  const [audCount, setAudCount] = useState<number | null>(null);
   const [subject, setSubject] = useState("");
   const [tpl, setTpl] = useState<Tpl>(DEFAULTS);
   const [testTo, setTestTo] = useState("");
@@ -39,7 +66,20 @@ export default function BrandedEmailComposer() {
   }, []);
 
   const set = (k: keyof Tpl, v: string) => setTpl((p) => ({ ...p, [k]: v }));
-  const count = tag === "__all__" ? (seg?.all ?? 0) : (seg?.segments.find((x) => x.tag === tag)?.n ?? 0);
+  const count = include.length === 0 && exclude.length === 0 ? (seg?.all ?? 0) : (audCount ?? 0);
+  useEffect(() => {
+    if (include.length === 0 && exclude.length === 0) { setAudCount(null); return; }
+    let alive = true;
+    const t = setTimeout(() => {
+      const qs = new URLSearchParams();
+      if (include.length) qs.set("include", include.join(","));
+      if (exclude.length) qs.set("exclude", exclude.join(","));
+      api.get<{ data?: { n?: number }; n?: number }>(`/api/marketing/email/audience-count?${qs.toString()}`)
+        .then((r) => { if (alive) setAudCount(Number(r?.data?.n ?? r?.n ?? 0)); })
+        .catch(() => { if (alive) setAudCount(0); });
+    }, 250);
+    return () => { alive = false; clearTimeout(t); };
+  }, [include, exclude]);
 
   useEffect(() => {
     let alive = true;
@@ -87,7 +127,10 @@ export default function BrandedEmailComposer() {
     try {
       const payload: Record<string, unknown> = { subject, ...tpl };
       if (test) payload.test = test;
-      else if (tag !== "__all__") payload.tag = tag;
+      else {
+        if (include.length) payload.tags = include;
+        if (exclude.length) payload.excludeTags = exclude;
+      }
       const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/email/send-template", payload);
       const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; total?: number };
       if (r?.configured === false) setMsg("SendGrid not connected yet (set SENDGRID_API_KEY).");
@@ -109,12 +152,15 @@ export default function BrandedEmailComposer() {
       <div className="drawer-section__title mb-2">Email campaign</div>
       <div className="flex flex-col gap-4 md:flex-row">
         <div className="space-y-2 md:w-1/2">
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Audience
-            <select value={tag} onChange={(e) => setTag(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle}>
-              <option value="__all__">All contacts ({seg?.all ?? 0})</option>
-              {(seg?.segments ?? []).map((x) => <option key={x.tag} value={x.tag}>{x.tag} ({x.n})</option>)}
-            </select>
-          </label>
+          <div className="text-sm" style={{ color: "var(--ui-text)" }}>Audience
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <TagPicker title="Include tags" hint={`Empty = all contacts (${seg?.all ?? 0})`} tags={seg?.segments ?? []} selected={include}
+                onToggle={(t) => setInclude((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))} />
+              <TagPicker title="Exclude tags" hint="Removed even if included" tags={seg?.segments ?? []} selected={exclude}
+                onToggle={(t) => setExclude((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))} />
+            </div>
+            <p className="mt-1" style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Recipients: <strong style={{ color: "var(--ui-text)" }}>{count}</strong></p>
+          </div>
           <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Subject
             <input value={subject} onChange={(e) => setSubject(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
           </label>
