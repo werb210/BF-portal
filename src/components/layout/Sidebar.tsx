@@ -35,6 +35,7 @@ const navigationSections: NavigationSection[] = [
       { label: "AI Comms", path: "/ai-comms", roles: ["Admin", "Staff", "Marketing"] },
       { label: "Issues", path: "/issues", roles: ["Admin", "Staff", "Marketing"] },
       { label: "Calendar", path: "/calendar" },
+      { label: "Tasks", path: "/tasks" }, // BF_PORTAL_TASKS_V1
       { label: "Marketing", path: "/marketing", roles: ["Admin", "Marketing"] },
       { label: "Lenders", path: "/lenders" },
       { label: "Settings", path: "/settings" }

@@ -25,6 +25,7 @@ import CalendarPage from "@/pages/calendar/CalendarPage";
 import CommunicationsPage from "@/pages/communications/CommunicationsPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
 import MarketingPage from "@/pages/marketing/MarketingPage";
+import TasksPage from "@/pages/tasks/TasksPage"; // BF_PORTAL_TASKS_V1
 import BIDashboardPage from "@/pages/bi/BIDashboardPage";
 import BICommissionDashboard from "@/pages/bi/BICommissionDashboard";
 import BIReferrersPage from "@/pages/bi/BIReferrersPage";
@@ -156,6 +157,7 @@ const AppRoutes = () => {
         <Route path="/applications" element={<Navigate to="/pipeline" replace />} />
         <Route path="/crm/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CRMPage /></RequireRole></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} /> {/* BF_PORTAL_TASKS_V1 */}
         <Route path="/communications/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CommunicationsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/settings/:tab" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
