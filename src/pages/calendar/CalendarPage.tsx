@@ -9,6 +9,7 @@ import { api } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 import RequireRole from "@/components/auth/RequireRole";
 import SecondaryButton from "@/components/forms/SecondaryButton";
+import CalendarTasksPanel from "./CalendarTasksPanel";
 
 type ApiCalendarEvent = {
   id?: string;
@@ -137,11 +138,7 @@ function CalendarContent() {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
-  const [showTaskForm, setShowTaskForm] = useState(false);
-  const [completedExpanded, setCompletedExpanded] = useState(false); // BF_PORTAL_BLOCK_v825_CALENDAR_COMPLETED_COLLAPSE
-  const [selectedTask, setSelectedTask] = useState<CalendarTask | null>(null);
   const [eventForm, setEventForm] = useState({ title: "", start: "", end: "", attendees: "", location: "", notes: "" });
-  const [taskForm, setTaskForm] = useState({ title: "", dueAt: "", priority: "normal", assignee_user_id: (user as { id?: string } | null)?.id ?? "", notes: "" });
   const queryClient = useQueryClient();
 
   // BF_PORTAL_BLOCK_v699_CALENDAR_RANGE_v1 — send the visible window to the
@@ -184,14 +181,6 @@ function CalendarContent() {
     },
   });
 
-  const tasksQuery = useQuery({
-    queryKey: ["calendar-tasks"],
-    queryFn: async () => {
-      const response = await api.get<CalendarTask[]>("/api/calendar/tasks");
-      console.log("[tasks.diag] GET /api/calendar/tasks response JSON:", JSON.stringify(response)); // BF_TASKS_DIAG_v30
-      return response;
-    },
-  });
 
   const createEventMutation = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
@@ -206,27 +195,6 @@ function CalendarContent() {
       setEventForm({ title: "", start: "", end: "", attendees: "", location: "", notes: "" });
     },
   });
-
-  const createTaskMutation = useMutation({
-    mutationFn: async (payload: Record<string, unknown>) => {
-      console.log("[tasks.diag] POST /api/calendar/tasks body JSON:", JSON.stringify(payload)); // BF_TASKS_DIAG_v30
-      const response = await api.post("/api/calendar/tasks", payload);
-      console.log("[tasks.diag] POST /api/calendar/tasks response JSON:", JSON.stringify(response)); // BF_TASKS_DIAG_v30
-      return response;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["calendar-tasks"] });
-      setShowTaskForm(false);
-      setTaskForm({ title: "", dueAt: "", priority: "normal", assignee_user_id: (user as { id?: string } | null)?.id ?? "", notes: "" });
-    },
-  });
-
-  const completeTaskMutation = useMutation({
-    mutationFn: (task: CalendarTask) => api.patch(`/api/calendar/tasks/${task.id}`, { status: (task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed)) ? "open" : "done" }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["calendar-tasks"] }),
-  });
-
-  const groupedTasks = useMemo(() => groupTasks(Array.isArray(tasksQuery.data) ? tasksQuery.data : []), [tasksQuery.data]);
 
   const events = useMemo<CalendarEvent[]>(() => {
     // BF_PORTAL_BLOCK_v624_COMMS_AND_CALENDAR_v1 — calendar grid shows
@@ -245,25 +213,7 @@ function CalendarContent() {
         resource: { ...event, source: "calendar" as const },
       }));
   }, [eventsQuery.data]);
-  const tasksAsEvents = useMemo<CalendarEvent[]>(() => {
-    const tasks = Array.isArray(tasksQuery.data) ? tasksQuery.data : [];
-    return tasks
-      .filter((t) => t.dueAt || t.due_date || t.dueDate)
-      .map((t) => {
-        const due = new Date(t.dueAt ?? t.due_date ?? t.dueDate ?? "");
-        if (Number.isNaN(due.getTime())) return null;
-        return {
-          id: `task:${t.id}`,
-          title: t.title ?? "Untitled task",
-          start: due,
-          end: due,
-          allDay: true,
-          resource: { __kind: "task", task: t } as any,
-        } as CalendarEvent;
-      })
-      .filter((e): e is CalendarEvent => e !== null);
-  }, [tasksQuery.data]);
-  const allItems = useMemo(() => [...events, ...tasksAsEvents], [events, tasksAsEvents]);
+
 
   return (
     <div className="page" style={{ display: "grid", gridTemplateColumns: "65% 35%", gap: 16, minHeight: "calc(100vh - 160px)" }}>
@@ -317,7 +267,7 @@ function CalendarContent() {
           {view === "year" ? (
             <YearView
               year={currentDate.getFullYear()}
-              events={allItems}
+              events={events}
               onPrevYear={() => setCurrentDate(new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1))}
               onNextYear={() => setCurrentDate(new Date(currentDate.getFullYear() + 1, currentDate.getMonth(), 1))}
               onPickDay={(d) => { setCurrentDate(d); setView("day"); }}
@@ -339,11 +289,6 @@ function CalendarContent() {
               dayLayoutAlgorithm="no-overlap"
               allDayMaxRows={2}
               onSelectEvent={(event: CalendarEvent) => {
-                const resource = (event.resource as any) ?? {};
-                if (resource.__kind === "task") {
-                  setSelectedTask(resource.task as CalendarTask);
-                  return;
-                }
                 setSelectedEvent(event);
               }}
               eventPropGetter={(event: CalendarEvent) => {
@@ -357,63 +302,10 @@ function CalendarContent() {
         </div>
       </section>
 
-      <aside style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: 12, overflowY: "auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h3 style={{ margin: 0 }}>Tasks</h3>
-          {/* BF_PORTAL_BLOCK_v_CALENDAR_TASK_BUTTON_v1 — was hardcoded teal #0f766e */}
-          <button onClick={() => setShowTaskForm(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "transparent", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: "pointer" }}>
-            Add Task
-          </button>
-        </div>
-
-        {tasksQuery.isLoading && <p>Loading tasks…</p>}
-
-        {/* BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — added Completed bucket */}
-        {[
-          ["Overdue", groupedTasks.overdue, "#dc2626"],
-          ["Due Today", groupedTasks.dueToday, "#f97316"],
-          ["Upcoming", groupedTasks.upcoming, "var(--ui-text)"],
-          ["No Due Date", groupedTasks.noDueDate, "var(--ui-text-muted)"],
-          ["Completed", groupedTasks.completed, "#10b981"],
-        ].map(([label, items, color]) => (
-          <div key={label as string} style={{ marginBottom: 14 }}>
-            {/* BF_PORTAL_BLOCK_v825_CALENDAR_COMPLETED_COLLAPSE — Completed is collapsible. */}
-            {label === "Completed" ? (
-              <h4
-                onClick={() => setCompletedExpanded((v) => !v)}
-                style={{ margin: "0 0 8px", color: color as string, fontSize: 14, cursor: "pointer", userSelect: "none" }}
-                data-testid="calendar-completed-toggle"
-              >
-                {(items as CalendarTask[]).length > 0 ? (completedExpanded ? "\u25be " : "\u25b8 ") : ""}{label as string} ({(items as CalendarTask[]).length})
-              </h4>
-            ) : (
-              <h4 style={{ margin: "0 0 8px", color: color as string, fontSize: 14 }}>{label as string}</h4>
-            )}
-            {label === "Completed" && !completedExpanded ? null : (items as CalendarTask[]).length === 0 ? (
-              <p style={{ color: "var(--ui-text-muted)", fontSize: 13, margin: 0 }}>None</p>
-            ) : (
-              (items as CalendarTask[]).map((task) => (
-                <div key={task.id ?? `${task.title}-${task.due_date}`} onClick={() => setSelectedTask(task)} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--ui-border)", alignItems: "flex-start", cursor: "pointer" }}>
-                  <input type="checkbox" style={{ marginTop: 3 }} checked={task.status === "done" || Boolean(task.completedAt) || Boolean(task.completed)} onChange={(e) => { e.stopPropagation(); task.id && completeTaskMutation.mutate(task); }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ui-text)", wordBreak: "break-word" }}>
-                      {(typeof task.title === "string" && task.title.trim()) ? task.title : "Untitled task"}
-                    </div>
-                    <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
-                      Due: {(task.dueAt ?? task.due_date ?? task.dueDate) ? new Date(task.dueAt ?? task.due_date ?? task.dueDate ?? "").toLocaleString() : "-"}
-                    </div>
-                    <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Assigned to: {(() => {
-                      const assigneeName = task.assignee_name ?? task.assigneeName;
-                      const assigneeEmail = task.assignee_email ?? task.assigneeEmail;
-                      return assigneeName || assigneeEmail || "-";
-                    })()}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        ))}
-      </aside>
+      {/* BF_PORTAL_CAL_TASKS_HUBSPOT_v1 - full HubSpot-style Tasks panel,
+          wired to /api/tasks (queues, runner, task types). Replaces the old
+          cramped Overdue/Due-Today list + Add Task modal. */}
+      <CalendarTasksPanel currentUserId={(user as { id?: string } | null)?.id ?? ""} />
 
       {selectedEvent && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
@@ -453,23 +345,6 @@ function CalendarContent() {
           </div>
         </div>
       )}
-      {selectedTask && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "grid", placeItems: "center", zIndex: 1000 }}>
-          <div style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text)", borderRadius: 10, padding: 16, width: "min(520px, 92vw)" }}>
-            <h3 style={{ marginTop: 0 }}>{selectedTask.title ?? "Untitled task"}</h3>
-            <p><strong>Notes:</strong> {selectedTask.notes ?? "-"}</p>
-            <p><strong>Due date:</strong> {(selectedTask.dueAt ?? selectedTask.due_date ?? selectedTask.dueDate) ? new Date(selectedTask.dueAt ?? selectedTask.due_date ?? selectedTask.dueDate ?? "").toLocaleString() : "-"}</p>
-            <p><strong>Priority:</strong> {selectedTask.priority ?? "normal"}</p>
-            <p><strong>Assigned to:</strong> {selectedTask.assignee_name ?? selectedTask.assigneeName ?? selectedTask.assignee_email ?? selectedTask.assigneeEmail ?? "-"}</p>
-            <p><strong>Status:</strong> {selectedTask.status ?? "open"}</p>
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button onClick={() => selectedTask.id && completeTaskMutation.mutate(selectedTask)}>Mark Complete</button>
-              <SecondaryButton onClick={() => setSelectedTask(null)}>Close</SecondaryButton>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showEventForm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
           <div style={{ width: "min(560px, 90vw)", background: "var(--ui-surface-strong)", borderRadius: 12, padding: 16 }}>
@@ -535,75 +410,7 @@ function CalendarContent() {
         </div>
       )}
 
-      {showTaskForm && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
-          <div style={{ width: "min(560px, 90vw)", background: "var(--ui-surface-strong)", borderRadius: 12, padding: 16 }}>
-            <h3 style={{ marginTop: 0 }}>Add Task</h3>
-            <label style={fieldRow}>
-              <span style={fieldLabel}>Title</span>
-              <input
-                type="text"
-                value={taskForm.title}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))}
-                style={calInputStyle}
-              />
-            </label>
-            <label style={fieldRow}>
-              <span style={fieldLabel}>Due</span>
-              <input
-                type="datetime-local"
-                value={taskForm.dueAt}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, dueAt: e.target.value }))}
-                style={calInputStyle}
-              />
-            </label>
-            <label style={fieldRow}>
-              <span style={fieldLabel}>Priority</span>
-              <select
-                value={taskForm.priority}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))}
-                style={calInputStyle}
-              >
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-              </select>
-            </label>
-            <label style={fieldRow}>
-              <span style={fieldLabel}>Assignee</span>
-              <select
-                value={taskForm.assignee_user_id}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, assignee_user_id: e.target.value }))}
-                style={calInputStyle}
-              >
-                {(((usersQuery.data as StaffUser[] | undefined) ?? [])).map((staff) => (
-                  <option key={staff.id} value={staff.id}>
-                    {staff.name || `${staff.first_name ?? ""} ${staff.last_name ?? ""}`.trim() || staff.email || staff.id}
-                  </option>
-                ))}
-                {(!usersQuery.data || (usersQuery.data as StaffUser[]).length === 0) && taskForm.assignee_user_id && (
-                  <option value={taskForm.assignee_user_id}>Current user</option>
-                )}
-              </select>
-            </label>
-            <label style={fieldRow}>
-              <span style={fieldLabel}>Notes</span>
-              <textarea
-                value={taskForm.notes}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, notes: e.target.value }))}
-                rows={4}
-                style={calInputStyle}
-              />
-            </label>
-            <div style={{ display: "flex", gap: 8 }}>
-              {taskForm.title.trim() ? (
-                <button onClick={() => createTaskMutation.mutate(taskForm)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #0f766e", background: "#0f766e", color: "#fff" }}>Save</button>
-              ) : null}
-              <SecondaryButton onClick={() => setShowTaskForm(false)}>Cancel</SecondaryButton>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
