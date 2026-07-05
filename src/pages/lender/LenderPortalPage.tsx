@@ -25,7 +25,7 @@ import {
 type Profile = {
   name?: string; phone?: string; website?: string; description?: string;
   contact_name?: string; contact_email?: string; contact_phone?: string;
-  street?: string; city?: string; region?: string; postal_code?: string;
+  street?: string; city?: string; region?: string; postal_code?: string; country?: string;
 };
 
 type Product = {
@@ -119,6 +119,7 @@ const INFO_ROWS: { key: keyof Profile; label: string }[] = [
   { key: "city", label: "City" },
   { key: "region", label: "Province / State" },
   { key: "postal_code", label: "Postal code / ZIP" },
+  { key: "country", label: "Country" },
   { key: "description", label: "Description" },
 ];
 const EDIT_FIELDS: { key: keyof Profile; label: string; type?: string }[] = [
@@ -131,6 +132,7 @@ const EDIT_FIELDS: { key: keyof Profile; label: string; type?: string }[] = [
   { key: "city", label: "City" },
   { key: "region", label: "Province / State" },
   { key: "postal_code", label: "Postal code / ZIP" },
+  { key: "country", label: "Country" },
 ];
 
 const fmtAmount = (v: number | null | undefined) => (v == null ? "\u2014" : `$${Number(v).toLocaleString()}`);
@@ -290,9 +292,9 @@ export default function LenderPortalPage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flexWrap: "wrap" }}>
-          <img src={logoWhite} alt="Boreal Financial" style={{ height: 34, width: "auto", display: "block" }} />
-          <span style={{ fontSize: 20, fontWeight: 700, color: "var(--ui-text)" }}>Boreal Financial Group</span>
-          <span style={{ fontSize: 15, color: "var(--ui-text-muted)", marginLeft: 8 }}>
+          <img src={logoWhite} alt="Boreal Financial" style={{ height: 34, width: "auto", display: "block", filter: "brightness(0) invert(1)" }} /> {/* LENDER_HEADER_WHITE_v2 */}
+          <span style={{ fontSize: 20, fontWeight: 700, color: "#ffffff" }}>Boreal Financial Group</span>
+          <span style={{ fontSize: 15, color: "rgba(255,255,255,0.85)", marginLeft: 8 }}>
             {(() => {
               const first = (profile.contact_name || "").trim().split(/\s+/)[0];
               const lender = (profile.name || "").trim();
