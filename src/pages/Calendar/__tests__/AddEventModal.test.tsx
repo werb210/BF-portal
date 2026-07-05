@@ -5,7 +5,7 @@ import CalendarPage from "@/pages/calendar/CalendarPage";
 
 vi.mock("@/components/auth/RequireRole", () => ({ default: ({ children }: any) => children }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1", name: "Current User" } }) }));
-vi.mock("@/api", () => ({ api: { get: vi.fn() } }));
+vi.mock("@/api", () => ({ api: { get: vi.fn(() => Promise.resolve({ tasks: [], queues: [], staff: [] })), post: vi.fn(() => Promise.resolve({})) } }));
 vi.mock("@tanstack/react-query", () => ({
   useQuery: () => ({ data: [], isLoading: false }),
   useMutation: () => ({ mutate: vi.fn() }),
@@ -33,15 +33,16 @@ describe("Add Event modal", () => {
 });
 
 
-describe("Add Task modal", () => {
-  it("renders Assignee dropdown", () => {
+describe("Create task dialog (HubSpot panel)", () => {
+  it("opens the HubSpot-style create dialog with type + assignee", () => {
     render(
       <MemoryRouter initialEntries={["/calendar"]}>
         <CalendarPage />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole("button", { name: /Add Task/i }));
-    expect(screen.getByText("Assignee")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Create task/i }));
+    expect(screen.getByText("Task type")).toBeInTheDocument();
+    expect(screen.getByText("Assigned to")).toBeInTheDocument();
     expect(screen.getAllByRole("combobox").length).toBeGreaterThanOrEqual(2);
   });
 });
