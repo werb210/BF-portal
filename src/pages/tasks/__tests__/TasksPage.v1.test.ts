@@ -42,3 +42,21 @@ describe("tasks milestones 2+3 (portal)", () => {
     expect(modal).toContain("/shares");
   });
 });
+
+// BF_PORTAL_TASKS_M4_v1 - type-specific action surfaces reuse the REAL
+// portal surfaces (dialer/O365/SMS) with an auto-open user setting.
+describe("tasks milestone 4 (portal)", () => {
+  const runner = readFileSync(join(process.cwd(), "src", "pages", "tasks", "TaskRunner.tsx"), "utf-8");
+  it("CALL opens the Twilio dialer with the contact prefilled", () => {
+    expect(runner).toContain('openDialer({ contactId: t.contact_id');
+    expect(runner).toContain('source: "task_runner"');
+  });
+  it("EMAIL uses the O365 composer with send-and-complete semantics", () => {
+    expect(runner).toContain("<O365ComposeModal");
+    expect(runner).toContain("if (completeAfterSend) complete();");
+  });
+  it("SMS uses the Twilio composer; auto-open is a user setting", () => {
+    expect(runner).toContain("<SMSComposer");
+    expect(runner).toContain('localStorage.getItem("boreal.tasks.autoOpen")');
+  });
+});
