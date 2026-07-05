@@ -180,6 +180,10 @@ function CreateTaskModal({ queues, onClose, onCreated }: { queues: Queue[]; onCl
   const [dueAt, setDueAt] = useState("");
   const [queueId, setQueueId] = useState("");
   const [body, setBody] = useState("");
+  // BF_PORTAL_TASKS_M6_v1 - reminder + recurrence.
+  const [reminderAt, setReminderAt] = useState("");
+  const [repeatUnit, setRepeatUnit] = useState("");
+  const [repeatInterval, setRepeatInterval] = useState(1);
   const [err, setErr] = useState<string | null>(null);
 
   // HubSpot nicety: typing "call"/"email" in the title flips the type.
@@ -197,6 +201,10 @@ function CreateTaskModal({ queues, onClose, onCreated }: { queues: Queue[]; onCl
       title: title.trim(), type, priority, body: body.trim() || null,
       due_at: dueAt ? new Date(dueAt).toISOString() : null,
       queue_id: queueId || null,
+      // BF_PORTAL_TASKS_M6_v1 - reminder + recurrence.
+      reminder_at: reminderAt ? new Date(reminderAt).toISOString() : null,
+      repeat_unit: repeatUnit || null,
+      repeat_interval: repeatUnit ? repeatInterval : null,
     }).then(onCreated).catch(() => setErr("Failed to create task."));
   };
 
@@ -228,6 +236,24 @@ function CreateTaskModal({ queues, onClose, onCreated }: { queues: Queue[]; onCl
               <option value="">No queue</option>
               {queues.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
             </select>
+          </label>
+        </div>
+        {/* BF_PORTAL_TASKS_M6_v1 - reminder + repeat */}
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Reminder
+            <input type="datetime-local" value={reminderAt} onChange={(e) => setReminderAt(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
+          </label>
+          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Repeat
+            <div className="flex gap-1 mt-1">
+              <input type="number" min={1} value={repeatInterval} disabled={!repeatUnit} onChange={(e) => setRepeatInterval(Math.max(1, Number(e.target.value)))} className="border rounded px-2 py-1 text-sm w-14" style={inputStyle} />
+              <select value={repeatUnit} onChange={(e) => setRepeatUnit(e.target.value)} className="border rounded px-2 py-1 text-sm flex-1" style={inputStyle}>
+                <option value="">No repeat</option>
+                <option value="DAY">days</option>
+                <option value="WEEK">weeks</option>
+                <option value="MONTH">months</option>
+                <option value="YEAR">years</option>
+              </select>
+            </div>
           </label>
         </div>
         <label className="text-sm block mb-3" style={{ color: "var(--ui-text)" }}>Notes
