@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useLenderAuth } from "@/lender/auth/useLenderAuth";
 import "@/styles/globals.css";
+import logoWhite from "@/assets/logo-boreal-mountains-white.svg";
 import "@/styles/lender.css";
 
 const LenderLayout = () => {
@@ -16,7 +17,8 @@ const LenderLayout = () => {
     <div className="lender-shell">
       <aside className="lender-sidebar">
         <div className="lender-sidebar__brand">
-          <div className="lender-sidebar__logo" aria-hidden>⛰️</div>
+          {/* BF_PORTAL_LENDER_OTP_RESTYLE_v1 - real Boreal logo, BF-silo look. */}
+          <img src={logoWhite} alt="Boreal" className="lender-sidebar__logo-img" />
           <div>
             <div className="lender-sidebar__title">Lender Portal</div>
             <div className="lender-sidebar__subtitle">{user?.companyName ?? ""}</div>

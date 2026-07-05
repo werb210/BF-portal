@@ -1,203 +1,230 @@
+/* BF_PORTAL_LENDER_OTP_RESTYLE_v1 - lender portal restyled to match the staff
+   BF silo. Uses the --ui-* design tokens (defined in globals.css) so the shell,
+   sidebar, cards, tables, and forms read like the staff portal instead of the
+   old sky-blue/emoji styling. Class names are unchanged - this is styling only,
+   no component edits. */
+
 .lender-shell {
-  display: grid;
-  grid-template-columns: 260px 1fr;
+  display: flex;
   min-height: 100vh;
-  background: #f9fafb;
-  color: #0f172a;
+  background: var(--ui-bg, #0b1220);
+  color: var(--ui-text, #e5eaf2);
 }
 
 .lender-sidebar {
-  background: #f1f5f9;
-  border-right: 1px solid #e2e8f0;
-  padding: 24px 18px;
+  width: 248px;
+  flex-shrink: 0;
+  background: #020817;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .lender-sidebar__brand {
   display: flex;
-  gap: 12px;
   align-items: center;
+  gap: 12px;
 }
 
+.lender-sidebar__logo-img {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+/* legacy emoji logo box - kept in case it is still referenced */
 .lender-sidebar__logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #0ea5e9, #818cf8);
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
-  font-size: 18px;
-  color: #0b1220;
+  font-size: 20px;
 }
 
 .lender-sidebar__title {
   font-weight: 700;
+  font-size: 15px;
+  color: #ffffff;
 }
 
 .lender-sidebar__subtitle {
-  color: #475569;
-  font-size: 13px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .lender-sidebar__nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .lender-nav-link {
-  padding: 10px 12px;
-  border-radius: 10px;
-  color: #0f172a;
-  font-weight: 600;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  display: block;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .lender-nav-link:hover {
-  background: #e2e8f0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }
 
 .lender-nav-link--active {
-  background: #0f172a;
-  color: #e2e8f0;
+  background: var(--ui-accent-blue, #2563eb);
+  color: #ffffff;
 }
 
 .lender-shell__content {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-width: 0;
+  background: var(--ui-bg, #0b1220);
 }
 
 .lender-topbar {
-  padding: 16px 24px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--ui-border, #1e293b);
+  background: var(--ui-surface, #0f172a);
 }
 
 .lender-topbar__title {
-  font-size: 20px;
-  margin: 0;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ui-text, #e5eaf2);
 }
 
 .lender-topbar__subtitle {
-  color: #475569;
-  font-size: 14px;
+  font-size: 12px;
+  color: var(--ui-text-muted, #94a3b8);
 }
 
 .lender-topbar__user {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .lender-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #cbd5e1;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
   display: grid;
   place-items: center;
+  background: var(--ui-accent-blue, #2563eb);
+  color: #ffffff;
   font-weight: 700;
+  font-size: 14px;
 }
 
 .lender-topbar__user-meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  line-height: 1.2;
 }
 
 .lender-topbar__user-name {
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ui-text, #e5eaf2);
 }
 
 .lender-topbar__user-role {
-  color: #475569;
-  font-size: 13px;
+  font-size: 11px;
+  color: var(--ui-text-muted, #94a3b8);
 }
 
 .lender-shell__main {
-  padding: 20px 24px;
+  padding: 28px;
+  overflow-y: auto;
   flex: 1;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
 }
 
 .lender-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.4fr);
+  gap: 20px;
+  align-items: start;
 }
 
 .lender-section {
-  background: #fff;
+  background: var(--ui-surface-strong, #ffffff);
+  border: 1px solid var(--ui-border, #cbd6e2);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  padding: 16px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+  padding: 20px;
+  color: var(--ui-text, #0f172a);
 }
 
 .lender-section__header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 .lender-section__title {
+  font-size: 16px;
   font-weight: 700;
 }
 
 .lender-cta-row {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  align-items: center;
 }
 
 .lender-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 14px;
 }
 
 .lender-table th,
 .lender-table td {
-  padding: 10px 8px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  padding: 10px 12px;
   text-align: left;
+  border-bottom: 1px solid var(--ui-border-soft, #eaf0f6);
 }
 
 .lender-table th {
-  color: #94a3b8;
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  color: var(--ui-text-muted, #64748b);
+  font-weight: 600;
 }
 
 .lender-pill {
-  display: inline-flex;
-  padding: 4px 8px;
+  display: inline-block;
+  padding: 2px 10px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.75);
-  color: #e2e8f0;
   font-size: 12px;
+  font-weight: 600;
 }
 
 .lender-pill--success {
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
+  background: #dcfce7;
+  color: #166534;
 }
 
 .lender-pill--muted {
-  background: rgba(15, 23, 42, 0.6);
-  color: #94a3b8;
+  background: var(--ui-surface-muted, #eef1f5);
+  color: var(--ui-text-muted, #64748b);
 }
 
 .lender-form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
@@ -205,16 +232,15 @@
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 .lender-drawer {
-  background: rgba(15, 23, 42, 0.85);
-  border: none;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.55);
-  backdrop-filter: blur(16px);
+  background: var(--ui-surface-strong, #ffffff);
+  border: 1px solid var(--ui-border, #cbd6e2);
+  border-radius: 12px;
+  padding: 20px;
+  color: var(--ui-text, #0f172a);
 }
 
 .lender-doc-list {
@@ -226,15 +252,18 @@
 .lender-doc-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid var(--ui-border, #cbd6e2);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.6);
-  border: none;
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+  font-size: 14px;
 }
 
 .lender-doc-custom {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
+
+/* Auth pages now use Tailwind utility classes (staff Login parity); the old
+   .auth-page / .auth-form styling is no longer used by the lender pages. */
