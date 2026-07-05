@@ -5,6 +5,8 @@
 // switching silo in the topbar refetches everything.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/api";
+import TaskRunner, { type RunTask } from "./TaskRunner"; // BF_PORTAL_TASKS_M2_M3_v1
+import ManageQueuesModal from "./ManageQueuesModal"; // BF_PORTAL_TASKS_M2_M3_v1
 
 type Queue = { id: string; name: string; access_type: string; open_count: number };
 type Task = {
@@ -38,6 +40,9 @@ export default function TasksPage() {
   const [queues, setQueues] = useState<Queue[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [showCreate, setShowCreate] = useState(false);
+  // BF_PORTAL_TASKS_M2_M3_v1 - runner + manage-queues state.
+  const [runTasks, setRunTasks] = useState<RunTask[] | null>(null);
+  const [showQueues, setShowQueues] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,9 +82,22 @@ export default function TasksPage() {
     <div className="p-4" data-testid="tasks-page">
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-xl font-semibold" style={{ color: "var(--ui-text)" }}>Tasks</h1>
-        <button className="border rounded px-3 py-1.5 text-sm font-semibold" style={inputStyle} onClick={() => setShowCreate(true)}>
-          + Create task
-        </button>
+        <div className="flex gap-2">
+          {view !== "completed" && tasks.length > 0 && (
+            <button className="border rounded px-3 py-1.5 text-sm font-semibold" style={inputStyle}
+              onClick={() => {
+                api.post<unknown>("/api/tasks/runs", { view, type: type || null, priority: priority || null, queue_id: queueId || null })
+                  .then((r) => setRunTasks(unwrap<{ tasks: RunTask[] }>(r).tasks ?? []))
+                  .catch(() => setError("Failed to start run."));
+              }}>
+              Start {tasks.length} tasks
+            </button>
+          )}
+          <button className="border rounded px-3 py-1.5 text-sm" style={inputStyle} onClick={() => setShowQueues(true)}>Manage queues</button>
+          <button className="border rounded px-3 py-1.5 text-sm font-semibold" style={inputStyle} onClick={() => setShowCreate(true)}>
+            + Create task
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 flex-wrap items-center mb-3">
@@ -149,6 +167,8 @@ export default function TasksPage() {
       )}
 
       {showCreate && <CreateTaskModal queues={queues} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
+      {runTasks && <TaskRunner tasks={runTasks} onExit={() => { setRunTasks(null); load(); }} />}
+      {showQueues && <ManageQueuesModal onClose={() => { setShowQueues(false); load(); }} />}
     </div>
   );
 }

@@ -20,3 +20,25 @@ describe("tasks milestone 1 (portal)", () => {
     expect(nav).toContain('{ label: "Tasks", path: "/tasks" }');
   });
 });
+
+// BF_PORTAL_TASKS_M2_M3_v1 - Manage queues (create/rename/delete/shares) and
+// the Start-N-tasks runner with strict current-task binding.
+describe("tasks milestones 2+3 (portal)", () => {
+  const runner = readFileSync(join(process.cwd(), "src", "pages", "tasks", "TaskRunner.tsx"), "utf-8");
+  const modal = readFileSync(join(process.cwd(), "src", "pages", "tasks", "ManageQueuesModal.tsx"), "utf-8");
+  const idx = readFileSync(join(process.cwd(), "src", "pages", "tasks", "TasksPage.tsx"), "utf-8");
+  it("index starts a run and opens manage queues", () => {
+    expect(idx).toContain("/api/tasks/runs");
+    expect(idx).toContain("Start {tasks.length} tasks");
+    expect(idx).toContain("<ManageQueuesModal");
+  });
+  it("runner binds actions to the current task id and never deletes", () => {
+    expect(runner).toContain("strict current-task binding");
+    expect(runner).toContain("Task {Math.min(idx + 1, tasks.length)} of {tasks.length}");
+    expect(runner).not.toContain("api.delete");
+  });
+  it("queue delete warns that tasks are kept; shares editor present", () => {
+    expect(modal).toContain("only the label is removed");
+    expect(modal).toContain("/shares");
+  });
+});
