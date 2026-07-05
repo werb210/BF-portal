@@ -4,6 +4,7 @@
 // Overdue/Due-Today sidebar.
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { api } from "@/api";
+import { crmApi, type ContactRow } from "@/api/crm"; // BF_PORTAL_TASKS_CONTACT_PICKER_v1
 import TaskRunner, { type RunTask } from "@/pages/tasks/TaskRunner";
 import ManageQueuesModal from "@/pages/tasks/ManageQueuesModal";
 
@@ -255,12 +256,32 @@ function CreateTaskDialog({ queues, staff, currentUserId, onClose, onCreated }: 
   const [repeatUnit, setRepeatUnit] = useState("");
   const [repeatInterval, setRepeatInterval] = useState(1);
   const [notes, setNotes] = useState("");
+  // BF_PORTAL_TASKS_CONTACT_PICKER_v1 - contact attachment (required for Call/Email/SMS).
+  const [contactId, setContactId] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactQuery, setContactQuery] = useState("");
+  const [contactResults, setContactResults] = useState<ContactRow[]>([]);
+  const [contactSearching, setContactSearching] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const needsContact = ["CALL", "EMAIL", "SMS"].includes(type);
+  useEffect(() => {
+    if (contactId || contactQuery.trim().length < 2) { setContactResults([]); return; }
+    let alive = true;
+    setContactSearching(true);
+    const t = window.setTimeout(() => {
+      crmApi.listContacts({ q: contactQuery.trim(), limit: 8 })
+        .then((rows) => { if (alive) setContactResults(Array.isArray(rows) ? rows : []); })
+        .catch(() => { if (alive) setContactResults([]); })
+        .finally(() => { if (alive) setContactSearching(false); });
+    }, 250);
+    return () => { alive = false; window.clearTimeout(t); };
+  }, [contactQuery, contactId]);
 
   const onTitle = (v: string) => { setTitle(v); const low = v.toLowerCase(); if (low.includes("call")) setType("CALL"); else if (low.includes("email")) setType("EMAIL"); else if (low.includes("sms") || low.includes("text")) setType("SMS"); };
   const save = () => {
     if (!title.trim()) { setErr("Please enter a task title."); return; }
-    api.post("/api/tasks", { title: title.trim(), type, priority, body: notes.trim() || null, due_at: dueAt || null, reminder_at: reminderIso(dueAt, reminder), queue_id: queueId || null, assignee_user_id: assigneeId || null, repeat_unit: repeatUnit || null, repeat_interval: repeatUnit ? repeatInterval : null }).then(onCreated).catch(() => setErr("Failed to create task."));
+    if (needsContact && !contactId) { setErr("Call, Email, and SMS tasks need a contact. Search and pick one above."); return; }
+    api.post("/api/tasks", { title: title.trim(), type, priority, body: notes.trim() || null, due_at: dueAt || null, reminder_at: reminderIso(dueAt, reminder), queue_id: queueId || null, assignee_user_id: assigneeId || null, contact_id: contactId || null, repeat_unit: repeatUnit || null, repeat_interval: repeatUnit ? repeatInterval : null }).then(onCreated).catch(() => setErr("Failed to create task."));
   };
   const field: CSSProperties = { display: "block", marginBottom: 10 };
   const lbl: CSSProperties = { display: "block", fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 3 };
@@ -271,6 +292,36 @@ function CreateTaskDialog({ queues, staff, currentUserId, onClose, onCreated }: 
       <div style={{ width: "min(520px, 92vw)", background: "var(--ui-surface, #fff)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: 16, maxHeight: "88vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}><h3 style={{ margin: 0 }}>Task</h3><button onClick={onClose} style={{ ...ctl, cursor: "pointer" }}>X</button></div>
         <label style={field}><input value={title} onChange={(e) => onTitle(e.target.value)} placeholder="Enter your task" style={{ ...full, fontSize: 15, padding: "8px 10px" }} /></label>
+        {/* BF_PORTAL_TASKS_CONTACT_PICKER_v1 - search-as-you-type contact attach. */}
+        <label style={field}>
+          <span style={lbl}>Contact{needsContact ? " (required)" : ""}</span>
+          {contactId ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ ...full, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                {contactName}
+                <button type="button" onClick={() => { setContactId(""); setContactName(""); setContactQuery(""); }} style={{ ...ctl, padding: "2px 8px", cursor: "pointer" }}>Change</button>
+              </span>
+            </div>
+          ) : (
+            <div style={{ position: "relative" }}>
+              <input value={contactQuery} onChange={(e) => setContactQuery(e.target.value)} placeholder="Search contacts by name, email, or phone" style={full} />
+              {(contactSearching || contactResults.length > 0) && contactQuery.trim().length >= 2 && (
+                <div style={{ position: "absolute", zIndex: 60, top: "100%", left: 0, right: 0, background: "var(--ui-surface, #fff)", border: "1px solid var(--ui-border)", borderRadius: 8, marginTop: 2, maxHeight: 220, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.2)" }}>
+                  {contactSearching && <div style={{ padding: "8px 10px", color: "var(--ui-text-muted)", fontSize: 13 }}>Searching...</div>}
+                  {!contactSearching && contactResults.length === 0 && <div style={{ padding: "8px 10px", color: "var(--ui-text-muted)", fontSize: 13 }}>No matches.</div>}
+                  {contactResults.map((c) => (
+                    <button key={c.id} type="button"
+                      onClick={() => { setContactId(c.id); setContactName(c.name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || c.email || c.id); setContactResults([]); }}
+                      style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", background: "none", border: "none", borderBottom: "1px solid var(--ui-border-soft)", cursor: "pointer", color: "var(--ui-text)", fontSize: 13 }}>
+                      <div style={{ fontWeight: 600 }}>{c.name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "(no name)"}</div>
+                      <div style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{[c.email, c.phone].filter(Boolean).join(" - ") || "--"}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </label>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <label style={field}><span style={lbl}>Task type</span><select value={type} onChange={(e) => setType(e.target.value)} style={full}>{TYPES.map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}</select></label>
           <label style={field}><span style={lbl}>Priority</span><select value={priority} onChange={(e) => setPriority(e.target.value)} style={full}>{PRIORITIES.map((p) => <option key={p} value={p}>{p === "NONE" ? "None" : p.charAt(0) + p.slice(1).toLowerCase()}</option>)}</select></label>

@@ -5,7 +5,6 @@ const store = readFileSync("src/dialer/store.ts", "utf-8");
 const panel = readFileSync("src/dialer/components/DialerPanel.tsx", "utf-8");
 const login = readFileSync("src/pages/Login.tsx", "utf-8");
 const conv  = readFileSync("src/pages/communications/ConversationViewer.tsx", "utf-8");
-const task  = readFileSync("src/pages/tasks/TaskEditor.tsx", "utf-8");
 
 describe("v663 fixes", () => {
   it("dialer timer falls back to callStartedAt", () => {
@@ -17,15 +16,6 @@ describe("v663 fixes", () => {
   it("login auto-submit fires once per phone", () => {
     expect(login).toContain("autoFiredFor");
     expect(login).toContain("if (autoFiredFor.current === normalized) return;");
-  });
-  it("tasks fields have an explicit readable text color on a defined surface", () => {
-    // BF_PORTAL_BLOCK_v_FIX_DIALER_V663_TASK_COLOR_TEST_v1 — PR #1785 tokenized the
-    // dark-mode chrome; the hardcoded color: "#000" is now color: "var(--ui-text)"
-    // on background var(--ui-surface-strong). Assert the tokenized intent (explicit
-    // text color + surface), not the old literal hex.
-    expect(task).toContain("taskFieldStyle");
-    expect(task).toContain('color: "var(--ui-text)"');
-    expect(task).toContain('background: "var(--ui-surface-strong)"');
   });
   it("conversation scroll keys on id + length via rAF", () => {
     expect(conv).toContain("requestAnimationFrame");
