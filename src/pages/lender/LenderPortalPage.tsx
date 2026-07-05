@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api";
+import logoWhite from "@/assets/logo-boreal-mountains-white.svg"; // BF_PORTAL_LENDER_HEADER_v1
 import { formatDollar, unformatDollar } from "@/utils/format";
 import { Field, inputStyle } from "@/pages/lenders/components/lenderFieldShared";
 import {
@@ -280,17 +281,32 @@ export default function LenderPortalPage() {
 
   return (
     <div className="page" style={{ maxWidth: 1180, margin: "0 auto", padding: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "8px 0 20px" }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "var(--ui-text)" }}>
-          {profile.name ? profile.name : "Lender Portal"}
-        </h1>
+      {/* BF_PORTAL_LENDER_HEADER_v1 - staff-style portal header with the BF logo,
+          Boreal Financial Group name, and a graceful Welcome line. */}
+      <header
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: 12, height: 68, margin: "0 0 20px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flexWrap: "wrap" }}>
+          <img src={logoWhite} alt="Boreal Financial" style={{ height: 34, width: "auto", display: "block" }} />
+          <span style={{ fontSize: 20, fontWeight: 700, color: "var(--ui-text)" }}>Boreal Financial Group</span>
+          <span style={{ fontSize: 15, color: "var(--ui-text-muted)", marginLeft: 8 }}>
+            {(() => {
+              const first = (profile.contact_name || "").trim().split(/\s+/)[0];
+              const lender = (profile.name || "").trim();
+              return `Welcome${first ? " " + first : ""}${lender ? " - " + lender : ""}`;
+            })()}
+          </span>
+        </div>
         <button
           className="ui-button"
           onClick={() => { sessionStorage.removeItem("lender_token"); navigate("/lender-portal/login"); }}
         >
           Sign out
         </button>
-      </div>
+      </header>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(280px, 380px) 1fr", gap: 20, alignItems: "start" }}>
         <section style={sectionCard}>
@@ -298,6 +314,10 @@ export default function LenderPortalPage() {
             <h2 style={sectionTitle}>Company information</h2>
             <button className="ui-button" onClick={openProfileEdit} disabled={!profileLoaded}>Edit</button>
           </div>
+          {/* BF_PORTAL_LENDER_BLURBS_v1 */}
+          <p style={{ fontSize: 13, color: "var(--ui-text-muted)", margin: "0 0 14px", lineHeight: 1.5 }}>
+            Welcome to your portal. Please ensure all your company information is correct.
+          </p>
           {!profileLoaded && <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Loading...</div>}
           {profileLoaded && (
             <>
@@ -319,6 +339,15 @@ export default function LenderPortalPage() {
             <h2 style={sectionTitle}>Your products</h2>
             <button className="ui-button ui-button--primary" onClick={openCreate}>+ Create Product</button>
           </div>
+          {/* BF_PORTAL_LENDER_BLURBS_v1 */}
+          <p style={{ fontSize: 13, color: "var(--ui-text-muted)", margin: "0 0 14px", lineHeight: 1.5 }}>
+            Please check the current products we have in our system. You can add or edit to ensure we
+            are promoting all your products with the most correct information possible. If your products
+            have different requirements for different levels of funding then create each level. Example:
+            a LOC from $50,000 to $100,000 has required documents A; a LOC from $100,001 to $250,000 has
+            required documents A, B, and C. If you need any further clarification please email{" "}
+            <a href="mailto:info@boreal.financial" style={{ color: "var(--ui-accent-blue, #2563eb)" }}>info@boreal.financial</a>.
+          </p>
           {!productsLoaded && <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Loading...</div>}
           {productsLoaded && products.length === 0 && (
             <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>No products yet. Click "+ Create Product" to create one.</div>
@@ -366,6 +395,10 @@ export default function LenderPortalPage() {
 
       <section style={{ ...sectionCard, marginTop: 20 }}>
         <h2 style={{ ...sectionTitle, marginBottom: 10 }}>Product sheets &amp; marketing</h2>
+        {/* BF_PORTAL_LENDER_BLURBS_v1 */}
+        <p style={{ fontSize: 13, color: "var(--ui-text-muted)", margin: "0 0 8px", lineHeight: 1.5 }}>
+          Please provide any marketing or product information sheets so we can promote your products to our clients.
+        </p>
         <p style={{ fontSize: 13, color: "var(--ui-text-muted)", margin: "0 0 12px" }}>
           Upload product PDFs and marketing material. Boreal uses these to train Maya, our AI
           assistant, so it can represent your products accurately.
