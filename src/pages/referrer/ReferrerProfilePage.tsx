@@ -14,7 +14,7 @@ export default function ReferrerProfilePage() {
     setSaving(true);
     setErr(null);
     try {
-      await api("/api/v1/bi/referrers/referrer/profile", {
+      await api("/api/referrer/profile", {
         method: "POST",
         body: JSON.stringify(form),
         headers: { Authorization: `Bearer ${sessionStorage.getItem("referrer_token")}` }

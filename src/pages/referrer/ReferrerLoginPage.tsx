@@ -40,7 +40,7 @@ export default function ReferrerLoginPage() {
         profileComplete?: boolean;
       }>("/api/auth/otp/verify", {
         method: "POST",
-        body: JSON.stringify({ phone, code })
+        body: JSON.stringify({ phone, code, userType: "referrer" }) // REFERRER_BF_WIRING_v1
       });
       sessionStorage.setItem("referrer_token", r.token);
       sessionStorage.setItem("referrer_user", JSON.stringify(r.user));
