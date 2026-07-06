@@ -26,6 +26,8 @@ type Profile = {
   name?: string; phone?: string; website?: string; description?: string;
   contact_name?: string; contact_email?: string; contact_phone?: string;
   street?: string; city?: string; region?: string; postal_code?: string; country?: string;
+  // LENDER_COMPANY_PARITY_v1 - staff-form fields (commission-free parity)
+  application_url?: string; announcement?: string; submission_method?: string; submission_email?: string;
 };
 
 type Product = {
@@ -36,6 +38,7 @@ type Product = {
   rate_kind?: string | null; rate_type?: string | null;
   rate_period_days?: number | null; term_min?: number | null; term_max?: number | null;
   min_credit_score?: number | null; eligibility_notes?: string | null;
+  required_documents?: Array<{ category: string; stage?: number }> | null; // LENDER_PRODUCT_PARITY_v1
 };
 
 type UploadRow = { id: string; filename: string; mime_type: string; created_at: string };
@@ -99,6 +102,31 @@ function payloadFromForm(form: ProductCoreForm) {
   };
 }
 
+// LENDER_PRODUCT_PARITY_v1 - Required Documents catalog mirrors staff CreateProductModal.
+const DOC_ALWAYS = { key: "business_banking_statements_6_months", label: "6 months business banking statements" };
+const DOC_CORE: Array<{ key: string; label: string; defaultStage: 1 | 2 }> = [
+  { label: "3 years accountant prepared financials", defaultStage: 1 },
+  { label: "3 years business tax returns", defaultStage: 1 },
+  { label: "PnL \u2013 Interim financials", defaultStage: 1 },
+  { label: "Balance Sheet \u2013 Interim financials", defaultStage: 1 },
+  { label: "A/R", defaultStage: 1 },
+  { label: "A/P", defaultStage: 1 },
+  { label: "2 pieces of Government Issued ID", defaultStage: 2 },
+  { label: "VOID cheque or PAD", defaultStage: 2 },
+  { label: "Personal net worth statement", defaultStage: 2 },
+  { label: "2 years personal tax returns (T1 generals)", defaultStage: 2 },
+  { label: "Corporate structure / org chart", defaultStage: 2 },
+  { label: "Business plan / projections", defaultStage: 2 },
+  { label: "Lease agreement (if applicable)", defaultStage: 2 },
+  { label: "Debt stack", defaultStage: 2 },
+  { label: "Banking connection (Flinks view-only)", defaultStage: 2 },
+  { label: "CRA view-only access", defaultStage: 2 },
+  { label: "Real estate collateral", defaultStage: 2 },
+  { label: "Equipment collateral", defaultStage: 2 },
+  { key: "professional_advisors", label: "Professional advisors (CPA / lawyer / insurance)", defaultStage: 2 },
+].map((d) => ({ key: (d as any).key ?? d.label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label: d.label, defaultStage: d.defaultStage as 1 | 2 }));
+const docKeyFromLabel = (label: string) => [DOC_ALWAYS, ...DOC_CORE].find((d) => d.label === label)?.key ?? label.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+
 const sectionCard: React.CSSProperties = {
   background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)",
   borderRadius: 12, padding: 20,
@@ -120,6 +148,10 @@ const INFO_ROWS: { key: keyof Profile; label: string }[] = [
   { key: "region", label: "Province / State" },
   { key: "postal_code", label: "Postal code / ZIP" },
   { key: "country", label: "Country" },
+  { key: "application_url", label: "Application URL" },
+  { key: "announcement", label: "Announcement" },
+  { key: "submission_method", label: "Submission method" },
+  { key: "submission_email", label: "Submission email" },
   { key: "description", label: "Description" },
 ];
 const EDIT_FIELDS: { key: keyof Profile; label: string; type?: string }[] = [
@@ -133,6 +165,8 @@ const EDIT_FIELDS: { key: keyof Profile; label: string; type?: string }[] = [
   { key: "region", label: "Province / State" },
   { key: "postal_code", label: "Postal code / ZIP" },
   { key: "country", label: "Country" },
+  { key: "application_url", label: "Application URL" },
+  { key: "announcement", label: "Announcement" },
 ];
 
 const fmtAmount = (v: number | null | undefined) => (v == null ? "\u2014" : `$${Number(v).toLocaleString()}`);
@@ -155,6 +189,10 @@ export default function LenderPortalPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [productErr, setProductErr] = useState<string | null>(null);
   const [productSaving, setProductSaving] = useState(false);
+  // LENDER_PRODUCT_PARITY_v1 - Required Documents + Active match staff product form minus commission.
+  const [prodActive, setProdActive] = useState(true);
+  const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set([DOC_ALWAYS.key]));
+  const [docStages, setDocStages] = useState<Map<string, 1 | 2>>(new Map());
 
   const [uploads, setUploads] = useState<UploadRow[]>([]);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
@@ -232,6 +270,9 @@ export default function LenderPortalPage() {
     setForm(EMPTY_FORM);
     setFormErrors({});
     setProductErr(null);
+    setProdActive(true);
+    setCheckedDocs(new Set([DOC_ALWAYS.key]));
+    setDocStages(new Map());
     setEditing({ id: null });
   }
 
@@ -239,6 +280,17 @@ export default function LenderPortalPage() {
     setForm(formFromProduct(p));
     setFormErrors({});
     setProductErr(null);
+    setProdActive(p.active !== false);
+    const docs = new Set<string>([DOC_ALWAYS.key]);
+    const stages = new Map<string, 1 | 2>();
+    for (const d of p.required_documents ?? []) {
+      if (!d?.category) continue;
+      const key = docKeyFromLabel(String(d.category));
+      docs.add(key);
+      stages.set(key, Number(d.stage) === 2 ? 2 : 1);
+    }
+    setCheckedDocs(docs);
+    setDocStages(stages);
     setEditing({ id: p.id });
   }
 
@@ -251,9 +303,14 @@ export default function LenderPortalPage() {
     setProductErr(null);
     const isEdit = Boolean(editing?.id);
     try {
+      const requiredDocuments = Array.from(checkedDocs).map((key) => {
+        const found = [DOC_ALWAYS, ...DOC_CORE].find((d) => d.key === key);
+        const defaultStage = (found as any)?.defaultStage ?? 1;
+        return { category: found?.label ?? key, required: true, description: null, stage: (docStages.get(key) ?? defaultStage) as 1 | 2 };
+      });
       await api(isEdit ? `/api/lender/products/${editing?.id}` : "/api/lender/products", {
         method: isEdit ? "PATCH" : "POST",
-        body: JSON.stringify(payloadFromForm(form)),
+        body: JSON.stringify({ ...payloadFromForm(form), active: prodActive, required_documents: requiredDocuments }),
         headers: authHeader(),
       });
       setEditing(null);
@@ -453,6 +510,31 @@ export default function LenderPortalPage() {
                 </Field>
               ))}
             </div>
+            {/* LENDER_COMPANY_PARITY_v1 - submission method + email, same as staff form */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Submission method">
+                <select
+                  value={profileDraft.submission_method ?? ""}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, submission_method: e.target.value })}
+                  style={inputStyle}
+                >
+                  <option value="">Select method...</option>
+                  <option value="EMAIL">Email</option>
+                  <option value="API">API</option>
+                  <option value="GOOGLE_SHEET">Google Sheet</option>
+                </select>
+              </Field>
+              {(profileDraft.submission_method ?? "").toUpperCase() === "EMAIL" && (
+                <Field label="Submission email">
+                  <input
+                    type="email"
+                    value={profileDraft.submission_email ?? ""}
+                    onChange={(e) => setProfileDraft({ ...profileDraft, submission_email: e.target.value })}
+                    style={inputStyle}
+                  />
+                </Field>
+              )}
+            </div>
             <Field label="Description">
               <textarea
                 rows={3}
@@ -487,6 +569,56 @@ export default function LenderPortalPage() {
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <ProductCoreFields form={form} set={setField} errors={formErrors} showCommission={false} />
+              {/* LENDER_PRODUCT_PARITY_v1 - Required Documents mirrors staff form */}
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ui-text)", marginBottom: 8 }}>Required Documents</div>
+                <div style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: 12, marginBottom: 10, background: "var(--ui-surface)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: "var(--ui-text-muted)", marginBottom: 6 }}>ALWAYS REQUIRED</div>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ui-text)" }}>
+                    <input type="checkbox" checked readOnly disabled /> {DOC_ALWAYS.label}
+                    <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--ui-text-muted)" }}>Stage 1 (locked)</span>
+                  </label>
+                </div>
+                <div style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: 12, background: "var(--ui-surface)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: "var(--ui-text-muted)", marginBottom: 6 }}>CORE UNDERWRITING PACK</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    {DOC_CORE.map((d) => {
+                      const on = checkedDocs.has(d.key);
+                      const stage = docStages.get(d.key) ?? d.defaultStage;
+                      return (
+                        <div key={d.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ui-text)" }}>
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            onChange={() => {
+                              setCheckedDocs((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(d.key)) next.delete(d.key); else next.add(d.key);
+                                return next;
+                              });
+                            }}
+                          />
+                          <span style={{ flex: 1 }}>{d.label}</span>
+                          {on && (
+                            <button
+                              type="button"
+                              className="ui-button"
+                              style={{ fontSize: 11, padding: "2px 8px" }}
+                              onClick={() => setDocStages((prev) => { const next = new Map(prev); next.set(d.key, (stage === 1 ? 2 : 1) as 1 | 2); return next; })}
+                            >
+                              Stage {stage}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              {/* LENDER_PRODUCT_PARITY_v1 - Active toggle */}
+              <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, fontSize: 14, fontWeight: 600, color: "var(--ui-text)" }}>
+                <input type="checkbox" checked={prodActive} onChange={(e) => setProdActive(e.target.checked)} /> Active
+              </label>
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 }}>
               <button className="ui-button" onClick={() => setEditing(null)} disabled={productSaving}>Cancel</button>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom"; // LENDER_PRODUCT_NOTIF_DEEPLINK_v1
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchLenders,
@@ -148,6 +149,8 @@ function CreateLenderModal({
     contactName: lender?.primaryContact?.name ?? "",
     contactPhone: lender?.primaryContact?.phone ?? "",
     contactEmail: lender?.primaryContact?.email ?? "",
+    website: ((lender as any)?.website ?? "") as string, // STAFF_LENDER_WEB_DESC_v1
+    description: ((lender as any)?.description ?? "") as string, // STAFF_LENDER_WEB_DESC_v1
     submissionMethod: (lender?.submissionConfig?.method as SubmissionMethod | undefined) ?? "",
     submissionEmail: lender?.submissionConfig?.submissionEmail ?? "",
     apiEndpoint: lender?.submissionConfig?.apiBaseUrl ?? "",
@@ -204,6 +207,8 @@ function CreateLenderModal({
         name: form.name.trim(),
         application_url: form.applicationUrl.trim() || null,
         announcement: form.announcement.trim() || null,
+        website: form.website.trim() || null, // STAFF_LENDER_WEB_DESC_v1
+        description: form.description.trim() || null, // STAFF_LENDER_WEB_DESC_v1
         street: form.street.trim() || null,
         city: form.city.trim() || null,
         region: form.region.trim() || null,
@@ -278,6 +283,14 @@ function CreateLenderModal({
             <input placeholder="https://lender.com/apply" value={form.applicationUrl} onChange={(e) => set("applicationUrl", e.target.value)} style={{ ...inputStyle(), marginBottom: 8 }} />
             <label style={labelStyle}>Announcement</label>
             <input placeholder="Short note shown with this lender" value={form.announcement} onChange={(e) => set("announcement", e.target.value)} style={inputStyle()} />
+          </div>
+
+          {/* STAFF_LENDER_WEB_DESC_v1 - parity with lender portal Edit Company form */}
+          <div>
+            <label style={labelStyle}>Website</label>
+            <input placeholder="www.lender.com" value={form.website} onChange={(e) => set("website", e.target.value)} style={{ ...inputStyle(), marginBottom: 8 }} />
+            <label style={labelStyle}>Description</label>
+            <textarea rows={3} placeholder="Short description of this lender" value={form.description} onChange={(e) => set("description", e.target.value)} style={{ ...inputStyle(), resize: "vertical", fontFamily: "inherit" }} />
           </div>
 
           {/* Lender Address */}
@@ -1179,6 +1192,16 @@ export default function LendersPage() {
   const [showCreateProduct, setShowCreateProduct] = useState(false);
   const [editingLender, setEditingLender] = useState<Lender | null>(null);
   const [editingProduct, setEditingProduct] = useState<LenderProduct | null>(null);
+  // LENDER_PRODUCT_NOTIF_DEEPLINK_v1 - staff notifications link to /lenders?editProduct=<id>.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const pid = searchParams.get("editProduct");
+    if (!pid) return;
+    setEditingProduct({ id: pid } as LenderProduct);
+    const next = new URLSearchParams(searchParams);
+    next.delete("editProduct");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
   const [sortKey, setSortKey] = useState<"name" | "status" | "active" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
 
