@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/api";
-import { PGI_STAGES, PGI_STAGE_LABEL, type PGIStage } from "@/contracts/pgiStages";
+// REFERRER_BF_WIRING_v1 - BF referral pipeline stages (was insurance PGI stages).
+// A referral with no application yet, or a pipeline_state we don't recognize,
+// falls into "No Application Yet".
+const BF_STAGES = ["New", "Requires Docs", "In Review", "Off to Lender", "Offer", "Accepted", "Funded", "Rejected"] as const;
+type BFStage = typeof BF_STAGES[number];
+const BF_STAGE_LABEL: Record<string, string> = {
+  New: "New", "Requires Docs": "Requires Docs", "In Review": "In Review",
+  "Off to Lender": "Off to Lender", Offer: "Offer", Accepted: "Accepted",
+  Funded: "Funded", Rejected: "Rejected",
+};
 
 type Referral = {
   id: string;
@@ -31,7 +40,7 @@ const ReferrerPortal = () => {
   async function load() {
     try {
       const res = await api<{ referrals: Referral[] }>(
-        "/api/v1/bi/referrers/referrer/pipeline",
+        "/api/referrer/pipeline",
         { headers: authHeader() }
       );
       setReferrals(res.referrals || []);
@@ -41,18 +50,18 @@ const ReferrerPortal = () => {
   }
 
   const grouped = useMemo(() => {
-    const g: Partial<Record<PGIStage | "new", Referral[]>> = { new: [] };
-    PGI_STAGES.forEach((stage) => {
+    const g: Partial<Record<BFStage | "new", Referral[]>> = { new: [] };
+    BF_STAGES.forEach((stage) => {
       g[stage] = [];
     });
     referrals.forEach((r) => {
       const key =
-        r.application_stage && PGI_STAGES.includes(r.application_stage as PGIStage)
-          ? (r.application_stage as PGIStage)
+        r.application_stage && BF_STAGES.includes(r.application_stage as BFStage)
+          ? (r.application_stage as BFStage)
           : "new";
       (g[key] ??= []).push(r);
     });
-    return g as Record<PGIStage | "new", Referral[]>;
+    return g as Record<BFStage | "new", Referral[]>;
   }, [referrals]);
 
   async function addContact() {
@@ -63,7 +72,7 @@ const ReferrerPortal = () => {
     setSaving(true);
     setErr(null);
     try {
-      await api("/api/v1/bi/referrers/referrer/add-referral", {
+      await api("/api/referrer/add-referral", {
         method: "POST",
         body: JSON.stringify(form),
         headers: authHeader()
@@ -87,7 +96,7 @@ const ReferrerPortal = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <section className="drawer-section">
           <div className="drawer-section__title">No Application Yet</div>
           <div className="space-y-2">
@@ -100,9 +109,9 @@ const ReferrerPortal = () => {
             ))}
           </div>
         </section>
-        {PGI_STAGES.map((s: PGIStage) => (
+        {BF_STAGES.map((s: BFStage) => (
           <section key={s} className="drawer-section">
-            <div className="drawer-section__title">{PGI_STAGE_LABEL[s] || s}</div>
+            <div className="drawer-section__title">{BF_STAGE_LABEL[s] || s}</div>
             <div className="space-y-2">
               {(grouped[s] || []).map((r) => (
                 <article key={r.id} className="rounded border p-2">
