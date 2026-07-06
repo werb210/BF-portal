@@ -55,7 +55,12 @@ export default function ReferrerLoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm rounded border bg-white p-4 space-y-3">
-        <h1 className="text-xl font-semibold">Referrer Portal</h1>
+        {/* REFERRER_LOGIN_SIGNUP_LINK_v1 - explicit color (was theme-less -> invisible on
+            the un-themed referrer pages) + a subtitle. */}
+        <div>
+          <h1 className="text-xl font-semibold" style={{ color: "#1F3B63" }}>Referral Partner Login</h1>
+          <p className="text-sm text-gray-600">Sign in with the mobile number on your referral agreement.</p>
+        </div>
         {step === "enter" && (
           <>
             <input className="w-full border rounded p-2" type="tel" placeholder="+1XXXXXXXXXX"
@@ -67,6 +72,15 @@ export default function ReferrerLoginPage() {
             </button>
           </>
         )}
+        {/* REFERRER_LOGIN_SIGNUP_LINK_v1 - first-timers who land on /referrer/login
+            (e.g. an old bookmark) need a path to signup; they cannot log in until
+            their agreement is signed. */}
+        <p className="text-center text-sm text-gray-500 pt-1">
+          New referral partner?{" "}
+          <button type="button" className="underline" onClick={() => navigate("/referrer/signup")}>
+            Sign up
+          </button>
+        </p>
         {step === "verify" && (
           <>
             <p className="text-sm text-gray-600">Enter the 6-digit code sent to {phone}.</p>
