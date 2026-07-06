@@ -34,3 +34,18 @@ describe("referrer routing", () => {
     expect(layout).toContain('Navigate to="/referrer/signup"');
   });
 });
+
+
+// REFERRER_LOGIN_SIGNUP_LINK_v1 - login page must have a visible heading and a
+// path to signup so a first-timer landing on /referrer/login isn't stranded.
+import { readFileSync as _rf } from "node:fs";
+import _path from "node:path";
+import { describe as _d, expect as _e, it as _i } from "vitest";
+const _login = _rf(_path.join(process.cwd(), "src", "pages", "referrer", "ReferrerLoginPage.tsx"), "utf-8");
+_d("referrer login page", () => {
+  _i("has a colored heading (not invisible) and links to signup", () => {
+    _e(_login).toContain("REFERRER_LOGIN_SIGNUP_LINK_v1");
+    _e(_login).toContain('color: "#1F3B63"');
+    _e(_login).toContain('navigate("/referrer/signup")');
+  });
+});
