@@ -4,11 +4,12 @@ import { NotePopup } from "./popups/NotePopup";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { CallPopup } from "./popups/CallPopup";
 import { SmsPopup } from "./popups/SmsPopup";
-import { TaskPopup } from "./popups/TaskPopup";
+import TaskModal from "@/components/tasks/TaskModal";
 import { MeetingPopup } from "./popups/MeetingPopup";
 
 type Action = "note" | "email" | "call" | "sms" | "task" | "meeting";
 
+// BF_PORTAL_UNIFIED_TASK_MODAL_v1 - CRM Task action uses the shared task modal with the current record locked.
 // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1 — optional Edit/Delete so BI can adopt this
 // shared bar without losing them; BF callers omit these props and are unchanged.
 export function ActionBar({ scope, contactEmail, contactPhone, contactName, googleQuery, onChanged, onAction, onEdit, onDelete, deleting, editTestId, deleteTestId }: {
@@ -83,7 +84,12 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, goog
         <SmsPopup contactId={scope.id} defaultPhone={contactPhone} onClose={close} onSent={() => { onAction?.("sms"); onChanged?.(); }} />
       )}
       {open === "task" && (
-        <TaskPopup scope={scope} onClose={close} onCreated={() => { onAction?.("task"); onChanged?.(); }} />
+        <TaskModal
+          contact={scope.kind === "contact" ? { id: scope.id, name: contactName ?? null, email: contactEmail ?? null, phone: contactPhone ?? null } : null}
+          companyId={scope.kind === "company" ? scope.id : null}
+          onClose={close}
+          onCreated={() => { onAction?.("task"); onChanged?.(); close(); }}
+        />
       )}
       {open === "meeting" && (
         <MeetingPopup scope={scope} defaultPhone={contactPhone} defaultEmail={contactEmail} onClose={close} onCreated={() => { onAction?.("meeting"); onChanged?.(); }} />
