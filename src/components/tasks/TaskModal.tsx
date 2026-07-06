@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { api } from "@/api";
 import { crmApi, type ContactRow } from "@/api/crm";
-import { useAuth } from "@/auth/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 type Queue = { id: string; name: string; access_type?: string; open_count?: number };
 type Staff = { id: string; name: string };

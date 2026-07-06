@@ -61,12 +61,19 @@ describe("tasks milestone 4 (portal)", () => {
   });
 });
 
-// BF_PORTAL_TASKS_M6_v1 - create modal exposes reminder + repeat.
+// BF_PORTAL_TASKS_M6_v1 + BF_PORTAL_UNIFIED_TASK_MODAL_v1 - reminder + repeat now
+// live in the shared TaskModal that TasksPage renders (the local create modal was
+// retired during task-form unification).
 describe("tasks milestone 6 (portal)", () => {
-  const idx = readFileSync(join(process.cwd(), "src", "pages", "tasks", "TasksPage.tsx"), "utf-8");
-  it("create modal posts reminder_at and recurrence", () => {
-    expect(idx).toContain("reminder_at: reminderAt");
-    expect(idx).toContain("repeat_unit: repeatUnit || null");
-    expect(idx).toContain("No repeat");
+  const modal = readFileSync(join(process.cwd(), "src", "components", "tasks", "TaskModal.tsx"), "utf-8");
+  const page = readFileSync(join(process.cwd(), "src", "pages", "tasks", "TasksPage.tsx"), "utf-8");
+  it("the shared TaskModal posts reminder_at and recurrence", () => {
+    expect(modal).toContain("reminder_at: reminderIso");
+    expect(modal).toContain("repeat_unit: repeatUnit || null");
+    expect(modal).toContain("No repeat");
+  });
+  it("TasksPage renders the shared TaskModal", () => {
+    expect(page).toContain("import TaskModal from \"@/components/tasks/TaskModal\"");
+    expect(page).toContain("<TaskModal");
   });
 });
