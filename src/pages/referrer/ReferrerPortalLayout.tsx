@@ -7,7 +7,10 @@ function hasToken() {
 }
 
 const ReferrerPortalLayout = () => {
-  if (!hasToken()) return <Navigate to="/referrer/login" replace />;
+  // REFERRER_SIGNUP_UI_v1 - first-time visitors see signup first; returning
+  // partners tap "Log in" from there. (They cannot OTP-log-in until their
+  // agreement is signed, so signup is the correct default landing.)
+  if (!hasToken()) return <Navigate to="/referrer/signup" replace />;
   return (
     <Routes>
       <Route path="/" element={<ReferrerPortal />} />
