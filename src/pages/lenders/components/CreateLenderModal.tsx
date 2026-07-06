@@ -23,6 +23,8 @@ type Props = {
 
 type FormState = {
   name: string;
+  website: string; // STAFF_LENDER_WEB_DESC_v1
+  description: string; // STAFF_LENDER_WEB_DESC_v1
   street: string;
   city: string;
   region: string;
@@ -41,6 +43,8 @@ type FormState = {
 
 const EMPTY: FormState = {
   name: "",
+  website: "", // STAFF_LENDER_WEB_DESC_v1
+  description: "", // STAFF_LENDER_WEB_DESC_v1
   street: "",
   city: "",
   region: "",
@@ -104,6 +108,8 @@ export default function CreateLenderModal({ open, onClose, onCreated }: Props) {
     try {
       const payload: Record<string, unknown> = {
         name: form.name.trim(),
+        website: form.website.trim() || null, // STAFF_LENDER_WEB_DESC_v1
+        description: form.description.trim() || null, // STAFF_LENDER_WEB_DESC_v1
         country: form.country.trim(),
         street: form.street.trim(),
         city: form.city.trim(),
@@ -141,6 +147,14 @@ export default function CreateLenderModal({ open, onClose, onCreated }: Props) {
       <div data-testid="create-lender-form" style={{ padding: 4 }}>
         <Field label="Lender Name *" error={errors.name}>
           <input data-testid="lender-name" value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder="Enter lender name" style={inputStyle} />
+        </Field>
+
+        {/* STAFF_LENDER_WEB_DESC_v1 - parity with lender portal Edit Company form */}
+        <Field label="Website">
+          <input data-testid="lender-website" value={form.website} onChange={(e) => set({ website: e.target.value })} placeholder="www.lender.com" style={inputStyle} />
+        </Field>
+        <Field label="Description">
+          <textarea data-testid="lender-description" rows={3} value={form.description} onChange={(e) => set({ description: e.target.value })} placeholder="Short description of this lender" style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }} />
         </Field>
 
         <Field label="Street Address *" error={errors.street}>
