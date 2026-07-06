@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/api";
 import TaskRunner, { type RunTask } from "./TaskRunner"; // BF_PORTAL_TASKS_M2_M3_v1
 import ManageQueuesModal from "./ManageQueuesModal"; // BF_PORTAL_TASKS_M2_M3_v1
+import TaskModal from "@/components/tasks/TaskModal";
 
 type Queue = { id: string; name: string; access_type: string; open_count: number };
 type Task = {
@@ -166,105 +167,9 @@ export default function TasksPage() {
         </table>
       )}
 
-      {showCreate && <CreateTaskModal queues={queues} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
+      {showCreate && <TaskModal onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
       {runTasks && <TaskRunner tasks={runTasks} onExit={() => { setRunTasks(null); load(); }} />}
       {showQueues && <ManageQueuesModal onClose={() => { setShowQueues(false); load(); }} />}
-    </div>
-  );
-}
-
-function CreateTaskModal({ queues, onClose, onCreated }: { queues: Queue[]; onClose: () => void; onCreated: () => void }) {
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState("TODO");
-  const [priority, setPriority] = useState("NONE");
-  const [dueAt, setDueAt] = useState("");
-  const [queueId, setQueueId] = useState("");
-  const [body, setBody] = useState("");
-  // BF_PORTAL_TASKS_M6_v1 - reminder + recurrence.
-  const [reminderAt, setReminderAt] = useState("");
-  const [repeatUnit, setRepeatUnit] = useState("");
-  const [repeatInterval, setRepeatInterval] = useState(1);
-  const [err, setErr] = useState<string | null>(null);
-
-  // HubSpot nicety: typing "call"/"email" in the title flips the type.
-  const onTitle = (v: string) => {
-    setTitle(v);
-    const low = v.toLowerCase();
-    if (low.includes("call")) setType("CALL");
-    else if (low.includes("email")) setType("EMAIL");
-    else if (low.includes("sms") || low.includes("text")) setType("SMS");
-  };
-
-  const save = () => {
-    if (!title.trim()) { setErr("Title is required."); return; }
-    api.post("/api/tasks", {
-      title: title.trim(), type, priority, body: body.trim() || null,
-      due_at: dueAt ? new Date(dueAt).toISOString() : null,
-      queue_id: queueId || null,
-      // BF_PORTAL_TASKS_M6_v1 - reminder + recurrence.
-      reminder_at: reminderAt ? new Date(reminderAt).toISOString() : null,
-      repeat_unit: repeatUnit || null,
-      repeat_interval: repeatUnit ? repeatInterval : null,
-    }).then(onCreated).catch(() => setErr("Failed to create task."));
-  };
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div className="border rounded-xl p-4 w-[420px]" style={{ background: "var(--ui-surface, #fff)", borderColor: "var(--ui-border)" }}>
-        <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--ui-text)" }}>Create task</h2>
-        <label className="text-sm block mb-2" style={{ color: "var(--ui-text)" }}>Title
-          <input value={title} onChange={(e) => onTitle(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-        </label>
-        <div className="grid grid-cols-2 gap-2 mb-2">
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Type
-            <select value={type} onChange={(e) => setType(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle}>
-              {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </label>
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Priority
-            <select value={priority} onChange={(e) => setPriority(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle}>
-              {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </label>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mb-2">
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Due
-            <input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-          </label>
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Queue
-            <select value={queueId} onChange={(e) => setQueueId(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle}>
-              <option value="">No queue</option>
-              {queues.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
-            </select>
-          </label>
-        </div>
-        {/* BF_PORTAL_TASKS_M6_v1 - reminder + repeat */}
-        <div className="grid grid-cols-2 gap-2 mb-2">
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Reminder
-            <input type="datetime-local" value={reminderAt} onChange={(e) => setReminderAt(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-          </label>
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Repeat
-            <div className="flex gap-1 mt-1">
-              <input type="number" min={1} value={repeatInterval} disabled={!repeatUnit} onChange={(e) => setRepeatInterval(Math.max(1, Number(e.target.value)))} className="border rounded px-2 py-1 text-sm w-14" style={inputStyle} />
-              <select value={repeatUnit} onChange={(e) => setRepeatUnit(e.target.value)} className="border rounded px-2 py-1 text-sm flex-1" style={inputStyle}>
-                <option value="">No repeat</option>
-                <option value="DAY">days</option>
-                <option value="WEEK">weeks</option>
-                <option value="MONTH">months</option>
-                <option value="YEAR">years</option>
-              </select>
-            </div>
-          </label>
-        </div>
-        <label className="text-sm block mb-3" style={{ color: "var(--ui-text)" }}>Notes
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-        </label>
-        {err && <p role="alert" style={{ color: "#dc2626" }}>{err}</p>}
-        <div className="flex justify-end gap-2">
-          <button className="border rounded px-3 py-1.5 text-sm" style={inputStyle} onClick={onClose}>Cancel</button>
-          <button className="border rounded px-3 py-1.5 text-sm font-semibold" style={inputStyle} onClick={save}>Create</button>
-        </div>
-      </div>
     </div>
   );
 }
