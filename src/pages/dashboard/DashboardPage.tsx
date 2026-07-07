@@ -7,6 +7,7 @@ import { api } from "@/api";
 type DashboardMetrics = {
   activeApplications: number;
   pipelineByStage: Record<string, number>;
+  commissionByStage?: Record<string, number>;
   dealsWonThisMonth: number;
   commissionEarned: number;
   newLeadsToday: number;
@@ -73,7 +74,7 @@ const DashboardPage = () => {
 
       <div className="drawer-section" style={{ padding: "16px 18px" }}>
         <div className="drawer-section__title" style={{ marginBottom: 12 }}>
-          Pipeline by Stage
+          Pipeline by Stage &middot; Projected Commission
         </div>
         {stages.length === 0 ? (
           <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>
@@ -86,12 +87,13 @@ const DashboardPage = () => {
                 totalInPipeline > 0
                   ? Math.round((count / totalInPipeline) * 100)
                   : 0;
+              const stageCommission = metrics?.commissionByStage?.[stage] ?? 0;
               return (
                 <div
                   key={stage}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "200px 1fr 40px",
+                    gridTemplateColumns: "200px 1fr 40px 110px",
                     alignItems: "center",
                     gap: 12,
                   }}
@@ -131,6 +133,17 @@ const DashboardPage = () => {
                     }}
                   >
                     {count}
+                  </div>
+                  <div
+                    style={{
+                      color: "var(--ui-text-muted)",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textAlign: "right",
+                    }}
+                    title="Projected BF commission in this stage"
+                  >
+                    ${stageCommission.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </div>
                 </div>
               );
