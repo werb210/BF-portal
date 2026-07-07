@@ -5,7 +5,7 @@ import { api } from "@/api";
 import SiloContext from "@/context/SiloContext"; // BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_HOTFIX1 — defensive silo read (no throw if provider absent)
 import { ActionBar } from "@/components/crm/ActionBar";
 import { UnifiedTimeline } from "@/components/crm/UnifiedTimeline"; // BF_PORTAL_UNIFIED_TIMELINE_v1
-import { ContactApplicantFields, ContactAdvisors, ContactPartners } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_CONTACT_PANELS_v1
+import { ContactApplicantFields, ContactAdvisors, ContactPartners, ContactMarketingSource } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_CONTACT_PANELS_v1
 import { EntityEditModal } from "@/components/EntityEditModal";
 import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
 import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
@@ -127,6 +127,7 @@ export default function ContactDetailPage() {
         )}
         <ContactAdvisors applicationIds={contact.applicationIds} />
         <ContactPartners applicationIds={contact.applicationIds} />
+        <ContactMarketingSource contactId={id} />
       </aside>
       </div>
 

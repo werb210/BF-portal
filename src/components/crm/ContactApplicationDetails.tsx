@@ -328,3 +328,96 @@ export default function ContactApplicationDetails(props: { applicationIds?: stri
     </>
   );
 }
+
+// BF_PORTAL_AD_ATTRIBUTION_v1 - "Marketing Source" card. Shows the exact Google
+// Ads campaign / ad group / keyword a contact clicked (resolved server-side from
+// their gclid via click_view), falling back to raw UTM source for non-Google
+// traffic. Reads GET /api/crm/contacts/:id/ad-attribution. Renders nothing when
+// there's no attribution at all.
+type AdAttribution = {
+  source?: string | null; campaign_name?: string | null; ad_group_name?: string | null;
+  keyword_text?: string | null; keyword_match_type?: string | null; click_date?: string | null;
+  resolved?: boolean | null; resolve_error?: string | null;
+};
+type UtmAttribution = Record<string, unknown> | null;
+
+export function ContactMarketingSource({ contactId }: { contactId?: string }) {
+  const [ad, setAd] = useState<AdAttribution | null>(null);
+  const [utm, setUtm] = useState<UtmAttribution>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!contactId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get<{ data?: { ad: AdAttribution | null; utm: UtmAttribution } } & { ad?: AdAttribution | null; utm?: UtmAttribution }>(
+          `/api/crm/contacts/${contactId}/ad-attribution`,
+        );
+        const d = (r as { data?: { ad: AdAttribution | null; utm: UtmAttribution } })?.data ?? (r as { ad?: AdAttribution | null; utm?: UtmAttribution });
+        if (!cancelled) { setAd(d?.ad ?? null); setUtm(d?.utm ?? null); setLoaded(true); }
+      } catch {
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [contactId]);
+
+  if (!loaded) return null;
+
+  const row = (label: string, value: unknown) =>
+    String(value ?? "").trim()
+      ? (
+        <div key={label} style={{ fontSize: 13, padding: "3px 0", display: "flex", justifyContent: "space-between", gap: 10 }}>
+          <span style={{ color: "var(--ui-text-muted)" }}>{label}</span>
+          <span style={{ color: "var(--ui-text)", fontWeight: 600, textAlign: "right" }}>{String(value)}</span>
+        </div>
+      )
+      : null;
+
+  // Resolved Google Ads click.
+  if (ad && ad.resolved) {
+    return (
+      <div style={{ marginTop: 16 }}>
+        <h3 style={{ marginTop: 0 }}>Marketing Source</h3>
+        {row("Source", "Google Ads")}
+        {row("Campaign", ad.campaign_name)}
+        {row("Ad group", ad.ad_group_name)}
+        {row("Keyword", ad.keyword_text ? `${ad.keyword_text}${ad.keyword_match_type ? ` (${String(ad.keyword_match_type).toLowerCase()})` : ""}` : null)}
+        {row("Clicked", ad.click_date)}
+      </div>
+    );
+  }
+
+  // Google Ads click captured but not resolvable (older than 90 days or no match).
+  if (ad && !ad.resolved && ad.source === "google_ads") {
+    return (
+      <div style={{ marginTop: 16 }}>
+        <h3 style={{ marginTop: 0 }}>Marketing Source</h3>
+        {row("Source", "Google Ads")}
+        <div style={{ fontSize: 12, color: "var(--ui-text-muted)", paddingTop: 4 }}>
+          Clicked a Google ad; the specific campaign couldn't be resolved{ad.click_date ? ` (click ${ad.click_date})` : ""}.
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback: raw UTM from a non-Google source.
+  if (utm) {
+    const src = utm.utm_source ?? utm.source;
+    const camp = utm.utm_campaign;
+    const med = utm.utm_medium;
+    if (String(src ?? "").trim() || String(camp ?? "").trim()) {
+      return (
+        <div style={{ marginTop: 16 }}>
+          <h3 style={{ marginTop: 0 }}>Marketing Source</h3>
+          {row("Source", src)}
+          {row("Medium", med)}
+          {row("Campaign", camp)}
+        </div>
+      );
+    }
+  }
+
+  return null;
+}

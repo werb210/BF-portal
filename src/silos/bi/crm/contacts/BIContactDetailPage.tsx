@@ -23,6 +23,7 @@ import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { ActionBar } from "@/components/crm/ActionBar"; // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
 import { ContactEmailFeed, ContactCallFeed } from "@/components/crm/ContactCommsFeeds";
+import { ContactMarketingSource } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_AD_ATTRIBUTION_v1
 import type { TimelineItem } from "@/api/crm";
 import toast from "react-hot-toast";
 
@@ -535,6 +536,7 @@ export default function BIContactDetailPage() {
         ) : (
           <div style={subtle}>No associated company.</div>
         )}
+        <ContactMarketingSource contactId={id} />
       </aside>
       <O365ComposeModal
         open={emailComposeOpen}
