@@ -688,6 +688,7 @@ function SmsComposerPanel() {
   // BF_PORTAL_BLOCK_v204_SMS_TEMPLATES
   const [templates, setTemplates] = useState<SmsTemplateRow[]>([]);
   const [tplName, setTplName] = useState("");
+  const [currentSmsTemplateId, setCurrentSmsTemplateId] = useState<string | null>(null); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
   const loadTemplates = () => {
     api.get<{ data?: { items?: SmsTemplateRow[] }; items?: SmsTemplateRow[] }>("/api/marketing/templates?channel=sms")
       .then((res) => setTemplates(res?.data?.items ?? res?.items ?? []))
@@ -714,6 +715,7 @@ function SmsComposerPanel() {
       else {
         if (tag !== "__all__") payload.tag = tag;
         if (linkUrl.trim()) payload.linkUrl = linkUrl.trim();
+        if (currentSmsTemplateId) payload.templateId = currentSmsTemplateId; // BF_PORTAL_TEMPLATE_ANALYTICS_v1
       }
       const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/sms/send", payload);
       const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; smsSent?: number; emailSent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number };
@@ -747,7 +749,7 @@ function SmsComposerPanel() {
         {/* BF_PORTAL_BLOCK_v204_SMS_TEMPLATES */}
         <div className="border-t pt-2 flex flex-wrap gap-2 items-end" style={{ borderColor: "var(--ui-border)" }}>
           <label className="text-sm" style={{ color: "var(--ui-text)" }}>Load template
-            <select onChange={(e) => { const t = templates.find((x) => x.id === e.target.value); if (t) { setBody(t.body ?? ""); setLinkUrl(t.link_url ?? ""); } }} className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
+            <select onChange={(e) => { const t = templates.find((x) => x.id === e.target.value); if (t) { setBody(t.body ?? ""); setLinkUrl(t.link_url ?? ""); setCurrentSmsTemplateId(t.id); } else { setCurrentSmsTemplateId(null); } }} className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
               <option value="">&mdash; select &mdash;</option>
               {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
@@ -1378,9 +1380,53 @@ function ClarityPanel() {
   );
 }
 
+// BF_PORTAL_TEMPLATE_ANALYTICS_v1 - per-template sends/opens/clicks/replies from GET /api/marketing/templates/analytics.
+type TemplateAnalyticsRow = { id: string; channel: string | null; name: string; sends: number; opens: number; clicks: number; replies: number };
+function TemplateAnalyticsPanel() {
+  const [rows, setRows] = useState<TemplateAnalyticsRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    api.get<{ data?: { items?: TemplateAnalyticsRow[] }; items?: TemplateAnalyticsRow[] }>("/api/marketing/templates/analytics")
+      .then((r) => { if (!cancelled) setRows(r?.data?.items ?? r?.items ?? []); })
+      .catch(() => { if (!cancelled) setRows([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+  return (
+    <section className="drawer-section">
+      <div className="drawer-section__title mb-2">Template performance</div>
+      {loading ? (
+        <p style={{ color: "var(--ui-text-muted)", fontSize: "0.85rem" }}>Loading&hellip;</p>
+      ) : rows.length === 0 ? (
+        <p style={{ color: "var(--ui-text-muted)", fontSize: "0.85rem" }}>No templates yet. Save one in the Email or SMS tab, then send from it &mdash; stats appear here going forward.</p>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table className="text-sm" style={{ width: "100%", borderCollapse: "collapse", color: "var(--ui-text)" }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "var(--ui-text-muted)" }}>
+                <th style={{ padding: "6px 8px" }}>Template</th><th style={{ padding: "6px 8px" }}>Channel</th><th style={{ padding: "6px 8px", textAlign: "right" }}>Sends</th><th style={{ padding: "6px 8px", textAlign: "right" }}>Opens</th><th style={{ padding: "6px 8px", textAlign: "right" }}>Clicks</th><th style={{ padding: "6px 8px", textAlign: "right" }}>Replies</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} style={{ borderTop: "1px solid var(--ui-border)" }}>
+                  <td style={{ padding: "6px 8px", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</td>
+                  <td style={{ padding: "6px 8px", color: "var(--ui-text-muted)" }}>{(r.channel ?? "").toUpperCase()}</td>
+                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{r.sends}</td><td style={{ padding: "6px 8px", textAlign: "right" }}>{r.channel === "sms" ? "\u2014" : r.opens}</td><td style={{ padding: "6px 8px", textAlign: "right" }}>{r.channel === "sms" ? "\u2014" : r.clicks}</td><td style={{ padding: "6px 8px", textAlign: "right" }}>{r.replies}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <BrandedEmailComposer />}{tab === "sms" && <SmsComposerPanel />}{tab === "sequences" && <SequencesPanel />}{tab === "linkedin-ads" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SequencePerfPanel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}</div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <BrandedEmailComposer />}{tab === "sms" && <SmsComposerPanel />}{tab === "sequences" && <SequencesPanel />}{tab === "linkedin-ads" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SequencePerfPanel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}<TemplateAnalyticsPanel /></div>;
 };
 
 export default MarketingDashboard;

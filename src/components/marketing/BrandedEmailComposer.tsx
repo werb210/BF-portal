@@ -50,6 +50,8 @@ export default function BrandedEmailComposer() {
   const [msg, setMsg] = useState<string | null>(null);
   const [preview, setPreview] = useState("");
   const [libName, setLibName] = useState(""); // BF_PORTAL_BLOCK_v206_EMAIL_LIB
+  const [emailTpls, setEmailTpls] = useState<{ id: string; name: string; subject: string | null; body: string | null }[]>([]); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
+  const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
   const heroRef = useRef<HTMLInputElement>(null);
   const img2Ref = useRef<HTMLInputElement>(null);
 
@@ -122,10 +124,17 @@ export default function BrandedEmailComposer() {
     catch { setMsg("Save failed."); }
   };
 
+  useEffect(() => {
+    api.get<{ data?: { items?: { id: string; name: string; subject: string | null; body: string | null }[] }; items?: { id: string; name: string; subject: string | null; body: string | null }[] }>("/api/marketing/templates?channel=email")
+      .then((r) => setEmailTpls(r?.data?.items ?? r?.items ?? []))
+      .catch(() => setEmailTpls([]));
+  }, []); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
+
   const send = async (test?: string) => {
     setBusy(true); setMsg(null);
     try {
       const payload: Record<string, unknown> = { subject, ...tpl };
+      if (currentTemplateId) payload.templateId = currentTemplateId; // BF_PORTAL_TEMPLATE_ANALYTICS_v1
       if (test) payload.test = test;
       else {
         if (include.length) payload.tags = include;
@@ -161,6 +170,14 @@ export default function BrandedEmailComposer() {
             </div>
             <p className="mt-1" style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Recipients: <strong style={{ color: "var(--ui-text)" }}>{count}</strong></p>
           </div>
+          {emailTpls.length > 0 ? (
+            <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Load template
+              <select value={currentTemplateId ?? ""} onChange={(e) => { const t = emailTpls.find((x) => x.id === e.target.value); if (t) { setSubject(t.subject ?? ""); setTpl((p) => ({ ...p, body: t.body ?? p.body })); setCurrentTemplateId(t.id); } else { setCurrentTemplateId(null); } }} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle}>
+                <option value="">&mdash; none &mdash;</option>
+                {emailTpls.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </label>
+          ) : null}
           <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Subject
             <input value={subject} onChange={(e) => setSubject(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
           </label>
