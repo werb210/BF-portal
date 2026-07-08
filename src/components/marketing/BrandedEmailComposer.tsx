@@ -11,6 +11,27 @@ const DEFAULTS: Tpl = {
   image2Url: "", image2Link: "",
 };
 
+// BF_PORTAL_COMPOSER_JOB_POLL_v1 - the composer previously fired a queued
+// blast and went blind ("Queued N recipients..."); with ALWAYS_QUEUE on the
+// server every branded blast is queued, so a fully-rejected job (dead key,
+// unverified sender) was invisible here. Poll the job like the raw email tab.
+async function pollComposerJob(jobId: string, total: number, setMsg: (m: string) => void): Promise<void> {
+  type SendJob = { status?: string; total?: number; sent?: number; failed?: number; error?: string };
+  setMsg(`Queued ${total} recipients - sending in the background...`);
+  for (let n = 0; n < 240; n++) {
+    await new Promise((r) => setTimeout(r, 5000));
+    try {
+      const res = await api.get<{ data?: SendJob } & SendJob>(`/api/marketing/send-jobs/${jobId}`);
+      const j = (res?.data ?? res) as SendJob;
+      if (!j || !j.status) continue;
+      if (j.status === "done") { setMsg(`Done: sent ${j.sent ?? 0}${j.failed ? `, ${j.failed} failed` : ""} of ${j.total ?? total}.${j.error ? ` ${j.error}` : ""}`); return; }
+      if (j.status === "failed") { setMsg(`Send failed${j.error ? `: ${j.error}` : ""}.`); return; }
+      setMsg(`Sending in background: ${j.sent ?? 0}${j.failed ? ` (+${j.failed} failed)` : ""} of ${j.total ?? total}...`);
+    } catch { /* keep polling */ }
+  }
+  setMsg("Still sending in the background - check back shortly.");
+}
+
 // EMAIL_AUDIENCE_INCL_EXCL_v1 - multi-select tag checkbox list.
 function TagPicker({ title, hint, tags, selected, onToggle }: {
   title: string; hint: string; tags: { tag: string; n: number }[]; selected: string[]; onToggle: (tag: string) => void;
@@ -141,11 +162,11 @@ export default function BrandedEmailComposer() {
         if (exclude.length) payload.excludeTags = exclude;
       }
       const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/email/send-template", payload);
-      const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; total?: number };
+      const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number };
       if (r?.configured === false) setMsg("SendGrid not connected yet (set SENDGRID_API_KEY).");
       else if (r?.error) setMsg(r.error);
       else if (r?.test) setMsg(r.ok ? "Test sent." : "Test failed.");
-      else if (r?.queued) setMsg(`Queued ${r.total ?? count} recipients - sending in the background...`);
+      else if (r?.queued) { void pollComposerJob(String(r.jobId ?? ""), Number(r.total ?? count), setMsg); } // BF_PORTAL_COMPOSER_JOB_POLL_v1
       else setMsg(`Sent ${r?.sent ?? 0}${r?.failed ? `, ${r.failed} failed` : ""}.`);
     } catch { setMsg("Send failed."); }
     finally { setBusy(false); }

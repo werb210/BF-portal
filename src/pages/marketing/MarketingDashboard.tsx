@@ -607,7 +607,7 @@ async function pollSendJob(jobId: string, total: number, setMsg: (m: string) => 
       const res = await api.get<{ data?: SendJob } & SendJob>(`/api/marketing/send-jobs/${jobId}`);
       const j = (res?.data ?? res) as SendJob;
       if (!j || !j.status) continue;
-      if (j.status === "done") { setMsg(`Done: sent ${j.sent ?? 0}${j.failed ? `, ${j.failed} failed` : ""} of ${j.total ?? total}.`); return; }
+      if (j.status === "done") { setMsg(`Done: sent ${j.sent ?? 0}${j.failed ? `, ${j.failed} failed` : ""} of ${j.total ?? total}.${j.error ? ` ${j.error}` : ""}`); return; } // BF_PORTAL_COMPOSER_JOB_POLL_v1 - surface rejection reason on done jobs
       if (j.status === "failed") { setMsg(`Send failed${j.error ? `: ${j.error}` : ""}.`); return; }
       setMsg(`Sending in background: ${j.sent ?? 0}${j.failed ? ` (+${j.failed} failed)` : ""} of ${j.total ?? total}...`);
     } catch { /* keep polling */ }
