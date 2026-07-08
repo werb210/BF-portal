@@ -9,6 +9,7 @@ import { ContactApplicantFields, ContactAdvisors, ContactPartners, ContactMarket
 import { EntityEditModal } from "@/components/EntityEditModal";
 import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
 import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
+import ContactJourney from "@/components/crm/ContactJourney"; // BF_PORTAL_VISITOR_JOURNEY_v1
 import { ContactDocuments } from "@/components/crm/ContactDocuments"; // BF_PORTAL_CONTACT_DOCUMENTS_v1
 
 export default function ContactDetailPage() {
@@ -109,6 +110,7 @@ export default function ContactDetailPage() {
       <main style={{ minWidth: 0 }}>
         <UnifiedTimeline contactId={id} scope={scope} refreshKey={refreshKey} />
         <ContactDocuments contactId={id} refreshKey={refreshKey} /> {/* BF_PORTAL_CONTACT_DOCUMENTS_v1 */}
+        <ContactJourney contactId={id} /> {/* BF_PORTAL_VISITOR_JOURNEY_v1 */}
         {isBiSilo && (
           <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}>
             <MarketingTab contactId={id} />
