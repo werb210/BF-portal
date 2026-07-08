@@ -67,7 +67,18 @@ export function ContactDocuments({ contactId, refreshKey }: { contactId: string;
     [contactId],
   );
 
-  if (!docs.length && !loading) return null;
+  // BF_PORTAL_CONTACT_DOCS_EMPTY_v1 - show the section with an explanation instead of vanishing,
+  // so "no documents on this contact" is distinguishable from "the panel failed to load".
+  if (!docs.length && !loading) {
+    return (
+      <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}>
+        <h3 style={{ marginTop: 0, fontSize: 15 }}>Documents</h3>
+        <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>
+          No documents filed against this contact. Application documents live on the application record.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}>
