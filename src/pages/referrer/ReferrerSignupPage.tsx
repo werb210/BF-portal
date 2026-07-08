@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api";
+import logoUrl from "@/assets/logo-boreal-mountains-white.svg"; // BF_PORTAL_REFERRER_BRAND_v1
 
 type SignupResp = {
   referrerId: string;
@@ -127,12 +128,19 @@ export default function ReferrerSignupPage() {
     );
   }
 
+  // BF_PORTAL_REFERRER_BRAND_v1 - same external-portal shell as the lender portal.
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-lg rounded border bg-white p-6 space-y-3">
+    <div data-testid="referrer-signup-screen" className="min-h-screen w-screen flex items-center justify-center bg-[#020817] px-4 py-12">
+      <div className="w-full max-w-lg flex flex-col items-center gap-6">
+        <div className="text-center">
+          <img src={logoUrl} alt="Boreal" style={{ display: "block", margin: "0 auto 18px", height: 88, width: "auto" }} />
+          <h1 className="text-2xl font-semibold text-white">Boreal Financial Group</h1>
+          <p className="mt-1 text-sm font-medium text-white/70">Referral Portal</p>
+        </div>
+      <div className="w-full bg-white border border-slate-200 rounded-xl p-6 shadow-md space-y-3">
         <div>
-          <h1 className="text-xl font-semibold">Become a Boreal Referral Partner</h1>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-lg font-semibold text-slate-900">Become a Boreal Referral Partner</h2>
+          <p className="text-sm text-slate-600">
             Sign up and sign our referral agreement to start referring clients and earning commission.
           </p>
         </div>
@@ -167,16 +175,20 @@ export default function ReferrerSignupPage() {
 
         {err && <p className="text-sm text-red-600">{err}</p>}
 
-        <button className="ui-button ui-button--primary w-full"
+        <button className="w-full py-3.5 px-5 text-[17px] font-bold text-slate-900 bg-amber-500 hover:bg-amber-600 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
           disabled={loading || !required} onClick={submit}>
           {loading ? "Starting…" : "Sign up & review agreement"}
         </button>
 
-        <p className="text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-slate-500">
           Already a referral partner?{" "}
-          <button type="button" className="underline" onClick={() => navigate("/referrer/login")}>
+          <button type="button" className="underline text-blue-700 font-medium" onClick={() => navigate("/referrer/login")}>
             Log in
           </button>
+        </p>
+      </div>
+        <p className="text-xs text-white/50 text-center">
+          Boreal Financial Group &middot; 450 Sparling Crt SW, Edmonton, AB T6X 1G9
         </p>
       </div>
     </div>
