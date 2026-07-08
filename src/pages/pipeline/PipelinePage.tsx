@@ -150,11 +150,14 @@ export default function PipelinePage() {
     }
   }
 
-  async function move(cardId: string, toStage: string) {
+  // BF_PORTAL_FUNDED_AMOUNT_v1 - Accepted carries the ACTUAL funded amount so commission is
+  // computed from what the lender advanced, not from what the client requested.
+  async function move(cardId: string, toStage: string, fundedAmount?: number) {
     setActing(cardId);
     try {
       await api.patch(`/api/portal/applications/${cardId}/status`, {
         status: toStage, reason: `Manually set to ${toStage}`,
+        ...(fundedAmount !== undefined ? { fundedAmount } : {}),
       });
       setCards((prev) =>
         prev.map((c) => c.id === cardId ? { ...c, pipeline_state: toStage } : c)
@@ -226,7 +229,7 @@ export default function PipelinePage() {
 function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
   card: Card; stage: Stage; busy: boolean;
   onOpen: () => void;
-  onMove: (id: string, to: string) => void;
+  onMove: (id: string, to: string, fundedAmount?: number) => void; // BF_PORTAL_FUNDED_AMOUNT_v1
   onDelete: (id: string) => void;
   onRefresh: () => void; // BF_PORTAL_BLOCK_v793_REQUEST_STEPS
 }) {
@@ -236,6 +239,8 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
   // details to pull applicantDetails.phone, then open the dialer pre-filled.
   const [callBusy, setCallBusy] = useState(false);
   const [stepsOpen, setStepsOpen] = useState(false); // BF_PORTAL_BLOCK_v793_REQUEST_STEPS
+  const [fundOpen, setFundOpen] = useState(false); // BF_PORTAL_FUNDED_AMOUNT_v1
+  const [fundVal, setFundVal] = useState<string>(""); // blank on purpose: never prefill with requested_amount
   const cardName = card.business_legal_name ?? card.name ?? "Unnamed";
   const navigate = useNavigate();
   // BF_PORTAL_BLOCK_v225_DIALER_CLEAN_SLATE_v1 -- look up phone via API,
@@ -413,7 +418,7 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
       {/* Accept / Reject — only on Offer */}
       {stage === "Offer" && (
         <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
-          <button disabled={busy} onClick={() => onMove(card.id, "Accepted")}
+          <button disabled={busy} onClick={() => setFundOpen(true)}
             style={{ ...btnBase, background: "#15803d18", borderColor: "#15803d55", color: "#15803d" }}>
             ✓ Accept
           </button>
@@ -421,6 +426,32 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
             style={{ ...btnBase, background: "#ef444418", borderColor: "#ef444455", color: "#ef4444" }}>
             ✗ Reject
           </button>
+        </div>
+      )}
+
+      {/* BF_PORTAL_FUNDED_AMOUNT_v1 - capture the actual advance before marking Accepted. */}
+      {fundOpen && (
+        <div onClick={(e) => { e.stopPropagation(); setFundOpen(false); }}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ background: "var(--ui-surface)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: 20, width: 360 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Funded amount</div>
+            <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 12 }}>
+              Enter the amount the lender actually advanced. Commission is calculated from this.
+              {typeof card.requested_amount === "number" ? <div style={{ marginTop: 4 }}>Requested: ${card.requested_amount.toLocaleString()}</div> : null}
+            </div>
+            <input autoFocus type="number" min="0" step="0.01" value={fundVal}
+              onChange={(e) => setFundVal(e.target.value)}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", marginBottom: 14 }} />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button type="button" onClick={() => setFundOpen(false)} style={{ ...btnBase }}>Cancel</button>
+              <button type="button" disabled={busy || fundVal.trim() === "" || !Number.isFinite(Number(fundVal)) || Number(fundVal) < 0}
+                onClick={() => { setFundOpen(false); onMove(card.id, "Accepted", Number(fundVal)); }}
+                style={{ ...btnBase, background: "#15803d18", borderColor: "#15803d55", color: "#15803d" }}>
+                Confirm accept
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
