@@ -43,9 +43,18 @@ import _path from "node:path";
 import { describe as _d, expect as _e, it as _i } from "vitest";
 const _login = _rf(_path.join(process.cwd(), "src", "pages", "referrer", "ReferrerLoginPage.tsx"), "utf-8");
 _d("referrer login page", () => {
-  _i("has a colored heading (not invisible) and links to signup", () => {
-    _e(_login).toContain("REFERRER_LOGIN_SIGNUP_LINK_v1");
-    _e(_login).toContain('color: "#1F3B63"');
-    _e(_login).toContain('navigate("/referrer/signup")');
+  // BF_PORTAL_REFERRER_BRAND_v1 - the page moved to the branded external-portal shell (navy
+  // background, white heading, Boreal mark) and links to signup with <Link>. Same guarantee
+  // as before: the heading is visible and a first-timer can reach signup.
+  _i("has a visible heading (not invisible) and links to signup", () => {
+    _e(_login).toContain("BF_PORTAL_REFERRER_BRAND_v1");
+    _e(_login).toContain("text-white");
+    _e(_login).toContain('to="/referrer/signup"');
+  });
+  _i("auto-forwards on a valid phone and on the 6th OTP digit, keeping the button", () => {
+    _e(_login).toContain("autoSentFor");
+    _e(_login).toContain("autoVerifiedFor");
+    _e(_login).toContain('code.length !== 6');
+    _e(_login).toContain('data-testid="referrer-send-code"');
   });
 });
