@@ -86,7 +86,20 @@ export default function ContactJourney({ contactId }: { contactId: string }) {
   }, [contactId]);
 
   if (loading) return null;
-  if (!data || data.sessions.length === 0) return null;
+  // BF_PORTAL_VISITOR_JOURNEY_EMPTY_v1 - say so explicitly rather than rendering nothing, so
+  // "no journey recorded" is distinguishable from "the panel is broken".
+  if (!data || data.sessions.length === 0) {
+    return (
+      <section style={box}>
+        <h3 style={{ marginTop: 0, marginBottom: 8 }}>Visitor journey</h3>
+        <p style={subtle}>
+          No browsing history recorded for this contact. Journey tracking captures the ad, pages,
+          and wizard path for people who visit the site from now on &mdash; contacts created before
+          tracking was enabled will not have one.
+        </p>
+      </section>
+    );
+  }
 
   const first = data.sessions[0];
   if (!first) return null;
