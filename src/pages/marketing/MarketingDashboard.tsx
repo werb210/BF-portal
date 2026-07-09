@@ -627,6 +627,12 @@ async function pollSendJob(jobId: string, total: number, setMsg: (m: string) => 
         setMsg(`HOLD ${jobId}|Sending ${j.total ?? total} in ${mm}:${String(ss).padStart(2, "0")} - you can still cancel.`);
         continue;
       }
+      // BF_PORTAL_SEND_KILL_SWITCH_v1 - keep the Stop button up while actively
+      // sending; the server aborts the blast between recipients on cancel.
+      if (j.status === "running") {
+        setMsg(`HOLD ${jobId}|Sending ${j.sent ?? 0}${j.failed ? ` (+${j.failed} failed)` : ""} of ${j.total ?? total}...`);
+        continue;
+      }
       setMsg(`Sending in background: ${j.sent ?? 0}${j.failed ? ` (+${j.failed} failed)` : ""} of ${j.total ?? total}...`);
     } catch { /* keep polling */ }
   }
@@ -643,7 +649,7 @@ function SendStatus({ msg, onCancel }: { msg: string | null; onCancel: (jobId: s
     return (
       <div className="ui-hint" style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span>{text}</span>
-        <button type="button" className="ui-button ui-button--danger" onClick={() => onCancel(jobId)}>Cancel send</button>
+        <button type="button" className="ui-button ui-button--danger" onClick={() => onCancel(jobId)}>Stop send</button>
       </div>
     );
   }
