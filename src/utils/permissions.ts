@@ -19,7 +19,14 @@ export const canAccess = (params: {
   userCapabilities?: Capability[] | null;
 }) => {
   const { role, allowedRoles = [], requiredCapabilities = [], userCapabilities } = params;
-  const roleAllowed = allowedRoles.length === 0 || hasRequiredRole(role, allowedRoles);
+  // BF_PORTAL_MARKETING_INHERITS_STAFF_v1 - a Marketing user has the same access
+  // as a Staff user (the only difference is the Marketing tab, gated separately to
+  // Admin+Marketing). Any guard that admits Staff also admits Marketing.
+  const effectiveAllowed: UserRole[] =
+    role === "Marketing" && allowedRoles.includes("Staff") && !allowedRoles.includes("Marketing")
+      ? [...allowedRoles, "Marketing"]
+      : allowedRoles;
+  const roleAllowed = allowedRoles.length === 0 || hasRequiredRole(role, effectiveAllowed);
   const capabilityAllowed = hasCapabilities(userCapabilities, requiredCapabilities);
   return roleAllowed && capabilityAllowed;
 };
