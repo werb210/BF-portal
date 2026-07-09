@@ -598,21 +598,56 @@ function LinkedInSuggestionsPanel() {
 // BF_PORTAL_EMAIL_COMPOSER_v1 - SendGrid bulk marketing email (BF silo).
 type EmailSegments = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
 // BF_PORTAL_SEND_QUEUE_v1 - poll a background blast job and report live progress.
-type SendJob = { status?: string; total?: number; sent?: number; failed?: number; error?: string };
+type SendJob = { status?: string; total?: number; sent?: number; failed?: number; error?: string; not_before?: string | null };
+// BF_PORTAL_SEND_HOLD_WINDOW_v1 - the server holds every queued blast for a few
+// minutes before it actually sends (see BF-Server SEND_HOLD_MINUTES). While a
+// job's not_before is still in the future, show a live countdown and let the
+// user CANCEL; canceling before the hold expires stops the blast entirely.
+async function cancelSendJob(jobId: string): Promise<boolean> {
+  try {
+    const res = await api.post<{ data?: { canceled?: boolean } } & { canceled?: boolean }>(`/api/marketing/send-jobs/${jobId}/cancel`, {});
+    const r = (res?.data ?? res) as { canceled?: boolean };
+    return Boolean(r?.canceled);
+  } catch { return false; }
+}
 async function pollSendJob(jobId: string, total: number, setMsg: (m: string) => void): Promise<void> {
-  setMsg(`Queued ${total} recipients - sending in the background...`);
-  for (let n = 0; n < 240; n++) {
+  setMsg(`Queued ${total} recipients - starting shortly...`);
+  for (let n = 0; n < 300; n++) {
     await new Promise((r) => setTimeout(r, 5000));
     try {
       const res = await api.get<{ data?: SendJob } & SendJob>(`/api/marketing/send-jobs/${jobId}`);
       const j = (res?.data ?? res) as SendJob;
       if (!j || !j.status) continue;
       if (j.status === "done") { setMsg(`Done: sent ${j.sent ?? 0}${j.failed ? `, ${j.failed} failed` : ""} of ${j.total ?? total}.${j.error ? ` ${j.error}` : ""}`); return; } // BF_PORTAL_COMPOSER_JOB_POLL_v1 - surface rejection reason on done jobs
+      if (j.status === "canceled") { setMsg("Canceled - nothing was sent."); return; }
       if (j.status === "failed") { setMsg(`Send failed${j.error ? `: ${j.error}` : ""}.`); return; }
+      const holdMs = j.not_before ? new Date(j.not_before).getTime() - Date.now() : 0;
+      if (j.status === "queued" && holdMs > 0) {
+        const mm = Math.floor(holdMs / 60000); const ss = Math.floor((holdMs % 60000) / 1000);
+        setMsg(`HOLD ${jobId}|Sending ${j.total ?? total} in ${mm}:${String(ss).padStart(2, "0")} - you can still cancel.`);
+        continue;
+      }
       setMsg(`Sending in background: ${j.sent ?? 0}${j.failed ? ` (+${j.failed} failed)` : ""} of ${j.total ?? total}...`);
     } catch { /* keep polling */ }
   }
   setMsg("Still sending in the background - check back shortly.");
+}
+// BF_PORTAL_SEND_HOLD_WINDOW_v1 - renders the status line, upgrading the special
+// "HOLD <jobId>|<text>" sentinel into a message plus a Cancel button.
+function SendStatus({ msg, onCancel }: { msg: string | null; onCancel: (jobId: string) => void }) {
+  if (!msg) return null;
+  if (msg.startsWith("HOLD ")) {
+    const bar = msg.indexOf("|");
+    const jobId = msg.slice(5, bar);
+    const text = msg.slice(bar + 1);
+    return (
+      <div className="ui-hint" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span>{text}</span>
+        <button type="button" className="ui-button ui-button--danger" onClick={() => onCancel(jobId)}>Cancel send</button>
+      </div>
+    );
+  }
+  return <div className="ui-hint">{msg}</div>;
 }
 function EmailComposerPanel() {
   const [seg, setSeg] = useState<EmailSegments | null>(null);
@@ -668,9 +703,9 @@ function EmailComposerPanel() {
             <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@boreal.financial" className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
           </label>
           <button type="button" disabled={busy || !subject || !html || !testTo} onClick={() => void post(testTo)} className="ui-button ui-button--secondary">Send test</button>
-          <button type="button" disabled={busy || !subject || !html || !count} onClick={() => void post()} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
+          <button type="button" disabled={busy || !subject || !html || !count} onClick={() => { if (window.confirm(`Send this email to ${count} recipients? It will hold for 5 minutes and you can cancel.`)) void post(); }} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
         </div>
-        {msg && <p style={{ color: "var(--ui-text-muted)" }}>{msg}</p>}
+        <SendStatus msg={msg} onCancel={(id) => { void cancelSendJob(id).then((ok) => setMsg(ok ? "Canceled - nothing was sent." : "Too late to cancel - already sending.")); }} />
       </div>
     </section>
   );
@@ -765,9 +800,9 @@ function SmsComposerPanel() {
             <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="+1..." className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
           </label>
           <button type="button" disabled={busy || !body || !testTo} onClick={() => void post(testTo)} className="ui-button ui-button--secondary">Send test</button>
-          <button type="button" disabled={busy || !body || !count} onClick={() => void post()} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
+          <button type="button" disabled={busy || !body || !count} onClick={() => { if (window.confirm(`Send this SMS to ${count} recipients? It will hold for 5 minutes and you can cancel.`)) void post(); }} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
         </div>
-        {msg && <p style={{ color: "var(--ui-text-muted)" }}>{msg}</p>}
+        <SendStatus msg={msg} onCancel={(id) => { void cancelSendJob(id).then((ok) => setMsg(ok ? "Canceled - nothing was sent." : "Too late to cancel - already sending.")); }} />
       </div>
     </section>
   );
