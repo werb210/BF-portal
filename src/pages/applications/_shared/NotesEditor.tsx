@@ -58,6 +58,19 @@ export default function NotesEditor({ applicationId }: Props) {
     setDraft(""); setEditingId(null); setEditingBody(""); setStatusMsg(null);
   }, [applicationId]);
 
+  // BF_PORTAL_NOTE_DEEPLINK_v1 - when arriving from a mention notification
+  // (#note-<id>), scroll to that note and flash a highlight so it is obvious.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash.startsWith("#note-")) return;
+    const el = document.getElementById(hash.slice(1));
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-2", "ring-blue-400");
+    const t = setTimeout(() => el.classList.remove("ring-2", "ring-blue-400"), 2500);
+    return () => clearTimeout(t);
+  }, [data]);
+
   const create = useMutation({
     mutationFn: (body: string) => createApplicationNote(applicationId, body),
     onSuccess: () => { setDraft(""); setStatusMsg("Note added."); qc.invalidateQueries({ queryKey }); },
@@ -111,7 +124,7 @@ export default function NotesEditor({ applicationId }: Props) {
       ) : (
         <ul className="space-y-2" data-testid="notes-list">
           {notes.map((n) => (
-            <li key={n.id} className="rounded border p-3 text-sm" data-testid={`note-${n.id}`}>
+            <li key={n.id} id={`note-${n.id}`} className="rounded border p-3 text-sm transition-shadow" data-testid={`note-${n.id}`}>
               <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
                 <span>{n.owner_name ?? "Staff"} · {new Date(n.created_at).toLocaleString()}</span>
                 <div className="flex gap-2">
@@ -154,7 +167,7 @@ export default function NotesEditor({ applicationId }: Props) {
                   </div>
                 </div>
               ) : (
-                <div className="whitespace-pre-wrap" data-testid={`note-body-${n.id}`}>
+                <div className="whitespace-pre-wrap text-gray-900" data-testid={`note-body-${n.id}`}>
                   {renderBodyWithMentions(n.body)}
                 </div>
               )}
