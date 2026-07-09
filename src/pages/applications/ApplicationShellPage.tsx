@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom"; // BF_PORTAL_NOTE_DEEPLINK_v1
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import AppLoading from "@/components/layout/AppLoading";
@@ -111,8 +111,20 @@ const resolveStageLabel = (stage: string) => {
 
 const ApplicationShellPage = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
   const firstTabId = APPLICATION_TABS[0]?.id ?? "overview";
-  const [selectedTab, setSelectedTab] = useState(firstTabId);
+  // BF_PORTAL_NOTE_DEEPLINK_v1 - honor the tab in the URL (/applications/:id/<tab>)
+  // so a mention notification linking to /applications/:id/notes#note-<id> opens
+  // the Notes tab instead of always defaulting to the first tab.
+  const urlTabId = location.pathname.split("/").filter(Boolean)[2] ?? "";
+  const validTabIds: string[] = APPLICATION_TABS.map((t) => t.id);
+  const initialTabId = (validTabIds.includes(urlTabId) ? urlTabId : firstTabId) as typeof firstTabId;
+  const [selectedTab, setSelectedTab] = useState(initialTabId);
+  const selectTab = (tabId: typeof firstTabId) => {
+    setSelectedTab(tabId);
+    if (id) navigate(`/applications/${id}/${tabId}${window.location.hash}`, { replace: true });
+  };
 
   const applicationQuery = useQuery({
     queryKey: ["portal-application", id],
@@ -154,7 +166,7 @@ const ApplicationShellPage = () => {
             <span className="application-shell__badge">{stageLabel}</span>
           </div>
         </div>
-        <ApplicationCard tabs={APPLICATION_TABS} selectedTab={selectedTab} onSelect={setSelectedTab}>
+        <ApplicationCard tabs={APPLICATION_TABS} selectedTab={selectedTab} onSelect={selectTab}>
           {selectedTab === "overview" && <ApplicationOverviewTab application={parseOverviewRecord(applicationQuery.data, application.id)} />}
           {/* BF_PORTAL_BLOCK_1_28A_SHELL_DISPATCH — real components per tab id. */}
           {selectedTab === "application" && <ApplicationTab application={applicationQuery.data as Record<string, any> | null} />}
