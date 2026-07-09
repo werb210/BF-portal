@@ -7,13 +7,18 @@ describe("role normalization", () => {
     expect(normalizeRole("ops")).toBe("Ops");
   });
 
-  it("returns null for unknown roles", () => {
-    expect(normalizeRole("Marketing")).toBeNull();
+  it("recognizes the Marketing role (server issues Marketing tokens)", () => {
+    expect(normalizeRole("Marketing")).toBe("Marketing");
+    expect(normalizeRole("marketing")).toBe("Marketing");
+  });
+
+  it("returns null for genuinely unknown roles", () => {
+    expect(normalizeRole("Superuser")).toBeNull();
     expect(normalizeRole("unknown")).toBeNull();
   });
 
   it("handles all canonical server roles", () => {
-    const serverRoles = ["Admin", "Staff", "Ops", "Lender", "Referrer"];
+    const serverRoles = ["Admin", "Staff", "Marketing", "Ops", "Lender", "Referrer"];
     serverRoles.forEach((r) => {
       expect(normalizeRole(r)).not.toBeNull();
     });
