@@ -157,20 +157,20 @@ const AppRoutes = () => {
         <Route element={token ? <AuthenticatedShell /> : <Navigate to="/login" replace />}>
           <Route path="/" element={<Navigate to="/portal" replace />} />
         <Route path="/applications" element={<Navigate to="/pipeline" replace />} />
-        <Route path="/crm/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CRMPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/crm/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><CRMPage /></RequireRole></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} /> {/* BF_PORTAL_TASKS_V1 */}
-        <Route path="/communications/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CommunicationsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/communications/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><CommunicationsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/settings/:tab" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-        <Route path="/marketing/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Ops"]}><MarketingPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/marketing/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Marketing"]}><MarketingPage /></RequireRole></ProtectedRoute>} />
         <Route path="/portal/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<Navigate to="/portal" replace />} />
         <Route
           path="/pipeline"
           element={
             <ProtectedRoute>
-              <RequireRole roles={["Admin", "Staff", "Ops"]}>
+              <RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}>
                 {/* BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE — picks BI vs BF page based on active silo */}
                 <PipelineRouter />
               </RequireRole>
@@ -181,13 +181,13 @@ const AppRoutes = () => {
         {/* BF_PORTAL_BLOCK_v91_BI_LENDERS_PAGE_v1 */}
         <Route path="/bi-lenders" element={<ProtectedRoute><BiLendersPage /></ProtectedRoute>} />
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Ops"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
         <Route
           path="/bi"
           element={
             <ProtectedRoute>
-              <RequireRole roles={["Admin", "Staff"]}>
+              <RequireRole roles={["Admin", "Staff", "Marketing"]}>
                 <BIDashboardPage />
               </RequireRole>
             </ProtectedRoute>
@@ -199,7 +199,7 @@ const AppRoutes = () => {
           path="/bi/commissions"
           element={
             <ProtectedRoute>
-              <RequireRole roles={["Admin", "Staff"]}>
+              <RequireRole roles={["Admin", "Staff", "Marketing"]}>
                 <BICommissionDashboard />
               </RequireRole>
             </ProtectedRoute>
@@ -209,7 +209,7 @@ const AppRoutes = () => {
           path="/bi/referrers"
           element={
             <ProtectedRoute>
-              <RequireRole roles={["Admin", "Staff"]}>
+              <RequireRole roles={["Admin", "Staff", "Marketing"]}>
                 <BIReferrersPage />
               </RequireRole>
             </ProtectedRoute>
@@ -223,18 +223,18 @@ const AppRoutes = () => {
           path="/silo/bi/*"
           element={
             <ProtectedRoute>
-              <RequireRole roles={["Admin", "Staff", "Ops"]}>
+              <RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}>
                 <BISilo />
               </RequireRole>
             </ProtectedRoute>
           }
         />
         <Route path="/apply" element={<ApplyPage />} />
-        <Route path="/leads" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><Leads /></RequireRole></ProtectedRoute>} />
-        <Route path="/issues" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><IssueInboxPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/ai-chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AIChatDashboard /></RequireRole></ProtectedRoute>} />
-        <Route path="/ai-comms" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/leads" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><Leads /></RequireRole></ProtectedRoute>} />
+        <Route path="/issues" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><IssueInboxPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/ai-chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AIChatDashboard /></RequireRole></ProtectedRoute>} />
+        <Route path="/ai-comms" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/ai" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AIKnowledgeManager /></RequireRole></ProtectedRoute>} />
         {/* BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1 -- five routes
             removed here (/admin/ai-knowledge, /admin/issue-reports,
@@ -247,10 +247,10 @@ const AppRoutes = () => {
         <Route path="/admin/ai-policy" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AiPolicyEditorPage /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/operations" element={<ProtectedRoute><RequireRole roles={["Admin"]}><Operations /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/maya" element={<ProtectedRoute><RequireRole roles={["Admin"]}><MayaIntelligence /></RequireRole></ProtectedRoute>} />
-        <Route path="/portal/ai" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiLiveChatPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/ai/chats" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiChatDashboard /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/ai/issues" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><AiIssueReports /></RequireRole></ProtectedRoute>} />
-        <Route path="/continuations" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><CreditReadiness /></RequireRole></ProtectedRoute>} />
+        <Route path="/portal/ai" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiLiveChatPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/ai/chats" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiChatDashboard /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/ai/issues" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiIssueReports /></RequireRole></ProtectedRoute>} />
+        <Route path="/continuations" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><CreditReadiness /></RequireRole></ProtectedRoute>} />
         </Route>
       </Routes>
     </>
