@@ -29,7 +29,10 @@ function authHeader() {
 const ReferrerPortal = () => {
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ full_name: "", company_name: "", email: "", phone: "" });
+  // BF_PORTAL_REFERRER_UNIFY_UI_v1
+  const [form, setForm] = useState({ first_name: "", last_name: "", business_name: "", email: "", phone: "" });
+  const [silos, setSilos] = useState<{ BF: boolean; BI: boolean }>({ BF: true, BI: false });
+  const [message, setMessage] = useState<"A" | "B">("A");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -65,8 +68,15 @@ const ReferrerPortal = () => {
   }, [referrals]);
 
   async function addContact() {
-    if (!form.full_name || !form.phone) {
-      setErr("Name and phone are required.");
+    if (!form.first_name || !form.phone) {
+      setErr("First name and mobile are required.");
+      return;
+    }
+    const pickedSilos: string[] = [];
+    if (silos.BF) pickedSilos.push("BF");
+    if (silos.BI) pickedSilos.push("BI");
+    if (pickedSilos.length === 0) {
+      setErr("Pick at least one product (Funding and/or PGI).");
       return;
     }
     setSaving(true);
@@ -74,10 +84,20 @@ const ReferrerPortal = () => {
     try {
       await api("/api/referrer/add-referral", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          first_name: form.first_name,
+          last_name: form.last_name,
+          business_name: form.business_name,
+          email: form.email,
+          phone: form.phone,
+          silos: pickedSilos,
+          message,
+        }),
         headers: authHeader()
       });
-      setForm({ full_name: "", company_name: "", email: "", phone: "" });
+      setForm({ first_name: "", last_name: "", business_name: "", email: "", phone: "" });
+      setSilos({ BF: true, BI: false });
+      setMessage("A");
       setShowModal(false);
       await load();
     } catch (e) {
@@ -128,18 +148,47 @@ const ReferrerPortal = () => {
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
           <div className="bg-white rounded p-4 w-full max-w-md space-y-3">
             <h2 className="text-lg font-semibold">Add Contact</h2>
-            <input className="w-full p-2 border rounded" placeholder="Full Name"
-              value={form.full_name}
-              onChange={(e) => setForm((s) => ({ ...s, full_name: e.target.value }))} />
-            <input className="w-full p-2 border rounded" placeholder="Company"
-              value={form.company_name}
-              onChange={(e) => setForm((s) => ({ ...s, company_name: e.target.value }))} />
+            <div className="flex gap-2">
+              <input className="w-full p-2 border rounded" placeholder="First Name"
+                value={form.first_name}
+                onChange={(e) => setForm((s) => ({ ...s, first_name: e.target.value }))} />
+              <input className="w-full p-2 border rounded" placeholder="Last Name"
+                value={form.last_name}
+                onChange={(e) => setForm((s) => ({ ...s, last_name: e.target.value }))} />
+            </div>
+            <input className="w-full p-2 border rounded" placeholder="Business Name"
+              value={form.business_name}
+              onChange={(e) => setForm((s) => ({ ...s, business_name: e.target.value }))} />
             <input className="w-full p-2 border rounded" type="email" placeholder="Email"
               value={form.email}
               onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))} />
-            <input className="w-full p-2 border rounded" type="tel" placeholder="Phone"
+            <input className="w-full p-2 border rounded" type="tel" placeholder="Mobile"
               value={form.phone}
               onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))} />
+            <div className="text-sm text-slate-700">
+              <div className="font-medium mb-1">Refer them to</div>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={silos.BF}
+                  onChange={(e) => setSilos((s) => ({ ...s, BF: e.target.checked }))} />
+                Boreal Financial (funding)
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={silos.BI}
+                  onChange={(e) => setSilos((s) => ({ ...s, BI: e.target.checked }))} />
+                Boreal Risk Management (PGI)
+              </label>
+            </div>
+            <div className="text-sm text-slate-700">
+              <div className="font-medium mb-1">Message</div>
+              <label className="flex items-center gap-2">
+                <input type="radio" name="refmsg" checked={message === "A"}
+                  onChange={() => setMessage("A")} /> Version A
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="radio" name="refmsg" checked={message === "B"}
+                  onChange={() => setMessage("B")} /> Version B
+              </label>
+            </div>
             {err && <p className="text-sm text-red-600">{err}</p>}
             <div className="flex justify-end gap-2">
               <button className="ui-button ui-button--secondary" onClick={() => setShowModal(false)}>

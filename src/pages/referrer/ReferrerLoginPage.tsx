@@ -66,7 +66,9 @@ export default function ReferrerLoginPage() {
       sessionStorage.setItem("referrer_user", JSON.stringify(r.user));
       navigate(r.profileComplete === false ? "/referrer/profile" : "/referrer");
     } catch (e) {
-      autoVerifiedFor.current = null;
+      // BF_PORTAL_REFERRER_UNIFY_UI_v1 - do NOT reset autoVerifiedFor here; a
+      // failed code must not auto-retry (that caused the 401 loop). The
+      // "=== code" guard already re-enables verify when the code changes.
       setErr(e instanceof Error ? e.message : "Invalid code");
     } finally {
       setLoading(false);
