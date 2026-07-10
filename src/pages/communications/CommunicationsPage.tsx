@@ -35,13 +35,14 @@ import { startOutboundPstn } from "@/dialer/actions";
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 
-type Tab = "messages" | "sms" | "inbox" | "issues" | "maya" | "team" | "voicemail"; // BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB
+type Tab = "messages" | "sms" | "inbox" | "issues" | "maya" | "team" | "voicemail" | "recents"; // BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB / BF_PORTAL_RECENT_CALLS_v1
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "messages", label: "Messages" },
   { id: "sms", label: "SMS" },
   { id: "inbox", label: "Inbox" },
   { id: "voicemail", label: "Voicemail" }, // BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB
+  { id: "recents", label: "Recents" }, // BF_PORTAL_RECENT_CALLS_v1
   { id: "issues", label: "Issues" },
   { id: "maya", label: "Maya" }, // BF_PORTAL_BLOCK_v763_MAYA_TAB
   { id: "team", label: "Team" }, // BF_PORTAL_BLOCK_v752_TEAM_TAB
@@ -2276,7 +2277,7 @@ export default function CommunicationsPage() {
   // BF_PORTAL_BLOCK_v641_TAB_COUNTS_v1 — per-sub-tab counters. Each source is
   // the same endpoint that tab renders from. Fully guarded so a mocked/undefined
   // api response can never throw during render or tests.
-  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; voicemail: number; issues: number; maya: number; team: number }>({
+  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; voicemail: number; issues: number; maya: number; team: number; recents: number }>({
     messages: 0,
     sms: 0,
     inbox: 0,
@@ -2284,6 +2285,7 @@ export default function CommunicationsPage() {
     issues: 0,
     maya: 0,
     team: 0,
+    recents: 0,
   });
   useEffect(() => {
     let cancelled = false;
@@ -2407,6 +2409,7 @@ export default function CommunicationsPage() {
         {tab === "messages" && <MessagesTab onStartConversation={(contact) => { setForcedSmsContact(contact); setTab("sms"); }} />}
         {tab === "inbox" && <InboxTab />}
         {tab === "voicemail" && <VoicemailTab />} {/* BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB */}
+        {tab === "recents" && <RecentsTab />} {/* BF_PORTAL_RECENT_CALLS_v1 */}
         {tab === "issues" && <IssuesTab />}
         {tab === "maya" && <MayaTab />}
         {tab === "team" && <TeamTab onUnreadChange={(n) => setTabCounts((c) => ({ ...c, team: n }))} />}
@@ -3150,6 +3153,69 @@ function NewTeamChatModal({ users, onClose, onCreated }: { users: TeamUser[]; on
           <button onClick={() => void create()} disabled={!canCreate || busy} style={{ padding: "8px 16px", border: "none", background: canCreate ? "var(--ui-accent-blue)" : "var(--ui-border)", color: "#fff", borderRadius: 8, fontWeight: 600, cursor: canCreate ? "pointer" : "default" }}>{busy ? "Creating…" : "Create"}</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// BF_PORTAL_RECENT_CALLS_v1 - recent calls for the logged-in staff member.
+function RecentsTab() {
+  const [rows, setRows] = useState<import("@/services/callService").CallSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    import("@/services/callService")
+      .then((m) => m.fetchCallHistory())
+      .then((r) => { if (!cancelled) setRows(r); })
+      .catch(() => { if (!cancelled) setRows([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+  const fmtWhen = (iso: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  };
+  const fmtDur = (sec?: number | null) => {
+    if (sec == null || sec <= 0) return "";
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  };
+  if (loading) return <div style={{ padding: 16, color: "var(--ui-text-muted)", fontSize: 13 }}>Loading recent calls...</div>;
+  if (!rows.length) return <div style={{ padding: 16, color: "var(--ui-text-muted)", fontSize: 13 }}>No recent calls yet.</div>;
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <h3 style={{ padding: "0 4px 8px", fontSize: 15, fontWeight: 700 }}>Recents</h3>
+      {rows.map((c) => {
+        const inbound = c.direction === "inbound";
+        const missed = /no-?answer|busy|failed|missed/i.test(c.status || "");
+        const title = c.contact_name || c.phone || "Unknown caller";
+        return (
+          <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 8px", borderBottom: "1px solid var(--ui-border)" }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: missed ? "#ff3b30" : inbound ? "#22c55e" : "var(--ui-text-muted)", width: 26 }}>{inbound ? "IN" : "OUT"}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: missed ? "#ff3b30" : undefined }}>{title}</div>
+              <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
+                {[
+                  inbound ? "Incoming" : "Outgoing",
+                  missed ? "Missed" : null,
+                  c.duration_seconds ? fmtDur(c.duration_seconds) : null,
+                  fmtWhen(c.started_at) || null,
+                ].filter(Boolean).join("  -  ")}
+              </div>
+            </div>
+            {c.contact_id && (
+              <a href={`/crm/contacts/${c.contact_id}`} style={{ fontSize: 12, color: "var(--ui-accent-blue)", textDecoration: "none" }}>Open</a>
+            )}
+            {c.phone && (
+              <button
+                onClick={() => void startOutboundPstn(c.phone as string, { contactId: c.contact_id ?? null, contactName: c.contact_name ?? null })}
+                style={{ background: "#22c55e", color: "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >Call</button>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

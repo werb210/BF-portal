@@ -11,12 +11,18 @@ export default function IncomingCallToast() {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ color: "#9ca3af", fontSize: 11, marginBottom: 2 }}>Incoming call</div>
         <div style={{ color: "#fff", fontSize: 15, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {incoming.fromDisplay || "Unknown"}
+          {incoming.fromDisplay || "Unknown caller"}
         </div>
+        {incoming.phone && incoming.phone !== incoming.fromDisplay && (
+          <div style={{ color: "#9ca3af", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{incoming.phone}</div>
+        )}
       </div>
-      {incoming.contactId && (
+      {/* BF_PORTAL_UNKNOWN_CALLER_v1 - known -> Open; unknown -> Add to contacts */}
+      {incoming.contactId ? (
         <a href={`/crm/contacts/${incoming.contactId}`} style={{ ...btn("var(--ui-accent-blue)"), textDecoration: "none", display: "inline-block" }}>Open</a>
-      )}
+      ) : incoming.phone ? (
+        <a href={`/crm/contacts?addPhone=${encodeURIComponent(incoming.phone)}`} style={{ ...btn("var(--ui-accent-blue)"), textDecoration: "none", display: "inline-block" }}>Add</a>
+      ) : null}
       <button onClick={() => declineIncoming()} style={btn("#374151")}>Dismiss</button>
       <button onClick={() => void answerIncoming()} style={btn("#22c55e")}>Answer</button>
     </div>

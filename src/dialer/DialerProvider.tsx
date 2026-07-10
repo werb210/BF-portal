@@ -21,6 +21,13 @@ async function resolveAndSetIncoming(base: { conferenceFriendly: string; fromDis
       if (!cur) return;
       useDialer.getState().setIncoming({ ...cur, fromDisplay: body.name, contactId: body.contactId ?? null, applicationId: body.applicationId ?? null, applicationName: body.applicationName ?? null, companyName: body.companyName ?? null, phone: rawPhone });
       useDialer.getState().setCtx({ contactName: body.name, contactId: body.contactId ?? null, applicationId: body.applicationId ?? null, applicationName: body.applicationName ?? null, phone: rawPhone });
+    } else {
+      // BF_PORTAL_UNKNOWN_CALLER_v1 - number isn't a saved contact. Label it
+      // clearly as "Unknown caller" (keeping the number in `phone` for display
+      // and the add-to-contacts action) instead of showing a bare number.
+      const cur = useDialer.getState().incoming;
+      if (cur) useDialer.getState().setIncoming({ ...cur, fromDisplay: "Unknown caller", contactId: null, phone: rawPhone });
+      useDialer.getState().setCtx({ contactName: "Unknown caller", contactId: null, phone: rawPhone });
     }
   } catch { /* keep raw number */ }
 }
