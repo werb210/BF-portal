@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; // BF_PORTAL_BRANDED_EMAIL_COMPOSER_MOUNT_v1
+import BFReferrerManagement from "./BFReferrerManagement"; // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
 
-type MarketingTab = "google-ads" | "sms" | "email" | "sequences" | "linkedin-ads" | "automations" | "analytics";
+type MarketingTab = "google-ads" | "sms" | "email" | "sequences" | "linkedin-ads" | "automations" | "analytics" | "referrers";
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "google-ads", label: "Google Ads" },
@@ -13,6 +14,7 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "sequences", label: "Sequences" },
   { id: "linkedin-ads", label: "LinkedIn Ads" },
   { id: "automations", label: "Automations" }, // BF_PORTAL_AUTOMATIONS_v1
+  { id: "referrers", label: "Referrers" }, // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
   { id: "analytics", label: "Analytics" },
 ];
 
@@ -1518,7 +1520,7 @@ function AutomationsPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <BrandedEmailComposer />}{tab === "sms" && <SmsComposerPanel />}{tab === "sequences" && <SequencesPanel />}{tab === "automations" && <AutomationsPanel />}{tab === "linkedin-ads" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SequencePerfPanel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}<TemplateAnalyticsPanel /></div>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <BrandedEmailComposer />}{tab === "sms" && <SmsComposerPanel />}{tab === "sequences" && <SequencesPanel />}{tab === "automations" && <AutomationsPanel />}{tab === "linkedin-ads" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SequencePerfPanel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}{tab === "referrers" && <BFReferrerManagement />}{tab !== "referrers" && <TemplateAnalyticsPanel />}</div>;
 };
 
 export default MarketingDashboard;
