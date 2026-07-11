@@ -81,6 +81,7 @@ export default function BFReferrerManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false); // BF_PORTAL_REFERRER_PAYOUT_v1
   const [detail, setDetail] = useState<Detail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -110,6 +111,21 @@ export default function BFReferrerManagement() {
       console.warn("referrer detail load failed", e);
       setDetail(null);
     } finally { setDetailLoading(false); }
+  }
+
+  // BF_PORTAL_REFERRER_PAYOUT_v1 - flip this referrer's credited conversions to paid.
+  async function payReferrer(id: string) {
+    if (!id || paying) return;
+    setPaying(true);
+    try {
+      await api.post(`/api/admin/referrers/${id}/pay`, {});
+      await load();
+      await openDetail(id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Payout failed");
+    } finally {
+      setPaying(false);
+    }
   }
 
   const totals = useMemo(() => ({
@@ -192,6 +208,9 @@ export default function BFReferrerManagement() {
         <DetailPanel
           detail={detail}
           loading={detailLoading}
+          accrued={Number(referrers.find((x) => x.id === selected)?.total_accrued || 0)}
+          paying={paying}
+          onPay={() => { if (selected) void payReferrer(selected); }}
           onClose={() => { setSelected(null); setDetail(null); }}
         />
       ) : null}
@@ -208,7 +227,7 @@ function Pill(props: { label: string; value: number | string }) {
   );
 }
 
-function DetailPanel(props: { detail: Detail | null; loading: boolean; onClose: () => void }) {
+function DetailPanel(props: { detail: Detail | null; loading: boolean; accrued: number; paying: boolean; onPay: () => void; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-end bg-black/40">
       <div className="w-full max-w-2xl overflow-y-auto bg-brand-surface border-l border-card p-6">
@@ -235,6 +254,14 @@ function DetailPanel(props: { detail: Detail | null; loading: boolean; onClose: 
 
         {props.detail ? (
           <div className="space-y-6">
+            {/* BF_PORTAL_REFERRER_PAYOUT_v1 - pay out accrued (credited) commission. */}
+            <button
+              onClick={props.onPay}
+              disabled={props.paying || props.accrued <= 0}
+              className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {props.paying ? "Paying..." : `Pay out ${fmtMoney(props.accrued)}`}
+            </button>
             <Section title={`Referrals (${props.detail.referrals.length})`}>
               {props.detail.referrals.length === 0 ? <Empty>No referrals yet.</Empty> : (
                 <ul className="divide-y divide-white/10 text-sm">
