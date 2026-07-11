@@ -258,7 +258,8 @@ function DetailPanel(props: { detail: Detail | null; loading: boolean; accrued: 
             <button
               onClick={props.onPay}
               disabled={props.paying || props.accrued <= 0}
-              className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ color: "#fff" }}
             >
               {props.paying ? "Paying..." : `Pay out ${fmtMoney(props.accrued)}`}
             </button>
