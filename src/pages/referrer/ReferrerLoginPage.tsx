@@ -75,9 +75,17 @@ export default function ReferrerLoginPage() {
     }
   }
 
+  // BF_PORTAL_REFERRER_OTP_GUARD_v1 - a signed-in referrer must NEVER be sent OTP codes.
+  // If a referrer token already exists, go straight to the portal instead of the login
+  // (which auto-sends a code on mount).
+  useEffect(() => {
+    if (sessionStorage.getItem("referrer_token")) navigate("/referrer", { replace: true });
+  }, [navigate]);
+
   // Auto-forward: send the code once a valid phone is entered. Short debounce so it does not
   // fire mid-keystroke; the button stays visible so nothing feels hijacked.
   useEffect(() => {
+    if (sessionStorage.getItem("referrer_token")) return; // BF_PORTAL_REFERRER_OTP_GUARD_v1
     if (step !== "enter" || !normalizedPhone || loading) return;
     if (autoSentFor.current === normalizedPhone) return;
     autoSentFor.current = normalizedPhone;
