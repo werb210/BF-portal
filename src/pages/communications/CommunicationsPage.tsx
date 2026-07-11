@@ -3182,40 +3182,44 @@ function RecentsTab() {
     return `${m}:${String(s).padStart(2, "0")}`;
   };
   if (loading) return <div style={{ padding: 16, color: "var(--ui-text-muted)", fontSize: 13 }}>Loading recent calls...</div>;
-  if (!rows.length) return <div style={{ padding: 16, color: "var(--ui-text-muted)", fontSize: 13 }}>No recent calls yet.</div>;
-  return (
-    <div style={{ padding: "8px 0" }}>
-      <h3 style={{ padding: "0 4px 8px", fontSize: 15, fontWeight: 700 }}>Recents</h3>
-      {rows.map((c) => {
-        const inbound = c.direction === "inbound";
-        const missed = /no-?answer|busy|failed|missed/i.test(c.status || "");
-        const title = c.contact_name || c.phone || "Unknown caller";
-        return (
-          <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 8px", borderBottom: "1px solid var(--ui-border)" }}>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: missed ? "#ff3b30" : inbound ? "#22c55e" : "var(--ui-text-muted)", width: 26 }}>{inbound ? "IN" : "OUT"}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: missed ? "#ff3b30" : undefined }}>{title}</div>
-              <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
-                {[
-                  inbound ? "Incoming" : "Outgoing",
-                  missed ? "Missed" : null,
-                  c.duration_seconds ? fmtDur(c.duration_seconds) : null,
-                  fmtWhen(c.started_at) || null,
-                ].filter(Boolean).join("  -  ")}
-              </div>
-            </div>
-            {c.contact_id && (
-              <a href={`/crm/contacts/${c.contact_id}`} style={{ fontSize: 12, color: "var(--ui-accent-blue)", textDecoration: "none" }}>Open</a>
-            )}
-            {c.phone && (
-              <button
-                onClick={() => void startOutboundPstn(c.phone as string, { contactId: c.contact_id ?? null, contactName: c.contact_name ?? null })}
-                style={{ background: "#22c55e", color: "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-              >Call</button>
-            )}
+  // BF_PORTAL_RECENTS_2COL_v1 - two scrollable columns (Incoming / Outgoing), themed text.
+  type Call = import("@/services/callService").CallSession;
+  const incoming = rows.filter((c) => c.direction === "inbound");
+  const outgoing = rows.filter((c) => c.direction !== "inbound");
+  const CallRow = (c: Call) => {
+    const missed = /no-?answer|busy|failed|missed/i.test(c.status || "");
+    const title = c.contact_name || c.phone || "Unknown caller";
+    return (
+      <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 8px", borderBottom: "1px solid var(--ui-border)" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: missed ? "#ff3b30" : "var(--ui-text)" }}>{title}</div>
+          <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
+            {[missed ? "Missed" : null, c.duration_seconds ? fmtDur(c.duration_seconds) : null, fmtWhen(c.started_at) || null].filter(Boolean).join("  -  ")}
           </div>
-        );
-      })}
+        </div>
+        {c.phone && (
+          <button
+            onClick={() => void startOutboundPstn(c.phone as string, { contactId: c.contact_id ?? null, contactName: c.contact_name ?? null })}
+            style={{ background: "#22c55e", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+          >Call</button>
+        )}
+      </div>
+    );
+  };
+  const Column = (heading: string, list: Call[]) => (
+    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <h3 style={{ padding: "0 4px 8px", fontSize: 15, fontWeight: 700, color: "var(--ui-text)" }}>{heading}</h3>
+      <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
+        {list.length === 0
+          ? <div style={{ padding: 12, color: "var(--ui-text-muted)", fontSize: 13 }}>None yet.</div>
+          : list.map((c) => CallRow(c))}
+      </div>
+    </div>
+  );
+  return (
+    <div style={{ display: "flex", gap: 16, padding: 8, height: "100%", minHeight: 0, boxSizing: "border-box", color: "var(--ui-text)" }}>
+      {Column("Incoming", incoming)}
+      {Column("Outgoing", outgoing)}
     </div>
   );
 }

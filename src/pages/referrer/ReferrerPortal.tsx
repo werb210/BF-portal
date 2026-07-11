@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "@/api";
 // BF_PORTAL_REFERRER_PORTAL_V2 - portal + add-referral rebuilt to the approved mockup.
+// BF_PORTAL_REFERRER_UNIFY_UI_v1 / REFERRER_BF_WIRING_v1 - unified add-referral form
+// (first_name/last_name/business_name, silos, message) grouped by BF pipeline stages.
 // BF referral pipeline stages; a referral with no application (or an unknown stage)
 // falls into "New".
-const STAGES = ["New", "Requires Docs", "In Review", "Off to Lender", "Offer", "Accepted", "Funded", "Rejected"] as const;
+const BF_STAGES = ["New", "Requires Docs", "In Review", "Off to Lender", "Offer", "Accepted", "Funded", "Rejected"] as const;
 
 type Referral = {
   id: string;
@@ -51,7 +54,13 @@ const MSG_PREVIEW: Record<"A" | "B", { label: string; text: string }> = {
 
 const EMPTY = { first_name: "", last_name: "", business_name: "", email: "", phone: "" };
 
+const WELCOME = [
+  "Welcome to your referrer portal where you can let your contacts and clients know about funding for capital or equipment needs, Personal Guarantee Insurance (with many more industry-specific insurance products coming). We will also be building a list of those who require start-up capital for a new business idea and informing them once the fund is ready for the general public.",
+  "To start, click the \"Add Referral\" button and enter all their information. You can then pick the message that goes out to the referral, so whether your name is included or it is more general. When the contact then fills in an application, you will be able to see their progress, and when funded, you will be informed and we will issue the referral fee.",
+];
+
 const ReferrerPortal = () => {
+  const navigate = useNavigate();
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ ...EMPTY });
@@ -71,9 +80,9 @@ const ReferrerPortal = () => {
   }
 
   const grouped = useMemo(() => {
-    const g: Record<string, Referral[]> = {}; STAGES.forEach((s) => (g[s] = []));
+    const g: Record<string, Referral[]> = {}; BF_STAGES.forEach((s) => (g[s] = []));
     referrals.forEach((r) => {
-      const key = r.application_stage && (STAGES as readonly string[]).includes(r.application_stage) ? r.application_stage : "New";
+      const key = r.application_stage && (BF_STAGES as readonly string[]).includes(r.application_stage) ? r.application_stage : "New";
       (g[key] ??= []).push(r);
     });
     return g;
@@ -104,7 +113,7 @@ const ReferrerPortal = () => {
     } finally { setSaving(false); }
   }
 
-  const columns: { key: string; label: string }[] = STAGES.map((s) => ({ key: s, label: s }));
+  const columns: { key: string; label: string }[] = BF_STAGES.map((s) => ({ key: s, label: s }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: C.bg, color: C.ink }}>
@@ -113,8 +122,22 @@ const ReferrerPortal = () => {
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: "-.01em" }}>My Referrals</h1>
           <p style={{ margin: "3px 0 0", color: C.muted, fontSize: 13 }}>Track every client you've referred, from intro to funded.</p>
         </div>
-        <button type="button" onClick={() => { setShowModal(true); setErr(null); }} style={{ border: "none", borderRadius: 10, background: C.navy, color: "#fff", fontWeight: 700, fontSize: 14, padding: "11px 18px", cursor: "pointer" }}>+ Add referral</button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button type="button" onClick={() => navigate("/referrer/profile")} style={{ border: "none", borderRadius: 10, background: "#eef1f7", color: C.navy, fontWeight: 700, fontSize: 14, padding: "11px 18px", cursor: "pointer" }}>Edit my info</button>
+          <button type="button" onClick={() => { setShowModal(true); setErr(null); }} style={{ border: "none", borderRadius: 10, background: C.navy, color: "#fff", fontWeight: 700, fontSize: 14, padding: "11px 18px", cursor: "pointer" }}>+ Add referral</button>
+        </div>
       </div>
+      <div style={{ padding: "16px 22px 0" }}>
+        <div style={{ background: "#fff", border: `1px solid ${C.line}`, borderLeft: `4px solid ${C.navy}`, borderRadius: 12, padding: "16px 18px", maxWidth: 900 }}>
+          {WELCOME.map((para, i) => (
+            <p key={i} style={{ margin: i === 0 ? 0 : "10px 0 0", color: "#374151", fontSize: 13.5, lineHeight: 1.55 }}>{para}</p>
+          ))}
+          <p style={{ margin: "10px 0 0", color: "#374151", fontSize: 13.5, lineHeight: 1.55 }}>
+            If you have any questions or concerns, you can contact us at <a href="mailto:info@boreal.financial" style={{ color: C.blue, textDecoration: "none" }}>info@boreal.financial</a>
+          </p>
+        </div>
+      </div>
+
       <div style={{ display: "flex", gap: 16, overflowX: "auto", padding: "18px 22px 24px", flex: 1, minHeight: 0 }}>
         {columns.map((col) => {
           const list = grouped[col.key] ?? [];

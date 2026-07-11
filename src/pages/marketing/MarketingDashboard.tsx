@@ -5,17 +5,16 @@ import { api } from "@/api";
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; // BF_PORTAL_BRANDED_EMAIL_COMPOSER_MOUNT_v1
 import BFReferrerManagement from "./BFReferrerManagement"; // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
 
-type MarketingTab = "google-ads" | "sms" | "email" | "sequences" | "linkedin-ads" | "automations" | "analytics" | "referrers";
+type MarketingTab = "analytics" | "automations" | "referrers" | "sequences" | "sms" | "email" | "ads"; // BF_PORTAL_MARKETING_TABS_v2
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
-  { id: "google-ads", label: "Google Ads" },
+  { id: "analytics", label: "Analytics" },
+  { id: "automations", label: "Automations" },
+  { id: "referrers", label: "Referrers" },
+  { id: "sequences", label: "Sequences" },
   { id: "sms", label: "SMS" },
   { id: "email", label: "Email" },
-  { id: "sequences", label: "Sequences" },
-  { id: "linkedin-ads", label: "LinkedIn Ads" },
-  { id: "automations", label: "Automations" }, // BF_PORTAL_AUTOMATIONS_v1
-  { id: "referrers", label: "Referrers" }, // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
-  { id: "analytics", label: "Analytics" },
+  { id: "ads", label: "Ads" },
 ];
 
 type FunnelStep = {
@@ -1520,7 +1519,74 @@ function AutomationsPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{MARKETING_TABS.map((entry) => <button key={entry.id} type="button" className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setTab(entry.id)}>{entry.label}</button>)}</div>{tab === "google-ads" && (<div className="space-y-4"><GoogleAdsPanel /><UtmBuilderPanel /><MayaSuggestionsPanel /><AdsConversionsPanel /><IcpBuilderPanel /></div>)}{tab === "email" && <BrandedEmailComposer />}{tab === "sms" && <SmsComposerPanel />}{tab === "sequences" && <SequencesPanel />}{tab === "automations" && <AutomationsPanel />}{tab === "linkedin-ads" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}{tab === "analytics" && (<div className="space-y-4"><AnalyticsFunnel /><SequencePerfPanel /><SourcesPanel /><Ga4Panel /><ClarityPanel /></div>)}{tab === "referrers" && <BFReferrerManagement />}{tab !== "referrers" && <TemplateAnalyticsPanel />}</div>;
+  const [adsTab, setAdsTab] = useState<"google" | "linkedin" | "microsoft">("google");
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {MARKETING_TABS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            className={`ui-button ${tab === entry.id ? "ui-button--primary" : "ui-button--secondary"}`}
+            onClick={() => setTab(entry.id)}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "ads" && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {(["google", "linkedin", "microsoft"] as const).map((id) => (
+              <button
+                key={id}
+                type="button"
+                className={`ui-button ${adsTab === id ? "ui-button--primary" : "ui-button--secondary"}`}
+                onClick={() => setAdsTab(id)}
+              >
+                {id === "google" ? "Google Ads" : id === "linkedin" ? "LinkedIn Ads" : "Microsoft Ads"}
+              </button>
+            ))}
+          </div>
+          {adsTab === "google" && (
+            <div className="space-y-4">
+              <GoogleAdsPanel />
+              <UtmBuilderPanel />
+              <MayaSuggestionsPanel />
+              <AdsConversionsPanel />
+              <IcpBuilderPanel />
+            </div>
+          )}
+          {adsTab === "linkedin" && (
+            <div className="space-y-4">
+              <LinkedInAdsPanel />
+              <LinkedInSuggestionsPanel />
+              <LinkedInConversionsPanel />
+              <LinkedInAudiencePanel />
+            </div>
+          )}
+          {adsTab === "microsoft" && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Microsoft Ads - coming soon.</div>}
+        </div>
+      )}
+      {tab === "email" && <BrandedEmailComposer />}
+      {tab === "sms" && <SmsComposerPanel />}
+      {tab === "sequences" && <SequencesPanel />}
+      {tab === "automations" && <AutomationsPanel />}
+      {tab === "analytics" && (
+        <div className="space-y-4">
+          <AnalyticsFunnel />
+          <SequencePerfPanel />
+          <SourcesPanel />
+          <Ga4Panel />
+          <ClarityPanel />
+        </div>
+      )}
+      {tab === "referrers" && <BFReferrerManagement />}
+      {tab !== "referrers" && <TemplateAnalyticsPanel />}
+    </div>
+  );
 };
 
 export default MarketingDashboard;
