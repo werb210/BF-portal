@@ -31,6 +31,11 @@ export default function ContactsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  // BF_PORTAL_BF_CONTACTS_PAGER_v1 - the server has always supported ?page/&pageSize
+  // (GET /api/crm/contacts, default 200, max 500) and BI already ships a pager, but
+  // BF never sent a page at all - so it silently showed only the FIRST 200 contacts
+  // with no way to reach the rest. With 2,777 contacts that hid ~93% of the list.
+  const [crmPage, setCrmPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tagInput, setTagInput] = useState("");
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | "active" | "assign" | null>(null);
@@ -68,6 +73,8 @@ export default function ContactsPage() {
           sort: `${sort.col}:${sort.dir}`,
           owner_id: ownerId || undefined,
           tag: tagFilter || undefined, // BF_PORTAL_BLOCK_v806_TAG_FILTER
+          page: crmPage, // BF_PORTAL_BF_CONTACTS_PAGER_v1
+          pageSize: CONTACTS_PAGE_SIZE,
         });
         if (!cancelled) setRows(Array.isArray(r) ? r : []);
       } catch (e: any) {
@@ -77,7 +84,15 @@ export default function ContactsPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [silo, q, sort.col, sort.dir, ownerId, tagFilter, refreshKey]);
+  }, [silo, q, sort.col, sort.dir, ownerId, tagFilter, refreshKey, crmPage]);
+
+  // BF_PORTAL_BF_CONTACTS_PAGER_v1 - any change to the filters/sort re-queries from
+  // the top; staying on page 7 of a now-2-page result would render an empty table.
+  useEffect(() => { setCrmPage(1); }, [silo, q, sort.col, sort.dir, ownerId, tagFilter]);
+
+  // The endpoint returns no total, so "is there a next page" is inferred the same
+  // way BI does it: a full page back means there is probably more.
+  const hasNext = rows.length === CONTACTS_PAGE_SIZE;
 
   const onSort = (col: SortCol) =>
     setSort(s => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
@@ -244,6 +259,12 @@ export default function ContactsPage() {
         </div>
       )}
 
+      {/* BF_PORTAL_BF_CONTACTS_PAGER_v1 - same Prev/Next control BI already uses. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginBottom: 12 }}>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Page {crmPage}</span>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+      </div>
       <table style={table}>
         <thead>
           <tr style={theadRow}>
@@ -289,6 +310,9 @@ export default function ContactsPage() {
 function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return <th onClick={onClick} style={thStyle}>{children}</th>;
 }
+
+// BF_PORTAL_BF_CONTACTS_PAGER_v1 - matches the server default (max 500).
+const CONTACTS_PAGE_SIZE = 200;
 
 const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24 };
 const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16 };
