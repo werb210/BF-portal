@@ -1,4 +1,4 @@
-import api from "@/api";
+import api, { apiGetEnvelope } from "@/api";
 import { requireAuth } from "@/utils/requireAuth";
 import type { CRMLead } from "@/types/crm";
 import { withO365Refresh } from "./o365Interceptor";
@@ -272,10 +272,13 @@ export const crmApi = {
     api.get<{ data?: ContactRow[] } | ContactRow[]>(`/api/crm/contacts`, { params }).then(unwrap<ContactRow[]>),
   // BF_PORTAL_CRM_TOTALS_v1 - unwrap() throws away the envelope's `meta`, so a caller
   // needing the real total (for a pager) cannot use listContacts. These keep it.
+  // BF_PORTAL_ENVELOPE_GET_v1 - MUST use apiGetEnvelope, not api.get: api.get strips the
+  // envelope down to `data`, so meta.total was lost and the pager fell back to
+  // rows.length - which reported "1-200 of 200" on a 2,428-row table and disabled Next.
   listContactsPaged: (params: Record<string, string | number | undefined> = {}) =>
-    api.get<PagedEnvelope<ContactRow>>(`/api/crm/contacts`, { params }).then(unwrapPaged<ContactRow>),
+    apiGetEnvelope<PagedEnvelope<ContactRow>>(`/api/crm/contacts`, { params }).then(unwrapPaged<ContactRow>),
   listCompaniesPaged: (params: Record<string, string | number | undefined> = {}) =>
-    api.get<PagedEnvelope<CompanyRow>>(`/api/crm/companies`, { params }).then(unwrapPaged<CompanyRow>),
+    apiGetEnvelope<PagedEnvelope<CompanyRow>>(`/api/crm/companies`, { params }).then(unwrapPaged<CompanyRow>),
   bulkDeleteContacts: (ids: string[]) => api.post("/api/crm/contacts/bulk-delete", { ids }),
   bulkTagContacts: (ids: string[], tag: string) => api.post("/api/crm/contacts/bulk-tag", { ids, tags: [tag], op: "add" }), // BF_PORTAL_BLOCK_v802_ACTIVE_TAG — server expects {tags[],op}, not {tag}
   bulkAssignContacts: (ids: string[], ownerUserId: string) => api.post("/api/crm/contacts/bulk-assign", { ids, ownerUserId }),

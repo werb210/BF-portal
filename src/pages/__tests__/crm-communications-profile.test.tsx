@@ -27,6 +27,12 @@ const { apiMock } = vi.hoisted(() => {
 vi.mock("@/api", () => ({
   default: apiMock,
   api: apiMock,
+  // BF_PORTAL_ENVELOPE_GET_v1 - the paged list calls use apiGetEnvelope (api.get strips
+  // the envelope, so meta.total was unreachable). Mock returns the same envelope shape.
+  apiGetEnvelope: async (path: string, options?: any) => {
+    const r: any = await (apiMock.get as any)(path, options);
+    return Array.isArray(r) ? { data: r, meta: { total: r.length } } : r;
+  },
 }));
 
 

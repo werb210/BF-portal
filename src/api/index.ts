@@ -189,6 +189,16 @@ export async function apiFetch<T = any>(path: string, options: RequestOptions = 
   return parsePayload<T>(json);
 }
 
+// BF_PORTAL_ENVELOPE_GET_v1 - apiFetch() runs parsePayload(), which returns json.data
+// and THROWS AWAY the envelope. Any caller needing envelope `meta` (e.g. a pager that
+// wants the real total row count) therefore silently got nothing and had to guess from
+// rows.length. This returns the whole envelope untouched.
+export async function apiGetEnvelope<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
+  const res = await rawApiFetch(path, { ...options, method: "GET" });
+  if (!res.ok) throw new Error(API_ERROR);
+  return (await res.json()) as T;
+}
+
 export async function apiFetchWithRetry<T = any>(path: string, options: RequestOptions = {}, retries = 1) {
   try {
     return await apiFetch<T>(path, options);
