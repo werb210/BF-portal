@@ -25,6 +25,10 @@ export default function CompaniesPage() {
   const [err, setErr] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  // BF_PORTAL_CRM_TOTALS_v1 - companies had no pager at all, and the server had no
+  // paging either (a hardcoded LIMIT 500). Both now page, with a real total.
+  const [crmPage, setCrmPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tagInput, setTagInput] = useState("");
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | "active" | "assign" | null>(null);
@@ -44,14 +48,16 @@ export default function CompaniesPage() {
     setErr(null);
     (async () => {
       try {
-        const r = await crmApi.listCompanies({
+        const r = await crmApi.listCompaniesPaged({
           silo: String(silo).toLowerCase(),
           q,
           owner_id: ownerId || undefined,
           tag: tagFilter || undefined,
           sort: `${sort.col}:${sort.dir}`,
+          page: crmPage, // BF_PORTAL_CRM_TOTALS_v1
+          pageSize: COMPANIES_PAGE_SIZE,
         });
-        if (!cancelled) setRows(Array.isArray(r) ? r : []);
+        if (!cancelled) { setRows(r.rows); setTotal(r.total); }
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "Could not load companies.");
       } finally {
@@ -59,7 +65,14 @@ export default function CompaniesPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [silo, q, sort.col, sort.dir, refreshKey, ownerId, tagFilter]);
+  }, [silo, q, sort.col, sort.dir, refreshKey, ownerId, tagFilter, crmPage]);
+
+  // BF_PORTAL_CRM_TOTALS_v1 - a filter/sort change re-queries from page 1.
+  useEffect(() => { setCrmPage(1); }, [silo, q, sort.col, sort.dir, ownerId, tagFilter]);
+
+  const hasNext = crmPage * COMPANIES_PAGE_SIZE < total;
+  const rangeStart = total === 0 ? 0 : (crmPage - 1) * COMPANIES_PAGE_SIZE + 1;
+  const rangeEnd = Math.min(crmPage * COMPANIES_PAGE_SIZE, total);
 
   useEffect(() => {
     let cancelled = false;
@@ -193,6 +206,14 @@ export default function CompaniesPage() {
         </div>
       )}
 
+      {/* BF_PORTAL_CRM_TOTALS_v1 - Prev/Next + real total, matching Contacts. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginBottom: 12 }}>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>
+          {total === 0 ? "No companies" : `${rangeStart}-${rangeEnd} of ${total.toLocaleString()}`}
+        </span>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+      </div>
       <table style={table}>
         <thead>
           <tr style={theadRow}>
@@ -236,6 +257,9 @@ export default function CompaniesPage() {
 function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return <th onClick={onClick} style={thStyle}>{children}</th>;
 }
+
+// BF_PORTAL_CRM_TOTALS_v1 - server default 200, hard max 500.
+const COMPANIES_PAGE_SIZE = 200;
 
 const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24 };
 const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16 };
