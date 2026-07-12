@@ -19,8 +19,13 @@ describe("D recents (v1)", () => {
   it("fetchCallHistory hits the real endpoint", () => {
     expect(svc).toContain("/api/voice/recent-calls");
   });
-  it("Communications has a Recents tab", () => {
-    expect(comm).toContain('{ id: "recents", label: "Recents" }');
+  // BF_PORTAL_PHONE_TAB_v1 - Recents + Voicemail are now one "Phone" tab.
+  // RecentsTab itself is unchanged; it is rendered inside PhoneTab. The test still
+  // guarantees recent calls are reachable from Communications.
+  it("Communications surfaces recent calls under the Phone tab", () => {
+    expect(comm).toContain('{ id: "phone", label: "Phone" }');
+    expect(comm).toContain("function PhoneTab()");
     expect(comm).toContain("function RecentsTab()");
+    expect(comm).toContain("<RecentsTab />");
   });
 });
