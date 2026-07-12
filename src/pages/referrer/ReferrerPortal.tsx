@@ -6,7 +6,32 @@ import { api } from "@/api";
 // (first_name/last_name/business_name, silos, message) grouped by BF pipeline stages.
 // BF referral pipeline stages; a referral with no application (or an unknown stage)
 // falls into "New".
-const BF_STAGES = ["New", "Requires Docs", "In Review", "Off to Lender", "Offer", "Accepted", "Funded", "Rejected"] as const;
+// BF_PORTAL_REFERRER_STAGE_MAP_v1 - the board columns did not match the server's
+// real pipeline_state values, so referrals mis-bucketed. The server emits
+// Received / In Review / Documents Required / Additional Steps Required /
+// Off to Lender / Offer / Accepted / Rejected (modules/applications/pipelineState.ts).
+// Previously anything not literally matching a column fell into "New", which meant
+// "Documents Required" and "Additional Steps Required" both showed as New, and the
+// "Funded" column could never populate because no application is ever in a state
+// called "Funded" - Accepted IS the funded state (it is what commissionEarned uses).
+const BF_STAGES = ["New", "Requires Docs", "In Review", "Off to Lender", "Offer", "Funded", "Rejected"] as const;
+
+const STAGE_MAP: Record<string, (typeof BF_STAGES)[number]> = {
+  "Received": "New",
+  "In Review": "In Review",
+  "Documents Required": "Requires Docs",
+  "Additional Steps Required": "Requires Docs",
+  "Off to Lender": "Off to Lender",
+  "Offer": "Offer",
+  "Accepted": "Funded",
+  "Rejected": "Rejected",
+};
+
+// A referral with no application yet (or an unrecognised state) sits in "New".
+function stageOf(applicationStage: string | null): (typeof BF_STAGES)[number] {
+  if (!applicationStage) return "New";
+  return STAGE_MAP[applicationStage] ?? "New";
+}
 
 type Referral = {
   id: string;
@@ -82,7 +107,7 @@ const ReferrerPortal = () => {
   const grouped = useMemo(() => {
     const g: Record<string, Referral[]> = {}; BF_STAGES.forEach((s) => (g[s] = []));
     referrals.forEach((r) => {
-      const key = r.application_stage && (BF_STAGES as readonly string[]).includes(r.application_stage) ? r.application_stage : "New";
+      const key = stageOf(r.application_stage);
       (g[key] ??= []).push(r);
     });
     return g;
