@@ -36,6 +36,11 @@ export default function ContactsPage() {
   // BF never sent a page at all - so it silently showed only the FIRST 200 contacts
   // with no way to reach the rest. With 2,777 contacts that hid ~93% of the list.
   const [crmPage, setCrmPage] = useState(1);
+  // BF_PORTAL_CRM_TOTALS_v1 - v3 inferred hasNext from "a full page came back", which
+  // mis-fires on exact multiples of the page size (a dead Next click onto an empty
+  // page). The server now returns a real total, so paging is exact and we can show
+  // the range.
+  const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tagInput, setTagInput] = useState("");
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | "active" | "assign" | null>(null);
@@ -65,7 +70,7 @@ export default function ContactsPage() {
     setErr(null);
     (async () => {
       try {
-        const r = await crmApi.listContacts({
+        const r = await crmApi.listContactsPaged({ // BF_PORTAL_CRM_TOTALS_v1
           silo: String(silo).toLowerCase(),
           // v193_contact_search: server reads `search` not `q`.
           search: q,
@@ -76,7 +81,7 @@ export default function ContactsPage() {
           page: crmPage, // BF_PORTAL_BF_CONTACTS_PAGER_v1
           pageSize: CONTACTS_PAGE_SIZE,
         });
-        if (!cancelled) setRows(Array.isArray(r) ? r : []);
+        if (!cancelled) { setRows(r.rows); setTotal(r.total); }
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "Could not load contacts.");
       } finally {
@@ -90,9 +95,10 @@ export default function ContactsPage() {
   // the top; staying on page 7 of a now-2-page result would render an empty table.
   useEffect(() => { setCrmPage(1); }, [silo, q, sort.col, sort.dir, ownerId, tagFilter]);
 
-  // The endpoint returns no total, so "is there a next page" is inferred the same
-  // way BI does it: a full page back means there is probably more.
-  const hasNext = rows.length === CONTACTS_PAGE_SIZE;
+  // BF_PORTAL_CRM_TOTALS_v1 - exact, from the server's total.
+  const hasNext = crmPage * CONTACTS_PAGE_SIZE < total;
+  const rangeStart = total === 0 ? 0 : (crmPage - 1) * CONTACTS_PAGE_SIZE + 1;
+  const rangeEnd = Math.min(crmPage * CONTACTS_PAGE_SIZE, total);
 
   const onSort = (col: SortCol) =>
     setSort(s => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
@@ -261,7 +267,9 @@ export default function ContactsPage() {
 
       {/* BF_PORTAL_BF_CONTACTS_PAGER_v1 - same Prev/Next control BI already uses. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginBottom: 12 }}>
-        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Page {crmPage}</span>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>
+          {total === 0 ? "No contacts" : `${rangeStart}-${rangeEnd} of ${total.toLocaleString()}`}
+        </span>
         <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
         <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>

@@ -248,6 +248,17 @@ export type InboxMessage = {
   isRead?: boolean;
 };
 
+// BF_PORTAL_CRM_TOTALS_v1
+export type PagedEnvelope<T> = { data?: T[]; meta?: { page?: number; pageSize?: number; total?: number } } | T[];
+
+function unwrapPaged<T>(r: any): { rows: T[]; total: number } {
+  const rows: T[] = Array.isArray(r) ? r : Array.isArray(r?.data) ? r.data : [];
+  // Older responses carry no meta.total; fall back to the row count so the caller
+  // degrades to "one page" rather than rendering a broken pager.
+  const total = Number(r?.meta?.total ?? rows.length);
+  return { rows, total };
+}
+
 function unwrap<T>(r: any): T {
   if (r && typeof r === "object" && "data" in r) return r.data as T;
   return r as T;
@@ -257,6 +268,12 @@ export const crmApi = {
   // Lists
   listContacts: (params: Record<string, string | number | undefined> = {}) =>
     api.get<{ data?: ContactRow[] } | ContactRow[]>(`/api/crm/contacts`, { params }).then(unwrap<ContactRow[]>),
+  // BF_PORTAL_CRM_TOTALS_v1 - unwrap() throws away the envelope's `meta`, so a caller
+  // needing the real total (for a pager) cannot use listContacts. These keep it.
+  listContactsPaged: (params: Record<string, string | number | undefined> = {}) =>
+    api.get<PagedEnvelope<ContactRow>>(`/api/crm/contacts`, { params }).then(unwrapPaged<ContactRow>),
+  listCompaniesPaged: (params: Record<string, string | number | undefined> = {}) =>
+    api.get<PagedEnvelope<CompanyRow>>(`/api/crm/companies`, { params }).then(unwrapPaged<CompanyRow>),
   bulkDeleteContacts: (ids: string[]) => api.post("/api/crm/contacts/bulk-delete", { ids }),
   bulkTagContacts: (ids: string[], tag: string) => api.post("/api/crm/contacts/bulk-tag", { ids, tags: [tag], op: "add" }), // BF_PORTAL_BLOCK_v802_ACTIVE_TAG — server expects {tags[],op}, not {tag}
   bulkAssignContacts: (ids: string[], ownerUserId: string) => api.post("/api/crm/contacts/bulk-assign", { ids, ownerUserId }),
