@@ -128,7 +128,7 @@ const ReferrerPortal = () => {
         </div>
       </div>
       <div style={{ padding: "16px 22px 0" }}>
-        <div style={{ background: "#fff", border: `1px solid ${C.line}`, borderLeft: `4px solid ${C.navy}`, borderRadius: 12, padding: "16px 18px", maxWidth: 900 }}>
+        <div style={{ background: "#fff", border: `1px solid ${C.line}`, borderLeft: `4px solid ${C.navy}`, borderRadius: 12, padding: "16px 18px", width: "100%", maxWidth: "100%" }}>
           {WELCOME.map((para, i) => (
             <p key={i} style={{ margin: i === 0 ? 0 : "10px 0 0", color: "#374151", fontSize: 13.5, lineHeight: 1.55 }}>{para}</p>
           ))}
