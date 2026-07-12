@@ -71,10 +71,23 @@ function timeAgo(iso: string): string {
   const d = Math.floor(h / 24); return `${d}d ago`;
 }
 
-// DRAFT preview copy - final wording set separately.
-const MSG_PREVIEW: Record<"A" | "B", { label: string; text: string }> = {
-  A: { label: "Version A · warm intro", text: "Hi, it's your referrer — I work with Boreal Financial and they've helped businesses like yours get funding fast. Mind if they reach out?" },
-  B: { label: "Version B · straight to the point", text: "You've been referred to Boreal Financial for business funding. Start whenever you're ready — link below." },
+// BF_PORTAL_REFERRER_MSG_PREVIEW_TRUTH_v1 - these bubbles previously showed copy
+// that was never sent: the portal posts the version KEY ("A"/"B") and BF-Server
+// composes the real SMS from REFERRAL_SMS_VERSIONS in modules/referrals/
+// referralInvite.ts. The preview now mirrors that server copy exactly, with the
+// referrer's own name interpolated the way the SMS will render it, plus the
+// landing-link line the server appends. DRAFT wording - keep this in step with
+// referralInvite.ts whenever the copy is finalised.
+function previewA(referrerName: string | null): string {
+  const who = referrerName && referrerName.trim() ? referrerName.trim() : "You";
+  return `${who} referred you to Boreal Financial. They help businesses like yours get funding fast - mind if they reach out?`;
+}
+function previewB(): string {
+  return "You have been referred to Boreal Financial for business funding. Start whenever you are ready - link below.";
+}
+const MSG_PREVIEW: Record<"A" | "B", { label: string; text: (referrerName: string | null) => string }> = {
+  A: { label: "Version A · warm intro (your name included)", text: (n) => previewA(n) },
+  B: { label: "Version B · straight to the point (no name)", text: () => previewB() },
 };
 
 const EMPTY = { first_name: "", last_name: "", business_name: "", email: "", phone: "" };
@@ -87,6 +100,9 @@ const WELCOME = [
 const ReferrerPortal = () => {
   const navigate = useNavigate();
   const [referrals, setReferrals] = useState<Referral[]>([]);
+  // BF_PORTAL_REFERRER_MSG_PREVIEW_TRUTH_v1 - version A embeds the referrer's
+  // name server-side, so the preview has to know it to be truthful.
+  const [myName, setMyName] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ ...EMPTY });
   const [refer, setRefer] = useState({ funding: true, pgi: false, startup: false });
@@ -96,6 +112,11 @@ const ReferrerPortal = () => {
   const [added, setAdded] = useState(false);
 
   useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    api<{ profile?: { full_name?: string | null } }>("/api/referrer/me", { headers: authHeader() })
+      .then((me) => setMyName(me?.profile?.full_name ?? null))
+      .catch(() => undefined);
+  }, []);
 
   async function load() {
     try {
@@ -199,7 +220,7 @@ const ReferrerPortal = () => {
             <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", margin: "16px 0 8px" }}>Intro message <span style={{ color: "#9aa3b2", fontWeight: 500 }}>— pick which text they receive</span></div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{(["A", "B"] as const).map((v) => {
               const sel = message === v;
-              return <div key={v} onClick={() => setMessage(v)} style={{ border: `1.5px solid ${sel ? C.navy : C.line}`, background: sel ? "#f7f9ff" : "#fff", borderRadius: 12, padding: "12px 12px 12px 14px", cursor: "pointer" }}><div style={{ display: "flex", alignItems: "center", gap: 9, fontWeight: 700, fontSize: 13, color: "#1f2937" }}><span style={{ width: 16, height: 16, borderRadius: 999, border: `2px solid ${sel ? C.navy : "#9aa3b2"}`, position: "relative", flexShrink: 0 }}>{sel ? <span style={{ position: "absolute", inset: 3, borderRadius: 999, background: C.navy }} /> : null}</span>{MSG_PREVIEW[v].label}</div><div style={{ margin: "10px 0 0 25px", background: "#e9edf6", color: "#111827", fontSize: 13, lineHeight: 1.45, borderRadius: 14, borderTopLeftRadius: 4, padding: "10px 12px" }}>{MSG_PREVIEW[v].text}</div></div>;
+              return <div key={v} onClick={() => setMessage(v)} style={{ border: `1.5px solid ${sel ? C.navy : C.line}`, background: sel ? "#f7f9ff" : "#fff", borderRadius: 12, padding: "12px 12px 12px 14px", cursor: "pointer" }}><div style={{ display: "flex", alignItems: "center", gap: 9, fontWeight: 700, fontSize: 13, color: "#1f2937" }}><span style={{ width: 16, height: 16, borderRadius: 999, border: `2px solid ${sel ? C.navy : "#9aa3b2"}`, position: "relative", flexShrink: 0 }}>{sel ? <span style={{ position: "absolute", inset: 3, borderRadius: 999, background: C.navy }} /> : null}</span>{MSG_PREVIEW[v].label}</div><div style={{ margin: "10px 0 0 25px", background: "#e9edf6", color: "#111827", fontSize: 13, lineHeight: 1.45, borderRadius: 14, borderTopLeftRadius: 4, padding: "10px 12px" }}>{MSG_PREVIEW[v].text(myName)}<div style={{ marginTop: 6, color: "#5b6472", fontSize: 12 }}>+ their personal application link</div></div></div>;
             })}</div>
             {added ? <div style={{ color: C.green, fontSize: 13, fontWeight: 700, marginTop: 12 }}>Added ✓ — form cleared for the next one.</div> : null}
             {err ? <div style={{ color: "#b91c1c", fontSize: 13, fontWeight: 600, marginTop: 10 }}>{err}</div> : null}
