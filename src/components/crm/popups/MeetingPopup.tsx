@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { PopupShell, popupInputStyle } from "./PopupShell";
 import { crmApi, type Scope } from "@/api/crm";
+// BF_PORTAL_MEETING_DATETIME_PICKER_v1 - same picker as TaskModal.
+import DateTimePicker from "@/components/ui/DateTimePicker";
 
 // BF_PORTAL_BLOCK_v336_MEETING_TYPE_v1
 type MeetingType = "teams" | "phone" | "inperson";
@@ -67,9 +69,19 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
         placeholder="Title"
         style={{ ...popupInputStyle, marginBottom: 8 }}
       />
+      {/* BF_PORTAL_MEETING_DATETIME_PICKER_v1 - the two raw datetime-local inputs
+          rendered a bare "yyyy-mm-dd, --:-- --" box that did not match the Task
+          popup. Both now use the shared calendar + time-list picker. Values are
+          ISO strings, which is what save() already sends. */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-        <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} style={popupInputStyle} />
-        <input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} style={popupInputStyle} />
+        <label style={{ display: "block" }}>
+          <span style={{ display: "block", fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 3 }}>Starts</span>
+          <DateTimePicker value={start} onChange={setStart} />
+        </label>
+        <label style={{ display: "block" }}>
+          <span style={{ display: "block", fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 3 }}>Ends</span>
+          <DateTimePicker value={end} onChange={setEnd} />
+        </label>
       </div>
       <input
         value={attendees}

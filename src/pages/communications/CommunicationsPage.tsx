@@ -35,14 +35,14 @@ import { startOutboundPstn } from "@/dialer/actions";
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 
-type Tab = "messages" | "sms" | "inbox" | "issues" | "maya" | "team" | "voicemail" | "recents"; // BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB / BF_PORTAL_RECENT_CALLS_v1
+// BF_PORTAL_PHONE_TAB_v1 - Voicemail + Recents merged into one "Phone" tab.
+type Tab = "messages" | "sms" | "inbox" | "issues" | "maya" | "team" | "phone";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "messages", label: "Messages" },
   { id: "sms", label: "SMS" },
   { id: "inbox", label: "Inbox" },
-  { id: "voicemail", label: "Voicemail" }, // BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB
-  { id: "recents", label: "Recents" }, // BF_PORTAL_RECENT_CALLS_v1
+  { id: "phone", label: "Phone" }, // BF_PORTAL_PHONE_TAB_v1 (was Voicemail + Recents)
   { id: "issues", label: "Issues" },
   { id: "maya", label: "Maya" }, // BF_PORTAL_BLOCK_v763_MAYA_TAB
   { id: "team", label: "Team" }, // BF_PORTAL_BLOCK_v752_TEAM_TAB
@@ -1816,7 +1816,14 @@ function InboxTab() {
   }, []);
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 0, height: "100%", background: "var(--ui-surface-strong)", color: "var(--ui-text)", position: "relative" }}>
+    // BF_PORTAL_INBOX_SCROLL_v1 - the message list could not be scrolled. This grid
+    // sits inside a flex row with `overflow: hidden`, but its ROWS defaulted to
+    // `auto`, so the left column's track grew to fit its content instead of being
+    // bounded by the viewport. The inner `flex: 1; overflowY: auto` therefore never
+    // had a constrained height, produced no scrollbar, and the overflow was simply
+    // clipped by the ancestor. Bounding the row track (minmax(0, 1fr)) plus
+    // minHeight: 0 on the column restores the scroll.
+    <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gridTemplateRows: "minmax(0, 1fr)", gap: 0, flex: 1, width: "100%", height: "100%", minHeight: 0, background: "var(--ui-surface-strong)", color: "var(--ui-text)", position: "relative" }}>
       {/* BF_PORTAL_BLOCK_v213_INBOX_RECONNECT_M365_v2 — reconnect banner */}
       {needsReconnect && (
         <div style={{
@@ -1852,7 +1859,7 @@ function InboxTab() {
           </button>
         </div>
       )}
-      <div style={{ borderRight: "1px solid var(--ui-border)", display: "flex", flexDirection: "column" }}>
+      <div style={{ borderRight: "1px solid var(--ui-border)", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
         {/* BF_PORTAL_BLOCK_77_INBOX_COMPOSE_v1 - Compose button + modal. */}
         <div style={{ padding: 12, borderBottom: "1px solid var(--ui-border)", display: "flex", flexDirection: "column", gap: 8 }}>
           <button
@@ -2034,7 +2041,7 @@ function InboxTab() {
         </div>
       </div>
 
-      <div style={{ padding: 16, overflowY: "auto" }}>
+      <div style={{ padding: 16, overflowY: "auto", minHeight: 0 }}>
         {!selectedId && <div style={{ color: "var(--ui-text-muted)" }}>Select an email.</div>}
         {selectedId && !selected && <div style={{ color: "var(--ui-text-muted)" }}>Loading…</div>}
         {selected && (
@@ -2277,15 +2284,17 @@ export default function CommunicationsPage() {
   // BF_PORTAL_BLOCK_v641_TAB_COUNTS_v1 — per-sub-tab counters. Each source is
   // the same endpoint that tab renders from. Fully guarded so a mocked/undefined
   // api response can never throw during render or tests.
-  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; voicemail: number; issues: number; maya: number; team: number; recents: number }>({
+  // BF_PORTAL_PHONE_TAB_v1 - the voicemail/recents counters were declared but never
+  // populated by the loader below (always 0, badge never rendered), so folding them
+  // into a single `phone` key loses nothing.
+  const [tabCounts, setTabCounts] = useState<{ messages: number; sms: number; inbox: number; issues: number; maya: number; team: number; phone: number }>({
     messages: 0,
     sms: 0,
     inbox: 0,
-    voicemail: 0,
     issues: 0,
     maya: 0,
     team: 0,
-    recents: 0,
+    phone: 0,
   });
   useEffect(() => {
     let cancelled = false;
@@ -2408,8 +2417,7 @@ export default function CommunicationsPage() {
         {tab === "sms" && <SmsTab forcedContact={forcedSmsContact} onContactSelected={setForcedSmsContact} />}
         {tab === "messages" && <MessagesTab onStartConversation={(contact) => { setForcedSmsContact(contact); setTab("sms"); }} />}
         {tab === "inbox" && <InboxTab />}
-        {tab === "voicemail" && <VoicemailTab />} {/* BF_PORTAL_BLOCK_v830_VOICEMAIL_TAB */}
-        {tab === "recents" && <RecentsTab />} {/* BF_PORTAL_RECENT_CALLS_v1 */}
+        {tab === "phone" && <PhoneTab />} {/* BF_PORTAL_PHONE_TAB_v1 */}
         {tab === "issues" && <IssuesTab />}
         {tab === "maya" && <MayaTab />}
         {tab === "team" && <TeamTab onUnreadChange={(n) => setTabCounts((c) => ({ ...c, team: n }))} />}
@@ -3158,6 +3166,22 @@ function NewTeamChatModal({ users, onClose, onCreated }: { users: TeamUser[]; on
 }
 
 // BF_PORTAL_RECENT_CALLS_v1 - recent calls for the logged-in staff member.
+// BF_PORTAL_PHONE_TAB_v1 - one "Phone" tab holding both call history and voicemails.
+// Deliberately a thin wrapper around the two EXISTING components rather than a
+// rewrite: no behaviour change, nothing to re-test.
+function PhoneTab() {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, width: "100%", minHeight: 0, overflow: "hidden" }}>
+      <div style={{ borderRight: "1px solid var(--ui-border)", minHeight: 0, overflowY: "auto" }}>
+        <RecentsTab />
+      </div>
+      <div style={{ minHeight: 0, overflowY: "auto" }}>
+        <VoicemailTab />
+      </div>
+    </div>
+  );
+}
+
 function RecentsTab() {
   const [rows, setRows] = useState<import("@/services/callService").CallSession[]>([]);
   const [loading, setLoading] = useState(true);
