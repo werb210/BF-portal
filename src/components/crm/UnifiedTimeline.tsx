@@ -33,11 +33,13 @@ type CallRow = {
   transcript_summary?: string | null;
 };
 
-type Kind = "note" | "task" | "call" | "email" | "meeting";
+// BF_PORTAL_TIMELINE_KINDS_v1 - voicemail and sms were emitted by the server but had
+// no place in this union, so they were dropped on the floor.
+type Kind = "note" | "task" | "call" | "email" | "meeting" | "voicemail" | "sms";
 type FilterTab = "all" | Kind;
 
 type Entry =
-  | { kind: "note" | "task" | "meeting"; id: string; ts: number; item: TimelineItem }
+  | { kind: "note" | "task" | "meeting" | "voicemail" | "sms"; id: string; ts: number; item: TimelineItem }
   | { kind: "email"; id: string; ts: number; email: EmailRow }
   | { kind: "call"; id: string; ts: number; call: CallRow };
 
@@ -80,7 +82,13 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
   const entries = useMemo<Entry[]>(() => {
     const out: Entry[] = [];
     for (const t of timeline) {
-      if (t.kind === "note" || t.kind === "task" || t.kind === "meeting") {
+      // BF_PORTAL_TIMELINE_KINDS_v1 - this used to keep ONLY note/task/meeting and
+      // silently drop everything else the server emits. Voicemails and SMS therefore
+      // never appeared on a contact record at all. 'call'/'email' stay excluded here
+      // because they are fetched from their own endpoints below; including them would
+      // double-render every call and email.
+      if (t.kind === "note" || t.kind === "task" || t.kind === "meeting"
+          || t.kind === "voicemail" || t.kind === "sms") {
         out.push({ kind: t.kind, id: t.id, ts: tsOf(t.ts), item: t });
       }
     }
@@ -117,7 +125,8 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
               <time style={tsStyle}>{entry.ts ? new Date(entry.ts).toLocaleString() : ""}</time>
             </header>
 
-            {(entry.kind === "note" || entry.kind === "task" || entry.kind === "meeting") && (
+            {(entry.kind === "note" || entry.kind === "task" || entry.kind === "meeting"
+              || entry.kind === "voicemail" || entry.kind === "sms") && (
               <>
                 {entry.item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{entry.item.title}</div>}
                 {entry.item.body && <div style={{ color: "var(--ui-text-muted)", marginTop: 4, whiteSpace: "pre-wrap" }}>{entry.item.body}</div>}
@@ -253,6 +262,8 @@ function kindBadge(kind: Kind): CSSProperties {
     call: { bg: "#e3f2fd", fg: "#0d47a1" },
     email: { bg: "#e8f5e9", fg: "#1b5e20" },
     meeting: { bg: "#fce4ec", fg: "#880e4f" },
+    voicemail: { bg: "#ede7f6", fg: "#311b92" }, // BF_PORTAL_TIMELINE_KINDS_v1
+    sms: { bg: "#e0f7fa", fg: "#006064" },
   };
   const c = palette[kind];
   return {

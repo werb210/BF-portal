@@ -1,10 +1,16 @@
 // BF_PORTAL_BLOCK_v602_INBOUND_UI_v1
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useDialer } from "../store";
 import { answerIncoming, declineIncoming } from "../actions";
 
 export default function IncomingCallToast() {
   const incoming = useDialer((s) => s.incoming);
+  // BF_PORTAL_TOAST_NO_RELOAD_v1 - these were anchor href links, i.e. a FULL page load.
+  // That unmounts DialerProvider, which destroys the Twilio Device, which drops the
+  // live call - so clicking "Open" on a ringing call hung up on the caller and sent
+  // them to voicemail. Client-side navigation keeps the Device (and the call) alive.
+  const navigate = useNavigate();
   if (!incoming) return null;
   return (
     <div role="alert" style={wrap}>
@@ -19,9 +25,9 @@ export default function IncomingCallToast() {
       </div>
       {/* BF_PORTAL_UNKNOWN_CALLER_v1 - known -> Open; unknown -> Add to contacts */}
       {incoming.contactId ? (
-        <a href={`/crm/contacts/${incoming.contactId}`} style={{ ...btn("var(--ui-accent-blue)"), textDecoration: "none", display: "inline-block" }}>Open</a>
+        <button type="button" onClick={() => navigate(`/crm/contacts/${incoming.contactId}`)} style={btn("var(--ui-accent-blue)")}>Open</button>
       ) : incoming.phone ? (
-        <a href={`/crm/contacts?addPhone=${encodeURIComponent(incoming.phone)}`} style={{ ...btn("var(--ui-accent-blue)"), textDecoration: "none", display: "inline-block" }}>Add</a>
+        <button type="button" onClick={() => navigate(`/crm/contacts?addPhone=${encodeURIComponent(incoming.phone ?? "")}`)} style={btn("var(--ui-accent-blue)")}>Add</button>
       ) : null}
       <button onClick={() => declineIncoming()} style={btn("#374151")}>Dismiss</button>
       <button onClick={() => void answerIncoming()} style={btn("#22c55e")}>Answer</button>

@@ -99,6 +99,9 @@ function kindBadge(kind: TimelineItem["kind"]): CSSProperties {
     call: { bg: "#e3f2fd", fg: "#0d47a1" },
     email: { bg: "#e8f5e9", fg: "#1b5e20" },
     meeting: { bg: "#fce4ec", fg: "#880e4f" },
+    voicemail: { bg: "#ede7f6", fg: "#311b92" }, // BF_PORTAL_TIMELINE_KINDS_v1
+    sms: { bg: "#e0f7fa", fg: "#006064" },
+    system: { bg: "#eceff1", fg: "#263238" },
   };
   const c = palette[kind];
   return {
