@@ -1,10 +1,10 @@
 // BF_PORTAL_CONTACT_MERGE_v1
-// Surfaces likely duplicates of the contact being viewed and merges them.
+// Surfaces likely duplicates of the contact being viewed, and merges them into it.
 //
-// This matters because the CRM is actively fragmenting live leads: Mike Cotic exists twice
-// (contact form vs Microsoft Bookings, different email AND different phone), Juergen
-// Zischler three times, Wayne Beamish twice. A rep looking at one record cannot see the
-// calls, SMS and applications sitting on the other.
+// The CRM is actively fragmenting live leads: Mike Cotic exists twice (contact form vs
+// Microsoft Bookings - different email AND different phone), Juergen Zischler three times,
+// Wayne Beamish twice. A rep looking at one record cannot see the calls, SMS and
+// applications sitting on the other.
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 
@@ -17,7 +17,9 @@ type Candidate = {
   created_at: string | null;
   match_email: string | null;
   match_phone: string | null;
-  name_similarity: number | null;
+  // Pure-SQL surname+forename match (bf_same_person_name). NOT a trigram score:
+  // pg_trgm is not allow-listed on Azure Postgres.
+  match_name: boolean | null;
   applications: number;
   calls: number;
   messages: number;
@@ -51,7 +53,7 @@ export function ContactDuplicates({ contactId, onMerged }: { contactId?: string;
 
   const merge = useCallback(async () => {
     if (!contactId || loserIds.length === 0) return;
-    // Irreversible from the user's point of view, so make them mean it.
+    // The losing records are archived, so make the user mean it.
     const names = items.filter((i) => loserIds.includes(i.id)).map((i) => i.name ?? i.id).join(", ");
     if (!window.confirm(
       `Merge ${loserIds.length} record${loserIds.length === 1 ? "" : "s"} into this contact?\n\n${names}\n\n` +
@@ -81,13 +83,12 @@ export function ContactDuplicates({ contactId, onMerged }: { contactId?: string;
 
   if (!loaded || items.length === 0) return null;
 
+  // Say WHY each record matched. Staff should never be asked to trust a black box.
   const why = (c: Candidate) => {
     const bits: string[] = [];
     if (c.match_email) bits.push("same email");
     if (c.match_phone) bits.push("same phone");
-    if (!c.match_email && !c.match_phone && c.name_similarity != null) {
-      bits.push(`similar name (${Math.round(Number(c.name_similarity) * 100)}%)`);
-    }
+    if (c.match_name && !c.match_email && !c.match_phone) bits.push("same name");
     return bits.join(", ");
   };
 
