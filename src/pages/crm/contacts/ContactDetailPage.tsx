@@ -11,6 +11,7 @@ import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
 import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
 import ContactJourney from "@/components/crm/ContactJourney"; // BF_PORTAL_VISITOR_JOURNEY_v1
 import { ContactDocuments } from "@/components/crm/ContactDocuments"; // BF_PORTAL_CONTACT_DOCUMENTS_v1
+import { ContactDuplicates } from "@/components/crm/ContactDuplicates"; // BF_PORTAL_CONTACT_MERGE_v1
 
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
@@ -127,6 +128,10 @@ export default function ContactDetailPage() {
         ) : (
           <div style={subtle}>No associated company.</div>
         )}
+        {/* BF_PORTAL_CONTACT_MERGE_v1 - the CRM is actively fragmenting live leads across
+            duplicate records; surface them where the rep is already looking. Hidden when
+            there are none. */}
+        <ContactDuplicates contactId={id} onMerged={() => window.location.reload()} />
         <ContactAdvisors applicationIds={contact.applicationIds} />
         {/* BF_PORTAL_CREDIT_READINESS_v1 - below Company and Advisors, hidden when empty */}
         <ContactCreditReadiness contactId={id} />
