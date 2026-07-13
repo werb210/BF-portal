@@ -34,6 +34,7 @@ import { startOutboundPstn } from "@/dialer/actions";
 // BF_PORTAL_BLOCK_v312_COMPOSER_PULLDOWNS_v1
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
+import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
 
 // BF_PORTAL_PHONE_TAB_v1 - Voicemail + Recents merged into one "Phone" tab.
 type Tab = "messages" | "sms" | "inbox" | "issues" | "maya" | "team" | "phone";
@@ -2094,7 +2095,7 @@ ${orig}`;
             </div>
             {crmSaveMsg && <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 12 }}>{crmSaveMsg}</div>} {/* BF_PORTAL_INBOX_SAVE_TO_CRM_v1 */}
             {selected.body?.contentType === "html"
-              ? <div dangerouslySetInnerHTML={{ __html: selected.body.content }} />
+              ? <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(selected.body.content) }} /> /* BF_PORTAL_HTML_SANITIZE_v1 */
               : <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{selected.body?.content ?? ""}</pre>}
             {/* BF_PORTAL_INBOX_ATTACHMENTS_v1 */}
             {attachments.length > 0 && (

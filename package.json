@@ -39,6 +39,7 @@
     "@twilio/voice-sdk": "^2.18.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dompurify": "^3.4.12",
     "html2canvas": "^1.4.1",
     "jwt-decode": "^4.0.0",
     "openai": "^6.22.0",

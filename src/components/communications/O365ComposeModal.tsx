@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { api } from "@/api";
+import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
 
 type MailboxOption = { value: string; label: string };
 type AppOption = { id: string; label: string };
@@ -171,7 +172,7 @@ export default function O365ComposeModal({
     setComposeSubject(initialSubject);
     const initHtml = sanitizeBookingHtml(/<[a-z][\s\S]*>/i.test(initialBody) ? initialBody : escapeToHtml(initialBody));
     setComposeBody(initHtml);
-    if (bodyRef.current) bodyRef.current.innerHTML = initHtml;
+    if (bodyRef.current) bodyRef.current.innerHTML = sanitizeHtml(initHtml); // BF_PORTAL_HTML_SANITIZE_v1
     setRequestReadReceipt(false);
     setRequestDeliveryReceipt(false);
     setImportance("normal");
@@ -382,7 +383,7 @@ export default function O365ComposeModal({
     // BF_PORTAL_TEMPLATE_REPLACE_BODY_v1 - applying a template replaces the composer body rather
     // than inserting at the cursor (which appended to existing text).
     if (html && bodyRef.current) {
-      bodyRef.current.innerHTML = html;
+      bodyRef.current.innerHTML = sanitizeHtml(html); // BF_PORTAL_HTML_SANITIZE_v1
       syncBody();
     }
   }
@@ -474,7 +475,7 @@ export default function O365ComposeModal({
       if (fromAddress) setComposeFrom(fromAddress);
       setComposeSubject(draft?.subject ?? "");
       setComposeBody(html);
-      if (bodyRef.current) bodyRef.current.innerHTML = html;
+      if (bodyRef.current) bodyRef.current.innerHTML = sanitizeHtml(html); // BF_PORTAL_HTML_SANITIZE_v1
       if (draft?.importance === "low" || draft?.importance === "normal" || draft?.importance === "high") setImportance(draft.importance);
       if (typeof draft?.isReadReceiptRequested === "boolean") setRequestReadReceipt(draft.isReadReceiptRequested);
       if (typeof draft?.isDeliveryReceiptRequested === "boolean") setRequestDeliveryReceipt(draft.isDeliveryReceiptRequested);
