@@ -444,6 +444,7 @@ type CreditReadiness = {
   id: string;
   readiness_score: number | null;
   readiness_tier: ReadinessTier | null;
+  readiness_over_ask: boolean | null; // BF_PORTAL_READINESS_OVER_ASK_v1
   company_name: string | null;
   industry: string | null;
   business_location: string | null;
@@ -487,6 +488,26 @@ export function ContactCreditReadiness({ contactId }: { contactId?: string }) {
     return Number.isFinite(n) ? `$${n.toLocaleString()}` : String(v);
   };
 
+  // BF_PORTAL_READINESS_OVER_ASK_v1 - a badge alone does not tell a rep WHY a file is
+  // capped. This MUST mirror bf_readiness_revenue_basis() on the server (the TOP of the
+  // declared band, not the bottom) or the multiple shown here would contradict the grade
+  // the server assigned. "Over $3,000,000" is unbounded, so $3M is used as its basis.
+  const revenueBasis = (range: string | null): number => {
+    const r = (range ?? "").toLowerCase();
+    if (r.includes("over $3,000,000")) return 3_000_000;
+    if (r.includes("$1,000,001 to $3,000,000")) return 3_000_000;
+    if (r.includes("$500,001 to $1,000,000")) return 1_000_000;
+    if (r.includes("$150,001 to $500,000")) return 500_000;
+    return 150_000;
+  };
+
+  const askMultiple = (() => {
+    const amt = Number(cr.requested_amount);
+    if (!Number.isFinite(amt) || amt <= 0) return null;
+    const mult = amt / revenueBasis(cr.annual_revenue_range);
+    return mult >= 10 ? `${Math.round(mult)}x` : `${mult.toFixed(1)}x`;
+  })();
+
   const row = (label: string, value: unknown) =>
     String(value ?? "").trim()
       ? (
@@ -519,10 +540,23 @@ export function ContactCreditReadiness({ contactId }: { contactId?: string }) {
         </div>
       )}
 
+      {/* BF_PORTAL_READINESS_OVER_ASK_v1 - say it plainly rather than silently capping. */}
+      {cr.readiness_over_ask && (
+        <div style={{
+          fontSize: 12, color: "#92400e", background: "#fef3c7",
+          border: "1px solid #fde68a", borderRadius: 6,
+          padding: "6px 8px", marginBottom: 10, lineHeight: 1.35,
+        }}>
+          <strong>Over-asking.</strong> Requesting{askMultiple ? ` ${askMultiple}` : ""} their annual
+          revenue. Most products cap near 35% of revenue, so this cannot rate Strong
+          regardless of score.
+        </div>
+      )}
+
       {row("Industry", cr.industry)}
       {row("Location", cr.business_location)}
       {row("Funding type", cr.funding_type)}
-      {row("Requested", money(cr.requested_amount))}
+      {row("Requested", money(cr.requested_amount) + (askMultiple ? ` (${askMultiple} revenue)` : ""))}
       {row("Purpose", cr.purpose_of_funds)}
       {row("Years in business", cr.sales_history_years)}
       {row("Annual revenue", cr.annual_revenue_range)}
