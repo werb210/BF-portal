@@ -1642,12 +1642,25 @@ function InboxTab() {
     setCrmSaveMsg("");
     try {
       const params = active ? { mailbox: active } : {};
-      const resp = await api<{ filed?: number; data?: { filed?: number } }>(
+      const resp = await api<{ filed?: number; duplicates?: number; reason?: string; data?: { filed?: number; duplicates?: number; reason?: string } }>(
         `/api/crm/inbox/${encodeURIComponent(selectedId)}/file-to-crm`,
         { method: "POST", params },
       );
       const filed = (resp?.data?.filed ?? resp?.filed ?? 0) as number;
-      setCrmSaveMsg(filed > 0 ? `Saved ${filed} file${filed === 1 ? "" : "s"} to CRM.` : "No attachments on this email.");
+      // BF_PORTAL_SAVE_TO_CRM_TRUTH_v1 - a zero was always reported as "No attachments on
+      // this email", which is a flat lie when the attachments are simply already filed, or
+      // when the sender matched no contact. Say what actually happened.
+      const dupes = (resp?.data?.duplicates ?? resp?.duplicates ?? 0) as number;
+      const reason = (resp?.data?.reason ?? resp?.reason) as string | undefined;
+      if (filed > 0) {
+        setCrmSaveMsg(`Saved ${filed} file${filed === 1 ? "" : "s"} to CRM.`);
+      } else if (reason === "all_duplicates" || dupes > 0) {
+        setCrmSaveMsg(`Already in CRM - ${dupes || "all"} file${dupes === 1 ? "" : "s"} previously saved.`);
+      } else if (reason === "no_contact") {
+        setCrmSaveMsg("Could not match the sender to a CRM contact.");
+      } else {
+        setCrmSaveMsg("No attachments on this email.");
+      }
     } catch (e: unknown) {
       setCrmSaveMsg(e instanceof Error ? e.message : "Save to CRM failed.");
     } finally {
