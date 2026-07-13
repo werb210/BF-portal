@@ -2093,7 +2093,16 @@ ${orig}`;
                 );
               })()}
             </div>
-            {crmSaveMsg && <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 12 }}>{crmSaveMsg}</div>} {/* BF_PORTAL_INBOX_SAVE_TO_CRM_v1 */}
+            {/* BF_PORTAL_INBOX_SAVE_FEEDBACK_v1 - this was 12px muted grey, so a failure
+                looked identical to doing nothing at all. Colour it and make it legible. */}
+            {crmSaveMsg && (
+              <div style={{
+                fontSize: 13, fontWeight: 600, marginBottom: 12, padding: "6px 10px", borderRadius: 6,
+                color: /^Saved/i.test(crmSaveMsg) ? "#14532d" : "#7f1d1d",
+                background: /^Saved/i.test(crmSaveMsg) ? "#dcfce7" : "#fee2e2",
+                border: `1px solid ${/^Saved/i.test(crmSaveMsg) ? "#86efac" : "#fca5a5"}`,
+              }}>{crmSaveMsg}</div>
+            )}
             {selected.body?.contentType === "html"
               ? <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(selected.body.content) }} /> /* BF_PORTAL_HTML_SANITIZE_v1 */
               : <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{selected.body?.content ?? ""}</pre>}
@@ -2115,7 +2124,15 @@ ${orig}`;
                     </div>
                   ))}
                 </div>
-                {crmOneMsg && <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginTop: 8 }}>{crmOneMsg}</div>} {/* BF_PORTAL_INBOX_FILE_ONE_TO_CRM_v1 */}
+                {/* BF_PORTAL_INBOX_SAVE_FEEDBACK_v1 */}
+                {crmOneMsg && (
+                  <div style={{
+                    fontSize: 13, fontWeight: 600, marginTop: 8, padding: "6px 10px", borderRadius: 6,
+                    color: /^Saved/i.test(crmOneMsg) ? "#14532d" : "#7f1d1d",
+                    background: /^Saved/i.test(crmOneMsg) ? "#dcfce7" : "#fee2e2",
+                    border: `1px solid ${/^Saved/i.test(crmOneMsg) ? "#86efac" : "#fca5a5"}`,
+                  }}>{crmOneMsg}</div>
+                )}
               </div>
             )}
           </article>
