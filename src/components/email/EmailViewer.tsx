@@ -4,6 +4,7 @@ import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import type { EmailMessage } from "@/api/email";
+import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
 import { fetchEmailMessage, fetchEmailMessages, archiveEmailMessage } from "@/api/email";
 import EmailMessageItem from "./EmailMessageItem";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
@@ -97,7 +98,7 @@ const EmailViewer = ({ visible, contactId, contactEmail, onClose }: EmailViewerP
                 <div className="font-semibold">{selected.subject}</div>
                 <div className="text-sm">From: {selected.from}</div>
                 <div className="text-sm">To: {selected.to}</div>
-                <div dangerouslySetInnerHTML={{ __html: selected.body }} />
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(selected.body) }} /> {/* BF_PORTAL_HTML_SANITIZE_v1 */}
                 {selected.attachments.length > 0 && (
                   <ul>
                     {selected.attachments.map((file) => (
