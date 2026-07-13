@@ -421,3 +421,115 @@ export function ContactMarketingSource({ contactId }: { contactId?: string }) {
 
   return null;
 }
+
+// BF_PORTAL_CREDIT_READINESS_v1
+// The credit-readiness result was computed in the browser on bf-website, shown to the
+// prospect, and then discarded - staff never saw the outcome of a form the prospect had
+// already completed. The server now scores it (BF_SERVER_READINESS_SCORE_v1) and this
+// surfaces it on the contact record: read-only, latest submission only, hidden entirely
+// when the contact never submitted one.
+//
+// Labels and colours are copied from what the PROSPECT sees on /credit-results
+// (bf-website src/pages/CreditResults.tsx TIER_COPY) so staff and client are never
+// looking at different words for the same result.
+type ReadinessTier = "green" | "yellow" | "red";
+
+const TIER_LABEL: Record<ReadinessTier, { label: string; color: string }> = {
+  green: { label: "Strong", color: "#22c55e" },
+  yellow: { label: "Moderate", color: "#eab308" },
+  red: { label: "Early", color: "#ef4444" },
+};
+
+type CreditReadiness = {
+  id: string;
+  readiness_score: number | null;
+  readiness_tier: ReadinessTier | null;
+  company_name: string | null;
+  industry: string | null;
+  business_location: string | null;
+  funding_type: string | null;
+  requested_amount: string | number | null;
+  purpose_of_funds: string | null;
+  sales_history_years: string | null;
+  annual_revenue_range: string | null;
+  avg_monthly_revenue_range: string | null;
+  accounts_receivable_range: string | null;
+  fixed_assets_value_range: string | null;
+  created_at: string | null;
+};
+
+export function ContactCreditReadiness({ contactId }: { contactId?: string }) {
+  const [cr, setCr] = useState<CreditReadiness | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!contactId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get<{ data?: CreditReadiness | null } | CreditReadiness | null>(
+          `/api/crm/contacts/${contactId}/credit-readiness`,
+        );
+        const d = (r as { data?: CreditReadiness | null })?.data ?? (r as CreditReadiness | null);
+        if (!cancelled) { setCr(d ?? null); setLoaded(true); }
+      } catch {
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [contactId]);
+
+  if (!loaded || !cr) return null;
+
+  const money = (v: string | number | null) => {
+    if (v === null || v === undefined || v === "") return "";
+    const n = Number(v);
+    return Number.isFinite(n) ? `$${n.toLocaleString()}` : String(v);
+  };
+
+  const row = (label: string, value: unknown) =>
+    String(value ?? "").trim()
+      ? (
+        <div key={label} style={{ fontSize: 13, padding: "3px 0", display: "flex", justifyContent: "space-between", gap: 10 }}>
+          <span style={{ color: "var(--ui-text-muted)" }}>{label}</span>
+          <span style={{ color: "var(--ui-text)", fontWeight: 600, textAlign: "right" }}>{String(value)}</span>
+        </div>
+      )
+      : null;
+
+  const tier = cr.readiness_tier && TIER_LABEL[cr.readiness_tier] ? TIER_LABEL[cr.readiness_tier] : null;
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <h3 style={{ marginTop: 0, marginBottom: 8 }}>Credit Readiness</h3>
+
+      {tier && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+          <span style={{
+            background: tier.color, color: "#fff", fontWeight: 700, fontSize: 12,
+            padding: "3px 10px", borderRadius: 999,
+          }}>
+            {tier.label}
+          </span>
+          {cr.readiness_score !== null && (
+            <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>
+              {cr.readiness_score}/100
+            </span>
+          )}
+        </div>
+      )}
+
+      {row("Industry", cr.industry)}
+      {row("Location", cr.business_location)}
+      {row("Funding type", cr.funding_type)}
+      {row("Requested", money(cr.requested_amount))}
+      {row("Purpose", cr.purpose_of_funds)}
+      {row("Years in business", cr.sales_history_years)}
+      {row("Annual revenue", cr.annual_revenue_range)}
+      {row("Monthly revenue", cr.avg_monthly_revenue_range)}
+      {row("A/R", cr.accounts_receivable_range)}
+      {row("Fixed assets", cr.fixed_assets_value_range)}
+      {row("Submitted", cr.created_at ? new Date(cr.created_at).toLocaleDateString() : "")}
+    </div>
+  );
+}
