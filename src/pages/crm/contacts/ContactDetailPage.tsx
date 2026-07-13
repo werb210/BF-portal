@@ -128,9 +128,8 @@ export default function ContactDetailPage() {
         ) : (
           <div style={subtle}>No associated company.</div>
         )}
-        {/* BF_PORTAL_CONTACT_MERGE_v1 - the CRM is actively fragmenting live leads across
-            duplicate records; surface them where the rep is already looking. Hidden when
-            there are none. */}
+        {/* BF_PORTAL_CONTACT_MERGE_v1 - the CRM is fragmenting live leads across duplicate
+            records; surface them where the rep is already looking. Hidden when there are none. */}
         <ContactDuplicates contactId={id} onMerged={() => window.location.reload()} />
         <ContactAdvisors applicationIds={contact.applicationIds} />
         {/* BF_PORTAL_CREDIT_READINESS_v1 - below Company and Advisors, hidden when empty */}
