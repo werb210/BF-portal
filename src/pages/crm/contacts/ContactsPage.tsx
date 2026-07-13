@@ -298,6 +298,17 @@ export default function ContactsPage() {
           {!loading && !err && tableRows}
         </tbody>
       </table>
+
+
+      {/* BF_PORTAL_BOTTOM_PAGER_v1 - same controls mirrored under the table, so a long list does not force a scroll back to the top to page. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>
+          {total === 0 ? "No contacts" : `${rangeStart}-${rangeEnd} of ${total.toLocaleString()}`}
+        </span>
+        <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
+        <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
+      </div>
+
       {createOpen && (
         <CreateContactModal
           open={createOpen}
