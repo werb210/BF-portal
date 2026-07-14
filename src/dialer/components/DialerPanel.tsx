@@ -488,22 +488,38 @@ export default function DialerPanel() {
             <div style={{ fontSize: 28, fontFamily: T.mono, marginTop: 6, minHeight: 36 }}>{phone || "+1"}</div>
           </div>
           <div style={{ padding: "0 24px 8px" }}>
-            <input
-              type="text"
-              autoFocus
-              inputMode="tel"
-              name="dialer-phone"
-              autoComplete="off"
-              data-1p-ignore
-              data-lpignore="true"
-              data-form-type="other"
-              pattern="[+0-9 \(\)\-]*"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") void startOutboundPstn(phone, st.ctx); }}
-              placeholder="+1..."
-              style={{ width: "100%", borderRadius: 10, border: `1px solid ${T.borderStrong}`, background: T.surfaceAlt, color: T.text, padding: "10px 12px" }}
-            />
+            {/* DIALER_NO_INPUT_v1 -- password managers (iCloud Passwords, 1Password,
+                LastPass) attach to any focused text input and ignore autocomplete="off"
+                and the data-*-ignore hints. The only reliable fix is to not use an
+                <input> at all. This is a focusable div that captures keystrokes and
+                paste directly, so there is no form field for a manager to bind to. */}
+            <div
+              role="textbox"
+              aria-label="Phone number"
+              tabIndex={0}
+              ref={(el) => { if (el && document.activeElement !== el) el.focus(); }}
+              onKeyDown={(e) => {
+                if (e.metaKey || e.ctrlKey || e.altKey) return;
+                if (e.key === "Enter") { e.preventDefault(); void startOutboundPstn(phone, st.ctx); return; }
+                if (e.key === "Backspace") { e.preventDefault(); setPhone((prev) => prev.slice(0, -1)); return; }
+                if (e.key === "Escape") { e.preventDefault(); setPhone(""); return; }
+                if (e.key.length === 1 && /[0-9+*#]/.test(e.key)) { e.preventDefault(); setPhone((prev) => prev + e.key); }
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                const raw = e.clipboardData.getData("text") || "";
+                const cleaned = raw.replace(/[^0-9+]/g, "");
+                if (cleaned) setPhone((prev) => prev + cleaned);
+              }}
+              style={{
+                width: "100%", borderRadius: 10, border: `1px solid ${T.borderStrong}`,
+                background: T.surfaceAlt, color: phone ? T.text : T.textMuted,
+                padding: "10px 12px", minHeight: 20, cursor: "text",
+                fontFamily: T.mono, outline: "none", userSelect: "none",
+              }}
+            >
+              {phone || "+1..."}
+            </div>
           </div>
           <QuickCallRow />
           <DTMFKeypad onPress={(d) => setPhone((p) => p + d)} />
