@@ -2072,9 +2072,18 @@ function InboxTab() {
               {(() => {
                 const subj = selected.subject ?? "";
                 const fromAddr = selected.from?.emailAddress?.address ?? "";
+                // BF_PORTAL_REPLY_QUOTE_HTML_v1 - the quote used to be built with
+                // the old tag-stripping regex flattened the original into one wall of
+                // text AND left every HTML entity undecoded, so replies showed literal
+                // "&nbsp;", "&lt;info@boreal.financial&gt;" and "&quot;good luck&quot;".
+                // The composer already accepts HTML (O365ComposeModal detects tags and runs
+                // it through DOMPurify), so quote the original as real, sanitised HTML.
+                const rawOrig = selected.body?.content ?? "";
                 const orig = selected.body?.contentType === "html"
-                  ? (selected.body?.content ?? "").replace(/<[^>]+>/g, " ")
-                  : (selected.body?.content ?? "");
+                  ? rawOrig
+                  : rawOrig
+                      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                      .replace(/\r?\n/g, "<br>");
                 const myAddr = (active || mailboxes.mine?.address || "").toLowerCase();
                 const allRecipients = [
                   ...(selected.toRecipients ?? []),
@@ -2082,10 +2091,17 @@ function InboxTab() {
                 ].map((r) => r.emailAddress?.address ?? "").filter(Boolean);
                 const reSubj = /^re:/i.test(subj) ? subj : `Re: ${subj}`;
                 const fwdSubj = /^fwd?:/i.test(subj) ? subj : `Fwd: ${subj}`;
-                const quoted = `
-
------ Original message -----
-${orig}`;
+                const whenStr = selected.receivedDateTime
+                  ? new Date(selected.receivedDateTime).toLocaleString()
+                  : "";
+                const whoStr = selected.from?.emailAddress?.name || fromAddr;
+                const attribution = [
+                  whenStr ? `On ${whenStr}` : "",
+                  whoStr ? `${whoStr}` : "",
+                  fromAddr ? `&lt;${fromAddr}&gt;` : "",
+                ].filter(Boolean).join(" ") + " wrote:";
+                const quoted = `<p><br></p><p><br></p><div>${attribution}</div>` +
+                  `<blockquote style="margin:0 0 0 0.8ex;border-left:2px solid #ccc;padding-left:1ex;color:#555;">${orig}</blockquote>`;
                 const btnStyle: React.CSSProperties = {
                   padding: "7px 16px", border: "1px solid var(--ui-accent-blue)", borderRadius: 6,
                   background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", fontWeight: 600, fontSize: 13, cursor: "pointer",
