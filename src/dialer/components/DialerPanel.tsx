@@ -487,24 +487,7 @@ export default function DialerPanel() {
             <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: 0.6 }}>Enter a number</div>
             <div style={{ fontSize: 28, fontFamily: T.mono, marginTop: 6, minHeight: 36 }}>{phone || "+1"}</div>
           </div>
-          <div style={{ padding: "0 24px 8px" }}>
-            <input
-              type="text"
-              autoFocus
-              inputMode="tel"
-              name="dialer-phone"
-              autoComplete="off"
-              data-1p-ignore
-              data-lpignore="true"
-              data-form-type="other"
-              pattern="[+0-9 \(\)\-]*"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") void startOutboundPstn(phone, st.ctx); }}
-              placeholder="+1..."
-              style={{ width: "100%", borderRadius: 10, border: `1px solid ${T.borderStrong}`, background: T.surfaceAlt, color: T.text, padding: "10px 12px" }}
-            />
-          </div>
+          {/* BF_PORTAL_v901: number input removed (browser password-manager popup). Keypad + Delete build the number. */}
           <QuickCallRow />
           <DTMFKeypad onPress={(d) => setPhone((p) => p + d)} />
           <div style={{ padding: "6px 24px 22px", display: "flex", justifyContent: "center", alignItems: "center", gap: 18 }}>

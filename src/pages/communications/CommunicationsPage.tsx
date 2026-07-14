@@ -1392,10 +1392,21 @@ function InboxTab() {
     subject: "",
     body: "",
   });
+  // BF_PORTAL_v901_UNIFIED_INBOX - forward carries original attachments.
+  const [replyAttachments, setReplyAttachments] = useState<Array<{ name: string; contentType: string; contentBytes: string; size: number }>>([]);
 
   const [mailboxes, setMailboxes] = useState<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>({ mine: null, shared: [] });
   const [active, setActive] = useState<string>("");
-  const [messages, setMessages] = useState<Array<{ id: string; subject: string; bodyPreview?: string; from?: { emailAddress?: { address: string; name?: string } }; receivedDateTime?: string; isRead?: boolean; flag?: { flagStatus?: string }; conversationId?: string }>>([]); // BF_PORTAL_BLOCK_v833_INBOX_SEARCH_FOLDERS_THREAD
+  const [messages, setMessages] = useState<Array<{ id: string; subject: string; bodyPreview?: string; from?: { emailAddress?: { address: string; name?: string } }; receivedDateTime?: string; isRead?: boolean; flag?: { flagStatus?: string }; conversationId?: string; _mailbox?: string; _mailboxLabel?: string }>>([]); // BF_PORTAL_BLOCK_v833_INBOX_SEARCH_FOLDERS_THREAD
+  // BF_PORTAL_v901_UNIFIED_INBOX - All-Mailboxes merged view + per-mailbox op routing.
+  const ALL_MAILBOXES = "__ALL__";
+  const isAllMailboxes = active === ALL_MAILBOXES;
+  const [mailboxUnread, setMailboxUnread] = useState<Record<string, number>>({});
+  const mailboxForMessage = useCallback((messageId: string): string => {
+    if (active !== ALL_MAILBOXES) return active;
+    const m = messages.find((mm) => mm.id === messageId);
+    return m?._mailbox ?? "";
+  }, [active, messages]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [attachments, setAttachments] = useState<Array<{ id: string; name: string; contentType: string; size: number }>>([]); // BF_PORTAL_INBOX_ATTACHMENTS_v1
   const [attBusy, setAttBusy] = useState(false); // BF_PORTAL_INBOX_ATTACHMENTS_v1
@@ -1459,13 +1470,29 @@ function InboxTab() {
     setSelected(null);
     (async () => {
       try {
-        const params = { ...(active ? { mailbox: active } : {}), sort: sortDir, ...(browseFolderId ? { folderId: browseFolderId } : { folder }), ...(query ? { q: query } : {}) };
-        const r = await withO365Refresh(() =>
-          api<typeof messages>("/api/crm/inbox", { params })
-        );
-        if (cancelled) return;
-        setMessages(Array.isArray(r) ? r : []);
-        setNeedsReconnect(false);
+        if (active === ALL_MAILBOXES) {
+          const targets: Array<{ addr: string; label: string }> = [];
+          if (mailboxes.mine) targets.push({ addr: "", label: `${mailboxes.mine.display_name} (mine)` });
+          for (const mb of mailboxes.shared) targets.push({ addr: mb.address, label: mb.display_name });
+          const results = await Promise.allSettled(targets.map((t) =>
+            withO365Refresh(() => api<typeof messages>("/api/crm/inbox", { params: { ...(t.addr ? { mailbox: t.addr } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) } }))
+              .then((rr) => (Array.isArray(rr) ? rr : []).map((mm) => ({ ...mm, _mailbox: t.addr, _mailboxLabel: t.label })))
+          ));
+          if (cancelled) return;
+          const merged = results.flatMap((res) => (res.status === "fulfilled" ? res.value : []));
+          const dir = sortDir === "asc" ? 1 : -1;
+          merged.sort((a, b) => dir * ((new Date(a.receivedDateTime || 0).getTime()) - (new Date(b.receivedDateTime || 0).getTime())));
+          setMessages(merged);
+          setNeedsReconnect(false);
+        } else {
+          const params = { ...(active ? { mailbox: active } : {}), sort: sortDir, ...(browseFolderId ? { folderId: browseFolderId } : { folder }), ...(query ? { q: query } : {}) };
+          const r = await withO365Refresh(() =>
+            api<typeof messages>("/api/crm/inbox", { params })
+          );
+          if (cancelled) return;
+          setMessages(Array.isArray(r) ? r : []);
+          setNeedsReconnect(false);
+        }
       } catch (e: unknown) {
         if (cancelled) return;
         const status = (e as { status?: number; response?: { status?: number } })?.status
@@ -1482,7 +1509,7 @@ function InboxTab() {
       }
     })();
     return () => { cancelled = true; };
-  }, [active, reconnectAttempts, sortDir, folder, query, browseFolderId]);
+  }, [active, reconnectAttempts, sortDir, folder, query, browseFolderId, mailboxes]);
 
   // Load body when a message is selected
   useEffect(() => {
@@ -1490,7 +1517,8 @@ function InboxTab() {
     let cancelled = false;
     (async () => {
       try {
-        const params = active ? { mailbox: active } : {};
+        const mbBody = active === ALL_MAILBOXES ? (messages.find((mm) => mm.id === selectedId)?._mailbox ?? "") : active;
+        const params = mbBody ? { mailbox: mbBody } : {};
         const r = await withO365Refresh(() =>
           api<typeof selected>(`/api/crm/inbox/${encodeURIComponent(selectedId)}`, { params })
         );
@@ -1507,7 +1535,8 @@ function InboxTab() {
     setAttachments([]);
     if (!selectedId) return;
     let cancelled = false;
-    const params = active ? { mailbox: active } : {};
+    const mbAtt = active === ALL_MAILBOXES ? (messages.find((mm) => mm.id === selectedId)?._mailbox ?? "") : active;
+    const params = mbAtt ? { mailbox: mbAtt } : {};
     withO365Refresh(() => api<{ data?: Array<{ id: string; name: string; contentType: string; size: number }> } | Array<{ id: string; name: string; contentType: string; size: number }>>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments`, { params }))
       .then((r) => {
         const list = Array.isArray(r) ? r : ((r as { data?: Array<{ id: string; name: string; contentType: string; size: number }> }).data ?? []);
@@ -1521,7 +1550,8 @@ function InboxTab() {
   // base64 JSON; decode to a Blob and trigger a browser download.
   const downloadOne = useCallback(async (att: { id: string; name: string; contentType: string }): Promise<void> => {
     if (!selectedId) return;
-    const params = active ? { mailbox: active } : {};
+    const mbDl = mailboxForMessage(selectedId);
+    const params = mbDl ? { mailbox: mbDl } : {};
     const resp = await withO365Refresh(() => api<{ data?: { name?: string; contentType?: string; contentBytes?: string } } & { name?: string; contentType?: string; contentBytes?: string }>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/${encodeURIComponent(att.id)}`, { params }));
     const d = (resp as { data?: { name?: string; contentType?: string; contentBytes?: string } }).data ?? (resp as { name?: string; contentType?: string; contentBytes?: string });
     if (!d?.contentBytes) return;
@@ -1533,7 +1563,7 @@ function InboxTab() {
     const a = document.createElement("a");
     a.href = url; a.download = d.name ?? att.name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, [active, selectedId]);
+  }, [mailboxForMessage, selectedId]);
 
   const downloadAllAttachments = useCallback(async (): Promise<void> => {
     if (attBusy || !attachments.length) return;
@@ -1606,17 +1636,19 @@ function InboxTab() {
   }, [messages]);
   const markRead = useCallback(async (messageId: string, isRead: boolean): Promise<void> => {
     try {
-      const params = active ? { mailbox: active } : {};
+      const mbR = mailboxForMessage(messageId);
+      const params = mbR ? { mailbox: mbR } : {};
       await api(`/api/crm/inbox/${encodeURIComponent(messageId)}/read`, { method: "PATCH", params, body: { isRead } });
       setMessages((prev) => prev.map((mm) => (mm.id === messageId ? { ...mm, isRead } : mm)));
     } catch { /* non-fatal */ }
-  }, [active]);
+  }, [mailboxForMessage]);
   const handleDelete = useCallback(async (messageId: string): Promise<void> => {
     if (!messageId) return;
     if (!window.confirm("Move this email to Deleted Items?")) return;
     setDeletingId(messageId);
     try {
-      const params = active ? { mailbox: active } : {};
+      const mbDel1 = mailboxForMessage(messageId);
+      const params = mbDel1 ? { mailbox: mbDel1 } : {};
       await api(`/api/crm/inbox/${encodeURIComponent(messageId)}`, { method: "DELETE", params });
       setMessages((prev) => prev.filter((mm) => mm.id !== messageId));
       setSelectedId((sid) => (sid === messageId ? "" : sid));
@@ -1627,7 +1659,7 @@ function InboxTab() {
     } finally {
       setDeletingId(null);
     }
-  }, [active, selectedId]);
+  }, [mailboxForMessage, selectedId]);
 
   // BF_PORTAL_INBOX_SAVE_TO_CRM_v1 - manually file the open email's attachments to the
   // sender's CRM contact (creating the contact if needed). Useful for older mail outside the
@@ -1641,7 +1673,8 @@ function InboxTab() {
     setCrmSaveBusy(true);
     setCrmSaveMsg("");
     try {
-      const params = active ? { mailbox: active } : {};
+      const mbSave = mailboxForMessage(selectedId);
+      const params = mbSave ? { mailbox: mbSave } : {};
       const resp = await api<{ filed?: number; duplicates?: number; reason?: string; data?: { filed?: number; duplicates?: number; reason?: string } }>(
         `/api/crm/inbox/${encodeURIComponent(selectedId)}/file-to-crm`,
         { method: "POST", params },
@@ -1666,7 +1699,7 @@ function InboxTab() {
     } finally {
       setCrmSaveBusy(false);
     }
-  }, [selectedId, active]);
+  }, [selectedId, mailboxForMessage]);
 
   // BF_PORTAL_INBOX_FILE_ONE_TO_CRM_v1: add a single attachment to the sender's CRM contact.
   const fileOneToCrm = useCallback(async (att: { id: string; name: string }): Promise<void> => {
@@ -1674,7 +1707,8 @@ function InboxTab() {
     setCrmOneBusy(att.id);
     setCrmOneMsg("");
     try {
-      const params = active ? { mailbox: active } : {};
+      const mbOne = mailboxForMessage(selectedId);
+      const params = mbOne ? { mailbox: mbOne } : {};
       const resp = await api<{ filed?: number; data?: { filed?: number } }>(
         `/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/${encodeURIComponent(att.id)}/file-to-crm`,
         { method: "POST", params },
@@ -1686,7 +1720,7 @@ function InboxTab() {
     } finally {
       setCrmOneBusy("");
     }
-  }, [selectedId, active]);
+  }, [selectedId, mailboxForMessage]);
 
   // BF_PORTAL_BLOCK_v832_INBOX_FLAG_AND_BULK — flag + bulk multi-select.
   const [bulkMode, setBulkMode] = useState(false);
@@ -1701,11 +1735,12 @@ function InboxTab() {
   }, []);
   const flagMessage = useCallback(async (messageId: string, flagged: boolean): Promise<void> => {
     try {
-      const params = active ? { mailbox: active } : {};
+      const mbF = mailboxForMessage(messageId);
+      const params = mbF ? { mailbox: mbF } : {};
       await api(`/api/crm/inbox/${encodeURIComponent(messageId)}/flag`, { method: "PATCH", params, body: { flagged } });
       setMessages((prev) => prev.map((mm) => (mm.id === messageId ? { ...mm, flag: { flagStatus: flagged ? "flagged" : "notFlagged" } } : mm)));
     } catch { /* non-fatal */ }
-  }, [active]);
+  }, [mailboxForMessage]);
   const bulkMarkRead = useCallback(async (isRead: boolean): Promise<void> => {
     setBulkBusy(true);
     try {
@@ -1730,8 +1765,9 @@ function InboxTab() {
     if (!window.confirm(`Move ${ids.length} email(s) to Deleted Items?`)) return;
     setBulkBusy(true);
     try {
-      const params = active ? { mailbox: active } : {};
       for (const id of ids) {
+        const mbBd = mailboxForMessage(id);
+        const params = mbBd ? { mailbox: mbBd } : {};
         try {
           await api(`/api/crm/inbox/${encodeURIComponent(id)}`, { method: "DELETE", params });
           setMessages((prev) => prev.filter((mm) => mm.id !== id));
@@ -1743,12 +1779,12 @@ function InboxTab() {
     } finally {
       setBulkBusy(false);
     }
-  }, [selectedIds, active, selectedId]);
+  }, [selectedIds, mailboxForMessage, selectedId]);
 
   // BF_PORTAL_INBOX_MOVE_v1 - load the mailbox Outlook folders for the "Move to" picker.
   useEffect(() => {
     let alive = true;
-    const params = active ? { mailbox: active } : {};
+    const params = (active && active !== ALL_MAILBOXES) ? { mailbox: active } : {};
     api<{ data?: Array<{ id: string; name: string }> } | Array<{ id: string; name: string }>>("/api/crm/inbox/folders/list", { params })
       .then((r) => {
         const list = Array.isArray(r) ? r : ((r as { data?: Array<{ id: string; name: string }> }).data ?? []);
@@ -1765,8 +1801,9 @@ function InboxTab() {
     if (!ids.length || !destinationId) return;
     setBulkBusy(true);
     try {
-      const params = active ? { mailbox: active } : {};
       for (const id of ids) {
+        const mbBm = mailboxForMessage(id);
+        const params = mbBm ? { mailbox: mbBm } : {};
         try {
           await api(`/api/crm/inbox/${encodeURIComponent(id)}/move`, { method: "POST", params, body: { destinationId } });
           setMessages((prev) => prev.filter((mm) => mm.id !== id));
@@ -1778,25 +1815,68 @@ function InboxTab() {
     } finally {
       setBulkBusy(false);
     }
-  }, [selectedIds, active, selectedId]);
+  }, [selectedIds, mailboxForMessage, selectedId]);
 
   useEffect(() => {
     if (needsReconnect) return;
     const tick = setInterval(() => {
       (async () => {
         try {
-          const params = active ? { mailbox: active } : {};
-          const r = await withO365Refresh(() => api<typeof messages>("/api/crm/inbox", { params }));
-          if (Array.isArray(r)) setMessages(r);
+          if (active === ALL_MAILBOXES) {
+            const targets: Array<{ addr: string; label: string }> = [];
+            if (mailboxes.mine) targets.push({ addr: "", label: `${mailboxes.mine.display_name} (mine)` });
+            for (const mb of mailboxes.shared) targets.push({ addr: mb.address, label: mb.display_name });
+            const results = await Promise.allSettled(targets.map((t) =>
+              withO365Refresh(() => api<typeof messages>("/api/crm/inbox", { params: { ...(t.addr ? { mailbox: t.addr } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) } }))
+                .then((rr) => (Array.isArray(rr) ? rr : []).map((mm) => ({ ...mm, _mailbox: t.addr, _mailboxLabel: t.label })))
+            ));
+            const merged = results.flatMap((res) => (res.status === "fulfilled" ? res.value : []));
+            const dir = sortDir === "asc" ? 1 : -1;
+            merged.sort((a, b) => dir * ((new Date(a.receivedDateTime || 0).getTime()) - (new Date(b.receivedDateTime || 0).getTime())));
+            setMessages(merged);
+          } else {
+            const params = active ? { mailbox: active } : {};
+            const r = await withO365Refresh(() => api<typeof messages>("/api/crm/inbox", { params }));
+            if (Array.isArray(r)) setMessages(r);
+          }
         } catch { /* background poll: swallow */ }
       })();
     }, 20000);
     return () => clearInterval(tick);
-  }, [active, needsReconnect]);
+  }, [active, needsReconnect, mailboxes, sortDir, folder, query]);
 
+  // BF_PORTAL_v901_UNIFIED_INBOX - per-mailbox unread counts for the selector.
+  useEffect(() => {
+    const targets: string[] = [];
+    if (mailboxes.mine) targets.push("");
+    for (const m of mailboxes.shared) targets.push(m.address);
+    if (targets.length === 0) return;
+    let cancelled = false;
+    const run = async (): Promise<void> => {
+      const entries = await Promise.allSettled(targets.map(async (addr) => {
+        const params = { ...(addr ? { mailbox: addr } : {}), folder: "inbox" as const };
+        const r = await withO365Refresh(() => api<Array<{ isRead?: boolean }>>("/api/crm/inbox", { params }));
+        const n = (Array.isArray(r) ? r : []).filter((mm) => mm.isRead === false).length;
+        return [addr, n] as const;
+      }));
+      if (cancelled) return;
+      const next: Record<string, number> = {};
+      for (const e of entries) if (e.status === "fulfilled") next[e.value[0]] = e.value[1];
+      setMailboxUnread(next);
+    };
+    void run();
+    const t = setInterval(() => void run(), 60000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [mailboxes, reconnectAttempts]);
+
+  const mbUnreadLabel = (addr: string, base: string): string => { const n = mailboxUnread[addr] ?? 0; return n > 0 ? `${base} (${n})` : base; };
   const mailboxOptions: Array<{ value: string; label: string }> = [];
-  if (mailboxes.mine) mailboxOptions.push({ value: "", label: `${mailboxes.mine.display_name} (mine)` });
-  for (const m of mailboxes.shared) mailboxOptions.push({ value: m.address, label: m.display_name });
+  if (mailboxes.mine || mailboxes.shared.length > 0) {
+    const totalUnread = Object.values(mailboxUnread).reduce((a, b) => a + (b || 0), 0);
+    mailboxOptions.push({ value: ALL_MAILBOXES, label: totalUnread > 0 ? `All Mailboxes (${totalUnread})` : "All Mailboxes" });
+  }
+  if (mailboxes.mine) mailboxOptions.push({ value: "", label: mbUnreadLabel("", `${mailboxes.mine.display_name} (mine)`) });
+  for (const m of mailboxes.shared) mailboxOptions.push({ value: m.address, label: mbUnreadLabel(m.address, m.display_name) });
 
   // BF_PORTAL_BLOCK_v625_INBOX_COMPOSE_FULL_v1 — load applications list for
   // the "Insert app link" picker on the Compose modal. Lightweight, runs
@@ -2002,6 +2082,11 @@ function InboxTab() {
                       {threadCount}
                     </span>
                   )}
+                  {isAllMailboxes && m._mailboxLabel && (
+                    <span style={{ marginLeft: 6, fontSize: 10, color: "var(--ui-text-muted)", background: "var(--ui-surface-muted)", borderRadius: 8, padding: "0 6px" }}>
+                      {m._mailboxLabel}
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {m.bodyPreview || ""}
@@ -2107,7 +2192,31 @@ function InboxTab() {
                   background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", fontWeight: 600, fontSize: 13, cursor: "pointer",
                 };
                 const openCompose = (to: string, subject: string) => {
+                  setReplyAttachments([]);
                   setReplyCtx({ to, subject, body: quoted });
+                  setComposeOpen(true);
+                };
+                const openForward = async (): Promise<void> => {
+                  const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                  const header =
+                    `<div>---------- Forwarded message ----------</div>` +
+                    `<div>From: ${esc(whoStr)}${fromAddr ? ` &lt;${esc(fromAddr)}&gt;` : ""}</div>` +
+                    (whenStr ? `<div>Date: ${esc(whenStr)}</div>` : "") +
+                    (subj ? `<div>Subject: ${esc(subj)}</div>` : "") +
+                    (allRecipients.length ? `<div>To: ${esc(allRecipients.join(", "))}</div>` : "");
+                  const fwdBody = `<p><br></p>${header}<p><br></p><div>${orig}</div>`;
+                  const mb = mailboxForMessage(selectedId);
+                  const params = mb ? { mailbox: mb } : {};
+                  const atts: Array<{ name: string; contentType: string; contentBytes: string; size: number }> = [];
+                  for (const a of attachments) {
+                    try {
+                      const resp = await withO365Refresh(() => api<{ data?: { name?: string; contentType?: string; contentBytes?: string } } & { name?: string; contentType?: string; contentBytes?: string }>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/${encodeURIComponent(a.id)}`, { params }));
+                      const d = (resp as { data?: { name?: string; contentType?: string; contentBytes?: string } }).data ?? (resp as { name?: string; contentType?: string; contentBytes?: string });
+                      if (d?.contentBytes) atts.push({ name: d.name ?? a.name, contentType: d.contentType ?? a.contentType, contentBytes: d.contentBytes, size: a.size });
+                    } catch { /* skip unreadable attachment */ }
+                  }
+                  setReplyAttachments(atts);
+                  setReplyCtx({ to: "", subject: fwdSubj, body: fwdBody });
                   setComposeOpen(true);
                 };
                 const replyAllTo = Array.from(new Set([fromAddr, ...allRecipients]
@@ -2116,7 +2225,7 @@ function InboxTab() {
                   <>
                     <button type="button" style={btnStyle} onClick={() => openCompose(fromAddr, reSubj)}>Reply</button>
                     <button type="button" style={btnStyle} onClick={() => openCompose(replyAllTo.join(", "), reSubj)}>Reply All</button>
-                    <button type="button" style={btnStyle} onClick={() => openCompose("", fwdSubj)}>Forward</button>
+                    <button type="button" style={btnStyle} onClick={() => void openForward()}>Forward</button>
                     <button type="button" style={btnStyle} disabled={crmSaveBusy} onClick={() => void saveToCrm()} title="Save this email's attachments to the sender's CRM contact">{crmSaveBusy ? "Saving..." : "Save to CRM"}</button>
                   </>
                 );
@@ -2172,12 +2281,14 @@ function InboxTab() {
         initialTo={replyCtx.to}
         initialSubject={replyCtx.subject}
         initialBody={replyCtx.body}
-        fromOptions={mailboxOptions}
-        defaultFrom={active}
+        initialAttachments={replyAttachments}
+        fromOptions={mailboxOptions.filter((o) => o.value !== ALL_MAILBOXES)}
+        defaultFrom={active === ALL_MAILBOXES ? "" : active}
         appOptions={appOptions}
         onClose={() => {
           setComposeOpen(false);
           setReplyCtx({ to: "", subject: "", body: "" });
+          setReplyAttachments([]);
         }}
       />
     </div>

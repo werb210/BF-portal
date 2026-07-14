@@ -111,6 +111,7 @@ export default function O365ComposeModal({
   initialTo = "",
   initialSubject = "",
   initialBody = "",
+  initialAttachments = [],
   fromOptions = [],
   defaultFrom = "",
   appOptions = [],
@@ -123,6 +124,7 @@ export default function O365ComposeModal({
   initialTo?: string;
   initialSubject?: string;
   initialBody?: string;
+  initialAttachments?: Attachment[];
   fromOptions?: MailboxOption[];
   defaultFrom?: string;
   appOptions?: AppOption[];
@@ -181,7 +183,7 @@ export default function O365ComposeModal({
     lastAutosaveKeyRef.current = "";
     setScheduleAt("");
     setScheduleMode("");
-    setAttachments([]);
+    setAttachments(initialAttachments ?? []);
     setLinkAppId("");
     setTemplateId("");
     setCollateralIds([]);
