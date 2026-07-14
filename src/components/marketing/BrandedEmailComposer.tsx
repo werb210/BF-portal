@@ -15,8 +15,8 @@ const DEFAULTS: Tpl = {
 // blast and went blind ("Queued N recipients..."); with ALWAYS_QUEUE on the
 // server every branded blast is queued, so a fully-rejected job (dead key,
 // unverified sender) was invisible here. Poll the job like the raw email tab.
-async function pollComposerJob(jobId: string, total: number, setMsg: (m: string) => void): Promise<void> {
-  type SendJob = { status?: string; total?: number; sent?: number; failed?: number; error?: string };
+async function pollComposerJob(jobId: string, total: number, setMsg: (m: string) => void, setHeld: (held: boolean) => void): Promise<void> {
+  type SendJob = { status?: string; total?: number; sent?: number; failed?: number; error?: string; not_before?: string };
   setMsg(`Queued ${total} recipients - sending in the background...`);
   for (let n = 0; n < 240; n++) {
     await new Promise((r) => setTimeout(r, 5000));
@@ -24,9 +24,26 @@ async function pollComposerJob(jobId: string, total: number, setMsg: (m: string)
       const res = await api.get<{ data?: SendJob } & SendJob>(`/api/marketing/send-jobs/${jobId}`);
       const j = (res?.data ?? res) as SendJob;
       if (!j || !j.status) continue;
-      if (j.status === "done") { setMsg(`Done: sent ${j.sent ?? 0}${j.failed ? `, ${j.failed} failed` : ""} of ${j.total ?? total}.${j.error ? ` ${j.error}` : ""}`); return; }
-      if (j.status === "failed") { setMsg(`Send failed${j.error ? `: ${j.error}` : ""}.`); return; }
-      setMsg(`Sending in background: ${j.sent ?? 0}${j.failed ? ` (+${j.failed} failed)` : ""} of ${j.total ?? total}...`);
+      if (j.status === "done") { setHeld(false); setMsg(`Done: sent ${j.sent ?? 0}${j.failed ? `, ${j.failed} failed` : ""} of ${j.total ?? total}.${j.error ? ` ${j.error}` : ""}`); return; }
+      if (j.status === "failed") { setHeld(false); setMsg(`Send failed${j.error ? `: ${j.error}` : ""}.`); return; }
+      // BF_PORTAL_SEND_HOLD_CANCEL_v1 - a job in its hold window is QUEUED, not sending.
+      // Saying "Sending in background: 0 of N" made a cancellable blast look unstoppable.
+      if (j.status === "queued" && j.not_before) {
+        const secs = Math.max(0, Math.round((new Date(j.not_before).getTime() - Date.now()) / 1000));
+        const mm = String(Math.floor(secs / 60));
+        const ss = String(secs % 60).padStart(2, "0");
+        setHeld(secs > 0);
+        setMsg(secs > 0
+          ? `Queued - sending in ${mm}:${ss}. You can still cancel.`
+          : `Queued - starting now...`);
+      } else if (j.status === "canceled") {
+        setHeld(false);
+        setMsg("Canceled. Nothing was sent.");
+        return;
+      } else {
+        setHeld(false);
+        setMsg(`Sending in background: ${j.sent ?? 0}${j.failed ? ` (+${j.failed} failed)` : ""} of ${j.total ?? total}...`);
+      }
     } catch { /* keep polling */ }
   }
   setMsg("Still sending in the background - check back shortly.");
@@ -69,6 +86,9 @@ export default function BrandedEmailComposer() {
   const [landingUrl, setLandingUrl] = useState(""); // BF_PORTAL_EMAIL_LANDING_v1
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null); // BF_PORTAL_SEND_HOLD_CANCEL_v1
+  const [held, setHeld] = useState(false); // BF_PORTAL_SEND_HOLD_CANCEL_v1
+  const [canceling, setCanceling] = useState(false); // BF_PORTAL_SEND_HOLD_CANCEL_v1
   const [preview, setPreview] = useState("");
   const [libName, setLibName] = useState(""); // BF_PORTAL_BLOCK_v206_EMAIL_LIB
   const [emailTpls, setEmailTpls] = useState<{ id: string; name: string; subject: string | null; body: string | null }[]>([]); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
@@ -151,8 +171,22 @@ export default function BrandedEmailComposer() {
       .catch(() => setEmailTpls([]));
   }, []); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
 
+  async function cancelSend() {
+    if (!jobId) return;
+    setCanceling(true);
+    try {
+      await api.post(`/api/marketing/send-jobs/${jobId}/cancel`, {});
+      setHeld(false);
+      setMsg("Canceled. Nothing was sent.");
+    } catch (e) {
+      setMsg(e instanceof Error ? `Cancel failed: ${e.message}` : "Cancel failed.");
+    } finally {
+      setCanceling(false);
+    }
+  } // BF_PORTAL_SEND_HOLD_CANCEL_v1
+
   const send = async (test?: string) => {
-    setBusy(true); setMsg(null);
+    setBusy(true); setMsg(null); setHeld(false); setJobId(null);
     try {
       const payload: Record<string, unknown> = { subject, ...tpl };
       if (currentTemplateId) payload.templateId = currentTemplateId; // BF_PORTAL_TEMPLATE_ANALYTICS_v1
@@ -166,7 +200,7 @@ export default function BrandedEmailComposer() {
       if (r?.configured === false) setMsg("SendGrid not connected yet (set SENDGRID_API_KEY).");
       else if (r?.error) setMsg(r.error);
       else if (r?.test) setMsg(r.ok ? "Test sent." : "Test failed.");
-      else if (r?.queued) { void pollComposerJob(String(r.jobId ?? ""), Number(r.total ?? count), setMsg); } // BF_PORTAL_COMPOSER_JOB_POLL_v1
+      else if (r?.queued) { const id = String(r.jobId ?? ""); setJobId(id); void pollComposerJob(id, Number(r.total ?? count), setMsg, setHeld); } // BF_PORTAL_COMPOSER_JOB_POLL_v1
       else setMsg(`Sent ${r?.sent ?? 0}${r?.failed ? `, ${r.failed} failed` : ""}.`);
     } catch { setMsg("Send failed."); }
     finally { setBusy(false); }
@@ -244,6 +278,17 @@ export default function BrandedEmailComposer() {
             <button type="button" disabled={busy || !subject || !count} onClick={() => void send()} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
           </div>
           {msg ? <p style={{ color: "var(--ui-text-muted)" }}>{msg}</p> : null}
+          {/* BF_PORTAL_SEND_HOLD_CANCEL_v1 */}
+          {held && jobId ? (
+            <button
+              type="button"
+              onClick={cancelSend}
+              disabled={canceling}
+              className="ml-2 rounded border border-red-500 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {canceling ? "Canceling..." : "Cancel send"}
+            </button>
+          ) : null}
           {landingUrl ? (
             <div className="mt-2">
               <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Landing page URL (paste into your SMS template's landing page field):</p>
