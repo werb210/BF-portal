@@ -1,7 +1,7 @@
 import PipelinePage from "@/core/engines/pipeline/PipelinePage";
 import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
 import { bfPipelineAdapter } from "@/silos/bf/bf.pipeline.adapter";
-import { slfPipelineAdapter } from "@/silos/slf/slf.pipeline.adapter";
+import SLFView from "@/silos/slf/SLFView";
 import { useSilo } from "@/hooks/useSilo";
 import RequireRole from "@/components/auth/RequireRole";
 import { canDelete } from "@/auth/canDelete";
@@ -15,16 +15,9 @@ const ApplicationsContent = () => {
   void showDelete;
 
   if (silo === SILOS.SLF) {
-    return (
-      <PipelineEngineProvider
-        config={{
-          businessUnit: "SLF",
-          api: slfPipelineAdapter,
-        }}
-      >
-        <PipelinePage />
-      </PipelineEngineProvider>
-    );
+    // SLF is view-only (read-only mirror served by slf-server); it does not use
+    // the editable pipeline engine.
+    return <SLFView />;
   }
 
   return (
