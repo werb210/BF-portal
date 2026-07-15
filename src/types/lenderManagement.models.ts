@@ -42,6 +42,7 @@ export type Lender = {
   name: string;
   status: "ACTIVE" | "INACTIVE";
   active?: boolean;
+  hasBrokerAgreement?: boolean; // BF_PORTAL_BLOCK_v_LENDER_BROKER_AGREEMENT_v1
   address: LenderAddress;
   phone: string;
   website: string | null;
