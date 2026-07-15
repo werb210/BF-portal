@@ -5,7 +5,7 @@
 //   role="group" aria-label="Active silo"
 //     button[aria-pressed=true]  → active silo
 //     button[aria-pressed=false] → inactive silos
-// SLF was hidden in v165/v166, so it's not rendered.
+// SLF is shown again for admins (re-added to the selector).
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
@@ -46,13 +46,13 @@ describe("BusinessUnitSelector", () => {
     expect(screen.getByRole("button", { name: /insurance/i })).toBeInTheDocument();
   });
 
-  it("renders both BF and BI buttons for admins (SLF removed in v165/v166)", () => {
+  // BF_PORTAL_BLOCK_v_SLF_SELECTOR_TEST_FIX_v1 — SLF is shown again for admins.
+  it("renders BF, BI, and SLF buttons for admins", () => {
     mockUseAuth.mockReturnValue({ user: { role: "admin" } });
     renderSelector();
     expect(screen.getByRole("button", { name: /financial/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /insurance/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /site level/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^slf$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^slf$/i })).toBeInTheDocument();
   });
 
   it("marks the active silo with aria-pressed=true and others with aria-pressed=false", () => {
