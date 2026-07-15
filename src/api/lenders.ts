@@ -342,6 +342,7 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
     name: typeof raw.name === "string" ? raw.name : "",
     active,
     status: resolvedStatus,
+    hasBrokerAgreement: record.has_broker_agreement === true, // BF_PORTAL_BLOCK_v_LENDER_BROKER_AGREEMENT_v1
     address,
     phone: typeof lender.phone === "string" ? lender.phone : "",
     website: typeof lender.website === "string" ? lender.website : null,

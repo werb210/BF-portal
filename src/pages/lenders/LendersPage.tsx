@@ -138,6 +138,7 @@ function CreateLenderModal({
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
     name: lender?.name ?? "",
+    hasBrokerAgreement: ((lender as any)?.hasBrokerAgreement ?? (lender as any)?.has_broker_agreement ?? false) as boolean,
     applicationUrl: ((lender as any)?.applicationUrl ?? (lender as any)?.application_url ?? "") as string,
     announcement: ((lender as any)?.announcement ?? "") as string,
     street: lender?.address?.street ?? "",
@@ -228,6 +229,7 @@ function CreateLenderModal({
         primaryContactName: form.contactName.trim(),
         primaryContactEmail: form.contactEmail.trim(),
         primaryContactPhone: form.contactPhone.trim() || null,
+        hasBrokerAgreement: form.hasBrokerAgreement,
         active: true,
         status: "ACTIVE",
       } as any;
@@ -281,6 +283,11 @@ function CreateLenderModal({
           <div>
             <label style={labelStyle}>Application URL</label>
             <input placeholder="https://lender.com/apply" value={form.applicationUrl} onChange={(e) => set("applicationUrl", e.target.value)} style={{ ...inputStyle(), marginBottom: 8 }} />
+            {/* BF_PORTAL_BLOCK_v_LENDER_BROKER_AGREEMENT_v1 */}
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, cursor: "pointer", color: "var(--ui-text)", fontSize: 14 }}>
+              <input type="checkbox" checked={form.hasBrokerAgreement} onChange={(e) => setForm((p) => ({ ...p, hasBrokerAgreement: e.target.checked }))} />
+              We have a signed broker agreement with this lender
+            </label>
             <label style={labelStyle}>Announcement</label>
             <input placeholder="Short note shown with this lender" value={form.announcement} onChange={(e) => set("announcement", e.target.value)} style={inputStyle()} />
           </div>
@@ -1307,6 +1314,8 @@ export default function LendersPage() {
                 {/* BF_PORTAL_BLOCK_v709_LP_PRODUCT_COUNTS_v1 — Products column between Name and Status */}
                 <th onClick={() => cycleSort("name")} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)", cursor: "pointer" }}>Lender Name{sortKey === "name" ? (sortDir === "asc" ? " ▲" : sortDir === "desc" ? " ▼" : "") : ""}</th>
                 <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)" }}>Products</th>
+                {/* BF_PORTAL_BLOCK_v_LENDER_BROKER_AGREEMENT_v1 - broker agreement indicator */}
+                <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: 600, color: "var(--ui-text-muted)", fontSize: 12, background: "var(--ui-surface-muted)" }} title="Signed broker agreement">Broker</th>
                 {[
                   ["Status", "status"],
                 ].map(([h, key]) => (
@@ -1317,10 +1326,10 @@ export default function LendersPage() {
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", color: "var(--ui-text-muted)" }}>Loading…</td></tr>
+                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "var(--ui-text-muted)" }}>Loading…</td></tr>
               )}
               {!isLoading && paginated.length === 0 && (
-                <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", color: "var(--ui-text-muted)" }}>No lenders found</td></tr>
+                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "var(--ui-text-muted)" }}>No lenders found</td></tr>
               )}
               {paginated.map((l) => {
                 const isSelected = selected?.id === l.id;
@@ -1339,6 +1348,14 @@ export default function LendersPage() {
                     <td style={{ padding: "10px 12px", fontWeight: isSelected ? 600 : 400, color: "var(--ui-text)" }}>{l.name}</td>
                     {/* BF_PORTAL_BLOCK_v709_LP_PRODUCT_COUNTS_v1 */}
                     <td style={{ padding: "10px 12px", color: "var(--ui-text-muted)", fontWeight: 600 }}>{productCountByLender.get(l.id) ?? 0}</td>
+                    {/* BF_PORTAL_BLOCK_v_LENDER_BROKER_AGREEMENT_v1 */}
+                    <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                      {(l as any).hasBrokerAgreement ? (
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-label="Broker agreement" style={{ display: "inline-block", verticalAlign: "middle" }}><path d="M5 10l3 3 7-7" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                      ) : (
+                        <span style={{ color: "var(--ui-text-muted)" }}>-</span>
+                      )}
+                    </td>
                     <td style={{ padding: "10px 12px" }}>
                       <StatusBadge active={l.active} status={l.status} />
                     </td>
