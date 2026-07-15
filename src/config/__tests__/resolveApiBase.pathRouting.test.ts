@@ -9,6 +9,11 @@ describe("BF_PORTAL_BLOCK_v86 — resolveApiBase routes by path, not by silo", (
   it("routes /api/v1/pgi/* to BI-Server", () => {
     expect(resolveApiBase("/api/v1/pgi/score")).toBe(__apiBaseUrls.bi);
   });
+  it("routes /api/slf/* to SLF-Server", () => {
+    expect(resolveApiBase("/api/slf/deals")).toBe(__apiBaseUrls.slf);
+    expect(resolveApiBase("/api/slf/stats")).toBe(__apiBaseUrls.slf);
+    expect(resolveApiBase("/api/slf")).toBe(__apiBaseUrls.slf);
+  });
   it("routes shared shell paths to BF-Server even though tests run in BI silo", () => {
     expect(resolveApiBase("/api/auth/me")).toBe(__apiBaseUrls.bf);
     expect(resolveApiBase("/api/users/me")).toBe(__apiBaseUrls.bf);
