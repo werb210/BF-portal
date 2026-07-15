@@ -1443,8 +1443,9 @@ function InboxTab() {
         );
         if (cancelled) return;
         setMailboxes(r);
-        // Default to personal mailbox if available, else first shared
-        setActive(r.mine ? "" : (r.shared[0]?.address ?? ""));
+        // BF_PORTAL_BLOCK_v_INBOX_DEFAULT_UNIFIED_v1 - default to the unified
+        // "All Mailboxes" view so staff don't have to switch to it each time.
+        setActive((r.mine || r.shared.length > 0) ? ALL_MAILBOXES : "");
         setNeedsReconnect(false);
       } catch (e: unknown) {
         if (cancelled) return;
