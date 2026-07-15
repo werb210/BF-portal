@@ -50,7 +50,7 @@ function buildUrl(path: string, explicitSilo?: "BF" | "BI" | "SLF"): string {
   // sessionStorage via resolveApiBase().
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const base = explicitSilo
-    ? __apiBaseUrls[explicitSilo === "BI" ? "bi" : "bf"]
+    ? __apiBaseUrls[explicitSilo === "BI" ? "bi" : explicitSilo === "SLF" ? "slf" : "bf"]
     : resolveApiBase(normalized);
   return `${base}${normalized}`;
 }
