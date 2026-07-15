@@ -23,13 +23,13 @@ const unitAccents: Record<BusinessUnit, string> = {
   SLF: "#d97706", // matches AppLayout SILO_BRAND.SLF
 };
 
-const ALL_UNITS: BusinessUnit[] = ["BF", "BI"];
+const ALL_UNITS: BusinessUnit[] = ["BF", "BI", "SLF"];
 
 // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
 const SILO_HOME: Record<BusinessUnit, string> = {
   BF: "/portal",
   BI: "/silo/bi/dashboard",
-  SLF: "/portal",
+  SLF: "/pipeline",
 };
 
 const isBusinessUnit = (value: unknown): value is BusinessUnit =>
