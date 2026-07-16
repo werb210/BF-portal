@@ -39,6 +39,7 @@ type Card = {
   doc_progress?: DocProgress;
   contact_name?: string | null;
   contact_id?: string | null;
+  phone?: string | null; // BF_PORTAL_BLOCK_v_PIPELINE_CARD_PHONE_v1
   partner_name?: string | null;
   partner_contact_id?: string | null;
   productCategory?: string | null;
@@ -331,6 +332,10 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
               ) : (
                 <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
               )
+            )}
+            {/* BF_PORTAL_BLOCK_v_PIPELINE_CARD_PHONE_v1 - show the OTP phone (esp. drafts with no contact name) */}
+            {card.phone && (
+              <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.phone}</div>
             )}
             {/* v_PARTNER_NAME_LINK: partner name -> their CRM contact, mirrors the applicant link */}
             {card.partner_name && (
