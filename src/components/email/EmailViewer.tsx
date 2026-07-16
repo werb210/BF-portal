@@ -8,6 +8,7 @@ import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
 import { fetchEmailMessage, fetchEmailMessages, archiveEmailMessage } from "@/api/email";
 import EmailMessageItem from "./EmailMessageItem";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
+import MailCategoryPicker from "@/components/o365/MailCategoryPicker"; // BF_PORTAL_O365_UI_v1
 
 // BF_PORTAL_BLOCK_v803_EMAIL_REPLY_FORWARD — reply / reply-all / forward open the
 // O365 composer pre-filled; sending goes through /api/o365/mail/send and is logged
@@ -96,6 +97,7 @@ const EmailViewer = ({ visible, contactId, contactEmail, onClose }: EmailViewerP
             ) : selected ? (
               <div>
                 <div className="font-semibold">{selected.subject}</div>
+                <MailCategoryPicker messageId={selected.id} />
                 <div className="text-sm">From: {selected.from}</div>
                 <div className="text-sm">To: {selected.to}</div>
                 <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(selected.body) }} /> {/* BF_PORTAL_HTML_SANITIZE_v1 */}

@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import RequireRole from "@/components/auth/RequireRole";
 import SecondaryButton from "@/components/forms/SecondaryButton";
 import CalendarTasksPanel from "./CalendarTasksPanel";
+import FindATimePanel from "@/components/o365/FindATimePanel"; // BF_PORTAL_O365_UI_v1
 
 type ApiCalendarEvent = {
   id?: string;
@@ -306,6 +307,8 @@ function CalendarContent() {
           wired to /api/tasks (queues, runner, task types). Replaces the old
           cramped Overdue/Due-Today list + Add Task modal. */}
       <CalendarTasksPanel currentUserId={(user as { id?: string } | null)?.id ?? ""} />
+
+      <FindATimePanel />
 
       {selectedEvent && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
