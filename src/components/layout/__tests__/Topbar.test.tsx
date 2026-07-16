@@ -28,6 +28,7 @@ vi.mock("@/components/MayaStatus", () => ({
 vi.mock("@/api", () => {
   const mock = Object.assign(vi.fn().mockResolvedValue({ status: "ok" }), {
     post: vi.fn().mockResolvedValue({ status: "ok" }),
+    get: vi.fn().mockResolvedValue({ connected: false }), // BF_PORTAL_O365_UI_v1 - presence pill fetches on mount
   });
 
   return { api: mock };
