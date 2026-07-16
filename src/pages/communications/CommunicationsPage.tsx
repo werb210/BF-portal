@@ -2170,7 +2170,20 @@ function InboxTab() {
                   : rawOrig
                       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
                       .replace(/\r?\n/g, "<br>");
-                const myAddr = (active || mailboxes.mine?.address || "").toLowerCase();
+                // BF_PORTAL_INBOX_REPLYALL_SELF_v1 - exclude every mailbox the user operates
+                // (mine + shared + the message's mailbox) so Reply All never sends the
+                // message back to the user's own inbox. In the All-Mailboxes view
+                // `active` is the "__ALL__" sentinel, not a real address, which
+                // previously left the user's own address in Reply All.
+                const ownAddrs = new Set(
+                  [
+                    mailboxes.mine?.address ?? "",
+                    mailboxForMessage(selectedId),
+                    ...mailboxes.shared.map((mb) => mb.address),
+                  ]
+                    .map((a) => a.toLowerCase())
+                    .filter(Boolean)
+                );
                 const allRecipients = [
                   ...(selected.toRecipients ?? []),
                   ...(selected.ccRecipients ?? []),
@@ -2221,7 +2234,7 @@ function InboxTab() {
                   setComposeOpen(true);
                 };
                 const replyAllTo = Array.from(new Set([fromAddr, ...allRecipients]
-                  .map((a) => a.trim()).filter((a) => a && a.toLowerCase() !== myAddr)));
+                  .map((a) => a.trim()).filter((a) => a && !ownAddrs.has(a.toLowerCase()))));
                 return (
                   <>
                     <button type="button" style={btnStyle} onClick={() => openCompose(fromAddr, reSubj)}>Reply</button>
