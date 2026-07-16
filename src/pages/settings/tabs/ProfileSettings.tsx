@@ -571,15 +571,48 @@ const ProfileSettings = () => {
         <button
           type="button"
           onClick={async () => {
+            // BF_PORTAL_PUSH_REGISTER_v1 -- request permission, create a push subscription, and register it with the server.
             if (!("Notification" in window)) {
               alert("This browser does not support notifications.");
               return;
             }
             const result = await Notification.requestPermission();
-            if (result === "granted") {
-              alert("Notifications enabled.");
-            } else {
+            if (result !== "granted") {
               alert("Notifications were not enabled.");
+              return;
+            }
+            try {
+              if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+                alert("Notifications enabled, but this browser cannot receive push messages.");
+                return;
+              }
+              const reg = await navigator.serviceWorker.ready;
+              let sub = await reg.pushManager.getSubscription();
+              if (!sub) {
+                const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+                if (!vapidKey) {
+                  alert("Notifications enabled, but push is not configured for this environment yet.");
+                  return;
+                }
+                const padding = "=".repeat((4 - (vapidKey.length % 4)) % 4);
+                const normalized = (vapidKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+                const rawKey = window.atob(normalized);
+                const appKey = new Uint8Array(rawKey.length);
+                for (let i = 0; i < rawKey.length; i += 1) appKey[i] = rawKey.charCodeAt(i);
+                sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appKey });
+              }
+              const json = sub.toJSON() as unknown as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+              if (json.endpoint && json.keys && json.keys.p256dh && json.keys.auth) {
+                const deviceType = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? "mobile" : "desktop";
+                await api.post("/api/pwa/subscribe", {
+                  endpoint: json.endpoint,
+                  keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+                  deviceType,
+                });
+              }
+              alert("Notifications enabled.");
+            } catch {
+              alert("Notifications enabled, but push registration failed. Please try again.");
             }
           }}
           style={{

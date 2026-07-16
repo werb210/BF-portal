@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getPushSubscription, setPushSubscription } from "@/utils/pushSubscriptionStore";
 import { readPushPreference, writePushPreference } from "@/utils/notificationPreferences";
+import { api } from "@/api"; // BF_PORTAL_PUSH_REGISTER_v1
 
 type PushState = "unsupported" | "default" | "granted" | "denied";
 
@@ -13,6 +14,24 @@ const decodeBase64Key = (base64String: string) => {
     output[i] = raw.charCodeAt(i);
   }
   return output;
+};
+
+// BF_PORTAL_PUSH_REGISTER_v1 -- send the browser PushSubscription to the server so web-push can reach this device.
+const detectPushDeviceType = (): "mobile" | "desktop" =>
+  typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? "mobile" : "desktop";
+
+const registerPushWithServer = async (sub: PushSubscription): Promise<void> => {
+  try {
+    const json = sub.toJSON() as unknown as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+    if (!json.endpoint || !json.keys || !json.keys.p256dh || !json.keys.auth) return;
+    await api.post("/api/pwa/subscribe", {
+      endpoint: json.endpoint,
+      keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+      deviceType: detectPushDeviceType(),
+    });
+  } catch {
+    // best-effort; the server upsert is idempotent so a later attempt will succeed
+  }
 };
 
 export const usePushNotifications = () => {
@@ -32,6 +51,7 @@ export const usePushNotifications = () => {
     if (existing) {
       setPushSubscription(existing);
       setSubscription(existing);
+      await registerPushWithServer(existing); // BF_PORTAL_PUSH_REGISTER_v1
       return existing;
     }
 
@@ -47,6 +67,7 @@ export const usePushNotifications = () => {
     });
     setPushSubscription(newSubscription);
     setSubscription(newSubscription);
+    await registerPushWithServer(newSubscription); // BF_PORTAL_PUSH_REGISTER_v1
     return newSubscription;
   }, []);
 
