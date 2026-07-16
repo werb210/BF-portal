@@ -6,7 +6,6 @@ import { useNotificationsStore } from "@/state/notifications.store";
 import BusinessUnitSelector from "@/components/BusinessUnitSelector";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { api } from "@/api";
-import O365PresencePill from "@/components/o365/O365PresencePill"; // BF_PORTAL_O365_UI_v1
 
 type TopbarProps = {
   onToggleSidebar: () => void;
@@ -151,7 +150,6 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: presence === "available" ? "#22c55e" : "#f59e0b", flexShrink: 0 }} />
           {presence === "available" ? "Available" : "Busy"}
         </button>
-        <O365PresencePill />
         <div className="relative">
           <button
             type="button"
