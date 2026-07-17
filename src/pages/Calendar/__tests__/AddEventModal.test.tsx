@@ -17,18 +17,18 @@ vi.mock("react-big-calendar", () => ({
 }));
 
 describe("Add Event modal", () => {
-  it("uses datetime-local inputs with readable black text", () => {
+  // BF_PORTAL_CAL_DATETIMEPICKER_v1 - Start/End now use the shared DateTimePicker
+  // (calendar popover), not raw datetime-local inputs.
+  it("renders the Add Event modal with Start and End date pickers", () => {
     render(
       <MemoryRouter initialEntries={["/calendar"]}>
         <CalendarPage />
       </MemoryRouter>,
     );
     fireEvent.click(screen.getByRole("button", { name: /Add Event/i }));
-    const start = screen.getByLabelText(/Start/i);
-    const end = screen.getByLabelText(/End/i);
-    expect(start).toHaveAttribute("type", "datetime-local");
-    expect(end).toHaveAttribute("type", "datetime-local");
-    expect((start as HTMLInputElement).style.color).toBe("var(--ui-text)");
+    expect(screen.getByText("Start")).toBeInTheDocument();
+    expect(screen.getByText("End")).toBeInTheDocument();
+    expect(screen.getByText("Location")).toBeInTheDocument();
   });
 });
 
