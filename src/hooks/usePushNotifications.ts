@@ -55,7 +55,15 @@ export const usePushNotifications = () => {
       return existing;
     }
 
-    const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+    // BF_PORTAL_VAPID_RUNTIME_v1 - fetch the VAPID public key from the server at runtime
+    // (was import.meta.env, which needs a rebuild; now only server env is required).
+    let vapidKey: string | undefined;
+    try {
+      const r = await api.get<{ publicKey?: string | null }>("/api/pwa/vapid-public-key");
+      vapidKey = (((r as { data?: { publicKey?: string | null } })?.data ?? r)?.publicKey) ?? undefined;
+    } catch {
+      vapidKey = undefined;
+    }
     if (!vapidKey) {
       console.info("Push subscription skipped: missing VAPID key");
       return null;
