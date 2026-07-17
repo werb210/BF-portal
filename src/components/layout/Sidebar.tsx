@@ -47,12 +47,9 @@ const navigationSections: NavigationSection[] = [
       { label: "AI Knowledge", path: "/admin/ai", roles: ["Admin"] },
       { label: "Support", path: "/admin/support", roles: ["Admin"] },
       { label: "Analytics", path: "/admin/analytics", roles: ["Admin"] },
-      { label: "Analytics Events", path: "/admin/analytics-events", roles: ["Admin"] },
       { label: "Website Leads", path: "/admin/website-leads", roles: ["Admin"] },
       { label: "Website Leads Table", path: "/admin/leads", roles: ["Admin"] },
       { label: "AI Knowledge Base", path: "/admin/ai-knowledge", roles: ["Admin"] },
-      { label: "AI Knowledge Upload", path: "/admin/ai-knowledge-upload", roles: ["Admin"] },
-      { label: "Comparison Editor", path: "/admin/comparison", roles: ["Admin"] },
       { label: "Issue Reports", path: "/admin/issue-reports", roles: ["Admin"] },
       { label: "Live Chat Queue", path: "/admin/live-chat", roles: ["Admin"] },
       { label: "Conversions", path: "/admin/conversions", roles: ["Admin"] },
@@ -61,8 +58,7 @@ const navigationSections: NavigationSection[] = [
       { label: "AI Policy", path: "/admin/ai-policy", roles: ["Admin"] },
       { label: "Issues", path: "/admin/ai/issues", roles: ["Admin", "Staff", "Marketing"] },
       { label: "Operations", path: "/admin/operations", roles: ["Admin"] },
-      { label: "Maya Intelligence", path: "/admin/maya", roles: ["Admin"] },
-      { label: "Maya Outbound Upload", path: "/admin/maya-outbound", roles: ["Admin"] }
+      { label: "Maya Intelligence", path: "/admin/maya", roles: ["Admin"] }
     ]
   }
 ];
