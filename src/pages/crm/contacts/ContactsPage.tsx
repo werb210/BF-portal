@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
@@ -20,12 +20,20 @@ export default function ContactsPage() {
   const { user } = useAuth();
   const showDelete = canDelete(user?.role as any);
   const isAdmin = user?.role === "Admin";
+  // BF_PORTAL_CRM_FILTER_PERSIST_v1 - remember the list view (tag/owner/search/sort/page) so
+  // opening a contact and hitting Back restores it instead of resetting to the default view.
+  const savedFilters = useMemo<Record<string, unknown>>(() => {
+    try { return JSON.parse(sessionStorage.getItem("crm.contacts.filters") || "{}") as Record<string, unknown>; } catch { return {}; }
+  }, []);
   const [rows, setRows] = useState<ContactRow[]>([]);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState<string>(typeof savedFilters.q === "string" ? savedFilters.q : "");
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
-  const [ownerId, setOwnerId] = useState("");
-  const [tagFilter, setTagFilter] = useState(""); // BF_PORTAL_BLOCK_v806_TAG_FILTER
-  const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>({ col: "created_at", dir: "desc" });
+  const [ownerId, setOwnerId] = useState<string>(typeof savedFilters.ownerId === "string" ? savedFilters.ownerId : "");
+  const [tagFilter, setTagFilter] = useState<string>(typeof savedFilters.tagFilter === "string" ? savedFilters.tagFilter : ""); // BF_PORTAL_BLOCK_v806_TAG_FILTER
+  const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>(() => {
+    const sv = savedFilters.sort as { col?: SortCol; dir?: "asc" | "desc" } | undefined;
+    return sv && typeof sv.col === "string" ? { col: sv.col, dir: sv.dir === "asc" ? "asc" : "desc" } : { col: "created_at", dir: "desc" };
+  });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -35,7 +43,7 @@ export default function ContactsPage() {
   // (GET /api/crm/contacts, default 200, max 500) and BI already ships a pager, but
   // BF never sent a page at all - so it silently showed only the FIRST 200 contacts
   // with no way to reach the rest. With 2,777 contacts that hid ~93% of the list.
-  const [crmPage, setCrmPage] = useState(1);
+  const [crmPage, setCrmPage] = useState<number>(typeof savedFilters.crmPage === "number" && savedFilters.crmPage > 0 ? savedFilters.crmPage : 1);
   // BF_PORTAL_CRM_TOTALS_v1 - v3 inferred hasNext from "a full page came back", which
   // mis-fires on exact multiples of the page size (a dead Next click onto an empty
   // page). The server now returns a real total, so paging is exact and we can show
@@ -93,7 +101,16 @@ export default function ContactsPage() {
 
   // BF_PORTAL_BF_CONTACTS_PAGER_v1 - any change to the filters/sort re-queries from
   // the top; staying on page 7 of a now-2-page result would render an empty table.
-  useEffect(() => { setCrmPage(1); }, [silo, q, sort.col, sort.dir, ownerId, tagFilter]);
+  // BF_PORTAL_CRM_FILTER_PERSIST_v1 - save the view on change, and don't clobber the
+  // restored page on the initial mount (only reset to page 1 when filters actually change).
+  useEffect(() => {
+    try { sessionStorage.setItem("crm.contacts.filters", JSON.stringify({ q, ownerId, tagFilter, sort, crmPage })); } catch { /* ignore */ }
+  }, [q, ownerId, tagFilter, sort, crmPage]);
+  const filtersMountRef = useRef(false);
+  useEffect(() => {
+    if (!filtersMountRef.current) { filtersMountRef.current = true; return; }
+    setCrmPage(1);
+  }, [silo, q, sort.col, sort.dir, ownerId, tagFilter]);
 
   // BF_PORTAL_CRM_TOTALS_v1 - exact, from the server's total.
   const hasNext = crmPage * CONTACTS_PAGE_SIZE < total;

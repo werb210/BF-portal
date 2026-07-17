@@ -1956,18 +1956,19 @@ function InboxTab() {
       )}
       <div style={{ borderRight: "1px solid var(--ui-border)", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
         {/* BF_PORTAL_BLOCK_77_INBOX_COMPOSE_v1 - Compose button + modal. */}
-        <div style={{ padding: 12, borderBottom: "1px solid var(--ui-border)", display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* BF_PORTAL_INBOX_TOOLBAR_ROW_v1 - Compose + mailbox + Refresh as one horizontal toolbar (was stacked full-width). */}
+        <div style={{ padding: 12, borderBottom: "1px solid var(--ui-border)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           <button
             type="button"
             onClick={() => setComposeOpen(true)}
-            style={{ width: "100%", padding: "8px 12px", border: "none", borderRadius: 4, background: "var(--ui-accent-blue)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+            style={{ padding: "8px 12px", border: "none", borderRadius: 4, background: "var(--ui-accent-blue)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
           >
             + Compose
           </button>
           <select
             value={active}
             onChange={(e) => setActive(e.target.value)}
-            style={{ width: "100%", padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}
+            style={{ flex: "1 1 140px", minWidth: 0, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}
           >
             {mailboxOptions.map(o => <option key={o.value || "self"} value={o.value}>{o.label}</option>)}
             {mailboxOptions.length === 0 && <option value="">No mailbox available</option>}
@@ -1976,11 +1977,11 @@ function InboxTab() {
             type="button"
             onClick={() => setReconnectAttempts((n) => n + 1)}
             disabled={loading}
-            style={{ width: "100%", padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", fontSize: 12, cursor: loading ? "default" : "pointer" }}
+            style={{ padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", fontSize: 12, cursor: loading ? "default" : "pointer" }}
           >
             {loading ? "Refreshing…" : "↻ Refresh inbox"}
           </button>
-          <div style={{ fontSize: 10, color: "var(--ui-text-muted)", textAlign: "center" }}>Auto-refreshes every 20s</div>
+          <div style={{ flexBasis: "100%", fontSize: 10, color: "var(--ui-text-muted)", textAlign: "center" }}>Auto-refreshes every 20s</div>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
