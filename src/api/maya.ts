@@ -26,6 +26,24 @@ export type MayaResponse = {
   tools_used?: string[];
 };
 
+// BF_PORTAL_MAYA_SESSION_PERSIST_v1 - the BF-Server proxy only records a Maya turn into
+// the Communications -> Maya tab when it receives a valid UUID sessionId. The staff widget
+// never sent one, so no staff Maya conversation was ever logged. Send a stable per-tab UUID
+// so each turn (user + reply) persists and accumulates into one reviewable conversation.
+const MAYA_SESSION_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function mayaSessionId(): string {
+  try {
+    let id = sessionStorage.getItem("maya.sessionId");
+    if (!id || !MAYA_SESSION_RE.test(id)) {
+      id = crypto.randomUUID();
+      sessionStorage.setItem("maya.sessionId", id);
+    }
+    return id;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
 export async function sendMayaMessage(
   text: string,
   screenContext?: Record<string, unknown> | null,
@@ -33,6 +51,7 @@ export async function sendMayaMessage(
   const body: Record<string, unknown> = {
     message: text,
     surface: "staff_portal",
+    sessionId: mayaSessionId(), // BF_PORTAL_MAYA_SESSION_PERSIST_v1
     pathname: typeof window !== "undefined" ? window.location.pathname : null,
   };
   if (screenContext) body.screen_context = screenContext;
