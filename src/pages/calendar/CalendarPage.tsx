@@ -303,12 +303,13 @@ function CalendarContent() {
         </div>
       </section>
 
-      {/* BF_PORTAL_CAL_TASKS_HUBSPOT_v1 - full HubSpot-style Tasks panel,
-          wired to /api/tasks (queues, runner, task types). Replaces the old
-          cramped Overdue/Due-Today list + Add Task modal. */}
-      <CalendarTasksPanel currentUserId={(user as { id?: string } | null)?.id ?? ""} />
-
-      <FindATimePanel />
+      {/* BF_PORTAL_O365_FINDTIME_PLACEMENT_v1 - right rail column: Find-a-time on top
+          (it was wrapping to the bottom of the page as a stray 3rd grid child), tasks below. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+        <FindATimePanel />
+        {/* BF_PORTAL_CAL_TASKS_HUBSPOT_v1 - full HubSpot-style Tasks panel. */}
+        <CalendarTasksPanel currentUserId={(user as { id?: string } | null)?.id ?? ""} />
+      </div>
 
       {selectedEvent && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "grid", placeItems: "center", zIndex: 50 }}>
