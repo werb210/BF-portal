@@ -1,10 +1,12 @@
 // BF_PORTAL_O365_UI_v1 - find-a-time free/busy grid (GET /api/calendar/schedule).
-import { useState } from "react";
+// BF_PORTAL_FINDTIME_AUTOCOMPLETE_v1 - type a teammate's name or email to add them
+// (suggestions from /api/tasks/staff) instead of typing full addresses by hand.
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/api";
 
 type ScheduleEntry = { scheduleId?: string; availabilityView?: string };
+type StaffMember = { id: string; name: string; email: string };
 
-// Graph availabilityView digits: 0 free, 1 tentative, 2 busy, 3 out-of-office, 4 working-elsewhere.
 const SLOT_COLORS: Record<string, string> = {
   "0": "#22c55e",
   "1": "#fbbf24",
@@ -18,6 +20,41 @@ export default function FindATimePanel() {
   const [rows, setRows] = useState<ScheduleEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [showSug, setShowSug] = useState(false);
+  const blurTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    api
+      .get<unknown>("/api/tasks/staff")
+      .then((r) => {
+        if (!alive) return;
+        const body = ((r as { data?: unknown })?.data ?? r) as { staff?: Array<{ id: string; name: string; email?: string }> };
+        setStaff(
+          (body?.staff ?? [])
+            .filter((s) => !!s.email)
+            .map((s) => ({ id: s.id, name: s.name, email: s.email as string }))
+        );
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  const parts = emails.split(",");
+  const currentToken = (parts[parts.length - 1] ?? "").trim().toLowerCase();
+  const chosen = new Set(parts.slice(0, -1).map((p) => p.trim().toLowerCase()).filter(Boolean));
+  const suggestions = staff
+    .filter((s) => !chosen.has(s.email.toLowerCase()))
+    .filter((s) => currentToken === "" || s.name.toLowerCase().includes(currentToken) || s.email.toLowerCase().includes(currentToken))
+    .slice(0, 8);
+
+  const pick = (email: string) => {
+    const head = parts.slice(0, -1).map((p) => p.trim()).filter(Boolean);
+    head.push(email);
+    setEmails(head.join(", ") + ", ");
+    setShowSug(false);
+  };
 
   const run = async () => {
     const list = emails.split(",").map((e) => e.trim()).filter(Boolean);
@@ -43,15 +80,37 @@ export default function FindATimePanel() {
   return (
     <div style={{ marginTop: 16, padding: 16, border: "1px solid var(--ui-border, #eaf0f6)", borderRadius: 8 }}>
       <h3 style={{ marginTop: 0, fontSize: 15 }}>Find a time</h3>
-      <p style={{ color: "var(--ui-text-muted)", fontSize: 12, marginTop: 0 }}>Enter teammate email addresses (comma-separated) to see today&apos;s free/busy.</p>
+      <p style={{ color: "var(--ui-text-muted)", fontSize: 12, marginTop: 0 }}>Start typing a teammate&apos;s name or email to add them, then see today&apos;s free/busy.</p>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <input
-          value={emails}
-          onChange={(e) => setEmails(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") void run(); }}
-          placeholder="alice@boreal.financial, bob@boreal.financial"
-          style={{ flex: 1, padding: "6px 10px", borderRadius: 4, border: "1px solid #cbd6e2" }}
-        />
+        <div style={{ position: "relative", flex: 1 }}>
+          <input
+            value={emails}
+            onChange={(e) => { setEmails(e.target.value); setShowSug(true); }}
+            onFocus={() => setShowSug(true)}
+            onBlur={() => { blurTimer.current = window.setTimeout(() => setShowSug(false), 150); }}
+            onKeyDown={(e) => { if (e.key === "Enter") { setShowSug(false); void run(); } }}
+            placeholder="Start typing a name, e.g. Andrew"
+            style={{ width: "100%", padding: "6px 10px", borderRadius: 4, border: "1px solid #cbd6e2", boxSizing: "border-box" }}
+          />
+          {showSug && suggestions.length > 0 && (
+            <div
+              onMouseDown={() => { if (blurTimer.current) window.clearTimeout(blurTimer.current); }}
+              style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, background: "var(--ui-surface, #fff)", border: "1px solid #cbd6e2", borderRadius: 4, marginTop: 2, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+            >
+              {suggestions.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => pick(s.email)}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "6px 10px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13 }}
+                >
+                  <span style={{ fontWeight: 600 }}>{s.name}</span>
+                  <span style={{ color: "var(--ui-text-muted)", marginLeft: 6 }}>{s.email}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button type="button" onClick={() => void run()} disabled={loading} style={{ padding: "6px 14px", background: "var(--ui-accent-blue)", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>
           {loading ? "Checking..." : "Check"}
         </button>
