@@ -3,6 +3,44 @@ import { crmApi, type Scope, type TimelineItem } from "@/api/crm";
 
 type FilterTab = "all" | "note" | "email" | "call" | "task" | "meeting";
 
+// BF_PORTAL_TIMELINE_MEETING_LINKS_v1 - render Teams/recording URLs in a meeting row as a clean
+// button (Join Teams meeting / View recording) instead of a raw pasted URL, and drop the
+// non-joinable graph.microsoft.com API URLs that were showing up as noise.
+const TIMELINE_URL_RE = /https?:\/\/[^\s]+/i;
+
+function MeetingLink({ url }: { url: string }): JSX.Element | null {
+  const u = url.trim().replace(/[),.]+$/, "");
+  const lower = u.toLowerCase();
+  if (lower.includes("graph.microsoft.com")) return null; // Graph API resource url, not user-joinable
+  const isJoin = lower.includes("teams.microsoft.com") || lower.includes("meetup-join") || lower.includes("teams.live.com");
+  const isRecording = lower.includes("sharepoint.com") || lower.includes("stream.") || lower.includes("/recording") || lower.includes("recordingcontenturl");
+  const label = isJoin ? "Join Teams meeting" : isRecording ? "View recording" : "Open link";
+  return (
+    <a
+      href={u}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ display: "inline-block", marginTop: 6, padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-accent-blue)", color: "var(--ui-accent-blue)", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+    >
+      {label}
+    </a>
+  );
+}
+
+function TimelineField({ text, muted }: { text: string; muted?: boolean }): JSX.Element {
+  const baseStyle: CSSProperties = muted ? extra : { color: "var(--ui-text-muted)", marginTop: 4, whiteSpace: "pre-wrap" };
+  const m = text.length <= 600 ? text.match(TIMELINE_URL_RE) : null;
+  if (!m) return <div style={baseStyle}>{text}</div>;
+  const url = m[0];
+  const rest = text.replace(url, "").trim();
+  return (
+    <div style={baseStyle}>
+      {rest && <div style={{ whiteSpace: "pre-wrap" }}>{rest}</div>}
+      <MeetingLink url={url} />
+    </div>
+  );
+}
+
 // BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1 — `items` makes this a controlled
 // component: when a caller supplies its own already-fetched events (e.g. the
 // BI contact card, whose feed is merged from BI-Server + BF-Server), the
@@ -60,8 +98,8 @@ export function ActivityTimeline({ scope, refreshKey, items: itemsProp }: {
             <time style={ts}>{new Date(item.ts).toLocaleString()}</time>
           </header>
           {item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{item.title}</div>}
-          {item.body && <div style={{ color: "var(--ui-text-muted)", marginTop: 4, whiteSpace: "pre-wrap" }}>{item.body}</div>}
-          {item.extra && <div style={extra}>{item.extra}</div>}
+          {item.body && <TimelineField text={item.body} />}
+          {item.extra && <TimelineField text={item.extra} muted />}
         </article>
       ))}
     </div>
