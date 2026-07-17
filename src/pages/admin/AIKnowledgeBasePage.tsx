@@ -39,7 +39,7 @@ export default function AIKnowledgeBasePage() {
 
   async function remove(id: string) {
     try {
-      await api.delete(`/admin/ai-documents/${id}`);
+      await api.delete(`/api/admin/ai-documents/${id}`);
       window.location.reload();
     } catch (error) {
       logger.error("Failed to delete AI document", { error });

@@ -51,6 +51,12 @@ import GlobalAdmin from "@/pages/GlobalAdmin";
 import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
 import LeadsPage from "@/pages/admin/LeadsPage";
 import AiPolicyEditorPage from "@/pages/admin/AiPolicyEditorPage";
+// BF_PORTAL_ADMIN_NAV_ROUTES_v1 - wire previously-dead admin nav pages
+import IssueReportsPage from "@/pages/admin/IssueReportsPage";
+import WebsiteLeadsPage from "@/pages/admin/WebsiteLeadsPage";
+import AIKnowledgeBasePage from "@/pages/admin/AIKnowledgeBasePage";
+import LiveChatQueuePage from "@/pages/admin/LiveChatQueuePage";
+import ConversionDashboardPage from "@/pages/admin/ConversionDashboardPage";
 import Operations from "@/pages/admin/Operations";
 import MayaIntelligence from "@/pages/admin/MayaIntelligence";
 import AiLiveChatPage from "@/pages/ai/AiLiveChatPage";
@@ -245,6 +251,12 @@ const AppRoutes = () => {
         <Route path="/admin/analytics" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AnalyticsDashboard /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/leads" element={<ProtectedRoute><RequireRole roles={["Admin"]}><LeadsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/ai-policy" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AiPolicyEditorPage /></RequireRole></ProtectedRoute>} />
+        {/* BF_PORTAL_ADMIN_NAV_ROUTES_v1 */}
+        <Route path="/admin/issue-reports" element={<ProtectedRoute><RequireRole roles={["Admin"]}><IssueReportsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/website-leads" element={<ProtectedRoute><RequireRole roles={["Admin"]}><WebsiteLeadsPage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/ai-knowledge" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AIKnowledgeBasePage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/live-chat" element={<ProtectedRoute><RequireRole roles={["Admin"]}><LiveChatQueuePage /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/conversions" element={<ProtectedRoute><RequireRole roles={["Admin"]}><ConversionDashboardPage /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/operations" element={<ProtectedRoute><RequireRole roles={["Admin"]}><Operations /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/maya" element={<ProtectedRoute><RequireRole roles={["Admin"]}><MayaIntelligence /></RequireRole></ProtectedRoute>} />
         <Route path="/portal/ai" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiLiveChatPage /></RequireRole></ProtectedRoute>} />
