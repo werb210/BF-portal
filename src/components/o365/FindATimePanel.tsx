@@ -62,14 +62,16 @@ export default function FindATimePanel() {
     setLoading(true);
     setNote(null);
     try {
-      const r = await api.get<{ data?: { schedules?: ScheduleEntry[]; connected?: boolean } }>(
+      // BF_PORTAL_FINDTIME_SHOW_ERR_v1 - show the real reason (Graph error) instead of a blank "no availability".
+      const r = await api.get<{ data?: { schedules?: ScheduleEntry[]; connected?: boolean; error?: string } }>(
         `/api/calendar/schedule?emails=${encodeURIComponent(list.join(","))}`
       );
       const data = r.data ?? {};
-      if (data.connected === false) setNote("Connect Microsoft 365 in Settings to check availability.");
       const schedules = Array.isArray(data.schedules) ? data.schedules : [];
       setRows(schedules);
-      if (data.connected !== false && schedules.length === 0) setNote("No availability returned for those addresses.");
+      if (data.connected === false) setNote("Connect Microsoft 365 in Settings to check availability.");
+      else if (data.error) setNote(`Availability check failed - ${data.error}`);
+      else if (schedules.length === 0) setNote("No availability returned for those addresses.");
     } catch {
       setNote("Could not fetch availability.");
     } finally {
