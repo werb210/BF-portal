@@ -1662,6 +1662,28 @@ function InboxTab() {
     }
   }, [mailboxForMessage, selectedId]);
 
+  // BF_PORTAL_INBOX_READINGPANE_MOVE_v1 - move the OPEN email to a folder in one pick, with a visible error on failure.
+  const [movingOpen, setMovingOpen] = useState(false);
+  const [moveNote, setMoveNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const moveOpenEmail = useCallback(async (destinationId: string): Promise<void> => {
+    if (!selectedId || !destinationId) return;
+    setMovingOpen(true);
+    setMoveNote(null);
+    try {
+      const mb = mailboxForMessage(selectedId);
+      const params = mb ? { mailbox: mb } : {};
+      await api(`/api/crm/inbox/${encodeURIComponent(selectedId)}/move`, { method: "POST", params, body: { destinationId } });
+      const movedId = selectedId;
+      setMessages((prev) => prev.filter((mm) => mm.id !== movedId));
+      setSelectedId("");
+      setSelected(null);
+    } catch (e: unknown) {
+      setMoveNote({ ok: false, text: e instanceof Error ? e.message : "Move failed" });
+    } finally {
+      setMovingOpen(false);
+    }
+  }, [mailboxForMessage, selectedId]);
+
   // BF_PORTAL_INBOX_SAVE_TO_CRM_v1 - manually file the open email's attachments to the
   // sender's CRM contact (creating the contact if needed). Useful for older mail outside the
   // background poller's window, or to file on demand.
@@ -2097,6 +2119,20 @@ function InboxTab() {
               {selected.receivedDateTime && (
                 <span style={{ marginLeft: 8 }}>· {new Date(selected.receivedDateTime).toLocaleString()}</span>
               )}
+            </div>
+            {/* BF_PORTAL_INBOX_READINGPANE_MOVE_v1 - move the open email to a folder in one pick */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Move to:</span>
+              <select
+                value=""
+                disabled={movingOpen}
+                onChange={(e) => { const d = e.target.value; e.currentTarget.selectedIndex = 0; if (d) void moveOpenEmail(d); }}
+                style={{ fontSize: 13, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", cursor: movingOpen ? "default" : "pointer" }}
+              >
+                <option value="">{movingOpen ? "Moving..." : "Choose a folder..."}</option>
+                {folders.map((fd) => (<option key={fd.id} value={fd.id}>{fd.name}</option>))}
+              </select>
+              {moveNote && !moveNote.ok && <span style={{ fontSize: 12, color: "#dc2626" }}>{moveNote.text}</span>}
             </div>
             {/* BF_PORTAL_BLOCK_v835_INBOX_REPLY_ALL_FORWARD */}
             <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
