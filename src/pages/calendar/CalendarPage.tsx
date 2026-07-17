@@ -11,6 +11,7 @@ import RequireRole from "@/components/auth/RequireRole";
 import SecondaryButton from "@/components/forms/SecondaryButton";
 import CalendarTasksPanel from "./CalendarTasksPanel";
 import FindATimePanel from "@/components/o365/FindATimePanel"; // BF_PORTAL_O365_UI_v1
+import DateTimePicker from "@/components/ui/DateTimePicker"; // BF_PORTAL_CAL_DATETIMEPICKER_v1
 
 type ApiCalendarEvent = {
   id?: string;
@@ -365,21 +366,12 @@ function CalendarContent() {
             </label>
             <label style={fieldRow}>
               <span style={fieldLabel}>Start</span>
-              <input
-                type="datetime-local"
-                value={eventForm.start}
-                onChange={(e) => setEventForm((prev) => ({ ...prev, start: e.target.value }))}
-                style={calInputStyle}
-              />
+              {/* BF_PORTAL_CAL_DATETIMEPICKER_v1 - use the Task creator's DateTimePicker (was a raw datetime-local input) */}
+              <DateTimePicker value={eventForm.start} onChange={(iso) => setEventForm((prev) => ({ ...prev, start: iso }))} />
             </label>
             <label style={fieldRow}>
               <span style={fieldLabel}>End</span>
-              <input
-                type="datetime-local"
-                value={eventForm.end}
-                onChange={(e) => setEventForm((prev) => ({ ...prev, end: e.target.value }))}
-                style={calInputStyle}
-              />
+              <DateTimePicker value={eventForm.end} onChange={(iso) => setEventForm((prev) => ({ ...prev, end: iso }))} />
             </label>
             <label style={fieldRow}>
               <span style={fieldLabel}>Location</span>
