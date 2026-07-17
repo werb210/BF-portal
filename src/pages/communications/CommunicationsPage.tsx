@@ -1672,7 +1672,9 @@ function InboxTab() {
     try {
       const mb = mailboxForMessage(selectedId);
       const params = mb ? { mailbox: mb } : {};
-      await api(`/api/crm/inbox/${encodeURIComponent(selectedId)}/move`, { method: "POST", params, body: { destinationId } });
+      // BF_PORTAL_INBOX_MOVE_BYNAME_v1 - send the folder NAME; the server resolves the correct
+      // id inside this message's own mailbox (a pre-fetched id from /me fails in All-Mailboxes view).
+      await api(`/api/crm/inbox/${encodeURIComponent(selectedId)}/move`, { method: "POST", params, body: { destinationName: destinationId } });
       const movedId = selectedId;
       setMessages((prev) => prev.filter((mm) => mm.id !== movedId));
       setSelectedId("");
@@ -2130,7 +2132,7 @@ function InboxTab() {
                 style={{ fontSize: 13, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", cursor: movingOpen ? "default" : "pointer" }}
               >
                 <option value="">{movingOpen ? "Moving..." : "Choose a folder..."}</option>
-                {folders.map((fd) => (<option key={fd.id} value={fd.id}>{fd.name}</option>))}
+                {folders.map((fd) => (<option key={fd.id} value={fd.name}>{fd.name}</option>))}
               </select>
               {moveNote && !moveNote.ok && <span style={{ fontSize: 12, color: "#dc2626" }}>{moveNote.text}</span>}
             </div>
