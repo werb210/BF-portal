@@ -1918,7 +1918,43 @@ function InboxTab() {
     // had a constrained height, produced no scrollbar, and the overflow was simply
     // clipped by the ancestor. Bounding the row track (minmax(0, 1fr)) plus
     // minHeight: 0 on the column restores the scroll.
-    <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gridTemplateRows: "minmax(0, 1fr)", gap: 0, flex: 1, width: "100%", height: "100%", minHeight: 0, background: "var(--ui-surface-strong)", color: "var(--ui-text)", position: "relative" }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, width: "100%", height: "100%", minHeight: 0, background: "var(--ui-surface-strong)", color: "var(--ui-text)", position: "relative" }}>
+      {/* BF_PORTAL_INBOX_FULLWIDTH_TOOLBAR_v1 - every inbox control in one full-width row across the top */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid var(--ui-border)", overflowX: "auto" }}>
+        <button type="button" onClick={() => setComposeOpen(true)} style={{ padding: "8px 12px", border: "none", borderRadius: 4, background: "var(--ui-accent-blue)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>+ Compose</button>
+        <select value={active} onChange={(e) => setActive(e.target.value)} style={{ minWidth: 150, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}>
+          {mailboxOptions.map(o => <option key={o.value || "self"} value={o.value}>{o.label}</option>)}
+          {mailboxOptions.length === 0 && <option value="">No mailbox available</option>}
+        </select>
+        <input type="search" value={queryInput} onChange={(e) => setQueryInput(e.target.value)} placeholder="Search mail..." style={{ flex: "1 1 180px", minWidth: 120, fontSize: 13, padding: "6px 8px", borderRadius: 4, border: "1px solid var(--ui-border)" }} />
+        <select value={browseFolderId ? `id:${browseFolderId}` : folder} onChange={(e) => { const v = e.target.value; if (v.startsWith("id:")) { setBrowseFolderId(v.slice(3)); } else { setBrowseFolderId(""); setFolder(v === "sent" ? "sent" : v === "all" ? "all" : "inbox"); } }} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 4, border: "1px solid var(--ui-border)" }}>
+          <option value="inbox">Inbox</option>
+          <option value="sent">Sent</option>
+          <option value="all">All</option>
+          {folders.filter((fd) => !["inbox", "sent items"].includes(fd.name.trim().toLowerCase())).map((fd) => (<option key={fd.id} value={`id:${fd.id}`}>{fd.name}</option>))}
+        </select>
+        <select value={sortDir} onChange={(e) => setSortDir(e.target.value === "asc" ? "asc" : "desc")} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 4, border: "1px solid var(--ui-border)" }}>
+          <option value="desc">Newest first</option>
+          <option value="asc">Oldest first</option>
+        </select>
+        <span style={{ fontSize: 12, color: "var(--ui-text-muted)", whiteSpace: "nowrap" }}>{unreadCount > 0 ? `${unreadCount} unread` : "All read"}</span>
+        <button type="button" onClick={() => { setBulkMode((v) => !v); setSelectedIds(new Set()); }} style={{ fontSize: 12, padding: "6px 10px", borderRadius: 4, border: "1px solid var(--ui-border)", background: bulkMode ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-strong)", cursor: "pointer", whiteSpace: "nowrap" }}>{bulkMode ? "Cancel" : "Select"}</button>
+        {bulkMode && (
+          <>
+            <span style={{ fontSize: 12, color: "var(--ui-text-muted)", whiteSpace: "nowrap" }}>{selectedIds.size} selected</span>
+            <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(true)} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer", whiteSpace: "nowrap" }}>Mark read</button>
+            <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(false)} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer", whiteSpace: "nowrap" }}>Mark unread</button>
+            <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkFlag()} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer", whiteSpace: "nowrap" }}>Flag</button>
+            <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkDelete()} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 4, border: "1px solid #fecaca", background: "var(--ui-surface-strong)", color: "#dc2626", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer", whiteSpace: "nowrap" }}>Delete</button>
+            <select disabled={bulkBusy || selectedIds.size === 0} value="" title="Move to folder" onChange={(e) => { const d = e.target.value; e.currentTarget.selectedIndex = 0; if (d) void bulkMove(d); }} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>
+              <option value="">Move to...</option>
+              {folders.map((fd) => (<option key={fd.id} value={fd.id}>{fd.name}</option>))}
+            </select>
+          </>
+        )}
+        <button type="button" onClick={() => setReconnectAttempts((n) => n + 1)} disabled={loading} style={{ marginLeft: "auto", padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", fontSize: 12, cursor: loading ? "default" : "pointer", whiteSpace: "nowrap" }}>{loading ? "Refreshing..." : "↻ Refresh"}</button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gridTemplateRows: "minmax(0, 1fr)", gap: 0, flex: 1, width: "100%", minHeight: 0, position: "relative" }}>
       {/* BF_PORTAL_BLOCK_v213_INBOX_RECONNECT_M365_v2 — reconnect banner */}
       {needsReconnect && (
         <div style={{
@@ -1955,103 +1991,11 @@ function InboxTab() {
         </div>
       )}
       <div style={{ borderRight: "1px solid var(--ui-border)", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
-        {/* BF_PORTAL_BLOCK_77_INBOX_COMPOSE_v1 - Compose button + modal. */}
-        {/* BF_PORTAL_INBOX_TOOLBAR_ROW_v1 - Compose + mailbox + Refresh as one horizontal toolbar (was stacked full-width). */}
-        <div style={{ padding: 12, borderBottom: "1px solid var(--ui-border)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-          <button
-            type="button"
-            onClick={() => setComposeOpen(true)}
-            style={{ padding: "8px 12px", border: "none", borderRadius: 4, background: "var(--ui-accent-blue)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
-          >
-            + Compose
-          </button>
-          <select
-            value={active}
-            onChange={(e) => setActive(e.target.value)}
-            style={{ flex: "1 1 140px", minWidth: 0, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}
-          >
-            {mailboxOptions.map(o => <option key={o.value || "self"} value={o.value}>{o.label}</option>)}
-            {mailboxOptions.length === 0 && <option value="">No mailbox available</option>}
-          </select>
-          <button
-            type="button"
-            onClick={() => setReconnectAttempts((n) => n + 1)}
-            disabled={loading}
-            style={{ padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", fontSize: 12, cursor: loading ? "default" : "pointer" }}
-          >
-            {loading ? "Refreshing…" : "↻ Refresh inbox"}
-          </button>
-          <div style={{ flexBasis: "100%", fontSize: 10, color: "var(--ui-text-muted)", textAlign: "center" }}>Auto-refreshes every 20s</div>
-        </div>
-
         <div style={{ flex: 1, overflowY: "auto" }}>
           {loading && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Loading…</div>}
           {err && <div style={{ padding: 16, color: "#b00020" }}>{err}</div>}
           {!loading && !err && messages.length === 0 && (
             <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Nothing in this inbox.</div>
-          )}
-          {/* BF_PORTAL_BLOCK_v833_INBOX_SEARCH_FOLDERS_THREAD — search + folder */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid var(--ui-surface-muted)" }}>
-            <input
-              type="search"
-              value={queryInput}
-              onChange={(e) => setQueryInput(e.target.value)}
-              placeholder="Search mail…"
-              style={{ flex: 1, fontSize: 13, padding: "4px 8px", borderRadius: 4, border: "1px solid var(--ui-border)" }}
-            />
-            <select
-              value={browseFolderId ? `id:${browseFolderId}` : folder}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v.startsWith("id:")) { setBrowseFolderId(v.slice(3)); }
-                else { setBrowseFolderId(""); setFolder(v === "sent" ? "sent" : v === "all" ? "all" : "inbox"); }
-              }}
-              style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--ui-border)" }}
-            >
-              <option value="inbox">Inbox</option>
-              <option value="sent">Sent</option>
-              <option value="all">All</option>
-              {folders.filter((fd) => !["inbox", "sent items"].includes(fd.name.trim().toLowerCase())).map((fd) => (
-                <option key={fd.id} value={`id:${fd.id}`}>{fd.name}</option>
-              ))}
-            </select>
-          </div>
-          {/* BF_PORTAL_BLOCK_v823_INBOX_READTOGGLE_SORT_BADGE — sort + unread badge */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 12px", borderBottom: "1px solid var(--ui-surface-muted)" }}>
-            <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
-              {unreadCount > 0 ? `${unreadCount} unread` : "All read"}
-            </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {/* BF_PORTAL_BLOCK_v832_INBOX_FLAG_AND_BULK — bulk select toolbar */}
-              <button
-                type="button"
-                onClick={() => { setBulkMode((v) => !v); setSelectedIds(new Set()); }}
-                style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: bulkMode ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-strong)", cursor: "pointer" }}
-              >
-                {bulkMode ? "Cancel" : "Select"}
-              </button>
-              <select
-                value={sortDir}
-                onChange={(e) => setSortDir(e.target.value === "asc" ? "asc" : "desc")}
-                style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--ui-border)" }}
-              >
-                <option value="desc">Newest first</option>
-                <option value="asc">Oldest first</option>
-              </select>
-            </div>
-          </div>
-          {bulkMode && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: "1px solid var(--ui-surface-muted)", background: "var(--ui-surface-muted)" }}>
-              <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{selectedIds.size} selected</span>
-              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(true)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark read</button>
-              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(false)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Mark unread</button>
-              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkFlag()} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Flag</button>
-              <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkDelete()} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid #fecaca", background: "var(--ui-surface-strong)", color: "#dc2626", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>Delete</button>
-              <select disabled={bulkBusy || selectedIds.size === 0} value="" title="Move to folder" onChange={(e) => { const d = e.target.value; e.currentTarget.selectedIndex = 0; if (d) void bulkMove(d); }} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer" }}>
-                <option value="">Move to...</option>
-                {folders.map((fd) => (<option key={fd.id} value={fd.id}>{fd.name}</option>))}
-              </select>
-            </div>
           )}
           {messages.map(m => {
             const isFlagged = m.flag?.flagStatus === "flagged";
@@ -2306,6 +2250,7 @@ function InboxTab() {
           setReplyAttachments([]);
         }}
       />
+    </div>
     </div>
   );
 }
