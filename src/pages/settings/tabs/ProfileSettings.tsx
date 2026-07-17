@@ -15,6 +15,7 @@ import { bfLogMsalPhase, pickLoginStrategy } from "@/auth/msalLoginStrategy";
 import { registerPasskey, passkeysSupported } from "@/auth/passkey"; // BF_PORTAL_WEBAUTHN_v1
 import OutOfOfficePanel from "@/components/o365/OutOfOfficePanel"; // BF_PORTAL_O365_UI_v1
 import OneDriveFilePicker from "@/components/o365/OneDriveFilePicker"; // BF_PORTAL_O365_UI_v1
+import ContactsSyncButton from "@/components/o365/ContactsSyncButton"; // BF_PORTAL_CONTACTS_PULL_TRIGGER_v1
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_DIMENSION = 256;
@@ -628,6 +629,7 @@ const ProfileSettings = () => {
 
       <OutOfOfficePanel />
       <OneDriveFilePicker />
+      <ContactsSyncButton />
 
       <div className="settings-actions">
         <Button
