@@ -592,7 +592,14 @@ const ProfileSettings = () => {
               const reg = await navigator.serviceWorker.ready;
               let sub = await reg.pushManager.getSubscription();
               if (!sub) {
-                const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+                // BF_PORTAL_VAPID_RUNTIME_v1 - fetch the VAPID public key from the server at runtime.
+                let vapidKey: string | undefined;
+                try {
+                  const kr = await api.get<{ publicKey?: string | null }>("/api/pwa/vapid-public-key");
+                  vapidKey = (((kr as { data?: { publicKey?: string | null } })?.data ?? kr)?.publicKey) ?? undefined;
+                } catch {
+                  vapidKey = undefined;
+                }
                 if (!vapidKey) {
                   alert("Notifications enabled, but push is not configured for this environment yet.");
                   return;
