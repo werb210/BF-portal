@@ -153,6 +153,7 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [smsConsent, setSmsConsent] = useState(false); // BF_PORTAL_IMPORT_CONSENT_v1
   const fileRef = useRef<HTMLInputElement>(null);
 
   const onFile = async (file: File) => {
@@ -197,7 +198,7 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
     setBusy(true);
     setErr(null);
     try {
-      const res = await api.post<ImportResult>("/api/crm/contacts/import", { rows });
+      const res = await api.post<ImportResult>("/api/crm/contacts/import", { rows, smsConsentExpress: smsConsent }); // BF_PORTAL_IMPORT_CONSENT_v1
       setResult(res);
       onDone();
     } catch (e) {
@@ -302,6 +303,11 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
 
             {err && <div style={{ color: "#b91c1c", marginBottom: 12, fontSize: 13 }}>{err}</div>}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
+              {/* BF_PORTAL_IMPORT_CONSENT_v1 - stamp express SMS/email consent on import */}
+              <label style={{ flexBasis: "100%", display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 6 }}>
+                <input type="checkbox" checked={smsConsent} onChange={(e) => setSmsConsent(e.target.checked)} />
+                These contacts gave express SMS/email consent (application terms) - mark them SMS-marketable
+              </label>
               <button
                 style={btnGhost}
                 onClick={() => {
