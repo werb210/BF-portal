@@ -579,6 +579,14 @@ const ProfileSettings = () => {
               alert("This browser does not support notifications.");
               return;
             }
+            // BF_PORTAL_PUSH_ERR_v1 - iPhone/iPad only allow web push from the app added to the
+            // Home Screen (not a Safari tab). Guide the user instead of failing cryptically.
+            const isIOS = /iP(ad|hone|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+            const isStandalone = (window.navigator as unknown as { standalone?: boolean }).standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+            if (isIOS && !isStandalone) {
+              alert("On iPhone/iPad, add Boreal Portal to your Home Screen first (Share button, then Add to Home Screen), open it from there, and then tap Enable notifications.");
+              return;
+            }
             const result = await Notification.requestPermission();
             if (result !== "granted") {
               alert("Notifications were not enabled.");
@@ -621,8 +629,9 @@ const ProfileSettings = () => {
                 });
               }
               alert("Notifications enabled.");
-            } catch {
-              alert("Notifications enabled, but push registration failed. Please try again.");
+            } catch (err) {
+              const detail = err instanceof Error && err.message ? (" (" + err.message + ")") : "";
+              alert("Notifications enabled, but push registration failed. Please try again." + detail);
             }
           }}
           style={{
