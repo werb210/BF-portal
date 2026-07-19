@@ -1,14 +1,32 @@
 import { useEffect, useState } from "react";
 import { isIOSSafari, isStandalonePWA } from "@/auth/msalLoginStrategy";
 
+// BF_PORTAL_MACOS_SAFARI_INSTALL_v1 - Safari (iOS and macOS) never fires beforeinstallprompt,
+// so the Chrome install banner never appears there. iOS Safari already had an "Add to Home Screen"
+// hint; this adds the macOS Safari equivalent (Sonoma+ installs via File -> Add to Dock).
 const STORAGE_KEY = "bf:iosInstallDismissedAt";
 const DISMISS_TTL_MS = 1000 * 60 * 60 * 24 * 14;
 
+type InstallMode = "ios" | "macos-safari";
+
+function detectInstallMode(): InstallMode | null {
+  if (isStandalonePWA()) return null;
+  if (isIOSSafari()) return "ios";
+  const ua = navigator.userAgent;
+  const isMac = /Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) <= 1;
+  const isSafari = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|Edg|OPR/.test(ua);
+  if (isMac && isSafari) return "macos-safari";
+  return null;
+}
+
 export function IOSInstallBanner() {
   const [visible, setVisible] = useState(false);
+  const [mode, setMode] = useState<InstallMode | null>(null);
 
   useEffect(() => {
-    if (!isIOSSafari() || isStandalonePWA()) return;
+    const detected = detectInstallMode();
+    if (!detected) return;
+    setMode(detected);
 
     try {
       const lastDismissedAt = localStorage.getItem(STORAGE_KEY);
@@ -21,7 +39,7 @@ export function IOSInstallBanner() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  if (!visible) return null;
+  if (!visible || !mode) return null;
 
   const dismiss = () => {
     setVisible(false);
@@ -51,14 +69,25 @@ export function IOSInstallBanner() {
         gap: 12,
         alignItems: "flex-start",
         fontSize: 14,
-        lineHeight: 1.4
+        lineHeight: 1.4,
+        maxWidth: 520,
+        marginLeft: "auto",
       }}
     >
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 600, marginBottom: 4 }}>Install Boreal as an app</div>
         <div>
-          Tap the Share icon (<span aria-hidden="true" style={{ fontWeight: 700 }}>⬆</span>) at the bottom
-          of Safari, then choose <b>Add to Home Screen</b>.
+          {mode === "ios" ? (
+            <>
+              Tap the Share icon (<span aria-hidden="true" style={{ fontWeight: 700 }}>⬆</span>) at the bottom
+              of Safari, then choose <b>Add to Home Screen</b>.
+            </>
+          ) : (
+            <>
+              In Safari&apos;s menu bar, choose <b>File</b> &rarr; <b>Add to Dock</b> to install this app
+              (notifications and passkeys work best from the installed app).
+            </>
+          )}
         </div>
       </div>
       <button
@@ -72,7 +101,7 @@ export function IOSInstallBanner() {
           borderRadius: 8,
           fontSize: 13,
           cursor: "pointer",
-          flexShrink: 0
+          flexShrink: 0,
         }}
       >
         Not now
