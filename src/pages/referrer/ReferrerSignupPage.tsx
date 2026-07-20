@@ -130,7 +130,7 @@ export default function ReferrerSignupPage() {
 
   // BF_PORTAL_REFERRER_BRAND_v1 - same external-portal shell as the lender portal.
   return (
-    <div data-testid="referrer-signup-screen" className="min-h-screen w-screen flex items-center justify-center bg-[#020817] px-4 py-12">
+    <div data-testid="referrer-signup-screen" style={{ colorScheme: "light" }} className="min-h-screen w-screen flex items-center justify-center bg-[#020817] px-4 py-12"> {/* BF_PORTAL_REFERRER_SIGNUP_LIGHT_v1 */}
       <div className="w-full max-w-lg flex flex-col items-center gap-6">
         <div className="text-center">
           <img src={logoUrl} alt="Boreal" style={{ display: "block", margin: "0 auto 18px", height: 88, width: "auto" }} />
@@ -148,27 +148,27 @@ export default function ReferrerSignupPage() {
         {notice && <p className="text-sm text-green-700">{notice}</p>}
 
         <div className="grid grid-cols-1 gap-3">
-          <input className="w-full border rounded p-2" placeholder="Full name *"
+          <input className="w-full border rounded p-2 bg-white text-slate-900" placeholder="Full name *"
             value={form.full_name} onChange={(e) => set("full_name", e.target.value)} />
           <div className="grid grid-cols-2 gap-3">
-            <input className="w-full border rounded p-2" type="email" placeholder="Email *"
+            <input className="w-full border rounded p-2 bg-white text-slate-900" type="email" placeholder="Email *"
               value={form.email} onChange={(e) => set("email", e.target.value)} />
-            <input className="w-full border rounded p-2" type="tel" placeholder="Mobile phone *"
+            <input className="w-full border rounded p-2 bg-white text-slate-900" type="tel" placeholder="Mobile phone *"
               value={form.phone} onChange={(e) => set("phone", e.target.value)} />
           </div>
-          <input className="w-full border rounded p-2" placeholder="Company name (optional)"
+          <input className="w-full border rounded p-2 bg-white text-slate-900" placeholder="Company name (optional)"
             value={form.company_name} onChange={(e) => set("company_name", e.target.value)} />
-          <input className="w-full border rounded p-2" placeholder="Street address *"
+          <input className="w-full border rounded p-2 bg-white text-slate-900" placeholder="Street address *"
             value={form.street} onChange={(e) => set("street", e.target.value)} />
           <div className="grid grid-cols-3 gap-3">
-            <input className="w-full border rounded p-2" placeholder="City *"
+            <input className="w-full border rounded p-2 bg-white text-slate-900" placeholder="City *"
               value={form.city} onChange={(e) => set("city", e.target.value)} />
-            <input className="w-full border rounded p-2" placeholder="Province / State *"
+            <input className="w-full border rounded p-2 bg-white text-slate-900" placeholder="Province / State *"
               value={form.province} onChange={(e) => set("province", e.target.value)} />
-            <input className="w-full border rounded p-2" placeholder="Postal / ZIP *"
+            <input className="w-full border rounded p-2 bg-white text-slate-900" placeholder="Postal / ZIP *"
               value={form.postal_code} onChange={(e) => set("postal_code", e.target.value)} />
           </div>
-          <input className="w-full border rounded p-2" type="email"
+          <input className="w-full border rounded p-2 bg-white text-slate-900" type="email"
             placeholder="e-Transfer email for commission payouts (optional)"
             value={form.etransfer_email} onChange={(e) => set("etransfer_email", e.target.value)} />
         </div>
