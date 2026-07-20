@@ -97,11 +97,11 @@ export default function ReferrerProfilePage() {
     }
   }
 
-  const input = "w-full border rounded p-2";
+  const input = "w-full border rounded p-2 bg-white text-slate-900"; // BF_PORTAL_REFERRER_PROFILE_FIX_v2
   const label = "block text-sm font-medium text-slate-700 mb-1"; // BF_PORTAL_REFERRER_PROFILE_LABELS_v1
 
   return (
-    <div className="flex justify-center p-4">
+    <div className="flex justify-center p-4" style={{ colorScheme: "light" }}>
       <div className="w-full max-w-md rounded border bg-white p-4 space-y-3">
         <h1 className="text-xl font-semibold">Your info</h1>
         <p className="text-sm text-slate-500">
