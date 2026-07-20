@@ -100,6 +100,9 @@ export default function ContactDetailPage() {
         <div style={fieldsBlock}>
           <Field label="Email"   value={contact.email ?? null} />
           <Field label="Phone"   value={contact.phone ?? null} />
+          {/* BF_PORTAL_CONTACT_SECONDARY_v1 - second email/phone, shown only when present */}
+          {contact.secondary_email && <Field label="Secondary email" value={contact.secondary_email} />}
+          {contact.secondary_phone && <Field label="Secondary phone" value={contact.secondary_phone} />}
           <Field label="Status"  value={contact.lead_status ?? null} />
           <Field label="Stage"   value={contact.lifecycle_stage ?? null} />
           <Field label="Owner"   value={contact.owner_name ?? null} />
@@ -150,6 +153,8 @@ export default function ContactDetailPage() {
           name: contact.name ?? "",
           email: contact.email ?? "",
           phone: contact.phone ?? "",
+          secondary_email: contact.secondary_email ?? "", // BF_PORTAL_CONTACT_SECONDARY_v1
+          secondary_phone: contact.secondary_phone ?? "",
           lead_status: contact.lead_status ?? "",
           lifecycle_stage: contact.lifecycle_stage ?? "",
           job_title: contact.job_title ?? "",
@@ -159,6 +164,8 @@ export default function ContactDetailPage() {
           { key: "name", label: "Name", required: true },
           { key: "email", label: "Email", type: "email" },
           { key: "phone", label: "Phone", type: "tel" },
+          { key: "secondary_email", label: "Secondary email", type: "email" },
+          { key: "secondary_phone", label: "Secondary phone", type: "tel" },
           { key: "job_title", label: "Job title" },
           { key: "lead_status", label: "Status" },
           { key: "lifecycle_stage", label: "Stage" },

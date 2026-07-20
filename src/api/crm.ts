@@ -196,6 +196,8 @@ export type ContactRow = {
   last_name?: string;
   email?: string;
   phone?: string;
+  secondary_email?: string; // BF_PORTAL_CONTACT_SECONDARY_v1
+  secondary_phone?: string;
   job_title?: string;
   company_id?: string | null;
   company_name?: string | null;
