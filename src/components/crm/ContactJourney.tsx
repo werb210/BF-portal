@@ -140,7 +140,7 @@ export default function ContactJourney({ contactId }: { contactId: string }) {
           <li key={`${e.session_id}-${i}`} style={{ marginBottom: 6 }}>
             <span style={{ color: "var(--ui-text)" }}>
               {e.event_type === "pageview"
-                ? e.path ?? "(page)"
+                ? pageName(e) /* BF_PORTAL_JOURNEY_PAGE_NAMES_v1 */
                 : e.event_type === "wizard_step"
                   ? `Wizard step ${e.step ?? "?"}`
                   : e.event_type === "application_submitted"
@@ -154,6 +154,25 @@ export default function ContactJourney({ contactId }: { contactId: string }) {
       </ol>
     </section>
   );
+}
+
+// BF_PORTAL_JOURNEY_PAGE_NAMES_v1 - show human page names in the journey path instead of raw URLs.
+function prettifyPath(path: string | null): string {
+  const p = (path ?? "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+  if (!p) return "Home";
+  const seg = p.split("/").filter(Boolean).pop() ?? "";
+  if (!seg) return "Home";
+  return seg.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+function pageName(e: JourneyEvent): string {
+  const p = (e.path ?? "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+  if (!p) return "Home";
+  const t = (e.title ?? "").trim();
+  if (t) {
+    const cleaned = t.replace(/\s+[|\u2013\u2014-]\s+.*$/, "").trim();
+    if (cleaned && !/^boreal/i.test(cleaned)) return cleaned;
+  }
+  return prettifyPath(e.path);
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
