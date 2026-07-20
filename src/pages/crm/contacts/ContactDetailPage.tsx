@@ -2,6 +2,7 @@ import { useEffect, useState, useContext, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { crmApi, type ContactRow, type Scope } from "@/api/crm";
 import { api } from "@/api";
+import { ContactOneDrive } from "@/components/crm/ContactOneDrive"; // BF_PORTAL_CONTACT_ONEDRIVE_v1
 import SiloContext from "@/context/SiloContext"; // BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_HOTFIX1 — defensive silo read (no throw if provider absent)
 import { ActionBar } from "@/components/crm/ActionBar";
 import { UnifiedTimeline } from "@/components/crm/UnifiedTimeline"; // BF_PORTAL_UNIFIED_TIMELINE_v1
@@ -136,6 +137,8 @@ export default function ContactDetailPage() {
         <ContactCreditReadiness contactId={id} />
         <ContactPartners applicationIds={contact.applicationIds} />
         <ContactMarketingSource contactId={id} />
+        {/* BF_PORTAL_CONTACT_ONEDRIVE_v1 - per-contact OneDrive folder, below everything, BF only */}
+        {!isBiSilo && <ContactOneDrive contactId={id} />}
       </aside>
       </div>
 
