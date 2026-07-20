@@ -98,6 +98,7 @@ export default function ReferrerProfilePage() {
   }
 
   const input = "w-full border rounded p-2";
+  const label = "block text-sm font-medium text-slate-700 mb-1"; // BF_PORTAL_REFERRER_PROFILE_LABELS_v1
 
   return (
     <div className="flex justify-center p-4">
@@ -107,42 +108,60 @@ export default function ReferrerProfilePage() {
           Update your details. This is where we send referral updates and issue your referral fees.
         </p>
 
-        <input className={input} placeholder="Full name *" value={form.full_name} onChange={set("full_name")} />
+        {/* BF_PORTAL_REFERRER_PROFILE_LABELS_v1 - fields showed only placeholders, which vanish
+            once filled; add a visible label above each. */}
+        <div>
+          <label className={label}>Full name *</label>
+          <input className={input} placeholder="Full name" value={form.full_name} onChange={set("full_name")} />
+        </div>
         <div className="grid grid-cols-2 gap-2">
-          <input className={input} type="email" placeholder="Email *" value={form.email} onChange={set("email")} />
-          <input className={input} type="tel" placeholder="Mobile phone *" value={form.phone} onChange={set("phone")} />
+          <div>
+            <label className={label}>Email *</label>
+            <input className={input} type="email" placeholder="Email" value={form.email} onChange={set("email")} />
+          </div>
+          <div>
+            <label className={label}>Mobile phone *</label>
+            <input className={input} type="tel" placeholder="Mobile phone" value={form.phone} onChange={set("phone")} />
+          </div>
         </div>
-        <input
-          className={input}
-          placeholder="Company name (optional)"
-          value={form.company_name}
-          onChange={set("company_name")}
-        />
-        <input className={input} placeholder="Street address *" value={form.street} onChange={set("street")} />
+        <div>
+          <label className={label}>Company name (optional)</label>
+          <input className={input} placeholder="Company name" value={form.company_name} onChange={set("company_name")} />
+        </div>
+        <div>
+          <label className={label}>Street address *</label>
+          <input className={input} placeholder="Street address" value={form.street} onChange={set("street")} />
+        </div>
         <div className="grid grid-cols-3 gap-2">
-          <input className={input} placeholder="City *" value={form.city} onChange={set("city")} />
-          <input className={input} placeholder="Province / State *" value={form.province} onChange={set("province")} />
-          <input
-            className={input}
-            placeholder="Postal / ZIP *"
-            value={form.postal_code}
-            onChange={set("postal_code")}
-          />
+          <div>
+            <label className={label}>City *</label>
+            <input className={input} placeholder="City" value={form.city} onChange={set("city")} />
+          </div>
+          <div>
+            <label className={label}>Province / State *</label>
+            <input className={input} placeholder="Province / State" value={form.province} onChange={set("province")} />
+          </div>
+          <div>
+            <label className={label}>Postal / ZIP *</label>
+            <input className={input} placeholder="Postal / ZIP" value={form.postal_code} onChange={set("postal_code")} />
+          </div>
         </div>
-        <input
-          className={input}
-          type="email"
-          placeholder="e-Transfer email for commission payouts (optional)"
-          value={form.etransfer_email}
-          onChange={set("etransfer_email")}
-        />
+        <div>
+          <label className={label}>e-Transfer email for commission payouts (optional)</label>
+          <input className={input} type="email" placeholder="e-Transfer email" value={form.etransfer_email} onChange={set("etransfer_email")} />
+        </div>
 
         {err ? <p className="text-sm text-red-600">{err}</p> : null}
         {saved ? <p className="text-sm text-green-700">Saved.</p> : null}
 
         <div className="grid grid-cols-2 gap-2 pt-1">
-          <button className="border rounded p-2" onClick={() => navigate("/referrer")} disabled={saving}>
-            Back
+          <button
+            className="rounded p-2"
+            style={{ background: "#ffffff", color: "#1e2a5a", border: "1px solid #cbd5e1" }}
+            onClick={() => navigate("/referrer")}
+            disabled={saving}
+          >
+            Cancel
           </button>
           <button
             className="rounded p-2 text-white disabled:opacity-60"
