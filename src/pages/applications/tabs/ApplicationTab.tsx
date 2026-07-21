@@ -20,6 +20,7 @@
 //   - Ownership % for the applicant.
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom"; // BF_PORTAL_APPLICANT_CRM_LINK_v1
 import { fetchTaskStatus, type TaskStatus } from "@/api/applicationTasks";
 import { getFormResponse, type PortalFormResponse } from "@/api/formResponses";
 import { formatMoneyOrRange } from "@/utils/moneyRange"; // BF_PORTAL_BLOCK_v864_MONEY_RANGE
@@ -283,6 +284,8 @@ export default function ApplicationTab({ application }: Props) {
 
   // Call Client button (v225 -- tel: handoff to OS dialer)
   const applicantName = joinName(applicant) || businessName;
+  // BF_PORTAL_APPLICANT_CRM_LINK_v1 - the applicant name links to their CRM record.
+  const applicantContactId = (application as any).contactId ?? (application as any).contact_id ?? null;
   const phoneRaw = applicant.phone ?? applicant.phoneNumber ?? null;
   const phone = phoneRaw ? String(phoneRaw).trim() : null;
   // BF_PORTAL_BLOCK_v817_REMIND_CLIENT — one-tap: email the client their outstanding tasks from the staff O365 account (signature auto-appended server-side).
@@ -542,7 +545,11 @@ export default function ApplicationTab({ application }: Props) {
       </SectionGroup>
 
       <SectionGroup title="Applicant">
-        <Field label="Name" value={fmt(joinName(applicant) || "—")} />
+        <Field label="Name" value={
+          applicantContactId
+            ? <Link to={`/crm/contacts/${applicantContactId}`} style={styles.link}>{fmt(joinName(applicant) || "—")}</Link>
+            : fmt(joinName(applicant) || "—")
+        } />
         <Field label="Title" value={fmt(applicant.title || fdApplicant.title)} />
         <Field label="Phone" value={fmt(applicant.phone ?? applicant.phoneNumber)} />
         <Field label="Email" value={applicant.email ? <Email value={String(applicant.email)} /> : "—"} />
