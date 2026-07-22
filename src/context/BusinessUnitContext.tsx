@@ -54,9 +54,13 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
   const userBusinessUnits: BusinessUnit[] = rawSilos
     .map((s) => String(s).toUpperCase())
     .filter(isBusinessUnit);
+  // BF_PORTAL_ADMIN_SLF_ALLOWLIST_v1 - v165 hid SLF from the admin allowlist
+  // while the SLF silo was dormant. The selector still renders an SLF button,
+  // so clicking it set the silo and the guard effect below immediately snapped
+  // it back to BF - the button looked dead. SLF-server now syncs, and admins
+  // have SLF ticked under Silo access, so admins get all three silos.
   const normalizedBusinessUnits: BusinessUnit[] = isAdmin
-    // BF_PORTAL_BLOCK_v165_HIDE_SLF_FROM_SELECTOR_v1 — SLF dropped
-    ? ["BF", "BI"]
+    ? ["BF", "BI", "SLF"]
     : (userBusinessUnits.length ? userBusinessUnits : [DEFAULT_BUSINESS_UNIT]);
   const fallbackBusinessUnit = normalizedBusinessUnits[0] ?? DEFAULT_BUSINESS_UNIT;
   const preferredUserBusinessUnit = ((user as { silo?: string } | null)?.silo
