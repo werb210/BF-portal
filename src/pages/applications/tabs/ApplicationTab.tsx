@@ -194,6 +194,35 @@ export default function ApplicationTab({ application }: Props) {
     return () => { active = false; };
   }, [v784_appId, v_signNote]);
 
+  // BF_PORTAL_PARTNER_CRM_LINK_v1 - resolve contact ids by role for this application.
+  const [appContactIds, setAppContactIds] = useState<{ applicant?: string; partner?: string }>({});
+  useEffect(() => {
+    if (!v784_appId) {
+      setAppContactIds({});
+      return;
+    }
+    let alive = true;
+    api
+      .get<unknown>(`/api/applications/${encodeURIComponent(v784_appId)}/contacts`)
+      .then((r) => {
+        if (!alive) return;
+        const body = ((r as { data?: unknown })?.data ?? r) as
+          | Array<{ contact_id?: string; role?: string }>
+          | { data?: Array<{ contact_id?: string; role?: string }> };
+        const rows = Array.isArray(body) ? body : (body?.data ?? []);
+        const next: { applicant?: string; partner?: string } = {};
+        for (const row of rows) {
+          const role = String(row?.role ?? "").toLowerCase();
+          const cid = row?.contact_id ? String(row.contact_id) : "";
+          if (!cid) continue;
+          if (role === "applicant" && !next.applicant) next.applicant = cid;
+          if (role === "partner" && !next.partner) next.partner = cid;
+        }
+        setAppContactIds(next);
+      })
+      .catch(() => { if (alive) setAppContactIds({}); });
+    return () => { alive = false; };
+  }, [v784_appId]);
   // BF_PORTAL_RESET_SIGNING_v1 - clear a wedged SignNow session so a fresh "Send for signing"
   // can run. Calls the admin reset route; refuses server-side on already-signed apps.
   async function v_resetSigning() {
@@ -285,7 +314,12 @@ export default function ApplicationTab({ application }: Props) {
   // Call Client button (v225 -- tel: handoff to OS dialer)
   const applicantName = joinName(applicant) || businessName;
   // BF_PORTAL_APPLICANT_CRM_LINK_v1 - the applicant name links to their CRM record.
-  const applicantContactId = (application as any).contactId ?? (application as any).contact_id ?? null;
+  // BF_PORTAL_PARTNER_CRM_LINK_v1 - application_contacts already stores one row
+  // per role ('applicant' / 'partner'), written at submit. Read those so BOTH
+  // names link, instead of relying on applications.contactId which is often null.
+  const applicantContactId =
+    appContactIds.applicant ?? (application as any).contactId ?? (application as any).contact_id ?? null;
+  const partnerContactId = appContactIds.partner ?? null;
   const phoneRaw = applicant.phone ?? applicant.phoneNumber ?? null;
   const phone = phoneRaw ? String(phoneRaw).trim() : null;
   // BF_PORTAL_BLOCK_v817_REMIND_CLIENT — one-tap: email the client their outstanding tasks from the staff O365 account (signature auto-appended server-side).
@@ -565,7 +599,11 @@ export default function ApplicationTab({ application }: Props) {
 
       {hasPartners && partner && (
         <SectionGroup title="Partner">
-          <Field label="Name" value={fmt(joinName(partner) || "—")} />
+          <Field label="Name" value={
+            partnerContactId
+              ? <Link to={`/crm/contacts/${partnerContactId}`} style={styles.link}>{fmt(joinName(partner) || "—")}</Link>
+              : fmt(joinName(partner) || "—")
+          } />
           <Field label="Title" value={fmt(partner.title)} />
           <Field label="Phone" value={fmt(partner.phone ?? partner.phoneNumber)} />
           <Field label="Email" value={partner.email ? <Email value={String(partner.email)} /> : "—"} />
