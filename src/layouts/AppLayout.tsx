@@ -45,14 +45,12 @@ const BI_NAV: NavItem[] = [
   { label: "Outreach", path: "/silo/bi/outreach", roles: ["Admin"] }, // BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_v1
 ];
 
+// BF_PORTAL_SLF_SINGLE_NAV_v1 - SLF is a read-only mirror of slf-server with
+// exactly one screen. The old 7-item nav pointed at BF screens (/portal,
+// /crm/contacts, /communications, /lenders, /settings), so every tab but
+// Pipeline showed Boreal Financial data while the SLF silo was selected.
 const SLF_NAV: NavItem[] = [
-  { label: "Dashboard",      path: "/portal",          roles: ["Admin", "Staff", "Ops"] },
-  { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
-  { label: "Contacts",       path: "/crm/contacts",    roles: ["Admin", "Staff"] },
-  { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
-  { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
-  { label: "Lenders",        path: "/lenders",         roles: ["Admin", "Staff"] },
-  { label: "Settings",       path: "/settings",        roles: ["Admin", "Staff", "Ops"] },
+  { label: "Pipeline", path: "/pipeline", roles: ["Admin", "Staff", "Ops"] },
 ];
 
 const SILO_NAV: Record<string, NavItem[]> = { BF: BF_NAV, BI: BI_NAV, SLF: SLF_NAV };
