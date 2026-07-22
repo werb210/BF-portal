@@ -63,10 +63,15 @@ export default function FindATimePanel() {
     setNote(null);
     try {
       // BF_PORTAL_FINDTIME_SHOW_ERR_v1 - show the real reason (Graph error) instead of a blank "no availability".
-      const r = await api.get<{ data?: { schedules?: ScheduleEntry[]; connected?: boolean; error?: string } }>(
+      // BF_PORTAL_FINDTIME_UNWRAP_v1 - api.get() already unwraps the server's
+      // {status,data} envelope (parsePayload returns json.data), so reading
+      // r.data here was always undefined and every check reported "no
+      // availability" even when Graph returned schedules. Accept both shapes.
+      type SchedulePayload = { schedules?: ScheduleEntry[]; connected?: boolean; error?: string };
+      const r = await api.get<SchedulePayload & { data?: SchedulePayload }>(
         `/api/calendar/schedule?emails=${encodeURIComponent(list.join(","))}`
       );
-      const data = r.data ?? {};
+      const data: SchedulePayload = (r && typeof r === "object" && r.data ? r.data : r) ?? {};
       const schedules = Array.isArray(data.schedules) ? data.schedules : [];
       setRows(schedules);
       if (data.connected === false) setNote("Connect Microsoft 365 in Settings to check availability.");
