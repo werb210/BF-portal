@@ -10,6 +10,12 @@ vi.mock("@/pages/pipeline/PipelinePage", () => ({
   default: () => <div data-testid="bf-pipeline">BF Pipeline</div>,
 }));
 
+// BF_PORTAL_SLF_PIPELINE_ROUTE_v1 - SLF now renders its own read-only view
+// (fed by slf-server) instead of the BF pipeline.
+vi.mock("@/silos/slf/SLFView", () => ({
+  default: () => <div data-testid="slf-view">SLF View</div>,
+}));
+
 function withSilo(silo: "BF" | "BI" | "SLF") {
   vi.doMock("@/context/BusinessUnitContext", () => ({
     useBusinessUnit: () => ({
@@ -52,7 +58,7 @@ describe("BF_PORTAL_BLOCK_v213_CANONICAL_BI_PIPELINE_REDIRECT_v1", () => {
     expect(screen.getByTestId("bf-pipeline")).toBeInTheDocument();
   });
 
-  it("renders BF PipelinePage when active silo is SLF (BF/SLF share the BF page for now)", async () => {
+  it("renders the SLF view (not the BF pipeline) when active silo is SLF", async () => {
     vi.resetModules();
     withSilo("SLF");
     const { default: PipelineRouter } = await import("../PipelineRouter");
@@ -63,6 +69,7 @@ describe("BF_PORTAL_BLOCK_v213_CANONICAL_BI_PIPELINE_REDIRECT_v1", () => {
         </Routes>
       </MemoryRouter>
     );
-    expect(screen.getByTestId("bf-pipeline")).toBeInTheDocument();
+    expect(screen.getByTestId("slf-view")).toBeInTheDocument();
+    expect(screen.queryByTestId("bf-pipeline")).not.toBeInTheDocument();
   });
 });
