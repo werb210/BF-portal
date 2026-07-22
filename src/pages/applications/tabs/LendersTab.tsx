@@ -167,16 +167,57 @@ export default function LendersTab({ applicationId }: Props) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [filesOpenFor]);
 
-  const selectedIds = useMemo(
-    () => selected.filter((s) => matches.some((m) => m.id === s)),
-    [selected, matches],
+  // BF_PORTAL_INCREMENTAL_LENDER_SEND_v1 - a lender that already received the
+  // package cannot be re-sent. The server filters these out of the dispatch set
+  // too; this keeps the UI honest instead of letting staff tick a row that will
+  // silently no-op.
+  const isAlreadySent = useMemo(
+    () => (m: LenderMatch) => Boolean(m.lenderId && v_sentMap.has(String(m.lenderId))),
+    [v_sentMap],
   );
+
+  const selectedIds = useMemo(
+    () => selected.filter((s) => matches.some((m) => m.id === s && !isAlreadySent(m))),
+    [selected, matches, isAlreadySent],
+  );
+
+  // BF_PORTAL_INCREMENTAL_LENDER_SEND_v1
+  // The server returns { submissions, orchestrator } and the orchestrator carries
+  // stageB.fired / stageB.reason. This was being discarded, so a send that did
+  // nothing at all - application not signed, another dispatch in flight, every
+  // selected lender already sent - looked identical to a successful one. Staff had
+  // no way to tell without a DB query.
+  const SEND_REASONS: Record<string, string> = {
+    not_ready: "Not sent: the application is not signed yet, or the credit summary is outstanding.",
+    already_sent: "Nothing to send: every selected lender has already received the package.",
+    dispatch_in_progress: "Another send is already running for this application. Try again in a moment.",
+    no_selected_lenders: "Nothing to send: no lenders are finalized on this application.",
+    dispatch_failed: "The package failed to build or deliver. Check the application's package history.",
+    preconditions_not_met: "Not sent: required documents or open tasks are still outstanding.",
+    collateral_incomplete: "Not sent: the Collateral & Facility section is incomplete.",
+  };
+
+  const describeSendResult = (payload: unknown): string | null => {
+    const orch = (payload as { orchestrator?: { stageB?: { fired?: boolean; reason?: string } } } | null)?.orchestrator;
+    const stageB = orch?.stageB;
+    if (!orch || stageB?.fired === true) return null;
+    const reason = String(stageB?.reason ?? "").trim();
+    if (!reason) return "Not sent. The application is not ready to dispatch yet.";
+    return SEND_REASONS[reason] ?? `Not sent (${reason}).`;
+  };
 
   const mutation = useMutation({
     mutationFn: (ids: string[]) => createLenderSubmission(id, ids),
-    onSuccess: () => {
+    onSuccess: (payload) => {
+      const notice = describeSendResult(payload);
+      if (notice) {
+        setSendError(notice);
+        return;
+      }
+      setSendError(null);
       setSelected([]);
       queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
+      queryClient.invalidateQueries({ queryKey: ["sent-lenders", id] });
     },
   });
 
@@ -321,9 +362,9 @@ export default function LendersTab({ applicationId }: Props) {
                   <td style={styles.td}>
                     <input
                       type="checkbox"
-                      checked={checked}
+                      checked={checked && !isAlreadySent(m)}
                       onChange={() => toggle(m.id)}
-                      disabled={sending || isStale}
+                      disabled={sending || isStale || isAlreadySent(m)}
                       aria-label={`Send to ${m.lenderName ?? "lender"}`}
                     />
                   </td>
