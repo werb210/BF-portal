@@ -1,7 +1,7 @@
 // BF_PORTAL_O365_UI_v1 - find-a-time free/busy grid (GET /api/calendar/schedule).
 // BF_PORTAL_FINDTIME_AUTOCOMPLETE_v1 - type a teammate's name or email to add them
 // (suggestions from /api/tasks/staff) instead of typing full addresses by hand.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/api";
 
 // BF_PORTAL_FINDTIME_GRID_v1 - Graph returns a per-entry `error` when a mailbox
@@ -48,13 +48,14 @@ const SLOT_COLORS: Record<string, string> = {
 };
 
 export default function FindATimePanel() {
-  const [emails, setEmails] = useState("");
+  // BF_PORTAL_FINDTIME_CHECKBOX_v1 - pick teammates from a checkbox list of
+  // staff instead of typing comma-separated addresses. Typing invited typos
+  // (andrew@ vs andrew.p@) that Graph then failed to resolve.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [rows, setRows] = useState<ScheduleEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [showSug, setShowSug] = useState(false);
-  const blurTimer = useRef<number | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -73,24 +74,17 @@ export default function FindATimePanel() {
     return () => { alive = false; };
   }, []);
 
-  const parts = emails.split(",");
-  const currentToken = (parts[parts.length - 1] ?? "").trim().toLowerCase();
-  const chosen = new Set(parts.slice(0, -1).map((p) => p.trim().toLowerCase()).filter(Boolean));
-  const suggestions = staff
-    .filter((s) => !chosen.has(s.email.toLowerCase()))
-    .filter((s) => currentToken === "" || s.name.toLowerCase().includes(currentToken) || s.email.toLowerCase().includes(currentToken))
-    .slice(0, 8);
-
-  const pick = (email: string) => {
-    const head = parts.slice(0, -1).map((p) => p.trim()).filter(Boolean);
-    head.push(email);
-    setEmails(head.join(", ") + ", ");
-    setShowSug(false);
+  const toggle = (email: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(email)) next.delete(email); else next.add(email);
+      return next;
+    });
   };
 
   const run = async () => {
-    const list = emails.split(",").map((e) => e.trim()).filter(Boolean);
-    if (!list.length) return;
+    const list = Array.from(selected);
+    if (!list.length) { setNote("Select at least one teammate."); return; }
     setLoading(true);
     setNote(null);
     try {
@@ -123,40 +117,35 @@ export default function FindATimePanel() {
   return (
     <div style={{ marginTop: 16, padding: 16, border: "1px solid var(--ui-border, #eaf0f6)", borderRadius: 8 }}>
       <h3 style={{ marginTop: 0, fontSize: 15 }}>Find a time</h3>
-      <p style={{ color: "var(--ui-text-muted)", fontSize: 12, marginTop: 0 }}>Start typing a teammate&apos;s name or email to add them, then see today&apos;s free/busy.</p>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <div style={{ position: "relative", flex: 1 }}>
-          <input
-            value={emails}
-            onChange={(e) => { setEmails(e.target.value); setShowSug(true); }}
-            onFocus={() => setShowSug(true)}
-            onBlur={() => { blurTimer.current = window.setTimeout(() => setShowSug(false), 150); }}
-            onKeyDown={(e) => { if (e.key === "Enter") { setShowSug(false); void run(); } }}
-            placeholder="Start typing a name, e.g. Andrew"
-            style={{ width: "100%", padding: "6px 10px", borderRadius: 4, border: "1px solid #cbd6e2", boxSizing: "border-box" }}
-          />
-          {showSug && suggestions.length > 0 && (
-            <div
-              onMouseDown={() => { if (blurTimer.current) window.clearTimeout(blurTimer.current); }}
-              style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, background: "var(--ui-surface, #fff)", border: "1px solid #cbd6e2", borderRadius: 4, marginTop: 2, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+      <p style={{ color: "var(--ui-text-muted)", fontSize: 12, marginTop: 0 }}>Select teammates to see today&apos;s free/busy.</p>
+      {/* BF_PORTAL_FINDTIME_CHECKBOX_v1 - staff checkbox list (Admin/Marketing/Staff only, server-filtered). */}
+      <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid var(--ui-border, #eaf0f6)", borderRadius: 6, padding: 8, marginBottom: 10 }}>
+        {staff.length === 0 ? (
+          <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>No staff found.</div>
+        ) : (
+          staff.map((m) => (
+            <label
+              key={m.id}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px", fontSize: 13, cursor: "pointer" }}
+              title={m.email}
             >
-              {suggestions.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => pick(s.email)}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "6px 10px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13 }}
-                >
-                  <span style={{ fontWeight: 600 }}>{s.name}</span>
-                  <span style={{ color: "var(--ui-text-muted)", marginLeft: 6 }}>{s.email}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <button type="button" onClick={() => void run()} disabled={loading} style={{ padding: "6px 14px", background: "var(--ui-accent-blue)", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>
+              <input type="checkbox" checked={selected.has(m.email)} onChange={() => toggle(m.email)} />
+              <span style={{ fontWeight: 600 }}>{m.name}</span>
+              <span style={{ color: "var(--ui-text-muted)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.email}</span>
+            </label>
+          ))
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <button type="button" onClick={() => void run()} disabled={loading || selected.size === 0} style={{ padding: "6px 14px", background: selected.size === 0 ? "var(--ui-surface-muted)" : "var(--ui-accent-blue)", color: selected.size === 0 ? "var(--ui-text-muted)" : "#fff", border: "none", borderRadius: 4, cursor: selected.size === 0 ? "default" : "pointer" }}>
           {loading ? "Checking..." : "Check"}
         </button>
+        {selected.size > 0 && (
+          <button type="button" onClick={() => { setSelected(new Set()); setRows([]); setNote(null); }} style={{ padding: "6px 10px", background: "transparent", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border, #cbd6e2)", borderRadius: 4, cursor: "pointer", fontSize: 12 }}>
+            Clear
+          </button>
+        )}
+        <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{selected.size} selected</span>
       </div>
       {note && <p style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{note}</p>}
       {rows.length > 0 && (

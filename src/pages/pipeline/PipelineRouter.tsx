@@ -7,12 +7,20 @@
 // BI silo has ONE canonical pipeline; BF + SLF keep using PipelinePage.
 import { Navigate } from "react-router-dom";
 import PipelinePage from "@/pages/pipeline/PipelinePage";
+import SLFView from "@/silos/slf/SLFView"; // BF_PORTAL_SLF_PIPELINE_ROUTE_v1
 import { useBusinessUnit } from "@/context/BusinessUnitContext";
 
 export default function PipelineRouter() {
   const { activeBusinessUnit } = useBusinessUnit();
   if (activeBusinessUnit === "BI") {
     return <Navigate to="/silo/bi/pipeline" replace />;
+  }
+  // BF_PORTAL_SLF_PIPELINE_ROUTE_v1 - SLF used to fall through to PipelinePage,
+  // which reads BF applications from BF-Server, so selecting the SLF silo showed
+  // BF deals. SLF data is a read-only mirror served by slf-server under
+  // /api/slf/*; SLFView is the component that reads it.
+  if (activeBusinessUnit === "SLF") {
+    return <SLFView />;
   }
   return <PipelinePage />;
 }
