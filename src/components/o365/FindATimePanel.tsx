@@ -4,7 +4,39 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/api";
 
-type ScheduleEntry = { scheduleId?: string; availabilityView?: string };
+// BF_PORTAL_FINDTIME_GRID_v1 - Graph returns a per-entry `error` when a mailbox
+// cannot be resolved; surface it instead of rendering a blank row.
+type ScheduleEntry = {
+  scheduleId?: string;
+  availabilityView?: string;
+  error?: { message?: string; responseCode?: string } | null;
+};
+
+// The grid is a local-day view: slot i covers 30 minutes from local midnight.
+// Only working hours are drawn, so the row is readable rather than 48 anonymous ticks.
+const SLOT_MINUTES = 30;
+const GRID_START_HOUR = 7;
+const GRID_END_HOUR = 19;
+const SLOTS_PER_HOUR = 60 / SLOT_MINUTES;
+const FIRST_SLOT = GRID_START_HOUR * SLOTS_PER_HOUR;
+const LAST_SLOT = GRID_END_HOUR * SLOTS_PER_HOUR;
+const SLOT_LABEL: Record<string, string> = { "0": "Free", "1": "Tentative", "2": "Busy", "3": "Out of office", "4": "Working elsewhere" };
+
+function localDayWindow(): { start: string; end: string } {
+  const now = new Date();
+  const startD = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const endD = new Date(startD.getTime() + 24 * 60 * 60 * 1000);
+  return { start: startD.toISOString(), end: endD.toISOString() };
+}
+
+function slotTimeLabel(slotIndex: number): string {
+  const totalMinutes = slotIndex * SLOT_MINUTES;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  const suffix = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${suffix}`;
+}
 type StaffMember = { id: string; name: string; email: string };
 
 const SLOT_COLORS: Record<string, string> = {
@@ -68,8 +100,12 @@ export default function FindATimePanel() {
       // r.data here was always undefined and every check reported "no
       // availability" even when Graph returned schedules. Accept both shapes.
       type SchedulePayload = { schedules?: ScheduleEntry[]; connected?: boolean; error?: string };
+      // BF_PORTAL_FINDTIME_GRID_v1 - the server defaults to a UTC day, which in
+      // western timezones starts the evening before. Send the viewer's own day.
+      const win = localDayWindow();
       const r = await api.get<SchedulePayload & { data?: SchedulePayload }>(
         `/api/calendar/schedule?emails=${encodeURIComponent(list.join(","))}`
+          + `&start=${encodeURIComponent(win.start)}&end=${encodeURIComponent(win.end)}`
       );
       const data: SchedulePayload = (r && typeof r === "object" && r.data ? r.data : r) ?? {};
       const schedules = Array.isArray(data.schedules) ? data.schedules : [];
@@ -124,17 +160,47 @@ export default function FindATimePanel() {
       </div>
       {note && <p style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{note}</p>}
       {rows.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* BF_PORTAL_FINDTIME_GRID_v1 - hour ruler so a block is readable as a time. */}
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 0, paddingLeft: 150 }}>
+            {Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, h) => (
+              <div key={`hr-${h}`} style={{ width: SLOTS_PER_HOUR * 14, fontSize: 10, color: "var(--ui-text-muted)", borderLeft: "1px solid var(--ui-border, #eaf0f6)", paddingLeft: 2 }}>
+                {slotTimeLabel((GRID_START_HOUR + h) * SLOTS_PER_HOUR).replace(":00", "")}
+              </div>
+            ))}
+          </div>
           {rows.map((row, idx) => {
             const view = row.availabilityView ?? "";
+            const slots = Array.from(view);
+            const label = row.scheduleId && row.scheduleId.trim() ? row.scheduleId : "Unknown mailbox";
+            const errMsg = row.error?.message ?? null;
             return (
-              <div key={row.scheduleId ?? `row-${idx}`}>
-                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 3 }}>{row.scheduleId ?? "Unknown"}</div>
-                <div style={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                  {view.split("").map((ch, i) => (
-                    <span key={`${idx}-${i}`} title={`Slot ${i + 1}`} style={{ width: 8, height: 16, background: SLOT_COLORS[ch] ?? "#e2e8f0", borderRadius: 1 }} />
-                  ))}
-                </div>
+              <div key={row.scheduleId ?? `row-${idx}`} style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                <div style={{ width: 150, fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={label}>{label}</div>
+                {errMsg || slots.length === 0 ? (
+                  <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
+                    {errMsg ? `Could not read this calendar - ${errMsg}` : "No free/busy published for this mailbox."}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", gap: 0 }}>
+                    {slots.slice(FIRST_SLOT, LAST_SLOT).map((ch, i) => {
+                      const slotIndex = FIRST_SLOT + i;
+                      const code = ch ?? "0";
+                      return (
+                        <span
+                          key={`${idx}-${slotIndex}`}
+                          title={`${slotTimeLabel(slotIndex)} - ${SLOT_LABEL[code] ?? "Unknown"}`}
+                          style={{
+                            width: 14,
+                            height: 22,
+                            background: SLOT_COLORS[code] ?? "#e2e8f0",
+                            borderLeft: slotIndex % SLOTS_PER_HOUR === 0 ? "1px solid var(--ui-border, #cbd6e2)" : "none"
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -143,6 +209,7 @@ export default function FindATimePanel() {
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#fbbf24", marginRight: 3 }} />Tentative</span>
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#ef4444", marginRight: 3 }} />Busy</span>
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#a855f7", marginRight: 3 }} />Out of office</span>
+            <span style={{ marginLeft: "auto" }}>Today, {GRID_START_HOUR}:00 - {GRID_END_HOUR}:00 local</span>
           </div>
         </div>
       )}
