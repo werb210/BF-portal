@@ -30,6 +30,31 @@ function requiresAuth(path: string) {
   return !PUBLIC_AUTH_PATHS.includes(path);
 }
 
+// BF_PORTAL_LENDER_PORTAL_AUTH_HEADER_v1
+// The pre-flight guard below refuses to send a request when getAuthToken() is
+// empty. getAuthToken() reads the STAFF token: localStorage["auth_token"].
+//
+// The lender portal (/lender-portal, src/pages/lender/LenderPortalPage.tsx) is
+// a different identity entirely. It keeps its token in
+// sessionStorage["lender_token"] and passes it explicitly via authHeader().
+// A signed-in lender therefore has no staff token, the guard fired, and
+// `new Error(API_ERROR)` was thrown BEFORE any HTTP request was made.
+//
+// Live symptoms this produced: the lender's Edit Company Information form
+// rendered every field blank (the GET never left the browser) and Save showed a
+// bare "API_ERROR" banner (the literal thrown message). Nothing appeared in the
+// server logs, because the server was never contacted - which is exactly why it
+// looked like a backend fault and was not.
+//
+// A caller that supplies its own Authorization header has already answered the
+// question this guard asks. Let it through and let the server judge the token.
+function hasExplicitAuthHeader(headers: RequestOptions["headers"]): boolean {
+  if (!headers || typeof headers !== "object") return false;
+  return Object.keys(headers as Record<string, string>).some(
+    (key) => key.toLowerCase() === "authorization",
+  );
+}
+
 function withQuery(path: string, params?: RequestOptions["params"]) {
   if (!params) return path;
   // BF_SILO_API_ROUTING_v43 — Block 43 — base depends on path
@@ -80,7 +105,8 @@ function parsePayload<T>(json: any): T {
 export async function rawApiFetch(path: string, options: RequestOptions = {}) {
   const token = getAuthToken();
 
-  if (!token && requiresAuth(path)) {
+  // BF_PORTAL_LENDER_PORTAL_AUTH_HEADER_v1
+  if (!token && !hasExplicitAuthHeader(options.headers) && requiresAuth(path)) {
     throw new Error(API_ERROR);
   }
 
@@ -240,7 +266,8 @@ export function apiForSilo(silo: "BF" | "BI" | "SLF"): ApiFn {
     const fullUrl = buildUrl(requestPath, silo);
     const token = getAuthToken();
 
-    if (!token && requiresAuth(path)) {
+    // BF_PORTAL_LENDER_PORTAL_AUTH_HEADER_v1 - same carve-out as rawApiFetch.
+    if (!token && !hasExplicitAuthHeader(options.headers) && requiresAuth(path)) {
       throw new Error(API_ERROR);
     }
 
