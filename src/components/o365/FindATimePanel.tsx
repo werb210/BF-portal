@@ -47,6 +47,29 @@ const SLOT_COLORS: Record<string, string> = {
   "4": "#38bdf8",
 };
 
+// BF_PORTAL_FINDTIME_RULER_ALIGN_v1
+// The hour ruler and the availability blocks are two separate flex rows that
+// have to line up pixel for pixel. They were each hardcoding their own widths
+// (ruler cell `SLOTS_PER_HOUR * 14`, block `14`, label gutter `150` written out
+// twice), so any change to one silently desynchronised the other - and the
+// ruler additionally carried `paddingLeft: 2` and a `borderLeft`, which under
+// content-box sizing pushes every label right of the block it names.
+//
+// Worse for reading: a 28px hour cell cannot fit "10 AM", so every label wrapped
+// onto two lines and the last one clipped mid-character. The result was a row of
+// bare numbers above a row of stray AM/PMs, aligned to nothing.
+//
+// One source of truth for the geometry, compact single-character meridiem so a
+// label always fits its own hour, and nowrap so it can never wrap again.
+const SLOT_PX = 14;
+const HOUR_PX = SLOTS_PER_HOUR * SLOT_PX;
+const LABEL_GUTTER_PX = 150;
+
+function hourRulerLabel(hour24: number): string {
+  const h12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  return `${h12}${hour24 >= 12 ? "p" : "a"}`;
+}
+
 export default function FindATimePanel() {
   // BF_PORTAL_FINDTIME_CHECKBOX_v1 - pick teammates from a checkbox list of
   // staff instead of typing comma-separated addresses. Typing invited typos
@@ -150,11 +173,33 @@ export default function FindATimePanel() {
       {note && <p style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{note}</p>}
       {rows.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {/* BF_PORTAL_FINDTIME_GRID_v1 - hour ruler so a block is readable as a time. */}
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 0, paddingLeft: 150 }}>
+          {/* BF_PORTAL_FINDTIME_RULER_ALIGN_v1 - hour ruler, sharing SLOT_PX /
+              HOUR_PX / LABEL_GUTTER_PX with the block rows below so the two can
+              never drift. boxSizing is set explicitly rather than inherited: the
+              cell must measure exactly one hour INCLUDING its divider line, or
+              every label creeps right of the hour it names. */}
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 0, paddingLeft: LABEL_GUTTER_PX }}>
             {Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, h) => (
-              <div key={`hr-${h}`} style={{ width: SLOTS_PER_HOUR * 14, fontSize: 10, color: "var(--ui-text-muted)", borderLeft: "1px solid var(--ui-border, #eaf0f6)", paddingLeft: 2 }}>
-                {slotTimeLabel((GRID_START_HOUR + h) * SLOTS_PER_HOUR).replace(":00", "")}
+              <div
+                key={`hr-${h}`}
+                style={{
+                  width: HOUR_PX,
+                  minWidth: HOUR_PX,
+                  maxWidth: HOUR_PX,
+                  boxSizing: "border-box",
+                  flex: `0 0 ${HOUR_PX}px`,
+                  fontSize: 10,
+                  lineHeight: "12px",
+                  color: "var(--ui-text-muted)",
+                  borderLeft: "1px solid var(--ui-border, #eaf0f6)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textAlign: "left",
+                  paddingLeft: 2,
+                }}
+                title={slotTimeLabel((GRID_START_HOUR + h) * SLOTS_PER_HOUR)}
+              >
+                {hourRulerLabel(GRID_START_HOUR + h)}
               </div>
             ))}
           </div>
@@ -165,7 +210,7 @@ export default function FindATimePanel() {
             const errMsg = row.error?.message ?? null;
             return (
               <div key={row.scheduleId ?? `row-${idx}`} style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <div style={{ width: 150, fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={label}>{label}</div>
+                <div style={{ width: LABEL_GUTTER_PX, minWidth: LABEL_GUTTER_PX, boxSizing: "border-box", fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={label}>{label}</div>
                 {errMsg || slots.length === 0 ? (
                   <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
                     {errMsg ? `Could not read this calendar - ${errMsg}` : "No free/busy published for this mailbox."}
@@ -180,7 +225,10 @@ export default function FindATimePanel() {
                           key={`${idx}-${slotIndex}`}
                           title={`${slotTimeLabel(slotIndex)} - ${SLOT_LABEL[code] ?? "Unknown"}`}
                           style={{
-                            width: 14,
+                            width: SLOT_PX,
+                            minWidth: SLOT_PX,
+                            boxSizing: "border-box",
+                            flex: `0 0 ${SLOT_PX}px`,
                             height: 22,
                             background: SLOT_COLORS[code] ?? "#e2e8f0",
                             borderLeft: slotIndex % SLOTS_PER_HOUR === 0 ? "1px solid var(--ui-border, #cbd6e2)" : "none"
@@ -198,6 +246,10 @@ export default function FindATimePanel() {
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#fbbf24", marginRight: 3 }} />Tentative</span>
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#ef4444", marginRight: 3 }} />Busy</span>
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#a855f7", marginRight: 3 }} />Out of office</span>
+            {/* BF_PORTAL_FINDTIME_RULER_ALIGN_v1 - SLOT_COLORS renders five states
+                but the legend only explained four, so a "working elsewhere" block
+                appeared as an unexplained colour. */}
+            <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#38bdf8", marginRight: 3 }} />Working elsewhere</span>
             <span style={{ marginLeft: "auto" }}>Today, {GRID_START_HOUR}:00 - {GRID_END_HOUR}:00 local</span>
           </div>
         </div>
