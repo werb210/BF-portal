@@ -11,7 +11,10 @@ export const inputStyle: React.CSSProperties = {
   fontSize: 14,
 };
 
-export function Field(p: { label: string; error?: string; children: React.ReactNode }) {
+// BF_PORTAL_LENDER_COMPANY_NAME_LOCKED_HINT_v1 - optional explanatory text under
+// a field. Distinct from `error`: a hint is neutral guidance, not a failure, so
+// it is not styled red and does not imply the user did something wrong.
+export function Field(p: { label: string; error?: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="ui-field" style={{ marginBottom: 12 }}>
       {p.label ? (
@@ -20,6 +23,11 @@ export function Field(p: { label: string; error?: string; children: React.ReactN
         </label>
       ) : null}
       {p.children}
+      {p.hint && !p.error ? (
+        <div className="ui-field__hint" style={{ color: "var(--ui-text-muted)", fontSize: 12, marginTop: 4 }}>
+          {p.hint}
+        </div>
+      ) : null}
       {p.error ? (
         <div className="ui-field__error" style={{ color: "#b91c1c", fontSize: 12, marginTop: 2 }}>
           {p.error}

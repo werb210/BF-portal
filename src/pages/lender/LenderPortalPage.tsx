@@ -495,8 +495,24 @@ export default function LenderPortalPage() {
                 {profileSaveErr}
               </div>
             )}
-            <Field label="Company name">
-              <input value={profileDraft.name ?? ""} readOnly disabled style={{ ...inputStyle, opacity: 0.6 }} />
+            {/* BF_PORTAL_LENDER_COMPANY_NAME_LOCKED_HINT_v1
+                Company name is deliberately not lender-editable: it is the name
+                shown to staff and used on submissions, so a lender renaming
+                themselves would silently break how their deals are identified.
+                Previously this rendered as a greyed-out box with no explanation,
+                which reads as a broken field rather than a deliberate one - a
+                lender reasonably assumed the form was failing. Keep the field
+                visible (it confirms WHICH company the lender is editing) and say
+                plainly why it is locked and who to ask. */}
+            <Field label="Company name" hint="Locked. Your company name appears on submissions to us, so it is maintained by Boreal - email info@boreal.financial to have it changed.">
+              <input
+                value={profileDraft.name ?? ""}
+                readOnly
+                disabled
+                aria-readonly="true"
+                title="Managed by Boreal Financial"
+                style={{ ...inputStyle, opacity: 0.6, cursor: "not-allowed" }}
+              />
             </Field>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {EDIT_FIELDS.map((f) => (
