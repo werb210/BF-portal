@@ -26,6 +26,8 @@ const fallback: Required<Analytics> = {
 };
 const fmt = (n?: number) => (n ?? 0).toLocaleString();
 const pct = (part?: number, total?: number) => total ? `${Math.round(((part ?? 0) / total) * 100)}%` : "0%";
+const statValue = { color: "var(--ui-text)", fontSize: 24, lineHeight: 1.1 } as const;
+const statHint = { color: "var(--ui-text-muted)", fontSize: 12 } as const;
 
 function MiniTable({ title, rows, valueLabel }: { title: string; rows: Row[]; valueLabel: (row: Row) => string }) {
   return (
@@ -63,10 +65,10 @@ export default function DashboardAnalytics() {
       </div>
       {error && <div className="drawer-section" style={{ color: "var(--ui-text-muted)", padding: 12 }}>{error}</div>}
       <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        <div className="drawer-section"><div className="drawer-section__title">GA4 Visits</div><strong>{fmt(f.visits)}</strong></div>
-        <div className="drawer-section"><div className="drawer-section__title">Applications</div><strong>{fmt(f.applications)}</strong><small> {pct(f.applications, f.visits)} of visits</small></div>
-        <div className="drawer-section"><div className="drawer-section__title">Submitted</div><strong>{fmt(f.submitted)}</strong><small> {pct(f.submitted, f.applications)} of apps</small></div>
-        <div className="drawer-section"><div className="drawer-section__title">Funded</div><strong>{fmt(f.funded)}</strong><small> {pct(f.funded, f.submitted)} of submitted</small></div>
+        <div className="drawer-section"><div className="drawer-section__title">GA4 Visits</div><strong style={statValue}>{fmt(f.visits)}</strong></div>
+        <div className="drawer-section"><div className="drawer-section__title">Applications</div><strong style={statValue}>{fmt(f.applications)}</strong><small style={statHint}> {pct(f.applications, f.visits)} of visits</small></div>
+        <div className="drawer-section"><div className="drawer-section__title">Submitted</div><strong style={statValue}>{fmt(f.submitted)}</strong><small style={statHint}> {pct(f.submitted, f.applications)} of apps</small></div>
+        <div className="drawer-section"><div className="drawer-section__title">Funded</div><strong style={statValue}>{fmt(f.funded)}</strong><small style={statHint}> {pct(f.funded, f.submitted)} of submitted</small></div>
       </div>
       <div className="drawer-section" style={{ padding: 16 }}><div className="drawer-section__title">Application funnel & drop-offs</div>{stages.length === 0 ? <p style={{ color: "var(--ui-text-muted)" }}>No funnel data for this range.</p> : stages.map(([stage, count]) => <div key={stage} style={{ display: "grid", gridTemplateColumns: "160px 1fr 70px", gap: 10, alignItems: "center", marginTop: 8 }}><span>{stage}</span><div style={{ height: 8, background: "var(--ui-surface-strong)", borderRadius: 99 }}><div style={{ height: "100%", width: `${Math.round((count / maxStage) * 100)}%`, background: "var(--ui-accent-blue)", borderRadius: 99 }} /></div><strong style={{ textAlign: "right" }}>{fmt(count)}</strong></div>)}</div>
       <div className="grid gap-3 md:grid-cols-2">

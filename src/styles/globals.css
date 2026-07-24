@@ -2260,6 +2260,12 @@ a,
 
 .drawer-section {
   background: var(--ui-surface-muted);
+  /* BF_PORTAL_DASHBOARD_CONTRAST_v1 - this rule painted a light background
+     (#eef1f5) and set no colour, so any text placed directly in a
+     drawer-section inherited the ancestor's colour. Where that ancestor was
+     light, values rendered near-white on near-white. __title and __footer set
+     their own muted colour and still win over this. */
+  color: var(--ui-text);
   border-radius: 14px;
   padding: 12px 14px;
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.14);
