@@ -1,5 +1,5 @@
 // BF_PORTAL_FINDTIME_RULER_ALIGN_v1
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -9,18 +9,19 @@ const src = readFileSync(
 );
 
 describe("free/busy ruler lines up with the availability blocks", () => {
-  it("ruler and blocks share one set of geometry constants", () => {
-    expect(src).toContain("const SLOT_PX = 14;");
-    expect(src).toContain("const HOUR_PX = SLOTS_PER_HOUR * SLOT_PX;");
+  it("ruler and blocks share the same label gutter", () => {
     expect(src).toContain("const LABEL_GUTTER_PX = 150;");
+    expect(src).toContain("flex: `0 0 ${LABEL_GUTTER_PX}px`");
+    expect(src).not.toContain("paddingLeft: LABEL_GUTTER_PX");
   });
 
-  it("no row hardcodes its own width any more", () => {
-    // Divergent literals are what let the two rows drift apart.
-    expect(src).not.toContain("width: SLOTS_PER_HOUR * 14");
-    expect(src).not.toContain("paddingLeft: 150");
-    expect(src).not.toContain("<div style={{ width: 150, fontSize: 12");
-    expect(src).not.toContain("width: 14,\n                            height: 22,");
+  it("all time columns are fluid instead of fixed pixel tracks", () => {
+    expect(src).toContain('flex: "1 1 0"');
+    expect(src).toContain("minWidth: 0");
+    expect(src).not.toContain("const SLOT_PX = 14;");
+    expect(src).not.toContain("const HOUR_PX = SLOTS_PER_HOUR * SLOT_PX;");
+    expect(src).not.toContain("minWidth: LABEL_GUTTER_PX + (LAST_SLOT - FIRST_SLOT) * SLOT_PX");
+    expect(src).not.toContain("flex: `0 0 ${SLOT_PX}px`");
   });
 
   it("sizing is border-box so a divider cannot shift a label", () => {

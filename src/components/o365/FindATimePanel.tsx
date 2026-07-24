@@ -74,21 +74,13 @@ const SLOT_COLORS: Record<string, string> = {
 };
 
 // BF_PORTAL_FINDTIME_RULER_ALIGN_v1
-// The hour ruler and the availability blocks are two separate flex rows that
-// have to line up pixel for pixel. They were each hardcoding their own widths
-// (ruler cell `SLOTS_PER_HOUR * 14`, block `14`, label gutter `150` written out
-// twice), so any change to one silently desynchronised the other - and the
-// ruler additionally carried `paddingLeft: 2` and a `borderLeft`, which under
-// content-box sizing pushes every label right of the block it names.
+// The hour ruler and the availability blocks are separate flex rows that have
+// to line up at every panel width. Keep the label gutter shared, then let the
+// ruler labels and half-hour blocks divide the remaining width with flex tracks
+// instead of a fixed pixel grid that requires horizontal scrolling.
 //
-// Worse for reading: a 28px hour cell cannot fit "10 AM", so every label wrapped
-// onto two lines and the last one clipped mid-character. The result was a row of
-// bare numbers above a row of stray AM/PMs, aligned to nothing.
-//
-// One source of truth for the geometry, compact single-character meridiem so a
-// label always fits its own hour, and nowrap so it can never wrap again.
-const SLOT_PX = 14;
-const HOUR_PX = SLOTS_PER_HOUR * SLOT_PX;
+// Compact single-character meridiem plus nowrap keeps labels readable in narrow
+// columns without the labels wrapping into stray AM/PM rows.
 const LABEL_GUTTER_PX = 150;
 
 function hourRulerLabel(hour24: number): string {
@@ -181,8 +173,7 @@ export default function FindATimePanel() {
               title={m.email}
             >
               <input type="checkbox" checked={selected.has(m.email)} onChange={() => toggle(m.email)} />
-              <span style={{ fontWeight: 600 }}>{m.name}</span>
-              <span style={{ color: "var(--ui-text-muted)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.email}</span>
+              <span style={{ color: "var(--ui-text-primary, #0f172a)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name && m.name.trim() ? m.name : m.email}</span>
             </label>
           ))
         )}
@@ -210,23 +201,21 @@ export default function FindATimePanel() {
       </div>
       {note && <p style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{note}</p>}
       {rows.length > 0 && (
-        <div style={{ overflowX: "auto", paddingBottom: 4 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: LABEL_GUTTER_PX + (LAST_SLOT - FIRST_SLOT) * SLOT_PX }}>
-          {/* BF_PORTAL_FINDTIME_RULER_ALIGN_v1 - hour ruler, sharing SLOT_PX /
-              HOUR_PX / LABEL_GUTTER_PX with the block rows below so the two can
-              never drift. boxSizing is set explicitly rather than inherited: the
-              cell must measure exactly one hour INCLUDING its divider line, or
-              every label creeps right of the hour it names. */}
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 0, paddingLeft: LABEL_GUTTER_PX }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 4 }}>
+          {/* BF_PORTAL_FINDTIME_RULER_ALIGN_v1 - hour ruler, sharing the same gutter
+              as the block rows below so the two can never drift. boxSizing is
+              set explicitly rather than inherited: each flex track must measure
+              INCLUDING its divider line, or every label creeps right. */}
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 0 }}>
+            <div style={{ flex: `0 0 ${LABEL_GUTTER_PX}px`, minWidth: 0, boxSizing: "border-box" }} />
+            <div style={{ display: "flex", flex: "1 1 0", minWidth: 0 }}>
             {Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, h) => (
               <div
                 key={`hr-${h}`}
                 style={{
-                  width: HOUR_PX,
-                  minWidth: HOUR_PX,
-                  maxWidth: HOUR_PX,
                   boxSizing: "border-box",
-                  flex: `0 0 ${HOUR_PX}px`,
+                  flex: "1 1 0",
+                  minWidth: 0,
                   fontSize: 10,
                   lineHeight: "12px",
                   color: "var(--ui-text-muted)",
@@ -241,6 +230,7 @@ export default function FindATimePanel() {
                 {hourRulerLabel(GRID_START_HOUR + h)}
               </div>
             ))}
+            </div>
           </div>
           {rows.map((row, idx) => {
             const view = row.availabilityView ?? "";
@@ -249,13 +239,13 @@ export default function FindATimePanel() {
             const errMsg = row.error?.message ?? null;
             return (
               <div key={row.scheduleId ?? `row-${idx}`} style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <div style={{ width: LABEL_GUTTER_PX, minWidth: LABEL_GUTTER_PX, boxSizing: "border-box", fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={label}>{label}</div>
+                <div style={{ flex: `0 0 ${LABEL_GUTTER_PX}px`, minWidth: 0, boxSizing: "border-box", fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={label}>{label}</div>
                 {errMsg || slots.length === 0 ? (
                   <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
                     {errMsg ? `Could not read this calendar - ${errMsg}` : "No free/busy published for this mailbox."}
                   </div>
                 ) : (
-                  <div style={{ display: "flex", gap: 0 }}>
+                  <div style={{ display: "flex", flex: "1 1 0", minWidth: 0, gap: 0 }}>
                     {slots.slice(FIRST_SLOT, LAST_SLOT).map((ch, i) => {
                       const slotIndex = FIRST_SLOT + i;
                       const code = ch ?? "0";
@@ -264,10 +254,9 @@ export default function FindATimePanel() {
                           key={`${idx}-${slotIndex}`}
                           title={`${slotTimeLabel(slotIndex)} - ${SLOT_LABEL[code] ?? "Unknown"}`}
                           style={{
-                            width: SLOT_PX,
-                            minWidth: SLOT_PX,
                             boxSizing: "border-box",
-                            flex: `0 0 ${SLOT_PX}px`,
+                            flex: "1 1 0",
+                            minWidth: 0,
                             height: 22,
                             background: SLOT_COLORS[code] ?? "#e2e8f0",
                             borderLeft: slotIndex % SLOTS_PER_HOUR === 0 ? "1px solid var(--ui-border, #cbd6e2)" : "none"
@@ -290,7 +279,6 @@ export default function FindATimePanel() {
                 appeared as an unexplained colour. */}
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#38bdf8", marginRight: 3 }} />Working elsewhere</span>
             <span style={{ marginLeft: "auto" }}>{selectedDayLabel}, {GRID_START_HOUR}:00 - {GRID_END_HOUR}:00 local</span>
-          </div>
           </div>
         </div>
       )}
