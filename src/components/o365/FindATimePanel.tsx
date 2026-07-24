@@ -1,7 +1,7 @@
 // BF_PORTAL_O365_UI_v1 - find-a-time free/busy grid (GET /api/calendar/schedule).
 // BF_PORTAL_FINDTIME_AUTOCOMPLETE_v1 - type a teammate's name or email to add them
 // (suggestions from /api/tasks/staff) instead of typing full addresses by hand.
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@/api";
 
 // BF_PORTAL_FINDTIME_GRID_v1 - Graph returns a per-entry `error` when a mailbox
@@ -22,11 +22,37 @@ const FIRST_SLOT = GRID_START_HOUR * SLOTS_PER_HOUR;
 const LAST_SLOT = GRID_END_HOUR * SLOTS_PER_HOUR;
 const SLOT_LABEL: Record<string, string> = { "0": "Free", "1": "Tentative", "2": "Busy", "3": "Out of office", "4": "Working elsewhere" };
 
-function localDayWindow(): { start: string; end: string } {
-  const now = new Date();
-  const startD = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-  const endD = new Date(startD.getTime() + 24 * 60 * 60 * 1000);
+function dateInputValue(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function parseDateInput(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const [, y, m, d] = match;
+  const date = new Date(Number(y), Number(m) - 1, Number(d), 0, 0, 0, 0);
+  if (date.getFullYear() !== Number(y) || date.getMonth() !== Number(m) - 1 || date.getDate() !== Number(d)) return null;
+  return date;
+}
+
+function addLocalDays(value: string, days: number): string {
+  const base = parseDateInput(value) ?? new Date();
+  return dateInputValue(new Date(base.getFullYear(), base.getMonth(), base.getDate() + days, 0, 0, 0, 0));
+}
+
+function localDayWindow(dateValue: string): { start: string; end: string } {
+  const selected = parseDateInput(dateValue) ?? new Date();
+  const startD = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 0, 0, 0, 0);
+  const endD = new Date(startD.getFullYear(), startD.getMonth(), startD.getDate() + 1, 0, 0, 0, 0);
   return { start: startD.toISOString(), end: endD.toISOString() };
+}
+
+function displayDay(value: string): string {
+  const parsed = parseDateInput(value) ?? new Date();
+  return parsed.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
 
 function slotTimeLabel(slotIndex: number): string {
@@ -79,6 +105,8 @@ export default function FindATimePanel() {
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [selectedDate, setSelectedDate] = useState(() => dateInputValue(new Date()));
+  const selectedDayLabel = useMemo(() => displayDay(selectedDate), [selectedDate]);
 
   useEffect(() => {
     let alive = true;
@@ -119,7 +147,7 @@ export default function FindATimePanel() {
       type SchedulePayload = { schedules?: ScheduleEntry[]; connected?: boolean; error?: string };
       // BF_PORTAL_FINDTIME_GRID_v1 - the server defaults to a UTC day, which in
       // western timezones starts the evening before. Send the viewer's own day.
-      const win = localDayWindow();
+      const win = localDayWindow(selectedDate);
       const r = await api.get<SchedulePayload & { data?: SchedulePayload }>(
         `/api/calendar/schedule?emails=${encodeURIComponent(list.join(","))}`
           + `&start=${encodeURIComponent(win.start)}&end=${encodeURIComponent(win.end)}`
@@ -140,7 +168,7 @@ export default function FindATimePanel() {
   return (
     <div style={{ marginTop: 16, padding: 16, border: "1px solid var(--ui-border, #eaf0f6)", borderRadius: 8 }}>
       <h3 style={{ marginTop: 0, fontSize: 15 }}>Find a time</h3>
-      <p style={{ color: "var(--ui-text-muted)", fontSize: 12, marginTop: 0 }}>Select teammates to see today&apos;s free/busy.</p>
+      <p style={{ color: "var(--ui-text-muted)", fontSize: 12, marginTop: 0 }}>Select teammates and a date to see free/busy.</p>
       {/* BF_PORTAL_FINDTIME_CHECKBOX_v1 - staff checkbox list (Admin/Marketing/Staff only, server-filtered). */}
       <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid var(--ui-border, #eaf0f6)", borderRadius: 6, padding: 8, marginBottom: 10 }}>
         {staff.length === 0 ? (
@@ -159,7 +187,17 @@ export default function FindATimePanel() {
           ))
         )}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        <button type="button" onClick={() => setSelectedDate((value) => addLocalDays(value, -1))} style={{ padding: "6px 10px", background: "transparent", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border, #cbd6e2)", borderRadius: 4, cursor: "pointer", fontSize: 12 }}>
+          Prev
+        </button>
+        <input aria-label="Find a time date" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ padding: "5px 8px", border: "1px solid var(--ui-border, #cbd6e2)", borderRadius: 4, fontSize: 12 }} />
+        <button type="button" onClick={() => setSelectedDate((value) => addLocalDays(value, 1))} style={{ padding: "6px 10px", background: "transparent", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border, #cbd6e2)", borderRadius: 4, cursor: "pointer", fontSize: 12 }}>
+          Next
+        </button>
+        <button type="button" onClick={() => setSelectedDate(dateInputValue(new Date()))} style={{ padding: "6px 10px", background: "transparent", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border, #cbd6e2)", borderRadius: 4, cursor: "pointer", fontSize: 12 }}>
+          Today
+        </button>
         <button type="button" onClick={() => void run()} disabled={loading || selected.size === 0} style={{ padding: "6px 14px", background: selected.size === 0 ? "var(--ui-surface-muted)" : "var(--ui-accent-blue)", color: selected.size === 0 ? "var(--ui-text-muted)" : "#fff", border: "none", borderRadius: 4, cursor: selected.size === 0 ? "default" : "pointer" }}>
           {loading ? "Checking..." : "Check"}
         </button>
@@ -172,7 +210,8 @@ export default function FindATimePanel() {
       </div>
       {note && <p style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{note}</p>}
       {rows.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ overflowX: "auto", paddingBottom: 4 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: LABEL_GUTTER_PX + (LAST_SLOT - FIRST_SLOT) * SLOT_PX }}>
           {/* BF_PORTAL_FINDTIME_RULER_ALIGN_v1 - hour ruler, sharing SLOT_PX /
               HOUR_PX / LABEL_GUTTER_PX with the block rows below so the two can
               never drift. boxSizing is set explicitly rather than inherited: the
@@ -250,7 +289,8 @@ export default function FindATimePanel() {
                 but the legend only explained four, so a "working elsewhere" block
                 appeared as an unexplained colour. */}
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#38bdf8", marginRight: 3 }} />Working elsewhere</span>
-            <span style={{ marginLeft: "auto" }}>Today, {GRID_START_HOUR}:00 - {GRID_END_HOUR}:00 local</span>
+            <span style={{ marginLeft: "auto" }}>{selectedDayLabel}, {GRID_START_HOUR}:00 - {GRID_END_HOUR}:00 local</span>
+          </div>
           </div>
         </div>
       )}
