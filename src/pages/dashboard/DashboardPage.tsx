@@ -3,6 +3,8 @@ import { Navigate } from "react-router-dom";
 import AppLoading from "@/components/layout/AppLoading";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/api";
+// BF_PORTAL_DASHBOARD_ANALYTICS_v1
+import DashboardAnalytics from "@/pages/dashboard/DashboardAnalytics";
 
 type DashboardMetrics = {
   activeApplications: number;
@@ -151,6 +153,9 @@ const DashboardPage = () => {
           </div>
         )}
       </div>
+
+      {/* BF_PORTAL_DASHBOARD_ANALYTICS_v1 */}
+      <DashboardAnalytics />
     </div>
   );
 };
