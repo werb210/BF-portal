@@ -39,6 +39,16 @@ describe("free/busy ruler lines up with the availability blocks", () => {
     expect(src).toContain("title={slotTimeLabel((GRID_START_HOUR + h) * SLOTS_PER_HOUR)}");
   });
 
+  it("makes row labels visible without relying on an inherited colour", () => {
+    expect(src).toContain('color: "var(--ui-text)"');
+  });
+
+  it("shows a matching teammate name and keeps the mailbox address on hover", () => {
+    expect(src).toContain("member.email.toLowerCase() === address.toLowerCase()");
+    expect(src).toContain("const label = teammate?.name.trim() || address;");
+    expect(src).toContain("title={address}>{label}</div>");
+  });
+
   it("the legend explains every state the grid can render", () => {
     for (const colour of ["#22c55e", "#fbbf24", "#ef4444", "#a855f7", "#38bdf8"]) {
       expect(src).toContain(`background: "${colour}", marginRight: 3`);
