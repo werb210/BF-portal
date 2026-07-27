@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AppLoading from "@/components/layout/AppLoading";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,13 +38,24 @@ const StatCard = ({ label, value }: { label: string; value: string }) => (
 const DashboardPage = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  const loadDashboard = useCallback(() => {
+    setLoadFailed(false);
+    return api<DashboardMetrics>("/api/dashboard/metrics")
+      .then((nextMetrics) => {
+        setMetrics(nextMetrics);
+      })
+      .catch(() => {
+        setMetrics(null);
+        setLoadFailed(true);
+      });
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    api<DashboardMetrics>("/api/dashboard/metrics")
-      .then(setMetrics)
-      .catch(() => setMetrics(null));
-  }, [isAuthenticated]);
+    void loadDashboard();
+  }, [isAuthenticated, loadDashboard]);
 
   if (isLoading) return <AppLoading />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -59,6 +70,31 @@ const DashboardPage = () => {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
+
+      {loadFailed && (
+        <div
+          role="alert"
+          className="drawer-section"
+          style={{
+            alignItems: "center",
+            display: "flex",
+            gap: 12,
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <div style={{ color: "var(--ui-text)", fontWeight: 700 }}>
+              {"Couldn't load dashboard data"}
+            </div>
+            <div style={{ color: "var(--ui-text-muted)", fontSize: 13, marginTop: 2 }}>
+              The dashboard service may be temporarily unavailable. Your data has not been removed.
+            </div>
+          </div>
+          <button type="button" className="btn btn-secondary" onClick={() => void loadDashboard()}>
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
         <StatCard label="Active Applications" value={fmt(metrics?.activeApplications)} />
@@ -78,11 +114,11 @@ const DashboardPage = () => {
         <div className="drawer-section__title" style={{ marginBottom: 12 }}>
           Pipeline by Stage &middot; Projected Commission
         </div>
-        {stages.length === 0 ? (
+        {metrics !== null && stages.length === 0 ? (
           <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>
             No applications in the pipeline yet.
           </div>
-        ) : (
+        ) : stages.length > 0 ? (
           <div style={{ display: "grid", gap: 10 }}>
             {stages.map(([stage, count]) => {
               const pct =
@@ -151,7 +187,7 @@ const DashboardPage = () => {
               );
             })}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* BF_PORTAL_DASHBOARD_ANALYTICS_v1 */}
