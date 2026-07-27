@@ -235,11 +235,17 @@ export default function FindATimePanel() {
           {rows.map((row, idx) => {
             const view = row.availabilityView ?? "";
             const slots = Array.from(view);
-            const label = row.scheduleId && row.scheduleId.trim() ? row.scheduleId : "Unknown mailbox";
+            const address = row.scheduleId && row.scheduleId.trim() ? row.scheduleId : "Unknown mailbox";
+            const teammate = staff.find((member) => member.email.toLowerCase() === address.toLowerCase());
+            const label = teammate?.name.trim() || address;
             const errMsg = row.error?.message ?? null;
             return (
               <div key={row.scheduleId ?? `row-${idx}`} style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <div style={{ flex: `0 0 ${LABEL_GUTTER_PX}px`, minWidth: 0, boxSizing: "border-box", fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={label}>{label}</div>
+                {/* BF_PORTAL_FINDTIME_ROW_LABEL_v1 - do not inherit the panel's
+                    colour: an inherited white value made this occupied gutter
+                    look blank. Prefer the staff name while retaining the
+                    mailbox address in the tooltip. */}
+                <div style={{ flex: `0 0 ${LABEL_GUTTER_PX}px`, minWidth: 0, boxSizing: "border-box", color: "var(--ui-text)", fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={address}>{label}</div>
                 {errMsg || slots.length === 0 ? (
                   <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
                     {errMsg ? `Could not read this calendar - ${errMsg}` : "No free/busy published for this mailbox."}
