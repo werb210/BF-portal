@@ -81,7 +81,7 @@ const SLOT_COLORS: Record<string, string> = {
 //
 // Compact single-character meridiem plus nowrap keeps labels readable in narrow
 // columns without the labels wrapping into stray AM/PM rows.
-const LABEL_GUTTER_PX = 150;
+const LABEL_GUTTER_PX = 116;
 
 function hourRulerLabel(hour24: number): string {
   const h12 = hour24 % 12 === 0 ? 12 : hour24 % 12;

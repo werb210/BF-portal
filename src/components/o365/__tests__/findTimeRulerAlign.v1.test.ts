@@ -10,7 +10,7 @@ const src = readFileSync(
 
 describe("free/busy ruler lines up with the availability blocks", () => {
   it("ruler and blocks share the same label gutter", () => {
-    expect(src).toContain("const LABEL_GUTTER_PX = 150;");
+    expect(src).toContain("const LABEL_GUTTER_PX = 116;");
     expect(src).toContain("flex: `0 0 ${LABEL_GUTTER_PX}px`");
     expect(src).not.toContain("paddingLeft: LABEL_GUTTER_PX");
   });
