@@ -4,6 +4,7 @@ import { api, rawApiFetch } from "@/api";
 
 type Seg = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
 type Tpl = { headline: string; heroUrl: string; heroLink: string; body: string; ctaLabel: string; ctaUrl: string; image2Url: string; image2Link: string };
+type EmailLibraryTemplate = { id: string; name: string; subject: string | null; body: string | null; html: string | null; landingUrl: string | null };
 
 const DEFAULTS: Tpl = {
   headline: "", heroUrl: "", heroLink: "", body: "",
@@ -91,10 +92,13 @@ export default function BrandedEmailComposer() {
   const [canceling, setCanceling] = useState(false); // BF_PORTAL_SEND_HOLD_CANCEL_v1
   const [preview, setPreview] = useState("");
   const [libName, setLibName] = useState(""); // BF_PORTAL_BLOCK_v206_EMAIL_LIB
-  const [emailTpls, setEmailTpls] = useState<{ id: string; name: string; subject: string | null; body: string | null }[]>([]); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
+  const [emailTpls, setEmailTpls] = useState<EmailLibraryTemplate[]>([]); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
   const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
   const heroRef = useRef<HTMLInputElement>(null);
   const img2Ref = useRef<HTMLInputElement>(null);
+  // A library template already contains the canonical rendered email. Do not
+  // immediately replace it with a preview generated from the current fields.
+  const skipNextPreview = useRef(false);
 
   useEffect(() => {
     api.get<{ data?: Seg } & Partial<Seg>>("/api/marketing/email/segments")
@@ -125,6 +129,10 @@ export default function BrandedEmailComposer() {
   }, [include, exclude]);
 
   useEffect(() => {
+    if (skipNextPreview.current) {
+      skipNextPreview.current = false;
+      return;
+    }
     let alive = true;
     api.post<any>("/api/marketing/email/template/preview", tpl)
       .then((r) => { if (alive) setPreview((r?.data?.html ?? r?.html ?? "") as string); })
@@ -166,7 +174,7 @@ export default function BrandedEmailComposer() {
   };
 
   useEffect(() => {
-    api.get<{ data?: { items?: { id: string; name: string; subject: string | null; body: string | null }[] }; items?: { id: string; name: string; subject: string | null; body: string | null }[] }>("/api/marketing/templates?channel=email")
+    api.get<{ data?: { items?: EmailLibraryTemplate[] }; items?: EmailLibraryTemplate[] }>("/api/marketing/templates?channel=email")
       .then((r) => setEmailTpls(r?.data?.items ?? r?.items ?? []))
       .catch(() => setEmailTpls([]));
   }, []); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
@@ -199,10 +207,16 @@ export default function BrandedEmailComposer() {
       const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number };
       if (r?.configured === false) setMsg("SendGrid not connected yet (set SENDGRID_API_KEY).");
       else if (r?.error) setMsg(r.error);
-      else if (r?.test) setMsg(r.ok ? "Test sent." : "Test failed.");
+      else if (r?.test) setMsg(r.ok
+        ? "Test accepted by SendGrid. Acceptance is not delivery; if it does not arrive, check spam, sender authentication, and suppression lists."
+        : `Test failed${r.error ? `: ${r.error}` : ""}.`);
       else if (r?.queued) { const id = String(r.jobId ?? ""); setJobId(id); void pollComposerJob(id, Number(r.total ?? count), setMsg, setHeld); } // BF_PORTAL_COMPOSER_JOB_POLL_v1
       else setMsg(`Sent ${r?.sent ?? 0}${r?.failed ? `, ${r.failed} failed` : ""}.`);
-    } catch { setMsg("Send failed."); }
+    } catch (e) {
+      const status = typeof e === "object" && e !== null && "status" in e ? String(e.status) : "";
+      const error = e instanceof Error ? e.message : String(e);
+      setMsg(`Send failed${status ? ` (${status})` : ""}: ${error}`);
+    }
     finally { setBusy(false); }
   };
 
@@ -227,7 +241,20 @@ export default function BrandedEmailComposer() {
           </div>
           {emailTpls.length > 0 ? (
             <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Load template
-              <select value={currentTemplateId ?? ""} onChange={(e) => { const t = emailTpls.find((x) => x.id === e.target.value); if (t) { setSubject(t.subject ?? ""); setTpl((p) => ({ ...p, body: t.body ?? p.body })); setCurrentTemplateId(t.id); } else { setCurrentTemplateId(null); } }} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle}>
+              <select value={currentTemplateId ?? ""} onChange={(e) => {
+                const t = emailTpls.find((x) => x.id === e.target.value);
+                if (t) {
+                  setSubject(t.subject ?? "");
+                  setTpl((p) => ({ ...p, body: t.body ?? p.body }));
+                  setLandingUrl(t.landingUrl ?? "");
+                  skipNextPreview.current = true;
+                  setPreview(t.html ?? "");
+                  setCurrentTemplateId(t.id);
+                } else {
+                  setCurrentTemplateId(null);
+                  setLandingUrl("");
+                }
+              }} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle}>
                 <option value="">&mdash; none &mdash;</option>
                 {emailTpls.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
