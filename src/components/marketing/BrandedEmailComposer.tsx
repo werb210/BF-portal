@@ -295,9 +295,9 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
           </div>
           <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Merge fields: {"{{first_name}}"}, {"{{name}}"}, {"{{company}}"}, {"{{email}}"}. Logo, colours and footer are fixed.</p>
           <div className="flex flex-wrap gap-2 items-end">
-            <button type="button" disabled={saving} onClick={() => void save()} className="ui-button ui-button--secondary">{saving ? "Saving..." : "Save template"}</button>
+            <button type="button" disabled={saving} onClick={() => void save()} className="ui-button ui-button--secondary">{saving ? "Saving..." : "Save draft"}</button>
             <input value={libName} onChange={(e) => setLibName(e.target.value)} placeholder="Template name" className="block border rounded px-2 py-1 text-sm" style={inputStyle} />
-            <button type="button" disabled={!libName.trim() || !subject} onClick={() => void saveNamed()} className="ui-button ui-button--secondary">Save as template</button>
+            <button type="button" disabled={!libName.trim() || !subject} onClick={() => void saveNamed()} className="ui-button ui-button--secondary">Save to library</button>
             <label className="text-sm" style={{ color: "var(--ui-text)" }}>Test to
               <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@boreal.financial" className="block border rounded px-2 py-1 text-sm mt-1" style={inputStyle} />
             </label>

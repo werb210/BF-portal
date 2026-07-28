@@ -14,6 +14,16 @@ type Analytics = {
   topLendersByApprovalRate?: Row[];
 };
 
+type AnalyticsResponse = Analytics & {
+  status?: string;
+  data?: unknown;
+  acquisition?: Row[];
+  marketing?: Row[];
+  funding?: Row[];
+  documents?: Row[];
+  lenders?: Row[];
+};
+
 const ranges: RangeDays[] = [7, 30, 90, 365];
 const fallback: Required<Analytics> = {
   revenueFunnel: { visits: 0, applications: 0, submitted: 0, funded: 0 },
@@ -28,6 +38,31 @@ const fmt = (n?: number) => (n ?? 0).toLocaleString();
 const pct = (part?: number, total?: number) => total ? `${Math.round(((part ?? 0) / total) * 100)}%` : "0%";
 const statValue = { color: "var(--ui-text)", fontSize: 24, lineHeight: 1.1 } as const;
 const statHint = { color: "var(--ui-text-muted)", fontSize: 12 } as const;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+const rows = (value: unknown): Row[] => Array.isArray(value) ? value : [];
+
+/** Convert both the server envelope/aliases and the canonical response into UI data. */
+export function normalizeAnalyticsResponse(raw: unknown): Analytics {
+  if (!isRecord(raw)) return fallback;
+  const body = isRecord(raw.data) ? raw.data : raw;
+  const response = body as AnalyticsResponse;
+
+  return {
+    revenueFunnel: isRecord(response.revenueFunnel)
+      ? response.revenueFunnel as Funnel
+      : fallback.revenueFunnel,
+    applicationFunnel: isRecord(response.applicationFunnel)
+      ? response.applicationFunnel as Record<string, number>
+      : fallback.applicationFunnel,
+    acquisitionChannels: rows(response.acquisitionChannels ?? response.acquisition),
+    marketingPerformance: rows(response.marketingPerformance ?? response.marketing),
+    fundingByProduct: rows(response.fundingByProduct ?? response.funding),
+    documentUploadIssues: rows(response.documentUploadIssues ?? response.documents),
+    topLendersByApprovalRate: rows(response.topLendersByApprovalRate ?? response.lenders),
+  };
+}
 
 function MiniTable({ title, rows, valueLabel }: { title: string; rows: Row[]; valueLabel: (row: Row) => string }) {
   return (
@@ -50,7 +85,7 @@ export default function DashboardAnalytics() {
   useEffect(() => {
     let alive = true;
     setError(null);
-    api.get<Analytics>(`/api/dashboard/analytics?range=${range}`).then((payload) => alive && setData(payload ?? fallback)).catch(() => alive && setError("Analytics are unavailable right now."));
+    api.get<unknown>(`/api/dashboard/analytics?range=${range}`).then((payload) => alive && setData(normalizeAnalyticsResponse(payload))).catch(() => alive && setError("Analytics are unavailable right now."));
     return () => { alive = false; };
   }, [range]);
   const merged = useMemo(() => ({ ...fallback, ...data }), [data]);
