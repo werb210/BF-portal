@@ -11,7 +11,7 @@ describe("branded email audience include/exclude", () => {
     expect(src).not.toContain('payload.tag = tag');
   });
   it("previews the combined recipient count from the server", () => {
-    expect(src).toContain("/api/marketing/email/audience-count");
+    expect(src).toContain("/email/audience-count");
   });
   it("renders two multi-select tag pickers", () => {
     expect(src).toContain('title="Include tags"');
