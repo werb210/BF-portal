@@ -1,11 +1,38 @@
-// BF_PORTAL_BLOCK_v311_MARKETING_CONSOLIDATE_v1 — the A/T split
-// lives inside MarketingT (its internal view-toggle scopes data to
-// Andrew's owner). The previous outer wrapper that toggled
-// MarketingT vs a separate MarketingA stub was duplicating the
-// heading and gating real users behind an empty placeholder.
-// Now BIMarketing just renders MarketingT directly.
+import { useState } from "react";
+import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer";
 import MarketingT from "./MarketingT";
 
+type Channel = "apollo" | "email";
+
 export default function BIMarketing() {
-  return <MarketingT />;
+  const [channel, setChannel] = useState<Channel>("apollo");
+
+  return (
+    <div className="space-y-6">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex gap-2" role="tablist" aria-label="Marketing channels">
+          {(["apollo", "email"] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={channel === key}
+              onClick={() => setChannel(key)}
+              className={"px-4 py-2 rounded-md text-sm font-medium " + (channel === key ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5")}
+            >
+              {key === "apollo" ? "Apollo" : "Email"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {channel === "apollo" ? (
+        <MarketingT />
+      ) : (
+        <div className="max-w-7xl mx-auto px-6">
+          <BrandedEmailComposer apiBase="/api/v1/bi/marketing" />
+        </div>
+      )}
+    </div>
+  );
 }

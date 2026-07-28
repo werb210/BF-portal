@@ -16,13 +16,13 @@ const DEFAULTS: Tpl = {
 // blast and went blind ("Queued N recipients..."); with ALWAYS_QUEUE on the
 // server every branded blast is queued, so a fully-rejected job (dead key,
 // unverified sender) was invisible here. Poll the job like the raw email tab.
-async function pollComposerJob(jobId: string, total: number, setMsg: (m: string) => void, setHeld: (held: boolean) => void): Promise<void> {
+async function pollComposerJob(apiBase: string, jobId: string, total: number, setMsg: (m: string) => void, setHeld: (held: boolean) => void): Promise<void> {
   type SendJob = { status?: string; total?: number; sent?: number; failed?: number; error?: string; not_before?: string };
   setMsg(`Queued ${total} recipients - sending in the background...`);
   for (let n = 0; n < 240; n++) {
     await new Promise((r) => setTimeout(r, 5000));
     try {
-      const res = await api.get<{ data?: SendJob } & SendJob>(`/api/marketing/send-jobs/${jobId}`);
+      const res = await api.get<{ data?: SendJob } & SendJob>(`${apiBase}/send-jobs/${jobId}`);
       const j = (res?.data ?? res) as SendJob;
       if (!j || !j.status) continue;
       if (j.status === "done") { setHeld(false); setMsg(`Done: sent ${j.sent ?? 0}${j.failed ? `, ${j.failed} failed` : ""} of ${j.total ?? total}.${j.error ? ` ${j.error}` : ""}`); return; }
@@ -72,7 +72,7 @@ function TagPicker({ title, hint, tags, selected, onToggle }: {
   );
 }
 
-export default function BrandedEmailComposer() {
+export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { apiBase?: string }) {
   const [seg, setSeg] = useState<Seg | null>(null);
   // EMAIL_AUDIENCE_INCL_EXCL_v1 - multi-tag audience. Include empty = all
   // contacts; a contact needs AT LEAST ONE include tag; any exclude tag
@@ -101,16 +101,16 @@ export default function BrandedEmailComposer() {
   const skipNextPreview = useRef(false);
 
   useEffect(() => {
-    api.get<{ data?: Seg } & Partial<Seg>>("/api/marketing/email/segments")
+    api.get<{ data?: Seg } & Partial<Seg>>(`${apiBase}/email/segments`)
       .then((r) => setSeg((r?.data ?? r) as Seg))
       .catch(() => setSeg({ configured: false, all: 0, segments: [] }));
-    api.get<any>("/api/marketing/email/template")
+    api.get<any>(`${apiBase}/email/template`)
       .then((r) => {
         const t = (r?.data?.template ?? r?.template) as Tpl | undefined;
         if (t && (t.headline || t.body || t.heroUrl || t.ctaLabel)) setTpl({ ...DEFAULTS, ...t });
       })
       .catch(() => {});
-  }, []);
+  }, [apiBase]);
 
   const set = (k: keyof Tpl, v: string) => setTpl((p) => ({ ...p, [k]: v }));
   const count = include.length === 0 && exclude.length === 0 ? (seg?.all ?? 0) : (audCount ?? 0);
@@ -121,12 +121,12 @@ export default function BrandedEmailComposer() {
       const qs = new URLSearchParams();
       if (include.length) qs.set("include", include.join(","));
       if (exclude.length) qs.set("exclude", exclude.join(","));
-      api.get<{ data?: { n?: number }; n?: number }>(`/api/marketing/email/audience-count?${qs.toString()}`)
+      api.get<{ data?: { n?: number }; n?: number }>(`${apiBase}/email/audience-count?${qs.toString()}`)
         .then((r) => { if (alive) setAudCount(Number(r?.data?.n ?? r?.n ?? 0)); })
         .catch(() => { if (alive) setAudCount(0); });
     }, 250);
     return () => { alive = false; clearTimeout(t); };
-  }, [include, exclude]);
+  }, [apiBase, include, exclude]);
 
   useEffect(() => {
     if (skipNextPreview.current) {
@@ -134,18 +134,18 @@ export default function BrandedEmailComposer() {
       return;
     }
     let alive = true;
-    api.post<any>("/api/marketing/email/template/preview", tpl)
+    api.post<any>(`${apiBase}/email/template/preview`, tpl)
       .then((r) => { if (alive) setPreview((r?.data?.html ?? r?.html ?? "") as string); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [tpl]);
+  }, [apiBase, tpl]);
 
   const upload = async (file: File, key: "heroUrl" | "image2Url") => {
     setMsg(null);
     const fd = new FormData();
     fd.append("file", file);
     try {
-      const res = await rawApiFetch("/api/marketing/email/assets/upload", { method: "POST", body: fd });
+      const res = await rawApiFetch(`${apiBase}/email/assets/upload`, { method: "POST", body: fd });
       const j: any = await res.json();
       const url = (j?.data?.url ?? j?.url) as string | undefined;
       if (url) set(key, url);
@@ -155,7 +155,7 @@ export default function BrandedEmailComposer() {
 
   const save = async () => {
     setSaving(true); setMsg(null);
-    try { await api.post("/api/marketing/email/template", tpl); setMsg("Template saved."); }
+    try { await api.post(`${apiBase}/email/template`, tpl); setMsg("Template saved."); }
     catch { setMsg("Save failed."); }
     finally { setSaving(false); }
   };
@@ -164,7 +164,7 @@ export default function BrandedEmailComposer() {
   const saveNamed = async () => {
     if (!libName.trim() || !subject.trim()) return;
     try {
-      const res = await api.post<{ data?: { landingUrl?: string } } & { landingUrl?: string }>("/api/marketing/templates", { channel: "email", name: libName.trim(), subject, body: tpl.body, html: preview });
+      const res = await api.post<{ data?: { landingUrl?: string } } & { landingUrl?: string }>(`${apiBase}/templates`, { channel: "email", name: libName.trim(), subject, body: tpl.body, html: preview });
       const url = (res?.data?.landingUrl ?? res?.landingUrl) || "";
       setLibName("");
       if (url) { setLandingUrl(url); setMsg("Email template saved. Copy the landing page URL below into your SMS template."); }
@@ -174,16 +174,16 @@ export default function BrandedEmailComposer() {
   };
 
   useEffect(() => {
-    api.get<{ data?: { items?: EmailLibraryTemplate[] }; items?: EmailLibraryTemplate[] }>("/api/marketing/templates?channel=email")
+    api.get<{ data?: { items?: EmailLibraryTemplate[] }; items?: EmailLibraryTemplate[] }>(`${apiBase}/templates?channel=email`)
       .then((r) => setEmailTpls(r?.data?.items ?? r?.items ?? []))
       .catch(() => setEmailTpls([]));
-  }, []); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
+  }, [apiBase]); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
 
   async function cancelSend() {
     if (!jobId) return;
     setCanceling(true);
     try {
-      await api.post(`/api/marketing/send-jobs/${jobId}/cancel`, {});
+      await api.post(`${apiBase}/send-jobs/${jobId}/cancel`, {});
       setHeld(false);
       setMsg("Canceled. Nothing was sent.");
     } catch (e) {
@@ -203,14 +203,14 @@ export default function BrandedEmailComposer() {
         if (include.length) payload.tags = include;
         if (exclude.length) payload.excludeTags = exclude;
       }
-      const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/email/send-template", payload);
+      const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>(`${apiBase}/email/send-template`, payload);
       const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number };
       if (r?.configured === false) setMsg("SendGrid not connected yet (set SENDGRID_API_KEY).");
       else if (r?.error) setMsg(r.error);
       else if (r?.test) setMsg(r.ok
         ? "Test accepted by SendGrid. Acceptance is not delivery; if it does not arrive, check spam, sender authentication, and suppression lists."
         : `Test failed${r.error ? `: ${r.error}` : ""}.`);
-      else if (r?.queued) { const id = String(r.jobId ?? ""); setJobId(id); void pollComposerJob(id, Number(r.total ?? count), setMsg, setHeld); } // BF_PORTAL_COMPOSER_JOB_POLL_v1
+      else if (r?.queued) { const id = String(r.jobId ?? ""); setJobId(id); void pollComposerJob(apiBase, id, Number(r.total ?? count), setMsg, setHeld); } // BF_PORTAL_COMPOSER_JOB_POLL_v1
       else setMsg(`Sent ${r?.sent ?? 0}${r?.failed ? `, ${r.failed} failed` : ""}.`);
     } catch (e) {
       const status = typeof e === "object" && e !== null && "status" in e ? String(e.status) : "";
