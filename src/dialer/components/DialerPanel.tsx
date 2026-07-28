@@ -283,6 +283,7 @@ export default function DialerPanel() {
   const connecting        = st.status === "dialing" || st.status === "ringing";
   const liveAny           = inCall || connecting;
   const incoming          = st.incoming;
+  const isInternalCall    = !!st.ctx.isStaff;
   const recording         = !!conf?.recording_sid;
   const recordingPaused   = !!conf?.recording_paused;
 
@@ -449,7 +450,7 @@ export default function DialerPanel() {
 
           {/* Recording consent / End row */}
           <div style={{ padding: "14px 18px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-            <RecordingPill recording={recording} paused={recordingPaused} onToggle={toggleRecording} disabled={!conf} />
+            {!isInternalCall && <RecordingPill recording={recording} paused={recordingPaused} onToggle={toggleRecording} disabled={!conf} />}
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setExp("keypad")}
                 style={{ width: 44, height: 44, borderRadius: "50%", background: expander === "keypad" ? "rgba(255,255,255,0.14)" : "transparent", border: `1.5px solid ${T.borderStrong}`, color: T.text, cursor: "pointer", display: "grid", placeItems: "center" }}
