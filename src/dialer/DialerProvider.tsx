@@ -8,11 +8,13 @@ import { ringPush } from "./debugRing";
 import { probeMicPermission, listAudioDevices } from "./sanityCheck";
 import { useAuth } from "@/auth/AuthContext";
 import { useSilo } from "@/context/SiloContext";
-// BF_PORTAL_CALLER_RESOLVE_v1 — resolve an inbound caller number to a CRM contact.
+// BF_PORTAL_INTERNAL_CALLER_RESOLVE_v1 — resolve inbound PSTN numbers and
+// client-to-client callers. Internal rings are resolved by the server from the
+// live conference rather than from a telephone number.
 async function resolveAndSetIncoming(base: { conferenceFriendly: string; fromDisplay: string; pendingCall?: any }) {
   useDialer.getState().setIncoming(base);
   const rawPhone = String(base.fromDisplay || "");
-  if (!/\d{7,}/.test(rawPhone)) return;
+  if (!/\d{7,}/.test(rawPhone) && !rawPhone.startsWith("client:")) return;
   try {
     const r: any = await dialerApi.resolveCaller(rawPhone);
     const body = r?.data ?? r;

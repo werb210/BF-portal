@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import AppLoading from "@/components/layout/AppLoading";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/api";
+import { useSilo } from "@/context/SiloContext";
 // BF_PORTAL_DASHBOARD_ANALYTICS_v1
 import DashboardAnalytics from "@/pages/dashboard/DashboardAnalytics";
 
@@ -37,10 +38,14 @@ const StatCard = ({ label, value }: { label: string; value: string }) => (
 
 const DashboardPage = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const silo = useSilo()?.silo ?? "BF";
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
   const loadDashboard = useCallback(() => {
+    // BF_PORTAL_DASHBOARD_SILO_REFETCH_v1 — discard the previous business
+    // unit's figures before loading metrics through the active silo.
+    setMetrics(null);
     setLoadFailed(false);
     return api<DashboardMetrics>("/api/dashboard/metrics")
       .then((nextMetrics) => {
@@ -50,7 +55,7 @@ const DashboardPage = () => {
         setMetrics(null);
         setLoadFailed(true);
       });
-  }, []);
+  }, [silo]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
