@@ -16,6 +16,7 @@ import NotificationToast from "@/components/notifications/NotificationToast";
 import { useServerNotifications } from "@/hooks/useServerNotifications";
 import { useInboundMessageWatcher } from "@/hooks/useInboundMessageWatcher";
 import { useNotificationsStore } from "@/state/notifications.store";
+import { usePushRegistration } from "@/hooks/usePushRegistration";
 
 
 const TOPBAR_HEIGHT = 68;
@@ -71,6 +72,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const messagesUnread = useNotificationsStore((st) => st.messagesUnread);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user } = useAuth();
+  usePushRegistration(Boolean(user));
   const { silo } = useSilo();
   const role = (user as { role?: string } | null)?.role ?? "";
   const capabilities = (((user as { capabilities?: string[] } | null)?.capabilities) ?? []) as string[];
