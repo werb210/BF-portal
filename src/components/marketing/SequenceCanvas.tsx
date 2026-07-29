@@ -71,7 +71,7 @@ const issueFor = (node: SequenceNode): string | null => {
   return node.body?.trim() ? null : "Pick a template or add a message body";
 };
 
-const labels: Record<SequenceNode["kind"], string> = { email: "Email", sms: "SMS", auto: "Auto", task: "Task", wait: "Wait" };
+const labels: Record<SequenceNode["kind"], string> = { email: "Email", sms: "SMS", auto: "SMS or email", task: "Task", wait: "Wait" };
 const newNode = (kind: SequenceNode["kind"]): SequenceNode => ({
   id: `${kind}-${Date.now()}-${Math.random().toString(36).slice(2)}`, kind,
   condition: "always", waitValue: kind === "wait" ? 1 : undefined,
@@ -136,9 +136,11 @@ export default function SequenceCanvas({ silo, templates = [], queues = [], busy
           <label className="text-sm">Priority<select value={selected.taskPriority} onChange={(e) => patch(selected.id, { taskPriority: e.target.value })} className={input}>{["NONE", "LOW", "MEDIUM", "HIGH"].map((v) => <option key={v}>{v}</option>)}</select></label>
           <label className="text-sm">Queue<select value={selected.taskQueueId || ""} onChange={(e) => patch(selected.id, { taskQueueId: e.target.value })} className={input}><option value="">No queue</option>{queues.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}</select></label>
           <label className="text-sm">Task title<input value={selected.taskTitle || ""} onChange={(e) => patch(selected.id, { taskTitle: e.target.value })} className={input} /></label>
+          <p className="text-xs text-white/60">Assigned to the contact&apos;s owner. If the contact has no owner, the task goes to the first active Admin.</p>
           <label className="text-sm">Notes<textarea value={selected.taskNotes || ""} onChange={(e) => patch(selected.id, { taskNotes: e.target.value })} className={input} /></label>
           <label className="flex gap-2 text-sm"><input type="checkbox" checked={selected.taskPause ?? true} onChange={(e) => patch(selected.id, { taskPause: e.target.checked })} />Pause sequence until this task is completed</label>
         </> : <>
+          {selected.kind === "auto" && <p className="text-xs text-white/60">Sends SMS to contacts you may lawfully text: Canadian mobile, consented, and not opted out. Everyone else receives email. Each contact receives one message, never both.</p>}
           <label className="text-sm">Template<select value={selected.templateId || ""} onChange={(e) => patch(selected.id, { templateId: e.target.value })} className={input}><option value="">Select a template</option>{templates.filter((t) => selected.kind === "auto" || !t.channel || t.channel === selected.kind).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
           <label className="text-sm">Message body<textarea value={selected.body || ""} onChange={(e) => patch(selected.id, { body: e.target.value })} className={input} /></label>
           <label className="text-sm">Send if<select value={selected.condition} onChange={(e) => patch(selected.id, { condition: e.target.value })} className={input}><option value="always">Always</option><option value="if_no_open">No open yet</option><option value="if_no_click">No click yet</option><option value="if_no_reply">No reply yet</option></select></label>

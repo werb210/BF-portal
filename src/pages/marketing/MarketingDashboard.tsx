@@ -839,7 +839,7 @@ function SequencesPanel() {
   };
   useEffect(() => {
     load();
-    api.get<{ data?: { segments?: { tag: string; n: number }[] }; segments?: { tag: string; n: number }[] }>("/api/marketing/sms/segments")
+    api.get<{ data?: { segments?: { tag: string; n: number }[] }; segments?: { tag: string; n: number }[] }>("/api/marketing/segments")
       .then((r) => setSegs(r?.data?.segments ?? r?.segments ?? [])).catch(() => setSegs([]));
     api.get<{ data?: { items?: TplRow[] }; items?: TplRow[] }>("/api/marketing/templates")
       .then((r) => setTpls(r?.data?.items ?? r?.items ?? [])).catch(() => setTpls([]));

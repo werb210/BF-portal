@@ -165,6 +165,10 @@ export default function BIOutreach() {
   const [loadedOffset, setLoadedOffset] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [biSequences, setBiSequences] = useState<ReadonlyArray<{ id: string; name: string }>>([]);
+  const [biSequenceId, setBiSequenceId] = useState("");
+  const [enrollBusy, setEnrollBusy] = useState(false);
+  const [enrollResult, setEnrollResult] = useState<string | null>(null);
   // BF_PORTAL_BLOCK_v744_OUTREACH_CARD_OPENS_CRM — pipeline card opens the full BI CRM contact view.
   const navigate = useNavigate();
   const openContact = (id: string) => navigate(`/silo/bi/crm/contacts/${id}`, { state: { from: "outreach" } });
@@ -272,6 +276,38 @@ export default function BIOutreach() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void api<{ sequences?: Array<{ id: string; name: string; status?: string }> }>("/api/v1/bi/marketing/sequences")
+      .then((r) => {
+        if (cancelled) return;
+        setBiSequences((r?.sequences ?? []).filter((sequence) => sequence.status !== "archived"));
+      })
+      .catch(() => { if (!cancelled) setBiSequences([]); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const addSelectedToSequence = useCallback(async () => {
+    const contactIds = Array.from(selectedIds);
+    if (!biSequenceId || !contactIds.length || enrollBusy) return;
+    setEnrollBusy(true);
+    setEnrollResult(null);
+    try {
+      const result: any = await api(`/api/v1/bi/marketing/sequences/${biSequenceId}/enroll`, {
+        method: "POST",
+        body: { contactIds },
+      } as any);
+      const enrolled = Number(result?.enrolled ?? result?.added ?? 0);
+      const skipped = Number(result?.skipped ?? 0);
+      setEnrollResult(`${enrolled} added${skipped ? `; ${skipped} skipped (already enrolled or no CASL consent basis)` : ""}.`);
+      clearSelection();
+    } catch (e: any) {
+      setEnrollResult(e?.message ?? "Could not add contacts to the sequence.");
+    } finally {
+      setEnrollBusy(false);
+    }
+  }, [selectedIds, biSequenceId, enrollBusy, clearSelection]);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -498,11 +534,17 @@ export default function BIOutreach() {
       {selectedIds.size > 0 && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-sm" data-testid="bi-outreach-selection-bar">
           <span className="font-semibold text-white">{selectedIds.size} selected</span>
+          <select aria-label="Sequence" value={biSequenceId} onChange={(e) => setBiSequenceId(e.target.value)} className="bg-brand-surface border border-card rounded-md px-2 py-1">
+            <option value="">Pick a sequence</option>
+            {biSequences.map((sequence) => <option key={sequence.id} value={sequence.id}>{sequence.name}</option>)}
+          </select>
+          <button type="button" data-testid="bi-outreach-enroll" disabled={enrollBusy || !biSequenceId} onClick={() => void addSelectedToSequence()} className="px-3 py-1 rounded-md bg-blue-500/30 hover:bg-blue-500/40 disabled:opacity-50">{enrollBusy ? "Adding…" : "Add to sequence"}</button>
           <button type="button" disabled={bulkBusy} onClick={() => void bulkAction("remove_from_outreach")} className="px-3 py-1 rounded-md bg-white/10 hover:bg-white/15 disabled:opacity-50">Remove from outreach</button>
           <button type="button" disabled={bulkBusy} onClick={() => void bulkAction("delete_from_crm")} className="px-3 py-1 rounded-md bg-red-500/20 text-red-200 hover:bg-red-500/30 disabled:opacity-50">Delete from CRM</button>
           <button type="button" onClick={clearSelection} className="ml-auto px-3 py-1 rounded-md bg-white/5 hover:bg-white/10">Clear</button>
         </div>
       )}
+      {enrollResult && <p role="status" className="rounded-xl border border-card bg-brand-surface px-4 py-2 text-sm">{enrollResult}</p>}
 
       {(importResult || importError) && (
         <div
