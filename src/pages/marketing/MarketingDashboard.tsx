@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; // BF_PORTAL_BRANDED_EMAIL_COMPOSER_MOUNT_v1
+import SequenceCanvas, { type BFSequenceStep } from "@/components/marketing/SequenceCanvas";
 import BFReferrerManagement from "./BFReferrerManagement"; // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
 
 type MarketingTab = "analytics" | "automations" | "referrers" | "sequences" | "sms" | "email" | "ads"; // BF_PORTAL_MARKETING_TABS_v2
@@ -817,12 +818,8 @@ function SmsComposerPanel() {
 }
 // BF_PORTAL_BLOCK_v205_SEQUENCES — drip sequence builder + list.
 function SequencesPanel() {
-  // BF_PORTAL_SEQ_TASK_STEP_v1 (Tasks M5) - a step can create a task instead
-  // of sending; by default the sequence pauses until the task is completed.
-  type SeqStepDraft = { channel: "email" | "sms" | "task"; waitValue: number; waitUnit: "minutes" | "hours" | "days"; condition: string; templateId: string; taskType: string; taskTitle: string; taskNotes: string; taskPriority: string; taskQueueId: string; taskPause: boolean };
   type SeqRow = { id: string; name: string; audience_tag: string | null; status: string; steps: number; enrolled: number; active: number; completed: number };
   type TplRow = { id: string; channel: string; name: string; body: string | null; subject: string | null; link_url: string | null };
-  const NEW_STEP: SeqStepDraft = { channel: "email", waitValue: 0, waitUnit: "minutes", condition: "always", templateId: "", taskType: "TODO", taskTitle: "", taskNotes: "", taskPriority: "NONE", taskQueueId: "", taskPause: true };
   const cls = "block border rounded px-2 py-1 text-sm mt-1 w-full";
   const ist = { color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" } as const;
 
@@ -832,7 +829,6 @@ function SequencesPanel() {
   const [name, setName] = useState("");
   const [audience, setAudience] = useState("");
   const [stopOnReply, setStopOnReply] = useState(true);
-  const [steps, setSteps] = useState<SeqStepDraft[]>([{ ...NEW_STEP }]);
   const [seqQueues, setSeqQueues] = useState<{ id: string; name: string }[]>([]); // BF_PORTAL_SEQ_TASK_STEP_v1
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -852,27 +848,17 @@ function SequencesPanel() {
       .then((r) => setSeqQueues((r as any)?.data?.queues ?? (r as any)?.queues ?? [])).catch(() => setSeqQueues([]));
   }, []);
 
-  const toMinutes = (v: number, u: string) => (u === "days" ? v * 1440 : u === "hours" ? v * 60 : v);
-  const setStep = (i: number, patch: Partial<SeqStepDraft>) => setSteps((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
-  const addStep = () => setSteps((prev) => [...prev, { ...NEW_STEP, waitValue: 1, waitUnit: "days" }]);
-  const removeStep = (i: number) => setSteps((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
-
-  const save = async () => {
-    if (!name.trim() || steps.some((s) => (s.channel === "task" ? !s.taskTitle.trim() : !s.templateId))) return; // BF_PORTAL_SEQ_TASK_STEP_v1
+  const save = async (steps: BFSequenceStep[]) => {
+    if (!name.trim()) return;
     setBusy(true); setMsg(null);
     try {
       await api.post("/api/marketing/sequences", {
         name: name.trim(),
         audienceTag: audience || null,
         stopOnReply,
-        steps: steps.map((s) => ({
-          channel: s.channel, waitMinutes: toMinutes(Number(s.waitValue) || 0, s.waitUnit), condition: s.condition,
-          templateId: s.channel === "task" ? null : (s.templateId || null),
-          // BF_PORTAL_SEQ_TASK_STEP_v1 - task-step fields.
-          ...(s.channel === "task" ? { subject: s.taskTitle.trim(), body: s.taskNotes.trim() || null, taskType: s.taskType, taskPriority: s.taskPriority, taskQueueId: s.taskQueueId || null, taskPause: s.taskPause } : {}),
-        })),
+        steps,
       });
-      setName(""); setAudience(""); setStopOnReply(true); setSteps([{ ...NEW_STEP }]);
+      setName(""); setAudience(""); setStopOnReply(true);
       setMsg("Saved as draft. Activate it below to start enrolling contacts."); load();
     } catch { setMsg("Save failed."); } finally { setBusy(false); }
   };
@@ -902,93 +888,14 @@ function SequencesPanel() {
           <label className="text-sm flex items-center gap-2" style={{ color: "var(--ui-text)" }}>
             <input type="checkbox" checked={stopOnReply} onChange={(e) => setStopOnReply(e.target.checked)} /> Stop a contact&apos;s sequence if they reply
           </label>
-          <div className="space-y-3">
-            {steps.map((s, i) => {
-              const stepTpls = tpls.filter((t) => t.channel === s.channel);
-              return (
-                <div key={i} className="border rounded p-2 space-y-2" style={{ borderColor: "var(--ui-border)" }}>
-                  <div className="flex flex-wrap gap-2 items-end">
-                    <span className="text-sm font-semibold" style={{ color: "var(--ui-text)" }}>Step {i + 1}</span>
-                    <label className="text-sm" style={{ color: "var(--ui-text)" }}>Channel
-                      <select value={s.channel} onChange={(e) => setStep(i, { channel: e.target.value as "email" | "sms" | "task", templateId: "" })} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
-                        <option value="email">Email</option>
-                        <option value="sms">SMS</option>
-                        <option value="task">Task</option>
-                      </select>
-                    </label>
-                    <label className="text-sm" style={{ color: "var(--ui-text)" }}>Wait
-                      <span className="flex gap-1 mt-1">
-                        <input type="number" min={0} value={s.waitValue} onChange={(e) => setStep(i, { waitValue: Number(e.target.value) })} className="border rounded px-2 py-1 text-sm w-16" style={ist} />
-                        <select value={s.waitUnit} onChange={(e) => setStep(i, { waitUnit: e.target.value as "minutes" | "hours" | "days" })} className="border rounded px-2 py-1 text-sm" style={ist}>
-                          <option value="minutes">min</option>
-                          <option value="hours">hrs</option>
-                          <option value="days">days</option>
-                        </select>
-                      </span>
-                    </label>
-                    <label className="text-sm" style={{ color: "var(--ui-text)" }}>Send if
-                      <select value={s.condition} onChange={(e) => setStep(i, { condition: e.target.value })} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
-                        <option value="always">Always</option>
-                        <option value="if_no_open">No open yet</option>
-                        <option value="if_no_click">No click yet</option>
-                        <option value="if_no_reply">No reply yet</option>
-                      </select>
-                    </label>
-                    {steps.length > 1 && <button type="button" onClick={() => removeStep(i)} className="ui-button ui-button--secondary">Remove</button>}
-                  </div>
-                  {/* BF_PORTAL_SEQ_TASK_STEP_v1 - task steps configure a task
-                      instead of picking a template. */}
-                  {s.channel === "task" ? (
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        <label className="text-sm" style={{ color: "var(--ui-text)" }}>Task type
-                          <select value={s.taskType} onChange={(e) => setStep(i, { taskType: e.target.value })} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
-                            {["CALL", "EMAIL", "SMS", "TODO"].map((t) => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                        </label>
-                        <label className="text-sm" style={{ color: "var(--ui-text)" }}>Priority
-                          <select value={s.taskPriority} onChange={(e) => setStep(i, { taskPriority: e.target.value })} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
-                            {["NONE", "LOW", "MEDIUM", "HIGH"].map((t) => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                        </label>
-                        <label className="text-sm" style={{ color: "var(--ui-text)" }}>Queue
-                          <select value={s.taskQueueId} onChange={(e) => setStep(i, { taskQueueId: e.target.value })} className="block border rounded px-2 py-1 text-sm mt-1" style={ist}>
-                            <option value="">No queue</option>
-                            {seqQueues.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
-                          </select>
-                        </label>
-                      </div>
-                      <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Task title
-                        <input value={s.taskTitle} onChange={(e) => setStep(i, { taskTitle: e.target.value })} placeholder="e.g. Call {{first_name}} about their application" className={cls} style={ist} />
-                      </label>
-                      <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Notes
-                        <textarea value={s.taskNotes} onChange={(e) => setStep(i, { taskNotes: e.target.value })} rows={2} className={cls} style={ist} />
-                      </label>
-                      <label className="flex items-center gap-2 text-sm" style={{ color: "var(--ui-text)" }}>
-                        <input type="checkbox" checked={s.taskPause} onChange={(e) => setStep(i, { taskPause: e.target.checked })} />
-                        Pause sequence until this task is completed
-                      </label>
-                    </div>
-                  ) : (
-                  <label className="text-sm block" style={{ color: "var(--ui-text)" }}>{s.channel === "sms" ? "SMS template" : "Email template"}
-                    <select value={s.templateId} onChange={(e) => setStep(i, { templateId: e.target.value })} className={cls} style={ist}>
-                      <option value="">Select a template</option>
-                      {stepTpls.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                  </label>
-                  )}
-                  {s.channel !== "task" && stepTpls.length === 0 && (
-                    <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>No {s.channel === "sms" ? "SMS" : "email"} templates yet &mdash; save one in the {s.channel === "sms" ? "SMS" : "Email"} tab first.</p>
-                  )}
-                </div>
-              );
-            })}
-            <button type="button" onClick={addStep} className="ui-button ui-button--secondary">+ Add step</button>
-          </div>
-          <div className="flex items-center gap-2">
-            <button type="button" disabled={busy || !name.trim() || steps.some((s) => (s.channel === "task" ? !s.taskTitle.trim() : !s.templateId))} onClick={() => void save()} className="ui-button ui-button--primary">{busy ? "Saving..." : "Save sequence"}</button>
-            {msg && <span className="text-sm" style={{ color: "var(--ui-text-muted)" }}>{msg}</span>}
-          </div>
+          <SequenceCanvas
+            silo="bf"
+            templates={tpls}
+            queues={seqQueues}
+            busy={busy}
+            onSave={(steps) => save(steps as BFSequenceStep[])}
+          />
+          {msg && <span className="text-sm" style={{ color: "var(--ui-text-muted)" }}>{msg}</span>}
         </div>
       </section>
 
