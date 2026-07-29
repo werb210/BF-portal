@@ -16,6 +16,7 @@ import { registerPasskey, passkeysSupported } from "@/auth/passkey"; // BF_PORTA
 import OutOfOfficePanel from "@/components/o365/OutOfOfficePanel"; // BF_PORTAL_O365_UI_v1
 import OneDriveFilePicker from "@/components/o365/OneDriveFilePicker"; // BF_PORTAL_O365_UI_v1
 import ContactsSyncButton from "@/components/o365/ContactsSyncButton"; // BF_PORTAL_CONTACTS_PULL_TRIGGER_v1
+import { registerExistingPushPermission } from "@/hooks/usePushRegistration";
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_DIMENSION = 256;
@@ -574,7 +575,7 @@ const ProfileSettings = () => {
         <button
           type="button"
           onClick={async () => {
-            // BF_PORTAL_PUSH_REGISTER_v1 -- request permission, create a push subscription, and register it with the server.
+            // BF_PORTAL_PUSH_VAPID_ROTATE_v1 -- delegate subscription creation and stale-key rotation to the shared registrar.
             if (!("Notification" in window)) {
               alert("This browser does not support notifications.");
               return;
@@ -597,37 +598,7 @@ const ProfileSettings = () => {
                 alert("Notifications enabled, but this browser cannot receive push messages.");
                 return;
               }
-              const reg = await navigator.serviceWorker.ready;
-              let sub = await reg.pushManager.getSubscription();
-              if (!sub) {
-                // BF_PORTAL_VAPID_RUNTIME_v1 - fetch the VAPID public key from the server at runtime.
-                let vapidKey: string | undefined;
-                try {
-                  const kr = await api.get<{ publicKey?: string | null }>("/api/pwa/vapid-public-key");
-                  vapidKey = (((kr as { data?: { publicKey?: string | null } })?.data ?? kr)?.publicKey) ?? undefined;
-                } catch {
-                  vapidKey = undefined;
-                }
-                if (!vapidKey) {
-                  alert("Notifications enabled, but push is not configured for this environment yet.");
-                  return;
-                }
-                const padding = "=".repeat((4 - (vapidKey.length % 4)) % 4);
-                const normalized = (vapidKey + padding).replace(/-/g, "+").replace(/_/g, "/");
-                const rawKey = window.atob(normalized);
-                const appKey = new Uint8Array(rawKey.length);
-                for (let i = 0; i < rawKey.length; i += 1) appKey[i] = rawKey.charCodeAt(i);
-                sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appKey });
-              }
-              const json = sub.toJSON() as unknown as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
-              if (json.endpoint && json.keys && json.keys.p256dh && json.keys.auth) {
-                const deviceType = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? "mobile" : "desktop";
-                await api.post("/api/pwa/subscribe", {
-                  endpoint: json.endpoint,
-                  keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
-                  deviceType,
-                });
-              }
+              await registerExistingPushPermission();
               alert("Notifications enabled.");
             } catch (err) {
               const detail = err instanceof Error && err.message ? (" (" + err.message + ")") : "";

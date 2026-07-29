@@ -754,10 +754,11 @@ function SmsComposerPanel() {
     setBusy(true); setMsg(null);
     try {
       const payload: Record<string, unknown> = { body };
+      // BF_PORTAL_SMS_TEST_LINK_v1 -- test sends need the same landing-page URL as audience sends.
+      if (linkUrl.trim()) payload.linkUrl = linkUrl.trim();
       if (test) { payload.test = test; }
       else {
         if (tag !== "__all__") payload.tag = tag;
-        if (linkUrl.trim()) payload.linkUrl = linkUrl.trim();
         if (currentSmsTemplateId) payload.templateId = currentSmsTemplateId; // BF_PORTAL_TEMPLATE_ANALYTICS_v1
       }
       const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/sms/send", payload);
