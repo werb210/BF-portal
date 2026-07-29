@@ -3,7 +3,18 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const useAuthMock = vi.fn();
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => useAuthMock() }));
-vi.mock("@/api", () => ({ api: vi.fn(async () => ({ sequences: [] })) }));
+// BF_PORTAL_SEQUENCE_CANVAS_v1 - BIMarketing now loads templates and task queues
+// on mount for the sequence canvas, so the mock needs api.get and api.post as
+// well as the bare callable. Without them the component threw
+// "api.get is not a function" during render and every assertion in this file
+// failed for a reason that had nothing to do with what it tests.
+vi.mock("@/api", () => {
+  const api: any = vi.fn(async () => ({ sequences: [] }));
+  api.get = vi.fn(async () => ({ items: [], queues: [] }));
+  api.post = vi.fn(async () => ({ ok: true }));
+  api.delete = vi.fn(async () => ({ ok: true }));
+  return { api };
+});
 
 import BIMarketing from "@/silos/bi/marketing/BIMarketing";
 

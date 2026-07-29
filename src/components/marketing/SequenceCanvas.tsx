@@ -97,7 +97,18 @@ export default function SequenceCanvas({ silo, templates = [], queues = [], busy
   const add = (kind: SequenceNode["kind"]) => { const node = newNode(kind); setNodes((all) => [...all, node]); setSelectedId(node.id); };
   const moveBefore = (targetId: string) => {
     if (!dragId || dragId === targetId) return;
-    setNodes((all) => { const moving = all.find((n) => n.id === dragId); if (!moving) return all; const rest = all.filter((n) => n.id !== dragId); return rest.toSpliced(rest.findIndex((n) => n.id === targetId), 0, moving); });
+    // BF_PORTAL_SEQUENCE_CANVAS_REORDER_v1 - the immutable splice method is ES2023
+    // and this project targets ES2022, so tsc rejected it and CI went red.
+    // splice on a copy does the same job on every runtime we support.
+    setNodes((all) => {
+      const moving = all.find((n) => n.id === dragId);
+      if (!moving) return all;
+      const rest = all.filter((n) => n.id !== dragId);
+      const at = rest.findIndex((n) => n.id === targetId);
+      const next = [...rest];
+      next.splice(at < 0 ? next.length : at, 0, moving);
+      return next;
+    });
     setDragId(null);
   };
   const input = "block w-full rounded border px-2 py-1 mt-1 bg-transparent";
