@@ -6,6 +6,7 @@ import { useNotificationsStore } from "@/state/notifications.store";
 import BusinessUnitSelector from "@/components/BusinessUnitSelector";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { api } from "@/api";
+import PushNotificationCta from "@/components/PushNotificationCta"; // BF_PORTAL_PUSH_AUTOREGISTER_v1
 
 type TopbarProps = {
   onToggleSidebar: () => void;
@@ -128,6 +129,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         </div>
       </div>
       <div className="topbar__right">
+        <PushNotificationCta />
         <BusinessUnitSelector />
         <button
           onClick={() => void togglePresence()}
