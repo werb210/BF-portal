@@ -279,10 +279,22 @@ export default function BIOutreach() {
 
   useEffect(() => {
     let cancelled = false;
-    void api<{ sequences?: Array<{ id: string; name: string; status?: string }> }>("/api/v1/bi/marketing/sequences")
+    // BF_PORTAL_BI_SEQUENCE_SOURCE_v1
+    // /api/v1/bi/marketing/sequences is a UNION ALL of bi_sequences (portal-built,
+    // source 'portal') and bi_apollo_sequences (source 'apollo'). An Apollo row's
+    // id is its apollo_sequence_id, which is NOT a bi_sequences.id — so picking
+    // one and clicking Add posted to an id the enrol route cannot resolve and
+    // came back 404 sequence_not_found, with the contacts left unenrolled and no
+    // useful message. Live DB confirms it: 0 portal sequences, 4 Apollo rows
+    // (Lawyers, LinkedIn, Todd's Outbound AI Sequence 1, Todd's outbound
+    // sequence), which is why sequences appeared here that were never built.
+    // Apollo is out of scope, so only portal sequences are enrollable.
+    void api<{ sequences?: Array<{ id: string; name: string; status?: string; source?: string }> }>("/api/v1/bi/marketing/sequences")
       .then((r) => {
         if (cancelled) return;
-        setBiSequences((r?.sequences ?? []).filter((sequence) => sequence.status !== "archived"));
+        setBiSequences((r?.sequences ?? [])
+          .filter((sequence) => (sequence.source ?? "portal") === "portal")
+          .filter((sequence) => sequence.status !== "archived"));
       })
       .catch(() => { if (!cancelled) setBiSequences([]); });
     return () => { cancelled = true; };
@@ -535,7 +547,7 @@ export default function BIOutreach() {
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-sm" data-testid="bi-outreach-selection-bar">
           <span className="font-semibold text-white">{selectedIds.size} selected</span>
           <select aria-label="Sequence" value={biSequenceId} onChange={(e) => setBiSequenceId(e.target.value)} className="bg-brand-surface border border-card rounded-md px-2 py-1">
-            <option value="">Pick a sequence</option>
+            <option value="">{biSequences.length ? "Pick a sequence" : "No sequences yet — build one in Marketing"}</option>
             {biSequences.map((sequence) => <option key={sequence.id} value={sequence.id}>{sequence.name}</option>)}
           </select>
           <button type="button" data-testid="bi-outreach-enroll" disabled={enrollBusy || !biSequenceId} onClick={() => void addSelectedToSequence()} className="px-3 py-1 rounded-md bg-blue-500/30 hover:bg-blue-500/40 disabled:opacity-50">{enrollBusy ? "Adding…" : "Add to sequence"}</button>
