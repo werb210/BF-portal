@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/api";
+import { useSilo } from "@/context/SiloContext";
 
 type RangeDays = 7 | 30 | 90 | 365;
 type Funnel = { visits: number; applications: number; submitted: number; funded: number };
@@ -41,7 +42,18 @@ const statHint = { color: "var(--ui-text-muted)", fontSize: 12 } as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
-const rows = (value: unknown): Row[] => Array.isArray(value) ? value : [];
+// BF_PORTAL_ANALYTICS_ROW_LABEL_v1 - API dimensions use panel-specific keys.
+const LABEL_KEYS = ["name", "channel", "source", "product", "category", "lenderName", "lender_name", "label"] as const;
+const rowLabel = (row: Record<string, unknown>): string => {
+  for (const key of LABEL_KEYS) {
+    const value = row[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "Unattributed";
+};
+const rows = (value: unknown): Row[] => Array.isArray(value)
+  ? value.map((row) => (isRecord(row) ? { ...row, name: rowLabel(row) } as Row : row as Row))
+  : [];
 
 /** Convert both the server envelope/aliases and the canonical response into UI data. */
 export function normalizeAnalyticsResponse(raw: unknown): Analytics {
@@ -80,14 +92,16 @@ function MiniTable({ title, rows, valueLabel }: { title: string; rows: Row[]; va
 
 export default function DashboardAnalytics() {
   const [range, setRange] = useState<RangeDays>(30);
+  const silo = useSilo()?.silo ?? "BF";
   const [data, setData] = useState<Analytics>(fallback);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
     setError(null);
-    api.get<unknown>(`/api/dashboard/analytics?range=${range}`).then((payload) => alive && setData(normalizeAnalyticsResponse(payload))).catch(() => alive && setError("Analytics are unavailable right now."));
+    setData(fallback);
+    api.get<unknown>(`/api/dashboard/analytics?range=${range}&silo=${encodeURIComponent(silo.toUpperCase())}`).then((payload) => alive && setData(normalizeAnalyticsResponse(payload))).catch(() => alive && setError("Analytics are unavailable right now."));
     return () => { alive = false; };
-  }, [range]);
+  }, [range, silo]);
   const merged = useMemo(() => ({ ...fallback, ...data }), [data]);
   const f = merged.revenueFunnel;
   const stages = Object.entries(merged.applicationFunnel);
