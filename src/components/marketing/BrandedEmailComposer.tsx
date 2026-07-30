@@ -156,10 +156,14 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
       return;
     }
     let alive = true;
-    api.post<any>(`${apiBase}/email/template/preview`, tpl)
-      .then((r) => { if (alive) setPreview((r?.data?.html ?? r?.html ?? "") as string); })
-      .catch(() => {});
-    return () => { alive = false; };
+    // BF_PORTAL_PREVIEW_DEBOUNCE_v1: rendering on every keystroke can exhaust
+    // the shared BI rate-limit budget. Only render after editing has paused.
+    const timer = setTimeout(() => {
+      api.post<any>(`${apiBase}/email/template/preview`, tpl)
+        .then((r) => { if (alive) setPreview((r?.data?.html ?? r?.html ?? "") as string); })
+        .catch(() => {});
+    }, 400);
+    return () => { alive = false; clearTimeout(timer); };
   }, [apiBase, tpl]);
 
   useEffect(() => {
