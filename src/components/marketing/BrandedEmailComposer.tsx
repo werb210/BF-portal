@@ -1,15 +1,30 @@
 // BF_PORTAL_BRANDED_EMAIL_COMPOSER_v1
+// BF_PORTAL_EMAIL_TWO_COLUMN_v1
 import { useEffect, useRef, useState } from "react";
 import { api, rawApiFetch } from "@/api";
 
 type Seg = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
-type Tpl = { headline: string; heroUrl: string; heroLink: string; body: string; ctaLabel: string; ctaUrl: string; image2Url: string; image2Link: string };
+type Tpl = {
+  headline: string;
+  heroUrl: string;
+  heroLink: string;
+  body: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  image2Url: string;
+  image2Link: string;
+  headline2: string;
+  body2: string;
+  rightImageUrl: string;
+  rightImageLink: string;
+};
 type EmailLibraryTemplate = { id: string; name: string; subject: string | null; body: string | null; html: string | null; landingUrl: string | null };
 
 const DEFAULTS: Tpl = {
   headline: "", heroUrl: "", heroLink: "", body: "",
   ctaLabel: "See If You Qualify", ctaUrl: "https://client.boreal.financial",
   image2Url: "", image2Link: "",
+  headline2: "", body2: "", rightImageUrl: "", rightImageLink: "",
 };
 
 // BF_PORTAL_COMPOSER_JOB_POLL_v1 - the composer previously fired a queued
@@ -96,6 +111,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
   const heroRef = useRef<HTMLInputElement>(null);
   const img2Ref = useRef<HTMLInputElement>(null);
+  const rightImageRef = useRef<HTMLInputElement>(null);
   // A library template already contains the canonical rendered email. Do not
   // immediately replace it with a preview generated from the current fields.
   const skipNextPreview = useRef(false);
@@ -140,7 +156,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
     return () => { alive = false; };
   }, [apiBase, tpl]);
 
-  const upload = async (file: File, key: "heroUrl" | "image2Url") => {
+  const upload = async (file: File, key: "heroUrl" | "image2Url" | "rightImageUrl") => {
     setMsg(null);
     const fd = new FormData();
     fd.append("file", file);
@@ -293,6 +309,24 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
             </div>
             <input value={tpl.image2Link} onChange={(e) => set("image2Link", e.target.value)} placeholder="Image click link (optional)" className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
           </div>
+          <fieldset className="space-y-2 rounded border p-3" style={{ borderColor: "var(--ui-border)" }}>
+            <legend className="px-1 text-sm font-semibold" style={{ color: "var(--ui-text)" }}>Second column (optional)</legend>
+            <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Add a heading, body, and image to place a second subject beside the main content. Leave these fields empty to keep the standard single-column email.</p>
+            <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Heading
+              <input value={tpl.headline2} onChange={(e) => set("headline2", e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
+            </label>
+            <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Body
+              <textarea value={tpl.body2} onChange={(e) => set("body2", e.target.value)} rows={4} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
+            </label>
+            <div className="text-sm" style={{ color: "var(--ui-text)" }}>Image
+              <div className="flex gap-2 items-center mt-1">
+                <button type="button" onClick={() => rightImageRef.current?.click()} className="ui-button ui-button--secondary">{tpl.rightImageUrl ? "Replace" : "Upload"}</button>
+                {tpl.rightImageUrl ? <button type="button" onClick={() => set("rightImageUrl", "")} className="ui-button ui-button--secondary">Remove</button> : null}
+                <input ref={rightImageRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f, "rightImageUrl"); e.target.value = ""; }} />
+              </div>
+              <input value={tpl.rightImageLink} onChange={(e) => set("rightImageLink", e.target.value)} placeholder="Image click link (optional)" className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
+            </div>
+          </fieldset>
           <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Merge fields: {"{{first_name}}"}, {"{{name}}"}, {"{{company}}"}, {"{{email}}"}. Logo, colours and footer are fixed.</p>
           <div className="flex flex-wrap gap-2 items-end">
             <button type="button" disabled={saving} onClick={() => void save()} className="ui-button ui-button--secondary">{saving ? "Saving..." : "Save draft"}</button>
