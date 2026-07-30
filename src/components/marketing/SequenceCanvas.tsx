@@ -1,5 +1,6 @@
 // BF_PORTAL_SEQUENCE_CANVAS_v1 — one visual sequence model for both marketing silos.
 // BF_PORTAL_BI_TASK_ASSIGNEE_v1 — BI tasks must name the staff member who owns them.
+// BF_PORTAL_AUTO_TEMPLATES_v1 — auto sends resolve a channel-specific template after branching.
 import { useMemo, useState } from "react";
 
 export type SequenceSilo = "bf" | "bi";
@@ -13,6 +14,8 @@ export type SequenceNode = {
   id: string;
   kind: SendKind | "wait";
   templateId?: string;
+  smsTemplateId?: string;
+  emailTemplateId?: string;
   body?: string;
   condition?: string;
   waitValue?: number;
@@ -59,7 +62,11 @@ export function serializeNodes(nodes: SequenceNode[], silo: SequenceSilo): (BFSe
       steps.push({
         channel: node.kind, wait_minutes: pendingMinutes,
         condition: node.condition || "always",
-        template_id: task ? null : node.templateId || null,
+        template_id: task || node.kind === "auto" ? null : node.templateId || null,
+        ...(node.kind === "auto" ? {
+          sms_template_id: node.smsTemplateId || null,
+          email_template_id: node.emailTemplateId || null,
+        } : {}),
         ...taskFields,
       });
     }
@@ -73,6 +80,11 @@ const issueFor = (node: SequenceNode, silo: SequenceSilo): string | null => {
   if (node.kind === "task") {
     if (!node.taskTitle?.trim()) return "Task needs a title";
     if (silo === "bi" && !node.assigneeUserId) return "Choose a task assignee";
+    return null;
+  }
+  if (node.kind === "auto") {
+    if (!node.smsTemplateId) return "Choose an SMS template";
+    if (!node.emailTemplateId) return "Choose an email template";
     return null;
   }
   if (node.templateId) return null;
@@ -151,8 +163,13 @@ export default function SequenceCanvas({ silo, templates = [], queues = [], staf
           <label className="flex gap-2 text-sm"><input type="checkbox" checked={selected.taskPause ?? true} onChange={(e) => patch(selected.id, { taskPause: e.target.checked })} />Pause sequence until this task is completed</label>
         </> : <>
           {selected.kind === "auto" && <p className="text-xs text-white/60">Sends SMS to contacts you may lawfully text: Canadian mobile, consented, and not opted out. Everyone else receives email. Each contact receives one message, never both.</p>}
-          <label className="text-sm">Template<select value={selected.templateId || ""} onChange={(e) => patch(selected.id, { templateId: e.target.value })} className={input}><option value="">Select a template</option>{templates.filter((t) => selected.kind === "auto" || !t.channel || t.channel === selected.kind).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
-          <label className="text-sm">Message recipient reads (when no template is selected)<textarea value={selected.body || ""} onChange={(e) => patch(selected.id, { body: e.target.value })} className={input} /></label>
+          {selected.kind === "auto" ? <>
+            <label className="text-sm">SMS template<select data-testid="auto-sms-template" aria-label="SMS template" value={selected.smsTemplateId || ""} onChange={(e) => patch(selected.id, { smsTemplateId: e.target.value })} className={input}><option value="">Select an SMS template</option>{templates.filter((t) => t.channel === "sms").map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+            <label className="text-sm">Email template<select data-testid="auto-email-template" aria-label="Email template" value={selected.emailTemplateId || ""} onChange={(e) => patch(selected.id, { emailTemplateId: e.target.value })} className={input}><option value="">Select an email template</option>{templates.filter((t) => t.channel === "email").map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+          </> : <>
+            <label className="text-sm">Template<select value={selected.templateId || ""} onChange={(e) => patch(selected.id, { templateId: e.target.value })} className={input}><option value="">Select a template</option>{templates.filter((t) => !t.channel || t.channel === selected.kind).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+            <label className="text-sm">Message recipient reads (when no template is selected)<textarea value={selected.body || ""} onChange={(e) => patch(selected.id, { body: e.target.value })} className={input} /></label>
+          </>}
           <label className="text-sm">Send if<select value={selected.condition} onChange={(e) => patch(selected.id, { condition: e.target.value })} className={input}><option value="always">Always</option><option value="if_no_open">No open yet</option><option value="if_no_click">No click yet</option><option value="if_no_reply">No reply yet</option></select></label>
         </>}
         <button type="button" className="ui-button ui-button--secondary" onClick={() => { setNodes((all) => all.filter((n) => n.id !== selected.id)); setSelectedId(null); }}>Remove step</button>
