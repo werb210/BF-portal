@@ -817,6 +817,7 @@ function SmsComposerPanel() {
   );
 }
 // BF_PORTAL_BLOCK_v205_SEQUENCES — drip sequence builder + list.
+// BF_PORTAL_SEQ_AUDIENCE_TAGS_v1 — sequences support inclusive and exclusive tag audiences.
 function SequencesPanel() {
   type SeqRow = { id: string; name: string; audience_tag: string | null; status: string; steps: number; enrolled: number; active: number; completed: number };
   type TplRow = { id: string; channel: string; name: string; body: string | null; subject: string | null; link_url: string | null };
@@ -827,7 +828,8 @@ function SequencesPanel() {
   const [segs, setSegs] = useState<{ tag: string; n: number }[]>([]);
   const [tpls, setTpls] = useState<TplRow[]>([]);
   const [name, setName] = useState("");
-  const [audience, setAudience] = useState("");
+  const [includeTags, setIncludeTags] = useState<string[]>([]);
+  const [excludeTags, setExcludeTags] = useState<string[]>([]);
   const [stopOnReply, setStopOnReply] = useState(true);
   const [seqQueues, setSeqQueues] = useState<{ id: string; name: string }[]>([]); // BF_PORTAL_SEQ_TASK_STEP_v1
   const [busy, setBusy] = useState(false);
@@ -854,11 +856,12 @@ function SequencesPanel() {
     try {
       await api.post("/api/marketing/sequences", {
         name: name.trim(),
-        audienceTag: audience || null,
+        includeTags,
+        excludeTags,
         stopOnReply,
         steps,
       });
-      setName(""); setAudience(""); setStopOnReply(true);
+      setName(""); setIncludeTags([]); setExcludeTags([]); setStopOnReply(true);
       setMsg("Saved as draft. Activate it below to start enrolling contacts."); load();
     } catch { setMsg("Save failed."); } finally { setBusy(false); }
   };
@@ -879,12 +882,26 @@ function SequencesPanel() {
           <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Name
             <input value={name} onChange={(e) => setName(e.target.value)} className={cls} style={ist} />
           </label>
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Audience
-            <select value={audience} onChange={(e) => setAudience(e.target.value)} className={cls} style={ist}>
-              <option value="">All contacts</option>
-              {segs.map((s) => <option key={s.tag} value={s.tag}>{s.tag} ({s.n})</option>)}
-            </select>
-          </label>
+          <fieldset className="text-sm" style={{ color: "var(--ui-text)" }}>
+            <legend className="font-medium">Include tags</legend>
+            <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>None selected = all contacts</p>
+            <div className="mt-1 grid gap-1">
+              {segs.map((s) => <label key={s.tag} className="flex items-center gap-2">
+                <input type="checkbox" checked={includeTags.includes(s.tag)} onChange={(e) => setIncludeTags((tags) => e.target.checked ? [...tags, s.tag] : tags.filter((tag) => tag !== s.tag))} />
+                <span>{s.tag} ({s.n})</span>
+              </label>)}
+            </div>
+          </fieldset>
+          <fieldset className="text-sm" style={{ color: "var(--ui-text)" }}>
+            <legend className="font-medium">Exclude tags</legend>
+            <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Removed even if included</p>
+            <div className="mt-1 grid gap-1">
+              {segs.map((s) => <label key={s.tag} className="flex items-center gap-2">
+                <input type="checkbox" checked={excludeTags.includes(s.tag)} onChange={(e) => setExcludeTags((tags) => e.target.checked ? [...tags, s.tag] : tags.filter((tag) => tag !== s.tag))} />
+                <span>{s.tag} ({s.n})</span>
+              </label>)}
+            </div>
+          </fieldset>
           <label className="text-sm flex items-center gap-2" style={{ color: "var(--ui-text)" }}>
             <input type="checkbox" checked={stopOnReply} onChange={(e) => setStopOnReply(e.target.checked)} /> Stop a contact&apos;s sequence if they reply
           </label>
