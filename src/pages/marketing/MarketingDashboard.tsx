@@ -891,26 +891,29 @@ function SequencesPanel() {
           <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Name
             <input value={name} onChange={(e) => setName(e.target.value)} className={cls} style={ist} />
           </label>
-          <fieldset className="text-sm" style={{ color: "var(--ui-text)" }}>
+          {/* BF_PORTAL_SEQ_AUDIENCE_LAYOUT_v1 - compare both independently scrolling lists side by side. */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <fieldset className="min-w-0 text-sm" style={{ color: "var(--ui-text)" }}>
             <legend className="font-medium">Include tags</legend>
             <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>None selected = all contacts</p>
-            <div className="mt-1 grid gap-1">
+            <div className="mt-1 grid max-h-48 gap-1 overflow-y-auto">
               {segs.map((s) => <label key={s.tag} className="flex items-center gap-2">
                 <input type="checkbox" checked={includeTags.includes(s.tag)} onChange={(e) => setIncludeTags((tags) => e.target.checked ? [...tags, s.tag] : tags.filter((tag) => tag !== s.tag))} />
                 <span>{s.tag} ({s.n})</span>
               </label>)}
             </div>
           </fieldset>
-          <fieldset className="text-sm" style={{ color: "var(--ui-text)" }}>
+          <fieldset className="min-w-0 text-sm" style={{ color: "var(--ui-text)" }}>
             <legend className="font-medium">Exclude tags</legend>
             <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Removed even if included</p>
-            <div className="mt-1 grid gap-1">
+            <div className="mt-1 grid max-h-48 gap-1 overflow-y-auto">
               {segs.map((s) => <label key={s.tag} className="flex items-center gap-2">
                 <input type="checkbox" checked={excludeTags.includes(s.tag)} onChange={(e) => setExcludeTags((tags) => e.target.checked ? [...tags, s.tag] : tags.filter((tag) => tag !== s.tag))} />
                 <span>{s.tag} ({s.n})</span>
               </label>)}
             </div>
           </fieldset>
+          </div>
           <label className="text-sm flex items-center gap-2" style={{ color: "var(--ui-text)" }}>
             <input type="checkbox" checked={stopOnReply} onChange={(e) => setStopOnReply(e.target.checked)} /> Stop a contact&apos;s sequence if they reply
           </label>

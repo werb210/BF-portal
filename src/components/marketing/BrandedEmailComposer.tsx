@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { api, rawApiFetch } from "@/api";
 
+// BF_PORTAL_EMAIL_PREVIEW_WIDTH_v1 - render at the email's desktop width and
+// scale the canvas, rather than triggering its mobile breakpoint in the pane.
+const EMAIL_PREVIEW_WIDTH = 600;
+
 type Seg = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
 type Tpl = {
   headline: string;
@@ -112,6 +116,8 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   const heroRef = useRef<HTMLInputElement>(null);
   const img2Ref = useRef<HTMLInputElement>(null);
   const rightImageRef = useRef<HTMLInputElement>(null);
+  const previewPaneRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState(1);
   // A library template already contains the canonical rendered email. Do not
   // immediately replace it with a preview generated from the current fields.
   const skipNextPreview = useRef(false);
@@ -155,6 +161,16 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
       .catch(() => {});
     return () => { alive = false; };
   }, [apiBase, tpl]);
+
+  useEffect(() => {
+    const pane = previewPaneRef.current;
+    if (!pane) return;
+    const resize = () => setPreviewScale(Math.min(1, pane.clientWidth / EMAIL_PREVIEW_WIDTH));
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(pane);
+    return () => observer.disconnect();
+  }, []);
 
   const upload = async (file: File, key: "heroUrl" | "image2Url" | "rightImageUrl") => {
     setMsg(null);
@@ -360,9 +376,11 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
             </div>
           ) : null}
         </div>
-        <div className="md:w-1/2">
+        <div ref={previewPaneRef} className="md:w-1/2 min-w-0">
           <div className="text-sm mb-1" style={{ color: "var(--ui-text-muted)" }}>Preview</div>
-          <iframe title="Email preview" srcDoc={preview} style={{ width: "100%", height: 520, border: "1px solid var(--ui-border)", borderRadius: 8, background: "#fff" }} />
+          <div style={{ width: EMAIL_PREVIEW_WIDTH * previewScale, height: 520 * previewScale, overflow: "hidden" }}>
+            <iframe title="Email preview" srcDoc={preview} style={{ width: EMAIL_PREVIEW_WIDTH, height: 520, border: "1px solid var(--ui-border)", borderRadius: 8, background: "#fff", transform: `scale(${previewScale})`, transformOrigin: "top left" }} />
+          </div>
         </div>
       </div>
     </section>
