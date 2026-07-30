@@ -1,5 +1,6 @@
 // BF_PORTAL_SEQUENCE_CANVAS_v1 — one visual sequence model for both marketing silos.
 // BF_PORTAL_BI_TASK_ASSIGNEE_v1 — BI tasks must name the staff member who owns them.
+// BF_PORTAL_SEQ_STEP_ASSIGNEE_v1 — task assignees are supported in both marketing silos.
 // BF_PORTAL_AUTO_TEMPLATES_v1 — auto sends resolve a channel-specific template after branching.
 import { useMemo, useState } from "react";
 
@@ -48,7 +49,7 @@ export function serializeNodes(nodes: SequenceNode[], silo: SequenceSilo): (BFSe
       subject: node.taskTitle?.trim(), body: node.taskNotes?.trim() || null,
       taskType: node.taskType || "TODO", taskPriority: node.taskPriority || "NONE",
       taskQueueId: node.taskQueueId || null, taskPause: node.taskPause ?? true,
-      ...(silo === "bi" ? { assignee_user_id: node.assigneeUserId || null } : {}),
+      assignee_user_id: node.assigneeUserId || null,
     } : {};
     if (silo === "bi") {
       steps.push({
@@ -157,8 +158,7 @@ export default function SequenceCanvas({ silo, templates = [], queues = [], staf
           <label className="text-sm">Priority<select value={selected.taskPriority} onChange={(e) => patch(selected.id, { taskPriority: e.target.value })} className={input}>{["NONE", "LOW", "MEDIUM", "HIGH"].map((v) => <option key={v}>{v}</option>)}</select></label>
           <label className="text-sm">Queue<select value={selected.taskQueueId || ""} onChange={(e) => patch(selected.id, { taskQueueId: e.target.value })} className={input}><option value="">No queue</option>{queues.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}</select></label>
           <label className="text-sm">Task title<input value={selected.taskTitle || ""} onChange={(e) => patch(selected.id, { taskTitle: e.target.value })} className={input} /></label>
-          {silo === "bi" ? <label className="text-sm">Assignee<select data-testid="bi-task-assignee" aria-label="Assignee" value={selected.assigneeUserId || ""} onChange={(e) => patch(selected.id, { assigneeUserId: e.target.value })} className={input}><option value="">Select a staff member</option>{staff.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</select></label> :
-            <p className="text-xs text-white/60">Assigned to the contact's owner. If the contact has no owner, the task goes to the first active Admin.</p>}
+          <label className="text-sm">Assignee<select data-testid={`${silo}-task-assignee`} aria-label="Assignee" value={selected.assigneeUserId || ""} onChange={(e) => patch(selected.id, { assigneeUserId: e.target.value })} className={input}><option value="">{silo === "bi" ? "Select a staff member" : "Contact's owner (default)"}</option>{staff.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</select></label>
           <label className="text-sm">Notes<textarea value={selected.taskNotes || ""} onChange={(e) => patch(selected.id, { taskNotes: e.target.value })} className={input} /></label>
           <label className="flex gap-2 text-sm"><input type="checkbox" checked={selected.taskPause ?? true} onChange={(e) => patch(selected.id, { taskPause: e.target.checked })} />Pause sequence until this task is completed</label>
         </> : <>

@@ -832,6 +832,7 @@ function SequencesPanel() {
   const [excludeTags, setExcludeTags] = useState<string[]>([]);
   const [stopOnReply, setStopOnReply] = useState(true);
   const [seqQueues, setSeqQueues] = useState<{ id: string; name: string }[]>([]); // BF_PORTAL_SEQ_TASK_STEP_v1
+  const [seqStaff, setSeqStaff] = useState<{ id: string; name: string }[]>([]); // BF_PORTAL_SEQ_STEP_ASSIGNEE_v1
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -848,6 +849,14 @@ function SequencesPanel() {
     // BF_PORTAL_SEQ_TASK_STEP_v1 - queues for the task-step queue picker.
     api.get<{ data?: { queues?: { id: string; name: string }[] }; queues?: { id: string; name: string }[] }>("/api/tasks/queues")
       .then((r) => setSeqQueues((r as any)?.data?.queues ?? (r as any)?.queues ?? [])).catch(() => setSeqQueues([]));
+    api.get<{ users?: Array<{ id: string; first_name?: string; last_name?: string; email?: string }> } | Array<{ id: string; first_name?: string; last_name?: string; email?: string }>>("/api/users")
+      .then((response) => {
+        const users = Array.isArray(response) ? response : response.users ?? [];
+        setSeqStaff(users.map((user) => ({
+          id: user.id,
+          name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email || user.id,
+        })));
+      }).catch(() => setSeqStaff([]));
   }, []);
 
   const save = async (steps: BFSequenceStep[]) => {
@@ -909,6 +918,7 @@ function SequencesPanel() {
             silo="bf"
             templates={tpls}
             queues={seqQueues}
+            staff={seqStaff}
             busy={busy}
             onSave={(steps) => save(steps as BFSequenceStep[])}
           />

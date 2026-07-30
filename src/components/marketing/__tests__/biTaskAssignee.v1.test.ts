@@ -16,8 +16,8 @@ describe("BI task assignee v1", () => {
     }));
   });
 
-  it("does not add BI-only assignee fields to BF task steps", () => {
+  it("serializes explicit assignees for BF task steps too", () => {
     const task: SequenceNode = { id: "task-1", kind: "task", taskTitle: "Call", assigneeUserId: "user-42" };
-    expect(serializeNodes([task], "bf")[0]).not.toHaveProperty("assignee_user_id");
+    expect(serializeNodes([task], "bf")[0]).toHaveProperty("assignee_user_id", "user-42");
   });
 });
