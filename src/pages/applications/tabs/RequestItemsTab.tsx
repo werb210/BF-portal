@@ -145,9 +145,9 @@ export default function RequestItemsTab({ applicationId }: Props) {
             document_type: dt,
           });
         } else {
-          await api.delete(
-            `/api/portal/applications/${applicationId}/document-waivers/${encodeURIComponent(dt)}`,
-          );
+          await api.post(`/api/portal/applications/${applicationId}/document-waivers/remove`, {
+            document_type: dt,
+          });
         }
       } catch (e: any) {
         setWaived((prev) => {
@@ -189,7 +189,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
         if (currentlyChecked) {
           await api.post(`/api/portal/applications/${applicationId}/document-waivers`, { document_type: key });
         } else {
-          await api.delete(`/api/portal/applications/${applicationId}/document-waivers/${encodeURIComponent(key)}`);
+          await api.post(`/api/portal/applications/${applicationId}/document-waivers/remove`, { document_type: key });
         }
       } catch (e: any) {
         setFormsWaived((prev) => {
