@@ -47,7 +47,7 @@ const DashboardPage = () => {
     // unit's figures before loading metrics through the active silo.
     setMetrics(null);
     setLoadFailed(false);
-    return api<DashboardMetrics>("/api/dashboard/metrics")
+    return api<DashboardMetrics>(`/api/dashboard/metrics?silo=${encodeURIComponent(silo.toUpperCase())}`)
       .then((nextMetrics) => {
         setMetrics(nextMetrics);
       })

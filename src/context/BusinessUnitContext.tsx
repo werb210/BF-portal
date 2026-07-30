@@ -21,6 +21,18 @@ const readStoredBusinessUnit = (): BusinessUnit | null => {
   }
 };
 
+// BF_PORTAL_SILO_STORAGE_SYNC_v1 - persistence must happen before React exposes
+// the new value to child fetch effects.
+const persistBusinessUnit = (businessUnit: BusinessUnit) => {
+  if (!canUseLocalStorage()) return;
+  try {
+    window.sessionStorage.setItem(STORAGE_KEY, businessUnit);
+    window.sessionStorage.setItem("staff-portal.silo", businessUnit);
+  } catch {
+    // ignore storage errors
+  }
+};
+
 export type BusinessUnitContextValue = {
   activeBusinessUnit: BusinessUnit;
   businessUnits: BusinessUnit[];
@@ -72,21 +84,16 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
       ? preferredUserBusinessUnit
       : fallbackBusinessUnit);
 
-  const [activeBusinessUnit, setActiveBusinessUnitState] = useState<BusinessUnit>(initialBusinessUnit ?? DEFAULT_BUSINESS_UNIT);
-
-  useEffect(() => {
-    if (!canUseLocalStorage()) return;
-    try {
-      window.sessionStorage.setItem(STORAGE_KEY, activeBusinessUnit);
-      window.sessionStorage.setItem("staff-portal.silo", activeBusinessUnit);
-    } catch {
-      // ignore storage errors
-    }
-  }, [activeBusinessUnit]);
+  const [activeBusinessUnit, setActiveBusinessUnitState] = useState<BusinessUnit>(() => {
+    const businessUnit = initialBusinessUnit ?? DEFAULT_BUSINESS_UNIT;
+    persistBusinessUnit(businessUnit);
+    return businessUnit;
+  });
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     if (normalizedBusinessUnits.includes(activeBusinessUnit)) return;
+    persistBusinessUnit(fallbackBusinessUnit);
     setActiveBusinessUnitState(fallbackBusinessUnit);
   }, [activeBusinessUnit, authStatus, fallbackBusinessUnit, normalizedBusinessUnits]);
 
@@ -96,6 +103,7 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
   // reported "have to click a couple times"). Navigation to the silo
   // home page is now handled by BusinessUnitSelector.
   const setActiveBusinessUnit = (businessUnit: BusinessUnit) => {
+    persistBusinessUnit(businessUnit);
     setActiveBusinessUnitState(businessUnit);
   };
 
