@@ -1,0 +1,30 @@
+{
+  "name": "boreal-portal-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Electron desktop shell for the Boreal staff portal",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac --arm64"
+  },
+  "devDependencies": {
+    "electron": "43.2.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.boreal.portal.desktop",
+    "productName": "Boreal Staff Portal",
+    "directories": { "output": "release" },
+    "files": ["main.cjs", "package.json"],
+    "mac": {
+      "category": "public.app-category.finance",
+      "target": [{ "target": "dmg", "arch": ["arm64"] }],
+      "icon": "../public/icons/icon-512x512.png",
+      "identity": null,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Boreal uses the microphone for staff phone calls placed through the in-app dialer."
+      }
+    }
+  }
+}

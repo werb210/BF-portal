@@ -1,3 +1,4 @@
+import { safeInternalPath } from "@/lib/safeInternalPath";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api";
@@ -46,9 +47,10 @@ const NotificationCenter = ({ onClose }: NotificationCenterProps) => {
     if (item.source === "server") {
       void api.post(`/api/notifications/${encodeURIComponent(item.id)}/read`).catch(() => {});
     }
-    if (item.url) {
+    const target = safeInternalPath(item.url);
+    if (target) {
       onClose();
-      navigate(item.url);
+      navigate(target);
     }
   };
 

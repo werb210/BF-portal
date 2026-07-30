@@ -1,6 +1,7 @@
 // MAYA_COMMAND_BAR — inline sidebar command bar. Input on top, mic + Go
 // below so it fits the narrow nav column. Screen-aware: attaches the
 // current screen context and executes Maya's navigate / dial actions.
+import { safeInternalPath } from "@/lib/safeInternalPath";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { sendMayaMessage, type MayaAction } from "@/api/maya";
@@ -97,7 +98,7 @@ export default function MayaCommandBar() {
       const actions = Array.isArray(res.actions) ? res.actions : [];
       for (const a of actions) {
         if (a?.type === "navigate") {
-          const path = actionToPath(a);
+          const path = safeInternalPath(actionToPath(a));
           if (path) { navigate(path); break; }
         }
         if (a?.type === "dial") {
