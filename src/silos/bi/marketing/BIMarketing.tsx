@@ -11,6 +11,7 @@ export default function BIMarketing() {
   const [channel, setChannel] = useState<Channel>("apollo");
   const [templates, setTemplates] = useState<SequenceTemplate[]>([]);
   const [queues, setQueues] = useState<SequenceQueue[]>([]);
+  const [sequenceName, setSequenceName] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -22,9 +23,14 @@ export default function BIMarketing() {
   }, []);
 
   const saveSequence = async (steps: BISequenceStep[]) => {
+    const name = sequenceName.trim();
+    if (!name) {
+      setMessage("Sequence name is required.");
+      return;
+    }
     setBusy(true); setMessage(null);
     try {
-      await api.post("/api/v1/bi/marketing/sequences", { steps });
+      await api.post("/api/v1/bi/marketing/sequences", { name, steps });
       setMessage("Sequence saved.");
     } catch { setMessage("Save failed."); }
     finally { setBusy(false); }
@@ -37,6 +43,9 @@ export default function BIMarketing() {
       </div>
     </div>
     {channel === "apollo" ? <MarketingT /> : channel === "email" ? <div className="max-w-7xl mx-auto px-6"><BrandedEmailComposer apiBase="/api/v1/bi/marketing" /></div> : <div className="max-w-7xl mx-auto px-6">
+      <label className="mb-4 block max-w-xl text-sm text-white/80">Sequence name
+        <input id="bi-sequence-name" aria-label="Sequence name" value={sequenceName} onChange={(event) => setSequenceName(event.target.value)} className="mt-1 block w-full rounded border px-3 py-2 bg-transparent text-white" placeholder="Enter a sequence name" />
+      </label>
       <SequenceCanvas silo="bi" templates={templates} queues={queues} busy={busy} onSave={(steps) => saveSequence(steps as BISequenceStep[])} />
       {message && <p className="mt-2 text-sm text-white/70">{message}</p>}
     </div>}

@@ -136,7 +136,7 @@ export default function SequenceCanvas({ silo, templates = [], queues = [], busy
           <label className="text-sm">Priority<select value={selected.taskPriority} onChange={(e) => patch(selected.id, { taskPriority: e.target.value })} className={input}>{["NONE", "LOW", "MEDIUM", "HIGH"].map((v) => <option key={v}>{v}</option>)}</select></label>
           <label className="text-sm">Queue<select value={selected.taskQueueId || ""} onChange={(e) => patch(selected.id, { taskQueueId: e.target.value })} className={input}><option value="">No queue</option>{queues.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}</select></label>
           <label className="text-sm">Task title<input value={selected.taskTitle || ""} onChange={(e) => patch(selected.id, { taskTitle: e.target.value })} className={input} /></label>
-          <p className="text-xs text-white/60">Assigned to the contact&apos;s owner. If the contact has no owner, the task goes to the first active Admin.</p>
+          <p className="text-xs text-white/60">{silo === "bf" ? "Assigned to the contact's owner. If the contact has no owner, the task goes to the first active Admin." : "BI task steps record the task details as a sequence event; they do not create or assign a task in a user queue."}</p>
           <label className="text-sm">Notes<textarea value={selected.taskNotes || ""} onChange={(e) => patch(selected.id, { taskNotes: e.target.value })} className={input} /></label>
           <label className="flex gap-2 text-sm"><input type="checkbox" checked={selected.taskPause ?? true} onChange={(e) => patch(selected.id, { taskPause: e.target.checked })} />Pause sequence until this task is completed</label>
         </> : <>
