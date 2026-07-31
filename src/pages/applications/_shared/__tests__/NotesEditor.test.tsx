@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const editor = fs.readFileSync(path.resolve(__dirname, "../NotesEditor.tsx"), "utf8");
-const drawer = fs.readFileSync(path.resolve(__dirname, "../../drawer/tab-notes/NotesTab.tsx"), "utf8");
+const drawer = fs.readFileSync(path.resolve(__dirname, "../../tabs/NotesTab.tsx"), "utf8");
 const detail = fs.readFileSync(path.resolve(__dirname, "../../tabs/NotesTab.tsx"), "utf8");
 const apiF   = fs.readFileSync(path.resolve(__dirname, "../../../../api/applicationNotes.ts"), "utf8");
 
@@ -25,7 +25,7 @@ describe("BF_NOTES_UI_v49 NotesEditor", () => {
 });
 
 describe("BF_NOTES_UI_v49 shells", () => {
-  it("drawer shell delegates to NotesEditor", () => {
+  it("the page shell delegates to NotesEditor", () => {
     expect(drawer).toContain("NotesEditor");
     expect(drawer).toContain("BF_NOTES_UI_v49");
   });
