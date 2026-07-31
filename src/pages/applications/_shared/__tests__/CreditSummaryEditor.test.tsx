@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const editorPath = path.resolve(__dirname, "../CreditSummaryEditor.tsx");
-const drawerPath = path.resolve(__dirname, "../../drawer/tab-credit-summary/CreditSummaryTab.tsx");
+const drawerPath = path.resolve(__dirname, "../../tabs/CreditSummaryTab.tsx");
 const detailPath = path.resolve(__dirname, "../../tabs/CreditSummaryTab.tsx");
 const apiPath    = path.resolve(__dirname, "../../../../api/credit.ts");
 
@@ -40,7 +40,7 @@ describe("BF_CREDIT_SUMMARY_UI_v46 CreditSummaryEditor", () => {
 });
 
 describe("BF_CREDIT_SUMMARY_UI_v46 shells", () => {
-  it("drawer shell delegates to CreditSummaryEditor", () => {
+  it("the page shell delegates to CreditSummaryEditor", () => {
     const drawer = fs.readFileSync(drawerPath, "utf8");
     expect(drawer).toContain("CreditSummaryEditor");
     expect(drawer).toContain("BF_CREDIT_SUMMARY_UI_v46");
