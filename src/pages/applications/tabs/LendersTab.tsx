@@ -6,7 +6,7 @@
 //   { status: "locked", outstanding, matches: [], computed_at: null }
 //   { status: "stale",  outstanding: [], matches: [...], computed_at }
 //   { status: "ready",  outstanding: [], matches: [...], computed_at }
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createLenderSubmission,
@@ -129,6 +129,35 @@ export default function LendersTab({ applicationId }: Props) {
     },
     enabled: Boolean(id),
   });
+  // BF_PORTAL_LENDER_PASS_REASON_v1 - recorded outcomes, keyed by lender.
+  const { data: v_respData } = useQuery({
+    queryKey: ["lender-responses", id],
+    queryFn: async () => {
+      const r = await api.get<any>(`/api/applications/${encodeURIComponent(id)}/lender-responses`);
+      return ((r as any)?.data ?? r) as { responses?: Array<{ lender_id: string; ordinal: number; reason: string }> };
+    },
+    enabled: Boolean(id),
+  });
+  const v_respMap = useMemo(() => {
+    const map = new Map<string, { ordinal: number; reason: string }>();
+    for (const x of v_respData?.responses ?? []) {
+      if (x?.lender_id) map.set(String(x.lender_id), { ordinal: Number(x.ordinal), reason: String(x.reason ?? "") });
+    }
+    return map;
+  }, [v_respData]);
+  const [reasonDraft, setReasonDraft] = useState<Record<string, string>>({});
+  const [reasonError, setReasonError] = useState<string | null>(null);
+  const passMutation = useMutation({
+    mutationFn: async (vars: { lenderId: string; reason: string }) => {
+      return api.post(`/api/applications/${encodeURIComponent(id)}/lender-response`, vars);
+    },
+    onSuccess: () => {
+      setReasonError(null);
+      queryClient.invalidateQueries({ queryKey: ["lender-responses", id] });
+    },
+    onError: (err: unknown) => setReasonError(getErrorMessage(err, "Unable to record the lender response.")),
+  });
+
   const v_sentMap = useMemo(() => {
     const map = new Map<string, string | null>();
     for (const x of v_sentData?.sent ?? []) {
@@ -331,6 +360,7 @@ export default function LendersTab({ applicationId }: Props) {
       {recalcError && <div style={{ ...styles.banner, ...styles.bannerError }}>{recalcError}</div>}
       {sendError && <div style={{ ...styles.banner, ...styles.bannerError }}>{sendError}</div>}
       {uploadError && <div style={{ ...styles.banner, ...styles.bannerError }}>{uploadError}</div>}
+      {reasonError && <div style={{ ...styles.banner, ...styles.bannerError }}>{reasonError}</div>}
 
       {matches.length === 0 ? (
         <div style={styles.empty}>No lender matches yet. Try Recalculate or check the application's amounts and category.</div>
@@ -357,8 +387,13 @@ export default function LendersTab({ applicationId }: Props) {
               const pct = getLikelihoodPercent(m);
               const pctColors = likelihoodColors(pct);
 
+              const lenderKey = m.lenderId ? String(m.lenderId) : "";
+              const isSent = Boolean(lenderKey && v_sentMap.has(lenderKey));
+              const recorded = lenderKey ? v_respMap.get(lenderKey) : undefined;
+
               return (
-                <tr key={m.id}>
+                <Fragment key={m.id}>
+                <tr>
                   <td style={styles.td}>
                     <input
                       type="checkbox"
@@ -442,6 +477,47 @@ export default function LendersTab({ applicationId }: Props) {
                     </button>
                   </td>
                 </tr>
+                {isSent && (
+                  <tr data-testid={`lender-pass-row-${m.id}`}>
+                    <td style={{ ...styles.td, paddingTop: 0 }} />
+                    <td style={{ ...styles.td, paddingTop: 0 }} colSpan={6}>
+                      {recorded ? (
+                        <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
+                          <strong>{`Lender ${recorded.ordinal} passed`}</strong>
+                          {" \u00b7 "}
+                          {recorded.reason}
+                        </div>
+                      ) : null}
+                      <div style={{ display: "flex", gap: 8, marginTop: recorded ? 6 : 0 }}>
+                        <input
+                          type="text"
+                          data-testid={`lender-pass-input-${m.id}`}
+                          placeholder={recorded ? "Update the pass reason" : "Why did they pass? The client sees this."}
+                          value={reasonDraft[lenderKey] ?? ""}
+                          onChange={(e) => setReasonDraft((prev) => ({ ...prev, [lenderKey]: e.target.value }))}
+                          style={{ ...styles.modalInput, marginTop: 0, flex: 1, minWidth: 0 }}
+                        />
+                        <button
+                          type="button"
+                          data-testid={`lender-pass-submit-${m.id}`}
+                          disabled={passMutation.isPending || !(reasonDraft[lenderKey] ?? "").trim()}
+                          onClick={() => {
+                            const reason = (reasonDraft[lenderKey] ?? "").trim();
+                            if (!reason) return;
+                            passMutation.mutate(
+                              { lenderId: lenderKey, reason },
+                              { onSuccess: () => setReasonDraft((prev) => ({ ...prev, [lenderKey]: "" })) },
+                            );
+                          }}
+                          style={styles.btn}
+                        >
+                          {passMutation.isPending ? "Saving\u2026" : "Record pass"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>
