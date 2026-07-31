@@ -21,6 +21,9 @@ type Tpl = {
   body2: string;
   rightImageUrl: string;
   rightImageLink: string;
+  // BF_PORTAL_EMAIL_CTA2_v1
+  cta2Label: string;
+  cta2Url: string;
 };
 type EmailLibraryTemplate = { id: string; name: string; subject: string | null; body: string | null; html: string | null; landingUrl: string | null };
 
@@ -29,6 +32,7 @@ const DEFAULTS: Tpl = {
   ctaLabel: "See If You Qualify", ctaUrl: "https://client.boreal.financial",
   image2Url: "", image2Link: "",
   headline2: "", body2: "", rightImageUrl: "", rightImageLink: "",
+  cta2Label: "", cta2Url: "",
 };
 
 // BF_PORTAL_COMPOSER_JOB_POLL_v1 - the composer previously fired a queued
@@ -321,7 +325,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
               <input value={tpl.ctaUrl} onChange={(e) => set("ctaUrl", e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
             </label>
           </div>
-          <div className="text-sm" style={{ color: "var(--ui-text)" }}>Second image (optional)
+          <div className="text-sm" style={{ color: "var(--ui-text)" }}>Full-width image below the frame (optional)
             <div className="flex gap-2 items-center mt-1">
               <button type="button" onClick={() => img2Ref.current?.click()} className="ui-button ui-button--secondary">{tpl.image2Url ? "Replace" : "Upload"}</button>
               {tpl.image2Url ? <button type="button" onClick={() => set("image2Url", "")} className="ui-button ui-button--secondary">Remove</button> : null}
@@ -338,7 +342,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
             <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Body
               <textarea value={tpl.body2} onChange={(e) => set("body2", e.target.value)} rows={4} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
             </label>
-            <div className="text-sm" style={{ color: "var(--ui-text)" }}>Image
+            <div className="text-sm" style={{ color: "var(--ui-text)" }}>Image (inside this column)
               <div className="flex gap-2 items-center mt-1">
                 <button type="button" onClick={() => rightImageRef.current?.click()} className="ui-button ui-button--secondary">{tpl.rightImageUrl ? "Replace" : "Upload"}</button>
                 {tpl.rightImageUrl ? <button type="button" onClick={() => set("rightImageUrl", "")} className="ui-button ui-button--secondary">Remove</button> : null}
@@ -346,6 +350,17 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
               </div>
               <input value={tpl.rightImageLink} onChange={(e) => set("rightImageLink", e.target.value)} placeholder="Image click link (optional)" className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
             </div>
+            {/* BF_PORTAL_EMAIL_CTA2_v1 - with two columns each one carries its own
+                button: the one above goes in the left column, this in the right. */}
+            <div className="grid grid-cols-2 gap-2">
+              <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Button label
+                <input value={tpl.cta2Label} onChange={(e) => set("cta2Label", e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
+              </label>
+              <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Button link
+                <input value={tpl.cta2Url} onChange={(e) => set("cta2Url", e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
+              </label>
+            </div>
+            <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Both a label and a link are needed before the button appears.</p>
           </fieldset>
           <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Merge fields: {"{{first_name}}"}, {"{{name}}"}, {"{{company}}"}, {"{{email}}"}. Logo, colours and footer are fixed.</p>
           <div className="flex flex-wrap gap-2 items-end">
