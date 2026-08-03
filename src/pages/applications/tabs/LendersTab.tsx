@@ -259,6 +259,20 @@ export default function LendersTab({ applicationId }: Props) {
 
   const handleSend = async () => {
     if (sending || selectedIds.length === 0) return;
+
+    // BF_PORTAL_SEND_PENDING_CONFIRM_v1 - envelope.outstanding is what the
+    // locked state lists; if any remain here the file is going out incomplete.
+    const outstanding = (envelope.outstanding ?? []).map((c) => String(c).replace(/_/g, " "));
+    if (outstanding.length > 0) {
+      const lenderCount = selectedIds.length;
+      const proceed = window.confirm(
+        `${outstanding.length} required document${outstanding.length === 1 ? " is" : "s are"} still outstanding:\n\n` +
+        outstanding.map((c) => `  \u2022 ${c}`).join("\n") +
+        `\n\nSend to ${lenderCount} lender${lenderCount === 1 ? "" : "s"} anyway?`
+      );
+      if (!proceed) return;
+    }
+
     setSending(true);
     setSendError(null);
     try {
