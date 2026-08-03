@@ -21,6 +21,13 @@ vi.mock("@/components/auth/AccessRestricted", () => ({
 }));
 vi.mock("@/auth/can", () => ({ canWrite: () => true }));
 vi.mock("@/utils/errors", () => ({ getErrorMessage: (e: any, fb: string) => e?.message ?? fb }));
+const apiGet = vi.fn();
+vi.mock("@/api", () => ({
+  api: {
+    get: (...args: unknown[]) => apiGet(...args),
+    post: vi.fn(),
+  },
+}));
 
 import LendersTab from "../LendersTab";
 import { fetchLenderEnvelope, recalculateLenderMatches, createLenderSubmission, uploadLenderTermSheet } from "@/api/lenders";
@@ -34,6 +41,13 @@ beforeEach(() => {
   (fetchLenderEnvelope as any).mockReset();
   (recalculateLenderMatches as any).mockReset();
   (createLenderSubmission as any).mockReset();
+  apiGet.mockReset();
+  apiGet.mockImplementation((url: string) => {
+    if (url.includes("/api/portal/applications/")) {
+      return Promise.resolve({ documents: [{ status: "accepted" }] });
+    }
+    return Promise.resolve({});
+  });
 });
 
 describe("LendersTab", () => {
@@ -78,6 +92,55 @@ describe("LendersTab", () => {
     await waitFor(() => {
       expect(createLenderSubmission).toHaveBeenCalledWith("app-123", ["p1"]);
     });
+  });
+
+  it("requires confirmation before sending when documents are not accepted", async () => {
+    (fetchLenderEnvelope as any).mockResolvedValue({
+      status: "ready",
+      outstanding: [],
+      computed_at: new Date().toISOString(),
+      matches: [{ id: "p1", lenderName: "Alpha", productCategory: "TERM_LOAN" }],
+    });
+    apiGet.mockImplementation((url: string) => Promise.resolve(
+      url.includes("/api/portal/applications/")
+        ? { documents: [{ status: "pending" }, { status: "rejected" }, { status: "accepted" }] }
+        : {},
+    ));
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    render(withClient(<LendersTab applicationId="app-pending" />));
+    fireEvent.click(await screen.findByLabelText(/Send to Alpha/i));
+    fireEvent.click(screen.getByRole("button", { name: /Send \(1\)/ }));
+
+    await waitFor(() => expect(confirm).toHaveBeenCalledWith(
+      "2 documents are not accepted. Send this partial file anyway?",
+    ));
+    expect(createLenderSubmission).not.toHaveBeenCalled();
+
+    confirm.mockRestore();
+  });
+
+  it("sends a partial file after the sender confirms", async () => {
+    (fetchLenderEnvelope as any).mockResolvedValue({
+      status: "ready",
+      outstanding: [],
+      computed_at: new Date().toISOString(),
+      matches: [{ id: "p1", lenderName: "Alpha", productCategory: "TERM_LOAN" }],
+    });
+    apiGet.mockImplementation((url: string) => Promise.resolve(
+      url.includes("/api/portal/applications/") ? { documents: [{ status: "PENDING" }] } : {},
+    ));
+    (createLenderSubmission as any).mockResolvedValue({});
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(withClient(<LendersTab applicationId="app-pending" />));
+    fireEvent.click(await screen.findByLabelText(/Send to Alpha/i));
+    fireEvent.click(screen.getByRole("button", { name: /Send \(1\)/ }));
+
+    await waitFor(() => expect(createLenderSubmission).toHaveBeenCalledWith("app-pending", ["p1"]));
+    expect(confirm).toHaveBeenCalledWith("1 document is not accepted. Send this partial file anyway?");
+
+    confirm.mockRestore();
   });
 });
 

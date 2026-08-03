@@ -25,6 +25,8 @@ import { canWrite } from "@/auth/can";
 import CollateralFacilitySection from "@/pages/applications/tabs/CollateralFacilitySection";
 
 type Props = { applicationId?: string | null };
+type ApplicationDocument = { status?: string | null };
+type ApplicationDocumentsResponse = { documents?: ApplicationDocument[] };
 
 const styles = {
   page: { padding: 20, paddingBottom: 100 } as const,
@@ -236,6 +238,7 @@ export default function LendersTab({ applicationId }: Props) {
   };
 
   const mutation = useMutation({
+    // BF_PORTAL_SEND_PENDING_CONFIRM_v1
     mutationFn: (ids: string[]) => createLenderSubmission(id, ids),
     onSuccess: (payload) => {
       const notice = describeSendResult(payload);
@@ -259,6 +262,18 @@ export default function LendersTab({ applicationId }: Props) {
     setSending(true);
     setSendError(null);
     try {
+      const application = await api.get<ApplicationDocumentsResponse>(
+        `/api/portal/applications/${encodeURIComponent(id)}`,
+      );
+      const unacceptedCount = (application.documents ?? []).filter(
+        (document) => String(document.status ?? "").toLowerCase() !== "accepted",
+      ).length;
+      if (unacceptedCount > 0) {
+        const confirmed = window.confirm(
+          `${unacceptedCount} document${unacceptedCount === 1 ? " is" : "s are"} not accepted. Send this partial file anyway?`,
+        );
+        if (!confirmed) return;
+      }
       await mutation.mutateAsync(selectedIds);
     } catch (err) {
       setSendError(getErrorMessage(err, "Unable to send to lenders."));
