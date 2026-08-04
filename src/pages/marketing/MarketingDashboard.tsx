@@ -724,6 +724,9 @@ type SmsTemplateRow = { id: string; name: string; body: string | null; link_url:
 function SmsComposerPanel() {
   const [seg, setSeg] = useState<SmsSegments | null>(null);
   const [tag, setTag] = useState("__all__");
+  // BF_PORTAL_SMS_MERGE_LABEL_v4 - the hint under this field claimed merge
+  // fields do not work in SMS. They do: marketingSms.mergeSmsFields runs on
+  // every send, substituting first_name, name, email and company.
   const [body, setBody] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [testTo, setTestTo] = useState("");
@@ -787,7 +790,7 @@ function SmsComposerPanel() {
         <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Message
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={400} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
         </label>
-        <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>{body.length} chars. Merge: {"{{first_name}}"} not applied to SMS; keep it short. A tracked link is appended if you add a landing page below.</p>
+        <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>{body.length} chars. Merge: {"{{first_name}}"}, {"{{name}}"}, {"{{company}}"} all work in SMS. Keep it short. A tracked link is appended if you add a landing page below.</p>
         <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Landing page (optional, tracked)
           <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://boreal.financial/..." className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
         </label>
