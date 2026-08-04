@@ -114,11 +114,12 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   const [held, setHeld] = useState(false); // BF_PORTAL_SEND_HOLD_CANCEL_v1
   const [canceling, setCanceling] = useState(false); // BF_PORTAL_SEND_HOLD_CANCEL_v1
   const [preview, setPreview] = useState("");
-  const [libName, setLibName] = useState(""); // BF_PORTAL_BLOCK_v206_EMAIL_LIB
+  const [libName, setLibName] = useState("");
+  // BF_PORTAL_EMAIL_SYMMETRIC_LAYOUT_v5
+  const [resend, setResend] = useState(false); // BF_PORTAL_BLOCK_v206_EMAIL_LIB
   const [emailTpls, setEmailTpls] = useState<EmailLibraryTemplate[]>([]); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
   const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null); // BF_PORTAL_TEMPLATE_ANALYTICS_v1
   const heroRef = useRef<HTMLInputElement>(null);
-  const img2Ref = useRef<HTMLInputElement>(null);
   const rightImageRef = useRef<HTMLInputElement>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = useState(1);
@@ -180,7 +181,10 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
     return () => observer.disconnect();
   }, []);
 
-  const upload = async (file: File, key: "heroUrl" | "image2Url" | "rightImageUrl") => {
+  // BF_PORTAL_EMAIL_SYMMETRIC_LAYOUT_v5 - image2 ("full-width image below the
+  // frame") is gone. It rendered outside the column layout, so a two-column
+  // email carried a stray banner underneath both columns.
+  const upload = async (file: File, key: "heroUrl" | "rightImageUrl") => {
     setMsg(null);
     const fd = new FormData();
     fd.append("file", file);
@@ -236,7 +240,10 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   const send = async (test?: string) => {
     setBusy(true); setMsg(null); setHeld(false); setJobId(null);
     try {
-      const payload: Record<string, unknown> = { subject, ...tpl };
+      // BF_PORTAL_EMAIL_SYMMETRIC_LAYOUT_v5 - the server skips anyone already
+      // emailed in the last 24h, which is right for a real blast and reported
+      // itself as "sent 0 of 0" on a repeat test. `resend` overrides it.
+      const payload: Record<string, unknown> = { subject, ...tpl, resend };
       if (currentTemplateId) payload.templateId = currentTemplateId; // BF_PORTAL_TEMPLATE_ANALYTICS_v1
       if (test) payload.test = test;
       else {
@@ -265,141 +272,153 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   }
 
   const inputStyle = { color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" };
+  const labelCls = "text-sm block";
+  const labelStyle = { color: "var(--ui-text)" } as const;
+  const fieldCls = "block border rounded px-2 py-1 text-sm mt-1 w-full";
+
+  // BF_PORTAL_EMAIL_SYMMETRIC_LAYOUT_v5
+  // The email is two columns, so the form is two columns, in the order the
+  // renderer emits: headline, image, image click link, body, button.
+  // Everything that used to sit only on the left - hero image, the single
+  // button - is now explicitly the LEFT column, because that is what it always
+  // was in the rendered output. Nothing else: no extra image, no extra link.
+  const columnFields = (side: "left" | "right") => {
+    const isLeft = side === "left";
+    const headlineKey = isLeft ? "headline" : "headline2";
+    const imageKey = isLeft ? "heroUrl" : "rightImageUrl";
+    const imageLinkKey = isLeft ? "heroLink" : "rightImageLink";
+    const bodyKey = isLeft ? "body" : "body2";
+    const ctaLabelKey = isLeft ? "ctaLabel" : "cta2Label";
+    const ctaUrlKey = isLeft ? "ctaUrl" : "cta2Url";
+    const fileRef = isLeft ? heroRef : rightImageRef;
+    const imageUrl = tpl[imageKey as keyof Tpl] as string;
+
+    return (
+      <div className="space-y-2 rounded border p-3" style={{ borderColor: "var(--ui-border)" }}>
+        <div className="text-sm font-semibold" style={labelStyle}>{isLeft ? "Left side" : "Right side"}</div>
+        <label className={labelCls} style={labelStyle}>Headline
+          <input value={tpl[headlineKey as keyof Tpl] as string} onChange={(e) => set(headlineKey as keyof Tpl, e.target.value)} className={fieldCls} style={inputStyle} />
+        </label>
+        <div className="text-sm" style={labelStyle}>Image
+          <div className="flex gap-2 items-center mt-1">
+            <button type="button" onClick={() => fileRef.current?.click()} className="ui-button ui-button--secondary">{imageUrl ? "Replace" : "Upload"}</button>
+            {imageUrl ? <button type="button" onClick={() => set(imageKey as keyof Tpl, "")} className="ui-button ui-button--secondary">Remove</button> : null}
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f, imageKey as "heroUrl" | "rightImageUrl"); e.target.value = ""; }} />
+          </div>
+        </div>
+        <label className={labelCls} style={labelStyle}>Image click link
+          <input value={tpl[imageLinkKey as keyof Tpl] as string} onChange={(e) => set(imageLinkKey as keyof Tpl, e.target.value)} placeholder="Optional" className={fieldCls} style={inputStyle} />
+        </label>
+        <label className={labelCls} style={labelStyle}>Body
+          <textarea value={tpl[bodyKey as keyof Tpl] as string} onChange={(e) => set(bodyKey as keyof Tpl, e.target.value)} rows={6} className={fieldCls} style={inputStyle} />
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className={labelCls} style={labelStyle}>Button label
+            <input value={tpl[ctaLabelKey as keyof Tpl] as string} onChange={(e) => set(ctaLabelKey as keyof Tpl, e.target.value)} className={fieldCls} style={inputStyle} />
+          </label>
+          <label className={labelCls} style={labelStyle}>Button link
+            <input value={tpl[ctaUrlKey as keyof Tpl] as string} onChange={(e) => set(ctaUrlKey as keyof Tpl, e.target.value)} className={fieldCls} style={inputStyle} />
+          </label>
+        </div>
+        <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>
+          {isLeft
+            ? "A button needs both a label and a link."
+            : "Leave the right side empty for a single-column email."}
+        </p>
+      </div>
+    );
+  };
+
   return (
     <section className="drawer-section">
       <div className="drawer-section__title mb-2">Email campaign</div>
-      <div className="flex flex-col gap-4 md:flex-row">
-        <div className="space-y-2 md:w-1/2">
-          <div className="text-sm" style={{ color: "var(--ui-text)" }}>Audience
-            <div className="grid grid-cols-2 gap-2 mt-1">
-              <TagPicker title="Include tags" hint={`Empty = all contacts (${seg?.all ?? 0})`} tags={seg?.segments ?? []} selected={include}
-                onToggle={(t) => setInclude((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))} />
-              <TagPicker title="Exclude tags" hint="Removed even if included" tags={seg?.segments ?? []} selected={exclude}
-                onToggle={(t) => setExclude((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))} />
-            </div>
-            <p className="mt-1" style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Recipients: <strong style={{ color: "var(--ui-text)" }}>{count}</strong></p>
-          </div>
-          {emailTpls.length > 0 ? (
-            <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Load template
-              <select value={currentTemplateId ?? ""} onChange={(e) => {
-                const t = emailTpls.find((x) => x.id === e.target.value);
-                if (t) {
-                  setSubject(t.subject ?? "");
-                  setTpl((p) => ({ ...p, body: t.body ?? p.body }));
-                  setLandingUrl(t.landingUrl ?? "");
-                  skipNextPreview.current = true;
-                  setPreview(t.html ?? "");
-                  setCurrentTemplateId(t.id);
-                } else {
-                  setCurrentTemplateId(null);
-                  setLandingUrl("");
-                }
-              }} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle}>
-                <option value="">&mdash; none &mdash;</option>
-                {emailTpls.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </label>
-          ) : null}
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Subject
-            <input value={subject} onChange={(e) => setSubject(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-          </label>
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Headline
-            <input value={tpl.headline} onChange={(e) => set("headline", e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-          </label>
-          <div className="text-sm" style={{ color: "var(--ui-text)" }}>Hero image
-            <div className="flex gap-2 items-center mt-1">
-              <button type="button" onClick={() => heroRef.current?.click()} className="ui-button ui-button--secondary">{tpl.heroUrl ? "Replace" : "Upload"}</button>
-              {tpl.heroUrl ? <button type="button" onClick={() => set("heroUrl", "")} className="ui-button ui-button--secondary">Remove</button> : null}
-              <input ref={heroRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f, "heroUrl"); e.target.value = ""; }} />
-            </div>
-            <input value={tpl.heroLink} onChange={(e) => set("heroLink", e.target.value)} placeholder="Image click link (optional)" className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-          </div>
-          <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Body
-            <textarea value={tpl.body} onChange={(e) => set("body", e.target.value)} rows={6} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Button label
-              <input value={tpl.ctaLabel} onChange={(e) => set("ctaLabel", e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-            </label>
-            <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Button link
-              <input value={tpl.ctaUrl} onChange={(e) => set("ctaUrl", e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-            </label>
-          </div>
-          <div className="text-sm" style={{ color: "var(--ui-text)" }}>Full-width image below the frame (optional)
-            <div className="flex gap-2 items-center mt-1">
-              <button type="button" onClick={() => img2Ref.current?.click()} className="ui-button ui-button--secondary">{tpl.image2Url ? "Replace" : "Upload"}</button>
-              {tpl.image2Url ? <button type="button" onClick={() => set("image2Url", "")} className="ui-button ui-button--secondary">Remove</button> : null}
-              <input ref={img2Ref} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f, "image2Url"); e.target.value = ""; }} />
-            </div>
-            <input value={tpl.image2Link} onChange={(e) => set("image2Link", e.target.value)} placeholder="Image click link (optional)" className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-          </div>
-          <fieldset className="space-y-2 rounded border p-3" style={{ borderColor: "var(--ui-border)" }}>
-            <legend className="px-1 text-sm font-semibold" style={{ color: "var(--ui-text)" }}>Second column (optional)</legend>
-            <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Add a heading, body, and image to place a second subject beside the main content. Leave these fields empty to keep the standard single-column email.</p>
-            <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Heading
-              <input value={tpl.headline2} onChange={(e) => set("headline2", e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-            </label>
-            <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Body
-              <textarea value={tpl.body2} onChange={(e) => set("body2", e.target.value)} rows={4} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-            </label>
-            <div className="text-sm" style={{ color: "var(--ui-text)" }}>Image (inside this column)
-              <div className="flex gap-2 items-center mt-1">
-                <button type="button" onClick={() => rightImageRef.current?.click()} className="ui-button ui-button--secondary">{tpl.rightImageUrl ? "Replace" : "Upload"}</button>
-                {tpl.rightImageUrl ? <button type="button" onClick={() => set("rightImageUrl", "")} className="ui-button ui-button--secondary">Remove</button> : null}
-                <input ref={rightImageRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f, "rightImageUrl"); e.target.value = ""; }} />
-              </div>
-              <input value={tpl.rightImageLink} onChange={(e) => set("rightImageLink", e.target.value)} placeholder="Image click link (optional)" className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-            </div>
-            {/* BF_PORTAL_EMAIL_CTA2_v1 - with two columns each one carries its own
-                button: the one above goes in the left column, this in the right. */}
-            <div className="grid grid-cols-2 gap-2">
-              <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Button label
-                <input value={tpl.cta2Label} onChange={(e) => set("cta2Label", e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-              </label>
-              <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Button link
-                <input value={tpl.cta2Url} onChange={(e) => set("cta2Url", e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={inputStyle} />
-              </label>
-            </div>
-            <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Both a label and a link are needed before the button appears.</p>
-          </fieldset>
-          <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Merge fields: {"{{first_name}}"}, {"{{name}}"}, {"{{company}}"}, {"{{email}}"}. Logo, colours and footer are fixed.</p>
-          <div className="flex flex-wrap gap-2 items-end">
-            <button type="button" disabled={saving} onClick={() => void save()} className="ui-button ui-button--secondary">{saving ? "Saving..." : "Save draft"}</button>
-            <input value={libName} onChange={(e) => setLibName(e.target.value)} placeholder="Template name" className="block border rounded px-2 py-1 text-sm" style={inputStyle} />
-            <button type="button" disabled={!libName.trim() || !subject} onClick={() => void saveNamed()} className="ui-button ui-button--secondary">Save to library</button>
-            <label className="text-sm" style={{ color: "var(--ui-text)" }}>Test to
-              <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@boreal.financial" className="block border rounded px-2 py-1 text-sm mt-1" style={inputStyle} />
-            </label>
-            <button type="button" disabled={busy || !subject || !testTo} onClick={() => void send(testTo)} className="ui-button ui-button--secondary">Send test</button>
-            <button type="button" disabled={busy || !subject || !count} onClick={() => void send()} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
-          </div>
-          {msg ? <p style={{ color: "var(--ui-text-muted)" }}>{msg}</p> : null}
-          {/* BF_PORTAL_SEND_HOLD_CANCEL_v1 */}
-          {held && jobId ? (
-            <button
-              type="button"
-              onClick={cancelSend}
-              disabled={canceling}
-              className="ml-2 rounded border border-red-500 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-            >
-              {canceling ? "Canceling..." : "Cancel send"}
-            </button>
-          ) : null}
-          {landingUrl ? (
-            <div className="mt-2">
-              <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Landing page URL (paste into your SMS template's landing page field):</p>
-              <div className="flex gap-2 items-center mt-1">
-                <input readOnly value={landingUrl} onFocus={(e) => e.currentTarget.select()} className="block border rounded px-2 py-1 text-sm w-full" style={inputStyle} />
-                <button type="button" className="ui-button ui-button--secondary" onClick={() => { void navigator.clipboard?.writeText(landingUrl); setMsg("Landing URL copied."); }}>Copy</button>
-              </div>
-            </div>
-          ) : null}
+
+      {/* Audience first - you choose who before you write. */}
+      <div className="text-sm" style={labelStyle}>Audience
+        <div className="grid grid-cols-2 gap-2 mt-1">
+          <TagPicker title="Include tags" hint={`Empty = all contacts (${seg?.all ?? 0})`} tags={seg?.segments ?? []} selected={include}
+            onToggle={(t) => setInclude((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))} />
+          <TagPicker title="Exclude tags" hint="Removed even if included" tags={seg?.segments ?? []} selected={exclude}
+            onToggle={(t) => setExclude((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))} />
         </div>
-        <div ref={previewPaneRef} className="md:w-1/2 min-w-0">
-          <div className="text-sm mb-1" style={{ color: "var(--ui-text-muted)" }}>Preview</div>
-          <div style={{ width: EMAIL_PREVIEW_WIDTH * previewScale, height: 520 * previewScale, overflow: "hidden" }}>
-            <iframe title="Email preview" srcDoc={preview} style={{ width: EMAIL_PREVIEW_WIDTH, height: 520, border: "1px solid var(--ui-border)", borderRadius: 8, background: "#fff", transform: `scale(${previewScale})`, transformOrigin: "top left" }} />
+        <p className="mt-1" style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Recipients: <strong style={{ color: "var(--ui-text)" }}>{count}</strong></p>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-2 mt-3">
+        {emailTpls.length > 0 ? (
+          <label className={labelCls} style={labelStyle}>Load template
+            <select value={currentTemplateId ?? ""} onChange={(e) => {
+              const t = emailTpls.find((x) => x.id === e.target.value);
+              if (t) {
+                setSubject(t.subject ?? "");
+                setTpl((p) => ({ ...p, body: t.body ?? p.body }));
+                setLandingUrl(t.landingUrl ?? "");
+                skipNextPreview.current = true;
+                setPreview(t.html ?? "");
+                setCurrentTemplateId(t.id);
+              } else {
+                setCurrentTemplateId(null);
+                setLandingUrl("");
+              }
+            }} className={fieldCls} style={inputStyle}>
+              <option value="">&mdash; none &mdash;</option>
+              {emailTpls.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+        ) : <div />}
+        <label className={labelCls} style={labelStyle}>Subject
+          <input value={subject} onChange={(e) => setSubject(e.target.value)} className={fieldCls} style={inputStyle} />
+        </label>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 mt-3">
+        {columnFields("left")}
+        {columnFields("right")}
+      </div>
+
+      <p className="mt-2" style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Merge fields: {"{{first_name}}"}, {"{{name}}"}, {"{{company}}"}, {"{{email}}"}. Logo, colours and footer are fixed.</p>
+
+      <div className="flex flex-wrap gap-2 items-end mt-2">
+        <button type="button" disabled={saving} onClick={() => void save()} className="ui-button ui-button--secondary">{saving ? "Saving..." : "Save draft"}</button>
+        <input value={libName} onChange={(e) => setLibName(e.target.value)} placeholder="Template name" className="block border rounded px-2 py-1 text-sm" style={inputStyle} />
+        <button type="button" disabled={!libName.trim() || !subject} onClick={() => void saveNamed()} className="ui-button ui-button--secondary">Save to library</button>
+        <label className="text-sm" style={labelStyle}>Test to
+          <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@boreal.financial" className="block border rounded px-2 py-1 text-sm mt-1" style={inputStyle} />
+        </label>
+        <button type="button" disabled={busy || !subject || !testTo} onClick={() => void send(testTo)} className="ui-button ui-button--secondary">Send test</button>
+        <button type="button" disabled={busy || !subject || !count} onClick={() => void send()} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
+        <label className="text-sm flex items-center gap-1" style={labelStyle} title="Contacts emailed in the last 24 hours are skipped unless this is ticked.">
+          <input type="checkbox" checked={resend} onChange={(e) => setResend(e.target.checked)} />
+          Send again within 24h
+        </label>
+      </div>
+
+      {msg ? <p style={{ color: "var(--ui-text-muted)" }}>{msg}</p> : null}
+      {held && jobId ? (
+        <button
+          type="button"
+          onClick={cancelSend}
+          disabled={canceling}
+          className="ml-2 rounded border border-red-500 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+        >
+          {canceling ? "Canceling..." : "Cancel send"}
+        </button>
+      ) : null}
+
+      {landingUrl ? (
+        <div className="mt-2">
+          <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Landing page URL (paste into your SMS template&apos;s landing page field):</p>
+          <div className="flex gap-2 items-center mt-1">
+            <input readOnly value={landingUrl} onFocus={(e) => e.currentTarget.select()} className="block border rounded px-2 py-1 text-sm w-full" style={inputStyle} />
+            <button type="button" className="ui-button ui-button--secondary" onClick={() => { void navigator.clipboard?.writeText(landingUrl); setMsg("Landing URL copied."); }}>Copy</button>
           </div>
+        </div>
+      ) : null}
+
+      <div ref={previewPaneRef} className="mt-4 min-w-0">
+        <div className="text-sm mb-1" style={{ color: "var(--ui-text-muted)" }}>Preview</div>
+        <div style={{ width: EMAIL_PREVIEW_WIDTH * previewScale, height: 520 * previewScale, overflow: "hidden" }}>
+          <iframe title="Email preview" srcDoc={preview} style={{ width: EMAIL_PREVIEW_WIDTH, height: 520, border: "1px solid var(--ui-border)", borderRadius: 8, background: "#fff", transform: `scale(${previewScale})`, transformOrigin: "top left" }} />
         </div>
       </div>
     </section>
