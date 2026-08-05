@@ -11,7 +11,7 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
-        with: { node-version: "20" }
+        with: { node-version: "22" }
       - run: npm ci --no-audit --no-fund
       - name: Resolve scope from PR label
         id: scope

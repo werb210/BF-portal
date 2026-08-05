@@ -16,6 +16,14 @@ vi.mock("@/api", () => {
   return { api };
 });
 
+// BF_PORTAL_APOLLO_OFF_v10 - Email is now the default channel, so rendering
+// BIMarketing mounts the real BrandedEmailComposer, which observes its preview
+// pane with a ResizeObserver that jsdom does not implement. This file tests the
+// T/A toggle, not the composer, so the composer is stubbed.
+vi.mock("@/components/marketing/BrandedEmailComposer", () => ({
+  default: () => <div>email composer</div>,
+}));
+
 import BIMarketing from "@/silos/bi/marketing/BIMarketing";
 
 describe("BIMarketing v215 toggle removed", () => {
@@ -35,9 +43,15 @@ describe("BIMarketing v215 toggle removed", () => {
     expect(screen.queryByRole("button", { name: "Marketing — A" })).not.toBeInTheDocument();
   });
 
-  it("BI Marketing heading still renders for Todd", () => {
+  // BF_PORTAL_APOLLO_OFF_v10 - the "BI Marketing" heading lived inside the
+  // Apollo module (MarketingT), which was the default tab. Apollo is retired,
+  // so the page now opens on the email composer. The point of this test is that
+  // BIMarketing still renders something for an admin, so it asserts the channel
+  // tablist instead of a heading that no longer exists.
+  it("still renders the channel tabs for Todd", () => {
     useAuthMock.mockReturnValue({ user: { id: "todd", name: "Todd", role: "Admin", capabilities: ["marketing:admin", "marketing:outreach"] } });
     render(<BIMarketing />);
-    expect(screen.getByRole("heading", { name: /BI Marketing/i })).toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: "Marketing channels" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Email" })).toBeInTheDocument();
   });
 });
