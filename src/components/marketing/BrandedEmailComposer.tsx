@@ -209,11 +209,14 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   const saveNamed = async () => {
     if (!libName.trim() || !subject.trim()) return;
     try {
-      const res = await api.post<{ data?: { landingUrl?: string } } & { landingUrl?: string }>(`${apiBase}/templates`, { channel: "email", name: libName.trim(), subject, body: tpl.body, html: preview, fields: tpl });
+      const res = await api.post<{ data?: { landingUrl?: string; replaced?: boolean } } & { landingUrl?: string; replaced?: boolean }>(`${apiBase}/templates`, { channel: "email", name: libName.trim(), subject, body: tpl.body, html: preview, fields: tpl });
       const url = (res?.data?.landingUrl ?? res?.landingUrl) || "";
-      setLibName("");
-      if (url) { setLandingUrl(url); setMsg("Email template saved. Copy the landing page URL below into your SMS template."); }
-      else { setMsg("Email template saved to library."); }
+      // BF_PORTAL_TEMPLATE_SAVE_BY_NAME_v8 - keep the name so a further edit
+      // saves back to the same template instead of forking a new one.
+      const wasReplaced = Boolean(res?.data?.replaced ?? res?.replaced);
+      const what = wasReplaced ? "updated" : "saved";
+      if (url) { setLandingUrl(url); setMsg(`Email template ${what}. Copy the landing page URL below into your SMS template.`); }
+      else { setMsg(`Email template ${what} to library.`); }
     }
     catch { setMsg("Save failed."); }
   };
@@ -358,6 +361,11 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
                 // Templates saved before v7 have no `fields`, so they reset to
                 // defaults plus their body rather than inheriting stale values.
                 setTpl(t.fields ? { ...DEFAULTS, ...t.fields } : { ...DEFAULTS, body: t.body ?? "" });
+                // BF_PORTAL_TEMPLATE_SAVE_BY_NAME_v8 - prefill the name box, so
+                // editing and re-saving overwrites this template rather than
+                // silently creating a second one with a retyped name. BF-Server
+                // matches on the exact name, so a typo forks a duplicate.
+                setLibName(t.name ?? "");
                 setLandingUrl(t.landingUrl ?? "");
                 skipNextPreview.current = true;
                 setPreview(t.html ?? "");
