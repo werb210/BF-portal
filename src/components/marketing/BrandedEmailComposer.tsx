@@ -23,7 +23,11 @@ type Tpl = {
   cta2Label: string;
   cta2Url: string;
 };
-type EmailLibraryTemplate = { id: string; name: string; subject: string | null; body: string | null; html: string | null; landingUrl: string | null };
+// BF_PORTAL_TEMPLATE_FIELDS_ROUNDTRIP_v7 - `fields` carries the whole composer
+// state. Before it existed, saving to the library kept only subject/body/html,
+// so picking a saved template restored those three and silently left the
+// previous one's headline, images and buttons in place, right column blank.
+type EmailLibraryTemplate = { id: string; name: string; subject: string | null; body: string | null; html: string | null; landingUrl: string | null; fields?: Partial<Tpl> | null };
 
 const DEFAULTS: Tpl = {
   headline: "", heroUrl: "", heroLink: "", body: "",
@@ -205,7 +209,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   const saveNamed = async () => {
     if (!libName.trim() || !subject.trim()) return;
     try {
-      const res = await api.post<{ data?: { landingUrl?: string } } & { landingUrl?: string }>(`${apiBase}/templates`, { channel: "email", name: libName.trim(), subject, body: tpl.body, html: preview });
+      const res = await api.post<{ data?: { landingUrl?: string } } & { landingUrl?: string }>(`${apiBase}/templates`, { channel: "email", name: libName.trim(), subject, body: tpl.body, html: preview, fields: tpl });
       const url = (res?.data?.landingUrl ?? res?.landingUrl) || "";
       setLibName("");
       if (url) { setLandingUrl(url); setMsg("Email template saved. Copy the landing page URL below into your SMS template."); }
@@ -348,7 +352,12 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
               const t = emailTpls.find((x) => x.id === e.target.value);
               if (t) {
                 setSubject(t.subject ?? "");
-                setTpl((p) => ({ ...p, body: t.body ?? p.body }));
+                // BF_PORTAL_TEMPLATE_FIELDS_ROUNDTRIP_v7 - replace the WHOLE form.
+                // Merging into the previous state is what left one template's
+                // headline and buttons attached to another template's body.
+                // Templates saved before v7 have no `fields`, so they reset to
+                // defaults plus their body rather than inheriting stale values.
+                setTpl(t.fields ? { ...DEFAULTS, ...t.fields } : { ...DEFAULTS, body: t.body ?? "" });
                 setLandingUrl(t.landingUrl ?? "");
                 skipNextPreview.current = true;
                 setPreview(t.html ?? "");
