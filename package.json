@@ -63,10 +63,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.0",
-    "@esbuild/linux-x64": "^0.21.5",
     "@playwright/test": "^1.58.2",
-    "@rolldown/binding-linux-x64-gnu": "^1.0.0-rc.15",
-    "@rollup/rollup-linux-x64-gnu": "^4.60.0",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.6.1",
@@ -106,5 +103,10 @@
     "workbox-precaching": "^7.3.0",
     "workbox-routing": "^7.3.0",
     "workbox-strategies": "^7.3.0"
+  },
+  "optionalDependencies": {
+    "@esbuild/linux-x64": "^0.21.5",
+    "@rolldown/binding-linux-x64-gnu": "^1.0.0-rc.15",
+    "@rollup/rollup-linux-x64-gnu": "^4.60.0"
   }
 }
