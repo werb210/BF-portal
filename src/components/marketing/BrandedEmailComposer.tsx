@@ -15,8 +15,6 @@ type Tpl = {
   body: string;
   ctaLabel: string;
   ctaUrl: string;
-  image2Url: string;
-  image2Link: string;
   headline2: string;
   body2: string;
   rightImageUrl: string;
@@ -30,7 +28,6 @@ type EmailLibraryTemplate = { id: string; name: string; subject: string | null; 
 const DEFAULTS: Tpl = {
   headline: "", heroUrl: "", heroLink: "", body: "",
   ctaLabel: "See If You Qualify", ctaUrl: "https://client.boreal.financial",
-  image2Url: "", image2Link: "",
   headline2: "", body2: "", rightImageUrl: "", rightImageLink: "",
   cta2Label: "", cta2Url: "",
 };
