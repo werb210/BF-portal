@@ -7,7 +7,10 @@ import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORT
 import SequenceCanvas, { type BFSequenceStep } from "@/components/marketing/SequenceCanvas";
 import BFReferrerManagement from "./BFReferrerManagement"; // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
 
-type MarketingTab = "analytics" | "automations" | "referrers" | "sequences" | "sms" | "email" | "ads"; // BF_PORTAL_MARKETING_TABS_v2
+// BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
+// the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
+// data, two different places to look for it. BF now gets the tab too.
+type MarketingTab = "analytics" | "automations" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads";
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "analytics", label: "Analytics" },
@@ -16,6 +19,7 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "sequences", label: "Sequences" },
   { id: "sms", label: "SMS" },
   { id: "email", label: "Email" },
+  { id: "links", label: "Links" }, // BF_PORTAL_BF_LINKS_TAB_v15
   { id: "ads", label: "Ads" },
 ];
 
@@ -1513,13 +1517,13 @@ const MarketingDashboard = () => {
         </div>
       )}
       {tab === "email" && <BrandedEmailComposer />}
+      {tab === "links" && <LinkClicksPanel />}{/* BF_PORTAL_BF_LINKS_TAB_v15 */}
       {tab === "sms" && <SmsComposerPanel />}
       {tab === "sequences" && <SequencesPanel />}
       {tab === "automations" && <AutomationsPanel />}
       {tab === "analytics" && (
         <div className="space-y-4">
           <AnalyticsFunnel />
-          <LinkClicksPanel />{/* BF_PORTAL_LINK_CLICKS_PANEL_v9 */}
           <SequencePerfPanel />
           <SourcesPanel />
           <Ga4Panel />
