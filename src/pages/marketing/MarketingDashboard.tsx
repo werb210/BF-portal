@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; // BF_PORTAL_BRANDED_EMAIL_COMPOSER_MOUNT_v1
+import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORTAL_LINK_CLICKS_PANEL_v9
 import SequenceCanvas, { type BFSequenceStep } from "@/components/marketing/SequenceCanvas";
 import BFReferrerManagement from "./BFReferrerManagement"; // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
 
@@ -1518,6 +1519,7 @@ const MarketingDashboard = () => {
       {tab === "analytics" && (
         <div className="space-y-4">
           <AnalyticsFunnel />
+          <LinkClicksPanel />{/* BF_PORTAL_LINK_CLICKS_PANEL_v9 */}
           <SequencePerfPanel />
           <SourcesPanel />
           <Ga4Panel />
