@@ -16,7 +16,7 @@ describe("the preview does not fire a request per keystroke", () => {
   });
   it("still abandons an in-flight response after unmount", () => {
     expect(effect).toContain("alive = false");
-    expect(effect).toContain("if (alive) setPreview(");
+    expect(effect).toContain("if (!alive) return;");
   });
   it("keeps the audience-count debounce that was already there", () => {
     expect(src).toContain("}, 250);");

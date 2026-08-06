@@ -124,10 +124,6 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   const rightImageRef = useRef<HTMLInputElement>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = useState(1);
-  // A library template already contains the canonical rendered email. Do not
-  // immediately replace it with a preview generated from the current fields.
-  const skipNextPreview = useRef(false);
-
   useEffect(() => {
     api.get<{ data?: Seg } & Partial<Seg>>(`${apiBase}/email/segments`)
       .then((r) => setSeg((r?.data ?? r) as Seg))
@@ -157,17 +153,25 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   }, [apiBase, include, exclude]);
 
   useEffect(() => {
-    if (skipNextPreview.current) {
-      skipNextPreview.current = false;
-      return;
-    }
     let alive = true;
     // BF_PORTAL_PREVIEW_DEBOUNCE_v1: rendering on every keystroke can exhaust
     // the shared BI rate-limit budget. Only render after editing has paused.
     const timer = setTimeout(() => {
       api.post<any>(`${apiBase}/email/template/preview`, tpl)
-        .then((r) => { if (alive) setPreview((r?.data?.html ?? r?.html ?? "") as string); })
-        .catch(() => {});
+        .then((r) => {
+          if (!alive) return;
+          const html = (r?.data?.html ?? r?.html ?? "") as string;
+          // BF_PORTAL_PREVIEW_ALWAYS_RENDER_v18 - an empty response used to render
+          // as a blank white box indistinguishable from a stale bundle or a dead
+          // request. Say so instead.
+          setPreview(html || "<p style=\"font:14px system-ui;padding:16px;color:#b45309\">Preview came back empty from the server.</p>");
+        })
+        .catch((e) => {
+          if (!alive) return;
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error("[composer] preview request failed", e);
+          setPreview(`<p style="font:14px system-ui;padding:16px;color:#b91c1c">Preview failed: ${msg}</p>`);
+        });
     }, 400);
     return () => { alive = false; clearTimeout(timer); };
   }, [apiBase, tpl]);
@@ -373,12 +377,12 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
                 // the render left the iframe blank with no way to recover short of
                 // editing a field. When html is absent, let the effect rebuild the
                 // preview from `fields` instead.
-                if (t.html) {
-                  skipNextPreview.current = true;
-                  setPreview(t.html);
-                } else {
-                  setPreview("");
-                }
+                // BF_PORTAL_PREVIEW_ALWAYS_RENDER_v18 - never reuse stored html on
+                // load. Reusing it meant a template with no html (anything seeded by
+                // SQL) showed an empty iframe, and a template WITH stale html showed
+                // a preview that no longer matched its own fields. Rendering from
+                // `fields` every time is always correct and costs one request.
+                setPreview("");
                 setCurrentTemplateId(t.id);
               } else {
                 setCurrentTemplateId(null);

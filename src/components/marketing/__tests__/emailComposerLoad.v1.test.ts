@@ -8,11 +8,10 @@ const src = readFileSync(
 );
 
 describe("email library template loading", () => {
-  it("loads stored rendered HTML without immediately regenerating it", () => {
-    expect(src).toContain("const skipNextPreview = useRef(false)");
-    expect(src).toContain("skipNextPreview.current = true");
-    expect(src).toContain("if (t.html) {");
-    expect(src).toContain("setPreview(t.html)");
+  it("regenerates rendered HTML from the loaded template fields", () => {
+    expect(src).not.toContain("skipNextPreview.current");
+    expect(src).not.toContain("setPreview(t.html)");
+    expect(src).toContain('setPreview("")');
   });
 
   it("restores and clears the template landing-page URL", () => {

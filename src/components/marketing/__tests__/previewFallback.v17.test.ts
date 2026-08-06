@@ -5,17 +5,16 @@ import path from "node:path";
 
 const src = fs.readFileSync(path.resolve(__dirname, "../BrandedEmailComposer.tsx"), "utf8");
 
-describe("loading a template with no stored html", () => {
-  it("no longer skips the render unconditionally", () => {
-    expect(src).not.toContain('skipNextPreview.current = true;\n                setPreview(t.html ?? "");');
+describe("loading a template preview", () => {
+  it("never skips rendering from the loaded fields", () => {
+    expect(src).not.toContain("skipNextPreview.current");
   });
 
-  it("only reuses stored html when it exists", () => {
-    expect(src).toContain("if (t.html) {");
-    expect(src).toContain("setPreview(t.html);");
+  it("clears the old preview while the new one renders", () => {
+    expect(src).toContain('setPreview("");');
   });
 
-  it("still skips the render when html IS present, to avoid a redundant round trip", () => {
-    expect(src).toContain("skipNextPreview.current = true;");
+  it("does not reuse stored html even when it exists", () => {
+    expect(src).not.toContain("setPreview(t.html);");
   });
 });
