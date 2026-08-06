@@ -367,8 +367,18 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
                 // matches on the exact name, so a typo forks a duplicate.
                 setLibName(t.name ?? "");
                 setLandingUrl(t.landingUrl ?? "");
-                skipNextPreview.current = true;
-                setPreview(t.html ?? "");
+                // BF_PORTAL_PREVIEW_FALLBACK_v17 - only reuse the stored html when
+                // there IS stored html. Templates seeded by SQL migration carry
+                // `fields` but no `html` (SQL cannot render an email), so skipping
+                // the render left the iframe blank with no way to recover short of
+                // editing a field. When html is absent, let the effect rebuild the
+                // preview from `fields` instead.
+                if (t.html) {
+                  skipNextPreview.current = true;
+                  setPreview(t.html);
+                } else {
+                  setPreview("");
+                }
                 setCurrentTemplateId(t.id);
               } else {
                 setCurrentTemplateId(null);
