@@ -24,4 +24,4 @@ See `docs/silo-scope.md` for the full policy.
 
 ## PWA
 
-The portal is installable on Chrome, Edge, Safari, and iOS using the browser install prompt flow. Service worker update prompts are surfaced via the `bf:sw-update-available` custom event. Push notifications are enabled when `VITE_VAPID_PUBLIC_KEY` is set and BF-Server is configured with the matching VAPID private key plus `/api/push/subscribe` endpoint support (server configuration is out of scope for this repository).
+The portal is installable on Chrome, Edge, Safari, and iOS using the browser install prompt flow. Service worker update prompts are surfaced via the `bf:sw-update-available` custom event. Push notifications are enabled when `VITE_VAPID_PUBLIC_KEY` is set and BF-Server is configured with the matching VAPID private key plus `/api/push/subscribe` endpoint support (server configuration is out of scope for this repository).1 
