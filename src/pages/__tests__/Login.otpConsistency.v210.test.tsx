@@ -88,7 +88,7 @@ describe("BF_PORTAL_BLOCK_v210 — staff Login OTP consistency", () => {
     const btn = screen.getByTestId("start-otp-button") as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
     const input = screen.getByTestId("phone-input");
-    fireEvent.change(input, { target: { value: "5871234567" } });
+    fireEvent.change(input, { target: { value: "5872345678" } });
     expect(btn.disabled).toBe(false);
   });
 });

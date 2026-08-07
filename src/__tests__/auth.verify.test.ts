@@ -3,7 +3,7 @@ import { beforeEach, describe, it, expect, vi } from "vitest";
 describe("verifyOtp token extraction", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("auth_phone", "+15550001234");
+    localStorage.setItem("auth_phone", "+14035550123");
   });
 
   it("extracts token from data.data.token (canonical server shape)", async () => {
@@ -37,7 +37,7 @@ describe("verifyOtp token extraction", () => {
 
   it("does not fall through to data.token when data.data.token is present", async () => {
     vi.resetModules();
-    localStorage.setItem("auth_phone", "+15550001234");
+    localStorage.setItem("auth_phone", "+14035550123");
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(
