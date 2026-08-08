@@ -2,6 +2,8 @@
 // BF_PORTAL_EMAIL_TWO_COLUMN_v1
 import { useEffect, useRef, useState } from "react";
 import { api, rawApiFetch } from "@/api";
+// BF_PORTAL_SEND_LATER_v21
+import { describeSchedule, localInputMax, localInputMin, toIsoInstant } from "./sendLater";
 
 // BF_PORTAL_EMAIL_PREVIEW_WIDTH_v1 - render at the email's desktop width and
 // scale the canvas, rather than triggering its mobile breakpoint in the pane.
@@ -245,6 +247,9 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
     }
   } // BF_PORTAL_SEND_HOLD_CANCEL_v1
 
+  // BF_PORTAL_SEND_LATER_v21 - empty means send now, preserving the old behaviour.
+  const [sendAtLocal, setSendAtLocal] = useState("");
+
   const send = async (test?: string) => {
     setBusy(true); setMsg(null); setHeld(false); setJobId(null);
     try {
@@ -257,14 +262,24 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
       else {
         if (include.length) payload.tags = include;
         if (exclude.length) payload.excludeTags = exclude;
+        // BF_PORTAL_SEND_LATER_v21 - a test send is always immediate.
+        const iso = toIsoInstant(sendAtLocal);
+        if (iso) payload.sendAt = iso;
       }
       const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>(`${apiBase}/email/send-template`, payload);
-      const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number };
+      const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number; scheduled?: boolean };
       if (r?.configured === false) setMsg("SendGrid not connected yet (set SENDGRID_API_KEY).");
       else if (r?.error) setMsg(r.error);
       else if (r?.test) setMsg(r.ok
         ? "Test accepted by SendGrid. Acceptance is not delivery; if it does not arrive, check spam, sender authentication, and suppression lists."
         : `Test failed${r.error ? `: ${r.error}` : ""}.`);
+      else if (r?.queued && r?.scheduled) {
+        // BF_PORTAL_SEND_LATER_v21 - a scheduled job sits in the queue for
+        // hours or days, so polling it to completion is pointless. Show when it
+        // will go and leave it alone; the send-jobs list is where it is managed.
+        setJobId(String(r.jobId ?? ""));
+        setMsg(`Scheduled. ${describeSchedule(sendAtLocal)} Cancel it from the send jobs list before then.`);
+      }
       else if (r?.queued) { const id = String(r.jobId ?? ""); setJobId(id); void pollComposerJob(apiBase, id, Number(r.total ?? count), setMsg, setHeld); } // BF_PORTAL_COMPOSER_JOB_POLL_v1
       else setMsg(`Sent ${r?.sent ?? 0}${r?.failed ? `, ${r.failed} failed` : ""}.`);
     } catch (e) {
@@ -414,7 +429,10 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
           <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@boreal.financial" className="block border rounded px-2 py-1 text-sm mt-1" style={inputStyle} />
         </label>
         <button type="button" disabled={busy || !subject || !testTo} onClick={() => void send(testTo)} className="ui-button ui-button--secondary">Send test</button>
-        <button type="button" disabled={busy || !subject || !count} onClick={() => void send()} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
+        <label className="text-sm" style={labelStyle}>Send at
+          <input type="datetime-local" value={sendAtLocal} min={localInputMin()} max={localInputMax()} onChange={(e) => setSendAtLocal(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1" style={inputStyle} />
+        </label>
+        <button type="button" disabled={busy || !subject || !count} onClick={() => void send()} className="ui-button ui-button--primary">{busy ? (sendAtLocal ? "Scheduling..." : "Sending...") : (sendAtLocal ? `Schedule for ${count}` : `Send to ${count}`)}</button>
         <label className="text-sm flex items-center gap-1" style={labelStyle} title="Contacts emailed in the last 24 hours are skipped unless this is ticked.">
           <input type="checkbox" checked={resend} onChange={(e) => setResend(e.target.checked)} />
           Send again within 24h
