@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { api, rawApiFetch } from "@/api";
 // BF_PORTAL_SEND_LATER_v21
 import { describeSchedule, localInputMax, localInputMin, toIsoInstant } from "./sendLater";
+// BF_PORTAL_SCHEDULED_SENDS_v23
+import { formatSendAt, pendingSends, sendJobsPath, type ScheduledSend } from "./scheduledSends";
 
 // BF_PORTAL_EMAIL_PREVIEW_WIDTH_v1 - render at the email's desktop width and
 // scale the canvas, rather than triggering its mobile breakpoint in the pane.
@@ -255,6 +257,29 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
 
   // BF_PORTAL_SEND_LATER_v21 - empty means send now, preserving the old behaviour.
   const [sendAtLocal, setSendAtLocal] = useState("");
+  // BF_PORTAL_SCHEDULED_SENDS_v23 - staff can now inspect and cancel queued sends.
+  const [scheduled, setScheduled] = useState<ScheduledSend[]>([]);
+  const [scheduledBusy, setScheduledBusy] = useState(false);
+  const loadScheduled = async () => {
+    setScheduledBusy(true);
+    try {
+      const res = await api.get<{ jobs?: unknown[]; data?: { jobs?: unknown[] } }>(sendJobsPath(apiBase));
+      const rows = (res?.jobs || res?.data?.jobs || []) as Record<string, unknown>[];
+      setScheduled(pendingSends(rows));
+    } catch {
+      setScheduled([]);
+    } finally {
+      setScheduledBusy(false);
+    }
+  };
+  useEffect(() => { void loadScheduled(); }, [apiBase]);
+  const cancelScheduled = async (id: string) => {
+    try {
+      await api.post(`${apiBase}/send-jobs/${id}/cancel`, {});
+    } finally {
+      void loadScheduled();
+    }
+  };
 
   const send = async (test?: string) => {
     setBusy(true); setMsg(null); setHeld(false); setJobId(null);
@@ -466,6 +491,42 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
           </div>
         </div>
       ) : null}
+
+      {/* BF_PORTAL_SCHEDULED_SENDS_v23 */}
+      <div className="mt-4">
+        <div className="flex items-center gap-3">
+          <div className="text-sm" style={{ color: "var(--ui-text-muted)" }}>Scheduled sends</div>
+          <button type="button" onClick={() => void loadScheduled()} className="text-xs underline" style={{ color: "var(--ui-text-muted)" }}>Refresh</button>
+        </div>
+        {scheduledBusy && scheduled.length === 0 ? (
+          <div className="text-sm mt-1" style={{ color: "var(--ui-text-muted)" }}>Loading…</div>
+        ) : scheduled.length === 0 ? (
+          <div className="text-sm mt-1" style={{ color: "var(--ui-text-muted)" }}>Nothing scheduled.</div>
+        ) : (
+          <table className="mt-2 w-full text-sm" style={{ borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ color: "var(--ui-text-muted)", textAlign: "left" }}>
+                <th className="py-1 pr-3">Template</th>
+                <th className="py-1 pr-3">Recipients</th>
+                <th className="py-1 pr-3">Sends</th>
+                <th className="py-1 pr-3">Status</th>
+                <th className="py-1"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {scheduled.map((job) => (
+                <tr key={job.id} style={{ borderTop: "1px solid var(--ui-border)" }}>
+                  <td className="py-1 pr-3">{job.name}</td>
+                  <td className="py-1 pr-3">{job.total}</td>
+                  <td className="py-1 pr-3">{formatSendAt(job.sendAt)}</td>
+                  <td className="py-1 pr-3">{job.status}</td>
+                  <td className="py-1"><button type="button" onClick={() => void cancelScheduled(job.id)} className="text-xs underline" style={{ color: "var(--ui-danger, #b91c1c)" }}>Cancel</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       <div ref={previewPaneRef} className="mt-4 min-w-0">
         <div className="text-sm mb-1" style={{ color: "var(--ui-text-muted)" }}>Preview</div>
