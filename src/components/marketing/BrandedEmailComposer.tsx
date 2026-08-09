@@ -8,6 +8,12 @@ import { describeSchedule, localInputMax, localInputMin, toIsoInstant } from "./
 // BF_PORTAL_EMAIL_PREVIEW_WIDTH_v1 - render at the email's desktop width and
 // scale the canvas, rather than triggering its mobile breakpoint in the pane.
 const EMAIL_PREVIEW_WIDTH = 600;
+// BF_PORTAL_PREVIEW_FULL_WIDTH_v22 - the scale was Math.min(1, ...), so the
+// preview could only ever shrink. On a wide screen it sat at 600px with dead
+// space beside it. It now fills the pane, capped at 2x so a very wide monitor
+// does not blow a 600px email up past the point of looking like an email.
+const EMAIL_PREVIEW_MAX_SCALE = 2;
+const EMAIL_PREVIEW_HEIGHT = 760;
 
 type Seg = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
 type Tpl = {
@@ -181,7 +187,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   useEffect(() => {
     const pane = previewPaneRef.current;
     if (!pane) return;
-    const resize = () => setPreviewScale(Math.min(1, pane.clientWidth / EMAIL_PREVIEW_WIDTH));
+    const resize = () => setPreviewScale(Math.min(EMAIL_PREVIEW_MAX_SCALE, pane.clientWidth / EMAIL_PREVIEW_WIDTH));
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(pane);
@@ -463,8 +469,8 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
 
       <div ref={previewPaneRef} className="mt-4 min-w-0">
         <div className="text-sm mb-1" style={{ color: "var(--ui-text-muted)" }}>Preview</div>
-        <div style={{ width: EMAIL_PREVIEW_WIDTH * previewScale, height: 520 * previewScale, overflow: "hidden" }}>
-          <iframe title="Email preview" srcDoc={preview} style={{ width: EMAIL_PREVIEW_WIDTH, height: 520, border: "1px solid var(--ui-border)", borderRadius: 8, background: "#fff", transform: `scale(${previewScale})`, transformOrigin: "top left" }} />
+        <div style={{ width: EMAIL_PREVIEW_WIDTH * previewScale, height: EMAIL_PREVIEW_HEIGHT * previewScale, overflow: "hidden" }}>
+          <iframe title="Email preview" srcDoc={preview} style={{ width: EMAIL_PREVIEW_WIDTH, height: EMAIL_PREVIEW_HEIGHT, border: "1px solid var(--ui-border)", borderRadius: 8, background: "#fff", transform: `scale(${previewScale})`, transformOrigin: "top left" }} />
         </div>
       </div>
     </section>
