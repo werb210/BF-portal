@@ -17,6 +17,13 @@ export function sendJobsPath(apiBase: string): string {
   return apiBase.includes("/bi/") ? `${apiBase}/email/send-jobs` : `${apiBase}/send-jobs`;
 }
 
+// BF_PORTAL_SCHEDULED_SENDS_DONE_v24 - cancel was hand-built as
+// `${apiBase}/send-jobs/${id}/cancel`, which is the BF path. On BI that 404s,
+// so the same /email mount has to be honoured here too.
+export function sendJobCancelPath(apiBase: string, id: string): string {
+  return `${sendJobsPath(apiBase)}/${encodeURIComponent(id)}/cancel`;
+}
+
 const str = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 const num = (value: unknown): number => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
@@ -31,7 +38,12 @@ export function normalizeSendJob(raw: RawSendJob): ScheduledSend {
   };
 }
 
-const DONE = ["sent", "completed", "complete", "finished", "cancelled", "canceled", "failed"];
+// BF_PORTAL_SCHEDULED_SENDS_DONE_v24 - BF's send worker writes the terminal
+// status as 'done' (BI writes 'sent'). 'done' was missing here, so every blast
+// BF had already finished stayed in the list forever with a live Cancel link
+// that the server correctly refused. BI looked right only because its
+// vocabulary happened to be covered.
+const DONE = ["sent", "done", "completed", "complete", "finished", "cancelled", "canceled", "failed", "error"];
 
 /** Only show mail that has not gone yet; send history is a separate feature. */
 export function pendingSends(rows: RawSendJob[], now: Date = new Date()): ScheduledSend[] {

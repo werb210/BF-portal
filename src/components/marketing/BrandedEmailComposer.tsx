@@ -5,7 +5,7 @@ import { api, rawApiFetch } from "@/api";
 // BF_PORTAL_SEND_LATER_v21
 import { describeSchedule, localInputMax, localInputMin, toIsoInstant } from "./sendLater";
 // BF_PORTAL_SCHEDULED_SENDS_v23
-import { formatSendAt, pendingSends, sendJobsPath, type ScheduledSend } from "./scheduledSends";
+import { formatSendAt, pendingSends, sendJobCancelPath, sendJobsPath, type ScheduledSend } from "./scheduledSends";
 
 // BF_PORTAL_EMAIL_PREVIEW_WIDTH_v1 - render at the email's desktop width and
 // scale the canvas, rather than triggering its mobile breakpoint in the pane.
@@ -245,9 +245,19 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
     if (!jobId) return;
     setCanceling(true);
     try {
-      await api.post(`${apiBase}/send-jobs/${jobId}/cancel`, {});
-      setHeld(false);
-      setMsg("Canceled. Nothing was sent.");
+      // BF_PORTAL_SCHEDULED_SENDS_DONE_v24 - silo-aware path, and the server's
+      // canceled:false is a refusal, not a success, so stop reporting it as one.
+      const res = await api.post<{ canceled?: boolean; status?: string | null; reason?: string; data?: { canceled?: boolean; status?: string | null; reason?: string } }>(
+        sendJobCancelPath(apiBase, jobId),
+        {},
+      );
+      const out = (res?.data ?? res) as { canceled?: boolean; status?: string | null; reason?: string };
+      if (out?.canceled === false) {
+        setMsg(`Could not cancel: this send is ${out.status ?? out.reason ?? "already finished"}.`);
+      } else {
+        setHeld(false);
+        setMsg("Canceled. Nothing was sent.");
+      }
     } catch (e) {
       setMsg(e instanceof Error ? `Cancel failed: ${e.message}` : "Cancel failed.");
     } finally {
@@ -274,8 +284,19 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   };
   useEffect(() => { void loadScheduled(); }, [apiBase]);
   const cancelScheduled = async (id: string) => {
+    // BF_PORTAL_SCHEDULED_SENDS_DONE_v24 - swallowing the outcome made a refused
+    // cancel look identical to a successful one: the row simply stayed put.
     try {
-      await api.post(`${apiBase}/send-jobs/${id}/cancel`, {});
+      const res = await api.post<{ canceled?: boolean; status?: string | null; reason?: string; data?: { canceled?: boolean; status?: string | null; reason?: string } }>(
+        sendJobCancelPath(apiBase, id),
+        {},
+      );
+      const out = (res?.data ?? res) as { canceled?: boolean; status?: string | null; reason?: string };
+      if (out?.canceled === false) {
+        setMsg(`Could not cancel: this send is ${out.status ?? out.reason ?? "already finished"}.`);
+      }
+    } catch (e) {
+      setMsg(e instanceof Error ? `Cancel failed: ${e.message}` : "Cancel failed.");
     } finally {
       void loadScheduled();
     }
