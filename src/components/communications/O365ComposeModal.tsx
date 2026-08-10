@@ -540,13 +540,25 @@ export default function O365ComposeModal({
       // its own because a browser SPA never receives a refresh token, so the
       // stored access token would otherwise die ~hourly and Graph would reject
       // the send (graph_send_failed).
+      // BF_PORTAL_SEND_REFRESH_TIMEOUT_v26 — this block is best-effort, but it
+      // had no time limit, and acquireTokenSilent can hang rather than throw:
+      // the hidden renew iframe never returns, or the cross-tab token lock is
+      // held by a tab that has gone away. A catch cannot rescue a promise that
+      // never settles, so the send request below was never issued and the
+      // button sat on "Sending..." indefinitely with nothing in the network
+      // log. Time-box it and send regardless; if the stored token really is
+      // stale the server returns graph_send_failed, which is a visible error
+      // the user can act on instead of a dead button.
+      const REFRESH_TIMEOUT_MS = 8000;
       try {
-        const { msalClient } = await import("@/auth/msal");
-        const accounts = msalClient.getAllAccounts?.() ?? [];
-        if (accounts.length) {
-          const scopes = ["User.Read", "Mail.Send", "Mail.ReadWrite", "Mail.Send.Shared", "Calendars.ReadWrite", "Tasks.ReadWrite", "offline_access"];
-          const result = await msalClient.acquireTokenSilent({ scopes, account: accounts[0] });
-          if (result?.accessToken) {
+        await Promise.race([
+          (async () => {
+            const { msalClient } = await import("@/auth/msal");
+            const accounts = msalClient.getAllAccounts?.() ?? [];
+            if (!accounts.length) return;
+            const scopes = ["User.Read", "Mail.Send", "Mail.ReadWrite", "Mail.Send.Shared", "Calendars.ReadWrite", "Tasks.ReadWrite", "offline_access"];
+            const result = await msalClient.acquireTokenSilent({ scopes, account: accounts[0] });
+            if (!result?.accessToken) return;
             await api("/api/users/me/o365-tokens", {
               method: "POST",
               body: {
@@ -555,9 +567,10 @@ export default function O365ComposeModal({
                 account_id: accounts[0]?.homeAccountId ?? null,
               },
             });
-          }
-        }
-      } catch { /* best-effort: if silent refresh fails the send will surface a clear error */ }
+          })(),
+          new Promise((resolve) => setTimeout(resolve, REFRESH_TIMEOUT_MS)),
+        ]);
+      } catch { /* best-effort: a failed refresh must never block the send */ }
       await api("/api/o365/mail/send", {
         method: "POST",
         body: {
