@@ -1,3 +1,4 @@
+import { mirrorSiloToWidget } from "@/native/widgetBridge"; // BF_PORTAL_WIDGET_BRIDGE_v28
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthContext";
 import type { BusinessUnit } from "@/types/businessUnit";
@@ -105,6 +106,9 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
   const setActiveBusinessUnit = (businessUnit: BusinessUnit) => {
     persistBusinessUnit(businessUnit);
     setActiveBusinessUnitState(businessUnit);
+    // BF_PORTAL_WIDGET_BRIDGE_v28 - keep the widget's default business in step
+    // with the portal's, since a home-screen tile has no selector of its own.
+    void mirrorSiloToWidget(String(businessUnit).toUpperCase());
   };
 
   const value = useMemo(
