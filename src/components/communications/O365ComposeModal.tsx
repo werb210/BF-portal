@@ -156,6 +156,9 @@ export default function O365ComposeModal({
   const [requestDeliveryReceipt, setRequestDeliveryReceipt] = useState(false);
   const [importance, setImportance] = useState<"low" | "normal" | "high">("normal");
   const [draftId, setDraftId] = useState<string | null>(null);
+  // BF_PORTAL_DRAFT_NOT_FOUND_v27 - latched when Graph reports the draft item
+  // no longer exists, so the 25s autosave cannot keep patching a dead id.
+  const [autosaveStopped, setAutosaveStopped] = useState(false);
   const [drafts, setDrafts] = useState<OutlookDraftSummary[]>([]);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
@@ -180,6 +183,7 @@ export default function O365ComposeModal({
     setImportance("normal");
     setDraftId(null);
     setDraftSavedAt(null);
+    setAutosaveStopped(false); // BF_PORTAL_DRAFT_NOT_FOUND_v27
     lastAutosaveKeyRef.current = "";
     setScheduleAt("");
     setScheduleMode("");
@@ -219,12 +223,12 @@ export default function O365ComposeModal({
   useEffect(() => {
     if (!open) return;
     const hasContent = !!((composeBody || "").replace(/<[^>]*>/g, "").trim() || composeSubject.trim());
-    if (!hasContent || composeSending || savingDraft) return;
+    if (!hasContent || composeSending || savingDraft || autosaveStopped) return; // BF_PORTAL_DRAFT_NOT_FOUND_v27
     const autosaveKey = draftContentKey();
     if (lastAutosaveKeyRef.current === autosaveKey) return;
     const t = setTimeout(() => { void saveDraft(); }, 25000);
     return () => clearTimeout(t);
-  }, [open, composeBody, composeSubject, composeTo, composeCc, composeBcc, composeFrom, importance, requestReadReceipt, requestDeliveryReceipt, composeSending, savingDraft]);
+  }, [open, composeBody, composeSubject, composeTo, composeCc, composeBcc, composeFrom, importance, requestReadReceipt, requestDeliveryReceipt, composeSending, savingDraft, autosaveStopped]);
 
   // BF_PORTAL_BLOCK_v730 — when the caller passes no mailboxes (CRM / BI "Email"
   // actions), self-fetch them so the composer is fully drop-in everywhere and
@@ -433,6 +437,7 @@ export default function O365ComposeModal({
       const id = (r?.id ?? r?.data?.id) || null;
       if (id) {
         setDraftId(id);
+        setAutosaveStopped(false); // BF_PORTAL_DRAFT_NOT_FOUND_v27
         setDrafts((prev) => {
           const summary = { id, subject: composeSubject.trim() || "(no subject)", to: parseAddrs(composeTo) };
           const rest = prev.filter((item) => item.id !== id);
@@ -442,7 +447,23 @@ export default function O365ComposeModal({
       lastAutosaveKeyRef.current = draftContentKey(body_html);
       setDraftSavedAt(Date.now());
     } catch (e: any) {
-      setComposeError(e?.message ?? "Couldn't save draft.");
+      // BF_PORTAL_DRAFT_NOT_FOUND_v27 - 409 draft_not_found means the Outlook
+      // item is gone, almost always because the message was already sent from
+      // another mail client, which consumes the Drafts item. Drop the dead id,
+      // stop autosaving and clear the stale "Saved" time so the composer stops
+      // claiming it is saving work that it is not. Do NOT recreate the draft
+      // automatically: that would put a phantom copy of a sent email back into
+      // Drafts. An explicit Save draft click starts a new one.
+      if (e?.status === 409 || e?.message === "draft_not_found") {
+        const goneId = draftId;
+        setDraftId(null);
+        setDraftSavedAt(null);
+        setAutosaveStopped(true);
+        if (goneId) setDrafts((prev) => prev.filter((item) => item.id !== goneId));
+        setComposeError("This draft is no longer in Outlook - it was sent or deleted elsewhere. Autosave is off; use Save draft to start a new one.");
+      } else {
+        setComposeError(e?.message ?? "Couldn't save draft.");
+      }
     } finally {
       setSavingDraft(false);
     }
@@ -485,7 +506,12 @@ export default function O365ComposeModal({
       setScheduleAt("");
       setScheduleMode("");
     } catch (e: any) {
-      setComposeError(e?.message ?? "Couldn't open draft.");
+      if (e?.status === 409 || e?.message === "draft_not_found") { // BF_PORTAL_DRAFT_NOT_FOUND_v27
+        setDrafts((prev) => prev.filter((item) => item.id !== nextDraftId));
+        setComposeError("That draft is no longer in Outlook - it was sent or deleted elsewhere.");
+      } else {
+        setComposeError(e?.message ?? "Couldn't open draft.");
+      }
     }
   }
 
