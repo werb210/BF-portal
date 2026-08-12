@@ -197,6 +197,8 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
   const [data, setData] = useState<RichAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // BF_PORTAL_BANKING_RERUN_v33
+  const [rerunning, setRerunning] = useState(false);
 
   useEffect(() => {
     if (!applicationId) {
@@ -222,6 +224,20 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
       cancelled = true;
     };
   }, [applicationId]);
+
+  // BF_PORTAL_BANKING_RERUN_v33 - queues a fresh pipeline run. The server sets
+  // the row back to pending; the banking worker picks it up on its next tick.
+  const onRerun = () => {
+    setRerunning(true);
+    api.post("/api/applications/" + applicationId + "/banking-analysis/retry", {})
+      .then(() => {
+        window.alert("Banking analysis queued. It takes a few minutes; reload this tab to see the new figures.");
+      })
+      .catch((e) => {
+        setRerunning(false);
+        window.alert("Could not queue the analysis: " + (e instanceof Error ? e.message : String(e)));
+      });
+  };
 
   if (!applicationId) return <div style={{ padding: 24 }}>No application selected.</div>;
   if (loading) return <div style={{ padding: 24 }}>Loading banking analysis…</div>;
@@ -278,6 +294,30 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
           </span>
           <div style={{ display: "none" }}>{data.bankCount ?? ""}</div>
           <div style={{ display: "none" }}>{docCount ?? ""}</div>
+        </div>
+
+        {/* BF_PORTAL_BANKING_RERUN_v33 */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <button
+            type="button"
+            onClick={onRerun}
+            disabled={rerunning}
+            title="Recompute every figure on this page from the uploaded statements"
+            data-testid="banking-rerun"
+            style={{
+              padding: "8px 14px",
+              borderRadius: 8,
+              border: "1px solid var(--ui-border)",
+              background: "var(--ui-surface-strong)",
+              color: "var(--ui-text)",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: rerunning ? "default" : "pointer",
+              opacity: rerunning ? 0.6 : 1,
+            }}
+          >
+            {rerunning ? "Queued - this takes a few minutes" : "Re-run analysis"}
+          </button>
         </div>
 
         <StatusBanner status={data.status} autoSkip={Boolean((data as any)?.banking_auto_skip ?? (data as any)?.bankingAutoSkip)} />
