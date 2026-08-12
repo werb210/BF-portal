@@ -75,14 +75,18 @@ function FraudScanRow({ scan, open, onToggle }: { scan: FraudScanState | undefin
           ) : (
             <ul style={{ margin: 0, paddingLeft: 18 }}>
               {r.signals.map((sig) => (
-                <li key={sig.code} style={{ fontSize: 13, marginBottom: 4 }}>
-                  <strong style={{ color: sig.severity === "high" ? "#991b1b" : sig.severity === "medium" ? "#92400e" : "var(--ui-text-muted)" }}>{sig.label}</strong> — {sig.detail}
+                // BF_PORTAL_TAMPER_CONTRAST_v30
+                <li key={sig.code} style={{ fontSize: 13, marginBottom: 6, color: "var(--ui-text)", lineHeight: 1.45 }}>
+                  <strong style={{ color: sig.severity === "high" ? "#991b1b" : sig.severity === "medium" ? "#92400e" : "var(--ui-text)" }}>{sig.label}</strong>
+                  <span style={{ color: "var(--ui-text)" }}> — {sig.detail}</span>
                 </li>
               ))}
             </ul>
           )}
           {r.note ? <div style={{ marginTop: 8, fontSize: 12, color: "var(--ui-text-muted)", fontStyle: "italic" }}>{r.note}</div> : null}
-          <div style={{ marginTop: 8, fontSize: 11, color: "var(--ui-text-muted)" }}>Signals for review only — not a verdict. Staff decide.</div>
+          {/* BF_PORTAL_TAMPER_CONTRAST_v30 - a disclaimer nobody can read is not a
+              disclaimer. Muted, but deliberately above the panel's faintest tone. */}
+          <div style={{ marginTop: 8, fontSize: 11, color: "var(--ui-text-muted)", opacity: 1 }}>Signals for review only — not a verdict. Staff decide.</div>
         </div>
       ) : null}
     </div>
