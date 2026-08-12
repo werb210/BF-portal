@@ -3,11 +3,22 @@ import { api } from "@/api";
 import { useNavigate } from "react-router-dom";
 import RequestStepsModal from "./RequestStepsModal"; // BF_PORTAL_BLOCK_v793_REQUEST_STEPS
 
+// BF_PORTAL_FRAUD_HOLD_v34 - Fraud and Hold are parking columns. Neither
+// deletes anything; both take the file out of the reported numbers (Fraud from
+// every period, Hold from live figures only). Server: BF_SERVER_FRAUD_HOLD_v48
+// and BF_SERVER_PARK_RESTORE_v49.
 const STAGES = [
   "Received", "In Review", "Documents Required",
   "Additional Steps Required", "Off to Lender",
   "Offer", "Accepted", "Rejected",
+  "Fraud", "Hold",
 ] as const;
+
+const PARKED_STAGES: readonly string[] = ["Fraud", "Hold"];
+
+function isParkedStage(stage: string | null | undefined): boolean {
+  return PARKED_STAGES.includes(String(stage ?? ""));
+}
 
 type Stage = typeof STAGES[number];
 
@@ -20,6 +31,8 @@ const COLORS: Record<Stage, string> = {
   "Offer":                     "#16a34a",
   "Accepted":                  "#15803d",
   "Rejected":                  "#6b7280",
+  "Fraud":                     "#b91c1c",
+  "Hold":                      "#7c3aed",
 };
 
 type DocProgress = { accepted: number; rejected: number; pending: number; total: number };
@@ -40,6 +53,10 @@ type Card = {
   contact_name?: string | null;
   contact_id?: string | null;
   phone?: string | null; // BF_PORTAL_BLOCK_v_PIPELINE_CARD_PHONE_v1
+  // BF_PORTAL_FRAUD_HOLD_v34 - park details from BF_SERVER_PARK_RESTORE_v49.
+  parked_previous_stage?: string | null;
+  parked_at?: string | null;
+  parked_reason?: string | null;
   partner_name?: string | null;
   partner_contact_id?: string | null;
   productCategory?: string | null;
@@ -154,16 +171,44 @@ export default function PipelinePage() {
   // BF_PORTAL_FUNDED_AMOUNT_v1 - Accepted carries the ACTUAL funded amount so commission is
   // computed from what the lender advanced, not from what the client requested.
   async function move(cardId: string, toStage: string, fundedAmount?: number, fundedCurrency?: string) {
+    // BF_PORTAL_FRAUD_HOLD_v34 - moving a file into Fraud or Hold removes it
+    // from the numbers, so it is never a one-click action.
+    let reason = `Manually set to ${toStage}`;
+    if (isParkedStage(toStage)) {
+      const prompt = toStage === "Fraud"
+        ? "Mark this application as FRAUD?\n\nIt will be removed from commission and every report, in every period. The file, its documents and its history are kept.\n\nReason (required):"
+        : "Put this application on HOLD?\n\nIt drops out of live pipeline and commission figures until reactivated. Nothing is deleted and the client will not have to re-apply.\n\nReason (optional):";
+      const entered = window.prompt(prompt, "");
+      if (entered === null) return;
+      const trimmed = entered.trim();
+      if (toStage === "Fraud" && trimmed.length < 3) {
+        window.alert("A reason is required to mark an application as fraud.");
+        return;
+      }
+      reason = trimmed || `Manually set to ${toStage}`;
+    }
     setActing(cardId);
     try {
       await api.patch(`/api/portal/applications/${cardId}/status`, {
-        status: toStage, reason: `Manually set to ${toStage}`,
+        status: toStage, reason,
         ...(fundedAmount !== undefined ? { fundedAmount, fundedCurrency } : {}),
       });
       setCards((prev) =>
-        prev.map((c) => c.id === cardId ? { ...c, pipeline_state: toStage } : c)
+        prev.map((c) => c.id === cardId
+          ? {
+              ...c,
+              pipeline_state: toStage,
+              // BF_PORTAL_FRAUD_HOLD_v34 - mirror what the server records so the
+              // card reads correctly without a refetch.
+              parked_previous_stage: isParkedStage(toStage) ? c.pipeline_state : null,
+              parked_reason: isParkedStage(toStage) ? reason : null,
+              parked_at: isParkedStage(toStage) ? new Date().toISOString() : null,
+            }
+          : c)
       );
-    } catch { /* leave in place */ } finally { setActing(null); }
+    } catch (e) {
+      window.alert(`Could not move this application: ${e instanceof Error ? e.message : String(e)}`);
+    } finally { setActing(null); }
   }
 
   if (loading) return (
@@ -405,6 +450,31 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
         )}
       </div>
 
+      {/* BF_PORTAL_FRAUD_HOLD_v34 - why this file is parked, and the way back. */}
+      {isParkedStage(stage) && (
+        <div style={{ marginTop: 2 }}>
+          {card.parked_reason && (
+            <div style={{ fontSize: 11, color: stage === "Fraud" ? "#b91c1c" : "var(--ui-text-muted)",
+              background: "var(--ui-surface-muted)", borderRadius: 6, padding: "5px 7px", marginBottom: 6,
+              whiteSpace: "pre-wrap" }}>
+              {card.parked_reason}
+            </div>
+          )}
+          <button
+            disabled={busy}
+            onClick={() => {
+              const back = card.parked_previous_stage || "In Review";
+              if (!window.confirm(`Reactivate this application and return it to "${back}"?`)) return;
+              onMove(card.id, back);
+            }}
+            style={{ ...btnBase, width: "100%", flex: "unset",
+              background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)",
+              color: "var(--ui-text)", textAlign: "left", paddingLeft: 8 }}>
+            {"\u21ba"} Reactivate{card.parked_previous_stage ? ` to ${card.parked_previous_stage}` : ""}
+          </button>
+        </div>
+      )}
+
       {/* Request Additional Steps — only on In Review or Documents Required */}
       {(stage === "In Review" || stage === "Documents Required") && (
         <button disabled={busy} onClick={() => setStepsOpen(true)}
@@ -433,6 +503,21 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
           <button disabled={busy} onClick={() => onMove(card.id, "Rejected")}
             style={{ ...btnBase, background: "#ef444418", borderColor: "#ef444455", color: "#ef4444" }}>
             ✗ Reject
+          </button>
+        </div>
+      )}
+
+      {/* BF_PORTAL_FRAUD_HOLD_v34 - park from any working stage, including a
+          funded deal: fraud is usually found after the money has moved. */}
+      {!isParkedStage(stage) && (
+        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+          <button disabled={busy} onClick={() => onMove(card.id, "Hold")}
+            style={{ ...btnBase, background: "#7c3aed18", borderColor: "#7c3aed55", color: "#7c3aed" }}>
+            {"\u23f8"} Hold
+          </button>
+          <button disabled={busy} onClick={() => onMove(card.id, "Fraud")}
+            style={{ ...btnBase, background: "#b91c1c18", borderColor: "#b91c1c55", color: "#b91c1c" }}>
+            {"\u26a0"} Fraud
           </button>
         </div>
       )}
