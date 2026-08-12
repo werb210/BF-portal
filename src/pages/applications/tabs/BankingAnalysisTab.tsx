@@ -47,6 +47,24 @@ type RichAnalysis = BankingAnalysis & {
     }>;
   } | null;
   topVendors?: Array<{ vendor: string; total: number }>;
+  // BF_PORTAL_BANKING_DISPLAY_v31
+  currency?: string | null;
+  integrityFlags?: string[];
+  accountBalances?: Array<{
+    accountLabel?: string | null;
+    averageDailyBalance?: number | null;
+    negativeBalanceDays?: number | null;
+    days?: number | null;
+  }>;
+  documents?: Array<{
+    document_id?: string;
+    filename?: string | null;
+    transaction_count?: number;
+    usable_count?: number;
+    pages?: number;
+    error?: string;
+  }>;
+  lastError?: string | null;
 };
 
 interface Props {
@@ -150,8 +168,11 @@ function fmtMoney(v: number | null | undefined): string {
   return "$" + n.toLocaleString();
 }
 
-function fmtMonth(m: string): string {
-  const d = new Date(m);
+export function fmtMonth(m: string): string {
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(m);
+  const d = iso
+    ? new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
+    : new Date(m);
   if (Number.isNaN(d.getTime())) return m;
   return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
 }
@@ -226,19 +247,7 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
     );
   }
 
-  if ((data as any).status === "needs_review") {
-    const d: any = data;
-    return (
-      <div style={{ border: "1px solid #fde68a", background: "#fffbeb", color: "#78350f", padding: 16, borderRadius: 8, margin: 16 }}>
-        <div style={{ fontWeight: 700, marginBottom: 6 }}>Automated banking analysis withheld — manual review required.</div>
-        <div style={{ fontSize: 13, marginBottom: 8 }}>The parsed transactions did not reconcile against the statement balances, so the computed figures are unreliable and are not shown. Review the statements directly before quoting any numbers to the applicant or a lender.</div>
-        <div style={{ fontSize: 12, fontFamily: "monospace", whiteSpace: "pre-wrap", opacity: 0.85 }}>{d.lastError || ""}</div>
-      </div>
-    );
-  }
-
   const months = ((data.monthGroups ?? []) as unknown) as BankingTrendMonth[];
-  const accounts = data.accounts ?? [];
   const unusual = data.riskFlags?.unusualTransactions ?? [];
   const vendors = data.topVendors ?? [];
   const period =
@@ -246,6 +255,12 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
       ? fmtMonth(data.dateRange.start) + " – " + fmtMonth(data.dateRange.end)
       : null;
   const docCount = data.documentsAnalyzed ?? null;
+  // BF_PORTAL_BANKING_DISPLAY_v31
+  const needsReview = (data as any).status === "needs_review";
+  const flags = data.integrityFlags ?? [];
+  const accountBalances = data.accountBalances ?? [];
+  const docs = data.documents ?? [];
+  const skipped = docs.filter((d) => typeof d.error === "string" && d.error.length > 0);
 
   const monthsProfitableLabel =
     data.cashFlow?.monthsProfitableNumerator != null &&
@@ -270,21 +285,63 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
 
         <StatusBanner status={data.status} autoSkip={Boolean((data as any)?.banking_auto_skip ?? (data as any)?.bankingAutoSkip)} />
 
-        {accounts.length > 0 && (
+        {needsReview && (
+          <div style={{ border: "1px solid #fde68a", background: "#fffbeb", color: "#78350f", padding: 16, borderRadius: 8, marginBottom: 16 }}>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>These figures need a human eye before you quote them.</div>
+            {flags.length > 0 ? (
+              <ul style={{ margin: "0 0 8px", paddingLeft: 18, fontSize: 13 }}>
+                {flags.map((f, i) => (
+                  <li key={i} style={{ marginBottom: 4 }}>{f}</li>
+                ))}
+              </ul>
+            ) : null}
+            <div style={{ fontSize: 12, whiteSpace: "pre-wrap", opacity: 0.85 }}>{(data as any).lastError || ""}</div>
+          </div>
+        )}
+
+        {accountBalances.length > 0 && (
           <div style={styles.panel}>
-            <div style={styles.panelTitle}>Key Account Summary</div>
-            {accounts.map((a, i) => (
+            <div style={styles.panelTitle}>
+              Balance by account{data.currency ? " (" + data.currency + ")" : ""}
+            </div>
+            {accountBalances.map((a, i) => (
               <div key={i} style={styles.metric}>
                 <span>
-                  <strong>{a.name ?? "Account " + (i + 1)}</strong>
-                  {a.type ? <span style={{ color: C.muted }}> ({a.type})</span> : null}
-                  {a.note ? (
-                    <div style={{ fontSize: 11, color: C.muted }}>{a.note}</div>
-                  ) : null}
+                  <strong>{a.accountLabel ?? "Unidentified account"}</strong>
+                  <div style={{ fontSize: 11, color: C.muted }}>
+                    Average daily balance over {a.days ?? 0} day{a.days === 1 ? "" : "s"}
+                    {a.negativeBalanceDays ? " · " + a.negativeBalanceDays + " day(s) negative" : ""}
+                  </div>
                 </span>
-                <span style={styles.metricValue}>{fmtMoney(a.balance ?? null)}</span>
+                <span style={styles.metricValue}>{fmtMoney(a.averageDailyBalance ?? null)}</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {docs.length > 0 && (
+          <div style={styles.panel}>
+            <div style={styles.panelTitle}>Statements analyzed</div>
+            {docs.map((d, i) => (
+              <div key={d.document_id ?? i} style={styles.metric}>
+                <span>
+                  <strong>{d.filename ?? "Untitled document"}</strong>
+                  <div style={{ fontSize: 11, color: C.muted }}>
+                    {(d.pages ?? 0) + " page" + (d.pages === 1 ? "" : "s")}
+                    {" · " + (d.usable_count ?? 0) + " transaction" + (d.usable_count === 1 ? "" : "s") + " used"}
+                  </div>
+                  {d.error ? (
+                    <div style={{ fontSize: 12, color: "#b45309", marginTop: 2 }}>{d.error}</div>
+                  ) : null}
+                </span>
+                <span style={styles.metricValue}>{d.error ? "Not counted" : "Counted"}</span>
+              </div>
+            ))}
+            {skipped.length > 0 ? (
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
+                {skipped.length} document(s) were left out of the totals for the reasons above.
+              </div>
+            ) : null}
           </div>
         )}
 
