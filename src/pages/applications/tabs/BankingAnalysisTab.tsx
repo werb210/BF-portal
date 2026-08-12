@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 // BF_PORTAL_BLOCK_v191a_OCR_DIAGNOSTIC_PANEL_FIX_v1
 import { api } from "@/api";
 import { fetchBankingAnalysis, type BankingAnalysis } from "@/api/banking";
+// BF_PORTAL_TREND_MONTH_v32
+import { fmtMonth } from "@/pages/applications/_shared/fmtMonth";
 import BankingTrendChart, {
   type BankingTrendMonth,
 } from "@/pages/applications/_shared/BankingTrendChart";
@@ -168,14 +170,9 @@ function fmtMoney(v: number | null | undefined): string {
   return "$" + n.toLocaleString();
 }
 
-export function fmtMonth(m: string): string {
-  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(m);
-  const d = iso
-    ? new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
-    : new Date(m);
-  if (Number.isNaN(d.getTime())) return m;
-  return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-}
+// BF_PORTAL_TREND_MONTH_v32 - moved to _shared/fmtMonth so the trend chart uses
+// the same implementation; re-exported here for existing importers.
+export { fmtMonth };
 
 // BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — accept auto-skip flag; render a clear
 // "Skipped — no bank statements" message instead of the misleading
@@ -563,4 +560,3 @@ function DiagnosticPanel({ applicationId }: { applicationId?: string | null }) {
     </div>
   );
 }
-

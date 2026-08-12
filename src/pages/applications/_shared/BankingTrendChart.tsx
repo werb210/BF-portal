@@ -1,5 +1,7 @@
 // BF_PORTAL_BLOCK_1_31A_TREND_CHART
 import { Fragment } from "react";
+// BF_PORTAL_TREND_MONTH_v32
+import { fmtMonth } from "./fmtMonth";
 
 export type BankingTrendMonth = {
   month: string;
@@ -18,12 +20,6 @@ const colors = {
   amber: "#f59e0b",
   grid: "var(--ui-surface-muted)",
 };
-
-function fmtMonth(m: string): string {
-  const d = new Date(m);
-  if (Number.isNaN(d.getTime())) return m;
-  return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-}
 
 interface Props {
   months: BankingTrendMonth[];
