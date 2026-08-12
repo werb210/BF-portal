@@ -140,6 +140,9 @@ export default function PipelinePage() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  // BF_PORTAL_PIPELINE_DND_v35 - drag state lives on the board, not the card.
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const load = useCallback(() => {
@@ -211,6 +214,23 @@ export default function PipelinePage() {
     } finally { setActing(null); }
   }
 
+  // BF_PORTAL_PIPELINE_DND_v35 - dropping a card is the only way into Fraud or
+  // Hold. Accepted is deliberately excluded: marking a deal accepted has to
+  // capture the actual advance (BF_PORTAL_FUNDED_AMOUNT_v1), and commission is
+  // computed from that figure, so it stays on the card's Accept button.
+  async function handleDrop(toStage: string) {
+    const cardId = dragging;
+    setDragging(null);
+    if (!cardId) return;
+    const card = cards.find((c) => c.id === cardId);
+    if (!card || effectiveStage(card) === toStage) return;
+    if (toStage === "Accepted") {
+      window.alert("Use the Accept button on the card to mark a deal accepted - it captures the amount the lender actually advanced, which commission is calculated from.");
+      return;
+    }
+    await move(cardId, toStage);
+  }
+
   if (loading) return (
     <div style={{ padding: 32, color: "var(--ui-text-muted)", fontSize: 14 }}>Loading pipeline…</div>
   );
@@ -230,8 +250,22 @@ export default function PipelinePage() {
       <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 16, alignItems: "flex-start" }}>
         {STAGES.map((stage) => {
           const col = cards.filter((c) => effectiveStage(c) === stage);
+          const isTarget = dragOver === stage && dragging !== null;
           return (
-            <div key={stage} style={{ minWidth: 260, maxWidth: 260, flexShrink: 0 }}>
+            // BF_PORTAL_PIPELINE_DND_v35 - the column is the drop target.
+            <div
+              key={stage}
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOver(stage); }}
+              onDragLeave={() => setDragOver((cur) => (cur === stage ? null : cur))}
+              onDrop={(e) => { e.preventDefault(); setDragOver(null); void handleDrop(stage); }}
+              style={{
+                minWidth: 260, maxWidth: 260, flexShrink: 0,
+                borderRadius: 10,
+                outline: isTarget ? `2px dashed ${COLORS[stage]}` : "2px dashed transparent",
+                outlineOffset: 4,
+                background: isTarget ? "var(--ui-surface-muted)" : "transparent",
+                transition: "background 0.12s",
+              }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
                 padding: "6px 2px", borderBottom: "2px solid var(--ui-text-muted)" }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ui-text-muted)" }}>{stage}</span>
@@ -242,7 +276,13 @@ export default function PipelinePage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {col.map((card) => (
-                  <PipeCard key={card.id} card={card} stage={stage}
+                  <div
+                    key={card.id}
+                    draggable={!acting && !deleting}
+                    onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDragging(card.id); }}
+                    onDragEnd={() => { setDragging(null); setDragOver(null); }}
+                    style={{ cursor: "grab", opacity: dragging === card.id ? 0.4 : 1 }}>
+                  <PipeCard card={card} stage={stage}
                     busy={acting === card.id || deleting === card.id}
                     // BF_PORTAL_BLOCK_v188_PIPELINE_NAV_AND_AUTO_REVIEW_v1 — fire /open, optimistic-advance if Received, then navigate
                     onOpen={() => {
@@ -257,6 +297,7 @@ export default function PipelinePage() {
                     onMove={move}
                     onDelete={removeCard}
                     onRefresh={load} />
+                  </div>
                 ))}
                 {col.length === 0 && (
                   <div style={{ fontSize: 12, color: "var(--ui-text-muted)", textAlign: "center", padding: "20px 8px", border: "1px dashed var(--ui-border)", borderRadius: 8 }}>
@@ -503,21 +544,6 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
           <button disabled={busy} onClick={() => onMove(card.id, "Rejected")}
             style={{ ...btnBase, background: "#ef444418", borderColor: "#ef444455", color: "#ef4444" }}>
             ✗ Reject
-          </button>
-        </div>
-      )}
-
-      {/* BF_PORTAL_FRAUD_HOLD_v34 - park from any working stage, including a
-          funded deal: fraud is usually found after the money has moved. */}
-      {!isParkedStage(stage) && (
-        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-          <button disabled={busy} onClick={() => onMove(card.id, "Hold")}
-            style={{ ...btnBase, background: "#7c3aed18", borderColor: "#7c3aed55", color: "#7c3aed" }}>
-            {"\u23f8"} Hold
-          </button>
-          <button disabled={busy} onClick={() => onMove(card.id, "Fraud")}
-            style={{ ...btnBase, background: "#b91c1c18", borderColor: "#b91c1c55", color: "#b91c1c" }}>
-            {"\u26a0"} Fraud
           </button>
         </div>
       )}

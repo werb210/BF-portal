@@ -34,5 +34,9 @@ describe("reactivating", () => {
   it("returns a parked file to the stage it left", () => expect(src).toContain('const back = card.parked_previous_stage || "In Review";'));
   it("confirms before reactivating", () => expect(src).toContain("Reactivate this application and return it to"));
   it("shows the reason on a parked card", () => expect(src).toContain("{card.parked_reason}"));
-  it("offers Hold and Fraud only on working stages", () => expect(src).toContain("{!isParkedStage(stage) && ("));
+  it("moves a card into Fraud or Hold by dragging, not by a button on the card", () => {
+    // BF_PORTAL_PIPELINE_DND_v35 - the per-card buttons were never asked for.
+    expect(src).not.toContain('onMove(card.id, "Fraud")');
+    expect(src).toContain("void handleDrop(stage)");
+  });
 });
