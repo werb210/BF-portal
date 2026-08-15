@@ -30,6 +30,13 @@ type ApplicationDocumentsResponse = { documents?: ApplicationDocument[] };
 
 const styles = {
   page: { padding: 20, paddingBottom: 100 } as const,
+  // BF_PORTAL_LENDERS_PARK_v36 - title on the left, park controls on the right.
+  headRow: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" } as const,
+  parkBtns: { display: "flex", gap: 8, flexShrink: 0 } as const,
+  parkBtn: {
+    fontSize: 13, fontWeight: 600, padding: "7px 14px", borderRadius: 8,
+    border: "1px solid", cursor: "pointer", background: "transparent",
+  } as const,
   header: { fontSize: 22, fontWeight: 700, color: "var(--ui-text)", margin: "0 0 4px" } as const,
   subhead: { fontSize: 13, color: "var(--ui-text-muted)", marginBottom: 16 } as const,
   banner: { padding: "10px 14px", borderRadius: 6, fontSize: 13, marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 } as const,
@@ -96,6 +103,42 @@ export default function LendersTab({ applicationId }: Props) {
   const { user } = useAuth();
   const canManage = canWrite((user as { role?: string | null } | null)?.role ?? null);
   const id = applicationId ?? "";
+  // BF_PORTAL_LENDERS_PARK_v36
+  const [parking, setParking] = useState<string | null>(null);
+  const [parkError, setParkError] = useState<string | null>(null);
+
+  // Mirrors the pipeline board: parking removes the file from the reported
+  // numbers, so it is never a one-click action, and Fraud will not proceed
+  // without a reason.
+  async function park(stage: "Hold" | "Fraud") {
+    if (!id) return;
+    const prompt = stage === "Fraud"
+      ? "Mark this application as FRAUD?\n\nIt will be removed from commission and every report, in every period, and can no longer be sent to a lender. The file, its documents and its history are kept.\n\nReason (required):"
+      : "Put this application on HOLD?\n\nIt drops out of live pipeline and commission figures until reactivated. Nothing is deleted and the client will not have to re-apply.\n\nReason (optional):";
+    const entered = window.prompt(prompt, "");
+    if (entered === null) return;
+    const reason = entered.trim();
+    if (stage === "Fraud" && reason.length < 3) {
+      window.alert("A reason is required to mark an application as fraud.");
+      return;
+    }
+    setParkError(null);
+    setParking(stage);
+    try {
+      await api.patch(`/api/portal/applications/${id}/status`, {
+        status: stage,
+        reason: reason || `Manually set to ${stage}`,
+      });
+      // A plain redirect, not useNavigate: this tab is rendered outside a
+      // Router in its existing tests, and adding that dependency would break
+      // eleven of them for no benefit.
+      window.location.assign("/pipeline");
+    } catch (e) {
+      setParkError(getErrorMessage(e, `Unable to move this application to ${stage}.`));
+    } finally {
+      setParking(null);
+    }
+  }
 
   const { data, isLoading, error } = useQuery<LenderEnvelope>({
     queryKey: ["lenders", id, "envelope"],
@@ -372,11 +415,37 @@ export default function LendersTab({ applicationId }: Props) {
 
   return (
     <div ref={filesRootRef} data-testid="lenders-tab" style={styles.page}>
-      <h2 style={styles.header}>Lenders</h2>
-      <div style={styles.subhead}>
-        {matches.length} match{matches.length === 1 ? "" : "es"}
-        {envelope.computed_at ? ` · last computed ${new Date(envelope.computed_at).toLocaleString()}` : ""}
+      {/* BF_PORTAL_LENDERS_PARK_v36 - Hold and Fraud reachable from the file
+          itself. Fraud is usually discovered while reading the lender matches,
+          and having to go back to the board to act on it invites forgetting. */}
+      <div style={styles.headRow}>
+        <div>
+          <h2 style={styles.header}>Lenders</h2>
+          <div style={styles.subhead}>
+            {matches.length} match{matches.length === 1 ? "" : "es"}
+            {envelope.computed_at ? ` · last computed ${new Date(envelope.computed_at).toLocaleString()}` : ""}
+          </div>
+        </div>
+        {canManage && (
+          <div style={styles.parkBtns}>
+            <button
+              type="button"
+              disabled={parking !== null}
+              onClick={() => void park("Hold")}
+              style={{ ...styles.parkBtn, borderColor: "#7c3aed55", color: "#7c3aed", background: "#7c3aed12" }}>
+              {parking === "Hold" ? "Placing on hold…" : "⏸ Hold"}
+            </button>
+            <button
+              type="button"
+              disabled={parking !== null}
+              onClick={() => void park("Fraud")}
+              style={{ ...styles.parkBtn, borderColor: "#b91c1c55", color: "#b91c1c", background: "#b91c1c12" }}>
+              {parking === "Fraud" ? "Marking fraud…" : "⚠ Fraud"}
+            </button>
+          </div>
+        )}
       </div>
+      {parkError && <div style={{ ...styles.banner, ...styles.bannerError }}>{parkError}</div>}
       {isStale && (
         <div style={{ ...styles.banner, ...styles.bannerStale }}>
           <span>Matches are stale. Inputs changed since the last calculation.</span>
