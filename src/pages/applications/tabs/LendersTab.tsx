@@ -25,6 +25,14 @@ import { canWrite } from "@/auth/can";
 import CollateralFacilitySection from "@/pages/applications/tabs/CollateralFacilitySection";
 
 type Props = { applicationId?: string | null };
+// BF_PORTAL_LENDERS_REVIVE_v37
+type ParkedApplication = {
+  application?: {
+    pipelineState?: string | null;
+    parkedPreviousStage?: string | null;
+    parkedReason?: string | null;
+  } | null;
+};
 type ApplicationDocument = { status?: string | null };
 type ApplicationDocumentsResponse = { documents?: ApplicationDocument[] };
 
@@ -106,6 +114,40 @@ export default function LendersTab({ applicationId }: Props) {
   // BF_PORTAL_LENDERS_PARK_v36
   const [parking, setParking] = useState<string | null>(null);
   const [parkError, setParkError] = useState<string | null>(null);
+
+  // BF_PORTAL_LENDERS_REVIVE_v37 - a file parked in Fraud or Hold needs the way
+  // back from the same place it was parked. parkedPreviousStage comes from
+  // BF_SERVER_PARKED_DETAIL_v55 so the button can name the stage it returns to.
+  const { data: appRecord } = useQuery<ParkedApplication>({
+    queryKey: ["application", id, "parked"],
+    queryFn: () => api.get<ParkedApplication>(`/api/portal/applications/${encodeURIComponent(id)}`),
+    enabled: Boolean(id),
+  });
+  const currentStage = appRecord?.application?.pipelineState ?? null;
+  const isParked = currentStage === "Fraud" || currentStage === "Hold";
+  const previousStage = appRecord?.application?.parkedPreviousStage ?? null;
+  const parkedReason = appRecord?.application?.parkedReason ?? null;
+
+  async function revive() {
+    if (!id) return;
+    // Fall back to In Review only when the server has no record of where the
+    // file came from - never silently drop it somewhere arbitrary.
+    const back = previousStage || "In Review";
+    if (!window.confirm(`Reactivate this application and return it to "${back}"?`)) return;
+    setParkError(null);
+    setParking("revive");
+    try {
+      await api.patch(`/api/portal/applications/${id}/status`, {
+        status: back,
+        reason: `Reactivated from ${currentStage ?? "parked"}`,
+      });
+      window.location.assign("/pipeline");
+    } catch (e) {
+      setParkError(getErrorMessage(e, `Unable to reactivate this application.`));
+    } finally {
+      setParking(null);
+    }
+  }
 
   // Mirrors the pipeline board: parking removes the file from the reported
   // numbers, so it is never a one-click action, and Fraud will not proceed
@@ -428,24 +470,51 @@ export default function LendersTab({ applicationId }: Props) {
         </div>
         {canManage && (
           <div style={styles.parkBtns}>
-            <button
-              type="button"
-              disabled={parking !== null}
-              onClick={() => void park("Hold")}
-              style={{ ...styles.parkBtn, borderColor: "#7c3aed55", color: "#7c3aed", background: "#7c3aed12" }}>
-              {parking === "Hold" ? "Placing on hold…" : "⏸ Hold"}
-            </button>
-            <button
-              type="button"
-              disabled={parking !== null}
-              onClick={() => void park("Fraud")}
-              style={{ ...styles.parkBtn, borderColor: "#b91c1c55", color: "#b91c1c", background: "#b91c1c12" }}>
-              {parking === "Fraud" ? "Marking fraud…" : "⚠ Fraud"}
-            </button>
+            {/* BF_PORTAL_LENDERS_REVIVE_v37 - a parked file offers the way out,
+                not the controls that put it there. */}
+            {isParked ? (
+              <button
+                type="button"
+                disabled={parking !== null}
+                onClick={() => void revive()}
+                style={{ ...styles.parkBtn, borderColor: "#15803d55", color: "#15803d", background: "#15803d12" }}>
+                {parking === "revive"
+                  ? "Reactivating…"
+                  : `↺ Reactivate${previousStage ? ` to ${previousStage}` : ""}`}
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={parking !== null}
+                  onClick={() => void park("Hold")}
+                  style={{ ...styles.parkBtn, borderColor: "#7c3aed55", color: "#7c3aed", background: "#7c3aed12" }}>
+                  {parking === "Hold" ? "Placing on hold…" : "⏸ Hold"}
+                </button>
+                <button
+                  type="button"
+                  disabled={parking !== null}
+                  onClick={() => void park("Fraud")}
+                  style={{ ...styles.parkBtn, borderColor: "#b91c1c55", color: "#b91c1c", background: "#b91c1c12" }}>
+                  {parking === "Fraud" ? "Marking fraud…" : "⚠ Fraud"}
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
       {parkError && <div style={{ ...styles.banner, ...styles.bannerError }}>{parkError}</div>}
+      {/* BF_PORTAL_LENDERS_REVIVE_v37 - the reason travels with the file, so
+          whoever reactivates it can see why it was parked in the first place. */}
+      {isParked && (
+        <div style={{ ...styles.banner, ...styles.bannerError }}>
+          <span>
+            <strong>{currentStage}.</strong>{" "}
+            {parkedReason || "No reason recorded."}
+            {currentStage === "Fraud" ? " This file cannot be sent to a lender." : ""}
+          </span>
+        </div>
+      )}
       {isStale && (
         <div style={{ ...styles.banner, ...styles.bannerStale }}>
           <span>Matches are stale. Inputs changed since the last calculation.</span>
