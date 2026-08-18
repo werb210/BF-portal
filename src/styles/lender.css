@@ -1,3 +1,6 @@
+/* BF_PORTAL_SHEETS_v41 - moved onto the brand palette: navy #0B1F3A, mist
+   #F5F8FC, hairline #E4EAF2, body #51617D, gold #BF9B49. Semantic colours
+   (success green, error red) are unchanged. */
 /* BF_PORTAL_LENDER_OTP_RESTYLE_v1 - lender portal restyled to match the staff
    BF silo. Uses the --ui-* design tokens (defined in globals.css) so the shell,
    sidebar, cards, tables, and forms read like the staff portal instead of the
@@ -7,14 +10,14 @@
 .lender-shell {
   display: flex;
   min-height: 100vh;
-  background: var(--ui-bg, #0b1220);
-  color: var(--ui-text, #e5eaf2);
+  background: var(--ui-bg, #0B1F3A);
+  color: var(--ui-text, #E4EAF2);
 }
 
 .lender-sidebar {
   width: 248px;
   flex-shrink: 0;
-  background: #020817;
+  background: #081729;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   padding: 20px 16px;
   display: flex;
@@ -77,7 +80,7 @@
 }
 
 .lender-nav-link--active {
-  background: var(--ui-accent-blue, #2563eb);
+  background: var(--ui-accent-blue, #0B1F3A);
   color: #ffffff;
 }
 
@@ -86,7 +89,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--ui-bg, #0b1220);
+  background: var(--ui-bg, #0B1F3A);
 }
 
 .lender-topbar {
@@ -94,19 +97,19 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 28px;
-  border-bottom: 1px solid var(--ui-border, #1e293b);
-  background: var(--ui-surface, #0f172a);
+  border-bottom: 1px solid var(--ui-border, #0d233f);
+  background: var(--ui-surface, #0B1F3A);
 }
 
 .lender-topbar__title {
   font-weight: 700;
   font-size: 16px;
-  color: var(--ui-text, #e5eaf2);
+  color: var(--ui-text, #E4EAF2);
 }
 
 .lender-topbar__subtitle {
   font-size: 12px;
-  color: var(--ui-text-muted, #94a3b8);
+  color: var(--ui-text-muted, #8593aa);
 }
 
 .lender-topbar__user {
@@ -121,7 +124,7 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: var(--ui-accent-blue, #2563eb);
+  background: var(--ui-accent-blue, #0B1F3A);
   color: #ffffff;
   font-weight: 700;
   font-size: 14px;
@@ -136,12 +139,12 @@
 .lender-topbar__user-name {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ui-text, #e5eaf2);
+  color: var(--ui-text, #E4EAF2);
 }
 
 .lender-topbar__user-role {
   font-size: 11px;
-  color: var(--ui-text-muted, #94a3b8);
+  color: var(--ui-text-muted, #8593aa);
 }
 
 .lender-shell__main {
@@ -159,10 +162,10 @@
 
 .lender-section {
   background: var(--ui-surface-strong, #ffffff);
-  border: 1px solid var(--ui-border, #cbd6e2);
+  border: 1px solid var(--ui-border, #E4EAF2);
   border-radius: 12px;
   padding: 20px;
-  color: var(--ui-text, #0f172a);
+  color: var(--ui-text, #0B1F3A);
 }
 
 .lender-section__header {
@@ -193,14 +196,14 @@
 .lender-table td {
   padding: 10px 12px;
   text-align: left;
-  border-bottom: 1px solid var(--ui-border-soft, #eaf0f6);
+  border-bottom: 1px solid var(--ui-border-soft, #E4EAF2);
 }
 
 .lender-table th {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--ui-text-muted, #64748b);
+  color: var(--ui-text-muted, #51617D);
   font-weight: 600;
 }
 
@@ -218,8 +221,8 @@
 }
 
 .lender-pill--muted {
-  background: var(--ui-surface-muted, #eef1f5);
-  color: var(--ui-text-muted, #64748b);
+  background: var(--ui-surface-muted, #F5F8FC);
+  color: var(--ui-text-muted, #51617D);
 }
 
 .lender-form-grid {
@@ -237,10 +240,10 @@
 
 .lender-drawer {
   background: var(--ui-surface-strong, #ffffff);
-  border: 1px solid var(--ui-border, #cbd6e2);
+  border: 1px solid var(--ui-border, #E4EAF2);
   border-radius: 12px;
   padding: 20px;
-  color: var(--ui-text, #0f172a);
+  color: var(--ui-text, #0B1F3A);
 }
 
 .lender-doc-list {
@@ -254,7 +257,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  border: 1px solid var(--ui-border, #cbd6e2);
+  border: 1px solid var(--ui-border, #E4EAF2);
   border-radius: 8px;
   font-size: 14px;
 }
