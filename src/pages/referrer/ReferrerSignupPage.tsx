@@ -6,6 +6,7 @@
 // signing, we verify with the server (/signup/complete), store the referrer
 // token, and drop them into the portal. Until the agreement is signed they
 // cannot OTP-log-in, so signup is the first thing they see.
+import { usePageMeta } from "@/lib/usePageMeta"; // BF_PORTAL_BRAND_v38
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api";
@@ -32,6 +33,10 @@ const EMPTY = {
 };
 
 export default function ReferrerSignupPage() {
+  usePageMeta(
+    "Become a Referral Partner | Boreal Financial",
+    "Refer your clients to Boreal Financial. One application across 80+ lenders, no cost to them and no credit pull. Sign up and get paid when a deal funds.",
+  );
   const [form, setForm] = useState({ ...EMPTY });
   const [stage, setStage] = useState<"form" | "sign">("form");
   const [signingUrl, setSigningUrl] = useState<string | null>(null);
@@ -130,7 +135,7 @@ export default function ReferrerSignupPage() {
 
   // BF_PORTAL_REFERRER_BRAND_v1 - same external-portal shell as the lender portal.
   return (
-    <div data-testid="referrer-signup-screen" style={{ colorScheme: "light" }} className="min-h-screen w-screen flex items-center justify-center bg-[#0B1F3A] px-4 py-12"> {/* BF_PORTAL_REFERRER_SIGNUP_LIGHT_v1 */}
+    <main data-testid="referrer-signup-screen" style={{ colorScheme: "light" }} className="min-h-screen w-screen flex items-center justify-center bg-[#0B1F3A] px-4 py-12"> {/* BF_PORTAL_REFERRER_SIGNUP_LIGHT_v1 */}
       <div className="w-full max-w-lg flex flex-col items-center gap-6">
         <div className="text-center">
           <img src={logoUrl} alt="Boreal" style={{ display: "block", margin: "0 auto 18px", height: 88, width: "auto" }} />
@@ -193,6 +198,6 @@ export default function ReferrerSignupPage() {
           Boreal Financial Group &middot; 450 Sparling Crt SW, Edmonton, AB T6X 1G9
         </p>
       </div>
-    </div>
+    </main>
   );
 }

@@ -6,6 +6,7 @@
 // 6-digit code auto-forwards (verifies) on the sixth digit. All auth logic
 // (phone-OTP, userType:"lender", sessionStorage tokens, navigate to
 // /lender-portal) is unchanged.
+import { usePageMeta } from "@/lib/usePageMeta"; // BF_PORTAL_BRAND_v38
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api";
@@ -19,6 +20,10 @@ function normalizeNAPhone(value: string): string | null {
 }
 
 export default function LenderLoginPage() {
+  usePageMeta(
+    "Lender Portal Login | Boreal Financial",
+    "Sign in to the Boreal Financial lender portal to review files, update your products and manage your credit box.",
+  );
   const [step, setStep] = useState<"enter" | "verify">("enter");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -96,7 +101,7 @@ export default function LenderLoginPage() {
   }, [code, step, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div data-testid="lender-login-screen" className="min-h-screen w-screen flex items-center justify-center bg-[#0B1F3A] px-4 py-12">
+    <main data-testid="lender-login-screen" className="min-h-screen w-screen flex items-center justify-center bg-[#0B1F3A] px-4 py-12">
       <div className="w-full max-w-md flex flex-col items-center gap-6">
         <div className="text-center">
           <img src={logoUrl} alt="Boreal" style={{ display: "block", margin: "0 auto 16px", height: 56, width: "auto" }} />
@@ -166,6 +171,6 @@ export default function LenderLoginPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }
