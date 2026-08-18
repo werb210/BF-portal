@@ -1,3 +1,6 @@
+/* BF_PORTAL_SHEETS_v41 - moved onto the brand palette: navy #0B1F3A, mist
+   #F5F8FC, hairline #E4EAF2, body #51617D, gold #BF9B49. Semantic colours
+   (success green, error red) are unchanged. */
 /* BF_PORTAL_BLOCK_v_DARK_INPUTS_v1
    Backstop for inline-styled inputs/textareas/selects that don't opt out.
    Previously this forced EVERY field white-on-black with !important, which
@@ -12,12 +15,12 @@ textarea:not([data-dark="true"]),
 select:not([data-dark="true"]) {
   background-color: #ffffff;
   color: #000000;
-  border: 1px solid #cbd6e2;
+  border: 1px solid #E4EAF2;
   border-radius: 4px;
 }
 input:not([data-dark="true"])::placeholder,
 textarea:not([data-dark="true"])::placeholder {
-  color: #7c98b6;
+  color: #51617D;
   opacity: 1;
 }
 
@@ -26,13 +29,13 @@ textarea:not([data-dark="true"])::placeholder {
   input:not([data-dark="true"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   textarea:not([data-dark="true"]),
   select:not([data-dark="true"]) {
-    background-color: var(--ui-surface-input, #20242C);
-    color: var(--ui-text, #F2F4F7);
+    background-color: var(--ui-surface-input, #0B1F3A);
+    color: var(--ui-text, #F5F8FC);
     border: 1px solid var(--ui-border, rgba(255,255,255,0.12));
   }
   input:not([data-dark="true"])::placeholder,
   textarea:not([data-dark="true"])::placeholder {
-    color: var(--ui-text-muted, #8B919C);
+    color: var(--ui-text-muted, #8593aa);
     opacity: 1;
   }
 }
@@ -41,13 +44,13 @@ textarea:not([data-dark="true"])::placeholder {
 :root[data-theme="dark"] input:not([data-dark="true"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 :root[data-theme="dark"] textarea:not([data-dark="true"]),
 :root[data-theme="dark"] select:not([data-dark="true"]) {
-  background-color: var(--ui-surface-input, #20242C);
-  color: var(--ui-text, #F2F4F7);
+  background-color: var(--ui-surface-input, #0B1F3A);
+  color: var(--ui-text, #F5F8FC);
   border: 1px solid var(--ui-border, rgba(255,255,255,0.12));
 }
 :root[data-theme="dark"] input:not([data-dark="true"])::placeholder,
 :root[data-theme="dark"] textarea:not([data-dark="true"])::placeholder {
-  color: var(--ui-text-muted, #8B919C);
+  color: var(--ui-text-muted, #8593aa);
   opacity: 1;
 }
 
@@ -57,5 +60,5 @@ textarea:not([data-dark="true"])::placeholder {
 :root[data-theme="light"] select:not([data-dark="true"]) {
   background-color: #ffffff;
   color: #000000;
-  border: 1px solid #cbd6e2;
+  border: 1px solid #E4EAF2;
 }
