@@ -39,14 +39,16 @@ import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
 // BF_PORTAL_PHONE_TAB_v1 - Voicemail + Recents merged into one "Phone" tab.
 type Tab = "messages" | "sms" | "inbox" | "issues" | "maya" | "team" | "phone";
 
+// BF_PORTAL_COMMS_TABS_v39 - order set by Todd. Inbox leads because it is
+// where staff start; the default tab below must stay in step with it.
 const TABS: { id: Tab; label: string }[] = [
-  { id: "messages", label: "Messages" },
-  { id: "sms", label: "SMS" },
   { id: "inbox", label: "Inbox" },
+  { id: "sms", label: "SMS" },
+  { id: "messages", label: "Messages" },
+  { id: "team", label: "Team" }, // BF_PORTAL_BLOCK_v752_TEAM_TAB
   { id: "phone", label: "Phone" }, // BF_PORTAL_PHONE_TAB_v1 (was Voicemail + Recents)
   { id: "issues", label: "Issues" },
   { id: "maya", label: "Maya" }, // BF_PORTAL_BLOCK_v763_MAYA_TAB
-  { id: "team", label: "Team" }, // BF_PORTAL_BLOCK_v752_TEAM_TAB
 ];
 
 type Contact = {
@@ -1442,10 +1444,16 @@ function InboxTab() {
           api<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>("/api/crm/shared-mailboxes")
         );
         if (cancelled) return;
-        setMailboxes(r);
+        // Normalise before storing, so every consumer of `mailboxes.shared`
+        // downstream can map over it without its own guard.
+        setMailboxes({ mine: r?.mine ?? null, shared: Array.isArray(r?.shared) ? r.shared : [] });
         // BF_PORTAL_BLOCK_v_INBOX_DEFAULT_UNIFIED_v1 - default to the unified
         // "All Mailboxes" view so staff don't have to switch to it each time.
-        setActive((r.mine || r.shared.length > 0) ? ALL_MAILBOXES : "");
+        // BF_PORTAL_COMMS_TABS_v39 - r.shared was read unguarded. Any response
+        // without it (partial payload, older server, error body returned with
+        // a 200) threw here, inside render, and blanked the tab. The catch
+        // below only covers a thrown request, not a malformed success.
+        setActive((r?.mine || (r?.shared?.length ?? 0) > 0) ? ALL_MAILBOXES : "");
         setNeedsReconnect(false);
       } catch (e: unknown) {
         if (cancelled) return;
@@ -2435,8 +2443,10 @@ function IssuesTab() {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-export default function CommunicationsPage() {
-  const [tab, setTab] = useState<Tab>("sms");
+// BF_PORTAL_COMMS_TABS_v39 - initialTab lets a caller, and the test suite,
+// open a specific tab. Defaults to the first tab in TABS.
+export default function CommunicationsPage({ initialTab }: { initialTab?: Tab } = {}) {
+  const [tab, setTab] = useState<Tab>(initialTab ?? "inbox");
   // BF_PORTAL_BLOCK_v641_TAB_COUNTS_v1 — per-sub-tab counters. Each source is
   // the same endpoint that tab renders from. Fully guarded so a mocked/undefined
   // api response can never throw during render or tests.
