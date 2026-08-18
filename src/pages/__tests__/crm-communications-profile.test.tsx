@@ -181,7 +181,7 @@ describe("SMS layout", () => {
       messages: [{ id: "m-1", direction: "inbound", body: "Hello", created_at: new Date().toISOString() }],
     });
 
-    renderWithQuery(<CommunicationsPage />);
+    renderWithQuery(<CommunicationsPage initialTab="sms" />);
 
     const contact = await screen.findByText("Jordan Lee");
     fireEvent.click(contact);

@@ -19,7 +19,7 @@ describe("Sms thread", () => {
       if (u.includes("/sms") || u.includes("messages-list")) return Promise.resolve({ conversations: [{ contact_id: "c-1", display_name: "Jordan", phone: "+1555", last_at: new Date().toISOString(), last_body: "hi" }] });
       return Promise.resolve({});
     });
-    render(<CommunicationsPage />);
+    render(<CommunicationsPage initialTab="sms" />);
     fireEvent.click((await screen.findAllByText("Jordan"))[0]!);
     expect((await screen.findAllByText("hi")).length).toBeGreaterThan(0);
   });
@@ -32,7 +32,7 @@ describe("Sms thread", () => {
       if (u.includes("/sms") || u.includes("messages-list")) return Promise.resolve({ conversations: [{ contact_id: "c-1", display_name: "Jordan", phone: "+1555", last_at: new Date().toISOString(), last_body: "hi" }] });
       return Promise.resolve({});
     });
-    render(<CommunicationsPage />);
+    render(<CommunicationsPage initialTab="sms" />);
     fireEvent.click((await screen.findAllByText("Jordan"))[0]!);
     await waitFor(() => expect(screen.getByText(/No messages yet/i)).toBeInTheDocument());
   });

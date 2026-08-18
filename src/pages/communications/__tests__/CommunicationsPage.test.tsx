@@ -79,7 +79,7 @@ describe("CommunicationsPage", () => {
     apiMock.mockResolvedValueOnce({ mine: null, shared: [] });
     apiMock.mockResolvedValueOnce([]);
 
-    render(<CommunicationsPage />);
+    render(<CommunicationsPage initialTab="sms" />);
 
     fireEvent.click((await screen.findAllByText("Jordan Lee"))[0]!);
 
@@ -97,7 +97,7 @@ describe("CommunicationsPage contact filter", () => {
     apiMock.mockResolvedValueOnce([{ id: "crm-1", name: "Alex Kim", phone: null, phone_e164: "+15555550123" }]);
     apiMock.mockResolvedValue({ messages: [] });
 
-    render(<CommunicationsPage />);
+    render(<CommunicationsPage initialTab="sms" />);
 
     expect(await screen.findByText("Alex Kim")).toBeInTheDocument();
     expect(screen.queryByText(/No CRM contacts with phone numbers yet/i)).not.toBeInTheDocument();
@@ -108,7 +108,7 @@ describe("CommunicationsPage contact filter", () => {
     apiMock.mockResolvedValueOnce([{ id: "crm-2", name: "Taylor", phone: "   " }]);
     apiMock.mockResolvedValue({ messages: [] });
 
-    render(<CommunicationsPage />);
+    render(<CommunicationsPage initialTab="sms" />);
 
     expect(await screen.findByText(/No CRM contacts with phone numbers yet/i)).toBeInTheDocument();
     expect(screen.queryByText("Taylor")).not.toBeInTheDocument();
