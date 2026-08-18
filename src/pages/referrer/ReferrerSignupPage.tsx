@@ -130,18 +130,20 @@ export default function ReferrerSignupPage() {
 
   // BF_PORTAL_REFERRER_BRAND_v1 - same external-portal shell as the lender portal.
   return (
-    <div data-testid="referrer-signup-screen" style={{ colorScheme: "light" }} className="min-h-screen w-screen flex items-center justify-center bg-[#020817] px-4 py-12"> {/* BF_PORTAL_REFERRER_SIGNUP_LIGHT_v1 */}
+    <div data-testid="referrer-signup-screen" style={{ colorScheme: "light" }} className="min-h-screen w-screen flex items-center justify-center bg-[#0B1F3A] px-4 py-12"> {/* BF_PORTAL_REFERRER_SIGNUP_LIGHT_v1 */}
       <div className="w-full max-w-lg flex flex-col items-center gap-6">
         <div className="text-center">
           <img src={logoUrl} alt="Boreal" style={{ display: "block", margin: "0 auto 18px", height: 88, width: "auto" }} />
-          <h1 className="text-2xl font-semibold text-white">Boreal Financial Group</h1>
+          <h1 className="text-2xl font-semibold text-white">Boreal Financial</h1>
           <p className="mt-1 text-sm font-medium text-white/70">Referral Portal</p>
         </div>
       <div className="w-full bg-white border border-slate-200 rounded-xl p-6 shadow-md space-y-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Become a Boreal Referral Partner</h2>
-          <p className="text-sm text-slate-600">
-            Sign up and sign our referral agreement to start referring clients and earning commission.
+          <h2 className="text-lg font-semibold text-slate-900">Become a Boreal referral partner</h2>
+          <p className="text-sm leading-relaxed text-slate-600">
+            Your clients get one application across 80+ lenders, with no cost to
+            them and no credit pull. You get paid when a deal funds. Sign the
+            referral agreement below to get started - it takes a few minutes.
           </p>
         </div>
 
@@ -175,7 +177,7 @@ export default function ReferrerSignupPage() {
 
         {err && <p className="text-sm text-red-600">{err}</p>}
 
-        <button className="w-full py-3.5 px-5 text-[17px] font-bold text-slate-900 bg-amber-500 hover:bg-amber-600 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
+        <button className="w-full py-3.5 px-5 text-[17px] font-bold text-slate-900 bg-[#BF9B49] hover:bg-[#cfa953] rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
           disabled={loading || !required} onClick={submit}>
           {loading ? "Starting…" : "Sign up & review agreement"}
         </button>

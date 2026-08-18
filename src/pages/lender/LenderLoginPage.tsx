@@ -96,12 +96,16 @@ export default function LenderLoginPage() {
   }, [code, step, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div data-testid="lender-login-screen" className="min-h-screen w-screen flex items-center justify-center bg-[#020817] px-4 py-12">
+    <div data-testid="lender-login-screen" className="min-h-screen w-screen flex items-center justify-center bg-[#0B1F3A] px-4 py-12">
       <div className="w-full max-w-md flex flex-col items-center gap-6">
         <div className="text-center">
           <img src={logoUrl} alt="Boreal" style={{ display: "block", margin: "0 auto 16px", height: 56, width: "auto" }} />
-          <h1 className="text-2xl font-semibold text-white">Boreal Financial Group</h1>
+          <h1 className="text-2xl font-semibold text-white">Boreal Financial</h1>
           <p className="mt-1 text-sm font-medium text-white/70">Lender Portal</p>
+          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-white/60">
+            Review the files we send you, update your products, and manage your
+            credit box in one place.
+          </p>
         </div>
 
         <div className="w-full bg-white border border-slate-200 rounded-xl p-6 shadow-md">
@@ -118,7 +122,7 @@ export default function LenderLoginPage() {
                 placeholder="(555) 000-0000"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3.5 py-3 text-base text-slate-900 bg-white border border-slate-300 rounded-lg mb-3 box-border focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3.5 py-3 text-base text-slate-900 bg-white border border-slate-300 rounded-lg mb-3 box-border focus:outline-none focus:ring-2 focus:ring-[#BF9B49]"
               />
               {err && <p className="text-sm text-red-700 mb-2" role="alert">{err}</p>}
               <button
@@ -126,11 +130,11 @@ export default function LenderLoginPage() {
                 type="button"
                 disabled={loading || !normalizedPhone}
                 onClick={() => void sendCode()}
-                className="w-full py-3.5 px-5 text-[17px] font-bold text-slate-900 bg-amber-500 hover:bg-amber-600 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-3.5 px-5 text-[17px] font-bold text-slate-900 bg-[#BF9B49] hover:bg-[#cfa953] rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? "Sending..." : "Send code"}
               </button>
-              <p className="text-xs text-slate-500 mt-2.5 mb-0 text-center">We{"'"}ll text you a one-time code to log in.</p>
+              <p className="text-xs text-slate-500 mt-2.5 mb-0 text-center">We{"'"}ll text you a one-time code. No password to remember.</p>
             </>
           ) : (
             <>
@@ -147,7 +151,7 @@ export default function LenderLoginPage() {
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 disabled={loading}
-                className="w-full px-3.5 py-3 text-base text-slate-900 bg-white border border-slate-300 rounded-lg mb-3 box-border text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-60"
+                className="w-full px-3.5 py-3 text-base text-slate-900 bg-white border border-slate-300 rounded-lg mb-3 box-border text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-[#BF9B49] disabled:opacity-60"
               />
               <p className="text-xs text-slate-500 mt-1 mb-2 text-center">Enter the 6-digit code we texted to {phone}.</p>
               {err && <p className="text-sm text-red-700 mb-2 text-center" role="alert">{err}</p>}
