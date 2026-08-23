@@ -3,7 +3,7 @@
 // (BF-Server v65). Two ways in:
 //
 //   1. the Snippet dropdown in ComposerPulldowns
-//   2. typing a shortcut - "/thanks" then space or tab - which expands in place
+//   2. typing a shortcut - "#pnw" then space or tab - which expands in place
 //
 // The second is the one that saves time. It works in a plain textarea or
 // input, so every composer can use it without being rewritten.
@@ -57,7 +57,7 @@ export function useSnippets(channel?: string) {
   return snippets;
 }
 
-// Expands "/shortcut" into its body when the user types space, tab or enter.
+// Expands "#shortcut" into its body when the user types space, tab or enter.
 // Returns the new value and where the caret should land, or null when the
 // token before the caret is not a shortcut - in which case the keystroke is
 // left completely alone.
@@ -68,7 +68,8 @@ export function expandShortcut(
 ): { value: string; caret: number } | null {
   const before = value.slice(0, caret);
   // Only the token immediately before the caret, and only if it starts a word.
-  const m = before.match(/(^|\s)\/([a-z0-9_-]{1,40})$/i);
+  // A '#' mid-word is left alone: "ref#123" is not a snippet trigger.
+  const m = before.match(/(^|\s)#([a-z0-9_-]{1,40})$/i);
   if (!m || !m[2]) return null;
 
   const token = m[2].toLowerCase();
@@ -78,9 +79,10 @@ export function expandShortcut(
   const body = snippetBody(hit);
   if (!body) return null;
 
-  const slashAt = before.length - token.length - 1;
-  const next = value.slice(0, slashAt) + body + value.slice(caret);
-  return { value: next, caret: slashAt + body.length };
+  // The '#' sits one character before the token.
+  const hashAt = before.length - token.length - 1;
+  const next = value.slice(0, hashAt) + body + value.slice(caret);
+  return { value: next, caret: hashAt + body.length };
 }
 
 export function useShortcutExpansion(

@@ -126,7 +126,7 @@ export default function ComposerPulldowns({ onInsertText, channel }: { onInsertT
           <option value="">Snippet…</option>
           {snippets.map((snippet) => (
             <option key={snippet.id} value={snippet.id}>
-              {snippet.shortcut ? `/${snippet.shortcut} — ${snippet.name}` : snippet.name}
+              {snippet.shortcut ? `#${snippet.shortcut} — ${snippet.name}` : snippet.name}
             </option>
           ))}
         </select>
