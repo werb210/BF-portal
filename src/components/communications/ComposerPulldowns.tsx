@@ -5,6 +5,7 @@
 // onInsertText (template body, or collateral share link) and resets itself.
 import { useEffect, useState, type CSSProperties } from "react";
 import { api } from "@/api";
+import { useSnippets, snippetBody } from "@/hooks/useSnippets"; // BF_PORTAL_SNIPPETS_v44
 
 type ComposeTemplate = {
   id: string;
@@ -47,6 +48,10 @@ const selectStyle: CSSProperties = {
 
 // BF_PORTAL_BLOCK_v742_TEMPLATE_CHANNEL — scope templates to the composer channel.
 export default function ComposerPulldowns({ onInsertText, channel }: { onInsertText: (text: string) => void; channel?: string }) {
+  // BF_PORTAL_SNIPPETS_v44 - same store, shown separately. A snippet is a
+  // fragment you drop mid-sentence; a template is a whole message.
+  const snippets = useSnippets(channel);
+  const [snippetId, setSnippetId] = useState("");
   const [templates, setTemplates] = useState<ComposeTemplate[]>([]);
   const [collateral, setCollateral] = useState<CollateralOption[]>([]);
   const [templateId, setTemplateId] = useState("");
@@ -61,7 +66,7 @@ export default function ComposerPulldowns({ onInsertText, channel }: { onInsertT
       ]);
       if (!alive) return;
       if (templateResult.status === "fulfilled") {
-        setTemplates(normalizeItems<ComposeTemplate>(templateResult.value).filter((item) => item.is_active !== false && (!channel || (((item as { channel?: string }).channel) ?? "email") === channel)));
+        setTemplates(normalizeItems<ComposeTemplate>(templateResult.value).filter((item) => item.is_active !== false && (item as { is_snippet?: boolean }).is_snippet !== true && (!channel || (((item as { channel?: string }).channel) ?? "email") === channel)));
       }
       if (collateralResult.status === "fulfilled") {
         setCollateral(normalizeItems<CollateralOption>(collateralResult.value).filter((item) => item.is_active !== false));
@@ -72,7 +77,7 @@ export default function ComposerPulldowns({ onInsertText, channel }: { onInsertT
     };
   }, []);
 
-  if (templates.length === 0 && collateral.length === 0) return null;
+  if (templates.length === 0 && collateral.length === 0 && snippets.length === 0) return null;
 
   function pickTemplate(id: string) {
     setTemplateId("");
@@ -89,6 +94,14 @@ export default function ComposerPulldowns({ onInsertText, channel }: { onInsertT
     onInsertText(item.url ? item.url : item.name);
   }
 
+  function pickSnippet(id: string) {
+    setSnippetId("");
+    const hit = snippets.find((item) => item.id === id);
+    if (!hit) return;
+    const body = snippetBody(hit);
+    if (body) onInsertText(body);
+  }
+
   return (
     <div style={{ display: "flex", gap: 8, padding: "6px 16px", borderTop: "1px solid var(--ui-surface-muted)", background: "var(--ui-surface-strong)" }}>
       <select
@@ -103,6 +116,21 @@ export default function ComposerPulldowns({ onInsertText, channel }: { onInsertT
           <option key={template.id} value={template.id}>{template.name}</option>
         ))}
       </select>
+      {snippets.length > 0 ? (
+        <select
+          aria-label="Insert snippet"
+          value={snippetId}
+          onChange={(event) => pickSnippet(event.target.value)}
+          style={selectStyle}
+        >
+          <option value="">Snippet…</option>
+          {snippets.map((snippet) => (
+            <option key={snippet.id} value={snippet.id}>
+              {snippet.shortcut ? `/${snippet.shortcut} — ${snippet.name}` : snippet.name}
+            </option>
+          ))}
+        </select>
+      ) : null}
       <select
         aria-label="Insert collateral"
         value={collateralId}
