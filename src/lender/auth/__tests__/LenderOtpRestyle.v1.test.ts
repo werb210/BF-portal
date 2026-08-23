@@ -24,6 +24,9 @@ describe("lender portal restyle", () => {
   });
   it("inner shell restyled to BF-silo tokens", () => {
     expect(css).toContain("var(--ui-surface-strong");
-    expect(css).toContain("#020817"); // dark sidebar like staff
+    // BF_PORTAL_OTP_TEST_v43 - v41 moved this from #020817 to the brand deep
+    // navy. Same guarantee: the lender shell keeps a dark sidebar.
+    expect(css).toContain("#081729"); // dark sidebar like staff
+    expect(css).not.toContain("#020817");
   });
 });
