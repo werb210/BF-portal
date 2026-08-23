@@ -13,35 +13,35 @@ const SNIPPETS = [
 
 describe("shortcut expansion", () => {
   it("replaces the token in place", () => {
-    const r = expandShortcut("/thanks", 7, SNIPPETS);
+    const r = expandShortcut("#thanks", 7, SNIPPETS);
     expect(r?.value).toBe("Thanks for your patience.");
     expect(r?.caret).toBe(25);
   });
 
   it("works mid-sentence and keeps what follows the caret", () => {
-    const r = expandShortcut("Hi Todd. /thanks Speak soon.", 16, SNIPPETS);
+    const r = expandShortcut("Hi Todd. #thanks Speak soon.", 16, SNIPPETS);
     expect(r?.value).toBe("Hi Todd. Thanks for your patience. Speak soon.");
   });
 
   it("strips markup, so a snippet cannot paste HTML into an SMS", () => {
-    const r = expandShortcut("/docs", 5, SNIPPETS);
+    const r = expandShortcut("#docs", 5, SNIPPETS);
     expect(r?.value).toBe("Please send bank statements.");
   });
 
   it("ignores an unknown shortcut", () => {
-    expect(expandShortcut("/nope", 5, SNIPPETS)).toBeNull();
+    expect(expandShortcut("#nope", 5, SNIPPETS)).toBeNull();
   });
 
-  it("ignores a slash that is not the start of a word", () => {
-    expect(expandShortcut("and/thanks", 10, SNIPPETS)).toBeNull();
+  it("ignores a hash that is not the start of a word", () => {
+    expect(expandShortcut("and#thanks", 10, SNIPPETS)).toBeNull();
   });
 
-  it("ignores a slash after the caret", () => {
-    expect(expandShortcut("/thanks later", 13, SNIPPETS)).toBeNull();
+  it("ignores a hash after the caret", () => {
+    expect(expandShortcut("#thanks later", 13, SNIPPETS)).toBeNull();
   });
 
   it("is case-insensitive", () => {
-    expect(expandShortcut("/THANKS", 7, SNIPPETS)?.value).toBe("Thanks for your patience.");
+    expect(expandShortcut("#THANKS", 7, SNIPPETS)?.value).toBe("Thanks for your patience.");
   });
 });
 
@@ -62,7 +62,7 @@ describe("the dropdown", () => {
   });
 
   it("shows the shortcut so people learn it", () => {
-    expect(PULLDOWNS).toContain("`/${snippet.shortcut} — ${snippet.name}`");
+    expect(PULLDOWNS).toContain("`#${snippet.shortcut} — ${snippet.name}`");
   });
 
   it("hides itself when there are none", () => {
