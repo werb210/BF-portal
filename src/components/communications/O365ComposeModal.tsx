@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { api } from "@/api";
 import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
+import { useSnippets, snippetBody } from "@/hooks/useSnippets"; // BF_PORTAL_EMAIL_SNIPPET_v48
 
 type MailboxOption = { value: string; label: string };
 type AppOption = { id: string; label: string };
@@ -143,6 +144,10 @@ export default function O365ComposeModal({
   const [composeFrom, setComposeFrom] = useState(defaultFrom);
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
+  // BF_PORTAL_EMAIL_SNIPPET_v48 - channel "message" because snippets are
+  // written channel-agnostic (see SnippetsSettings v46); one #pnw works
+  // everywhere rather than needing an email copy.
+  const emailSnippets = useSnippets("message");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [linkAppId, setLinkAppId] = useState("");
   const [templates, setTemplates] = useState<ComposeTemplate[]>([]); // v694
@@ -348,6 +353,51 @@ export default function O365ComposeModal({
     bodyRef.current?.focus();
     document.execCommand("insertHTML", false, html);
     syncBody();
+  }
+
+  // BF_PORTAL_EMAIL_SNIPPET_v48 - a snippet body is plain text and stays that
+  // way. Inserting stored markup into a live contentEditable is how you get
+  // nested tags and styling that survives into the sent email.
+  function escapeSnippetHtml(text: string): string {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br/>");
+  }
+
+  // Expands "#pnw" when space, tab or enter is pressed. Returns true if it
+  // expanded, so the caller knows to swallow the keystroke.
+  function expandEmailSnippet(): boolean {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return false;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return false;
+
+    const caret = range.startOffset;
+    const before = (node.textContent ?? "").slice(0, caret);
+    // Same rule as the plain-text composers: the token must start a word, so
+    // "ref#123" is left alone.
+    const m = before.match(/(^|\s)#([a-z0-9_-]{1,40})$/i);
+    if (!m || !m[2]) return false;
+
+    const token = m[2].toLowerCase();
+    const hit = emailSnippets.find((sn) => String(sn.shortcut ?? "").toLowerCase() === token);
+    if (!hit) return false;
+    const body = snippetBody(hit);
+    if (!body) return false;
+
+    // Select exactly the "#token" characters and let insertHTML replace them.
+    const start = caret - token.length - 1;
+    const del = document.createRange();
+    del.setStart(node, start);
+    del.setEnd(node, caret);
+    sel.removeAllRanges();
+    sel.addRange(del);
+
+    insertHtmlAtCursor(escapeSnippetHtml(body));
+    return true;
   }
   function insertLinkPrompt() {
     const url = window.prompt("Link URL:", "https://");
@@ -732,6 +782,13 @@ export default function O365ComposeModal({
             contentEditable
             suppressContentEditableWarning
             onInput={syncBody}
+            onKeyDown={(e) => {
+              // BF_PORTAL_EMAIL_SNIPPET_v48 - space, tab or enter after a
+              // shortcut expands it. preventDefault only when it actually
+              // expanded, so ordinary typing is untouched.
+              if (e.key !== " " && e.key !== "Tab" && e.key !== "Enter") return;
+              if (expandEmailSnippet()) e.preventDefault();
+            }}
             onKeyUp={saveSelection}
             onMouseUp={saveSelection}
             onBlur={saveSelection}
