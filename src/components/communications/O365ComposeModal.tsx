@@ -76,8 +76,11 @@ function templateBodyToHtml(raw: string): string {
 // (from the prior double-wrap bug) back to a single clean button whenever a body is loaded
 // into the editor (init / reply / edit-sent / draft), so a half-broken body can't carry the
 // raw `">Book a meeting` artifact forward.
+// BF_PORTAL_BOOKING_BTN_v47 - brand navy, matching BF-Server v70 which emits
+// this same button for the {{meeting_link}} token. The two must agree or an
+// email can contain two differently coloured "Book a meeting" buttons.
 const BOOKING_BTN_STYLE =
-  "display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif";
+  "display:inline-block;margin:4px 0;padding:10px 18px;background:#0B1F3A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif";
 function sanitizeBookingHtml(html: string): string {
   if (!html || html.indexOf("Book a meeting") === -1) return html;
   return html.replace(
@@ -383,7 +386,7 @@ export default function O365ComposeModal({
     // fill it once a To address is entered.
     if (firstName) html = html.split("{{first_name}}").join(firstName);
     if (bookingUrl) {
-      const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+      const bookingButton = `<a href="${bookingUrl}" style="${BOOKING_BTN_STYLE}">Book a meeting</a>`;
       html = html.split("{{meeting_link}}").join(bookingButton);
     }
     // BF_PORTAL_TEMPLATE_REPLACE_BODY_v1 - applying a template replaces the composer body rather
@@ -396,7 +399,7 @@ export default function O365ComposeModal({
 
   function insertBookingUrl() {
     if (!bookingUrl) return;
-    const btn = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+    const btn = `<a href="${bookingUrl}" style="${BOOKING_BTN_STYLE}">Book a meeting</a>`;
     insertHtmlAtCursor(btn + "<br/>");
   }
 
@@ -553,7 +556,7 @@ export default function O365ComposeModal({
         // inside that anchor's href and mangled the tag (raw `">Book a meeting` leaked
         // as text). Replace the token always; only buttonize a BARE pasted URL when it
         // isn't already wrapped in an anchor href.
-        const bookingButton = `<a href="${bookingUrl}" style="display:inline-block;margin:4px 0;padding:10px 18px;background:#1E3A8A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-family:Segoe UI,Arial,sans-serif">Book a meeting</a>`;
+        const bookingButton = `<a href="${bookingUrl}" style="${BOOKING_BTN_STYLE}">Book a meeting</a>`;
         body_html = body_html.split("{{meeting_link}}").join(bookingButton);
         if (!body_html.includes(`href="${bookingUrl}"`)) {
           body_html = body_html.split(bookingUrl).join(bookingButton);
@@ -717,7 +720,7 @@ export default function O365ComposeModal({
             <button type="button" title="Strikethrough" onMouseDown={(e) => { e.preventDefault(); exec("strikeThrough"); }} style={tbBtn}><s>S</s></button>
             <label title="Text color" onMouseDown={saveSelection} style={{ ...tbBtn, display: "inline-flex", alignItems: "center", gap: 4, padding: "1px 6px" }}>
               <span style={{ fontWeight: 700 }}>A</span>
-              <input type="color" defaultValue="#1E3A8A" onChange={(e) => applySel("foreColor", e.target.value)} style={{ width: 18, height: 18, border: "none", background: "transparent", padding: 0, cursor: "pointer" }} />
+              <input type="color" defaultValue="#0B1F3A" onChange={(e) => applySel("foreColor", e.target.value)} style={{ width: 18, height: 18, border: "none", background: "transparent", padding: 0, cursor: "pointer" }} />
             </label>
             <button type="button" title="Bulleted list" onMouseDown={(e) => { e.preventDefault(); exec("insertUnorderedList"); }} style={tbBtn}>• List</button>
             <button type="button" title="Numbered list" onMouseDown={(e) => { e.preventDefault(); exec("insertOrderedList"); }} style={tbBtn}>1. List</button>
