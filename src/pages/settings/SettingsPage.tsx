@@ -17,6 +17,7 @@ import RuntimeSettings from "./tabs/RuntimeSettings";
 import UserManagement from "./tabs/UserManagement";
 import SettingsOverview from "./tabs/SettingsOverview";
 import TemplatesSettings from "./tabs/TemplatesSettings"; // v694
+import SnippetsSettings from "./tabs/SnippetsSettings"; // BF_PORTAL_SNIPPETS_TAB_v46
 import CollateralSettings from "./tabs/CollateralSettings"; // v694
 
 const SettingsPage = () => {
@@ -35,6 +36,9 @@ const SettingsPage = () => {
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: !isBI, content: <RuntimeSettings /> },
       { id: "templates", label: "Templates", visible: !isBI, content: <TemplatesSettings /> }, // v694
+      // BF_PORTAL_SNIPPETS_TAB_v46 - visible in BI too: #pnw is as useful on a
+      // PGI conversation as a lending one, and the server scopes by silo.
+      { id: "snippets", label: "Snippets", visible: true, content: <SnippetsSettings /> },
       { id: "collateral", label: "Collateral", visible: !isBI, content: <CollateralSettings /> }, // v694
     ],
     [isAdmin, isBI]
