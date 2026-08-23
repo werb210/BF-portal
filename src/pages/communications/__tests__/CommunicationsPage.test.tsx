@@ -72,12 +72,20 @@ describe("CommunicationsPage", () => {
 
   it("loads SMS thread messages from thread endpoint", async () => {
     Element.prototype.scrollIntoView = vi.fn();
-    apiMock.mockResolvedValueOnce({
-      conversations: [{ contact_id: "c-1", display_name: "Jordan Lee", phone: "+15551234567", last_at: new Date().toISOString() }],
+    // BF_PORTAL_SNIPPET_TRIGGER_v45 - matched by URL, not call order, so a
+    // component adding a mount fetch cannot break this.
+    apiMock.mockImplementation((url: string) => {
+      if (String(url).includes("/api/communications/sms") && !String(url).includes("thread")) {
+        return Promise.resolve({
+          conversations: [{ contact_id: "c-1", display_name: "Jordan Lee", phone: "+15551234567", last_at: new Date().toISOString() }],
+        });
+      }
+      if (String(url).includes("/api/crm/inbox/folders")) return Promise.resolve({ mine: null, shared: [] });
+      if (String(url).includes("/api/templates")) return Promise.resolve({ items: [] });
+      if (String(url).includes("/api/collateral")) return Promise.resolve([]);
+      if (String(url).includes("/api/crm/contacts")) return Promise.resolve([]);
+      return Promise.resolve({ messages: [] });
     });
-    apiMock.mockResolvedValueOnce({ messages: [] });
-    apiMock.mockResolvedValueOnce({ mine: null, shared: [] });
-    apiMock.mockResolvedValueOnce([]);
 
     render(<CommunicationsPage initialTab="sms" />);
 
@@ -93,9 +101,17 @@ describe("CommunicationsPage", () => {
 // BF_PORTAL_BLOCK_v305_SMS_EMPTY_STATE_DEFENSIVE_FILTER_v1
 describe("CommunicationsPage contact filter", () => {
   it("treats phone_e164 as a valid phone", async () => {
-    apiMock.mockResolvedValueOnce({ conversations: [] });
-    apiMock.mockResolvedValueOnce([{ id: "crm-1", name: "Alex Kim", phone: null, phone_e164: "+15555550123" }]);
-    apiMock.mockResolvedValue({ messages: [] });
+    // BF_PORTAL_SNIPPET_TRIGGER_v45 - matched by URL, not call order.
+    apiMock.mockImplementation((url: string) => {
+      if (String(url).includes("/api/communications/sms") && !String(url).includes("thread")) return Promise.resolve({ conversations: [] });
+      if (String(url).includes("/api/crm/contacts")) {
+        return Promise.resolve([{ id: "crm-1", name: "Alex Kim", phone: null, phone_e164: "+15555550123" }]);
+      }
+      if (String(url).includes("/api/crm/inbox/folders")) return Promise.resolve({ mine: null, shared: [] });
+      if (String(url).includes("/api/templates")) return Promise.resolve({ items: [] });
+      if (String(url).includes("/api/collateral")) return Promise.resolve([]);
+      return Promise.resolve({ messages: [] });
+    });
 
     render(<CommunicationsPage initialTab="sms" />);
 

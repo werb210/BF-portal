@@ -174,11 +174,17 @@ describe("SMS layout", () => {
   });
 
   it("shows selected contact header and message input at the same time", async () => {
-    (apiMock as any).mockResolvedValueOnce({
-      contacts: [{ id: "c-1", name: "Jordan Lee", phone: "+15551234567" }],
-    });
-    (apiMock as any).mockResolvedValueOnce({
-      messages: [{ id: "m-1", direction: "inbound", body: "Hello", created_at: new Date().toISOString() }],
+    // BF_PORTAL_SNIPPET_TRIGGER_v45 - matched by URL, not call order.
+    (apiMock as any).mockImplementation((url: string) => {
+      if (String(url).includes("/api/communications/sms") && !String(url).includes("thread")) {
+        return Promise.resolve({ contacts: [{ id: "c-1", name: "Jordan Lee", phone: "+15551234567" }] });
+      }
+      if (String(url).includes("/api/templates")) return Promise.resolve({ items: [] });
+      if (String(url).includes("/api/collateral")) return Promise.resolve([]);
+      if (String(url).includes("/api/crm/inbox/folders")) return Promise.resolve({ mine: null, shared: [] });
+      return Promise.resolve({
+        messages: [{ id: "m-1", direction: "inbound", body: "Hello", created_at: new Date().toISOString() }],
+      });
     });
 
     renderWithQuery(<CommunicationsPage initialTab="sms" />);

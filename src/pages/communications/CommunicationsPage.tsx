@@ -33,6 +33,7 @@ import CommunicationsThread from "@/pages/communications/components/Communicatio
 import { startOutboundPstn } from "@/dialer/actions";
 // BF_PORTAL_BLOCK_v312_COMPOSER_PULLDOWNS_v1
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
+import { useSnippets, useShortcutExpansion } from "@/hooks/useSnippets"; // BF_PORTAL_SNIPPET_TRIGGER_v45
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
 
@@ -135,6 +136,9 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     media_url?: string | null; // BF_PORTAL_SMS_MEDIA_v1
   }>>([]);
   const [draft, setDraft] = useState("");
+  // BF_PORTAL_SNIPPET_TRIGGER_v45 - snippets scoped to the sms channel.
+  const expandSmsSnippets = useSnippets("sms");
+  const expandSms = useShortcutExpansion(expandSmsSnippets, (next) => setDraft(next));
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
   // BF_PORTAL_BLOCK_v801_MULTISEND — pick multiple contacts, send the same SMS to each 1:1 via /broadcast.
@@ -816,6 +820,11 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => {
+                    // BF_PORTAL_SNIPPET_TRIGGER_v45 - "#pnw" then space, tab or
+                    // enter expands. Runs before the send handler, so an
+                    // expanding Enter inserts text rather than sending.
+                    expandSms(e);
+                    if (e.defaultPrevented) return;
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       void send();
@@ -918,6 +927,9 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1 — stick the Messages thread to bottom.
   const threadEndRef = useRef<HTMLDivElement | null>(null);
   const [draft, setDraft] = useState("");
+  // BF_PORTAL_SNIPPET_TRIGGER_v45 - snippets scoped to the message channel.
+  const expandMsgSnippets = useSnippets("message");
+  const expandMsg = useShortcutExpansion(expandMsgSnippets, (next) => setDraft(next));
   const [sending, setSending] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // BF_PORTAL_BLOCK_v802_MULTISEND_MESSAGES — pick multiple contacts and send the same in-app message to each 1:1 via /broadcast.
@@ -1329,6 +1341,9 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={(e) => {
+                      // BF_PORTAL_SNIPPET_TRIGGER_v45
+                      expandMsg(e);
+                      if (e.defaultPrevented) return;
                       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                         e.preventDefault();
                         void send();
@@ -2752,6 +2767,9 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<TeamMessage[]>([]);
   const [draft, setDraft] = useState("");
+  // BF_PORTAL_SNIPPET_TRIGGER_v45 - snippets scoped to the team channel.
+  const expandTeamSnippets = useSnippets("team");
+  const expandTeam = useShortcutExpansion(expandTeamSnippets, (next) => setDraft(next));
   const [atts, setAtts] = useState<TeamAttachment[]>([]); // BF_PORTAL_TEAM_ATTACH_v1
   const [replyTo, setReplyTo] = useState<TeamMessage | null>(null); // BF_PORTAL_TEAM_LIFECYCLE_v1
   const [editing, setEditing] = useState<TeamMessage | null>(null);
@@ -3263,7 +3281,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={(e) => { void onPickFiles(e.target.files); e.target.value = ""; }} />
                 <button onClick={() => fileRef.current?.click()} title="Attach file" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{"\u{1F4CE}"}</button>
                 <button onClick={() => void toggleRecord()} title={recording ? "Stop recording" : "Record voice note"} style={{ padding: "10px 12px", background: recording ? "#ff3b30" : "var(--ui-surface-muted)", color: recording ? "#fff" : "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{recording ? "\u{23F9}\uFE0F" : "\u{1F3A4}"}</button>
-                <input value={draft} onChange={(e) => onDraftChange(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
+                <input value={draft} onChange={(e) => onDraftChange(e.target.value)} onKeyDown={(e) => { /* BF_PORTAL_SNIPPET_TRIGGER_v45 */ expandTeam(e); if (e.defaultPrevented) return; if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
                 <button onClick={() => void send()} disabled={editing ? !draft.trim() : (!draft.trim() && atts.length === 0)} style={{ padding: "10px 18px", background: "var(--ui-accent-blue)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>{editing ? "Save" : "Send"}</button>
               </div>
             </div>
