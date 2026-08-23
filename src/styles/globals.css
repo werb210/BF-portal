@@ -1,21 +1,25 @@
 :root {
+  /* BF_PORTAL_TOKENS_v40 - navy #0B1F3A, mist #F5F8FC, hairline #E4EAF2,
+     body #51617D. Semantic and silo colours are deliberately preserved. */
   --bg-primary: #ffffff;
-  --panel-bg: #f8f9fb;
-  --text-primary: #0b1220;
+  --panel-bg: #F5F8FC;
+  --text-primary: #0B1F3A;
   color-scheme: light dark;
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* BF_PORTAL_TOKENS_v40 - Public Sans, matching boreal.financial, bf-client,
+     boreal.insure and BI-Client. The portal was the last property on Inter. */
+  font-family: "Public Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text-primary);
   --ui-bg: var(--bg-primary);
   --ui-surface: var(--panel-bg);
   --ui-surface-strong: #ffffff;
   /* RESKIN2::ROOT — distinct input surface so fields separate from cards */
-  --ui-surface-input: #f4f6fa;
-  --ui-surface-muted: #eef1f5;
-  --ui-border: #cbd6e2;
-  --ui-border-soft: #eaf0f6;
+  --ui-surface-input: #F5F8FC;
+  --ui-surface-muted: #F5F8FC;
+  --ui-border: #E4EAF2;
+  --ui-border-soft: #E4EAF2;
   --ui-text: var(--text-primary);
-  --ui-text-muted: #475569;
-  --ui-text-soft: #1f2937;
+  --ui-text-muted: #51617D;
+  --ui-text-soft: #0B1F3A;
   /* BF_PORTAL_BLOCK_v_RESKIN_1_ACCENT_FOUNDATION_v1 — --ui-accent-blue was literally
      green (#2FA86A) despite its name; restored to brand blue. --accent is the
      silo-driven accent (see [data-silo] blocks at file end). --accent-neutral is the
@@ -24,9 +28,9 @@
   --ui-accent-blue: var(--accent); /* RESKIN3::ACCENT_VAR — silo-driven via --accent */
   /* BF_PORTAL_v_CONTRAST_PASS2 — readable foreground accent for accent-colored TEXT on dark (brand accent is too dark as text). Buttons keep --ui-accent-blue as BACKGROUND. */
   --ui-accent-fg: color-mix(in srgb, var(--accent) 50%, white);
-  --accent: #1E3A8A;
+  --accent: #0B1F3A;
   --accent-contrast: #ffffff;
-  --accent-neutral: #64748B;
+  --accent-neutral: #51617D;
   --ui-accent-gold: #f59e0b;
   --ui-accent-red: #ef4444;
   --ui-shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
@@ -73,15 +77,15 @@
 }
 :root[data-theme="light"] {
   --bg-primary: #ffffff;
-  --panel-bg: #f8f9fb;
-  --text-primary: #0b1220;
+  --panel-bg: #F5F8FC;
+  --text-primary: #0B1F3A;
   --ui-surface-strong: #ffffff;
-  --ui-surface-input: #f4f6fa; /* RESKIN2::LIGHTTHEME */
-  --ui-surface-muted: #eef1f5;
-  --ui-border: #cbd6e2;
-  --ui-border-soft: #eaf0f6;
-  --ui-text-muted: #475569;
-  --ui-text-soft: #1f2937;
+  --ui-surface-input: #F5F8FC; /* RESKIN2::LIGHTTHEME */
+  --ui-surface-muted: #F5F8FC;
+  --ui-border: #E4EAF2;
+  --ui-border-soft: #E4EAF2;
+  --ui-text-muted: #51617D;
+  --ui-text-soft: #0B1F3A;
   --ui-shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
   --ui-shadow-strong: 0 18px 40px rgba(15, 23, 42, 0.16);
 }
@@ -368,7 +372,7 @@ a,
   padding: 24px;
   border-radius: 16px 0 0 16px;
   box-shadow: -14px 0 40px rgba(2, 6, 23, 0.6);
-  background: radial-gradient(circle at top, #1a2233, #0b1220);
+  background: radial-gradient(circle at top, #0d233f, #081729);
   color: #e6e8ee;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -2846,7 +2850,9 @@ input[type="checkbox"]:disabled {
 /* BF_PORTAL_BLOCK_v_RESKIN_1_ACCENT_FOUNDATION_v1 RESKIN_1_SILO_OVERRIDES — accent IS
    the silo signal: BF blue, BI green. Keyed on data-silo on <html> (set from
    SiloContext). Accent is theme-independent; surfaces stay theme-driven. */
-:root[data-silo="BF"]  { --accent: #1E3A8A; --accent-contrast: #ffffff; }
+/* BF_PORTAL_TOKENS_v40 - BF moves onto the brand navy. BI green and SLF amber
+   are untouched: the accent IS the silo signal and those two carry meaning. */
+:root[data-silo="BF"]  { --accent: #0B1F3A; --accent-contrast: #ffffff; }
 :root[data-silo="BI"]  { --accent: #2FA86A; --accent-contrast: #ffffff; }
 :root[data-silo="SLF"] { --accent: #d97706; --accent-contrast: #ffffff; }
 
