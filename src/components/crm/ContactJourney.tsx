@@ -38,7 +38,78 @@ type JourneySummary = {
   submitted: boolean;
 };
 
-type JourneyPayload = { sessions: JourneySession[]; events: JourneyEvent[]; summary?: JourneySummary };
+// BF_PORTAL_CONTACT_STEP_v50 - the wizard step is recorded on the application itself,
+// not only in the beacon stream, so it exists for EVERY applicant including the ones
+// who landed directly on client.boreal.financial and were never journey-stitched.
+type JourneyApplication = {
+  id: string;
+  currentStep: number | null;
+  submitted: boolean;
+  submittedAt: string | null;
+  createdAt: string;
+  lastActivityAt: string;
+  pipelineState: string | null;
+};
+
+type JourneyPayload = {
+  sessions: JourneySession[];
+  events: JourneyEvent[];
+  summary?: JourneySummary;
+  applications?: JourneyApplication[];
+};
+
+const WIZARD_STEPS = [
+  "Financial profile",
+  "Product",
+  "Business",
+  "Applicant",
+  "Documents",
+  "Review & submit",
+];
+
+// A compact progress read-out: how far this person got, and how long ago they stopped.
+// This is the question staff actually ask when they open an abandoned applicant, and
+// until now the card could not answer it.
+function ApplicationProgress({ apps }: { apps: JourneyApplication[] }) {
+  if (!apps.length) return null;
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ ...subtle, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
+        Application progress
+      </div>
+      {apps.map((a) => {
+        const step = a.submitted ? WIZARD_STEPS.length : Math.min(Math.max(a.currentStep ?? 1, 1), WIZARD_STEPS.length);
+        const label = WIZARD_STEPS[step - 1] ?? "-";
+        return (
+          <div key={a.id} style={{ marginBottom: 12 }}>
+            <div style={{ color: "var(--ui-text)", fontSize: "0.9rem", marginBottom: 4 }}>
+              {a.submitted
+                ? `Submitted ${a.submittedAt ? new Date(a.submittedAt).toLocaleDateString() : ""}`
+                : `Stopped at Step ${step} of ${WIZARD_STEPS.length} \u00b7 ${label}`}
+            </div>
+            <div style={{ display: "flex", gap: 3, marginBottom: 4 }}>
+              {WIZARD_STEPS.map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    height: 5,
+                    flex: 1,
+                    borderRadius: 3,
+                    background: i < step ? "var(--ui-accent, #0B1F3A)" : "var(--ui-border-soft)",
+                  }}
+                />
+              ))}
+            </div>
+            <div style={subtle}>
+              Started {new Date(a.createdAt).toLocaleDateString()}
+              {a.submitted ? null : ` \u00b7 last active ${new Date(a.lastActivityAt).toLocaleString()}`}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function duration(ms: number | null | undefined): string {
   const n = Number(ms) || 0;
@@ -88,14 +159,17 @@ export default function ContactJourney({ contactId }: { contactId: string }) {
   if (loading) return null;
   // BF_PORTAL_VISITOR_JOURNEY_EMPTY_v1 - say so explicitly rather than rendering nothing, so
   // "no journey recorded" is distinguishable from "the panel is broken".
-  if (!data || data.sessions.length === 0) {
+  if (!data || data.sessions.length === 0) { // BF_PORTAL_CONTACT_STEP_v50
     return (
       <section style={box}>
         <h3 style={{ marginTop: 0, marginBottom: 8 }}>Visitor journey</h3>
+        {/* BF_PORTAL_CONTACT_STEP_v50 - an empty beacon stream does NOT mean an unknown
+            applicant. The application row still knows how far they got, so show that
+            first and treat the missing browsing history as the lesser gap it is. */}
+        <ApplicationProgress apps={data?.applications ?? []} />
         <p style={subtle}>
-          No browsing history recorded for this contact. Journey tracking captures the ad, pages,
-          and wizard path for people who visit the site from now on &mdash; contacts created before
-          tracking was enabled will not have one.
+          No browsing history recorded for this contact &mdash; page-by-page tracking only exists
+          for visitors who arrived via boreal.financial.
         </p>
       </section>
     );
@@ -115,6 +189,8 @@ export default function ContactJourney({ contactId }: { contactId: string }) {
   return (
     <section style={box}>
       <h3 style={{ marginTop: 0, marginBottom: 12 }}>Visitor journey</h3>
+
+      <ApplicationProgress apps={data.applications ?? []} />{/* BF_PORTAL_CONTACT_STEP_v50 */}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16 }}>
         <Stat label="Source" value={adSource} />
