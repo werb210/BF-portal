@@ -5,6 +5,7 @@ import { api } from "@/api";
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; // BF_PORTAL_BRANDED_EMAIL_COMPOSER_MOUNT_v1
 import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORTAL_LINK_CLICKS_PANEL_v9
 import SequenceCanvas, { type BFSequenceStep } from "@/components/marketing/SequenceCanvas";
+import AbandonedPanel from "@/components/marketing/AbandonedPanel"; // BF_PORTAL_ABANDONED_PANEL_v49
 import BFReferrerManagement from "./BFReferrerManagement"; // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
@@ -1524,6 +1525,7 @@ const MarketingDashboard = () => {
       {tab === "analytics" && (
         <div className="space-y-4">
           <AnalyticsFunnel />
+          <AbandonedPanel />{/* BF_PORTAL_ABANDONED_PANEL_v49 */}
           <SequencePerfPanel />
           <SourcesPanel />
           <Ga4Panel />
