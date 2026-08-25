@@ -54,6 +54,6 @@ describe("a snippet cannot inject markup", () => {
 
 describe("it shares one snippet set with the other composers", () => {
   it("loads the channel-agnostic snippets", () => {
-    expect(SRC).toContain('useSnippets("message")');
+    expect(SRC).toContain("useSnippets()");
   });
 });

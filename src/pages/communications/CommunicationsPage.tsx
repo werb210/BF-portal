@@ -137,7 +137,17 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
   }>>([]);
   const [draft, setDraft] = useState("");
   // BF_PORTAL_SNIPPET_TRIGGER_v45 - snippets scoped to the sms channel.
-  const expandSmsSnippets = useSnippets("sms");
+  // BF\_PORTAL\_SNIPPETS\_ALL\_CHANNELS\_v55
+  // This asked for channel="sms". Snippets are written channel-agnostic and get
+  // saved as "message" (see SnippetsSettings v46 and the note in
+  // O365ComposeModal v48), so this query returned an empty list and every "#pnw"
+  // typed into an SMS stayed on screen as literal text. The wiring was always
+  // correct - it was asking the wrong question.
+  //
+  // Passing no channel returns all of them, which matches how they are authored:
+  // one shortcut works in email, SMS, Messages and team chat rather than needing
+  // four copies of the same snippet.
+  const expandSmsSnippets = useSnippets();
   const expandSms = useShortcutExpansion(expandSmsSnippets, (next) => setDraft(next));
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
@@ -928,7 +938,10 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   const threadEndRef = useRef<HTMLDivElement | null>(null);
   const [draft, setDraft] = useState("");
   // BF_PORTAL_SNIPPET_TRIGGER_v45 - snippets scoped to the message channel.
-  const expandMsgSnippets = useSnippets("message");
+  // BF\_PORTAL\_SNIPPETS\_ALL\_CHANNELS\_v55 - this one worked, because "message" is
+  // what snippets are actually saved as. Widened anyway so all four composers
+  // resolve the same list and none of them can drift again.
+  const expandMsgSnippets = useSnippets();
   const expandMsg = useShortcutExpansion(expandMsgSnippets, (next) => setDraft(next));
   const [sending, setSending] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -2768,7 +2781,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const [messages, setMessages] = useState<TeamMessage[]>([]);
   const [draft, setDraft] = useState("");
   // BF_PORTAL_SNIPPET_TRIGGER_v45 - snippets scoped to the team channel.
-  const expandTeamSnippets = useSnippets("team");
+  // BF\_PORTAL\_SNIPPETS\_ALL\_CHANNELS\_v55 - same fault as the SMS box above.
+  const expandTeamSnippets = useSnippets();
   const expandTeam = useShortcutExpansion(expandTeamSnippets, (next) => setDraft(next));
   const [atts, setAtts] = useState<TeamAttachment[]>([]); // BF_PORTAL_TEAM_ATTACH_v1
   const [replyTo, setReplyTo] = useState<TeamMessage | null>(null); // BF_PORTAL_TEAM_LIFECYCLE_v1
