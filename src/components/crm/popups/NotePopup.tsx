@@ -33,7 +33,7 @@ export function NotePopup({ scope, onClose, onCreated }: {
         onClick: save,
       }}
     >
-      <textarea
+      <textarea spellCheck lang="en-CA" /* BF_PORTAL_SPELLCHECK_v54 */
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Start typing to leave a note…"

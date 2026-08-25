@@ -39,7 +39,7 @@ export function SmsPopup({ contactId, defaultPhone, onClose, onSent }: {
         placeholder="+15551234567"
         style={{ ...popupInputStyle, marginBottom: 8 }}
       />
-      <textarea
+      <textarea spellCheck lang="en-CA" /* BF_PORTAL_SPELLCHECK_v54 */
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={6}

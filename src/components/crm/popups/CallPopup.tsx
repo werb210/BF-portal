@@ -51,7 +51,7 @@ export function CallPopup({ scope, defaultPhone, onClose, onLogged }: {
         placeholder="Duration (seconds)"
         style={{ ...popupInputStyle, marginBottom: 8 }}
       />
-      <textarea
+      <textarea spellCheck lang="en-CA" /* BF_PORTAL_SPELLCHECK_v54 */
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         rows={6}

@@ -103,14 +103,14 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
       {meetingType === "inperson" && (
         <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location / address" style={{ ...popupInputStyle, marginBottom: 8 }} />
       )}
-      <textarea
+      <textarea spellCheck lang="en-CA" /* BF_PORTAL_SPELLCHECK_v54 */
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         rows={4}
         placeholder="Description for attendees…"
         style={{ ...popupInputStyle, marginBottom: 8 }}
       />
-      <textarea
+      <textarea spellCheck lang="en-CA" /* BF_PORTAL_SPELLCHECK_v54 */
         value={internalNote}
         onChange={(e) => setInternalNote(e.target.value)}
         rows={3}
