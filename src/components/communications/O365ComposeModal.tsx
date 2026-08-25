@@ -9,6 +9,7 @@ import type { CSSProperties } from "react";
 import { api } from "@/api";
 import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
 import { useSnippets, snippetBody } from "@/hooks/useSnippets"; // BF_PORTAL_EMAIL_SNIPPET_v48
+import { RecipientAutocomplete } from "./RecipientAutocomplete"; // BF_PORTAL_RECIPIENT_AUTOSUGGEST_v53
 
 type MailboxOption = { value: string; label: string };
 type AppOption = { id: string; label: string };
@@ -729,7 +730,13 @@ export default function O365ComposeModal({
           {fromOptions.length === 0 && selfMailboxes.length === 0 && <option value="">No mailbox available</option>}
         </select>
 
-        <input type="text" placeholder="To (comma-separated)" value={composeTo} onChange={(e) => setComposeTo(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14 }} />
+        {/* BF_PORTAL_RECIPIENT_AUTOSUGGEST_v53 - was a bare text input. Both
+            lookups already existed server-side and neither was wired up. */}
+        <RecipientAutocomplete
+          value={composeTo}
+          onChange={setComposeTo}
+          style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14, width: "100%", boxSizing: "border-box" }}
+        />
 
         {showCcBcc ? (
           <>
