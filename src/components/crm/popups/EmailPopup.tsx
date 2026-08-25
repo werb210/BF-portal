@@ -87,7 +87,7 @@ export function EmailPopup({ scope, defaultTo, onClose, onSent }: {
       <Field label="Cc"><input value={cc} onChange={(e) => setCc(e.target.value)} style={popupInputStyle} /></Field>
       <Field label="Bcc"><input value={bcc} onChange={(e) => setBcc(e.target.value)} style={popupInputStyle} /></Field>
       <Field label="Subject"><input value={subject} onChange={(e) => setSubject(e.target.value)} style={popupInputStyle} /></Field>
-      <textarea
+      <textarea spellCheck lang="en-CA" /* BF_PORTAL_SPELLCHECK_v54 */
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={10}

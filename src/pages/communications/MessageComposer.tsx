@@ -29,7 +29,7 @@ const MessageComposer = ({ conversation, onSend }: MessageComposerProps) => {
       </div>
       <label className="ui-field">
         <span className="ui-field__label">Message</span>
-        <textarea
+        <textarea spellCheck lang="en-CA" /* BF_PORTAL_SPELLCHECK_v54 */
           className="ui-input min-h-[80px]"
           placeholder="Type your reply"
           value={body}

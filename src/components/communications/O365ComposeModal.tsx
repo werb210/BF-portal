@@ -788,6 +788,8 @@ export default function O365ComposeModal({
             ref={bodyRef}
             contentEditable
             suppressContentEditableWarning
+            spellCheck /* BF_PORTAL_SPELLCHECK_v54 */
+            lang="en-CA"
             onInput={syncBody}
             onKeyDown={(e) => {
               // BF_PORTAL_EMAIL_SNIPPET_v48 - space, tab or enter after a
