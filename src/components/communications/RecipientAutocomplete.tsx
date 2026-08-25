@@ -11,6 +11,14 @@
 // Multiple recipients stay comma-separated - the send path splits on commas, so
 // changing to a chip control would mean touching the send contract too.
 import { useEffect, useMemo, useRef, useState } from "react";
+// BF_PORTAL_AUTOSUGGEST_API_FIX_v56
+// v53 used raw fetch("/api/..."), which resolves against the page origin -
+// staff.boreal.financial - where no API exists. The portal is a static web app;
+// the API is on server.boreal.financial. Worse, a raw fetch carries no auth
+// token, so even the right URL would have returned 401. Both lookups failed
+// silently behind their .catch and the box simply never suggested anything.
+// api() resolves the base URL per silo and attaches the bearer token.
+import { api } from "@/api";
 
 type Person = { id: string; name: string; email: string; kind: "staff" | "contact" };
 
@@ -45,8 +53,7 @@ export function RecipientAutocomplete({
   const tail = splitTail(value).tail.trim();
 
   useEffect(() => {
-    fetch("/api/tasks/staff", { credentials: "include" })
-      .then((r) => r.json())
+    api<any>("/api/tasks/staff")
       .then((body) => {
         const list = body?.data ?? body?.items ?? body ?? [];
         setStaff(
@@ -55,15 +62,20 @@ export function RecipientAutocomplete({
             .map((u: any) => ({ id: String(u.id), name: u.name || u.email, email: u.email, kind: "staff" as const })),
         );
       })
-      .catch(() => setStaff([]));
+      .catch((e) => {
+        // BF_PORTAL_AUTOSUGGEST_API_FIX_v56 - a silent catch is what made the
+        // original bug invisible: the field looked fine and simply never
+        // suggested. Log it so the next failure is findable.
+        console.warn("[recipient-autocomplete] staff load failed", e);
+        setStaff([]);
+      });
   }, []);
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
     if (tail.length < 2) { setContacts([]); return; }
     timer.current = setTimeout(() => {
-      fetch(`/api/crm/contacts?search=${encodeURIComponent(tail)}&limit=8`, { credentials: "include" })
-        .then((r) => r.json())
+      api<any>(`/api/crm/contacts?search=${encodeURIComponent(tail)}&limit=8`)
         .then((body) => {
           const list = body?.data?.items ?? body?.items ?? body?.data ?? [];
           setContacts(
@@ -72,7 +84,10 @@ export function RecipientAutocomplete({
               .map((c: any) => ({ id: String(c.id), name: c.name || c.email, email: c.email, kind: "contact" as const })),
           );
         })
-        .catch(() => setContacts([]));
+        .catch((e) => {
+          console.warn("[recipient-autocomplete] contact search failed", e);
+          setContacts([]);
+        });
     }, 200);
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [tail]);
