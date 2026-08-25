@@ -13,6 +13,7 @@ type Item = {
   contactId: string | null;
   name: string | null;
   phone: string | null;
+  country: "CA" | "US" | null; // BF_PORTAL_ABANDONED_COUNTRY_v51
   email: string | null;
   amount: string | number | null;
   product: string | null;
@@ -93,6 +94,9 @@ export default function AbandonedPanel() {
               <th style={{ padding: "6px 8px" }}>Reached</th>
               <th style={{ padding: "6px 8px" }}>Contact</th>
               <th style={{ padding: "6px 8px" }}>Phone</th>
+              {/* BF_PORTAL_ABANDONED_COUNTRY_v51 - the country changes what you can
+                  offer, so it belongs next to the number you would dial. */}
+              <th style={{ padding: "6px 8px" }}>Country</th>
               <th style={{ padding: "6px 8px" }}>Amount</th>
               <th style={{ padding: "6px 8px" }}>Source</th>
               <th style={{ padding: "6px 8px" }}>Last seen</th>
@@ -113,6 +117,8 @@ export default function AbandonedPanel() {
                   )}
                 </td>
                 <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>{i.phone || "-"}</td>
+                {/* BF_PORTAL_ABANDONED_COUNTRY_v51 */}
+                <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>{i.country || "-"}</td>
                 <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>{i.amount || "-"}</td>
                 <td style={{ padding: "6px 8px" }}>{i.source || "direct"}</td>
                 <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>{ago(i.lastActivityAt)}</td>
