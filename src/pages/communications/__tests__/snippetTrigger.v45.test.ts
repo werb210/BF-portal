@@ -11,13 +11,9 @@ describe("the trigger is attached", () => {
     expect(SRC).toContain("useShortcutExpansion");
   });
 
-  for (const [name, channel] of [
-    ["expandSms", "sms"],
-    ["expandMsg", "message"],
-    ["expandTeam", "team"],
-  ] as const) {
-    it(`${name} is wired and scoped to ${channel}`, () => {
-      expect(SRC).toContain(`const ${name}Snippets = useSnippets("${channel}")`);
+  for (const name of ["expandSms", "expandMsg", "expandTeam"] as const) {
+    it(`${name} is wired to the channel-agnostic snippet list`, () => {
+      expect(SRC).toContain(`const ${name}Snippets = useSnippets()`);
       expect(SRC).toContain(`const ${name} = useShortcutExpansion(`);
       expect(SRC).toContain(`${name}(e);`);
     });

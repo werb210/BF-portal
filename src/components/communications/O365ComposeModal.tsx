@@ -148,7 +148,8 @@ export default function O365ComposeModal({
   // BF_PORTAL_EMAIL_SNIPPET_v48 - channel "message" because snippets are
   // written channel-agnostic (see SnippetsSettings v46); one #pnw works
   // everywhere rather than needing an email copy.
-  const emailSnippets = useSnippets("message");
+  // BF\_PORTAL\_SNIPPETS\_ALL\_CHANNELS\_v55 - widened for parity with the other three.
+  const emailSnippets = useSnippets();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [linkAppId, setLinkAppId] = useState("");
   const [templates, setTemplates] = useState<ComposeTemplate[]>([]); // v694
