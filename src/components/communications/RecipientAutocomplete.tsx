@@ -22,6 +22,24 @@ import { api } from "@/api";
 
 type Person = { id: string; name: string; email: string; kind: "staff" | "contact" };
 
+// BF_PORTAL_AUTOSUGGEST_SHAPE_FIX_v57
+// This codebase has several response envelopes in circulation: a bare array,
+// { items }, { data }, { data: { items } }, and respondOk's { <name>: rows }.
+// Rather than guess per endpoint, look through all of them and take the first
+// actual array.
+function pickList(body: any, namedKey: string): any[] {
+  const candidates = [
+    body,
+    body?.[namedKey],
+    body?.data,
+    body?.items,
+    body?.data?.[namedKey],
+    body?.data?.items,
+  ];
+  for (const c of candidates) if (Array.isArray(c)) return c;
+  return [];
+}
+
 // Everything before the last comma is committed; only the fragment after it is
 // being typed. Without this, "andrew.p@boreal.financial, bi" would search on the
 // whole string and never match.
@@ -55,7 +73,14 @@ export function RecipientAutocomplete({
   useEffect(() => {
     api<any>("/api/tasks/staff")
       .then((body) => {
-        const list = body?.data ?? body?.items ?? body ?? [];
+        // BF_PORTAL_AUTOSUGGEST_SHAPE_FIX_v57
+        // The route answers respondOk(res, { staff: rows }) - the array is under
+        // "staff", which was not in the list of keys this checked. It landed on
+        // the wrapper object, Array.isArray failed, and the suggestions stayed
+        // empty with no error to show for it. Both known envelopes are handled
+        // now, and pickList throws away anything that is not an array so a
+        // future shape change degrades to "no suggestions" rather than a crash.
+        const list = pickList(body, "staff");
         setStaff(
           (Array.isArray(list) ? list : [])
             .filter((u: any) => u?.email)
@@ -77,7 +102,9 @@ export function RecipientAutocomplete({
     timer.current = setTimeout(() => {
       api<any>(`/api/crm/contacts?search=${encodeURIComponent(tail)}&limit=8`)
         .then((body) => {
-          const list = body?.data?.items ?? body?.items ?? body?.data ?? [];
+          // BF_PORTAL_AUTOSUGGEST_SHAPE_FIX_v57 - /api/crm/contacts returns a
+          // bare array on some paths and an envelope on others.
+          const list = pickList(body, "contacts");
           setContacts(
             (Array.isArray(list) ? list : [])
               .filter((c: any) => c?.email)
