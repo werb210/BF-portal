@@ -15,7 +15,6 @@ import {
 import { getErrorMessage } from "@/utils/errors";
 import { api } from "@/api";
 import ModalFooterWithDelete from "@/components/ModalFooterWithDelete";
-import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { phoneInputHandler, formatDollar, formatRate, unformatDollar } from "@/utils/format";
 import { CATEGORY_ORDER, CATEGORY_LABELS, CREDIT_SCORE_BANDS, bfBandFromMin, bfMinFromBand, ProductCoreFields } from "./productFormShared"; // PRODUCT_CORE_FIELDS_SHARED_v1
 
@@ -415,7 +414,12 @@ function CreateProductModal({
   onCreated: () => void;
   product?: LenderProduct | null;
 }) {
-  useDocumentTypes();
+  // BF_PORTAL_SBA_DOC_PACK_v202 - useDocumentTypes() was called here and its
+  // result discarded, so this modal has only ever rendered the hardcoded
+  // lists below. Removed rather than wired: the server-side catalogue is a
+  // superset spanning every silo, and dumping it into this form would show
+  // staff doc types that do not belong to a lender product. The one gap it
+  // was hiding - the SBA Stage 2 set - is added explicitly as sbaTypes.
   const queryClient = useQueryClient();
   const alwaysRequiredDoc = { key: "business_banking_statements_6_months", label: "6 months business banking statements" };
   const equipmentFinanceAlwaysRequiredDoc = {
@@ -463,6 +467,30 @@ function CreateProductModal({
     "Production schedule",
     "Minimum guarantees / presales",
   ].map((label) => ({ key: label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label }));
+
+  // BF_PORTAL_SBA_DOC_PACK_v202
+  // Keys are written out in full rather than derived from the label. Every other
+  // list here derives its key by slugifying the label, which is exactly how
+  // "Business plan / projections" became business_plan_projections while the SBA
+  // migrations wrote business_plan - the same document under two keys, counted
+  // twice and satisfied never. These strings must stay byte-identical to the
+  // document_type values in the v88 / v99 / v101 migrations and to the client's
+  // FORM_RENDERERS keys.
+  //
+  // All Stage 2 on purpose: SBA's own burden estimate is 90 minutes for Form 413
+  // and 31 for Form 1919. In front of a first-time applicant at Stage 1 that is
+  // an exit, not a form.
+  const sbaTypes = [
+    { key: "sba_form_413", label: "SBA Form 413 - Personal Financial Statement (per 20%+ owner)", hasForm: true },
+    { key: "sba_form_1919", label: "SBA Form 1919 - Borrower Information", hasForm: true },
+    { key: "owner_photo_id", label: "Government photo ID - each 20%+ owner" },
+    { key: "formation_documents", label: "Articles of incorporation, operating agreement or DBA" },
+    { key: "personal_tax_returns", label: "Personal tax returns - 3 years, each 20%+ owner" },
+    { key: "business_plan", label: "Business plan with financial projections" },
+    { key: "sba_1919_attachments", label: "Supporting detail for any Yes answer on Form 1919" },
+    { key: "debt_schedule", label: "Debt schedule - existing business debt" },
+    { key: "lease_or_loi", label: "Lease or letter of intent for premises" },
+  ].map((d) => ({ ...d, defaultStage: 2 as 1 | 2, hasForm: (d as any).hasForm ?? false }));
 
   // BF_LP_FORM_INIT_v32 — null-check, NOT truthy-check. Without this, a stored
   // value of 0 (or any falsy literal) was rendering as blank.
@@ -820,6 +848,30 @@ function CreateProductModal({
                 </div>
               </div>
             )}
+            {/* BF_PORTAL_SBA_DOC_PACK_v202 - attached automatically by the
+                sba_attach_stage2_requirements trigger the moment a product is
+                saved as SBA. Shown so staff can see what the applicant will be
+                asked for; ticking is not required and not what attaches them. */}
+            {form.category === "SBA_GOVERNMENT" && (
+              <div style={{ ...sectionStyle, marginBottom: 10 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ui-text)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" }}>SBA Stage 2 Pack</p>
+                <p style={{ fontSize: 11, color: "var(--ui-text-muted)", margin: "0 0 8px" }}>
+                  Attached automatically on save. Listed here for reference.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
+                  {sbaTypes.map((d) => (
+                    <DocCheckbox
+                      key={d.key}
+                      id={d.key}
+                      label={d.label}
+                      showStageToggle
+                      hasForm={(d as any).hasForm}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* BF_PORTAL_BLOCK_v98_v3 — short canonical code "MEDIA" */}
             {form.category === "MEDIA" && (
               <div style={sectionStyle}>
