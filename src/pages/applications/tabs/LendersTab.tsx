@@ -156,12 +156,19 @@ export default function LendersTab({ applicationId }: Props) {
     if (!id) return;
     const prompt = stage === "Fraud"
       ? "Mark this application as FRAUD?\n\nIt will be removed from commission and every report, in every period, and can no longer be sent to a lender. The file, its documents and its history are kept.\n\nReason (required):"
-      : "Put this application on HOLD?\n\nIt drops out of live pipeline and commission figures until reactivated. Nothing is deleted and the client will not have to re-apply.\n\nReason (optional):";
+      : "Put this application on HOLD?\n\nIt drops out of live pipeline and commission figures until reactivated. Nothing is deleted and the client will not have to re-apply.\n\nThe client is emailed this reason from submissions@, so write it for them to read.\n\nReason (required):";
     const entered = window.prompt(prompt, "");
     if (entered === null) return;
     const reason = entered.trim();
     if (stage === "Fraud" && reason.length < 3) {
       window.alert("A reason is required to mark an application as fraud.");
+      return;
+    }
+    // BF_PORTAL_HOLD_REASON_REQUIRED_v203 - the client is emailed this reason
+    // (BF_SERVER_HOLD_CLIENT_EMAIL_v108), so the server now rejects a blank one.
+    // Caught here so staff see it in the dialog rather than as a failed request.
+    if (stage === "Hold" && reason.length < 3) {
+      window.alert("A reason is required to put an application on hold. The client is emailed this reason.");
       return;
     }
     setParkError(null);
