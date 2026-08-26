@@ -32,8 +32,19 @@ describe("SBA document pack", () => {
   });
 
   it("does not slugify SBA keys from labels", () => {
-    // business_plan_projections is what slugifying produces, and is the wrong key.
-    expect(src).not.toContain("business_plan_projections");
+    // BF_PORTAL_SBA_DOCPACK_TEST_FIX_v205
+    // This forbade the raw substring "business_plan_projections" anywhere in the
+    // file - and the v202 comment above sbaTypes names that key precisely to
+    // explain why the SBA keys are written out longhand. The test therefore
+    // failed on the comment that documents it.
+    //
+    // The rule being protected is that no SBA entry is KEYED on the slugified
+    // label, so assert on the key declaration rather than on prose. The comment
+    // stays: it is the record of why these strings are not derived.
+    const sbaTypesStart = src.indexOf("const sbaTypes");
+    const sbaBlock = src.slice(sbaTypesStart, src.indexOf("const [form, setForm]", sbaTypesStart));
+    expect(sbaBlock).not.toContain('key: "business_plan_projections"');
+    expect(sbaBlock).toContain('key: "business_plan"');
   });
 
   it("no longer calls useDocumentTypes and discards the result", () => {
