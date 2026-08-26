@@ -480,16 +480,27 @@ function CreateProductModal({
   // All Stage 2 on purpose: SBA's own burden estimate is 90 minutes for Form 413
   // and 31 for Form 1919. In front of a first-time applicant at Stage 1 that is
   // an exit, not a form.
+  // BF_PORTAL_SBA_PACK_TRIMMED_v206
+  // Eight, not nine. Two were dropped server-side by BF_SERVER_SBA_DOC_SET_v114
+  // and listing them here would show staff documents the trigger no longer
+  // attaches:
+  //   six months bank statements - a pre-revenue start-up has none, and it is
+  //     not an SBA requirement. It was never in this pack, but it reached SBA
+  //     applications through the Always Required block; the migration strips it.
+  //   debt_schedule - the Debt Stack CMP form already collects it.
+  //
+  // `required` mirrors the server exactly. lease_or_loi and sba_1919_attachments
+  // are optional; everything else is mandated by SBA SOP and making either of
+  // the tax-return or formation rows optional produces a file the lender returns.
   const sbaTypes = [
-    { key: "sba_form_413", label: "SBA Form 413 - Personal Financial Statement (per 20%+ owner)", hasForm: true },
-    { key: "sba_form_1919", label: "SBA Form 1919 - Borrower Information", hasForm: true },
-    { key: "owner_photo_id", label: "Government photo ID - each 20%+ owner" },
-    { key: "formation_documents", label: "Articles of incorporation, operating agreement or DBA" },
-    { key: "personal_tax_returns", label: "Personal tax returns - 3 years, each 20%+ owner" },
-    { key: "business_plan", label: "Business plan with financial projections" },
-    { key: "sba_1919_attachments", label: "Supporting detail for any Yes answer on Form 1919" },
-    { key: "debt_schedule", label: "Debt schedule - existing business debt" },
-    { key: "lease_or_loi", label: "Lease or letter of intent for premises" },
+    { key: "sba_form_413", label: "SBA Form 413 - Personal Financial Statement (per 20%+ owner)", hasForm: true, required: true },
+    { key: "sba_form_1919", label: "SBA Form 1919 - Borrower Information", hasForm: true, required: true },
+    { key: "owner_photo_id", label: "Government photo ID - driver's licence, passport or state ID, each 20%+ owner", required: true },
+    { key: "formation_documents", label: "Articles of incorporation, operating agreement or DBA", required: true },
+    { key: "personal_tax_returns", label: "Personal tax returns - 3 years, each 20%+ owner", required: true },
+    { key: "business_plan", label: "Business plan with financial projections", required: true },
+    { key: "sba_1919_attachments", label: "Supporting detail for any Yes answer on Form 1919", required: false },
+    { key: "lease_or_loi", label: "Lease or letter of intent - only if the loan involves premises", required: false },
   ].map((d) => ({ ...d, defaultStage: 2 as 1 | 2, hasForm: (d as any).hasForm ?? false }));
 
   // BF_LP_FORM_INIT_v32 — null-check, NOT truthy-check. Without this, a stored
@@ -817,7 +828,11 @@ function CreateProductModal({
                 docs (Budget, Finance plan, Tax credit status, Production
                 schedule, Minimum guarantees / presales). No bank statements,
                 no photo ID. Hide the entire Always-Required block for MEDIA. */}
-            {form.category !== "MEDIA" && (
+            {/* BF_PORTAL_SBA_PACK_TRIMMED_v206 - SBA joins MEDIA in skipping the
+                Always Required block. Six months of bank statements do not exist
+                for a business that has not traded, and SBA does not ask for them:
+                the business plan and the owners' personal returns carry the file. */}
+            {form.category !== "MEDIA" && form.category !== "SBA_GOVERNMENT" && (
               <div style={{ ...sectionStyle, marginBottom: 10 }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ui-accent-fg)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Always Required</p>
                 <DocCheckbox id={alwaysRequiredDoc.key} label={alwaysRequiredDoc.label} locked />
@@ -832,7 +847,9 @@ function CreateProductModal({
                 docs are Always-Required + Conditional. For every other category
                 the Core pack is shown and Conditional is hidden. */}
             {/* BF_PORTAL_BLOCK_v98_v3 — short canonical code "MEDIA" */}
-            {form.category !== "MEDIA" && (
+            {/* BF_PORTAL_SBA_PACK_TRIMMED_v206 - the Core pack is the Canadian
+                underwriting set. An SBA product carries its own pack below. */}
+            {form.category !== "MEDIA" && form.category !== "SBA_GOVERNMENT" && (
               <div style={{ ...sectionStyle, marginBottom: 10 }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ui-text)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Core Underwriting Pack</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
@@ -863,7 +880,9 @@ function CreateProductModal({
                     <DocCheckbox
                       key={d.key}
                       id={d.key}
-                      label={d.label}
+                      /* BF_PORTAL_SBA_PACK_TRIMMED_v206 - mark the two the
+                         applicant only sends when it applies to them. */
+                      label={(d as any).required === false ? `${d.label} (optional)` : d.label}
                       showStageToggle
                       hasForm={(d as any).hasForm}
                     />

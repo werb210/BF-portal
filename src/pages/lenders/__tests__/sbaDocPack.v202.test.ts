@@ -8,6 +8,8 @@ const src = readFileSync(resolve(__dirname, "..", "LendersPage.tsx"), "utf-8");
 // Byte-identical to the document_type values in BF-Server migrations v88/v99/v101
 // and to the client's FORM_RENDERERS keys. A rename on either side breaks the
 // join silently, so it is pinned on both.
+// BF_PORTAL_SBA_PACK_TRIMMED_v206 - debt_schedule dropped from the SBA pack
+// (the Debt Stack form collects it). Eight keys, matching the server triggers.
 const SBA_KEYS = [
   "sba_form_413",
   "sba_form_1919",
@@ -16,7 +18,6 @@ const SBA_KEYS = [
   "personal_tax_returns",
   "business_plan",
   "sba_1919_attachments",
-  "debt_schedule",
   "lease_or_loi",
 ];
 
