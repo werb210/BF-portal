@@ -22,8 +22,14 @@ describe("BF_PORTAL_LENDER_PASS_REASON_v1", () => {
     expect(tab).toContain("Lender ${recorded.ordinal} passed");
   });
 
-  it("warns that the text reaches the client", () => {
-    expect(tab).toContain("The client sees this.");
+  // BF_PORTAL_REJECTION_REASONS_v125 - the warning moved into the modal when the
+  // free-text field became a checkbox catalogue.
+  it("warns that the reasons reach the client", () => {
+    const modal = readFileSync(
+      join(process.cwd(), "src", "components", "applications", "RejectReasonsModal.tsx"),
+      "utf-8",
+    );
+    expect(modal).toContain("The applicant sees these reasons on their portal.");
   });
 
   it("refreshes the recorded outcomes after a save", () => {
