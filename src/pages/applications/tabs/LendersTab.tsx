@@ -17,6 +17,7 @@ import {
   type LenderMatch,
 } from "@/api/lenders";
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v_SIGNING_RESEND_v1 — collateral-required signal
+import { RejectReasonsModal } from "@/components/applications/RejectReasonsModal";
 import { getErrorMessage } from "@/utils/errors";
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
@@ -239,17 +240,45 @@ export default function LendersTab({ applicationId }: Props) {
     }
     return map;
   }, [v_respData]);
-  const [reasonDraft, setReasonDraft] = useState<Record<string, string>>({});
+  // BF_PORTAL_REJECTION_REASONS_v125 - the free-text draft is gone; reasons are
+  // now a checkbox selection from the server catalogue so the applicant email
+  // and the portal always say the same thing.
   const [reasonError, setReasonError] = useState<string | null>(null);
+  const [passModalFor, setPassModalFor] = useState<{ lenderId: string; lenderName: string } | null>(null);
+  const [rejectAppOpen, setRejectAppOpen] = useState(false);
+  const [closedNotice, setClosedNotice] = useState<string | null>(null);
   const passMutation = useMutation({
-    mutationFn: async (vars: { lenderId: string; reason: string }) => {
+    mutationFn: async (vars: { lenderId: string; reason: string; reasonCodes: string[] }) => {
       return api.post(`/api/applications/${encodeURIComponent(id)}/lender-response`, vars);
     },
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       setReasonError(null);
+      setPassModalFor(null);
+      // The server closes the file when the last sent lender passes. Say so,
+      // rather than leaving staff to notice the stage changed under them.
+      if ((res?.data ?? res)?.closed) {
+        setClosedNotice("Every lender the file was sent to has now passed. The application moved to Rejected and the applicant has been emailed.");
+      }
       queryClient.invalidateQueries({ queryKey: ["lender-responses", id] });
+      queryClient.invalidateQueries({ queryKey: ["application", id] });
     },
     onError: (err: unknown) => setReasonError(getErrorMessage(err, "Unable to record the lender response.")),
+  });
+
+  const rejectAppMutation = useMutation({
+    mutationFn: async (vars: { reasonCodes: string[]; note: string }) => {
+      return api.post(`/api/applications/${encodeURIComponent(id)}/reject`, vars);
+    },
+    onSuccess: (res: any) => {
+      setReasonError(null);
+      setRejectAppOpen(false);
+      const d = (res?.data ?? res) ?? {};
+      setClosedNotice(d.emailed
+        ? "Application rejected. The applicant has been emailed the reasons."
+        : `Application rejected, but the email did not send${d.error ? ` (${d.error})` : ""}. The reasons are recorded.`);
+      queryClient.invalidateQueries({ queryKey: ["application", id] });
+    },
+    onError: (err: unknown) => setReasonError(getErrorMessage(err, "Unable to reject the application.")),
   });
 
   const v_sentMap = useMemo(() => {
@@ -493,6 +522,14 @@ export default function LendersTab({ applicationId }: Props) {
               <>
                 <button
                   type="button"
+                  data-testid="reject-application"
+                  disabled={parking !== null}
+                  onClick={() => setRejectAppOpen(true)}
+                  style={{ ...styles.parkBtn, borderColor: "#b91c1c55", color: "#b91c1c", background: "#b91c1c12" }}>
+                  ✕ Reject
+                </button>
+                <button
+                  type="button"
                   disabled={parking !== null}
                   onClick={() => void park("Hold")}
                   style={{ ...styles.parkBtn, borderColor: "#7c3aed55", color: "#7c3aed", background: "#7c3aed12" }}>
@@ -535,6 +572,7 @@ export default function LendersTab({ applicationId }: Props) {
       {sendError && <div style={{ ...styles.banner, ...styles.bannerError }}>{sendError}</div>}
       {uploadError && <div style={{ ...styles.banner, ...styles.bannerError }}>{uploadError}</div>}
       {reasonError && <div style={{ ...styles.banner, ...styles.bannerError }}>{reasonError}</div>}
+      {closedNotice && <div data-testid="reject-closed-notice" style={{ ...styles.banner, ...styles.bannerStale }}>{closedNotice}</div>}
 
       {matches.length === 0 ? (
         <div style={styles.empty}>No lender matches yet. Try Recalculate or check the application's amounts and category.</div>
@@ -663,29 +701,14 @@ export default function LendersTab({ applicationId }: Props) {
                         </div>
                       ) : null}
                       <div style={{ display: "flex", gap: 8, marginTop: recorded ? 6 : 0 }}>
-                        <input
-                          type="text"
-                          data-testid={`lender-pass-input-${m.id}`}
-                          placeholder={recorded ? "Update the pass reason" : "Why did they pass? The client sees this."}
-                          value={reasonDraft[lenderKey] ?? ""}
-                          onChange={(e) => setReasonDraft((prev) => ({ ...prev, [lenderKey]: e.target.value }))}
-                          style={{ ...styles.modalInput, marginTop: 0, flex: 1, minWidth: 0 }}
-                        />
                         <button
                           type="button"
                           data-testid={`lender-pass-submit-${m.id}`}
-                          disabled={passMutation.isPending || !(reasonDraft[lenderKey] ?? "").trim()}
-                          onClick={() => {
-                            const reason = (reasonDraft[lenderKey] ?? "").trim();
-                            if (!reason) return;
-                            passMutation.mutate(
-                              { lenderId: lenderKey, reason },
-                              { onSuccess: () => setReasonDraft((prev) => ({ ...prev, [lenderKey]: "" })) },
-                            );
-                          }}
+                          disabled={passMutation.isPending}
+                          onClick={() => setPassModalFor({ lenderId: lenderKey, lenderName: m.lenderName ?? "lender" })}
                           style={styles.btn}
                         >
-                          {passMutation.isPending ? "Saving\u2026" : "Record pass"}
+                          {recorded ? "Edit pass reasons" : "Record pass"}
                         </button>
                       </div>
                     </td>
@@ -714,6 +737,27 @@ export default function LendersTab({ applicationId }: Props) {
           {sending ? "Sending…" : `Send (${selectedIds.length})`}
         </button>
       </div>
+
+      {passModalFor && (
+        <RejectReasonsModal
+          mode="lender"
+          lenderName={passModalFor.lenderName}
+          busy={passMutation.isPending}
+          onCancel={() => setPassModalFor(null)}
+          onSubmit={(codes, note) =>
+            passMutation.mutate({ lenderId: passModalFor.lenderId, reason: note, reasonCodes: codes })
+          }
+        />
+      )}
+
+      {rejectAppOpen && (
+        <RejectReasonsModal
+          mode="application"
+          busy={rejectAppMutation.isPending}
+          onCancel={() => setRejectAppOpen(false)}
+          onSubmit={(codes, note) => rejectAppMutation.mutate({ reasonCodes: codes, note })}
+        />
+      )}
 
       {termSheetFor && (
         <div style={styles.modalOverlay} role="dialog" aria-modal="true" data-testid="term-sheet-modal">
