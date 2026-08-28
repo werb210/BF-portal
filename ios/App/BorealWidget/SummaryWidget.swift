@@ -24,10 +24,10 @@ struct SummaryWidgetView: View {
         }
     }
     var body: some View {
-        if entry.needsSignIn {
+        if entry.needsData {
             VStack(spacing: 4) {
                 Text("Boreal").font(.headline)
-                Text("Open the portal to sign in").font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                Text("Open the portal once to update").font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
         } else {
             VStack(alignment: .leading, spacing: 8) {

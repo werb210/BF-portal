@@ -28,7 +28,6 @@ vi.mock("@capacitor/core", () => ({
 
 import {
   mirrorSiloToWidget,
-  mirrorTokenToWidget,
   WIDGET_GROUP,
 } from "../widgetBridge";
 
@@ -38,26 +37,7 @@ beforeEach(() => {
   h.platform = "ios";
 });
 
-describe("native widget authentication bridge", () => {
-  it("writes the token to the real App Group and reloads timelines", async () => {
-    await mirrorTokenToWidget("jwt-123");
-    expect(h.setItem).toHaveBeenCalledWith({
-      group: WIDGET_GROUP,
-      key: "widget_auth_token",
-      value: "jwt-123",
-    });
-    expect(h.reloadAllTimelines).toHaveBeenCalledOnce();
-  });
-
-  it("removes the token on logout and reloads timelines", async () => {
-    await mirrorTokenToWidget(null);
-    expect(h.removeItem).toHaveBeenCalledWith({
-      group: "group.com.boreal.portal",
-      key: "widget_auth_token",
-    });
-    expect(h.reloadAllTimelines).toHaveBeenCalledOnce();
-  });
-
+describe("native widget state bridge", () => {
   it("writes the active silo to the same App Group", async () => {
     await mirrorSiloToWidget("BI");
     expect(h.setItem).toHaveBeenCalledWith({
@@ -73,7 +53,6 @@ describe("native widget authentication bridge", () => {
     async ({ native, platform }) => {
       h.native = native;
       h.platform = platform;
-      await mirrorTokenToWidget("jwt-123");
       await mirrorSiloToWidget("BI");
       expect(h.setItem).not.toHaveBeenCalled();
       expect(h.removeItem).not.toHaveBeenCalled();
@@ -83,7 +62,7 @@ describe("native widget authentication bridge", () => {
 
   it("swallows native failures so authentication is not rejected", async () => {
     h.setItem.mockRejectedValueOnce(new Error("bridge unavailable"));
-    await expect(mirrorTokenToWidget("jwt-123")).resolves.toBeUndefined();
+    await expect(mirrorSiloToWidget("BF")).resolves.toBeUndefined();
   });
 });
 

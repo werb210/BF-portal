@@ -1,21 +1,36 @@
-// BF_PORTAL_WIDGET_v29
 import Foundation
 
 enum WidgetStore {
     static let group = "group.com.boreal.portal"
-    static let tokenKey = "widget_auth_token"
     static let siloKey = "widget_active_silo"
-    private static let capacitorPrefix = "CapacitorStorage."
 
     static func string(_ key: String) -> String? {
-        guard let defaults = UserDefaults(suiteName: group) else { return nil }
-        if let value = defaults.string(forKey: capacitorPrefix + key), !value.isEmpty { return value }
-        let value = defaults.string(forKey: key)
-        return (value?.isEmpty ?? true) ? nil : value
+        guard let value = UserDefaults(suiteName: group)?.string(forKey: key), !value.isEmpty else {
+            return nil
+        }
+        return value
     }
 
-    static var token: String? { string(tokenKey) }
     static var silo: String? { string(siloKey) }
+
+    static func summary(for silo: WidgetSilo) -> WidgetSummary? {
+        guard let json = string("widget_summary_\(silo.rawValue)"),
+              let data = json.data(using: .utf8) else { return nil }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let value = try decoder.singleValueContainer().decode(String.self)
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: value) { return date }
+            formatter.formatOptions = [.withInternetDateTime]
+            if let date = formatter.date(from: value) { return date }
+            throw DecodingError.dataCorruptedError(
+                in: try decoder.singleValueContainer(),
+                debugDescription: "Invalid ISO-8601 date"
+            )
+        }
+        return try? decoder.decode(WidgetSummary.self, from: data)
+    }
 }
 
 struct WidgetSummary: Codable, Equatable {
@@ -74,24 +89,5 @@ enum WidgetSilo: String, CaseIterable {
         case .bi: return "Risk Management"
         case .slf: return "SLF"
         }
-    }
-}
-
-enum WidgetAPI {
-    static let baseURL = "https://server.boreal.financial/api"
-
-    static func fetch(silo: WidgetSilo, token: String) async throws -> WidgetSummary {
-        guard let url = URL(string: "\(baseURL)/widget/summary") else { throw URLError(.badURL) }
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue(silo.rawValue, forHTTPHeaderField: "X-Silo")
-        request.timeoutInterval = 15
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
-        }
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(WidgetSummary.self, from: data)
     }
 }
