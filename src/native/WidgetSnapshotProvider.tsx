@@ -9,12 +9,12 @@
 // the day the widget stays current within a working session. A slow poll fills
 // the gaps while the app is open. This is why the snapshot carries capturedAt:
 // the widget should render "as of HH:mm" and never imply live data.
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { App } from "@capacitor/app";
-import { Capacitor } from "@capacitor/core";
 import { useNavigate } from "react-router-dom";
 import { useSilo } from "@/context/SiloContext";
 import { publishWidgetSnapshot } from "@/native/widgetSnapshot";
+import { mirrorSiloToWidget, WidgetBridgePlugin, WIDGET_GROUP, isNativeIOS } from "@/native/widgetBridge";
 
 const POLL_MS = 10 * 60 * 1000;
 
@@ -32,19 +32,19 @@ const ROUTES: Record<string, string> = {
 export default function WidgetSnapshotProvider() {
   const { silo } = useSilo();
   const navigate = useNavigate();
-  const siloRef = useRef(silo);
-  siloRef.current = silo;
-
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
+    if (!isNativeIOS()) return;
 
-    void publishWidgetSnapshot(siloRef.current);
+    // Migration cleanup only: remove the sensitive value written by older builds.
+    void WidgetBridgePlugin.removeItem({ group: WIDGET_GROUP, key: "widget_auth_token" }).catch(() => {});
+
+    void publishWidgetSnapshot();
     const timer = window.setInterval(() => {
-      void publishWidgetSnapshot(siloRef.current);
+      void publishWidgetSnapshot();
     }, POLL_MS);
 
     const stateHandle = App.addListener("appStateChange", ({ isActive }) => {
-      if (isActive) void publishWidgetSnapshot(siloRef.current);
+      if (isActive) void publishWidgetSnapshot();
     });
 
     const urlHandle = App.addListener("appUrlOpen", ({ url }) => {
@@ -68,8 +68,11 @@ export default function WidgetSnapshotProvider() {
   // Silo is the one thing that changes what the widget should show, so a switch
   // republishes immediately rather than waiting for the next poll.
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-    void publishWidgetSnapshot(silo);
+    if (!isNativeIOS()) return;
+    void (async () => {
+      await mirrorSiloToWidget(silo);
+      await publishWidgetSnapshot();
+    })();
   }, [silo]);
 
   return null;

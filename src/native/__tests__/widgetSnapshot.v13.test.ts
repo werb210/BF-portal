@@ -1,99 +1,69 @@
-// BF_PORTAL_WIDGET_SNAPSHOT_v13
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// vi.mock is hoisted above const declarations, so the doubles have to be
-// created inside vi.hoisted() or the factory closes over a TDZ binding.
 const h = vi.hoisted(() => ({
-  isNative: vi.fn(() => true),
+  native: true,
+  platform: "ios",
+  api: vi.fn(),
   setItem: vi.fn(async () => {}),
-  reloadTimelines: vi.fn(async () => {}),
-  apiFn: vi.fn(),
-  fetchTasks: vi.fn(),
-  fetchLocalEvents: vi.fn(),
+  reloadAllTimelines: vi.fn(async () => {}),
 }));
-const { isNative, setItem, reloadTimelines, apiFn, fetchTasks, fetchLocalEvents } = h;
 
 vi.mock("@capacitor/core", () => ({
-  Capacitor: { isNativePlatform: () => h.isNative() },
+  Capacitor: {
+    isNativePlatform: () => h.native,
+    getPlatform: () => h.platform,
+  },
   registerPlugin: () => ({
     setItem: h.setItem,
-    reloadTimelines: h.reloadTimelines,
-    reloadAllTimelines: vi.fn(),
+    reloadAllTimelines: h.reloadAllTimelines,
   }),
 }));
-vi.mock("@/api", () => ({ api: (...a: unknown[]) => h.apiFn(...a) }));
-vi.mock("@/api/tasks", () => ({ fetchTasks: () => h.fetchTasks() }));
-vi.mock("@/api/calendar", () => ({ fetchLocalEvents: () => h.fetchLocalEvents() }));
+vi.mock("@/api", () => ({ api: (...args: unknown[]) => h.api(...args) }));
 
-import { APP_GROUP, buildSnapshot, publishWidgetSnapshot, WIDGET_KIND } from "../widgetSnapshot";
+import { publishWidgetSnapshot } from "../widgetSnapshot";
 
-const iso = (offsetMs: number) => new Date(Date.now() + offsetMs).toISOString();
+const summaries = {
+  BF: { silo: "BF", pipelineCount: 4, tasksDueToday: 2, unreadMessages: 3, commissionEarned: 44000, currency: "CAD", asOf: "2026-08-28T19:30:00.000Z" },
+  BI: { silo: "BI", pipelineCount: 1, tasksDueToday: 0, unreadMessages: 2, commissionEarned: 1000, currency: "CAD", asOf: "2026-08-28T19:30:00.000Z" },
+  SLF: { silo: "SLF", pipelineCount: 3, tasksDueToday: 1, unreadMessages: 0, commissionEarned: 2000, currency: "CAD", asOf: "2026-08-28T19:30:00.000Z" },
+};
 
 beforeEach(() => {
-  isNative.mockReturnValue(true);
-  setItem.mockClear();
-  reloadTimelines.mockClear();
-  apiFn.mockResolvedValue({ items: [
-    { id: "1", name: "A", pipeline_state: "in_review" },
-    { id: "2", name: "B", pipeline_state: "funded" },
-    { id: "3", name: "C", pipeline_state: "New" },
-  ] });
-  fetchTasks.mockResolvedValue([
-    { id: "t1", title: "due today", status: "open", dueDate: iso(60_000), priority: "normal" },
-    { id: "t2", title: "done today", status: "done", dueDate: iso(60_000), priority: "normal" },
-    { id: "t3", title: "next week", status: "open", dueDate: iso(7 * 86_400_000), priority: "normal" },
-  ]);
-  fetchLocalEvents.mockResolvedValue([
-    { id: "e1", title: "later", start: iso(3 * 3_600_000), end: iso(4 * 3_600_000) },
-    { id: "e2", title: "soon", start: iso(3_600_000), end: iso(2 * 3_600_000) },
-    { id: "e3", title: "past", start: iso(-3_600_000), end: iso(-1_000) },
-    { id: "e4", title: "third", start: iso(5 * 3_600_000), end: iso(6 * 3_600_000) },
-  ]);
+  vi.clearAllMocks();
+  h.native = true;
+  h.platform = "ios";
+  h.api.mockImplementation((_path: string, options: { headers: { "X-Silo": keyof typeof summaries } }) =>
+    Promise.resolve(summaries[options.headers["X-Silo"]]));
 });
 
-describe("widget snapshot", () => {
-  it("counts only applications that still need attention", async () => {
-    const s = await buildSnapshot("BF");
-    expect(s.applications).toBe(2); // funded is terminal
+describe("widget snapshots", () => {
+  it("uses the authenticated summary API and writes one snapshot for every silo", async () => {
+    expect(await publishWidgetSnapshot()).toBe(true);
+    for (const silo of ["BF", "BI", "SLF"] as const) {
+      expect(h.api).toHaveBeenCalledWith("/api/widget/summary", { headers: { "X-Silo": silo } });
+      expect(h.setItem).toHaveBeenCalledWith({
+        group: "group.com.boreal.portal",
+        key: `widget_summary_${silo}`,
+        value: JSON.stringify(summaries[silo]),
+      });
+    }
+    expect(h.reloadAllTimelines).toHaveBeenCalledOnce();
   });
 
-  it("counts only open tasks due today", async () => {
-    const s = await buildSnapshot("BF");
-    expect(s.tasksDueToday).toBe(1);
+  it("keeps successful snapshots when another silo is unavailable", async () => {
+    h.api.mockImplementation((_path: string, options: { headers: { "X-Silo": keyof typeof summaries } }) =>
+      options.headers["X-Silo"] === "BI" ? Promise.reject(new Error("forbidden")) : Promise.resolve(summaries[options.headers["X-Silo"]]));
+    expect(await publishWidgetSnapshot()).toBe(true);
+    expect(h.setItem).toHaveBeenCalledTimes(2);
+    expect(h.setItem).toHaveBeenCalledWith(expect.objectContaining({ key: "widget_summary_BF" }));
+    expect(h.setItem).toHaveBeenCalledWith(expect.objectContaining({ key: "widget_summary_SLF" }));
+    expect(h.reloadAllTimelines).toHaveBeenCalledOnce();
   });
 
-  it("takes the next two upcoming events in order, dropping past ones", async () => {
-    const s = await buildSnapshot("BF");
-    expect(s.events.map((e) => e.title)).toEqual(["soon", "later"]);
-  });
-
-  it("stamps the silo and a capture time so the widget never implies live data", async () => {
-    const s = await buildSnapshot("BI");
-    expect(s.silo).toBe("BI");
-    expect(Number.isNaN(new Date(s.capturedAt).getTime())).toBe(false);
-  });
-
-  it("degrades one number rather than losing the snapshot when a source fails", async () => {
-    fetchLocalEvents.mockRejectedValue(new Error("Graph down"));
-    const s = await buildSnapshot("BF");
-    expect(s.events).toEqual([]);
-    expect(s.applications).toBe(2);
-  });
-
-  it("writes to the App Group suite and reloads only our widget kind", async () => {
-    await publishWidgetSnapshot("BF");
-    expect(setItem).toHaveBeenCalledWith(expect.objectContaining({ group: APP_GROUP, key: "summary" }));
-    expect(reloadTimelines).toHaveBeenCalledWith({ ofKind: WIDGET_KIND });
-  });
-
-  it("does nothing at all on web", async () => {
-    isNative.mockReturnValue(false);
-    expect(await publishWidgetSnapshot("BF")).toBe(false);
-    expect(setItem).not.toHaveBeenCalled();
-  });
-
-  it("never throws when the bridge plugin is absent", async () => {
-    setItem.mockRejectedValueOnce(new Error("plugin not implemented"));
-    expect(await publishWidgetSnapshot("BF")).toBe(false);
+  it("does no API or App Group work in a browser", async () => {
+    h.native = false;
+    expect(await publishWidgetSnapshot()).toBe(false);
+    expect(h.api).not.toHaveBeenCalled();
+    expect(h.setItem).not.toHaveBeenCalled();
   });
 });
