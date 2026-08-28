@@ -20,7 +20,7 @@ import { fetchTasks } from "@/api/tasks";
 import { api } from "@/api";
 
 export const APP_GROUP = "group.com.boreal.portal";
-export const WIDGET_KIND = "BFPortalSummary";
+export const WIDGET_KIND = "BorealPortalSummary";
 export const SNAPSHOT_KEY = "summary";
 
 type WidgetBridge = {

@@ -91,6 +91,11 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
     return businessUnit;
   });
 
+  // Mirror restored state on cold launch as well as subsequent selector changes.
+  useEffect(() => {
+    void mirrorSiloToWidget(String(activeBusinessUnit).toUpperCase());
+  }, [activeBusinessUnit]);
+
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     if (normalizedBusinessUnits.includes(activeBusinessUnit)) return;
@@ -106,9 +111,6 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
   const setActiveBusinessUnit = (businessUnit: BusinessUnit) => {
     persistBusinessUnit(businessUnit);
     setActiveBusinessUnitState(businessUnit);
-    // BF_PORTAL_WIDGET_BRIDGE_v28 - keep the widget's default business in step
-    // with the portal's, since a home-screen tile has no selector of its own.
-    void mirrorSiloToWidget(String(businessUnit).toUpperCase());
   };
 
   const value = useMemo(
