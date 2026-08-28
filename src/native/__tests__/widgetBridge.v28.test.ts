@@ -1,87 +1,128 @@
-// BF_PORTAL_WIDGET_BRIDGE_v28
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
-const setSpy = vi.fn();
-const removeSpy = vi.fn();
-const configureSpy = vi.fn();
-let platform = "ios";
-let native = true;
+const h = vi.hoisted(() => ({
+  native: true,
+  platform: "ios",
+  setItem: vi.fn(async () => {}),
+  removeItem: vi.fn(async () => {}),
+  getItem: vi.fn(async () => ({ value: null as string | null })),
+  reloadAllTimelines: vi.fn(async () => {}),
+  reloadTimelines: vi.fn(async () => {}),
+}));
 
 vi.mock("@capacitor/core", () => ({
   Capacitor: {
-    isNativePlatform: () => native,
-    getPlatform: () => platform,
+    isNativePlatform: () => h.native,
+    getPlatform: () => h.platform,
   },
+  registerPlugin: () => ({
+    setItem: h.setItem,
+    removeItem: h.removeItem,
+    getItem: h.getItem,
+    reloadAllTimelines: h.reloadAllTimelines,
+    reloadTimelines: h.reloadTimelines,
+  }),
 }));
 
-vi.mock("@capacitor/preferences", () => ({
-  Preferences: {
-    configure: (...args: unknown[]) => { configureSpy(...args); return Promise.resolve(); },
-    set: (...args: unknown[]) => { setSpy(...args); return Promise.resolve(); },
-    remove: (...args: unknown[]) => { removeSpy(...args); return Promise.resolve(); },
-  },
-}));
-
-const load = async () => await import("../widgetBridge");
+import {
+  mirrorSiloToWidget,
+  mirrorTokenToWidget,
+  WIDGET_GROUP,
+} from "../widgetBridge";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  platform = "ios";
-  native = true;
+  h.native = true;
+  h.platform = "ios";
 });
 
-describe("the token reaches the widget's shared store", () => {
-  it("writes into the App Group suite, not the app's private defaults", async () => {
-    const { mirrorTokenToWidget, WIDGET_GROUP } = await load();
+describe("native widget authentication bridge", () => {
+  it("writes the token to the real App Group and reloads timelines", async () => {
     await mirrorTokenToWidget("jwt-123");
-    expect(configureSpy).toHaveBeenCalledWith({ group: WIDGET_GROUP });
-    expect(setSpy).toHaveBeenCalledWith({ key: "widget_auth_token", value: "jwt-123" });
+    expect(h.setItem).toHaveBeenCalledWith({
+      group: WIDGET_GROUP,
+      key: "widget_auth_token",
+      value: "jwt-123",
+    });
+    expect(h.reloadAllTimelines).toHaveBeenCalledOnce();
   });
 
-  it("removes it on sign-out rather than leaving a live token behind", async () => {
-    const { mirrorTokenToWidget } = await load();
+  it("removes the token on logout and reloads timelines", async () => {
     await mirrorTokenToWidget(null);
-    expect(removeSpy).toHaveBeenCalledWith({ key: "widget_auth_token" });
-    expect(setSpy).not.toHaveBeenCalled();
+    expect(h.removeItem).toHaveBeenCalledWith({
+      group: "group.com.boreal.portal",
+      key: "widget_auth_token",
+    });
+    expect(h.reloadAllTimelines).toHaveBeenCalledOnce();
   });
 
-  it("mirrors the active business too, since a tile has no switcher", async () => {
-    const { mirrorSiloToWidget } = await load();
+  it("writes the active silo to the same App Group", async () => {
     await mirrorSiloToWidget("BI");
-    expect(setSpy).toHaveBeenCalledWith({ key: "widget_active_silo", value: "BI" });
-  });
-});
-
-describe("it is inert everywhere a widget cannot exist", () => {
-  it("does nothing in a browser", async () => {
-    native = false;
-    const { mirrorTokenToWidget } = await load();
-    await mirrorTokenToWidget("jwt-123");
-    expect(setSpy).not.toHaveBeenCalled();
-    expect(configureSpy).not.toHaveBeenCalled();
+    expect(h.setItem).toHaveBeenCalledWith({
+      group: "group.com.boreal.portal",
+      key: "widget_active_silo",
+      value: "BI",
+    });
+    expect(h.reloadAllTimelines).toHaveBeenCalledOnce();
   });
 
-  it("does nothing on Android", async () => {
-    platform = "android";
-    const { mirrorTokenToWidget } = await load();
-    await mirrorTokenToWidget("jwt-123");
-    expect(setSpy).not.toHaveBeenCalled();
-  });
-});
+  it.each([{ native: false, platform: "ios" }, { native: true, platform: "android" }])(
+    "makes no plugin calls on $platform (native=$native)",
+    async ({ native, platform }) => {
+      h.native = native;
+      h.platform = platform;
+      await mirrorTokenToWidget("jwt-123");
+      await mirrorSiloToWidget("BI");
+      expect(h.setItem).not.toHaveBeenCalled();
+      expect(h.removeItem).not.toHaveBeenCalled();
+      expect(h.reloadAllTimelines).not.toHaveBeenCalled();
+    },
+  );
 
-describe("signing in cannot fail because of the widget", () => {
-  it("swallows a native failure instead of rejecting", async () => {
-    const { mirrorTokenToWidget } = await load();
-    configureSpy.mockImplementationOnce(() => { throw new Error("no such group"); });
+  it("swallows native failures so authentication is not rejected", async () => {
+    h.setItem.mockRejectedValueOnce(new Error("bridge unavailable"));
     await expect(mirrorTokenToWidget("jwt-123")).resolves.toBeUndefined();
   });
+});
 
-  it("the auth module does not await the mirror", async () => {
-    const { readFileSync } = await import("node:fs");
-    const path = await import("node:path");
-    const src = readFileSync(path.join(process.cwd(), "src/lib/authToken.ts"), "utf8");
-    expect(src).toContain("void mirrorTokenToWidget(token);");
-    expect(src).toContain("void mirrorTokenToWidget(null);");
-    expect(src).not.toContain("await mirrorTokenToWidget");
+describe("source regressions", () => {
+  const source = (relativePath: string) =>
+    readFileSync(path.join(process.cwd(), relativePath), "utf8");
+
+  it("does not use Capacitor Preferences for widget storage", () => {
+    const bridge = source("src/native/widgetBridge.ts");
+    expect(bridge).not.toContain("Preferences.configure");
+    expect(bridge).not.toContain("@capacitor/preferences");
+  });
+
+  it("uses the matching WidgetKit kind", () => {
+    expect(source("src/native/widgetSnapshot.ts")).toContain(
+      'WIDGET_KIND = "BorealPortalSummary"',
+    );
+  });
+
+  it("opens App Group defaults and can refresh all WidgetKit timelines", () => {
+    const swift = source("ios/App/App/WidgetBridgePlugin.swift");
+    expect(swift).toContain("UserDefaults(suiteName:");
+    expect(swift).not.toContain("UserDefaults.standard");
+    expect(swift).toContain("WidgetCenter.shared.reloadAllTimelines()");
+  });
+
+  it("registers a plugin instance from the custom bridge controller", () => {
+    const swift = source("ios/App/App/BorealBridgeViewController.swift");
+    expect(swift).toContain("registerPluginInstance(WidgetBridgePlugin())");
+    expect(swift).not.toContain("registerPluginType");
+  });
+
+  it("compiles both bridge files in the App source phase only", () => {
+    const project = source("ios/App/App.xcodeproj/project.pbxproj");
+    const appSources = project.match(/\n\t\t504EC3001FED79650016851F \/\* Sources \*\/ = \{[\s\S]*?runOnlyForDeploymentPostprocessing = 0;/)?.[0] ?? "";
+    const widgetSources = project.match(/\n\t\tB0EA29000000000000000010 \/\* Sources \*\/ = \{[\s\S]*?runOnlyForDeploymentPostprocessing = 0;/)?.[0] ?? "";
+    expect(appSources).toContain("WidgetBridgePlugin.swift in Sources");
+    expect(appSources).toContain("BorealBridgeViewController.swift in Sources");
+    expect(widgetSources).not.toContain("WidgetBridgePlugin.swift");
+    expect(widgetSources).not.toContain("BorealBridgeViewController.swift");
   });
 });

@@ -1,3 +1,4 @@
+import { clearAuthToken, setAuthToken } from "@/lib/authToken";
 const STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY || "auth_token";
 const SESSION_EVENT = "bf-session-changed";
 
@@ -21,12 +22,12 @@ export function setToken(token: string) {
     storageKey: STORAGE_KEY,
     tokenLength: token?.length ?? 0
   });
-  localStorage.setItem(STORAGE_KEY, token);
+  setAuthToken(token);
 }
 
 export function clearToken() {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(STORAGE_KEY);
+  clearAuthToken();
 }
 
 export function bfReadToken(): string | null {
