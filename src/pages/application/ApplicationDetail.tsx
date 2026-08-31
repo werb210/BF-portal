@@ -10,6 +10,7 @@ import CreditSummaryTab from "@/pages/applications/tabs/CreditSummaryTab";
 import RequestItemsTab from "@/pages/applications/tabs/RequestItemsTab"; // BF_PORTAL_BLOCK_v821_REQUEST_ITEMS_TAB
 import NotesTab from "@/pages/applications/tabs/NotesTab";
 import LendersTab from "@/pages/applications/tabs/LendersTab";
+import SbaSigningTab from "@/pages/applications/tabs/SbaSigningTab"; // BF_PORTAL_SBA_SIGNING_TAB_v146
 
 const TABS = [
   { key: "application", label: "Application" },
@@ -20,6 +21,8 @@ const TABS = [
   { key: "request-items", label: "Request Items" }, // BF_PORTAL_BLOCK_v821_REQUEST_ITEMS_TAB
   { key: "notes", label: "Notes" },
   { key: "lenders", label: "Lenders" },
+  // BF_PORTAL_SBA_SIGNING_TAB_v146 - expose signing status and resend.
+  { key: "sba-signing", label: "SBA Signing" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -68,6 +71,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     "request-items": <RequestItemsTab applicationId={applicationId} />,
     notes: <NotesTab applicationId={applicationId} />,
     lenders: <LendersTab applicationId={applicationId} />,
+    "sba-signing": <SbaSigningTab applicationId={applicationId} />,
   }[activeTab];
 
   return (
