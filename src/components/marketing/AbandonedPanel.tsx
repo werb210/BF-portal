@@ -15,6 +15,9 @@ type Item = {
   phone: string | null;
   country: "CA" | "US" | null;
   countryInferred?: boolean; // BF_PORTAL_COUNTRY_INFERRED_v52 // BF_PORTAL_ABANDONED_COUNTRY_v51
+  // BF_PORTAL_ABANDONED_REVENUE_v149
+  monthlyRevenue?: string | null;
+  belowCanadianFloor?: boolean;
   email: string | null;
   amount: string | number | null;
   product: string | null;
@@ -69,6 +72,17 @@ export default function AbandonedPanel() {
       <div className="flex items-center justify-between mb-2">
         <div className="drawer-section__title">
           Started, not submitted{items ? ` (${items.length})` : ""}
+          {/* BF_PORTAL_ABANDONED_REVENUE_v149 - the callable count is the one
+              that decides whether this list is worth working today. */}
+          {items && items.some((x) => x.belowCanadianFloor) ? (
+            <span
+              style={{ marginLeft: 8, fontWeight: 400, fontSize: "0.8rem", color: "var(--ui-text-muted)" }}
+              data-testid="abandoned-callable"
+            >
+              {items.filter((x) => !x.belowCanadianFloor).length} callable
+              &middot; {items.filter((x) => x.belowCanadianFloor).length} below the CA floor
+            </span>
+          ) : null}
         </div>
         <select
           className="ui-input"
@@ -98,6 +112,9 @@ export default function AbandonedPanel() {
               {/* BF_PORTAL_ABANDONED_COUNTRY_v51 - the country changes what you can
                   offer, so it belongs next to the number you would dial. */}
               <th style={{ padding: "6px 8px" }}>Country</th>
+              {/* BF_PORTAL_ABANDONED_REVENUE_v149 - next to Country, because the
+                  two together decide whether this row is worth a call. */}
+              <th style={{ padding: "6px 8px" }}>Monthly revenue</th>
               <th style={{ padding: "6px 8px" }}>Amount</th>
               <th style={{ padding: "6px 8px" }}>Source</th>
               <th style={{ padding: "6px 8px" }}>Last seen</th>
@@ -129,6 +146,23 @@ export default function AbandonedPanel() {
                       title="Inferred from the phone's area code - they did not tell us"
                       style={{ color: "var(--ui-text-muted)", marginLeft: 4 }}
                     >?</span>
+                  ) : null}
+                </td>
+                {/* BF_PORTAL_ABANDONED_REVENUE_v149 - a row marked "no lender"
+                    is not a lead: the Canadian panel has no product below
+                    $10K/month, so calling wastes the call and their time. */}
+                <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
+                  {i.monthlyRevenue || "-"}
+                  {i.belowCanadianFloor ? (
+                    <span
+                      title="Below the Canadian panel minimum of $10,000 average monthly revenue - no lender will take this today"
+                      style={{
+                        marginLeft: 6, fontSize: 11, fontWeight: 700, padding: "2px 7px",
+                        borderRadius: 999, background: "#b45c0918", color: "#b45c09",
+                        border: "1px solid #b45c0944", whiteSpace: "nowrap",
+                      }}
+                      data-testid="abandoned-below-floor"
+                    >no lender</span>
                   ) : null}
                 </td>
                 <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>{i.amount || "-"}</td>
