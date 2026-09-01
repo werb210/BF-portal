@@ -34,6 +34,7 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         }
         defaults.set(value, forKey: key)
         defaults.synchronize()
+        print("[WidgetBridge] wrote key \(key) (\(value.utf8.count) bytes)")
         call.resolve()
     }
 

@@ -46,8 +46,37 @@ describe("widget snapshots", () => {
         key: `widget_summary_${silo}`,
         value: expect.stringContaining(`"silo":"${silo}"`),
       });
+      const write = h.setItem.mock.calls.find(([item]) => item.key === `widget_summary_${silo}`)?.[0];
+      const snapshot = JSON.parse(write.value);
+      expect(snapshot).toMatchObject({
+        schemaVersion: 2, silo, pipelineCount: summaries[silo].pipelineCount,
+        tasksDueToday: summaries[silo].tasksDueToday, unreadMessages: summaries[silo].unreadMessages,
+        commissionEarned: summaries[silo].commissionEarned, currency: "CAD",
+        tasksOverdue: 0, documentsRequired: 0, additionalStepsRequired: 0, offersOutstanding: 0,
+        nextTask: null, nextMeeting: null, asOf: summaries[silo].asOf,
+      });
     }
     expect(h.reloadAllTimelines).toHaveBeenCalledOnce();
+  });
+
+  it("normalizes untrusted runtime summary values into the versioned persistence schema", async () => {
+    h.api.mockImplementation((path: string) => {
+      if (path === "/api/widget/summary") return Promise.resolve({
+        silo: "untrusted", pipelineCount: "7", tasksDueToday: "bad", unreadMessages: Infinity,
+        commissionEarned: "1250", currency: 99, asOf: null, injected: "must not persist",
+      });
+      return Promise.resolve([]);
+    });
+
+    expect(await publishWidgetSnapshot()).toBe(true);
+    const snapshot = JSON.parse(h.setItem.mock.calls[0][0].value);
+    expect(snapshot).toMatchObject({
+      schemaVersion: 2, silo: "BF", pipelineCount: 7, tasksDueToday: 0,
+      unreadMessages: 0, commissionEarned: 1250, currency: "CAD",
+      nextTask: null, nextMeeting: null,
+    });
+    expect(snapshot.asOf).toEqual(expect.any(String));
+    expect(snapshot).not.toHaveProperty("injected");
   });
 
   it("keeps successful snapshots when another silo is unavailable", async () => {
