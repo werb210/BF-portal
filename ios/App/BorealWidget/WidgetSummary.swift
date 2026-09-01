@@ -18,44 +18,14 @@ enum WidgetStore {
         guard let json = string("widget_summary_\(silo.rawValue)"),
               let data = json.data(using: .utf8) else { return nil }
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let value = try decoder.singleValueContainer().decode(String.self)
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = formatter.date(from: value) { return date }
-            formatter.formatOptions = [.withInternetDateTime]
-            if let date = formatter.date(from: value) { return date }
-            throw DecodingError.dataCorruptedError(
-                in: try decoder.singleValueContainer(),
-                debugDescription: "Invalid ISO-8601 date"
-            )
+        do {
+            return try decoder.decode(WidgetSummary.self, from: data)
+        } catch {
+            print("[BorealWidget] snapshot decode failed for \(silo.rawValue): \(error)")
+            return nil
         }
-        return try? decoder.decode(WidgetSummary.self, from: data)
     }
 }
-
-struct WidgetSummary: Codable, Equatable {
-    let silo: String
-    let pipelineCount: Int
-    let tasksDueToday: Int
-    let tasksOverdue: Int
-    let unreadMessages: Int
-    let commissionEarned: Int
-    let currency: String
-    let documentsRequired: Int
-    let additionalStepsRequired: Int
-    let offersOutstanding: Int
-    let nextTask: WidgetTask?
-    let nextMeeting: WidgetMeeting?
-    let asOf: Date?
-
-    static let placeholder = WidgetSummary(silo: "BF", pipelineCount: 0, tasksDueToday: 0, tasksOverdue: 0,
-        unreadMessages: 0, commissionEarned: 0, currency: "CAD", documentsRequired: 0,
-        additionalStepsRequired: 0, offersOutstanding: 0, nextTask: nil, nextMeeting: nil, asOf: nil)
-}
-
-struct WidgetTask: Codable, Equatable { let id: String; let title: String; let type: String; let dueAt: Date?; let contactName: String? }
-struct WidgetMeeting: Codable, Equatable { let id: String; let title: String; let start: Date }
 
 enum WidgetMetric: String, CaseIterable {
     case pipeline, tasksDueToday, unreadMessages, commissionEarned

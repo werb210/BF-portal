@@ -20,6 +20,7 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		B0EA29000000000000000001 /* BorealWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EA29000000000000000006 /* BorealWidgetBundle.swift */; };
 		B0EA29000000000000000002 /* WidgetSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EA29000000000000000007 /* WidgetSummary.swift */; };
+		B0EA29000000000000000020 /* WidgetSnapshotModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EA29000000000000000021 /* WidgetSnapshotModels.swift */; };
 		B0EA29000000000000000003 /* SummaryConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EA29000000000000000008 /* SummaryConfiguration.swift */; };
 		B0EA29000000000000000004 /* SummaryProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EA29000000000000000009 /* SummaryProvider.swift */; };
 		B0EA29000000000000000005 /* SummaryWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EA2900000000000000000A /* SummaryWidget.swift */; };
@@ -43,6 +44,7 @@
 		B0EA2900000000000000000D /* BorealWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BorealWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B0EA29000000000000000006 /* BorealWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BorealWidgetBundle.swift; sourceTree = "<group>"; };
 		B0EA29000000000000000007 /* WidgetSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSummary.swift; sourceTree = "<group>"; };
+		B0EA29000000000000000021 /* WidgetSnapshotModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotModels.swift; sourceTree = "<group>"; };
 		B0EA29000000000000000008 /* SummaryConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryConfiguration.swift; sourceTree = "<group>"; };
 		B0EA29000000000000000009 /* SummaryProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryProvider.swift; sourceTree = "<group>"; };
 		B0EA2900000000000000000A /* SummaryWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryWidget.swift; sourceTree = "<group>"; };
@@ -107,6 +109,7 @@
 		B0EA2900000000000000000E /* BorealWidget */ = { isa = PBXGroup; children = (
 				B0EA29000000000000000006 /* BorealWidgetBundle.swift */,
 				B0EA29000000000000000007 /* WidgetSummary.swift */,
+				B0EA29000000000000000021 /* WidgetSnapshotModels.swift */,
 				B0EA29000000000000000008 /* SummaryConfiguration.swift */,
 				B0EA29000000000000000009 /* SummaryProvider.swift */,
 				B0EA2900000000000000000A /* SummaryWidget.swift */,
@@ -215,7 +218,8 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B0EA29000000000000000010 /* Sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( B0EA29000000000000000001 /* BorealWidgetBundle.swift in Sources */, B0EA29000000000000000002 /* WidgetSummary.swift in Sources */, B0EA29000000000000000003 /* SummaryConfiguration.swift in Sources */, B0EA29000000000000000004 /* SummaryProvider.swift in Sources */, B0EA29000000000000000005 /* SummaryWidget.swift in Sources */, ); runOnlyForDeploymentPostprocessing = 0; };
+		B0EA29000000000000000010 /* Sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( B0EA29000000000000000001 /* BorealWidgetBundle.swift in Sources */, B0EA29000000000000000002 /* WidgetSummary.swift in Sources */,
+				B0EA29000000000000000020 /* WidgetSnapshotModels.swift in Sources */, B0EA29000000000000000003 /* SummaryConfiguration.swift in Sources */, B0EA29000000000000000004 /* SummaryProvider.swift in Sources */, B0EA29000000000000000005 /* SummaryWidget.swift in Sources */, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */

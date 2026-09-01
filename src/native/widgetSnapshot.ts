@@ -16,6 +16,7 @@ const SUMMARY_KEYS = {
 export type WidgetSilo = (typeof WIDGET_SILOS)[number];
 
 export type WidgetSummary = {
+  schemaVersion: 2;
   silo: WidgetSilo;
   pipelineCount: number;
   tasksDueToday: number;
@@ -30,6 +31,9 @@ export type WidgetSummary = {
   nextMeeting: { id: string; title: string; start: string } | null;
   asOf: string;
 };
+
+const safeNumber = (value: unknown): number =>
+  Number.isFinite(Number(value)) ? Number(value) : 0;
 
 type WidgetTask = { id: string; title: string; type: string; dueAt: string | null; contactName: string | null };
 type TaskRow = { id: string; title: string; type: string; due_at?: string | null; dueAt?: string | null; contact_name?: string | null; contactName?: string | null };
@@ -56,7 +60,7 @@ export async function publishWidgetSnapshot(): Promise<boolean> {
 
   const results = await Promise.allSettled(
     WIDGET_SILOS.map(async (silo) => {
-      const summary = await api<WidgetSummary>("/api/widget/summary", {
+      const summary = await api<Record<string, unknown>>("/api/widget/summary", {
         headers: { "X-Silo": silo },
       });
       const headers = { "X-Silo": silo };
@@ -75,10 +79,18 @@ export async function publishWidgetSnapshot(): Promise<boolean> {
         .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()) : [];
       const next = orderedTasks(overdue)[0] ?? orderedTasks(due)[0];
       const expanded: WidgetSummary = {
-        ...summary, tasksOverdue: overdue.length,
+        schemaVersion: 2,
+        silo,
+        pipelineCount: safeNumber(summary.pipelineCount),
+        tasksDueToday: safeNumber(summary.tasksDueToday),
+        unreadMessages: safeNumber(summary.unreadMessages),
+        commissionEarned: safeNumber(summary.commissionEarned),
+        currency: typeof summary.currency === "string" ? summary.currency : "CAD",
+        tasksOverdue: overdue.length,
         documentsRequired: stageCount("DOCUMENTS_REQUIRED"), additionalStepsRequired: stageCount("STARTUP"),
         offersOutstanding: stageCount("OFFER"), nextTask: toWidgetTask(next),
         nextMeeting: meetings[0] ? { id: meetings[0].id, title: meetings[0].title, start: meetings[0].start } : null,
+        asOf: typeof summary.asOf === "string" ? summary.asOf : new Date().toISOString(),
       };
       await WidgetBridgePlugin.setItem({
         group: WIDGET_GROUP,
