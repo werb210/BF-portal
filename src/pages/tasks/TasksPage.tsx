@@ -8,6 +8,7 @@ import { api } from "@/api";
 import TaskRunner, { type RunTask } from "./TaskRunner"; // BF_PORTAL_TASKS_M2_M3_v1
 import ManageQueuesModal from "./ManageQueuesModal"; // BF_PORTAL_TASKS_M2_M3_v1
 import TaskModal from "@/components/tasks/TaskModal";
+import { useSearchParams } from "react-router-dom";
 
 type Queue = { id: string; name: string; access_type: string; open_count: number };
 type Task = {
@@ -33,7 +34,19 @@ const inputStyle: React.CSSProperties = {
 function unwrap<T>(r: unknown): T { return ((r as { data?: unknown })?.data ?? r) as T; }
 
 export default function TasksPage() {
-  const [view, setView] = useState<string>("due_today");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedView = searchParams.get("view");
+  const validView = (candidate: string | null) => VIEWS.some((item) => item.key === candidate);
+  const [view, setViewState] = useState<string>(validView(requestedView) ? requestedView! : "due_today");
+  const setView = (next: string) => {
+    setViewState(next);
+    setSearchParams((current) => { const updated = new URLSearchParams(current); updated.set("view", next); return updated; });
+  };
+  useEffect(() => {
+    const next = validView(requestedView) ? requestedView! : "due_today";
+    setViewState(next);
+    if (requestedView !== next) setSearchParams((current) => { const updated = new URLSearchParams(current); updated.set("view", next); return updated; }, { replace: true });
+  }, [requestedView, setSearchParams]);
   const [type, setType] = useState("");
   const [priority, setPriority] = useState("");
   const [queueId, setQueueId] = useState("");

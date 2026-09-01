@@ -1414,7 +1414,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
 }
 
 // ── Inbox tab ─────────────────────────────────────────────────────────────────
-function InboxTab() {
+function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
   const [composeOpen, setComposeOpen] = useState(false);
   // v702: reply prefill (to / "Re:" subject / quoted body) for the open email.
   const [replyCtx, setReplyCtx] = useState<{ to: string; subject: string; body: string }>({
@@ -2057,7 +2057,7 @@ function InboxTab() {
           {!loading && !err && messages.length === 0 && (
             <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Nothing in this inbox.</div>
           )}
-          {messages.map(m => {
+          {messages.filter((message) => !unreadOnly || message.isRead === false).map(m => {
             const isFlagged = m.flag?.flagStatus === "flagged";
             const threadCount = m.conversationId ? (threadCounts.get(m.conversationId) ?? 1) : 1;
             return (
@@ -2474,7 +2474,18 @@ function IssuesTab() {
 // BF_PORTAL_COMMS_TABS_v39 - initialTab lets a caller, and the test suite,
 // open a specific tab. Defaults to the first tab in TABS.
 export default function CommunicationsPage({ initialTab }: { initialTab?: Tab } = {}) {
-  const [tab, setTab] = useState<Tab>(initialTab ?? "inbox");
+  const initialParams = new URLSearchParams(window.location.search);
+  const urlTab = initialParams.get("tab");
+  const validUrlTab = TABS.some((candidate) => candidate.id === urlTab) ? urlTab as Tab : null;
+  const [tab, setTabState] = useState<Tab>(initialTab ?? validUrlTab ?? "inbox");
+  const [unreadOnly, setUnreadOnly] = useState((initialTab ?? validUrlTab ?? "inbox") === "inbox" && initialParams.get("filter") === "unread");
+  const setTab = (next: Tab) => {
+    setTabState(next);
+    const updated = new URLSearchParams(window.location.search);
+    updated.set("tab", next);
+    if (next !== "inbox") { updated.delete("filter"); setUnreadOnly(false); }
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}?${updated}`);
+  };
   // BF_PORTAL_BLOCK_v641_TAB_COUNTS_v1 — per-sub-tab counters. Each source is
   // the same endpoint that tab renders from. Fully guarded so a mocked/undefined
   // api response can never throw during render or tests.
@@ -2610,7 +2621,7 @@ export default function CommunicationsPage({ initialTab }: { initialTab?: Tab } 
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {tab === "sms" && <SmsTab forcedContact={forcedSmsContact} onContactSelected={setForcedSmsContact} />}
         {tab === "messages" && <MessagesTab onStartConversation={(contact) => { setForcedSmsContact(contact); setTab("sms"); }} />}
-        {tab === "inbox" && <InboxTab />}
+        {tab === "inbox" && <InboxTab unreadOnly={unreadOnly} />}
         {tab === "phone" && <PhoneTab />} {/* BF_PORTAL_PHONE_TAB_v1 */}
         {tab === "issues" && <IssuesTab />}
         {tab === "maya" && <MayaTab />}

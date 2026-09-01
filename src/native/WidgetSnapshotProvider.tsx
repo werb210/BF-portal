@@ -21,16 +21,30 @@ const POLL_MS = 10 * 60 * 1000;
 // Widget deep links arrive as bfportal://<host>. Anything not listed is ignored
 // rather than navigated to, so a stale widget can never push the app somewhere
 // that no longer exists.
-const ROUTES: Record<string, string> = {
-  applications: "/pipeline",
-  pipeline: "/pipeline",
-  tasks: "/calendar",
-  calendar: "/calendar",
-  dashboard: "/dashboard",
-};
+export function widgetRoute(url: string): { silo?: "BF" | "BI" | "SLF"; path: string } | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "bfportal:") return null;
+    const rawSilo = parsed.searchParams.get("silo")?.toUpperCase();
+    const silo = rawSilo === "BF" || rawSilo === "BI" || rawSilo === "SLF" ? rawSilo : undefined;
+    switch (parsed.hostname) {
+      case "applications": case "pipeline": return { silo, path: "/pipeline" };
+      case "crm": return { silo, path: "/crm" };
+      case "calendar": return { silo, path: "/calendar" };
+      case "tasks": {
+        const view = parsed.searchParams.get("view");
+        const suffix = view && ["due_today", "overdue", "upcoming", "completed"].includes(view) ? `?view=${view}` : "";
+        return { silo, path: `/tasks${suffix}` };
+      }
+      case "messages": return { silo, path: `/communications?tab=inbox${parsed.searchParams.get("filter") === "unread" ? "&filter=unread" : ""}` };
+      case "commission": return { silo, path: silo === "BI" ? "/bi/commissions" : "/portal?focus=commission" };
+      default: return { silo, path: "/portal" };
+    }
+  } catch { return null; }
+}
 
 export default function WidgetSnapshotProvider() {
-  const { silo } = useSilo();
+  const { silo, setSilo } = useSilo();
   const navigate = useNavigate();
   useEffect(() => {
     if (!isNativeIOS()) return;
@@ -49,10 +63,10 @@ export default function WidgetSnapshotProvider() {
 
     const urlHandle = App.addListener("appUrlOpen", ({ url }) => {
       try {
-        const parsed = new URL(url);
-        if (parsed.protocol !== "bfportal:") return;
-        const target = ROUTES[parsed.hostname];
-        if (target) navigate(target);
+        const target = widgetRoute(url);
+        if (!target) return;
+        if (target.silo) setSilo(target.silo);
+        navigate(target.path);
       } catch {
         // A malformed URL from outside the app must never throw into React.
       }
@@ -63,7 +77,7 @@ export default function WidgetSnapshotProvider() {
       void stateHandle.then((h) => h.remove());
       void urlHandle.then((h) => h.remove());
     };
-  }, [navigate]);
+  }, [navigate, setSilo]);
 
   // Silo is the one thing that changes what the widget should show, so a switch
   // republishes immediately rather than waiting for the next poll.

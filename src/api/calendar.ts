@@ -17,11 +17,11 @@ export type CalendarEvent = {
   category?: string;
 };
 
-export const fetchLocalEvents = async () => {
+export const fetchLocalEvents = async (options: { headers?: Record<string, string> } = {}) => {
   if (!getAuthToken()) throw new Error("Not authenticated");
   const msToken = await getMicrosoftAccessToken(msalClient);
   const res = await api.getList<CalendarEvent>("/api/calendar/events", {
-    headers: msToken ? { "X-MS-Access-Token": msToken } : {},
+    headers: { ...options.headers, ...(msToken ? { "X-MS-Access-Token": msToken } : {}) },
   });
   return res;
 };
