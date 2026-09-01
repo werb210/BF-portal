@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import AppLoading from "@/components/layout/AppLoading";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/api";
@@ -19,8 +19,8 @@ type DashboardMetrics = {
 // BF_PORTAL_BLOCK_v_DASHBOARD_DENSITY_v1 — bigger stat values, a real per-stage
 // breakdown (was a run-on "A 1 · B 3 · C 1" string), and a Pipeline-at-a-glance
 // section so the page isn't 90% empty.
-const StatCard = ({ label, value }: { label: string; value: string }) => (
-  <div className="drawer-section">
+const StatCard = ({ label, value, focus }: { label: string; value: string; focus?: string }) => (
+  <div className="drawer-section" data-dashboard-focus={focus} tabIndex={focus ? -1 : undefined}>
     <div className="drawer-section__title">{label}</div>
     <div
       style={{
@@ -41,6 +41,12 @@ const DashboardPage = () => {
   const silo = useSilo()?.silo ?? "BF";
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const focus = searchParams.get("focus");
+    if (focus) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-dashboard-focus="${focus}"]`)?.focus({ preventScroll: false }));
+  }, [searchParams]);
 
   const loadDashboard = useCallback(() => {
     // BF_PORTAL_DASHBOARD_SILO_REFETCH_v1 — discard the previous business
@@ -106,6 +112,7 @@ const DashboardPage = () => {
         <StatCard label="Deals Won This Month" value={fmt(metrics?.dealsWonThisMonth)} />
         <StatCard
           label="Commission Earned"
+          focus="commission"
           value={
             metrics?.commissionEarned !== undefined
               ? `$${fmt(metrics.commissionEarned)}`

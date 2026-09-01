@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum WidgetStore {
     static let group = "group.com.boreal.portal"
@@ -37,14 +38,24 @@ struct WidgetSummary: Codable, Equatable {
     let silo: String
     let pipelineCount: Int
     let tasksDueToday: Int
+    let tasksOverdue: Int
     let unreadMessages: Int
     let commissionEarned: Int
     let currency: String
+    let documentsRequired: Int
+    let additionalStepsRequired: Int
+    let offersOutstanding: Int
+    let nextTask: WidgetTask?
+    let nextMeeting: WidgetMeeting?
     let asOf: Date?
 
-    static let placeholder = WidgetSummary(silo: "BF", pipelineCount: 0, tasksDueToday: 0,
-        unreadMessages: 0, commissionEarned: 0, currency: "CAD", asOf: nil)
+    static let placeholder = WidgetSummary(silo: "BF", pipelineCount: 0, tasksDueToday: 0, tasksOverdue: 0,
+        unreadMessages: 0, commissionEarned: 0, currency: "CAD", documentsRequired: 0,
+        additionalStepsRequired: 0, offersOutstanding: 0, nextTask: nil, nextMeeting: nil, asOf: nil)
 }
+
+struct WidgetTask: Codable, Equatable { let id: String; let title: String; let type: String; let dueAt: Date?; let contactName: String? }
+struct WidgetMeeting: Codable, Equatable { let id: String; let title: String; let start: Date }
 
 enum WidgetMetric: String, CaseIterable {
     case pipeline, tasksDueToday, unreadMessages, commissionEarned
@@ -73,8 +84,21 @@ enum WidgetMetric: String, CaseIterable {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = summary.currency
-        formatter.maximumFractionDigits = 0
+        formatter.maximumFractionDigits = raw >= 1_000_000 ? 1 : 0
+        if raw >= 1_000_000 { return (formatter.currencySymbol ?? "") + String(format: "%.1fM", Double(raw) / 1_000_000) }
+        if raw >= 1_000 { return (formatter.currencySymbol ?? "") + "\(raw / 1_000)K" }
         return formatter.string(from: NSNumber(value: raw)) ?? "$\(raw)"
+    }
+
+    var symbol: String {
+        switch self { case .pipeline: return "briefcase.fill"; case .tasksDueToday: return "checkmark.circle.fill"; case .unreadMessages: return "envelope.badge.fill"; case .commissionEarned: return "dollarsign.circle.fill" }
+    }
+
+    func destination(silo: WidgetSilo) -> URL {
+        let base: String
+        switch self { case .pipeline: base = "pipeline"; case .tasksDueToday: base = "tasks"; case .unreadMessages: base = "messages"; case .commissionEarned: base = "commission" }
+        let extra = self == .tasksDueToday ? "&view=due_today" : (self == .unreadMessages ? "&filter=unread" : "")
+        return URL(string: "bfportal://\(base)?silo=\(silo.rawValue)\(extra)")!
     }
 }
 
@@ -89,5 +113,8 @@ enum WidgetSilo: String, CaseIterable {
         case .bi: return "Risk Management"
         case .slf: return "SLF"
         }
+    }
+    var accent: Color {
+        switch self { case .bf: return Color(red: 0.08, green: 0.27, blue: 0.48); case .bi: return Color(red: 0.12, green: 0.48, blue: 0.29); case .slf: return .teal }
     }
 }

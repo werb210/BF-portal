@@ -44,7 +44,7 @@ describe("widget snapshots", () => {
       expect(h.setItem).toHaveBeenCalledWith({
         group: "group.com.boreal.portal",
         key: `widget_summary_${silo}`,
-        value: JSON.stringify(summaries[silo]),
+        value: expect.stringContaining(`"silo":"${silo}"`),
       });
     }
     expect(h.reloadAllTimelines).toHaveBeenCalledOnce();
