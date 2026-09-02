@@ -4,9 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.boreal.portal',
   appName: 'Boreal Staff Portal',
   webDir: 'dist',
-  android: {
-    androidScheme: 'https',
-  },
   ios: {
     contentInset: 'always',
     limitsNavigationsToAppBoundDomains: false,
