@@ -49,6 +49,9 @@ jobs:
           chmod +x scripts/ci-guard.sh
           ./scripts/ci-guard.sh
 
+      - name: Check tracked directory casing
+        run: node scripts/check-case-collisions.mjs
+
       - run: npm run typecheck
       - run: npm run build
       - run: npm run test:ci
@@ -88,6 +91,8 @@ jobs:
             console.log(require.resolve("@rollup/rollup-darwin-x64"));
           }
           NODE
+      - name: Check tracked directory casing
+        run: node scripts/check-case-collisions.mjs
       - run: npm run typecheck
       - run: npm run test:ci
       - run: npm run build
