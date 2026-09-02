@@ -18,7 +18,31 @@ jobs:
           node-version: 22
           cache: npm
 
-      - run: npm ci
+      - run: npm ci --include=optional
+
+      - name: Verify native binaries
+        run: |
+          node <<'NODE'
+          const os = process.platform;
+          const arch = process.arch;
+
+          console.log(`platform=${os} arch=${arch}`);
+
+          if (os === "linux" && arch === "x64") {
+            console.log(require.resolve("@esbuild/linux-x64/bin/esbuild"));
+            console.log(require.resolve("@rollup/rollup-linux-x64-gnu"));
+          }
+
+          if (os === "darwin" && arch === "arm64") {
+            console.log(require.resolve("@esbuild/darwin-arm64/bin/esbuild"));
+            console.log(require.resolve("@rollup/rollup-darwin-arm64"));
+          }
+
+          if (os === "darwin" && arch === "x64") {
+            console.log(require.resolve("@esbuild/darwin-x64/bin/esbuild"));
+            console.log(require.resolve("@rollup/rollup-darwin-x64"));
+          }
+          NODE
 
       - name: Guardrails
         run: |
@@ -40,7 +64,30 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --include=optional
+      - name: Verify native binaries
+        run: |
+          node <<'NODE'
+          const os = process.platform;
+          const arch = process.arch;
+
+          console.log(`platform=${os} arch=${arch}`);
+
+          if (os === "linux" && arch === "x64") {
+            console.log(require.resolve("@esbuild/linux-x64/bin/esbuild"));
+            console.log(require.resolve("@rollup/rollup-linux-x64-gnu"));
+          }
+
+          if (os === "darwin" && arch === "arm64") {
+            console.log(require.resolve("@esbuild/darwin-arm64/bin/esbuild"));
+            console.log(require.resolve("@rollup/rollup-darwin-arm64"));
+          }
+
+          if (os === "darwin" && arch === "x64") {
+            console.log(require.resolve("@esbuild/darwin-x64/bin/esbuild"));
+            console.log(require.resolve("@rollup/rollup-darwin-x64"));
+          }
+          NODE
       - run: npm run typecheck
       - run: npm run test:ci
       - run: npm run build
