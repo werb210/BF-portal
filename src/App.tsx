@@ -90,7 +90,8 @@ function SessionGuard() {
 import DialerProvider from "@/dialer/DialerProvider";
 // BF_PORTAL_PUSH_NOTIFICATIONS_v1
 import PushNotificationsProvider from "@/native/PushNotificationsProvider";
-import WidgetSnapshotProvider from "@/native/WidgetSnapshotProvider"; // BF_PORTAL_WIDGET_SNAPSHOT_v13
+import WidgetSnapshotProvider from "@/native/WidgetSnapshotProvider";
+import NativeAppProvider from "@/native/NativeAppProvider"; // BF_PORTAL_WIDGET_SNAPSHOT_v13
 import DialerPanel from "@/dialer/components/DialerPanel";
 import FloatingDialerButton from "@/dialer/components/FloatingDialerButton";
 import IncomingCallToast from "@/dialer/components/IncomingCallToast";
@@ -105,6 +106,7 @@ function AppShell() {
       <SessionGuard />
       <DialerProvider />
       <PushNotificationsProvider />
+      <NativeAppProvider />
       <WidgetSnapshotProvider />{/* BF_PORTAL_WIDGET_SNAPSHOT_v13 */}
       <DialerPanel />
       <FloatingDialerButton />

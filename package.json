@@ -20,12 +20,13 @@
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
     "@boreal/shared-contract": "file:shared-contract",
+    "@capacitor/android": "8.4.0",
     "@capacitor/app": "^8.1.0",
     "@capacitor/app-launcher": "^8.0.1",
-    "@capacitor/core": "^8.4.0",
+    "@capacitor/core": "8.4.0",
     "@capacitor/device": "^8.0.2",
     "@capacitor/filesystem": "^8.1.2",
-    "@capacitor/ios": "^8.4.0",
+    "@capacitor/ios": "8.4.0",
     "@capacitor/keyboard": "^8.0.3",
     "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",
@@ -63,7 +64,7 @@
     "esbuild": "0.21.5"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.4.0",
+    "@capacitor/cli": "8.4.0",
     "@esbuild/linux-x64": "^0.21.5",
     "@playwright/test": "^1.58.2",
     "@rolldown/binding-linux-x64-gnu": "^1.0.0-rc.15",

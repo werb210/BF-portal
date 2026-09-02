@@ -30,3 +30,27 @@ jobs:
 
       - name: Verify artifact
         run: test -f dist/index.html
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '8.13'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:ci
+      - run: npm run build
+      - run: npx cap sync android
+      - name: Assemble Android debug application
+        working-directory: android
+        run: gradle assembleDebug
