@@ -45,6 +45,22 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, goog
             testId="crm-google-search"
           />
         )}
+        {/* BF_PORTAL_CLARITY_LINK_v163 - open the client-app Clarity recordings
+            for this person. Clarity has no per-session deep link, so we open the
+            project's recordings and copy the phone digits to the clipboard for
+            the staffer to paste into Clarity's Search. Sessions are tagged with
+            these digits by the wizard (identifyClarity, bf-client v162). */}
+        {contactPhone && (
+          <ActionBtn
+            label="Clarity"
+            testId="crm-clarity-recordings"
+            onClick={() => {
+              const digits = String(contactPhone ?? "").replace(/[^0-9]/g, "");
+              try { if (digits && navigator.clipboard) void navigator.clipboard.writeText(digits); } catch { /* clipboard optional */ }
+              window.open("https://clarity.microsoft.com/projects/view/x8jrwbuviw/impressions", "_blank", "noopener,noreferrer");
+            }}
+          />
+        )}
         <ActionBtn label="Note" onClick={() => setOpen("note")} />
         <ActionBtn label="Email" onClick={() => setOpen("email")} />
         <ActionBtn
