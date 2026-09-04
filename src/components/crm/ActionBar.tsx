@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import type { Scope } from "@/api/crm";
+import { apiGetEnvelope } from "@/api"; // BF_PORTAL_CLARITY_PLAYBACK_v170
 import { NotePopup } from "./popups/NotePopup";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { CallPopup } from "./popups/CallPopup";
@@ -45,19 +46,34 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, goog
             testId="crm-google-search"
           />
         )}
-        {/* BF_PORTAL_CLARITY_LINK_v163 - open the client-app Clarity recordings
-            for this person. Clarity has no per-session deep link, so we open the
-            project's recordings and copy the phone digits to the clipboard for
-            the staffer to paste into Clarity's Search. Sessions are tagged with
-            these digits by the wizard (identifyClarity, bf-client v162). */}
+        {/* BF_PORTAL_CLARITY_PLAYBACK_v170 - open THIS contact's Clarity recording
+            directly when the wizard captured its player URL (client v170 -> server
+            /start -> metadata.clarity_playback_url). Falls back to the project
+            recordings dashboard + phone-to-clipboard for older/untagged sessions
+            (the v163 behaviour). The tab is opened synchronously so the popup
+            blocker does not eat it across the lookup await. */}
         {contactPhone && (
           <ActionBtn
             label="Clarity"
             testId="crm-clarity-recordings"
             onClick={() => {
-              const digits = String(contactPhone ?? "").replace(/[^0-9]/g, "");
-              try { if (digits && navigator.clipboard) void navigator.clipboard.writeText(digits); } catch { /* clipboard optional */ }
-              window.open("https://clarity.microsoft.com/projects/view/x8jrwbuviw/impressions", "_blank", "noopener,noreferrer");
+              const w = window.open("about:blank", "_blank");
+              const dashboard = "https://clarity.microsoft.com/projects/view/x8jrwbuviw/impressions";
+              const fallback = () => {
+                const digits = String(contactPhone ?? "").replace(/[^0-9]/g, "");
+                try { if (digits && navigator.clipboard) void navigator.clipboard.writeText(digits); } catch { /* clipboard optional */ }
+                if (w) w.location.href = dashboard; else window.open(dashboard, "_blank", "noopener,noreferrer");
+              };
+              void (async () => {
+                try {
+                  const env = await apiGetEnvelope<{ data?: { url?: string | null } }>(
+                    `/api/crm/contacts/${scope.id}/clarity-recording`
+                  );
+                  const url = env?.data?.url ?? null;
+                  if (url) { if (w) w.location.href = url; else window.open(url, "_blank", "noopener,noreferrer"); return; }
+                } catch { /* fall through */ }
+                fallback();
+              })();
             }}
           />
         )}
