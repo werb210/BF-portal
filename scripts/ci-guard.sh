@@ -30,9 +30,10 @@ if grep -r "networkGuard" src; then
   exit 1
 fi
 
-# Keep the native release surface iPadOS-only. The legacy android/ generated
-# directory is intentionally ignored; only active dependencies and automation
-# are prohibited.
+# BF-Portal is an iPad application that may also run unmodified on Apple-silicon
+# Mac using Apple's Designed-for-iPad compatibility destination. The legacy
+# android/ generated directory is intentionally ignored; only active
+# dependencies and automation are prohibited.
 if grep -q '"@capacitor/android"' package.json; then
   echo "Forbidden dependency detected: @capacitor/android"
   exit 1
@@ -59,5 +60,14 @@ fi
 
 if printf '%s\n' "$device_families" | grep -Ev '^2$' > /dev/null; then
   echo "App and BorealWidget must use only TARGETED_DEVICE_FAMILY 2 (iPad)"
+  exit 1
+fi
+
+# Resolve the App target's configurations by name rather than relying on Xcode
+# object IDs, then enforce its iPad and Mac compatibility settings.
+python3 scripts/validate-ios-build-settings.py "$project_file"
+
+if grep -Eq 'SUPPORTS_MACCATALYST[[:space:]]*=[[:space:]]*YES;' "$project_file"; then
+  echo "Mac Catalyst must remain disabled for every iOS target"
   exit 1
 fi
