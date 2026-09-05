@@ -49,6 +49,10 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Boreal uses the microphone for staff phone calls placed through the in-app dialer.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Boreal Staff Portal uses the camera to capture documents and photos you attach to records, messages, and your profile.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Boreal Staff Portal accesses your photo library to attach images to records, emails, marketing, and your profile.</string>
 	<key>UIRequiresFullScreen</key>
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
