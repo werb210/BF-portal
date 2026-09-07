@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/api";
 
 // BF_PORTAL_CRM_SEGMENTS_v1 - save the current contact-list filters as a named
-// segment, and re-apply a saved one. Filters are opaque; the list re-applies them.
+// segment, re-apply a saved one, or delete one. Filters are opaque jsonb.
 type Filters = Record<string, unknown>;
 type Segment = { id: string; name: string; filters: Filters };
 
@@ -37,6 +37,20 @@ export function CrmSegmentBar({ current, onApply }: { current: Filters; onApply:
     }
     setTimeout(() => setMsg(null), 2000);
   }
+  async function del() {
+    if (!selectedId) return;
+    const seg = segments.find((s) => s.id === selectedId);
+    if (!window.confirm(`Delete segment "${seg?.name ?? ""}"?`)) return;
+    try {
+      await api.delete(`/api/crm/segments/${selectedId}`);
+      setSelectedId("");
+      setMsg("Deleted");
+      void load();
+    } catch {
+      setMsg("Delete failed");
+    }
+    setTimeout(() => setMsg(null), 2000);
+  }
   const ctl: React.CSSProperties = { padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13, background: "var(--ui-surface-strong)" };
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -45,6 +59,9 @@ export function CrmSegmentBar({ current, onApply }: { current: Filters; onApply:
         {segments.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
       </select>
       <button type="button" onClick={save} style={{ ...ctl, cursor: "pointer" }}>Save segment</button>
+      {selectedId ? (
+        <button type="button" onClick={del} style={{ ...ctl, cursor: "pointer" }} aria-label="Delete segment">Delete</button>
+      ) : null}
       {msg ? <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{msg}</span> : null}
     </div>
   );
