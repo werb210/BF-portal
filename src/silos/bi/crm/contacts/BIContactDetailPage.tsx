@@ -22,6 +22,7 @@ import { api } from "@/api";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { ActionBar } from "@/components/crm/ActionBar"; // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
+import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
 import { ContactEmailFeed, ContactCallFeed } from "@/components/crm/ContactCommsFeeds";
 import { ContactMarketingSource } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_AD_ATTRIBUTION_v1
 import type { TimelineItem } from "@/api/crm";
@@ -494,6 +495,7 @@ export default function BIContactDetailPage() {
             through the shared tabbed timeline so the BI card matches BF.
             Data is unchanged; <ActivityTimeline> is controlled via items. */}
         <ActivityTimeline items={timelineItems} />
+        <ContactAiSummary contactId={id} />
 
         <ContactEmailFeed contactId={id} />
         <ContactCallFeed contactId={id} />
