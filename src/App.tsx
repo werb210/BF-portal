@@ -37,6 +37,7 @@ import IssueInboxPage from "@/pages/IssueInboxPage";
 import AiCommsPage from "@/pages/AiCommsPage";
 import AIChatDashboard from "@/pages/AIChatDashboard";
 import AIKnowledgeManager from "@/pages/admin/AIKnowledgeManager";
+import AutomationsPage from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUTOMATIONS_UI_v1
 // BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1
 // Five removed admin pages all call /api/admin/* endpoints that do not exist
 // on BF-Server (verified: /api/admin/ai-documents, /api/admin/issue-reports,
@@ -247,6 +248,7 @@ const AppRoutes = () => {
         <Route path="/ai-chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AIChatDashboard /></RequireRole></ProtectedRoute>} />
         <Route path="/ai-comms" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/ai" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AIKnowledgeManager /></RequireRole></ProtectedRoute>} />
+        <Route path="/admin/automations" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AutomationsPage /></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_AUTOMATIONS_UI_v1 */}
         {/* BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1 -- five routes
             removed here (/admin/ai-knowledge, /admin/issue-reports,
             /admin/website-leads, /admin/live-chat, /admin/conversions)
