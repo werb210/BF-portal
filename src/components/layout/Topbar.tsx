@@ -28,6 +28,9 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const [isCenterOpen, setIsCenterOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [presence, setPresence] = useState<"available" | "busy" | "offline">("available");
+  const [onCall, setOnCall] = useState(false); // BF_PORTAL_TOPBAR_ONCALL_v1
+  const statusColor: string = onCall ? "#ef4444" : presence === "available" ? "#22c55e" : "#f59e0b";
+  const statusLabel: string = onCall ? "On a call" : presence === "available" ? "Available" : "Busy";
 
   const firstName = (user as { first_name?: string; firstName?: string; name?: string } | null)?.first_name
     ?? (user as { firstName?: string } | null)?.firstName
@@ -85,7 +88,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         void setAvailable();
         return;
       }
-      api.post("/api/telephony/presence/heartbeat", {}).catch(() => {});
+      api.post("/api/telephony/presence/heartbeat", {}).then((r: any) => setOnCall(!!r?.onCall)).catch(() => {});
     }, 30_000);
 
     return () => {
@@ -140,17 +143,17 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
             gap: 5,
             background: "none",
             border: "1px solid",
-            borderColor: presence === "available" ? "#22c55e" : "#f59e0b",
+            borderColor: statusColor,
             borderRadius: 20,
             padding: "3px 10px",
             cursor: "pointer",
             fontSize: 11,
             fontWeight: 600,
-            color: presence === "available" ? "#22c55e" : "#f59e0b",
+            color: statusColor,
           }}
         >
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: presence === "available" ? "#22c55e" : "#f59e0b", flexShrink: 0 }} />
-          {presence === "available" ? "Available" : "Busy"}
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: statusColor, flexShrink: 0 }} />
+          {statusLabel}
         </button>
         <div className="relative">
           <button
