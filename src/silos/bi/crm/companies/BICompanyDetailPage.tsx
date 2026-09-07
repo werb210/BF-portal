@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
 import { api } from "@/api";
 
 type BICompany = {
@@ -336,6 +337,7 @@ export default function BICompanyDetailPage() {
 
       {/* MAIN — applications */}
       <main style={mainCol} data-testid="bi-company-main">
+        <ContactAiSummary companyId={id} />
         <div style={panel}>
           <div style={panelHeader}>
             <h3 style={{ margin: 0 }}>Applications</h3>
