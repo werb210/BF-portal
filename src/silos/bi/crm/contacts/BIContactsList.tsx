@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 import { exportRowsToCsv } from "@/utils/csvExport";
+import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
@@ -200,6 +201,13 @@ export default function BIContactsList() {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} />
         <button type="button" onClick={() => exportRowsToCsv("bi-contacts.csv", rows as any)} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">Export</button>
+        <CrmSegmentBar current={{ q, ownerId, tagFilter: Array.from(tagFilter), sort }} onApply={(f) => {
+          if (typeof f.q === "string") setQ(f.q);
+          if (typeof f.ownerId === "string") setOwnerId(f.ownerId);
+          if (Array.isArray(f.tagFilter)) setTagFilter(new Set(f.tagFilter as string[]));
+          if (f.sort && typeof f.sort === "object") setSort(f.sort as { col: SortCol; dir: "asc" | "desc" });
+          setCrmPage(1);
+        }} />
         <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "transparent", color: "var(--ui-text)", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
