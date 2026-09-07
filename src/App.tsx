@@ -37,6 +37,7 @@ import IssueInboxPage from "@/pages/IssueInboxPage";
 import AiCommsPage from "@/pages/AiCommsPage";
 import AIChatDashboard from "@/pages/AIChatDashboard";
 import AIKnowledgeManager from "@/pages/admin/AIKnowledgeManager";
+import ReportsPage from "@/pages/reports/ReportsPage"; // BF_PORTAL_REPORTS_UI_v1
 import AutomationsPage from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUTOMATIONS_UI_v1
 // BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1
 // Five removed admin pages all call /api/admin/* endpoints that do not exist
@@ -193,7 +194,7 @@ const AppRoutes = () => {
         {/* BF_PORTAL_BLOCK_v91_BI_LENDERS_PAGE_v1 */}
         <Route path="/bi-lenders" element={<ProtectedRoute><BiLendersPage /></ProtectedRoute>} />
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}><ReportsPage /></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_REPORTS_UI_v1 */}
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
         <Route
           path="/bi"
