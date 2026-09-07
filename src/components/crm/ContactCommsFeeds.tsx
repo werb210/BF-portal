@@ -100,6 +100,19 @@ export function ContactCallFeed({ contactId }: { contactId: string }) {
 
   if (!loaded || items.length === 0) return null;
 
+  const [summaries, setSummaries] = useState<Record<string, string>>({}); // BF_PORTAL_CALL_AI_SUMMARY_UI_v1
+  const [summarizing, setSummarizing] = useState<string | null>(null);
+  async function summarizeCall(confId: string) {
+    setSummarizing(confId);
+    try {
+      const r = await api.post<{ summary?: string }>(`/api/crm/calls/${encodeURIComponent(confId)}/ai-summary`, {});
+      setSummaries((prev) => ({ ...prev, [confId]: r?.summary ?? "No summary returned." }));
+    } catch {
+      setSummaries((prev) => ({ ...prev, [confId]: "Could not summarize this call." }));
+    } finally {
+      setSummarizing(null);
+    }
+  }
   const fmtDur = (s?: number | null) => {
     if (!s || s <= 0) return "";
     const m = Math.floor(s / 60); const sec = s % 60;
@@ -130,6 +143,10 @@ export function ContactCallFeed({ contactId }: { contactId: string }) {
                 {isOpen ? "Hide transcript" : "Show transcript"}
               </button>
             )}
+            <button type="button" onClick={() => summarizeCall(c.conference_id)} disabled={summarizing === c.conference_id} style={{ marginTop: 6, marginLeft: (c.transcript_summary || c.transcript_text) ? 12 : 0, background: "transparent", border: "none", color: "var(--ui-accent-blue)", fontSize: 13, cursor: summarizing === c.conference_id ? "default" : "pointer", padding: 0 }}>
+              {summarizing === c.conference_id ? "Summarizing\u2026" : "Summarize call"}
+            </button>
+            {summaries[c.conference_id] ? <div style={{ fontSize: 13, color: "#374151", whiteSpace: "pre-wrap", marginTop: 6 }}>{summaries[c.conference_id]}</div> : null}
             {isOpen && (
               <div style={{ marginTop: 6 }}>
                 {c.transcript_summary && <div style={{ fontSize: 13, color: "#374151", fontStyle: "italic", marginBottom: 6 }}>{c.transcript_summary}</div>}
