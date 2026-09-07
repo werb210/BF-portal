@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
@@ -264,6 +265,13 @@ export default function ContactsPage() {
         <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-contacts.csv", rows as any)}>Export</button>
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={toolbarBtn} />
         <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>
+        <CrmSegmentBar current={{ q, ownerId, tagFilter, sort }} onApply={(f) => {
+          if (typeof f.q === "string") setQ(f.q);
+          if (typeof f.ownerId === "string") setOwnerId(f.ownerId);
+          if (typeof f.tagFilter === "string") setTagFilter(f.tagFilter);
+          if (f.sort && typeof f.sort === "object") setSort(f.sort as { col: SortCol; dir: "asc" | "desc" });
+          setCrmPage(1);
+        }} />
         <button onClick={() => setCreateOpen(true)} style={{ background: "var(--accent)", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
       </div>
       {isAdmin && selected.size > 0 && (
