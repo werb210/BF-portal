@@ -4,6 +4,7 @@ import { api } from "@/api";
 import { crmApi, type CompanyRow, type ContactRow, type Scope } from "@/api/crm";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
+import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
 import { CompanyBusinessFields } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_COMPANY_BUSINESS_v1
 import { AuthContext } from "@/auth/AuthContext";
 import { canDelete } from "@/auth/canDelete";
@@ -111,6 +112,7 @@ export default function CompanyDetailPage() {
 
       <main>
         <ActivityTimeline scope={scope} refreshKey={refreshKey} />
+        <ContactAiSummary companyId={id} />
       </main>
 
       <aside style={rail}>
