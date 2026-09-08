@@ -24,6 +24,8 @@ import CRMPage from "@/pages/crm/CRMPage";
 import CalendarPage from "@/pages/calendar/CalendarPage";
 import CommunicationsPage from "@/pages/communications/CommunicationsPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
+// BF_PORTAL_AUDIT_EVENTS_v1
+import AuditEvents from "@/pages/AuditEvents";
 import MarketingPage from "@/pages/marketing/MarketingPage";
 import TasksPage from "@/pages/tasks/TasksPage"; // BF_PORTAL_TASKS_V1
 import BIDashboardPage from "@/pages/bi/BIDashboardPage";
@@ -174,6 +176,8 @@ const AppRoutes = () => {
         <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} /> {/* BF_PORTAL_TASKS_V1 */}
         <Route path="/communications/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><CommunicationsPage /></RequireRole></ProtectedRoute>} />
+        {/* BF_PORTAL_AUDIT_EVENTS_v1 - admin-only: the log names who did what. */}
+        <Route path="/audit" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AuditEvents /></RequireRole></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/settings/:tab" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/marketing/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Marketing"]}><MarketingPage /></RequireRole></ProtectedRoute>} />
