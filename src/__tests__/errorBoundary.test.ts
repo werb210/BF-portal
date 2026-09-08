@@ -31,6 +31,7 @@ describe("ErrorBoundary", () => {
     render(React.createElement(ErrorBoundary, null, React.createElement(Thrower)));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.getByText(/system error/i)).toBeTruthy();
+    expect(screen.getByText(/something went wrong on this screen/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /try again/i })).toBeTruthy();
   });
 });
