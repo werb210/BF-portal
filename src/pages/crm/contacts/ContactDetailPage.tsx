@@ -6,6 +6,7 @@ import { ContactOneDrive } from "@/components/crm/ContactOneDrive"; // BF_PORTAL
 import SiloContext from "@/context/SiloContext"; // BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_HOTFIX1 — defensive silo read (no throw if provider absent)
 import { ActionBar } from "@/components/crm/ActionBar";
 import { UnifiedTimeline } from "@/components/crm/UnifiedTimeline"; // BF_PORTAL_UNIFIED_TIMELINE_v1
+import { ContactStageHistory } from "@/components/crm/ContactStageHistory"; // BF_PORTAL_CONTACT_STAGE_HISTORY_v1
 import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
 import { ContactApplicantFields, ContactAdvisors, ContactPartners, ContactMarketingSource, ContactCreditReadiness } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_CONTACT_PANELS_v1 + BF_PORTAL_CREDIT_READINESS_v1
 import { EntityEditModal } from "@/components/EntityEditModal";
@@ -115,6 +116,7 @@ export default function ContactDetailPage() {
 
       <main style={{ minWidth: 0 }}>
         <UnifiedTimeline contactId={id} scope={scope} refreshKey={refreshKey} />
+        <ContactStageHistory contactId={id} />
         <ContactAiSummary contactId={id} />
         <ContactDocuments contactId={id} refreshKey={refreshKey} /> {/* BF_PORTAL_CONTACT_DOCUMENTS_v1 */}
         <ContactJourney contactId={id} /> {/* BF_PORTAL_VISITOR_JOURNEY_v1 */}
