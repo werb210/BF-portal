@@ -1,4 +1,6 @@
 // BF_PORTAL_BLOCK_v759_CONTACT_CSV_IMPORT — import contacts from a HubSpot
+// BF_PORTAL_DROPZONE_WIRE_v1
+import FileDropZone from "@/components/FileDropZone";
 // (or any) CSV export. Parses the file in the browser, auto-maps columns to
 // BF contact fields with manual override, previews, and POSTs the mapped rows
 // to /api/crm/contacts/import (upsert by email).
@@ -257,7 +259,16 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
                 if (f) void onFile(f);
               }}
             />
-            <button style={btnPrimary} onClick={() => fileRef.current?.click()}>Choose CSV file…</button>
+            {/* BF_PORTAL_DROPZONE_WIRE_v1 - v640 shipped FileDropZone with no
+                consumers. On iPad in Split View the natural gesture is dragging
+                the export straight out of Files.app; the button stays because a
+                bare drop target is undiscoverable and unusable by keyboard. */}
+            <FileDropZone accept={[".csv"]} onFiles={(files) => { if (files[0]) void onFile(files[0]); }}>
+              <p style={{ margin: 0, color: "var(--ui-text-muted)", fontSize: 14 }}>
+                Drop your CSV here, or
+              </p>
+              <button style={btnPrimary} onClick={() => fileRef.current?.click()}>Choose CSV file…</button>
+            </FileDropZone>
             {err && <div style={{ color: "#b91c1c", marginTop: 12, fontSize: 13 }}>{err}</div>}
           </div>
         ) : (
