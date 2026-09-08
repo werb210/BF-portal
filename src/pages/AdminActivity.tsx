@@ -20,10 +20,14 @@ export default function AdminActivity() {
 
   useEffect(() => {
     async function loadActivity() {
-      const [biEvents, slfLogs] = await Promise.all([
+      // BF_PORTAL_AUDIT_RESILIENCE_v1 - keep the activity feed available when
+      // one source fails, rather than leaving the page in its loading state.
+      const [biResult, slfResult] = await Promise.allSettled([
         biApi.get<Omit<ActivityEvent, "source">[]>("/bi/admin/events"),
         slfApi.get<Omit<ActivityEvent, "source">[]>("/slf/logs")
       ]);
+      const biEvents = biResult.status === "fulfilled" ? biResult.value : [];
+      const slfLogs = slfResult.status === "fulfilled" ? slfResult.value : [];
 
       const merged = [
         ...biEvents.map((event) => ({ ...event, source: "BI" as const })),
@@ -37,7 +41,7 @@ export default function AdminActivity() {
       setEvents(merged);
     }
 
-    void loadActivity();
+    void loadActivity().catch(() => setEvents([]));
   }, [biApi, slfApi]);
 
   return (

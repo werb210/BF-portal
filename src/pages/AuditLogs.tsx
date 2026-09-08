@@ -19,12 +19,23 @@ export default function AuditLogs() {
   const [events, setEvents] = useState<AuditLogEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [failedSources, setFailedSources] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadLogs() {
-      const [biEvents, slfLogs] = await Promise.all([
+      // BF_PORTAL_AUDIT_RESILIENCE_v1 - Promise.all rejects on the first failing
+      // source, so setIsLoading(false) never ran and the page span forever. It
+      // also hid the source that did respond. /slf/logs depends on the SLF sync,
+      // which fails whenever that upstream credential or URL is wrong.
+      const [biResult, slfResult] = await Promise.allSettled([
         biApi.get<Omit<AuditLogEvent, "source">[]>("/bi/admin/events"),
         slfApi.get<Omit<AuditLogEvent, "source">[]>("/slf/logs")
+      ]);
+      const biEvents = biResult.status === "fulfilled" ? biResult.value : [];
+      const slfLogs = slfResult.status === "fulfilled" ? slfResult.value : [];
+      setFailedSources([
+        ...(biResult.status === "rejected" ? ["BI"] : []),
+        ...(slfResult.status === "rejected" ? ["SLF"] : []),
       ]);
       setEvents([
         ...biEvents.map((event) => ({ ...event, source: "BI" as const })),
@@ -33,7 +44,9 @@ export default function AuditLogs() {
       setIsLoading(false);
     }
 
-    void loadLogs();
+    // Loading must clear even if loadLogs itself throws, or the page never
+    // renders anything at all.
+    void loadLogs().catch(() => setIsLoading(false));
   }, [biApi, slfApi]);
 
   const totalPages = Math.max(1, Math.ceil(events.length / PAGE_SIZE));
@@ -43,6 +56,11 @@ export default function AuditLogs() {
   return (
     <div>
       <h2>Audit Logs</h2>
+      {failedSources.length > 0 ? (
+        <p data-testid="audit-source-error" style={{ color: "#8A2B2B" }}>
+          Could not load {failedSources.join(" and ")} events. The rows below are incomplete.
+        </p>
+      ) : null}
       {isLoading ? <Skeleton count={8} height={24} /> : null}
       <table>
         <thead>
