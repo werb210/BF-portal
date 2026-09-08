@@ -74,10 +74,19 @@ export default function CompaniesImportModal({ onClose, onImported }: { onClose:
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  // BF_PORTAL_DROPZONE_WIRE_v2
+  // v1 wired the drop zone to the onFile handler, which exists in ImportContactsModal but
+  // never here -- this modal reads the file out of a ChangeEvent. Split the
+  // parsing out so the input and the drop zone share one implementation
+  // instead of two that can drift.
   function onPick(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
+    ingestFile(f);
+  }
+
+  function ingestFile(f: File) {
     const reader = new FileReader();
     reader.onload = () => {
       const text = String(reader.result ?? "");
@@ -126,10 +135,10 @@ export default function CompaniesImportModal({ onClose, onImported }: { onClose:
     <div onClick={onClose} style={overlay}>
       <div onClick={(e) => e.stopPropagation()} style={panel}>
         <h3 style={{ margin: "0 0 12px" }}>Import companies (CSV)</h3>
-        <FileDropZone accept={[".csv"]} onFiles={(files) => { if (files[0]) void onFile(files[0]); }}>
-              <p style={{ margin: 0, color: "var(--ui-text-muted)", fontSize: 14 }}>Drop your CSV here, or</p>
-              <button type="button" onClick={() => fileRef.current?.click()} style={btn}>Choose CSV…</button>
-            </FileDropZone>
+        <FileDropZone accept={[".csv"]} onFiles={(files) => { if (files[0]) ingestFile(files[0]); }}>
+          <p style={{ margin: 0, color: "var(--ui-text-muted)", fontSize: 14 }}>Drop your CSV here, or</p>
+          <button type="button" onClick={() => fileRef.current?.click()} style={btn}>Choose CSV…</button>
+        </FileDropZone>
         <input ref={fileRef} type="file" accept=".csv,text/csv" style={{ display: "none" }} onChange={onPick} />
         {headers.length > 0 && (
           <div style={{ marginTop: 12 }}>
