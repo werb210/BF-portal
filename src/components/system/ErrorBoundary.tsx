@@ -1,5 +1,7 @@
 import React from "react";
 import { logger } from "@/utils/logger";
+// BF_PORTAL_ERROR_REPORTING_v1
+import { reportError } from "@/utils/errorReporter";
 
 interface State {
   hasError: boolean;
@@ -24,6 +26,7 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, S
     // Surface to browser console for immediate debugging context.
     console.error("Portal ErrorBoundary caught:", error, errorInfo);
     logger.error("Portal Error:", { error, errorInfo });
+    reportError("boundary", error, { errorInfo: String(errorInfo) });
   }
 
   // BF_PORTAL_ERROR_BOUNDARY_v1 - a caught error left staff on a dead screen

@@ -1,4 +1,5 @@
 import "./styles/globals.css";
+import { reportError } from "@/utils/errorReporter";
 import "@/lib/authSync";
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -24,12 +25,17 @@ initTheme();
 
 (window as any).__SILO__ = getActiveSilo();
 
+// BF_PORTAL_ERROR_REPORTING_v1 - these logged to a console nobody reads in
+// production. Keep the console output for local debugging; also send it
+// somewhere durable.
 window.addEventListener("unhandledrejection", (e) => {
   console.error("❌ UNHANDLED PROMISE:", e.reason);
+  reportError("unhandledrejection", e.reason);
 });
 
 window.addEventListener("error", (e) => {
   console.error("❌ RUNTIME ERROR:", e.error);
+  reportError("runtime", e.error, { filename: e.filename, line: e.lineno });
 });
 
 console.log("🔥 PORTAL BOOT");
