@@ -1,4 +1,6 @@
 // BF_PORTAL_CRM_COMPANY_CSV_IMPORT — import companies from a CSV export.
+// BF_PORTAL_DROPZONE_WIRE_v1
+import FileDropZone from "@/components/FileDropZone";
 // Parses in-browser, auto-maps columns with manual override, previews count,
 // and POSTs mapped rows to /api/crm/companies/import (upsert by name within silo).
 import { useMemo, useRef, useState, type CSSProperties, type ChangeEvent } from "react";
@@ -124,7 +126,10 @@ export default function CompaniesImportModal({ onClose, onImported }: { onClose:
     <div onClick={onClose} style={overlay}>
       <div onClick={(e) => e.stopPropagation()} style={panel}>
         <h3 style={{ margin: "0 0 12px" }}>Import companies (CSV)</h3>
-        <button type="button" onClick={() => fileRef.current?.click()} style={btn}>Choose CSV…</button>
+        <FileDropZone accept={[".csv"]} onFiles={(files) => { if (files[0]) void onFile(files[0]); }}>
+              <p style={{ margin: 0, color: "var(--ui-text-muted)", fontSize: 14 }}>Drop your CSV here, or</p>
+              <button type="button" onClick={() => fileRef.current?.click()} style={btn}>Choose CSV…</button>
+            </FileDropZone>
         <input ref={fileRef} type="file" accept=".csv,text/csv" style={{ display: "none" }} onChange={onPick} />
         {headers.length > 0 && (
           <div style={{ marginTop: 12 }}>
