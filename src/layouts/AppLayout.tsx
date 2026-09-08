@@ -5,7 +5,7 @@
 // Lenders so they can track underwriting workload and the panel of
 // insurers they place with. Communications + Calendar removed; Pipeline
 // + Lenders added. BF and SLF nav definitions are unchanged.
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { useSilo } from "@/hooks/useSilo";
@@ -17,6 +17,9 @@ import { useServerNotifications } from "@/hooks/useServerNotifications";
 import { useInboundMessageWatcher } from "@/hooks/useInboundMessageWatcher";
 import { useNotificationsStore } from "@/state/notifications.store";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
+// BF_PORTAL_BLOCK_v640_IPAD_WORKSTATION_v1
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import ShortcutHelp from "@/components/ShortcutHelp";
 
 
 const TOPBAR_HEIGHT = 68;
@@ -65,6 +68,9 @@ const SILO_BRAND: Record<string, { label: string; accent: string }> = {
 };
 
 export default function AppLayout({ children }: { children?: React.ReactNode }) {
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
+  const openShortcutHelp = useCallback(() => setShortcutHelpOpen(true), []);
+  useKeyboardShortcuts(openShortcutHelp);
   const [mayaOpen, setMayaOpen] = useState(true);
   // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1 — global new-message alerts.
   useInboundMessageWatcher();
@@ -145,6 +151,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   return (
     <div style={{ display: "flex", height: "100dvh", overflow: "hidden" }}>
       <NotificationToast />
+      <ShortcutHelp open={shortcutHelpOpen} onClose={() => setShortcutHelpOpen(false)} />
       {/* ── Sidebar ── */}
       <aside
         style={{
