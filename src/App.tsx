@@ -1,6 +1,11 @@
 import BiLendersPage from "@/pages/BiLendersPage";
+// BF_PORTAL_SHORTCUTS_MOUNT_v1 - v640 targeted AppLayout and its anchors
+// did not match, so the hook shipped and nothing ever called it. Mount it
+// here, inside the Router, which is where navigate() is available.
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import ShortcutHelp from "@/components/ShortcutHelp";
 // BF_PORTAL_BLOCK_v90_REVERT_LENDER_SPA_v1
-import React, { Suspense, lazy, useEffect } from "react";
+import React, { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { roleIn } from "@/auth/roles";
@@ -128,6 +133,10 @@ function AuthenticatedShell() {
 const FloatingChat = lazy(() => import("./components/FloatingChat"));
 
 const AppRoutes = () => {
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
+  const openShortcutHelp = useCallback(() => setShortcutHelpOpen(true), []);
+  useKeyboardShortcuts(openShortcutHelp);
+
   const token = getAuthToken();
 
   useEffect(() => {
@@ -277,6 +286,7 @@ const AppRoutes = () => {
         <Route path="/continuations" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><CreditReadiness /></RequireRole></ProtectedRoute>} />
         </Route>
       </Routes>
+      <ShortcutHelp open={shortcutHelpOpen} onClose={() => setShortcutHelpOpen(false)} />
     </>
   );
 };
