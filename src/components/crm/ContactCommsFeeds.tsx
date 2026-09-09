@@ -98,10 +98,8 @@ export function ContactCallFeed({ contactId }: { contactId: string }) {
     return () => { cancelled = true; };
   }, [contactId]);
 
-  // BF_PORTAL_CALLFEED_HOOK_ORDER_v1
-  // These sat BELOW the guard. Renders before any call loaded returned
-  // early after 2 hooks; the render after data arrived ran 4. React #310,
-  // thrown from useState, blanking the whole BI contact page.
+  // BF_PORTAL_HOOK_ORDER_v1 - hooks must precede the guard; below it the
+  // count went 2 -> 4 once calls loaded, throwing React #310.
   const [summaries, setSummaries] = useState<Record<string, string>>({});
   const [summarizing, setSummarizing] = useState<string | null>(null);
 

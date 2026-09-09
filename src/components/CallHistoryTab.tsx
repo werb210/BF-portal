@@ -7,10 +7,9 @@ export default function CallHistoryTab({ clientId }: { clientId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  if (!clientId) return <div>Client not selected.</div>;
-
   useEffect(() => {
     let mounted = true;
+    if (!clientId) return;
 
     async function load() {
       try {
@@ -32,6 +31,8 @@ export default function CallHistoryTab({ clientId }: { clientId: string }) {
     };
   }, [clientId]);
 
+  // BF_PORTAL_HOOK_ORDER_v1 - guard moved below the hooks.
+  if (!clientId) return <div>Client not selected.</div>;
   if (loading) return <div>Loading call history…</div>;
   if (error) return <div>{error}</div>;
   if (!calls.length) return <div>No call history found.</div>;
