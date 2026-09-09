@@ -16,7 +16,7 @@ export default function Dashboard() {
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const res = await api.get("/api/bi/dashboard");
+        const res = await api.get("/api/v1/bi/dashboard");
         setData(res as DashboardData);
       } catch (e) {
         console.error(e);
