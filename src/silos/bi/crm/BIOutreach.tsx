@@ -1,4 +1,5 @@
 // BF_PORTAL_BLOCK_v210_OUTREACH_KANBAN_v1
+// BF_PORTAL_APOLLO_REMOVAL_v1 — Outreach uses portal-owned marketing sequences only.
 // Full replace of the flat Outreach list with a Kanban pipeline board.
 // Pairs with BI-Server v251/v409/v410/v411 endpoints under
 // /api/v1/bi/crm/outreach/*. All data handlers and sub-components
@@ -261,11 +262,13 @@ export default function BIOutreach() {
     let cancelled = false;
     (async () => {
       try {
-        const r: any = await api(`/api/v1/bi/apollo/sequences`);
+        const r: any = await api(`/api/v1/bi/marketing/sequences`);
         if (cancelled) return;
         const list: Array<{ id: string; name: string; is_active: boolean }> =
           Array.isArray(r?.sequences)
-            ? r.sequences.filter((s: any) => s && s.is_active !== false)
+            ? r.sequences
+              .filter((s: any) => s && (s.source ?? "portal") === "portal")
+              .filter((s: any) => s.status !== "archived")
             : [];
         setSequences(list);
       } catch {
@@ -431,8 +434,8 @@ export default function BIOutreach() {
   ): Promise<{ ok: boolean; mock?: boolean; error?: string }> {
     try {
       const r: any = await api(
-        `/api/v1/bi/apollo/sequences/${sequenceId}/enroll/${contactId}`,
-        { method: "POST", body: {} } as any,
+        `/api/v1/bi/marketing/sequences/${sequenceId}/enroll`,
+        { method: "POST", body: { contactIds: [contactId] } } as any,
       );
       return { ok: true, mock: Boolean(r?.mock) };
     } catch (e: any) {
@@ -877,7 +880,7 @@ function ContactPanel(props: {
             !c.email
               ? "Contact has no email"
               : sequences.length === 0
-                ? "No active Apollo sequences. Visit Marketing → Sync from Apollo."
+                ? "No sequences yet — build one in Marketing."
                 : ""
           }
           sequences={sequences}
