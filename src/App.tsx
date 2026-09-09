@@ -1,4 +1,5 @@
 import BiLendersPage from "@/pages/BiLendersPage";
+import DiagnosticsPage from "@/pages/diagnostics/DiagnosticsPage";
 // BF_PORTAL_SHORTCUTS_MOUNT_v1 - v640 targeted AppLayout and its anchors
 // did not match, so the hook shipped and nothing ever called it. Mount it
 // here, inside the Router, which is where navigate() is available.
@@ -186,6 +187,8 @@ const AppRoutes = () => {
         <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} /> {/* BF_PORTAL_TASKS_V1 */}
         <Route path="/communications/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><CommunicationsPage /></RequireRole></ProtectedRoute>} />
         {/* BF_PORTAL_AUDIT_EVENTS_v1 - admin-only: the log names who did what. */}
+        {/* BF_PORTAL_DIAGNOSTICS_v1 */}
+        <Route path="/diagnostics" element={<ProtectedRoute><RequireRole roles={["Admin"]}><DiagnosticsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/audit" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AuditEvents /></RequireRole></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/settings/:tab" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

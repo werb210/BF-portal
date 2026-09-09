@@ -47,6 +47,7 @@ const navigationSections: NavigationSection[] = [
       { label: "AI Knowledge", path: "/admin/ai", roles: ["Admin"] },
       { label: "Automations", path: "/admin/automations", roles: ["Admin"] },
       { label: "Support", path: "/admin/support", roles: ["Admin"] },
+      { label: "Diagnostics", path: "/diagnostics", roles: ["Admin"] }, // BF_PORTAL_DIAGNOSTICS_v1
       { label: "Analytics", path: "/admin/analytics", roles: ["Admin"] },
       { label: "Website Leads", path: "/admin/website-leads", roles: ["Admin"] },
       { label: "Website Leads Table", path: "/admin/leads", roles: ["Admin"] },
