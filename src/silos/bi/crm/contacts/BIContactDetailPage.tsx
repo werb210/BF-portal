@@ -64,7 +64,7 @@ function EngagementSection({ contactId }: { contactId: string | undefined }) {
     let cancelled = false;
     (async () => {
       try {
-        const r = await api<{ events: EngagementEvent[] }>("/api/v1/bi/crm/contacts/" + encodeURIComponent(contactId) + "/engagement");
+        const r = await api<{ events: EngagementEvent[] }>("/api/bi/crm/contacts/" + encodeURIComponent(contactId) + "/engagement");
         if (!cancelled) setEvents(Array.isArray(r.events) ? r.events : []);
       } catch (e) {
         if (!cancelled) {
@@ -223,8 +223,8 @@ export default function BIContactDetailPage() {
     (async () => {
       try {
         const [c, t] = await Promise.all([
-          api(`/api/v1/bi/crm/contacts/${id}`),
-          api(`/api/v1/bi/crm/outreach/contacts/${id}/activity`),
+          api(`/api/bi/crm/contacts/${id}`),
+          api(`/api/bi/crm/outreach/contacts/${id}/activity`),
         ]);
         if (cancelled) return;
         const cRaw = c as any;
@@ -377,7 +377,7 @@ export default function BIContactDetailPage() {
       return;
     }
     try {
-      await api(`/api/v1/bi/crm/contacts/${id}`, {
+      await api(`/api/bi/crm/contacts/${id}`, {
         method: "PATCH",
         body: patch,
       } as any);
@@ -395,7 +395,7 @@ export default function BIContactDetailPage() {
     setDeleting(true);
     setActionError(null);
     try {
-      await api(`/api/v1/bi/crm/contacts/${id}`, { method: "DELETE" } as any);
+      await api(`/api/bi/crm/contacts/${id}`, { method: "DELETE" } as any);
       navigate("/silo/bi/crm");
     } catch (e: any) {
       setActionError(e?.message ?? "Delete failed.");
@@ -454,7 +454,7 @@ export default function BIContactDetailPage() {
               // BF_PORTAL_BLOCK_v846_BI_EMAIL_TIMELINE — mirror every BI card action
               // into bi_contact_activity (shared popups otherwise log only to
               // BF-Server's separate DB, which the BI timeline can't read).
-              void api(`/api/v1/bi/crm/outreach/contacts/${contact.id}/activity`, {
+              void api(`/api/bi/crm/outreach/contacts/${contact.id}/activity`, {
                 method: "POST",
                 body: JSON.stringify({ event_type: eventType, body: `${eventType} logged`, meta: { source: "bi_card" } }),
               }).catch(() => {});
@@ -547,7 +547,7 @@ export default function BIContactDetailPage() {
         onClose={() => setEmailComposeOpen(false)}
         onSent={() => {
           // BF_PORTAL_BLOCK_v846_BI_EMAIL_TIMELINE
-          void api(`/api/v1/bi/crm/outreach/contacts/${contact.id}/activity`, {
+          void api(`/api/bi/crm/outreach/contacts/${contact.id}/activity`, {
             method: "POST",
             body: JSON.stringify({ event_type: "email", outcome: "sent", body: `Email sent to ${contact.email ?? ""}`.trim(), meta: { direction: "outbound", channel: "o365" } }),
           }).catch(() => {});
@@ -602,7 +602,7 @@ function TagEditor({ contact, onSaved }: { contact: { id: string; tags: string[]
     setError(null);
     try {
       const parsed = text.split(",").map((part) => part.trim()).filter(Boolean);
-      await api(`/api/v1/bi/crm/contacts/${encodeURIComponent(contact.id)}`, {
+      await api(`/api/bi/crm/contacts/${encodeURIComponent(contact.id)}`, {
         method: "PATCH",
         body: JSON.stringify({ tags: parsed.length > 0 ? parsed : null }),
       });
