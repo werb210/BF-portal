@@ -98,10 +98,14 @@ export function ContactCallFeed({ contactId }: { contactId: string }) {
     return () => { cancelled = true; };
   }, [contactId]);
 
-  if (!loaded || items.length === 0) return null;
-
-  const [summaries, setSummaries] = useState<Record<string, string>>({}); // BF_PORTAL_CALL_AI_SUMMARY_UI_v1
+  // BF_PORTAL_CALLFEED_HOOK_ORDER_v1
+  // These sat BELOW the guard. Renders before any call loaded returned
+  // early after 2 hooks; the render after data arrived ran 4. React #310,
+  // thrown from useState, blanking the whole BI contact page.
+  const [summaries, setSummaries] = useState<Record<string, string>>({});
   const [summarizing, setSummarizing] = useState<string | null>(null);
+
+  if (!loaded || items.length === 0) return null;
   async function summarizeCall(confId: string) {
     setSummarizing(confId);
     try {
