@@ -14,12 +14,11 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 export function buildShortcuts(navigate: (to: string) => void, openHelp: () => void): Shortcut[] {
   return [
-    // BF_PORTAL_SHORTCUTS_MOUNT_v1 - v640 guessed two of these. The router has
-    // no /portal and no /crm/contacts; they are /dashboard and /crm. Verified
-    // against App.tsx by the test in this block.
-    { keys: "g d", label: "Go to Dashboard", run: () => navigate("/dashboard") },
+    // BF_PORTAL_SHORTCUT_PATHS_v1 - navigate directly to canonical routes rather
+    // than adding redirecting parent routes to the browser history.
+    { keys: "g d", label: "Go to Dashboard", run: () => navigate("/portal") },
     { keys: "g p", label: "Go to Pipeline", run: () => navigate("/pipeline") },
-    { keys: "g c", label: "Go to CRM", run: () => navigate("/crm") },
+    { keys: "g c", label: "Go to CRM", run: () => navigate("/crm/contacts") },
     { keys: "g m", label: "Go to Communications", run: () => navigate("/communications") },
     { keys: "g t", label: "Go to Tasks", run: () => navigate("/tasks") },
     { keys: "?", label: "Show keyboard shortcuts", run: openHelp },
