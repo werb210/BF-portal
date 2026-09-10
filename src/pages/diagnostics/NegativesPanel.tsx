@@ -7,6 +7,22 @@ import Skeleton from "@/components/Skeleton";
 type Candidate = { searchTerm: string; cost: number; clicks: number; impressions: number; conversions: number };
 type AddResult = { added: string[]; failed: Array<{ term: string; error: string }> };
 
+// BF_PORTAL_NEGATIVES_TYPECHECK_v1
+// apiClient.get<T> resolves to T already - it does NOT wrap in { data }. The
+// generic was typed as the narrow shape and then `.data` was read off it, which
+// fails tsc with TS2339 and reddened main. Some BF-Server routes still answer
+// with an envelope, so accept either shape the way src/api/crm.ts does and
+// narrow with a helper.
+type CandidatesResponse = { candidates?: Candidate[] } | { data?: { candidates?: Candidate[] } } | Candidate[];
+
+function unwrapCandidates(response: CandidatesResponse | null | undefined): Candidate[] {
+  if (Array.isArray(response)) return response;
+  const envelope = (response as { data?: { candidates?: Candidate[] } } | null)?.data;
+  if (envelope && Array.isArray(envelope.candidates)) return envelope.candidates;
+  const direct = (response as { candidates?: Candidate[] } | null)?.candidates;
+  return Array.isArray(direct) ? direct : [];
+}
+
 const money = (value: unknown) => `$${Number(value ?? 0).toFixed(2)}`;
 const card: CSSProperties = { background: "var(--ui-surface-strong)", borderRadius: 8, padding: 16, marginBottom: 16 };
 const th: CSSProperties = { textAlign: "left", padding: "8px 12px", fontSize: 12, textTransform: "uppercase", color: "var(--ui-text-muted)", borderBottom: "1px solid var(--ui-border)" };
@@ -26,8 +42,8 @@ export default function NegativesPanel() {
 
   const load = useCallback(() => {
     setLoading(true); setErr(null); setResult(null);
-    apiClient.get<{ candidates: Candidate[] }>(`/api/marketing/negative-candidates?days=${days}&minCost=${minCost}`)
-      .then((response) => { setRows((response?.data ?? response)?.candidates ?? []); setPicked(new Set()); })
+    apiClient.get<CandidatesResponse>(`/api/marketing/negative-candidates?days=${days}&minCost=${minCost}`)
+      .then((response) => { setRows(unwrapCandidates(response)); setPicked(new Set()); })
       .catch((error: Error) => setErr(error?.message ?? "Could not load candidates."))
       .finally(() => setLoading(false));
   }, [days, minCost]);
