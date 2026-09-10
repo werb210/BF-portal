@@ -15,6 +15,8 @@ public class IPadWorkstationPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "preview", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "annotate", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "annotateAll", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "previewDocument", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "scanCard", returnType: CAPPluginReturnPromise)
     ]
 
@@ -122,6 +124,85 @@ public class IPadWorkstationPlugin: CAPPlugin, CAPBridgedPlugin {
         DispatchQueue.global(qos: .userInitiated).async {
             try? VNImageRequestHandler(cgImage: cgImage, options: [:]).perform([request])
         }
+    }
+}
+
+// v115-ipad-documents
+extension IPadWorkstationPlugin {
+    private func borealResolveURL(_ call: CAPPluginCall) -> URL? {
+        for key in ["path", "url", "filePath", "uri"] {
+            guard let raw = call.getString(key), !raw.isEmpty else { continue }
+            if raw.hasPrefix("file://") || raw.hasPrefix("http://") || raw.hasPrefix("https://") {
+                return URL(string: raw)
+            }
+            return URL(fileURLWithPath: raw)
+        }
+        guard let encoded = call.getString("data"), !encoded.isEmpty else { return nil }
+        let cleaned = encoded.split(separator: ",", maxSplits: 1).last.map(String.init) ?? encoded
+        guard let bytes = Data(base64Encoded: cleaned) else { return nil }
+        let name = call.getString("name") ?? "document-\(UUID().uuidString).pdf"
+        let output = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        do {
+            try bytes.write(to: output)
+            return output
+        } catch {
+            return nil
+        }
+    }
+
+    @objc public func annotateAll(_ call: CAPPluginCall) {
+        guard let url = borealResolveURL(call) else {
+            call.reject("A file path, URL, or base64 data is required")
+            return
+        }
+        guard #available(iOS 16.0, *) else {
+            call.reject("Multi-page annotation requires iOS 16 or later")
+            return
+        }
+        DispatchQueue.main.async {
+            guard let host = self.bridge?.viewController else {
+                call.reject("No view controller available")
+                return
+            }
+            let annotator = MultiPageAnnotatorViewController(url: url) { output, pages, cancelled in
+                call.resolve(["cancelled": cancelled, "pages": cancelled ? 0 : pages, "path": output?.path ?? ""])
+            }
+            let navigation = UINavigationController(rootViewController: annotator)
+            navigation.modalPresentationStyle = .fullScreen
+            host.present(navigation, animated: true)
+        }
+    }
+
+    @objc public func previewDocument(_ call: CAPPluginCall) {
+        guard let url = borealResolveURL(call) else {
+            call.reject("A file path, URL, or base64 data is required")
+            return
+        }
+        DispatchQueue.main.async {
+            guard let host = self.bridge?.viewController else {
+                call.reject("No view controller available")
+                return
+            }
+            let coordinator = BorealPreviewCoordinator(url: url)
+            BorealPreviewCoordinator.retained = coordinator
+            let controller = QLPreviewController()
+            controller.dataSource = coordinator
+            host.present(controller, animated: true)
+            call.resolve(["shown": true])
+        }
+    }
+}
+
+final class BorealPreviewCoordinator: NSObject, QLPreviewControllerDataSource {
+    static var retained: BorealPreviewCoordinator?
+    private let url: URL
+
+    init(url: URL) { self.url = url }
+
+    func numberOfPreviewItems(in controller: QLPreviewController) -> Int { 1 }
+
+    func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
+        url as NSURL
     }
 }
 
