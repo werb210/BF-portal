@@ -7,7 +7,8 @@ export const PREVIEWABLE_EXTENSIONS = [
 ];
 
 export function extensionOf(href: string): string {
-  const clean = (href || "").split("?")[0].split("#")[0];
+  const noQuery = (href || "").split("?")[0] ?? "";
+  const clean = noQuery.split("#")[0] ?? "";
   const last = clean.split("/").pop() || "";
   const dot = last.lastIndexOf(".");
   return dot < 0 ? "" : last.slice(dot + 1).toLowerCase();

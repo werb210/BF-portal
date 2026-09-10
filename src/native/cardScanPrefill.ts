@@ -1,4 +1,5 @@
 // v114-card-scan-mount
+// v121: index-safe under noUncheckedIndexedAccess
 // Pure mapping from a scanned business card (parsed object OR raw OCR lines)
 // to a CRM contact form prefill. No native or React dependencies.
 
@@ -26,6 +27,11 @@ function str(v: unknown): string {
   return typeof v === 'string' ? v.trim() : '';
 }
 
+function at(list: readonly string[], index: number): string {
+  const value = list[index];
+  return typeof value === 'string' ? value : '';
+}
+
 function pick(src: Record<string, unknown>, keys: string[]): string {
   for (const k of keys) {
     const v = str(src[k]);
@@ -47,16 +53,18 @@ export function normalizePhone(raw: unknown): string {
 export function splitName(full: unknown): { firstName: string; lastName: string } {
   const s = str(full).replace(/\s+/g, ' ');
   if (!s) return { firstName: '', lastName: '' };
-  const parts = s.split(' ');
-  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
-  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+  const parts = s.split(' ').filter((p) => p.length > 0);
+  if (parts.length === 0) return { firstName: '', lastName: '' };
+  const first = at(parts, 0);
+  if (parts.length === 1) return { firstName: first, lastName: '' };
+  return { firstName: first, lastName: parts.slice(1).join(' ') };
 }
 
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
 const URL_RE = /(?:https?:\/\/|www\.)[A-Za-z0-9.-]+\.[A-Za-z]{2,}/i;
 const ORG_RE = /\b(inc|ltd|llc|corp|corporation|company|co|group|holdings|services|solutions|financial|capital|partners)\b/i;
 
-export function fromLines(lines: string[]): Record<string, unknown> {
+export function fromLines(lines: readonly string[]): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   const rest: string[] = [];
   for (const raw of lines) {
@@ -64,7 +72,7 @@ export function fromLines(lines: string[]): Record<string, unknown> {
     if (!line) continue;
     const em = line.match(EMAIL_RE);
     if (em && !out.email) {
-      out.email = em[0];
+      out.email = at(em, 0);
       continue;
     }
     const digits = line.replace(/[^0-9]/g, '');
@@ -74,22 +82,27 @@ export function fromLines(lines: string[]): Record<string, unknown> {
     }
     const u = line.match(URL_RE);
     if (u && !out.website) {
-      out.website = u[0];
+      out.website = at(u, 0);
       continue;
     }
     rest.push(line);
   }
-  if (rest.length) out.fullName = rest[0];
+  if (rest.length > 0) out.fullName = at(rest, 0);
   const tail = rest.slice(1);
-  const org = tail.filter((l) => ORG_RE.test(l))[0];
+  const orgMatches = tail.filter((l) => ORG_RE.test(l));
+  const org = orgMatches.length > 0 ? at(orgMatches, 0) : '';
   if (org) out.company = org;
-  const title = tail.filter((l) => l !== org)[0];
+  const titleMatches = tail.filter((l) => l !== org);
+  const title = titleMatches.length > 0 ? at(titleMatches, 0) : '';
   if (title) out.title = title;
   return out;
 }
 
 export function toContactPrefill(card: unknown): ContactPrefill {
-  if (Array.isArray(card)) return toContactPrefill(fromLines(card as string[]));
+  if (Array.isArray(card)) {
+    const lines = (card as unknown[]).map((v) => str(v));
+    return toContactPrefill(fromLines(lines));
+  }
   if (!card || typeof card !== 'object') return { ...EMPTY };
   const c = card as Record<string, unknown>;
   let firstName = pick(c, ['firstName', 'first_name', 'givenName']);
