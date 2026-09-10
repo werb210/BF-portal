@@ -7,7 +7,7 @@ describe("BF_PORTAL_DIAGNOSTICS_v1", () => {
   it("reads all five diagnostic endpoints", () => {
     expect(page).toContain("/marketing/ad-waste?days=");
     expect(page).toContain("/marketing/ad-keywords?days=");
-    expect(page).toContain("/_int/job-queue");
+    expect(page).toContain("/admin/job-queue");
     expect(page).toContain("/admin/submit-funnel?days=");
     expect(page).toContain("/admin/submit-failures?days=");
   });
