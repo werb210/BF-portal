@@ -7,7 +7,9 @@ import { apiClient } from "@/api/client";
 import Skeleton from "@/components/Skeleton";
 
 type Tab = "ads" | "queue" | "funnel" | "failures";
-type AdTerm = { search_term: string; cost: string; clicks: number; impressions: number; conversions: string; cost_per_conversion?: string | null };
+// BF_PORTAL_AD_KEYWORD_FIELD_v1 - /ad-keywords returns `keyword` (aliased
+// from name); /ad-waste returns `search_term`. One row type, both shapes.
+type AdTerm = { search_term?: string; keyword?: string; cost: string; clicks: number; impressions: number; conversions: string; cost_per_conversion?: string | null };
 type AdsData = { windowDays: number; totalCost: number; wastedCost: number; wastedShare: number | null; totalConversions: number; worstOffenders: AdTerm[]; whatWorks: AdTerm[]; keywords?: AdTerm[] };
 type JobQueue = { summary: Array<{ type: string; status: string; count: string; oldest: string; max_attempts: string }>; claimableNow: Array<{ type: string; count: string }>; stuck: Array<{ id: string; type: string; status: string; error: string | null; attempts: string; created_at: string }> };
 type Funnel = { attempted: number; completed: number; completionRate: number | null; byStatus: Record<string, number> };
@@ -69,7 +71,7 @@ export default function DiagnosticsPage() {
 }
 
 function AdsPanel({ data }: { data: AdsData }) {
-  const rows = (title: string, terms: AdTerm[], empty: string) => <TableCard title={title} headers={["Search term", "Cost", "Clicks", "Conversions"]}>{terms.map((row, index) => <tr key={`${row.search_term}-${index}`}><td style={td}>{row.search_term}</td><td style={td}>{money(row.cost)}</td><td style={td}>{row.clicks}</td><td style={td}>{row.conversions}</td></tr>)}{terms.length === 0 && <tr><td style={td} colSpan={4}>{empty}</td></tr>}</TableCard>;
+  const rows = (title: string, terms: AdTerm[], empty: string) => <TableCard title={title} headers={["Search term", "Cost", "Clicks", "Conversions"]}>{terms.map((row, index) => <tr key={`${row.search_term ?? row.keyword ?? "—"}-${index}`}><td style={td}>{row.search_term ?? row.keyword ?? "—"}</td><td style={td}>{money(row.cost)}</td><td style={td}>{row.clicks}</td><td style={td}>{row.conversions}</td></tr>)}{terms.length === 0 && <tr><td style={td} colSpan={4}>{empty}</td></tr>}</TableCard>;
   return <><div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}><Stat label="Total spend" value={money(data.totalCost)} /><Stat label="Converted nothing" value={money(data.wastedCost)} alarm /><Stat label="Wasted share" value={pct(data.wastedShare)} alarm={(data.wastedShare ?? 0) > 0.5} /><Stat label="Conversions" value={String(data.totalConversions ?? 0)} /></div>{rows("Worst offenders — cost with zero conversions", data.worstOffenders ?? [], "No zero-conversion spend in this window.")}{rows("What works", data.whatWorks ?? [], "Nothing converted in this window.")}{rows("All ad keywords", data.keywords ?? [], "No keyword data in this window.")}</>;
 }
 function QueuePanel({ data }: { data: JobQueue }) {
