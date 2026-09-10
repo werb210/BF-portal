@@ -1,3 +1,6 @@
+// BF_PORTAL_DIAGNOSTICS_API_PREFIX_v4 - every call here was missing /api.
+// apiClient prepends the server origin only; it does not add a prefix, so
+// all four tabs requested the origin root and rendered Route not found.
 // BF_PORTAL_DIAGNOSTICS_v1
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { apiClient } from "@/api/client";
@@ -32,14 +35,14 @@ export default function DiagnosticsPage() {
   const load = useCallback(async () => {
     if (tab === "ads") {
       const [waste, keywords] = await Promise.all([
-        apiClient.get<AdsData>(`/marketing/ad-waste?days=${days}`),
-        apiClient.get<AdTerm[] | { keywords: AdTerm[] }>(`/marketing/ad-keywords?days=${days}`),
+        apiClient.get<AdsData>(`/api/marketing/ad-waste?days=${days}`),
+        apiClient.get<AdTerm[] | { keywords: AdTerm[] }>(`/api/marketing/ad-keywords?days=${days}`),
       ]);
       return { ...waste, keywords: Array.isArray(keywords) ? keywords : keywords.keywords };
     }
-    if (tab === "queue") return apiClient.get<JobQueue>("/_int/job-queue");
-    if (tab === "funnel") return apiClient.get<Funnel>(`/admin/submit-funnel?days=${days}`);
-    return apiClient.get<Failures>(`/admin/submit-failures?days=${days}`);
+    if (tab === "queue") return apiClient.get<JobQueue>("/api/_int/job-queue");
+    if (tab === "funnel") return apiClient.get<Funnel>(`/api/admin/submit-funnel?days=${days}`);
+    return apiClient.get<Failures>(`/api/admin/submit-failures?days=${days}`);
   }, [tab, days]);
 
   useEffect(() => {
