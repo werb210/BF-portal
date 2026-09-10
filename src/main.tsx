@@ -20,8 +20,11 @@ import "./index.css";
 import "./styles/light-inputs.css";
 import "./styles/bi-theme.css"; // BF_PORTAL_BLOCK_v_BI_THEME_AWARE_v1
 import { initTheme } from "@/theme/theme";
+import { installDocumentPreview } from "./native/documentPreviewDelegate";
 
 initTheme();
+// v115-doc-preview: use native Quick Look for document links on iPad.
+installDocumentPreview();
 
 (window as any).__SILO__ = getActiveSilo();
 
