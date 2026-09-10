@@ -6,6 +6,7 @@ import PhoneInput from "@/components/forms/PhoneInput";
 import RegionSelect from "@/components/forms/RegionSelect";
 import CreateCompanyModal from "@/pages/crm/companies/CreateCompanyModal";
 import { bfNormalizePhoneInput } from "@/utils/phoneFormat";
+import ContactCardScanField from "@/components/crm/ContactCardScanField"; // v114-card-scan-mount
 
 type Props = {
   open?: boolean;
@@ -133,6 +134,14 @@ export default function CreateContactModal({ open = true, onClose, onSaved }: Pr
       <div style={overlay}>
         <div style={modal}>
           <h3 style={{ marginTop: 0 }}>Create Contact</h3>
+          {/* v114-card-scan-mount */}
+          <ContactCardScanField onPrefill={(prefill) => setForm((current) => ({
+            ...current,
+            first_name: current.first_name || prefill.firstName,
+            last_name: current.last_name || prefill.lastName,
+            email: current.email || prefill.email,
+            phone: current.phone || prefill.phone,
+          }))} />
           <FormField label="First Name" required error={errors.first_name}><input value={form.first_name} onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))} style={input} /></FormField>
           <FormField label="Last Name" required error={errors.last_name}><input value={form.last_name} onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))} style={input} /></FormField>
           <FormField label="Email" error={errors.email}><input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} style={input} /></FormField>
