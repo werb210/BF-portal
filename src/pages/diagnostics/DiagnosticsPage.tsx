@@ -42,7 +42,7 @@ export default function DiagnosticsPage() {
       ]);
       return { ...waste, keywords: Array.isArray(keywords) ? keywords : keywords.keywords };
     }
-    if (tab === "queue") return apiClient.get<JobQueue>("/api/_int/job-queue");
+    if (tab === "queue") return apiClient.get<JobQueue>("/api/admin/job-queue" /* BF_PORTAL_JOB_QUEUE_PATH_v1 - /_int is internal; the browser got no CORS header and net::ERR_FAILED */);
     if (tab === "funnel") return apiClient.get<Funnel>(`/api/admin/submit-funnel?days=${days}`);
     return apiClient.get<Failures>(`/api/admin/submit-failures?days=${days}`);
   }, [tab, days]);
