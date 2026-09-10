@@ -303,6 +303,17 @@ export default function BIOutreach() {
     return () => { cancelled = true; };
   }, []);
 
+// BF_PORTAL_ENROLL_RESULT_TRUTH_v1
+// The six reasons biMarketingRoutes.ts can return in skips[].reason.
+const ENROLL_SKIP_REASON_LABEL: Record<string, string> = {
+  not_found: "contact not found",
+  no_email: "no email address",
+  no_consent_basis: "no CASL consent basis on file",
+  consent_expired: "CASL consent has expired",
+  suppressed: "on the suppression list",
+  already_enrolled: "already in this sequence",
+};
+
   const addSelectedToSequence = useCallback(async () => {
     const contactIds = Array.from(selectedIds);
     if (!biSequenceId || !contactIds.length || enrollBusy) return;
@@ -313,9 +324,28 @@ export default function BIOutreach() {
         method: "POST",
         body: { contactIds },
       } as any);
-      const enrolled = Number(result?.enrolled ?? result?.added ?? 0);
+      // BF_PORTAL_ENROLL_RESULT_TRUTH_v1
+      // The route returns { inserted, skipped, requested, next_step_at, skips }.
+      // This read `enrolled ?? added`, neither of which is sent, so the added
+      // count rendered 0 on every successful enrollment. It also discarded the
+      // skips array and printed a hardcoded guess naming two of the six reasons
+      // the server can return, so four in six failures reported the wrong cause.
+      const enrolled = Number(result?.inserted ?? result?.enrolled ?? result?.added ?? 0);
       const skipped = Number(result?.skipped ?? 0);
-      setEnrollResult(`${enrolled} added${skipped ? `; ${skipped} skipped (already enrolled or no CASL consent basis)` : ""}.`);
+      const skips: Array<{ contact_id?: string; reason?: string }> =
+        Array.isArray(result?.skips) ? result.skips : [];
+      let detail = "";
+      if (skips.length > 0) {
+        const byReason = new Map<string, number>();
+        for (const skip of skips) {
+          const key = String(skip?.reason ?? "unknown");
+          byReason.set(key, (byReason.get(key) ?? 0) + 1);
+        }
+        detail = ` (${[...byReason.entries()]
+          .map(([reason, count]) => `${count} ${ENROLL_SKIP_REASON_LABEL[reason] ?? reason}`)
+          .join(", ")})`;
+      }
+      setEnrollResult(`${enrolled} added${skipped ? `; ${skipped} skipped${detail}` : ""}.`);
       clearSelection();
     } catch (e: any) {
       setEnrollResult(e?.message ?? "Could not add contacts to the sequence.");

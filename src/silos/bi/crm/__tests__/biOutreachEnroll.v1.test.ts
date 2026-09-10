@@ -14,7 +14,7 @@ describe("BI Outreach sequence enrollment", () => {
 
   it("enrolls the explicitly selected contacts and reports skips", () => {
     expect(source).toContain("body: { contactIds }");
-    expect(source).toContain("already enrolled or no CASL consent basis");
+    expect(source).not.toContain("already enrolled or no CASL consent basis");
     expect(source).toContain('data-testid="bi-outreach-enroll"');
   });
 
