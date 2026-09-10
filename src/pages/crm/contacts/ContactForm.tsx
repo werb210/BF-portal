@@ -1,3 +1,4 @@
+import ContactCardScanField from '../../../components/crm/ContactCardScanField'; // v114-card-scan-mount
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -113,6 +114,14 @@ const ContactForm = ({ onSave }: ContactFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2" data-testid="contact-form">
+      {/* v114-card-scan-mount */}
+      <ContactCardScanField onPrefill={(prefill) => {
+        setFirstName((current) => current || prefill.firstName);
+        setLastName((current) => current || prefill.lastName);
+        setEmail((current) => current || prefill.email);
+        setPhone((current) => current || prefill.phone);
+      }} />
+
       {error && <p style={{ color: "#ef4444", fontSize: 13, margin: 0 }}>{error}</p>}
       <Input
         placeholder="First name *"

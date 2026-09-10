@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { exportRowsToCsv } from "@/utils/csvExport";
 import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
+import ContactCardScanField from "@/components/crm/ContactCardScanField"; // v114-card-scan-mount
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
 
@@ -256,6 +257,14 @@ export default function BIContactsList() {
         <div onClick={() => !creating && setCreateOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--ui-surface)", border: "1px solid var(--ui-border)", borderRadius: 10, padding: 20, width: 380, maxWidth: "90vw", color: "var(--ui-text)" }}>
             <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>New BI contact</h3>
+            {/* v114-card-scan-mount */}
+            <ContactCardScanField onPrefill={(prefill) => setCreateForm((current) => ({
+              ...current,
+              full_name: current.full_name || [prefill.firstName, prefill.lastName].filter(Boolean).join(" "),
+              email: current.email || prefill.email,
+              phone_e164: current.phone_e164 || prefill.phone,
+              title: current.title || prefill.title,
+            }))} />
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <input value={createForm.full_name} onChange={(e) => setCreateForm((f) => ({ ...f, full_name: e.target.value }))} placeholder="Full name" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text)", fontSize: 13 }} />
               <input value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)", color: "var(--ui-text)", fontSize: 13 }} />
