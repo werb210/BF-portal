@@ -38,11 +38,7 @@ const navigationSections: NavigationSection[] = [
       { label: "Tasks", path: "/tasks" }, // BF_PORTAL_TASKS_V1
       { label: "Marketing", path: "/marketing", roles: ["Admin", "Marketing"] },
       { label: "Lenders", path: "/lenders" },
-      { label: "Settings", path: "/settings" },
-      // BF_PORTAL_DIAGNOSTICS_NAV_v2 - v1 filed this under "AI & Support",
-      // a group that does not render for the user it was built for, so the
-      // page existed and was unreachable. Keep it in the primary group.
-      { label: "Diagnostics", path: "/diagnostics", roles: ["Admin"] }
+      { label: "Settings", path: "/settings" }
     ]
   },
   {

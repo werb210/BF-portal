@@ -1,3 +1,5 @@
+// BF_PORTAL_DIAGNOSTICS_ADS_TAB_v3 - ad waste belongs with the ad reports,
+// not in the left nav. Two previous attempts filed it in sidebar groups.
 // BF_PORTAL_MARKETING_FUNNEL_LIVE_v1 — Analytics tab renders the live
 // application funnel from GET /api/marketing/funnel (respondOk envelope).
 import { useEffect, useState } from "react";
@@ -7,6 +9,7 @@ import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORT
 import SequenceCanvas, { type BFSequenceStep } from "@/components/marketing/SequenceCanvas";
 import AbandonedPanel from "@/components/marketing/AbandonedPanel"; // BF_PORTAL_ABANDONED_PANEL_v49
 import BFReferrerManagement from "./BFReferrerManagement"; // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
+import DiagnosticsPanel from "@/pages/diagnostics/DiagnosticsPage";
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
@@ -1466,7 +1469,7 @@ function AutomationsPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  const [adsTab, setAdsTab] = useState<"google" | "linkedin" | "microsoft">("google");
+  const [adsTab, setAdsTab] = useState<"google" | "linkedin" | "microsoft" | "adwaste">("google");
 
   return (
     <div className="space-y-4">
@@ -1486,14 +1489,14 @@ const MarketingDashboard = () => {
       {tab === "ads" && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {(["google", "linkedin", "microsoft"] as const).map((id) => (
+            {(["google", "linkedin", "microsoft", "adwaste"] as const).map((id) => (
               <button
                 key={id}
                 type="button"
                 className={`ui-button ${adsTab === id ? "ui-button--primary" : "ui-button--secondary"}`}
                 onClick={() => setAdsTab(id)}
               >
-                {id === "google" ? "Google Ads" : id === "linkedin" ? "LinkedIn Ads" : "Microsoft Ads"}
+                {id === "google" ? "Google Ads" : id === "linkedin" ? "LinkedIn Ads" : id === "microsoft" ? "Microsoft Ads" : "Ad Waste"}
               </button>
             ))}
           </div>
@@ -1515,6 +1518,7 @@ const MarketingDashboard = () => {
             </div>
           )}
           {adsTab === "microsoft" && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Microsoft Ads - coming soon.</div>}
+          {adsTab === "adwaste" && <DiagnosticsPanel />}
         </div>
       )}
       {tab === "email" && <BrandedEmailComposer />}
