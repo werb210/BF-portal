@@ -1537,7 +1537,9 @@ const MarketingDashboard = () => {
         </div>
       )}
       {tab === "referrers" && <BFReferrerManagement />}
-      {tab !== "referrers" && <TemplateAnalyticsPanel />}
+      {/* BF_PORTAL_TEMPLATE_PERF_EMAIL_ONLY_v1 - Template performance reports
+          email sends, opens, clicks, and replies, so keep it on the Email tab. */}
+      {tab === "email" && <TemplateAnalyticsPanel />}
     </div>
   );
 };
