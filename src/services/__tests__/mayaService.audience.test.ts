@@ -26,7 +26,7 @@ describe("BF_PORTAL_BLOCK_v201_MAYA_AUDIENCE_HEADER_v1 — src/services/mayaServ
     postMock.mockResolvedValueOnce({});
     await sendMayaMessage("hello");
     expect(postMock).toHaveBeenCalledTimes(1);
-    const [path, body, options] = postMock.mock.calls[0];
+    const [path, body, options] = postMock.mock.calls[0]!;
     expect(path).toBe("/api/ai/maya/message");
     expect(body).toMatchObject({ message: "hello" });
     expect(options?.headers?.["X-Maya-Audience"]).toBe("staff");

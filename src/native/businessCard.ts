@@ -86,8 +86,9 @@ export function parseBusinessCard(lines: string[]): ParsedCard {
     return !claimed.has(i) && !/\d/.test(line) && words >= 2 && words <= 4;
   });
   if (nameIndex >= 0) {
-    card.fullName = clean[nameIndex];
-    Object.assign(card, splitName(clean[nameIndex]));
+    const fullName = clean[nameIndex]!;
+    card.fullName = fullName;
+    Object.assign(card, splitName(fullName));
     claimed.add(nameIndex);
   }
   if (!card.company) {

@@ -37,7 +37,7 @@ expect(() => reportError("runtime", new Error("boom"))).not.toThrow();
 
 it("sends the detail needed to locate the failure", () => {
 reportError("boundary", new Error("kaboom"));
-const [url, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+const [url, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0]!;
 expect(url).toBe("/api/client/issues");
 const body = JSON.parse(String((init as RequestInit).body));
 expect(body).toMatchObject({ source: "boundary", message: "kaboom" });

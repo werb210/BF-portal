@@ -48,9 +48,9 @@ describe("every external origin index.html references is allowed", () => {
   });
 
   it("no other third-party origin has crept into index.html unallowed", () => {
-    const csp: string = JSON.parse(read(CONFIGS[1])).globalHeaders["Content-Security-Policy"];
+    const csp: string = JSON.parse(read(CONFIGS[1]!)).globalHeaders["Content-Security-Policy"];
     const origins = new Set(
-      Array.from(html.matchAll(/https:\/\/([a-z0-9.-]+)/gi)).map((m) => m[1].toLowerCase()),
+      Array.from(html.matchAll(/https:\/\/([a-z0-9.-]+)/gi)).map((m) => m[1]!.toLowerCase()),
     );
     const unallowed = [...origins].filter((o) => !csp.includes(o));
     expect(unallowed).toEqual([]);

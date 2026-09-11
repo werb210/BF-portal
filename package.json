@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "start": "vite preview --port 8080",
     "typecheck": "tsc --noEmit",
+    "typecheck:all": "node scripts/typecheck-all.mjs",
     "test": "vitest run",
     "test:ci": "vitest run",
     "ci:verify": "npm run build && npm run test:ci",

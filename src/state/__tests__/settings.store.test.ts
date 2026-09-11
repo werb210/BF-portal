@@ -48,7 +48,7 @@ describe("settings.store admin user normalization", () => {
 
     await useSettingsStore.getState().fetchUsers();
 
-    const user = useSettingsStore.getState().users[0];
+    const user = useSettingsStore.getState().users[0]!;
     expect(user.firstName).toBe("Todd");
     expect(user.first_name).toBe("Todd");
     expect(user.lastName).toBe("W");

@@ -17,7 +17,7 @@ describe("BF_PORTAL_BLOCK_v201_MAYA_AUDIENCE_HEADER_v1 — src/api/maya.ts", () 
     postMock.mockResolvedValueOnce({});
     await sendMayaMessage("hello");
     expect(postMock).toHaveBeenCalledTimes(1);
-    const [path, body, options] = postMock.mock.calls[0];
+    const [path, body, options] = postMock.mock.calls[0]!;
     expect(path).toBe("/api/maya/message");
     expect(body).toMatchObject({ message: "hello", surface: "staff_portal" });
     expect(options?.headers?.["X-Maya-Audience"]).toBe("staff");
@@ -27,7 +27,7 @@ describe("BF_PORTAL_BLOCK_v201_MAYA_AUDIENCE_HEADER_v1 — src/api/maya.ts", () 
     postMock.mockResolvedValueOnce({});
     await escalateToHuman();
     expect(postMock).toHaveBeenCalledTimes(1);
-    const [path, body, options] = postMock.mock.calls[0];
+    const [path, body, options] = postMock.mock.calls[0]!;
     expect(path).toBe("/api/maya/escalate");
     expect(body).toMatchObject({ reason: "user_requested_human" });
     expect(options?.headers?.["X-Maya-Audience"]).toBe("staff");

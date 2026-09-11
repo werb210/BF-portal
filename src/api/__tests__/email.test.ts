@@ -62,7 +62,7 @@ describe("sendEmail", () => {
 
     await sendEmail({ to: "x@example.com", subject: "S", body: "B" });
 
-    const callArgs = postMock.mock.calls[0];
+    const callArgs = postMock.mock.calls[0]!;
     expect(callArgs[1]).toMatchObject({ cc: [], bcc: [] });
   });
 
@@ -73,7 +73,7 @@ describe("sendEmail", () => {
 
     // The new sendEmail makes a 2-arg call: (path, body) — no third options
     // arg with headers. Verify exactly 2 args were passed.
-    const callArgs = postMock.mock.calls[0];
+    const callArgs = postMock.mock.calls[0]!;
     expect(callArgs.length).toBe(2);
   });
 });

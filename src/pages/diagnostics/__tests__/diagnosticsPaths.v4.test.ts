@@ -9,7 +9,7 @@ import { resolve } from "node:path";
 const page = readFileSync(resolve(__dirname, "..", "DiagnosticsPage.tsx"), "utf-8");
 
 describe("BF_PORTAL_DIAGNOSTICS_API_PREFIX_v4", () => {
-  const calls = [...page.matchAll(/apiClient\.get<[^>]*>\(\s*[`"]([^`"$]*)/g)].map((m) => m[1]);
+  const calls = [...page.matchAll(/apiClient\.get<[^>]*>\(\s*[`"]([^`"$]*)/g)].map((m) => m[1]!);
 
   it("makes exactly the five expected requests", () => {
     expect(calls).toHaveLength(5);
