@@ -12,6 +12,7 @@
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
+		B0EA1000000000000000000B /* BorealPushCategories.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EA1000000000000000000C /* BorealPushCategories.swift */; };
 		B0EA10000000000000000003 /* WidgetBridgePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EA10000000000000000005 /* WidgetBridgePlugin.swift */; };
 		B0EA10000000000000000004 /* BorealBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EA10000000000000000006 /* BorealBridgeViewController.swift */; };
 		B0EA10000000000000000007 /* IPadWorkstationPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EA10000000000000000008 /* IPadWorkstationPlugin.swift */; };
@@ -35,6 +36,7 @@
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		B0EA1000000000000000000C /* BorealPushCategories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BorealPushCategories.swift; sourceTree = "<group>"; };
 		B0EA10000000000000000005 /* WidgetBridgePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridgePlugin.swift; sourceTree = "<group>"; };
 		B0EA10000000000000000006 /* BorealBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BorealBridgeViewController.swift; sourceTree = "<group>"; };
 		B0EA10000000000000000008 /* IPadWorkstationPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPadWorkstationPlugin.swift; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 			children = (
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
+				B0EA1000000000000000000C /* BorealPushCategories.swift */,
 				B0EA10000000000000000005 /* WidgetBridgePlugin.swift */,
 				B0EA10000000000000000006 /* BorealBridgeViewController.swift */,
 				B0EA10000000000000000008 /* IPadWorkstationPlugin.swift */,
@@ -219,6 +222,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				B0EA1000000000000000000B /* BorealPushCategories.swift in Sources */,
 				B0EA10000000000000000003 /* WidgetBridgePlugin.swift in Sources */,
 				B0EA10000000000000000004 /* BorealBridgeViewController.swift in Sources */,
 				B0EA10000000000000000007 /* IPadWorkstationPlugin.swift in Sources */,
