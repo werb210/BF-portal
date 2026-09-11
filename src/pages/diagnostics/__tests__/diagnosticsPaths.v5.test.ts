@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const page = readFileSync(resolve(__dirname, "..", "DiagnosticsPage.tsx"), "utf-8");
-const calls = [...page.matchAll(/apiClient\.get<[^>]*>\(\s*[`"]([^`"$]*)/g)].map((m) => m[1]);
+const calls = [...page.matchAll(/apiClient\.get<[^>]*>\(\s*[`"]([^`"$]*)/g)].map((m) => m[1]!);
 
 describe("BF_PORTAL_JOB_QUEUE_PATH_v1", () => {
   it("makes at least one request", () => {

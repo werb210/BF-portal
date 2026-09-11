@@ -4,7 +4,7 @@ const h = vi.hoisted(() => ({
   native: true,
   platform: "ios",
   api: vi.fn(),
-  setItem: vi.fn(async () => {}),
+  setItem: vi.fn<(item: { group: string; key: string; value: string }) => Promise<void>>(async () => {}),
   reloadAllTimelines: vi.fn(async () => {}),
 }));
 
@@ -47,6 +47,8 @@ describe("widget snapshots", () => {
         value: expect.stringContaining(`"silo":"${silo}"`),
       });
       const write = h.setItem.mock.calls.find(([item]) => item.key === `widget_summary_${silo}`)?.[0];
+      expect(write).toBeDefined();
+      if (!write) throw new Error(`Missing widget snapshot for ${silo}`);
       const snapshot = JSON.parse(write.value);
       expect(snapshot).toMatchObject({
         schemaVersion: 2, silo, pipelineCount: summaries[silo].pipelineCount,
@@ -69,7 +71,7 @@ describe("widget snapshots", () => {
     });
 
     expect(await publishWidgetSnapshot()).toBe(true);
-    const snapshot = JSON.parse(h.setItem.mock.calls[0][0].value);
+    const snapshot = JSON.parse(h.setItem.mock.calls[0]![0].value);
     expect(snapshot).toMatchObject({
       schemaVersion: 2, silo: "BF", pipelineCount: 7, tasksDueToday: 0,
       unreadMessages: 0, commissionEarned: 1250, currency: "CAD",

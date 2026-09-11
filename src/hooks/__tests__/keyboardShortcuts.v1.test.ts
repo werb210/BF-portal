@@ -8,7 +8,7 @@ const app = fs.readFileSync(path.resolve(__dirname, "../../App.tsx"), "utf8");
 
 /** Every path the router can match, including wildcard prefixes. */
 function routePaths(): string[] {
-  return [...app.matchAll(/path="([^"]+)"/g)].map((m) => m[1]);
+  return [...app.matchAll(/path="([^"]+)"/g)].map((m) => m[1]!);
 }
 
 describe("keyboard shortcuts", () => {

@@ -22,7 +22,7 @@ describe("unified API client", () => {
 
     await api.get("/api/test");
 
-    const [, options] = mockFetch.mock.calls[0];
+    const [, options] = mockFetch.mock.calls[0]!;
     expect((options.headers as Record<string, string>).Authorization).toBe("Bearer test-token");
   });
 

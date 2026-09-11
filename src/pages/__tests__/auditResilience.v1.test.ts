@@ -17,17 +17,17 @@ describe("one dead log source cannot blank the page", () => {
   }
 
   it("AuditLogs clears loading even if the loader throws", () => {
-    const src = pages[0].src;
+    const src = pages[0]!.src;
     expect(src).toMatch(/void loadLogs\(\)\.catch\(\(\) => setIsLoading\(false\)\)/);
   });
 
   it("AuditLogs tells the user the rows are incomplete", () => {
-    expect(pages[0].src).toContain("audit-source-error");
-    expect(pages[0].src).toContain("incomplete");
+    expect(pages[0]!.src).toContain("audit-source-error");
+    expect(pages[0]!.src).toContain("incomplete");
   });
 
   it("still renders whichever source succeeded", () => {
-    const src = pages[0].src;
+    const src = pages[0]!.src;
     expect(src).toContain('biResult.status === "fulfilled" ? biResult.value : []');
     expect(src).toContain('slfResult.status === "fulfilled" ? slfResult.value : []');
   });
