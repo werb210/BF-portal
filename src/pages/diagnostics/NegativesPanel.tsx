@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { apiClient } from "@/api/client";
 import Skeleton from "@/components/Skeleton";
+// BF_PORTAL_NEGATIVES_CAMPAIGN_PICKER_v177 - the campaign ID was a free-text
+// box and the Add button stayed disabled until someone pasted a numeric ID
+// out of the Google Ads URL. BF-Server v176 lists the real campaigns.
+import { unwrapCampaigns, campaignLabel, type AdCampaign, type CampaignsResponse } from "./negativesCampaigns";
 
 type Candidate = { searchTerm: string; cost: number; clicks: number; impressions: number; conversions: number };
 type AddResult = { added: string[]; failed: Array<{ term: string; error: string }> };
@@ -32,6 +36,8 @@ export default function NegativesPanel() {
   const [days, setDays] = useState(7);
   const [minCost, setMinCost] = useState(1);
   const [campaignId, setCampaignId] = useState("");
+  const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
+  const [campaignsErr, setCampaignsErr] = useState<string | null>(null);
   const [matchType, setMatchType] = useState<"PHRASE" | "EXACT">("PHRASE");
   const [rows, setRows] = useState<Candidate[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -39,6 +45,17 @@ export default function NegativesPanel() {
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<AddResult | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // BF_PORTAL_NEGATIVES_CAMPAIGN_PICKER_v177
+  useEffect(() => {
+    apiClient.get<CampaignsResponse>("/api/marketing/campaigns?pageSize=200")
+      .then((response) => {
+        const list = unwrapCampaigns(response);
+        setCampaigns(list);
+        setCampaignsErr(list.length === 0 ? "No campaigns returned - check the Google Ads credentials." : null);
+      })
+      .catch((error: Error) => setCampaignsErr(error?.message ?? "Could not load campaigns."));
+  }, []);
 
   const load = useCallback(() => {
     setLoading(true); setErr(null); setResult(null);
@@ -89,8 +106,16 @@ export default function NegativesPanel() {
             {[0, 1, 5, 10].map((value) => <option key={value} value={value}>${value}</option>)}
           </select>
         </label>
-        <label style={{ fontSize: 12, color: "var(--ui-text-muted)", flex: 1, minWidth: 200 }}>Campaign ID (numeric, from the Google Ads URL)<br />
-          <input value={campaignId} onChange={(event) => setCampaignId(event.target.value)} placeholder="e.g. 21234567890" data-testid="negatives-campaign-id" style={{ padding: "6px 10px", marginTop: 4, width: "100%", boxSizing: "border-box" }} />
+        <label style={{ fontSize: 12, color: "var(--ui-text-muted)", flex: 1, minWidth: 200 }}>Campaign<br />
+          {campaigns.length > 0 ? (
+            <select value={campaignId} onChange={(event) => setCampaignId(event.target.value)} data-testid="negatives-campaign-id" style={{ padding: "6px 10px", marginTop: 4, width: "100%", boxSizing: "border-box" }}>
+              <option value="">Select a campaign…</option>
+              {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaignLabel(campaign)}</option>)}
+            </select>
+          ) : (
+            <input value={campaignId} onChange={(event) => setCampaignId(event.target.value)} placeholder="e.g. 21234567890" data-testid="negatives-campaign-id" style={{ padding: "6px 10px", marginTop: 4, width: "100%", boxSizing: "border-box" }} />
+          )}
+          {campaignsErr && <span style={{ display: "block", marginTop: 4, color: "var(--ui-text-muted)" }}>{campaignsErr}</span>}
         </label>
         <label style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Match<br />
           <select value={matchType} onChange={(event) => setMatchType(event.target.value as "PHRASE" | "EXACT")} style={{ padding: "6px 10px", marginTop: 4 }}><option value="PHRASE">Phrase</option><option value="EXACT">Exact</option></select>
