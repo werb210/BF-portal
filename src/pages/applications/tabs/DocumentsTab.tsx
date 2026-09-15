@@ -17,6 +17,8 @@ import { api } from "@/api";
 import { apiBlob } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
+// BF_PORTAL_SPLIT_VIEW_v205
+import DocumentSplitView, { type SplitViewDoc } from "@/components/applications/DocumentSplitView";
 
 interface Props { applicationId?: string }
 
@@ -170,6 +172,8 @@ export default function DocumentsTab({ applicationId }: Props) {
   }
   // BF_PORTAL_BLOCK_v184_DOC_PREVIEW_WIRE_UP_v1
   const [previewing, setPreviewing] = useState<Record<string, boolean>>({});
+  // BF_PORTAL_SPLIT_VIEW_v205
+  const [splitDoc, setSplitDoc] = useState<SplitViewDoc | null>(null);
   // BF_PORTAL_BLOCK_v_DOC_FRAUD_SCAN_v1
   const [scan, setScan] = useState<Record<string, FraudScanState>>({});
   const [scanOpen, setScanOpen] = useState<Record<string, boolean>>({});
@@ -192,20 +196,11 @@ export default function DocumentsTab({ applicationId }: Props) {
     try {
       const blob = await apiBlob(`/api/portal/documents/${docId}/file`);
       objectUrl = URL.createObjectURL(blob);
-      const win = window.open(objectUrl, "_blank", "noopener,noreferrer");
-      if (!win) {
-        // Popup blocked — fall back to download
-        const a = document.createElement("a");
-        a.href = objectUrl;
-        a.download = filename ?? `document-${docId}`;
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-      // Revoke after a delay so the new tab can finish loading
-      const urlToRevoke = objectUrl;
-      setTimeout(() => URL.revokeObjectURL(urlToRevoke), 60_000);
+      // BF_PORTAL_SPLIT_VIEW_v205 - dock the preview beside the application.
+      setSplitDoc((previous) => {
+        if (previous?.url) URL.revokeObjectURL(previous.url);
+        return { url: objectUrl as string, filename, mimeType: blob.type || null };
+      });
     } catch (e) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       setActionError(e instanceof Error ? e.message : "Preview failed");
@@ -359,6 +354,14 @@ export default function DocumentsTab({ applicationId }: Props) {
           </section>
         ))
       )}
+      {/* BF_PORTAL_SPLIT_VIEW_v205 */}
+      <DocumentSplitView
+        doc={splitDoc}
+        onClose={() => setSplitDoc((previous) => {
+          if (previous?.url) URL.revokeObjectURL(previous.url);
+          return null;
+        })}
+      />
     </div>
   );
 }
