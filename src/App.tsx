@@ -4,6 +4,7 @@ import BiLendersPage from "@/pages/BiLendersPage";
 // here, inside the Router, which is where navigate() is available.
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useCommandShortcuts } from "@/hooks/useCommandShortcuts"; // BF_PORTAL_IPAD_WIRING_v238
+import BiometricLock from "@/native/BiometricLock"; // BF_PORTAL_FACE_ID_v243
 import ShortcutHelp from "@/components/ShortcutHelp";
 // BF_PORTAL_BLOCK_v90_REVERT_LENDER_SPA_v1
 import React, { Suspense, lazy, useCallback, useEffect, useState } from "react";
@@ -165,6 +166,7 @@ const AppRoutes = () => {
 
   return (
     <>
+      <BiometricLock />{/* BF_PORTAL_FACE_ID_v243 */}
       <InstallPromptBanner />
       <IOSInstallBanner />
       <Routes>
