@@ -1,3 +1,4 @@
+import { clearOfflineCopies } from "@/offline/readCache";
 import { clearToken, getToken } from "@/lib/authToken";
 import { decodeJwt } from "@/auth/jwt";
 
@@ -18,6 +19,7 @@ export function getUserRole(): string | null {
 
 export function clearAuth() {
   clearToken();
+  clearOfflineCopies(); // BF_PORTAL_OFFLINE_READ_CACHE_v252 - saved copies never outlive the session
 }
 
 export function isTokenExpired(token: string): boolean {

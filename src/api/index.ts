@@ -4,6 +4,7 @@ import { setApiStatus } from "@/state/apiStatus";
 import { API_ERROR } from "@/lib/errors";
 // BF_SILO_API_ROUTING_v43 — Block 43 — use resolveApiBase so /api/v1/* hits BI-Server
 import { resolveApiBase, getActiveSilo, __apiBaseUrls } from "@/config/api";
+import { announceSavedCopy, cacheKeyFor, readOfflineCopy, saveOfflineCopy } from "@/offline/readCache"; // BF_PORTAL_OFFLINE_READ_CACHE_v252
 import { shouldLogoutOn401 } from "@/lib/apiAuth";
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
@@ -141,7 +142,23 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
 }
 
 export async function apiFetch<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
-  const res = await rawApiFetch(path, options);
+  // BF_PORTAL_OFFLINE_READ_CACHE_v252 - saved copies for a few read-only GETs.
+  const offlineKey = String(options.method ?? "GET").toUpperCase() === "GET" && !options.params
+    ? cacheKeyFor(path, getActiveSilo())
+    : null;
+  let res: Response;
+  try {
+    res = await rawApiFetch(path, options);
+  } catch (networkError) {
+    if (offlineKey) {
+      const saved = readOfflineCopy(offlineKey);
+      if (saved !== undefined) {
+        announceSavedCopy();
+        return saved as T;
+      }
+    }
+    throw networkError;
+  }
   if (!res.ok) {
     const url = res.url || buildUrl(withQuery(path, options.params));
     if (res.status === 401 && !shouldLogoutOn401(url)) {
@@ -212,7 +229,9 @@ export async function apiFetch<T = any>(path: string, options: RequestOptions = 
     // Non-empty unparseable body — surface the original error.
     throw parseError;
   }
-  return parsePayload<T>(json);
+  const parsed = parsePayload<T>(json);
+  if (offlineKey) saveOfflineCopy(offlineKey, parsed); // BF_PORTAL_OFFLINE_READ_CACHE_v252
+  return parsed;
 }
 
 // BF_PORTAL_ENVELOPE_GET_v1 - apiFetch() runs parsePayload(), which returns json.data

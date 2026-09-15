@@ -5,6 +5,7 @@ import BiLendersPage from "@/pages/BiLendersPage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useCommandShortcuts } from "@/hooks/useCommandShortcuts"; // BF_PORTAL_IPAD_WIRING_v238
 import BiometricLock from "@/native/BiometricLock"; // BF_PORTAL_FACE_ID_v243
+import SavedCopyNotice from "@/offline/SavedCopyNotice"; // BF_PORTAL_OFFLINE_READ_CACHE_v252
 import OfflineBanner from "@/offline/OfflineBanner"; // BF_PORTAL_OFFLINE_OUTBOX_v251
 import ShortcutHelp from "@/components/ShortcutHelp";
 // BF_PORTAL_BLOCK_v90_REVERT_LENDER_SPA_v1
@@ -168,6 +169,7 @@ const AppRoutes = () => {
   return (
     <>
       <BiometricLock />{/* BF_PORTAL_FACE_ID_v243 */}
+      <SavedCopyNotice />{/* BF_PORTAL_OFFLINE_READ_CACHE_v252 */}
       <OfflineBanner />{/* BF_PORTAL_OFFLINE_OUTBOX_v251 */}
       <InstallPromptBanner />
       <IOSInstallBanner />
