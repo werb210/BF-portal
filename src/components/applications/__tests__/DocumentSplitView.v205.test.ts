@@ -2,8 +2,14 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const view = readFileSync("src/components/applications/DocumentSplitView.tsx", "utf-8");
-const tab = readFileSync("src/pages/applications/tabs/DocumentsTab.tsx", "utf-8");
+const view = readFileSync(
+  "src/components/applications/DocumentSplitView.tsx",
+  "utf-8",
+);
+const tab = readFileSync(
+  "src/pages/applications/tabs/DocumentsTab.tsx",
+  "utf-8",
+);
 
 describe("split view", () => {
   it("docks beside the page rather than covering it", () => {
@@ -14,7 +20,9 @@ describe("split view", () => {
 
   it("cannot be resized to nothing on either side", () => {
     expect(view).toContain("MIN_PANE = 320");
-    expect(view).toMatch(/Math\.min\([\s\S]{0,160}Math\.max\(window\.innerWidth - event\.clientX, MIN_PANE\)/);
+    expect(view).toMatch(
+      /Math\.min\([\s\S]{0,160}Math\.max\(window\.innerWidth - event\.clientX, MIN_PANE\)/,
+    );
   });
 
   it("closes on Escape", () => {
@@ -22,13 +30,15 @@ describe("split view", () => {
   });
 
   it("never leaves the page unselectable if it unmounts mid-drag", () => {
-    const cleanup = view.slice(view.indexOf("return () => {", view.indexOf("mousemove")));
+    const cleanup = view.slice(
+      view.indexOf("return () => {", view.indexOf("mousemove")),
+    );
     expect(cleanup).toContain('document.body.style.userSelect = ""');
     expect(cleanup).toContain('document.body.style.cursor = ""');
   });
 
   it("falls back visibly when the browser cannot render the type", () => {
-    expect(view).toContain("<object");
+    expect(view).toContain("<PdfPages");
     expect(view).toContain("This file type cannot be shown here");
   });
 
@@ -44,7 +54,9 @@ describe("documents tab", () => {
   });
 
   it("releases the previous blob before showing another", () => {
-    expect(tab.match(/URL\.revokeObjectURL\(previous\.url\)/g)?.length).toBe(2);
+    expect(
+      tab.match(/URL\.revokeObjectURL\(previous\.url\)/g)?.length,
+    ).toBeGreaterThanOrEqual(2);
   });
 
   it("mounts the pane", () => {

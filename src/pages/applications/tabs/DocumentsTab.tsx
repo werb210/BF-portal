@@ -214,9 +214,11 @@ export default function DocumentsTab({ applicationId }: Props) {
       const blob = await apiBlob(`/api/portal/documents/${docId}/file`);
       objectUrl = URL.createObjectURL(blob);
       // BF_PORTAL_SPLIT_VIEW_v205 - dock the preview beside the application.
+      // BF_PORTAL_DOCUMENT_REVIEW_PANE_v261 - keep the bytes and document metadata for review.
+      const row = docs.find((document) => document.documentId === docId);
       setSplitDoc((previous) => {
         if (previous?.url) URL.revokeObjectURL(previous.url);
-        return { url: objectUrl as string, filename, mimeType: blob.type || null };
+        return { url: objectUrl as string, filename, mimeType: blob.type || null, blob, documentId: docId, status: row?.status ?? null, category: row?.category ?? null };
       });
     } catch (e) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
@@ -259,6 +261,31 @@ export default function DocumentsTab({ applicationId }: Props) {
       setActionError(e instanceof Error ? e.message : "Accept failed");
     } finally {
       setWorking((w) => ({ ...w, [docId]: undefined }));
+    }
+  }
+
+  // BF_PORTAL_DOCUMENT_REVIEW_PANE_v261 - review from the preview, then advance.
+  const reviewOrder = useMemo(() => groupAndSortDocs(docs).flatMap(([, group]) => group.docs), [docs]);
+  function nextPendingAfter(docId: string): DocumentRow | null {
+    const index = reviewOrder.findIndex((document) => document.documentId === docId);
+    const after = [...reviewOrder.slice(index + 1), ...reviewOrder.slice(0, Math.max(0, index))];
+    return after.find((document) => (document.status ?? "pending").toLowerCase() === "pending" && document.documentId !== docId) ?? null;
+  }
+  async function reviewFromPane(docId: string, action: "accept" | "reject", reason?: string) {
+    if (working[docId]) return;
+    setWorking((value) => ({ ...value, [docId]: action }));
+    setActionError(null);
+    try {
+      if (action === "accept") await api.post(`/api/portal/documents/${docId}/accept`, {});
+      else await api.post(`/api/portal/documents/${docId}/reject`, { reason });
+      const next = nextPendingAfter(docId);
+      await reload();
+      if (next) await handlePreview(next.documentId, next.filename);
+      else setSplitDoc((previous) => { if (previous?.url) URL.revokeObjectURL(previous.url); return null; });
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : action === "accept" ? "Accept failed" : "Reject failed");
+    } finally {
+      setWorking((value) => ({ ...value, [docId]: undefined }));
     }
   }
 
@@ -431,6 +458,16 @@ export default function DocumentsTab({ applicationId }: Props) {
           if (previous?.url) URL.revokeObjectURL(previous.url);
           return null;
         })}
+        review={splitDoc?.documentId && canManage ? {
+          working: working[splitDoc.documentId],
+          onAccept: () => void reviewFromPane(splitDoc.documentId as string, "accept"),
+          onReject: (reason: string) => void reviewFromPane(splitDoc.documentId as string, "reject", reason),
+          hasNext: !!nextPendingAfter(splitDoc.documentId),
+          onNext: () => {
+            const next = nextPendingAfter(splitDoc.documentId as string);
+            if (next) void handlePreview(next.documentId, next.filename);
+          },
+        } : null}
       />
     </div>
   );
