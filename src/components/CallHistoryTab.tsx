@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { fetchCallHistory, type CallSession } from "../services/callService";
 import { logError } from "@/lib/logger";
+// BF_PORTAL_CALL_DISPOSITION_v204
+import CallDispositionPicker from "./CallDispositionPicker";
 
 export default function CallHistoryTab({ clientId }: { clientId: string }) {
   const [calls, setCalls] = useState<CallSession[]>([]);
@@ -41,6 +43,8 @@ export default function CallHistoryTab({ clientId }: { clientId: string }) {
     <div className="space-y-4">
       {calls.map((call) => (
         <div key={call.id} className="border rounded p-4">
+          {/* BF_PORTAL_CALL_DISPOSITION_v204 */}
+          <CallDispositionPicker callId={String(call.id)} current={call.disposition ?? null} />
           <div className="flex justify-between">
             <span className="font-semibold">{call.status}</span>
             <span>{call.started_at ? new Date(call.started_at).toLocaleString() : "Unknown"}</span>
