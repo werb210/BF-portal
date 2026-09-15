@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 // BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
 import { api } from "@/api";
+import { coverageHint, coverageTone, parseBankCoverage, type BankCoverage } from "./bankCoverage"; // BF_PORTAL_BANK_COVERAGE_v268
 import { autoMovedText, misfiledBadgeText, type MisfiledFields } from "./misfiledBadges"; // BF_PORTAL_MISFILED_BADGES_v263
 import { buildDuplicateIndex, duplicateBadgeText, extraCopyIds, parseDuplicateGroups, type DuplicateGroup, type DuplicateRef } from "./documentDuplicates"; // BF_PORTAL_DOCUMENT_DUPLICATE_BADGES_v259
 import { apiBlob } from "@/utils/api";
@@ -138,6 +139,7 @@ export default function DocumentsTab({ applicationId }: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [acceptDoc, setAcceptDoc] = useState<{ documentId: string; filename: string | null; fromPane: boolean } | null>(null); // v266
   const [dupGroups, setDupGroups] = useState<DuplicateGroup[]>([]); // v259
+  const [bankCoverage, setBankCoverage] = useState<BankCoverage | null>(null); // v268
   const [removingCopies, setRemovingCopies] = useState(false); // v259
   // BF_PORTAL_BLOCK_v820_STAFF_UPLOAD
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -237,6 +239,7 @@ export default function DocumentsTab({ applicationId }: Props) {
     try {
       const r = await api.get<PortalApplicationResponse>(`/api/portal/applications/${applicationId}`);
       setDocs(Array.isArray(r?.documents) ? r.documents : []);
+      setBankCoverage(parseBankCoverage(r)); // v268
       // BF_PORTAL_DOCUMENT_DUPLICATE_BADGES_v259 - an older server without the route just shows no badges.
       try {
         setDupGroups(parseDuplicateGroups(await api.get(`/api/documents/${applicationId}/duplicates`)));
@@ -406,6 +409,23 @@ export default function DocumentsTab({ applicationId }: Props) {
           </div>
         </div>
       )}
+
+      {/* BF_PORTAL_BANK_COVERAGE_v268 */}
+      {bankCoverage ? (() => {
+        const tone = coverageTone(bankCoverage);
+        const palette = tone === "complete"
+          ? { bg: "#f0fdf4", border: "#86efac", fg: "#166534", icon: "✓" }
+          : tone === "gaps"
+            ? { bg: "#fef2f2", border: "#fca5a5", fg: "#991b1b", icon: "!" }
+            : { bg: "#fffbeb", border: "#fcd34d", fg: "#92400e", icon: "?" };
+        const hint = coverageHint(bankCoverage);
+        return (
+          <div role="status" data-testid="bank-coverage-banner" data-tone={tone} style={{ background: palette.bg, border: `1px solid ${palette.border}`, color: palette.fg, borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 13 }}>
+            <div style={{ fontWeight: 700 }}>{palette.icon} Bank statements: {bankCoverage.summary}</div>
+            {hint ? <div style={{ marginTop: 4, fontWeight: 400 }}>{hint}</div> : null}
+          </div>
+        );
+      })() : null}
 
       {copyIds.length > 0 && (
         <div role="status" data-testid="duplicate-copies-banner" style={{ display: "flex", alignItems: "center", gap: 12, background: "#fff7ed", border: "1px solid #fdba74", color: "#9a3412", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 13 }}>
