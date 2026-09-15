@@ -4,7 +4,7 @@ import { api } from "@/api";
 
 type StageEvent = { id: string; application_id: string; from_stage: string | null; to_stage: string; trigger?: string | null; triggered_by?: string | null; created_at: string };
 
-export function ContactStageHistory({ contactId }: { contactId: string }) {
+export function ContactStageHistory({ contactId, endpoint, showEmpty = false }: { contactId: string; endpoint?: string; showEmpty?: boolean }) { // v272
   const [events, setEvents] = useState<StageEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -12,16 +12,24 @@ export function ContactStageHistory({ contactId }: { contactId: string }) {
     let cancelled = false;
     (async () => {
       try {
-        const r = await api.get<StageEvent[] | { data?: StageEvent[] }>(`/api/crm/contacts/${encodeURIComponent(contactId)}/stage-events`);
+        const r = await api.get<StageEvent[] | { data?: StageEvent[] }>(endpoint ?? `/api/crm/contacts/${encodeURIComponent(contactId)}/stage-events`);
         const list = Array.isArray(r) ? r : (r?.data ?? []);
         if (!cancelled) setEvents(Array.isArray(list) ? list : []);
       } catch { if (!cancelled) setEvents([]); }
       finally { if (!cancelled) setLoaded(true); }
     })();
     return () => { cancelled = true; };
-  }, [contactId]);
+  }, [contactId, endpoint]);
 
-  if (!loaded || events.length === 0) return null;
+  if (!loaded) return null;
+  if (events.length === 0) {
+    return showEmpty ? (
+      <section style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}>
+        <strong>Stage history</strong>
+        <div style={{ marginTop: 8, fontSize: 13, color: "var(--ui-text-muted)" }}>No stage changes recorded yet.</div>
+      </section>
+    ) : null;
+  }
 
   const row: CSSProperties = { fontSize: 13, padding: "6px 0", borderTop: "1px solid var(--ui-border)", display: "flex", justifyContent: "space-between", gap: 8 };
 

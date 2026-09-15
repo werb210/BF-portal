@@ -3,15 +3,15 @@ import { api } from "@/api";
 
 // BF_PORTAL_CONTACT_AI_SUMMARY_v1 - one-click AI summary of a contact's or company's recent
 // activity, plus a one-click follow-up task that carries the summary as context.
-export function ContactAiSummary({ contactId, companyId }: { contactId?: string; companyId?: string }) {
+export function ContactAiSummary({ contactId, companyId, endpoint }: { contactId?: string; companyId?: string; endpoint?: string }) { // v272
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [taskMsg, setTaskMsg] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const path = companyId
+  const path = endpoint ?? (companyId
     ? `/api/crm/companies/${companyId}/ai-summary`
-    : `/api/crm/contacts/${contactId}/ai-summary`;
+    : `/api/crm/contacts/${contactId}/ai-summary`);
   async function run() {
     setLoading(true);
     setErr(null);

@@ -13,6 +13,7 @@ import { EntityEditModal } from "@/components/EntityEditModal";
 import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
 import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
 import ContactJourney from "@/components/crm/ContactJourney"; // BF_PORTAL_VISITOR_JOURNEY_v1
+import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_CONTACT_RECORD_TABS_v272
 import { ContactDocuments } from "@/components/crm/ContactDocuments"; // BF_PORTAL_CONTACT_DOCUMENTS_v1
 import { ContactDuplicates } from "@/components/crm/ContactDuplicates"; // BF_PORTAL_CONTACT_MERGE_v1
 
@@ -115,16 +116,27 @@ export default function ContactDetailPage() {
       </aside>
 
       <main style={{ minWidth: 0 }}>
-        <UnifiedTimeline contactId={id} scope={scope} refreshKey={refreshKey} />
-        <ContactStageHistory contactId={id} />
-        <ContactAiSummary contactId={id} />
-        <ContactDocuments contactId={id} refreshKey={refreshKey} /> {/* BF_PORTAL_CONTACT_DOCUMENTS_v1 */}
-        <ContactJourney contactId={id} /> {/* BF_PORTAL_VISITOR_JOURNEY_v1 */}
-        {isBiSilo && (
-          <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}>
-            <MarketingTab contactId={id} />
-          </div>
-        )} {/* BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_v1_TAB */}
+        {/* BF_PORTAL_CONTACT_RECORD_TABS_v272 */}
+        <ContactRecordTabs
+          analytics={
+            <>
+              <ContactStageHistory contactId={id} showEmpty />
+              <ContactAiSummary contactId={id} />
+              <ContactJourney contactId={id} /> {/* BF_PORTAL_VISITOR_JOURNEY_v1 */}
+              {isBiSilo && (
+                <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}>
+                  <MarketingTab contactId={id} />
+                </div>
+              )} {/* BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_v1_TAB */}
+            </>
+          }
+          timeline={
+            <>
+              <UnifiedTimeline contactId={id} scope={scope} refreshKey={refreshKey} />
+              <ContactDocuments contactId={id} refreshKey={refreshKey} /> {/* BF_PORTAL_CONTACT_DOCUMENTS_v1 */}
+            </>
+          }
+        />
       </main>
 
       <aside style={rail}>
