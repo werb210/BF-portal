@@ -8,7 +8,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import Card from "@/components/ui/Card";
-import { api } from "@/lib/api";
+import { api } from "@/api"; // BF_PORTAL_NEXT_ACTIONS_IMPORT_v212
 
 type NextAction = {
   applicationId: string;
