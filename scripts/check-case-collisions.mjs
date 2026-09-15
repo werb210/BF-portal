@@ -27,6 +27,24 @@ const collisions = [...pathsByLowercase.values()].filter(
   (paths) => new Set(paths).size > 1,
 );
 
+// BF_PORTAL_BIOMETRIC_CASE_v249 - module paths that differ only in case (ignoring
+// the extension) resolve to the same file on macOS and Windows.
+const modulesByLowercase = new Map();
+for (const file of trackedFiles) {
+  if (!/\.(ts|tsx|js|jsx|mjs|cjs)$/u.test(file)) continue;
+  const stem = file.replace(/\.(d\.ts|ts|tsx|js|jsx|mjs|cjs)$/u, "");
+  const key = stem.toLowerCase();
+  const stems = modulesByLowercase.get(key) ?? new Set();
+  stems.add(stem);
+  modulesByLowercase.set(key, stems);
+}
+const moduleCollisions = [...modulesByLowercase.values()].filter((stems) => stems.size > 1);
+if (moduleCollisions.length > 0) {
+  console.error("Case-colliding module paths:");
+  for (const stems of moduleCollisions) console.error(`  ${[...stems].join(" <-> ")}`);
+  process.exitCode = 1;
+}
+
 if (collisions.length > 0) {
   console.error("Case-colliding tracked directories:");
 

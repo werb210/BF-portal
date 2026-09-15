@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { biometryLabel, LOCK_AFTER_MS, shouldLock } from "../biometricLock";
+import { biometryLabel, LOCK_AFTER_MS, shouldLock } from "../biometricLockPolicy";
 
 const root = path.resolve(__dirname, "../../..");
 const read = (p: string) => fs.readFileSync(path.join(root, p), "utf8");
