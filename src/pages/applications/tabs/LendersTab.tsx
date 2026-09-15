@@ -518,7 +518,13 @@ export default function LendersTab({ applicationId }: Props) {
                   ? "Reactivating…"
                   : `↺ Reactivate${previousStage ? ` to ${previousStage}` : ""}`}
               </button>
-            ) : (
+            ) : null}
+            {/* BF_PORTAL_REJECT_ON_HOLD_v223 - Reject used to sit inside the
+                else branch above, so it vanished whenever the file was parked.
+                A file on Hold is exactly the kind that gets rejected; making
+                staff reactivate first writes a stage transition that never
+                really happened. */}
+            {true ? (
               <>
                 <button
                   type="button"
@@ -543,7 +549,7 @@ export default function LendersTab({ applicationId }: Props) {
                   {parking === "Fraud" ? "Marking fraud…" : "⚠ Fraud"}
                 </button>
               </>
-            )}
+            ) : null}
           </div>
         )}
       </div>
@@ -745,7 +751,7 @@ export default function LendersTab({ applicationId }: Props) {
           busy={passMutation.isPending}
           onCancel={() => setPassModalFor(null)}
           onSubmit={(codes, note) =>
-            passMutation.mutate({ lenderId: passModalFor.lenderId, reason: note, reasonCodes: codes })
+            passMutation.mutate({ lenderId: passModalFor.lenderId, reason: note.trim(), reasonCodes: codes })  // BF_PORTAL_REJECT_ON_HOLD_v223 - server accepts codes without a note (v222)
           }
         />
       )}
