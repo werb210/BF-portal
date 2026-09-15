@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 // BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
 import { api } from "@/api";
+import { tamperBadge, type TamperFields } from "./tamperBadges"; // BF_PORTAL_TAMPER_BADGES_v270
 import { coverageHint, coverageTone, parseBankCoverage, type BankCoverage } from "./bankCoverage"; // BF_PORTAL_BANK_COVERAGE_v268
 import { autoMovedText, misfiledBadgeText, type MisfiledFields } from "./misfiledBadges"; // BF_PORTAL_MISFILED_BADGES_v263
 import { buildDuplicateIndex, duplicateBadgeText, extraCopyIds, parseDuplicateGroups, type DuplicateGroup, type DuplicateRef } from "./documentDuplicates"; // BF_PORTAL_DOCUMENT_DUPLICATE_BADGES_v259
@@ -41,7 +42,7 @@ type DocumentRow = {
   status?: DocStatus;
   rejectionReason?: string | null;
   ocrStatus?: OcrStatus;
-} & MisfiledFields; // v263
+} & MisfiledFields & TamperFields & { displayName?: string | null }; // v263, v270
 
 type PortalApplicationResponse = { documents?: DocumentRow[] };
 
@@ -223,7 +224,8 @@ export default function DocumentsTab({ applicationId }: Props) {
       const row = docs.find((document) => document.documentId === docId);
       setSplitDoc((previous) => {
         if (previous?.url) URL.revokeObjectURL(previous.url);
-        return { url: objectUrl as string, filename, mimeType: blob.type || null, blob, documentId: docId, status: row?.status ?? null, category: row?.category ?? null };
+        const notices = row ? [tamperBadge(row)?.text, misfiledBadgeText(row), autoMovedText(row)].filter((n): n is string => !!n) : []; // v270
+        return { url: objectUrl as string, filename: row?.displayName ?? filename, mimeType: blob.type || null, blob, documentId: docId, status: row?.status ?? null, category: row?.category ?? null, notices };
       });
     } catch (e) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
@@ -560,9 +562,18 @@ function DocRow(props: {
     <div style={styles.docRow}>
       <div style={styles.docMain}>
         <div style={styles.docTopLine}>
-          <span style={styles.filename}>{v_friendlyDocName(doc)}</span>
+          <span style={styles.filename}>{doc.displayName ?? v_friendlyDocName(doc)}</span>{doc.displayName && doc.filename && doc.displayName !== doc.filename ? <span data-testid="original-filename" style={{ fontSize: 12, color: "#6b7280" }}>({doc.filename})</span> : null}
           <StatusPill status={status} />
           <OcrBadge ocr={doc.ocrStatus} />
+          {tamperBadge(doc) ? (
+            <span data-testid="tamper-badge" data-tone={tamperBadge(doc)!.tone} title={tamperBadge(doc)!.detail}
+              style={{ fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "2px 8px", cursor: "help",
+                color: tamperBadge(doc)!.tone === "high" ? "#991b1b" : "#92400e",
+                background: tamperBadge(doc)!.tone === "high" ? "#fee2e2" : "#fef3c7",
+                border: `1px solid ${tamperBadge(doc)!.tone === "high" ? "#fca5a5" : "#fcd34d"}` }}>
+              {tamperBadge(doc)!.text}
+            </span>
+          ) : null}
           {misfiledBadgeText(doc) ? (
             <span data-testid="misfiled-badge" title="Server OCR thinks this document may be filed under the wrong requirement. Check before accepting." style={{ fontSize: 11, fontWeight: 700, color: "#1e40af", background: "#dbeafe", border: "1px solid #93c5fd", borderRadius: 6, padding: "2px 8px" }}>
               {misfiledBadgeText(doc)}

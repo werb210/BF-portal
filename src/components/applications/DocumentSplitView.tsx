@@ -16,6 +16,7 @@ export type SplitViewDoc = {
   documentId?: string | null;
   status?: string | null;
   category?: string | null;
+  notices?: string[]; // BF_PORTAL_TAMPER_BADGES_v270
 };
 
 export type SplitViewReview = {
@@ -200,6 +201,11 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
           {doc.category ? (
             <div style={{ fontSize: 12, color: "#6b7280" }}>{doc.category}</div>
           ) : null}
+          {(doc.notices ?? []).map((notice) => (
+            <div key={notice} data-testid="split-view-notice" style={{ fontSize: 12, fontWeight: 600, color: notice.startsWith("⚠") ? "#92400e" : "#1e40af", marginTop: 2 }}>
+              {notice}
+            </div>
+          ))}
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
           <a

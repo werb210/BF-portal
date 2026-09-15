@@ -48,7 +48,7 @@ describe("review pane wiring", () => {
     expect(view).toContain("Confirm reject");
     expect(view).toContain("FULL_WIDTH_BELOW = 900");
     expect(tab).toContain(
-      'reviewFromPane(splitDoc.documentId as string, "accept")',
+      'setAcceptDoc({ documentId: splitDoc.documentId as string' /* v270: accept opens the name dialog (v266) */,
     );
     expect(tab).toContain("nextPendingAfter(");
   });
