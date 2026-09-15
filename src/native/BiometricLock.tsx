@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { App } from "@capacitor/app";
 import { getAuthToken } from "@/lib/authToken";
 import { clearAuth } from "@/lib/authStorage";
-import { BiometricUnlock, biometryLabel, isNativeIos, shouldLock, type BiometryStatus } from "./biometricLock";
+import { BiometricUnlock, biometryLabel, isNativeIos, shouldLock, type BiometryStatus } from "./biometricLockPolicy"; // BF_PORTAL_BIOMETRIC_CASE_v249
 
 export default function BiometricLock() {
   const [locked, setLocked] = useState(false);
