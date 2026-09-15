@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PopupShell, popupInputStyle } from "./PopupShell";
-import { crmApi, type Scope } from "@/api/crm";
+import { type Scope } from "@/api/crm";
+import { postOrQueue } from "@/offline/outbox"; // BF_PORTAL_OFFLINE_OUTBOX_v251
 
 export function NotePopup({ scope, onClose, onCreated }: {
   scope: Scope; onClose: () => void; onCreated: () => void;
@@ -13,7 +14,7 @@ export function NotePopup({ scope, onClose, onCreated }: {
     if (!body.trim() || saving) return;
     setSaving(true); setErr(null);
     try {
-      await crmApi.notes.create(scope, { body: body.trim() });
+      await postOrQueue(`/api/crm/${scope.kind === "contact" ? "contacts" : "companies"}/${scope.id}/notes`, { body: body.trim() }, "Note");
       onCreated();
       onClose();
     } catch (e) {

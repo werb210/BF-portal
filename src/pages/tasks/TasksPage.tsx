@@ -4,6 +4,7 @@
 // bulk complete. Silo-scoped: the api client carries the active silo, and
 // switching silo in the topbar refetches everything.
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { postOrQueue } from "@/offline/outbox"; // BF_PORTAL_OFFLINE_OUTBOX_v251
 import { api } from "@/api";
 import TaskRunner, { type RunTask } from "./TaskRunner"; // BF_PORTAL_TASKS_M2_M3_v1
 import ManageQueuesModal from "./ManageQueuesModal"; // BF_PORTAL_TASKS_M2_M3_v1
@@ -87,7 +88,7 @@ export default function TasksPage() {
   const complete = (ids: string[]) => {
     if (!ids.length) return;
     const call = ids.length === 1
-      ? api.post(`/api/tasks/${ids[0]}/complete`, {})
+      ? postOrQueue(`/api/tasks/${ids[0]}/complete`, {}, "Task completed") // BF_PORTAL_OFFLINE_OUTBOX_v251
       : api.post("/api/tasks/bulk", { action: "complete", ids });
     call.then(load).catch(() => setError("Failed to complete."));
   };
