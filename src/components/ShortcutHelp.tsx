@@ -1,9 +1,10 @@
 // BF_PORTAL_BLOCK_v640_IPAD_WORKSTATION_v1
 import { buildShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { COMMAND_SHORTCUTS } from "@/hooks/useCommandShortcuts"; // BF_PORTAL_IPAD_WIRING_v238
 
 export default function ShortcutHelp({ open, onClose }: { open: boolean; onClose: () => void }) {
   if (!open) return null;
-  const shortcuts = buildShortcuts(() => {}, () => {});
+  const shortcuts = [...buildShortcuts(() => {}, () => {}), ...COMMAND_SHORTCUTS];
   return (
     <div
       role="dialog"

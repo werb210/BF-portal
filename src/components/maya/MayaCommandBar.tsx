@@ -139,6 +139,7 @@ export default function MayaCommandBar() {
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void run(text); } }}
         placeholder="Type a command…"
+        data-maya-command
         rows={2}
         style={{
           width: "100%", resize: "none", boxSizing: "border-box",

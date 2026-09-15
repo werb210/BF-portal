@@ -139,10 +139,23 @@ export default function DocumentsTab({ applicationId }: Props) {
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
   const uploadFileRef = useRef<HTMLInputElement | null>(null);
+  // BF_PORTAL_IPAD_WIRING_v238 - files dropped onto the tab (Finder, Files, Mail).
+  const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
+  const [dragActive, setDragActive] = useState(false);
+  const DROP_EXTS = [".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg"];
+  function onDocumentsDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragActive(false);
+    const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => DROP_EXTS.some((x) => f.name.toLowerCase().endsWith(x)));
+    if (files.length === 0) return;
+    setDroppedFiles(files);
+    setUploadErr(null);
+    setUploadOpen(true);
+  }
   async function doStaffUpload() {
     // BF_PORTAL_STAFF_MULTI_UPLOAD_v1 — upload every selected file (all under
     // the same category), so e.g. all 6 months of bank statements go up at once.
-    const files = Array.from(uploadFileRef.current?.files ?? []);
+    const files = droppedFiles.length > 0 ? droppedFiles : Array.from(uploadFileRef.current?.files ?? []);
     if (files.length === 0) { setUploadErr("Choose a file."); return; }
     if (!applicationId) { setUploadErr("No application."); return; }
     setUploading(true); setUploadErr(null);
@@ -160,6 +173,7 @@ export default function DocumentsTab({ applicationId }: Props) {
         }
       }
       if (uploadFileRef.current) uploadFileRef.current.value = "";
+      setDroppedFiles([]);
       if (failures.length > 0) {
         setUploadErr(`${files.length - failures.length} of ${files.length} uploaded. Failed: ${failures.join("; ")}`);
       } else {
@@ -277,7 +291,13 @@ export default function DocumentsTab({ applicationId }: Props) {
   if (error)          return <div style={styles.error}>{error}</div>;
 
   return (
-    <div style={styles.page}>
+    <div
+      style={dragActive ? { ...styles.page, outline: "2px dashed var(--ui-accent-blue)", outlineOffset: 4 } : styles.page}
+      onDragOver={(e) => { if (e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); setDragActive(true); } }}
+      onDragLeave={(e) => { if (e.currentTarget === e.target) setDragActive(false); }}
+      onDrop={onDocumentsDrop}
+      data-testid="documents-drop-target"
+    >
             <ReocrToolbar applicationId={applicationId} />
 <header style={styles.headerRow}>
         <div>
@@ -293,7 +313,7 @@ export default function DocumentsTab({ applicationId }: Props) {
         <button type="button" onClick={() => { setUploadErr(null); setUploadOpen(true); }} style={{ background: "var(--ui-accent-blue)", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", whiteSpace: "nowrap" }} data-testid="staff-upload-document">{/* BF_PORTAL_BLOCK_v820_STAFF_UPLOAD */}Upload document</button>
       </header>
       {uploadOpen && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={() => setUploadOpen(false)}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={() => { setUploadOpen(false); setDroppedFiles([]); }}>
           <div style={{ background: "var(--ui-surface-strong)", borderRadius: 12, padding: 20, width: 460, maxWidth: "92vw", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ui-text)", marginBottom: 12 }}>Upload document</div>
             <label style={{ fontSize: 12, fontWeight: 600, color: "var(--ui-text-muted)" }}>Category</label>
@@ -301,9 +321,14 @@ export default function DocumentsTab({ applicationId }: Props) {
               {STAFF_DOC_CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
             </select>
             <input ref={uploadFileRef} type="file" multiple accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" style={{ display: "block", marginBottom: 12 }} />
+            {droppedFiles.length > 0 && (
+              <div style={{ fontSize: 13, color: "var(--ui-text)", marginBottom: 12 }} data-testid="dropped-files">
+                {droppedFiles.length} dropped file{droppedFiles.length === 1 ? "" : "s"}: {droppedFiles.map((f) => f.name).join(", ")}
+              </div>
+            )}
             {uploadErr && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 10 }} role="status">{uploadErr}</div>}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button type="button" onClick={() => setUploadOpen(false)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text-muted)", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <button type="button" onClick={() => { setUploadOpen(false); setDroppedFiles([]); }} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text-muted)", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
               <button type="button" disabled={uploading} onClick={() => void doStaffUpload()} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "var(--ui-accent-blue)", color: "#fff", fontWeight: 600, cursor: uploading ? "default" : "pointer", opacity: uploading ? 0.6 : 1 }}>{uploading ? "Uploading…" : "Upload"}</button>
             </div>
           </div>
