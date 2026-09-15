@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 // BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
 import { api } from "@/api";
+import { autoMovedText, misfiledBadgeText, type MisfiledFields } from "./misfiledBadges"; // BF_PORTAL_MISFILED_BADGES_v263
 import { buildDuplicateIndex, duplicateBadgeText, extraCopyIds, parseDuplicateGroups, type DuplicateGroup, type DuplicateRef } from "./documentDuplicates"; // BF_PORTAL_DOCUMENT_DUPLICATE_BADGES_v259
 import { apiBlob } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,7 +39,7 @@ type DocumentRow = {
   status?: DocStatus;
   rejectionReason?: string | null;
   ocrStatus?: OcrStatus;
-};
+} & MisfiledFields; // v263
 
 type PortalApplicationResponse = { documents?: DocumentRow[] };
 
@@ -518,6 +519,16 @@ function DocRow(props: {
           <span style={styles.filename}>{v_friendlyDocName(doc)}</span>
           <StatusPill status={status} />
           <OcrBadge ocr={doc.ocrStatus} />
+          {misfiledBadgeText(doc) ? (
+            <span data-testid="misfiled-badge" title="Server OCR thinks this document may be filed under the wrong requirement. Check before accepting." style={{ fontSize: 11, fontWeight: 700, color: "#1e40af", background: "#dbeafe", border: "1px solid #93c5fd", borderRadius: 6, padding: "2px 8px" }}>
+              {misfiledBadgeText(doc)}
+            </span>
+          ) : null}
+          {autoMovedText(doc) ? (
+            <span data-testid="auto-moved-badge" style={{ fontSize: 11, fontWeight: 600, color: "#374151", background: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: 6, padding: "2px 8px" }}>
+              {autoMovedText(doc)}
+            </span>
+          ) : null}
           {props.duplicateOf ? (
             <span data-testid="duplicate-badge" style={{ fontSize: 11, fontWeight: 700, color: "#9a3412", background: "#ffedd5", border: "1px solid #fdba74", borderRadius: 6, padding: "2px 8px" }}>
               {duplicateBadgeText(props.duplicateOf)}
