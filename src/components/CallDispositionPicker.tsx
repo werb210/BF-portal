@@ -6,6 +6,7 @@
 // (BF_SERVER_CALL_DISPOSITION_v145). Nothing is duplicated here, so the portal,
 // the iOS dialer and the Watch all produce identical side effects.
 import { useState } from "react";
+import { postOrQueue } from "@/offline/outbox";
 import { api } from "@/api";
 
 // Must match CALL_DISPOSITIONS in src/modules/calls/callDisposition.ts. The
@@ -40,18 +41,17 @@ export default function CallDispositionPicker({ callId, current, onSaved }: Prop
     setError(null);
     setSavedNote(null);
     try {
-      const res = await api.post<{
-        followUpCreated?: boolean;
-        data?: { followUpCreated?: boolean };
-      }>(
+      // BF_PORTAL_OFFLINE_OUTBOX_v251 - queued when offline, sent on reconnect.
+      const res: { queued?: boolean; followUpCreated?: boolean; data?: { followUpCreated?: boolean } } = await postOrQueue(
         `/api/telephony/calls/${encodeURIComponent(callId)}/disposition`,
         { disposition: next },
+        "Call outcome",
       );
       setValue(next);
       // Tell staff what the server actually did. A task appearing silently is
       // how people end up with duplicate follow-ups they did not expect.
       setSavedNote(
-        res?.followUpCreated ?? res?.data?.followUpCreated
+        res?.queued ? "Saved on this device - will send when you reconnect" : res?.followUpCreated ?? res?.data?.followUpCreated
           ? "Saved — follow-up task created"
           : "Saved",
       );

@@ -5,6 +5,7 @@
 // mis-completion bug. Complete advances; Skip advances without completing;
 // Reschedule PATCHes due_at then advances; X exits (index refreshes).
 import { useEffect, useMemo, useState } from "react";
+import { postOrQueue } from "@/offline/outbox"; // BF_PORTAL_OFFLINE_OUTBOX_v251
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 // BF_PORTAL_TASKS_M4_v1 - type-specific action surfaces: the runner reuses
@@ -72,7 +73,7 @@ export default function TaskRunner({ tasks, onExit }: { tasks: RunTask[]; onExit
   const complete = () => {
     if (!t) return;
     const id = t.id; // strict current-task binding
-    api.post(`/api/tasks/${id}/complete`, {})
+    postOrQueue(`/api/tasks/${id}/complete`, {}, "Task completed") // BF_PORTAL_OFFLINE_OUTBOX_v251
       .then(() => { setDone((p) => ({ ...p, [id]: true })); advance(); })
       .catch(() => setErr("Failed to complete."));
   };

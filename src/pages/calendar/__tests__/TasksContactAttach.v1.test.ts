@@ -14,7 +14,7 @@ describe("unified task modal contact attachment", () => {
     expect(modal).toContain("crmApi.listContacts");
     expect(modal).toContain("/api/tasks/queues");
     expect(modal).toContain("/api/tasks/staff");
-    expect(modal).toContain('api.post("/api/tasks"');
+    expect(modal).toMatch(/(api\.post|postOrQueue)\("\/api\/tasks"/); // BF_PORTAL_OFFLINE_OUTBOX_v251
     expect(modal).toContain("contact_id: contactId || null");
     expect(modal).toContain("company_id: companyId || null");
   });

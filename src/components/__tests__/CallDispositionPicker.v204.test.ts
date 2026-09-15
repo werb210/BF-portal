@@ -21,7 +21,8 @@ describe("disposition picker", () => {
   });
   it("creates no task or note itself - the server owns those side effects", () => {
     expect(picker).not.toMatch(/crm_notes|\/tasks|createTask/);
-    expect(picker.match(/api\.post/g)?.length).toBe(1);
+    // BF_PORTAL_OFFLINE_OUTBOX_v251 - the one save call may be api.post or postOrQueue.
+    expect((picker.match(/api\.post/g)?.length ?? 0) + (picker.match(/postOrQueue\(/g)?.length ?? 0)).toBe(1);
   });
   it("reports what the server actually did", () => {
     expect(picker).toContain("followUpCreated");
