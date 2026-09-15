@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 // BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
 import { api } from "@/api";
+import { buildDuplicateIndex, duplicateBadgeText, extraCopyIds, parseDuplicateGroups, type DuplicateGroup, type DuplicateRef } from "./documentDuplicates"; // BF_PORTAL_DOCUMENT_DUPLICATE_BADGES_v259
 import { apiBlob } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
@@ -133,6 +134,8 @@ export default function DocumentsTab({ applicationId }: Props) {
   const [rejectDraft, setRejectDraft] = useState<Record<string, string>>({});
   const [rejectOpen, setRejectOpen] = useState<Record<string, boolean>>({});
   const [actionError, setActionError] = useState<string | null>(null);
+  const [dupGroups, setDupGroups] = useState<DuplicateGroup[]>([]); // v259
+  const [removingCopies, setRemovingCopies] = useState(false); // v259
   // BF_PORTAL_BLOCK_v820_STAFF_UPLOAD
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadCat, setUploadCat] = useState<string>(STAFF_DOC_CATEGORIES[0] ?? "Other");
@@ -229,6 +232,12 @@ export default function DocumentsTab({ applicationId }: Props) {
     try {
       const r = await api.get<PortalApplicationResponse>(`/api/portal/applications/${applicationId}`);
       setDocs(Array.isArray(r?.documents) ? r.documents : []);
+      // BF_PORTAL_DOCUMENT_DUPLICATE_BADGES_v259 - an older server without the route just shows no badges.
+      try {
+        setDupGroups(parseDuplicateGroups(await api.get(`/api/documents/${applicationId}/duplicates`)));
+      } catch {
+        setDupGroups([]);
+      }
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load documents");
@@ -285,6 +294,26 @@ export default function DocumentsTab({ applicationId }: Props) {
 
   const grouped = useMemo(() => groupAndSortDocs(docs), [docs]);
   const counts = useMemo(() => countByStatus(docs), [docs]);
+  // BF_PORTAL_DOCUMENT_DUPLICATE_BADGES_v259
+  const duplicateOf = useMemo(() => buildDuplicateIndex(dupGroups), [dupGroups]);
+  const copyIds = useMemo(() => extraCopyIds(dupGroups), [dupGroups]);
+  async function removeDuplicateCopies() {
+    if (!applicationId || copyIds.length === 0) return;
+    if (typeof window !== "undefined" && !window.confirm(`Remove ${copyIds.length} duplicate cop${copyIds.length === 1 ? "y" : "ies"}? The first upload of each file is kept.`)) return;
+    setRemovingCopies(true);
+    setActionError(null);
+    const failed: string[] = [];
+    for (const id of copyIds) {
+      try {
+        await api.delete(`/api/documents/${applicationId}/documents/${id}`);
+      } catch {
+        failed.push(id);
+      }
+    }
+    if (failed.length > 0) setActionError(`${copyIds.length - failed.length} of ${copyIds.length} duplicate copies removed. Try again for the rest.`);
+    setRemovingCopies(false);
+    await reload();
+  }
 
   if (!applicationId) return <div style={styles.placeholder}>Select an application to view documents.</div>;
   if (loading)        return <div style={styles.placeholder}>Loading documents…</div>;
@@ -335,6 +364,21 @@ export default function DocumentsTab({ applicationId }: Props) {
         </div>
       )}
 
+      {copyIds.length > 0 && (
+        <div role="status" data-testid="duplicate-copies-banner" style={{ display: "flex", alignItems: "center", gap: 12, background: "#fff7ed", border: "1px solid #fdba74", color: "#9a3412", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 13 }}>
+          <span>
+            {copyIds.length} duplicate cop{copyIds.length === 1 ? "y" : "ies"} on this application. Each file should be uploaded once, in the right place.
+            {isAdmin ? "" : " Ask an admin to remove the extra copies."}
+          </span>
+          {isAdmin ? (
+            <button type="button" disabled={removingCopies} onClick={() => void removeDuplicateCopies()}
+              style={{ marginLeft: "auto", padding: "6px 12px", borderRadius: 8, border: "1px solid #ea580c", background: "#fff", color: "#9a3412", fontWeight: 600, cursor: "pointer" }}>
+              {removingCopies ? "Removing..." : "Remove duplicate copies"}
+            </button>
+          ) : null}
+        </div>
+      )}
+
       {actionError && (
         <div role="alert" style={styles.actionError}>{actionError}</div>
       )}
@@ -373,6 +417,7 @@ export default function DocumentsTab({ applicationId }: Props) {
                   scanOpen={!!scanOpen[doc.documentId]}
                   onScan={() => void handleScan(doc.documentId)}
                   onToggleScan={() => setScanOpen((o) => ({ ...o, [doc.documentId]: !o[doc.documentId] }))}
+                  duplicateOf={duplicateOf[doc.documentId]}
                 />
               ))}
             </div>
@@ -410,6 +455,7 @@ function DocRow(props: {
   scanOpen: boolean;
   onScan: () => void;
   onToggleScan: () => void;
+  duplicateOf?: DuplicateRef; // v259
 }) {
   const { doc, canManage, working, previewing, rejectOpen, rejectDraft } = props;
   const status = (doc.status ?? "pending").toLowerCase() as DocStatus;
@@ -435,6 +481,11 @@ function DocRow(props: {
           <span style={styles.filename}>{v_friendlyDocName(doc)}</span>
           <StatusPill status={status} />
           <OcrBadge ocr={doc.ocrStatus} />
+          {props.duplicateOf ? (
+            <span data-testid="duplicate-badge" style={{ fontSize: 11, fontWeight: 700, color: "#9a3412", background: "#ffedd5", border: "1px solid #fdba74", borderRadius: 6, padding: "2px 8px" }}>
+              {duplicateBadgeText(props.duplicateOf)}
+            </span>
+          ) : null}
         </div>
         <div style={styles.docMeta}>
           {fmtSize(doc.size)} · uploaded {fmtDate(doc.createdAt)}
