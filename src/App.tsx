@@ -3,6 +3,7 @@ import BiLendersPage from "@/pages/BiLendersPage";
 // did not match, so the hook shipped and nothing ever called it. Mount it
 // here, inside the Router, which is where navigate() is available.
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useCommandShortcuts } from "@/hooks/useCommandShortcuts"; // BF_PORTAL_IPAD_WIRING_v238
 import ShortcutHelp from "@/components/ShortcutHelp";
 // BF_PORTAL_BLOCK_v90_REVERT_LENDER_SPA_v1
 import React, { Suspense, lazy, useCallback, useEffect, useState } from "react";
@@ -136,6 +137,7 @@ const AppRoutes = () => {
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const openShortcutHelp = useCallback(() => setShortcutHelpOpen(true), []);
   useKeyboardShortcuts(openShortcutHelp);
+  useCommandShortcuts(); // BF_PORTAL_IPAD_WIRING_v238
 
   const token = getAuthToken();
 
