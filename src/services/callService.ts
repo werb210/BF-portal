@@ -13,6 +13,8 @@ export interface CallSession {
   phone?: string | null;
   contact_id?: string | null;
   contact_name?: string | null;
+  // BF_PORTAL_CALL_DISPOSITION_v204
+  disposition?: string | null;
 }
 
 // BF_PORTAL_RECENT_CALLS_v1 - was a stub returning []. Now reads the real
@@ -30,6 +32,7 @@ export async function fetchCallHistory(_clientId?: string): Promise<CallSession[
       phone: c.phone_number ?? c.phone ?? null,
       contact_id: c.contact_id ?? null,
       contact_name: c.contact_name ?? null,
+      disposition: c.disposition ?? null, // BF_PORTAL_CALL_DISPOSITION_v204
     }));
   } catch {
     return [];
