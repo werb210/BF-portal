@@ -27,6 +27,8 @@ import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { ActionBar } from "@/components/crm/ActionBar"; // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
 import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
+import { ContactStageHistory } from "@/components/crm/ContactStageHistory";
+import ContactRecordTabs, { NoVisitorJourneyNotice } from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_CONTACT_RECORD_TABS_v272
 import { ContactEmailFeed, ContactCallFeed } from "@/components/crm/ContactCommsFeeds";
 import { ContactMarketingSource } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_AD_ATTRIBUTION_v1
 import type { TimelineItem } from "@/api/crm";
@@ -495,32 +497,46 @@ export default function BIContactDetailPage() {
       </aside>
 
       <main style={mainCol} data-testid="bi-contact-main">
-        {/* BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1 — render the merged feed
-            through the shared tabbed timeline so the BI card matches BF.
-            Data is unchanged; <ActivityTimeline> is controlled via items. */}
-        <ActivityTimeline items={timelineItems} />
-        <ContactAiSummary contactId={id} />
+        {/* BF_PORTAL_CONTACT_RECORD_TABS_v272 - BI analytics come from BI-Server (v271). */}
+        <ContactRecordTabs
+          analytics={
+            <>
+              <ContactStageHistory contactId={id} endpoint={`/api/v1/bi/crm/contacts/${id}/stage-events`} showEmpty />
+              <ContactAiSummary contactId={id} endpoint={`/api/v1/bi/crm/contacts/${id}/ai-summary`} />
+              <NoVisitorJourneyNotice />
+            </>
+          }
+          timeline={
+            <>
+              {/* BF_PORTAL_BLOCK_v699_BI_CARD_PARITY_v1 — render the merged feed
+                  through the shared tabbed timeline so the BI card matches BF.
+                  Data is unchanged; <ActivityTimeline> is controlled via items. */}
+              <ActivityTimeline items={timelineItems} />
 
-        <ContactEmailFeed contactId={id} />
-        <ContactCallFeed contactId={id} />
+              <ContactEmailFeed contactId={id} />
+              <ContactCallFeed contactId={id} />
 
-        {contact.notes && (
-          <div style={{ ...panel, marginTop: 16 }}>
-            <div style={panelHeader}>
-              <EngagementSection contactId={contact?.id} />
-              <h3 style={{ margin: 0 }}>Notes</h3>
-            </div>
-            <p
-              style={{
-                color: "var(--ui-text-muted)",
-                padding: 12,
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {contact.notes}
-            </p>
-          </div>
-        )}
+              {contact.notes && (
+                <div style={{ ...panel, marginTop: 16 }}>
+                  <div style={panelHeader}>
+                    <EngagementSection contactId={contact?.id} />
+                    <h3 style={{ margin: 0 }}>Notes</h3>
+                  </div>
+                  <p
+                    style={{
+                      color: "var(--ui-text-muted)",
+                      padding: 12,
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {contact.notes}
+                  </p>
+                </div>
+              )}
+
+            </>
+          }
+        />
       </main>
 
       <aside style={rail} data-testid="bi-contact-rail-right">

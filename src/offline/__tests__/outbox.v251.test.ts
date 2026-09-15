@@ -24,7 +24,7 @@ describe("offline outbox", () => {
 
   it("replays with an idempotency key and removes successes", async () => {
     const s = mem(); await postOrQueue("/api/tasks", { title: "A" }, "New task", { online: false, eligible: true, s });
-    const id = readOutbox(s)[0].id;
+    const id = readOutbox(s)[0]!.id;
     const post = vi.fn(async () => ({ results: [{ id, status: "succeeded", statusCode: 201 }] }));
     expect(await flushOutbox({ post, s })).toEqual({ sent: 1, failed: 0 });
     expect(post).toHaveBeenCalledWith("/api/pwa/sync", { actions: [{ id, method: "POST", path: "/api/tasks", body: { title: "A" }, idempotencyKey: id }] });
@@ -35,6 +35,6 @@ describe("offline outbox", () => {
     const s = mem(); await postOrQueue(`/api/tasks/${ID}/complete`, {}, "Task completed", { online: false, eligible: true, s });
     expect(await flushOutbox({ post: vi.fn(async () => ({ results: [{ status: "failed", statusCode: 404, error: { message: "Task not found" } }] })), s })).toEqual({ sent: 0, failed: 1 });
     expect(readOutbox(s)[0]).toMatchObject({ status: "failed", error: "Task not found" });
-    dismissFailed(readOutbox(s)[0].id, s); expect(readOutbox(s)).toHaveLength(0);
+    dismissFailed(readOutbox(s)[0]!.id, s); expect(readOutbox(s)).toHaveLength(0);
   });
 });

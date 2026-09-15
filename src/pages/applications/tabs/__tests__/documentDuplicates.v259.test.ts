@@ -25,7 +25,7 @@ describe("duplicate groups from the server", () => {
     const index = buildDuplicateIndex(groups);
     expect(Object.keys(index).sort()).toEqual(["d2", "d3", "d4"]);
     expect(index.d1).toBeUndefined();
-    expect(duplicateBadgeText(index.d2)).toBe("Duplicate of Voss Events Balance Sheet - 4.30.26 (1).pdf (Balance Sheet – Interim financials)");
+    expect(duplicateBadgeText(index.d2!)).toBe("Duplicate of Voss Events Balance Sheet - 4.30.26 (1).pdf (Balance Sheet – Interim financials)");
     expect(extraCopyIds(groups)).toEqual(["d2", "d3", "d4"]);
   });
   it("tolerates an unwrapped response, an empty one, or an older server", () => {
