@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
 // BF_PORTAL_SPLIT_VIEW_v205
 import DocumentSplitView, { type SplitViewDoc } from "@/components/applications/DocumentSplitView";
+import AcceptNameDialog from "@/components/applications/AcceptNameDialog"; // BF_PORTAL_ACCEPT_NAME_v266
 
 interface Props { applicationId?: string }
 
@@ -135,6 +136,7 @@ export default function DocumentsTab({ applicationId }: Props) {
   const [rejectDraft, setRejectDraft] = useState<Record<string, string>>({});
   const [rejectOpen, setRejectOpen] = useState<Record<string, boolean>>({});
   const [actionError, setActionError] = useState<string | null>(null);
+  const [acceptDoc, setAcceptDoc] = useState<{ documentId: string; filename: string | null; fromPane: boolean } | null>(null); // v266
   const [dupGroups, setDupGroups] = useState<DuplicateGroup[]>([]); // v259
   const [removingCopies, setRemovingCopies] = useState(false); // v259
   // BF_PORTAL_BLOCK_v820_STAFF_UPLOAD
@@ -251,17 +253,28 @@ export default function DocumentsTab({ applicationId }: Props) {
 
   useEffect(() => { void reload(); }, [reload]);
 
-  async function handleAccept(docId: string) {
+  async function handleAccept(docId: string, displayName: string | null = null) {
     if (working[docId]) return;
     setWorking((w) => ({ ...w, [docId]: "accept" }));
     setActionError(null);
     try {
-      await api.post(`/api/portal/documents/${docId}/accept`, {});
+      await api.post(`/api/portal/documents/${docId}/accept`, displayName ? { displayName } : {});
       await reload();
+      setAcceptDoc(null);
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Accept failed");
     } finally {
       setWorking((w) => ({ ...w, [docId]: undefined }));
+    }
+  }
+
+  async function confirmNamedAccept(displayName: string | null) {
+    if (!acceptDoc) return;
+    if (acceptDoc.fromPane) {
+      const accepted = await reviewFromPane(acceptDoc.documentId, "accept", undefined, displayName);
+      if (accepted) setAcceptDoc(null);
+    } else {
+      await handleAccept(acceptDoc.documentId, displayName);
     }
   }
 
@@ -272,19 +285,21 @@ export default function DocumentsTab({ applicationId }: Props) {
     const after = [...reviewOrder.slice(index + 1), ...reviewOrder.slice(0, Math.max(0, index))];
     return after.find((document) => (document.status ?? "pending").toLowerCase() === "pending" && document.documentId !== docId) ?? null;
   }
-  async function reviewFromPane(docId: string, action: "accept" | "reject", reason?: string) {
-    if (working[docId]) return;
+  async function reviewFromPane(docId: string, action: "accept" | "reject", reason?: string, displayName: string | null = null) {
+    if (working[docId]) return false;
     setWorking((value) => ({ ...value, [docId]: action }));
     setActionError(null);
     try {
-      if (action === "accept") await api.post(`/api/portal/documents/${docId}/accept`, {});
+      if (action === "accept") await api.post(`/api/portal/documents/${docId}/accept`, displayName ? { displayName } : {});
       else await api.post(`/api/portal/documents/${docId}/reject`, { reason });
       const next = nextPendingAfter(docId);
       await reload();
       if (next) await handlePreview(next.documentId, next.filename);
       else setSplitDoc((previous) => { if (previous?.url) URL.revokeObjectURL(previous.url); return null; });
+      return true;
     } catch (error) {
       setActionError(error instanceof Error ? error.message : action === "accept" ? "Accept failed" : "Reject failed");
+      return false;
     } finally {
       setWorking((value) => ({ ...value, [docId]: undefined }));
     }
@@ -431,7 +446,7 @@ export default function DocumentsTab({ applicationId }: Props) {
                   rejectOpen={!!rejectOpen[doc.documentId]}
                   rejectDraft={rejectDraft[doc.documentId] ?? ""}
                   onPreview={() => handlePreview(doc.documentId, doc.filename)}
-                  onAccept={() => handleAccept(doc.documentId)}
+                  onAccept={() => setAcceptDoc({ documentId: doc.documentId, filename: doc.filename, fromPane: false })}
                   onRejectOpen={() => setRejectOpen((r) => ({ ...r, [doc.documentId]: true }))}
                   onRejectCancel={() => {
                     setRejectOpen((r) => ({ ...r, [doc.documentId]: false }));
@@ -461,7 +476,7 @@ export default function DocumentsTab({ applicationId }: Props) {
         })}
         review={splitDoc?.documentId && canManage ? {
           working: working[splitDoc.documentId],
-          onAccept: () => void reviewFromPane(splitDoc.documentId as string, "accept"),
+          onAccept: () => setAcceptDoc({ documentId: splitDoc.documentId as string, filename: splitDoc.filename, fromPane: true }),
           onReject: (reason: string) => void reviewFromPane(splitDoc.documentId as string, "reject", reason),
           hasNext: !!nextPendingAfter(splitDoc.documentId),
           onNext: () => {
@@ -470,6 +485,15 @@ export default function DocumentsTab({ applicationId }: Props) {
           },
         } : null}
       />
+      {acceptDoc ? (
+        <AcceptNameDialog
+          documentId={acceptDoc.documentId}
+          originalFilename={acceptDoc.filename}
+          working={working[acceptDoc.documentId] === "accept"}
+          onCancel={() => setAcceptDoc(null)}
+          onConfirm={(displayName) => void confirmNamedAccept(displayName)}
+        />
+      ) : null}
     </div>
   );
 }
