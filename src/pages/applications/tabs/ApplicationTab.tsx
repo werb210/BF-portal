@@ -25,6 +25,7 @@ import { fetchTaskStatus, type TaskStatus } from "@/api/applicationTasks";
 import { getFormResponse, type PortalFormResponse } from "@/api/formResponses";
 import { formatMoneyOrRange } from "@/utils/moneyRange"; // BF_PORTAL_BLOCK_v864_MONEY_RANGE
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v817_REMIND_CLIENT
+import ProductQuestionsPanel from "@/pages/applications/tabs/ProductQuestionsPanel"; // BF_PORTAL_PRODUCT_QUESTIONS_v292
 
 type AnyRecord = Record<string, any>;
 type Props = { application: AnyRecord | null };
@@ -391,6 +392,7 @@ export default function ApplicationTab({ application }: Props) {
   return (
     <div style={styles.page}>
       {legInfo && <LegBanner kind={legInfo.kind} parentId={legInfo.parentId} />}
+      {application.id ? <ProductQuestionsPanel applicationId={String(application.id)} /> : null}
       <div style={styles.headerRow}>
         <div style={{ minWidth: 0 }}>
           <h2 style={styles.title}>{businessName}</h2>

@@ -25,6 +25,12 @@ import { canWrite } from "@/auth/can";
 // BF_PORTAL_BLOCK_v303_COLLATERAL_DOCTYPES_v1
 import CollateralFacilitySection from "@/pages/applications/tabs/CollateralFacilitySection";
 import ProductCategoryPicker from "@/pages/applications/tabs/ProductCategoryPicker"; // BF_PORTAL_PRODUCT_CATEGORY_PICKER_v287
+// BF_PORTAL_PRODUCT_QUESTIONS_v292 - BF-Server v289 refuses to send while product questions are unanswered.
+type ProductQuestionsSummary = { blocking?: boolean; message?: string | null } | null | undefined;
+export function productQuestionsBlock(envelope: unknown): string | null {
+  const pq = (envelope as { product_questions?: ProductQuestionsSummary } | null)?.product_questions;
+  return pq?.blocking ? (pq.message ?? "Waiting on the client to answer product questions.") : null;
+}
 
 type Props = { applicationId?: string | null };
 // BF_PORTAL_LENDERS_REVIVE_v37
@@ -516,6 +522,11 @@ export default function LendersTab({ applicationId }: Props) {
             canEdit={canManage}
             onChanged={() => queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] })}
           />
+          {productQuestionsBlock(envelope) && (
+            <div role="status" data-testid="product-questions-waiting" style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, background: "#fef3c7", color: "#92400e", fontSize: 13, maxWidth: 560 }}>
+              {productQuestionsBlock(envelope)}
+            </div>
+          )}
         </div>
         {canManage && (
           <div style={styles.parkBtns}>
@@ -750,8 +761,9 @@ export default function LendersTab({ applicationId }: Props) {
         <button
           type="button"
           onClick={handleSend}
-          disabled={sending || selectedIds.length === 0 || isStale}
-          style={(sending || selectedIds.length === 0 || isStale) ? styles.btnPrimaryDisabled : styles.btnPrimary}
+          disabled={sending || selectedIds.length === 0 || isStale || !!productQuestionsBlock(envelope)}
+          title={productQuestionsBlock(envelope) ?? undefined}
+          style={(sending || selectedIds.length === 0 || isStale || !!productQuestionsBlock(envelope)) ? styles.btnPrimaryDisabled : styles.btnPrimary}
         >
           {sending ? "Sending…" : `Send (${selectedIds.length})`}
         </button>
