@@ -42,7 +42,7 @@ type DocumentRow = {
   status?: DocStatus;
   rejectionReason?: string | null;
   ocrStatus?: OcrStatus;
-} & MisfiledFields & TamperFields & { displayName?: string | null }; // v263, v270
+} & MisfiledFields & TamperFields & { displayName?: string | null } & { receivedInBackground?: boolean }; // v263, v270, v311
 
 type PortalApplicationResponse = { documents?: DocumentRow[] };
 
@@ -565,6 +565,13 @@ function DocRow(props: {
           <span style={styles.filename}>{doc.displayName ?? v_friendlyDocName(doc)}</span>{doc.displayName && doc.filename && doc.displayName !== doc.filename ? <span data-testid="original-filename" style={{ fontSize: 12, color: "#6b7280" }}>({doc.filename})</span> : null}
           <StatusPill status={status} />
           <OcrBadge ocr={doc.ocrStatus} />
+          {/* BF_PORTAL_BACKGROUND_UPLOAD_TAG_v311 - the client's phone sent this after they closed the app (BF-client v307). */}
+          {doc.receivedInBackground ? (
+            <span data-testid="background-upload-tag" title="The client's phone finished this upload after they closed the app, so it may have arrived later than they sent it."
+              style={{ fontSize: 11, fontWeight: 600, borderRadius: 6, padding: "2px 8px", color: "#1e40af", background: "#dbeafe", border: "1px solid #bfdbfe", cursor: "help" }}>
+              Received in background
+            </span>
+          ) : null}
           {tamperBadge(doc) ? (
             <span data-testid="tamper-badge" data-tone={tamperBadge(doc)!.tone} title={tamperBadge(doc)!.detail}
               style={{ fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "2px 8px", cursor: "help",
