@@ -19,7 +19,17 @@ type Doc = {
   file_name: string;
   status: "pending" | "accepted" | "rejected";
   ocr_status?: string | null;
+  // BF_PORTAL_BI_MISFILED_v277 - BI-Server v276 OCR classification (advisory).
+  detected_label?: string | null;
+  detected_confidence?: number | null;
+  looks_misfiled?: boolean;
 };
+
+export function biMisfiledText(d: { looks_misfiled?: boolean; detected_label?: string | null; detected_confidence?: number | null }): string | null {
+  if (!d.looks_misfiled || !d.detected_label) return null;
+  const pct = typeof d.detected_confidence === "number" ? ` (${Math.round(d.detected_confidence * 100)}%)` : "";
+  return `Looks like ${d.detected_label}${pct}`;
+}
 
 
 async function biReviewDocument(applicationId: string, docId: string, decision: "accepted" | "rejected", reason?: string) {
@@ -213,6 +223,11 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
             <div className="text-sm font-medium">
               {biDocSlotLabel(d.doc_slot ?? d.doc_type)}
               <OcrStatusBadge status={d.ocr_status} />
+              {biMisfiledText(d) && (
+                <span data-testid="bi-misfiled-badge" title="OCR suggests this file may be in the wrong document slot. Check before accepting." className="ml-2 rounded bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-blue-200">
+                  {biMisfiledText(d)}
+                </span>
+              )}
               {biDocSlotIsCarrierBound(d.doc_slot ?? d.doc_type) === false && (
                 <span className="ml-2 rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">KYC only</span>
               )}
