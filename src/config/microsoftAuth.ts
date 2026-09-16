@@ -1,3 +1,4 @@
+import { withRequiredO365Scopes } from "@/auth/o365Scopes"; // BF_PORTAL_O365_SCOPES_v275
 const rawClientId = import.meta.env.VITE_MSAL_CLIENT_ID ?? "";
 const rawRedirectUri = import.meta.env.VITE_MSAL_REDIRECT_URI ?? "";
 const rawTenantId = import.meta.env.VITE_MSAL_TENANT_ID ?? "";
@@ -22,8 +23,5 @@ export const microsoftAuthConfig = {
   tenantId,
   authority: `https://login.microsoftonline.com/${tenantId}`,
   redirectUri,
-  scopes: scopeValue
-    .split(",")
-    .map((scope) => scope.trim())
-    .filter(Boolean)
+  scopes: withRequiredO365Scopes(scopeValue), // BF_PORTAL_O365_SCOPES_v275
 };

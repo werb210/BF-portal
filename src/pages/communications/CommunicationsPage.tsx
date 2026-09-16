@@ -4,6 +4,7 @@ import { contactDisplayName } from "@/utils/contactName";
 import { getAuthToken } from "@/lib/authToken"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
 import { API_BASE } from "@/config/api"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
 import { withO365Refresh } from "@/api/o365Interceptor";
+import { o365ReasonFrom } from "@/auth/o365Scopes"; // BF_PORTAL_O365_RECONNECT_v275
 import { ApiError } from "@/api/http";
 import toast from "react-hot-toast"; // BF_PORTAL_COMMS_SMS_ERROR_TOAST_v1
 import SecondaryButton from "@/components/forms/SecondaryButton";
@@ -1446,6 +1447,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
 
   // BF_PORTAL_BLOCK_v213_INBOX_RECONNECT_M365_v2
   const [needsReconnect, setNeedsReconnect] = useState(false);
+  const [reconnectReason, setReconnectReason] = useState<string | null>(null); // BF_PORTAL_O365_RECONNECT_v275
   const [reconnecting, setReconnecting] = useState(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
@@ -1516,6 +1518,10 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
               .then((rr) => (Array.isArray(rr) ? rr : []).map((mm) => ({ ...mm, _mailbox: t.addr, _mailboxLabel: t.label })))
           ));
           if (cancelled) return;
+          // BF_PORTAL_O365_RECONNECT_v275 - every mailbox failing used to look like an empty inbox.
+          const rejected = results.filter((res): res is PromiseRejectedResult => res.status === "rejected");
+          if (rejected.length > 0 && rejected.length === results.length) throw rejected[0]!.reason;
+          if (rejected.length > 0) console.warn("[inbox] some mailboxes failed", rejected.map((r) => o365ReasonFrom(r.reason) ?? String(r.reason)));
           const merged = results.flatMap((res) => (res.status === "fulfilled" ? res.value : []));
           const dir = sortDir === "asc" ? 1 : -1;
           merged.sort((a, b) => dir * ((new Date(a.receivedDateTime || 0).getTime()) - (new Date(b.receivedDateTime || 0).getTime())));
@@ -1534,11 +1540,12 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
         if (cancelled) return;
         const status = (e as { status?: number; response?: { status?: number } })?.status
           ?? (e as { response?: { status?: number } })?.response?.status;
-        if (status === 401) {
+        if (status === 401 || status === 412) {
           setNeedsReconnect(true);
+          setReconnectReason(o365ReasonFrom(e)); // v275
           setErr(null);
         } else {
-          const message = e instanceof Error ? e.message : "Could not load inbox.";
+          const message = o365ReasonFrom(e) ?? (e instanceof Error ? e.message : "Could not load inbox.");
           setErr(message);
         }
       } finally {
@@ -2029,7 +2036,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
           fontSize: 14,
         }}>
           <span style={{ flex: 1 }}>
-            Microsoft 365 connection has expired. Reconnect to view your inbox.
+            {reconnectReason ?? "Microsoft 365 connection has expired. Reconnect to view your inbox."}
           </span>
           <button
             type="button"

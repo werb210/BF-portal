@@ -1,6 +1,7 @@
 import { BrowserAuthError, PublicClientApplication } from "@azure/msal-browser";
 
 import { microsoftAuthConfig } from "@/config/microsoftAuth";
+import { withRequiredO365Scopes } from "@/auth/o365Scopes"; // BF_PORTAL_O365_SCOPES_v275
 
 const isIos = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
 
@@ -63,10 +64,7 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null, opts?: {
     // relies on the iframe re-auth path which modern browsers block.
     // Aligns with config/microsoftAuth.ts which already had it.
     const scopesEnv = import.meta.env.VITE_MSAL_SCOPES || "User.Read,Mail.Send,Mail.ReadWrite,Calendars.ReadWrite,Tasks.ReadWrite,offline_access";
-    const scopes = String(scopesEnv)
-      .split(",")
-      .map((scope) => scope.trim())
-      .filter(Boolean);
+    const scopes = withRequiredO365Scopes(String(scopesEnv)); // BF_PORTAL_O365_SCOPES_v275
 
     console.log("[msal.silent] acquire.start", { username: account.username ?? null, scopes });
     const result = await msalClient.acquireTokenSilent({ account, scopes });
@@ -150,7 +148,7 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null, opts?: {
       try {
         if (typeof sessionStorage !== "undefined") sessionStorage.setItem(REDIRECT_GUARD_KEY, "1");
         const scopesEnv = import.meta.env.VITE_MSAL_SCOPES || "User.Read,Mail.Send,Mail.ReadWrite,Mail.ReadWrite.Shared,Calendars.ReadWrite,Tasks.ReadWrite,offline_access";
-        const scopes = String(scopesEnv).split(",").map((scope) => scope.trim()).filter(Boolean);
+        const scopes = withRequiredO365Scopes(String(scopesEnv)); // BF_PORTAL_O365_SCOPES_v275
         const account = msalClient.getActiveAccount() ?? msalClient.getAllAccounts()[0] ?? null;
         console.log("[msal.silent] iframe blocked — falling back to acquireTokenRedirect", { name });
         await msalClient.acquireTokenRedirect({ scopes, account: account ?? undefined });
