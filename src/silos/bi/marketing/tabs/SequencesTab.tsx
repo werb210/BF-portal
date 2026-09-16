@@ -20,7 +20,8 @@ type StepDraft = {
   variant?: string;
 };
 
-export default function SequencesTab({ owner }: { viewAs?: "todd" | "andrew"; owner?: string; capabilities?: string[] } = {}) {
+// BF_PORTAL_BI_SEQUENCES_v285 - hideCreate/refreshKey let BI Marketing show this list above the canvas.
+export default function SequencesTab({ owner, hideCreate = false, refreshKey = 0 }: { viewAs?: "todd" | "andrew"; owner?: string; capabilities?: string[]; hideCreate?: boolean; refreshKey?: number } = {}) {
   const [list, setList] = useState<Sequence[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -33,7 +34,7 @@ export default function SequencesTab({ owner }: { viewAs?: "todd" | "andrew"; ow
       setList([]);
     }
   };
-  useEffect(() => { void load(); }, [owner]);
+  useEffect(() => { void load(); }, [owner, refreshKey]);
 
   const act = async (id: string, action: "start" | "pause") => {
     setBusy(id);
@@ -57,9 +58,10 @@ export default function SequencesTab({ owner }: { viewAs?: "todd" | "andrew"; ow
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Sequences</h3>
-        <button onClick={() => setShowCreate(true)} className="rounded bg-emerald-500/20 hover:bg-emerald-500/30 px-3 py-1.5 text-sm text-emerald-200">+ New sequence</button>
+        {!hideCreate && <button onClick={() => setShowCreate(true)} className="rounded bg-emerald-500/20 hover:bg-emerald-500/30 px-3 py-1.5 text-sm text-emerald-200">+ New sequence</button>}
       </div>
       {list.length === 0 && <p className="text-white/50 italic">No sequences yet.</p>}
+      {list.some((s) => s.status !== "active") && <p className="text-xs text-white/50">A sequence only sends once it is started. Add contacts from CRM → Outreach.</p>}
       <ul className="space-y-2">
         {list.map((s) => (
           <li key={s.id} className="bg-brand-bgAlt border border-card rounded-xl p-4">

@@ -3,6 +3,7 @@ import { api } from "@/api";
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer";
 import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORTAL_LINK_CLICKS_PANEL_v9
 import SequenceCanvas, { type BISequenceStep, type SequenceQueue, type SequenceStaff, type SequenceTemplate } from "@/components/marketing/SequenceCanvas";
+import SequencesTab from "./tabs/SequencesTab"; // BF_PORTAL_BI_SEQUENCES_v285
 
 // BF_PORTAL_LINK_CLICKS_PANEL_v9 - BI gets the same link report as BF.
 // BF_PORTAL_APOLLO_OFF_v10 - Apollo is retired. APOLLO_SYNC_ENABLED=false on
@@ -19,6 +20,7 @@ export default function BIMarketing() {
   const [sequenceName, setSequenceName] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [listVersion, setListVersion] = useState(0); // v285
 
   useEffect(() => {
     api.get<{ data?: { items?: SequenceTemplate[] }; items?: SequenceTemplate[] }>("/api/v1/bi/marketing/templates")
@@ -44,8 +46,15 @@ export default function BIMarketing() {
     setBusy(true); setMessage(null);
     try {
       await api.post("/api/v1/bi/marketing/sequences", { name, steps });
-      setMessage("Sequence saved.");
-    } catch { setMessage("Save failed."); }
+      // BF_PORTAL_BI_SEQUENCES_v285 - a saved sequence is a draft; say how to make it send.
+      setMessage("Sequence saved as a draft. Press Start on it below, then add contacts from CRM → Outreach.");
+      setSequenceName("");
+      setListVersion((v) => v + 1);
+    } catch (e) {
+      const detail = (e as { details?: { error?: { message?: unknown } | unknown } })?.details?.error;
+      const reason = detail && typeof detail === "object" && typeof (detail as { message?: unknown }).message === "string" ? (detail as { message: string }).message : null;
+      setMessage(reason ? `Save failed: ${reason}` : "Save failed.");
+    }
     finally { setBusy(false); }
   };
 
@@ -56,6 +65,8 @@ export default function BIMarketing() {
       </div>
     </div>
     {channel === "email" ? <div className="max-w-7xl mx-auto px-6"><BrandedEmailComposer apiBase="/api/v1/bi/marketing" /></div> : channel === "links" ? <div className="max-w-7xl mx-auto px-6"><LinkClicksPanel apiBase="/api/v1/bi/marketing" /></div> : <div className="max-w-7xl mx-auto px-6">
+      <div className="mb-8"><SequencesTab hideCreate refreshKey={listVersion} /></div>
+      <h3 className="mb-2 text-lg font-medium">Build a new sequence</h3>
       <label className="mb-4 block max-w-xl text-sm text-white/80">Sequence name
         <input id="bi-sequence-name" aria-label="Sequence name" value={sequenceName} onChange={(event) => setSequenceName(event.target.value)} className="mt-1 block w-full rounded border px-3 py-2 bg-transparent text-white" placeholder="Enter a sequence name" />
       </label>
