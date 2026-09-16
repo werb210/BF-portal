@@ -27,6 +27,11 @@ import CollateralFacilitySection from "@/pages/applications/tabs/CollateralFacil
 import ProductCategoryPicker from "@/pages/applications/tabs/ProductCategoryPicker"; // BF_PORTAL_PRODUCT_CATEGORY_PICKER_v287
 // BF_PORTAL_PRODUCT_QUESTIONS_v292 - BF-Server v289 refuses to send while product questions are unanswered.
 type ProductQuestionsSummary = { blocking?: boolean; message?: string | null } | null | undefined;
+// BF_PORTAL_RESIGN_REQUEST_v295 - BF-Server v293 flags when the client signed before a switch to Line of Credit.
+export function needsResignature(envelope: unknown): boolean {
+  const pq = (envelope as { product_questions?: { resignRequired?: boolean; missingCount?: number } | null } | null)?.product_questions;
+  return !!pq?.resignRequired && !pq?.missingCount;
+}
 export function productQuestionsBlock(envelope: unknown): string | null {
   const pq = (envelope as { product_questions?: ProductQuestionsSummary } | null)?.product_questions;
   return pq?.blocking ? (pq.message ?? "Waiting on the client to answer product questions.") : null;
@@ -525,6 +530,27 @@ export default function LendersTab({ applicationId }: Props) {
           {productQuestionsBlock(envelope) && (
             <div role="status" data-testid="product-questions-waiting" style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, background: "#fef3c7", color: "#92400e", fontSize: 13, maxWidth: 560 }}>
               {productQuestionsBlock(envelope)}
+              {needsResignature(envelope) && canManage && (
+                <div style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    data-testid="request-resignature"
+                    style={styles.btn}
+                    onClick={async () => {
+                      if (!window.confirm("Ask the client to sign the updated application? Their earlier signature will be kept on record and a new signing request sent.")) return;
+                      try {
+                        await api.post(`/api/applications/${encodeURIComponent(id)}/product-questions/request-signature`, {});
+                        await queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
+                        window.alert("The client has been asked to sign the updated application.");
+                      } catch (e) {
+                        window.alert(e instanceof Error ? e.message : "Could not request a new signature.");
+                      }
+                    }}
+                  >
+                    Ask client to sign again
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
