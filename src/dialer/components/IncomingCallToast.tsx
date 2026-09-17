@@ -19,6 +19,14 @@ export default function IncomingCallToast() {
         <div style={{ color: "#fff", fontSize: 15, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {incoming.fromDisplay || "Unknown caller"}
         </div>
+        {/* BF_PORTAL_KEEP_RESOLVED_CALLER_v327 - a mini-portal caller is calling
+            about a specific file. Show the business and the application so
+            whoever picks up knows the deal before they say hello. */}
+        {(incoming.companyName || incoming.applicationName) && (
+          <div style={{ color: "#d1d5db", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {[incoming.companyName, incoming.applicationName].filter(Boolean).join(" · ")}
+          </div>
+        )}
         {incoming.phone && incoming.phone !== incoming.fromDisplay && (
           <div style={{ color: "#9ca3af", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{incoming.phone}</div>
         )}
