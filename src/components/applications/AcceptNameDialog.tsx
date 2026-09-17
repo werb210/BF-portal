@@ -19,7 +19,31 @@ export default function AcceptNameDialog(props: {
   working: boolean;
   onCancel: () => void;
   onConfirm: (displayName: string | null) => void;
+  // BF_PORTAL_ACCEPT_CATEGORY_v318 - fix the category while naming, without leaving the dialog.
+  category?: string | null;
+  categories?: string[];
+  onMoved?: (category: string) => void;
 }) {
+  const [category, setCategory] = useState<string>(props.category ?? "");
+  const [moving, setMoving] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const [nameVersion, setNameVersion] = useState(0);
+  const categoryOptions = categoryChoices(props.categories ?? [], props.category ?? null);
+  async function changeCategory(next: string) {
+    if (!next || next === category) return;
+    setMoving(true);
+    setMoveError(null);
+    try {
+      await api.post(`/api/documents/${encodeURIComponent(props.documentId)}/category`, { category: next });
+      setCategory(next);
+      props.onMoved?.(next);
+      setNameVersion((v) => v + 1); // the suggested name follows the new category
+    } catch (e) {
+      setMoveError(e instanceof Error ? e.message : "Could not change the category.");
+    } finally {
+      setMoving(false);
+    }
+  }
   const [parts, setParts] = useState<NameParts | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [period, setPeriod] = useState("");
@@ -48,7 +72,7 @@ export default function AcceptNameDialog(props: {
       }
     })();
     return () => { cancelled = true; };
-  }, [props.documentId]);
+  }, [props.documentId, nameVersion]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -88,9 +112,25 @@ export default function AcceptNameDialog(props: {
         ) : (
           <p style={styles.help}>Accept <strong>{props.originalFilename || "this document"}</strong>? Naming is unavailable, so its current name will be kept.</p>
         )}
-        <div style={styles.actions}>
-          <button type="button" onClick={props.onCancel} disabled={props.working} style={styles.cancel}>Cancel</button>
-          <button type="button" onClick={confirm} disabled={!loaded || props.working} style={styles.accept}>{props.working ? "Accepting…" : "Accept"}</button>
+        {moveError && <p role="alert" style={{ margin: "12px 0 0", color: "#b91c1c", fontSize: 13 }}>{moveError}</p>}
+        <div style={{ ...styles.actions, justifyContent: categoryOptions.length ? "space-between" : "flex-end" }}>
+          {categoryOptions.length ? (
+            <select
+              aria-label="Document category"
+              data-testid="accept-category"
+              value={category}
+              disabled={props.working || moving}
+              onChange={(event) => void changeCategory(event.target.value)}
+              style={styles.category}
+            >
+              {!category && <option value="">Choose category…</option>}
+              {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          ) : null}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" onClick={props.onCancel} disabled={props.working} style={styles.cancel}>Cancel</button>
+            <button type="button" onClick={confirm} disabled={!loaded || props.working || moving} style={styles.accept}>{props.working ? "Accepting…" : moving ? "Moving…" : "Accept"}</button>
+          </div>
         </div>
       </div>
     </div>
@@ -110,4 +150,12 @@ const styles: Record<string, CSSProperties> = {
   actions: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 },
   cancel: { padding: "9px 15px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", cursor: "pointer", fontWeight: 600 },
   accept: { padding: "9px 15px", borderRadius: 8, border: 0, background: "#16a34a", color: "#fff", cursor: "pointer", fontWeight: 700 },
+  category: { flex: "1 1 auto", minWidth: 0, maxWidth: 240, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13 },
 };
+
+/** The staff categories, with the document's current category first if it is not one of them. */
+export function categoryChoices(categories: string[], current: string | null): string[] {
+  const list = [...categories];
+  if (current && !list.some((c) => c.toLowerCase() === current.toLowerCase())) list.unshift(current);
+  return list;
+}
