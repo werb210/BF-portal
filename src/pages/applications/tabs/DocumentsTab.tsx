@@ -148,10 +148,12 @@ export default function DocumentsTab({ applicationId }: Props) {
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
   const uploadFileRef = useRef<HTMLInputElement | null>(null);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null); // v316
   // BF_PORTAL_IPAD_WIRING_v238 - files dropped onto the tab (Finder, Files, Mail).
   const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
-  const DROP_EXTS = [".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg"];
+  // BF_PORTAL_DOC_UPLOAD_MOVE_v316 - Apple Numbers, older Excel/Word, CSV and iPhone photos too.
+  const DROP_EXTS = [".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg", ".numbers", ".xls", ".csv", ".doc", ".heic"];
   function onDocumentsDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragActive(false);
@@ -170,6 +172,7 @@ export default function DocumentsTab({ applicationId }: Props) {
     setUploading(true); setUploadErr(null);
     try {
       const failures: string[] = [];
+      const skipped: string[] = [];
       for (const file of files) {
         try {
           const fd = new FormData();
@@ -178,15 +181,19 @@ export default function DocumentsTab({ applicationId }: Props) {
           fd.append("file", file);
           await api("/api/documents/upload", { method: "POST", body: fd });
         } catch (e: any) {
-          failures.push(`${file.name}: ${e?.message ?? "upload failed"}`);
+          // A file already on this application (v256) is skipped, not a failure.
+          if (isDuplicateUploadError(e)) skipped.push(file.name);
+          else failures.push(`${file.name}: ${e?.message ?? "upload failed"}`);
         }
       }
       if (uploadFileRef.current) uploadFileRef.current.value = "";
       setDroppedFiles([]);
+      const summary = uploadSummary(files.length, skipped, failures);
       if (failures.length > 0) {
-        setUploadErr(`${files.length - failures.length} of ${files.length} uploaded. Failed: ${failures.join("; ")}`);
+        setUploadErr(summary);
       } else {
         setUploadOpen(false);
+        setUploadNotice(summary);
       }
       await reload();
     } catch (e: any) {
@@ -328,6 +335,18 @@ export default function DocumentsTab({ applicationId }: Props) {
     }
   }
 
+  // BF_PORTAL_DOC_UPLOAD_MOVE_v316 - move a document filed under the wrong category.
+  async function handleMove(docId: string, filename: string | null, category: string) {
+    if (typeof window !== "undefined" && !window.confirm(`Move "${filename ?? "this document"}" to ${category}?`)) return;
+    setActionError(null);
+    try {
+      await api.post(`/api/documents/${encodeURIComponent(docId)}/category`, { category });
+      await reload();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Move failed");
+    }
+  }
+
   async function handleDelete(docId: string) {
     if (!applicationId) return;
     if (typeof window !== "undefined" && !window.confirm("Delete this document permanently? This also removes the stored file.")) return;
@@ -397,7 +416,7 @@ export default function DocumentsTab({ applicationId }: Props) {
             <select value={uploadCat} onChange={(e) => setUploadCat(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--ui-border)", margin: "4px 0 12px", fontSize: 14 }}>
               {STAFF_DOC_CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
             </select>
-            <input ref={uploadFileRef} type="file" multiple accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" style={{ display: "block", marginBottom: 12 }} />
+            <input ref={uploadFileRef} type="file" multiple accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.numbers,.xls,.csv,.doc,.heic" style={{ display: "block", marginBottom: 12 }} />
             {droppedFiles.length > 0 && (
               <div style={{ fontSize: 13, color: "var(--ui-text)", marginBottom: 12 }} data-testid="dropped-files">
                 {droppedFiles.length} dropped file{droppedFiles.length === 1 ? "" : "s"}: {droppedFiles.map((f) => f.name).join(", ")}
@@ -447,6 +466,12 @@ export default function DocumentsTab({ applicationId }: Props) {
       {actionError && (
         <div role="alert" style={styles.actionError}>{actionError}</div>
       )}
+      {uploadNotice && (
+        <div role="status" data-testid="upload-notice" style={{ margin: "8px 0", padding: "8px 12px", borderRadius: 8, background: "#ecfdf5", color: "#065f46", fontSize: 13, display: "flex", justifyContent: "space-between", gap: 8 }}>
+          <span>{uploadNotice}</span>
+          <button type="button" onClick={() => setUploadNotice(null)} style={{ border: 0, background: "transparent", color: "#065f46", cursor: "pointer", fontWeight: 700 }} aria-label="Dismiss">×</button>
+        </div>
+      )}
 
       {grouped.length === 0 ? (
         <div style={styles.emptyAll}>No documents have been uploaded.</div>
@@ -483,6 +508,7 @@ export default function DocumentsTab({ applicationId }: Props) {
                   onScan={() => void handleScan(doc.documentId)}
                   onToggleScan={() => setScanOpen((o) => ({ ...o, [doc.documentId]: !o[doc.documentId] }))}
                   duplicateOf={duplicateOf[doc.documentId]}
+                  onMove={(category) => void handleMove(doc.documentId, doc.filename, category)}
                 />
               ))}
             </div>
@@ -540,6 +566,7 @@ function DocRow(props: {
   onScan: () => void;
   onToggleScan: () => void;
   duplicateOf?: DuplicateRef; // v259
+  onMove?: (category: string) => void; // v316
 }) {
   const { doc, canManage, working, previewing, rejectOpen, rejectDraft } = props;
   const status = (doc.status ?? "pending").toLowerCase() as DocStatus;
@@ -649,6 +676,18 @@ function DocRow(props: {
               {isRejected ? "✕ Rejected" : "Reject"}
             </button>
           </>
+        )}
+        {canManage && props.onMove && (
+          <select
+            aria-label="Move to another category"
+            data-testid="doc-move"
+            value=""
+            onChange={(e) => { if (e.target.value) props.onMove!(e.target.value); }}
+            style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, maxWidth: 190 }}
+          >
+            <option value="">Move to…</option>
+            {moveTargets(doc.category).map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
         )}
         {props.isAdmin && (
           <button
@@ -903,4 +942,23 @@ export function ReocrToolbar({ applicationId }: { applicationId?: string | null 
       )}
     </div>
   );
+}
+
+// BF_PORTAL_DOC_UPLOAD_MOVE_v316
+export function isDuplicateUploadError(e: unknown): boolean {
+  const err = e as { status?: number; code?: string; message?: string } | null;
+  return err?.status === 409 || /duplicate/i.test(String(err?.code ?? "")) || /already (been )?uploaded|duplicate/i.test(String(err?.message ?? ""));
+}
+
+export function uploadSummary(total: number, skipped: string[], failures: string[]): string {
+  const uploaded = total - skipped.length - failures.length;
+  const parts = [`${uploaded} of ${total} uploaded`];
+  if (skipped.length) parts.push(`${skipped.length} skipped - already on this application: ${skipped.join(", ")}`);
+  if (failures.length) parts.push(`Failed: ${failures.join("; ")}`);
+  return parts.join(". ") + ".";
+}
+
+export function moveTargets(current: string | null | undefined): string[] {
+  const now = (current ?? "").trim().toLowerCase();
+  return STAFF_DOC_CATEGORIES.filter((c) => c.toLowerCase() !== now);
 }
