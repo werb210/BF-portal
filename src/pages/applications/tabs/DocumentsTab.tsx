@@ -540,6 +540,9 @@ export default function DocumentsTab({ applicationId }: Props) {
           working={working[acceptDoc.documentId] === "accept"}
           onCancel={() => setAcceptDoc(null)}
           onConfirm={(displayName) => void confirmNamedAccept(displayName)}
+          category={docs.find((d) => d.documentId === acceptDoc.documentId)?.category ?? null}
+          categories={STAFF_DOC_CATEGORIES}
+          onMoved={() => void reload()}
         />
       ) : null}
     </div>
