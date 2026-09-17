@@ -59,6 +59,11 @@ export default function RequestItemsTab({ applicationId }: Props) {
   const [required, setRequired] = useState<ReqDoc[]>([]);
   const [waived, setWaived] = useState<Set<string>>(new Set());
   const [manual, setManual] = useState<Set<string>>(new Set()); // optional docs, by norm(label)
+  // BF_PORTAL_REQUIRED_DOC_PROGRESS_v329 - document types with a live (non-rejected)
+  // upload, from BF-Server v328. Without this the checklist showed what was ASKED
+  // for and never what had arrived, so tracking a deal meant counting the
+  // Documents tab by eye against this list.
+  const [satisfiedDocs, setSatisfiedDocs] = useState<Set<string>>(new Set());
   const [requestedForms, setRequestedForms] = useState<Set<string>>(new Set());
   const [formsWaived, setFormsWaived] = useState<Set<string>>(new Set());
   const [formsManual, setFormsManual] = useState<Set<string>>(new Set());
@@ -77,6 +82,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
         if (cancelled) return;
         setRequired(Array.isArray(r?.required) ? r.required : []);
         setWaived(new Set((Array.isArray(r?.waived) ? r.waived : []).map(norm)));
+        setSatisfiedDocs(new Set((Array.isArray(r?.satisfied) ? r.satisfied : []).map(norm)));
         setRequestedForms(new Set((Array.isArray(r?.forms) ? r.forms : []).map((x: any) => String(x).trim().toLowerCase())));
         setFormsWaived(new Set((Array.isArray(r?.formsWaived) ? r.formsWaived : []).map((x: any) => String(x).trim().toLowerCase())));
       })
@@ -84,6 +90,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
         if (cancelled) return;
         setRequired([]);
         setWaived(new Set());
+        setSatisfiedDocs(new Set());
         setRequestedForms(new Set());
         setFormsWaived(new Set());
       });
@@ -254,6 +261,28 @@ export default function RequestItemsTab({ applicationId }: Props) {
 
   const labelCol = "uppercase" as const;
 
+  // BF_PORTAL_REQUIRED_DOC_PROGRESS_v329 - a document counts as in once anything
+  // non-rejected is filed under it, matched on either the stored document type
+  // or the visible label, because the two are the same string for every
+  // catalog and product document and differ only for legacy rows.
+  const isUploaded = (it: DocItem) =>
+    satisfiedDocs.has(norm(it.label)) || (!!it.documentType && satisfiedDocs.has(norm(it.documentType)));
+
+  const requiredItems = docItems.filter((it) => it.isRequired && isChecked(it));
+  const requiredIn = requiredItems.filter(isUploaded).length;
+
+  const pill = (uploaded: boolean): CSSProperties => ({
+    marginLeft: "auto",
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 0.3,
+    padding: "2px 8px",
+    borderRadius: 999,
+    whiteSpace: "nowrap",
+    background: uploaded ? "rgba(22, 163, 74, 0.14)" : "rgba(217, 119, 6, 0.14)",
+    color: uploaded ? "#15803d" : "#b45309",
+  });
+
   return (
     <div style={{ maxWidth: 1100 }}>
       <h3 style={{ margin: "4px 0 4px" }}>Request Items</h3>
@@ -270,6 +299,11 @@ export default function RequestItemsTab({ applicationId }: Props) {
         <div>
           <div style={{ fontSize: 11, textTransform: labelCol, letterSpacing: 0.5, color: "var(--ui-text-muted)", fontWeight: 700, margin: "16px 0 8px" }}>
             Required documents
+            {requiredItems.length > 0 && (
+              <span style={{ marginLeft: 8, fontWeight: 700, color: requiredIn === requiredItems.length ? "#15803d" : "#b45309" }}>
+                {requiredIn} of {requiredItems.length} uploaded
+              </span>
+            )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {docItems.map((it) => {
@@ -292,6 +326,9 @@ export default function RequestItemsTab({ applicationId }: Props) {
                 >
                   <input type="checkbox" readOnly checked={checked} disabled={disabled} />{" "}
                   <span style={{ color: "var(--ui-text)" }}>{it.label}</span>
+                  {it.isRequired && checked && (
+                    <span style={pill(isUploaded(it))}>{isUploaded(it) ? "Uploaded" : "Missing"}</span>
+                  )}
                 </div>
               );
             })}
