@@ -12,7 +12,22 @@ import { useSilo } from "@/context/SiloContext";
 // client-to-client callers. Internal rings are resolved by the server from the
 // live conference rather than from a telephone number.
 async function resolveAndSetIncoming(base: { conferenceFriendly: string; fromDisplay: string; pendingCall?: any }) {
-  useDialer.getState().setIncoming(base);
+  // BF_PORTAL_KEEP_RESOLVED_CALLER_v327
+  // One ring arrives twice: the server's "conference.incoming" websocket event
+  // and the Twilio Device "incoming" event, in whichever order the network
+  // decides. Each one called setIncoming(base) and wiped whatever the other had
+  // already resolved, so a caller correctly named by the first event was
+  // relabelled "Unknown caller" by the second. Keep the resolved identity and
+  // merge in only what the new event adds - above all pendingCall, which is the
+  // object Answer needs and which only the Device event carries.
+  const prior = useDialer.getState().incoming;
+  const alreadyResolved = !!prior?.contactId;
+  useDialer.getState().setIncoming(
+    alreadyResolved && prior
+      ? { ...prior, ...base, fromDisplay: prior.fromDisplay, phone: prior.phone ?? null, pendingCall: base.pendingCall ?? prior.pendingCall }
+      : base,
+  );
+  if (alreadyResolved) return;
   const rawPhone = String(base.fromDisplay || "");
   if (!/\d{7,}/.test(rawPhone) && !rawPhone.startsWith("client:")) return;
   try {
