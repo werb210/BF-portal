@@ -11,10 +11,22 @@ type DashboardMetrics = {
   activeApplications: number;
   pipelineByStage: Record<string, number>;
   commissionByStage?: Record<string, number>;
+  // BF_PORTAL_COMMISSION_CURRENCY_v352 - native amounts per currency (BF-Server v351).
+  commissionByStageCurrency?: Record<string, Record<string, number>>;
+  commissionEarnedByCurrency?: Record<string, number>;
   dealsWonThisMonth: number;
   commissionEarned: number;
   newLeadsToday: number;
 };
+
+// BF_PORTAL_COMMISSION_CURRENCY_v352 - "CA$51,000 · US$12,000"; null when no amounts.
+function splitMoney(by?: Record<string, number>): string | null {
+  if (!by) return null;
+  const parts = ([["CAD", "CA$"], ["USD", "US$"]] as const)
+    .filter(([code]) => (by[code] ?? 0) > 0)
+    .map(([code, prefix]) => `${prefix}${Math.round(by[code] ?? 0).toLocaleString()}`);
+  return parts.length ? parts.join(" · ") : null;
+}
 
 // BF_PORTAL_BLOCK_v_DASHBOARD_DENSITY_v1 — bigger stat values, a real per-stage
 // breakdown (was a run-on "A 1 · B 3 · C 1" string), and a Pipeline-at-a-glance
@@ -115,7 +127,7 @@ const DashboardPage = () => {
           focus="commission"
           value={
             metrics?.commissionEarned !== undefined
-              ? `$${fmt(metrics.commissionEarned)}`
+              ? splitMoney(metrics.commissionEarnedByCurrency) ?? `$${fmt(metrics.commissionEarned)}`
               : "—"
           }
         />
@@ -193,7 +205,11 @@ const DashboardPage = () => {
                     }}
                     title="Projected BF commission in this stage"
                   >
-                    ${stageCommission.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    {/* BF_PORTAL_COMMISSION_CURRENCY_v352 - a rejected deal earns nothing. */}
+                    {stage === "Rejected"
+                      ? "—"
+                      : splitMoney(metrics?.commissionByStageCurrency?.[stage]) ??
+                        `$${stageCommission.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                   </div>
                 </div>
               );
