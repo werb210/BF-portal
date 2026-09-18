@@ -35,11 +35,24 @@ type CallRow = {
 
 // BF_PORTAL_TIMELINE_KINDS_v1 - voicemail and sms were emitted by the server but had
 // no place in this union, so they were dropped on the floor.
-type Kind = "note" | "task" | "call" | "email" | "meeting" | "voicemail" | "sms";
+// BF_PORTAL_TIMELINE_EVERY_CHANNEL_v359 - marketing email + engagement, logged calls,
+// portal/client messages, talk-to-a-human and ad attribution were sent by the server
+// and discarded here.
+type Kind = "note" | "task" | "call" | "email" | "meeting" | "voicemail" | "sms"
+  | "message" | "call_logged" | "email_activity" | "system";
+type ItemKind = "note" | "task" | "meeting" | "voicemail" | "sms" | "message" | "call_logged" | "email_activity" | "system";
+const ITEM_KINDS: ReadonlySet<string> = new Set<ItemKind>(["note", "task", "meeting", "voicemail", "sms", "message", "call_logged", "email_activity", "system"]);
+const KIND_LABEL: Partial<Record<Kind, string>> = { call_logged: "call (logged)", email_activity: "email", message: "message", system: "system" };
+// Filter tabs group related kinds.
+const groupOf = (k: Kind): Kind =>
+  k === "email_activity" ? "email"
+    : k === "call_logged" || k === "voicemail" ? "call"
+    : k === "sms" ? "message"
+    : k;
 type FilterTab = "all" | Kind;
 
 type Entry =
-  | { kind: "note" | "task" | "meeting" | "voicemail" | "sms"; id: string; ts: number; item: TimelineItem }
+  | { kind: ItemKind; id: string; ts: number; item: TimelineItem }
   | { kind: "email"; id: string; ts: number; email: EmailRow }
   | { kind: "call"; id: string; ts: number; call: CallRow };
 
@@ -82,14 +95,10 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
   const entries = useMemo<Entry[]>(() => {
     const out: Entry[] = [];
     for (const t of timeline) {
-      // BF_PORTAL_TIMELINE_KINDS_v1 - this used to keep ONLY note/task/meeting and
-      // silently drop everything else the server emits. Voicemails and SMS therefore
-      // never appeared on a contact record at all. 'call'/'email' stay excluded here
-      // because they are fetched from their own endpoints below; including them would
-      // double-render every call and email.
-      if (t.kind === "note" || t.kind === "task" || t.kind === "meeting"
-          || t.kind === "voicemail" || t.kind === "sms") {
-        out.push({ kind: t.kind, id: t.id, ts: tsOf(t.ts), item: t });
+      // 'call'/'email' stay excluded here because they are fetched from their own
+      // endpoints below; including them would double-render every call and email.
+      if (ITEM_KINDS.has(t.kind)) {
+        out.push({ kind: t.kind as ItemKind, id: t.id, ts: tsOf(t.ts), item: t });
       }
     }
     for (const e of emails) out.push({ kind: "email", id: e.id, ts: tsOf(e.created_at), email: e });
@@ -98,7 +107,7 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
     return out;
   }, [timeline, emails, calls]);
 
-  const filtered = filter === "all" ? entries : entries.filter((e) => e.kind === filter);
+  const filtered = filter === "all" ? entries : entries.filter((e) => groupOf(e.kind) === filter);
 
   return (
     <div style={container}>
@@ -109,6 +118,7 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
         <Tab id="call" label="Calls" current={filter} onClick={setFilter} />
         <Tab id="task" label="Tasks" current={filter} onClick={setFilter} />
         <Tab id="meeting" label="Meetings" current={filter} onClick={setFilter} />
+        <Tab id="message" label="Messages" current={filter} onClick={setFilter} />
       </div>
 
       {loading && <div style={empty}>Loading...</div>}
@@ -121,12 +131,11 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
         return (
           <article key={key} style={card}>
             <header style={cardHeader}>
-              <span style={kindBadge(entry.kind)}>{entry.kind}</span>
+              <span style={kindBadge(entry.kind)}>{KIND_LABEL[entry.kind] ?? entry.kind}</span>
               <time style={tsStyle}>{entry.ts ? new Date(entry.ts).toLocaleString() : ""}</time>
             </header>
 
-            {(entry.kind === "note" || entry.kind === "task" || entry.kind === "meeting"
-              || entry.kind === "voicemail" || entry.kind === "sms") && (
+            {entry.kind !== "email" && entry.kind !== "call" && (
               <>
                 {entry.item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{entry.item.title}</div>}
                 {entry.item.body && <div style={{ color: "var(--ui-text-muted)", marginTop: 4, whiteSpace: "pre-wrap" }}>{entry.item.body}</div>}
@@ -264,6 +273,10 @@ function kindBadge(kind: Kind): CSSProperties {
     meeting: { bg: "#fce4ec", fg: "#880e4f" },
     voicemail: { bg: "#ede7f6", fg: "#311b92" }, // BF_PORTAL_TIMELINE_KINDS_v1
     sms: { bg: "#e0f7fa", fg: "#006064" },
+    message: { bg: "#e0f7fa", fg: "#006064" },
+    call_logged: { bg: "#e3f2fd", fg: "#0d47a1" },
+    email_activity: { bg: "#e8f5e9", fg: "#1b5e20" },
+    system: { bg: "#f3f4f6", fg: "#374151" },
   };
   const c = palette[kind];
   return {
