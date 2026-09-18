@@ -231,7 +231,9 @@ export type CompanyRow = {
 export type TimelineItem = {
   // BF_PORTAL_TIMELINE_KINDS_v1 - the server also emits 'voicemail', 'sms' and
   // 'system'; this union omitted them, which is part of why they never rendered.
-  kind: "note" | "task" | "call" | "email" | "meeting" | "voicemail" | "sms" | "system";
+  // BF_PORTAL_TIMELINE_EVERY_CHANNEL_v359 - BF-Server v358 kinds.
+  kind: "note" | "task" | "call" | "email" | "meeting" | "voicemail" | "sms" | "system"
+    | "message" | "call_logged" | "email_activity";
   id: string;
   ts: string;
   title: string | null;
