@@ -72,6 +72,10 @@ export default function RequestItemsTab({ applicationId }: Props) {
   const [waiveBusy, setWaiveBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  // BF_PORTAL_REQUEST_ITEMS_RELOAD_v352 - after "Request from Client" the list is
+  // re-read from the server (BF-Server v351 now stores requested documents), so
+  // the checklist shows what was actually saved instead of clearing the ticks.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!applicationId) return;
@@ -97,7 +101,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [applicationId]);
+  }, [applicationId, reloadKey]);
 
   if (!applicationId)
     return <div className="ui-empty">Select an application to request items.</div>;
@@ -239,6 +243,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
       setRequestedForms((prev) => new Set([...Array.from(prev), ...Array.from(formsManual)]));
       setFormsManual(new Set());
       setManual(new Set());
+      setReloadKey((k) => k + 1);
     } catch (e: any) {
       setError(e?.message || "Failed to send request.");
     } finally {
