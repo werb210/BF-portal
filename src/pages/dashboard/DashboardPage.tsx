@@ -14,6 +14,8 @@ type DashboardMetrics = {
   // BF_PORTAL_COMMISSION_CURRENCY_v352 - native amounts per currency (BF-Server v351).
   commissionByStageCurrency?: Record<string, Record<string, number>>;
   commissionEarnedByCurrency?: Record<string, number>;
+  // BF_PORTAL_COMMISSION_TOTAL_CAD_v356 - the USD->CAD rate BF-Server used (v355).
+  fx?: { usdToCad: number; asOf: string | null } | null;
   dealsWonThisMonth: number;
   commissionEarned: number;
   newLeadsToday: number;
@@ -85,9 +87,15 @@ const DashboardPage = () => {
 
   const fmt = (n: number | undefined) =>
     n !== undefined ? n.toLocaleString() : "—";
+  // BF_PORTAL_COMMISSION_TOTAL_CAD_v356 - a rejected deal is not pipeline and earns
+  // no commission, so it has no row in this card.
   const stages = metrics?.pipelineByStage
-    ? Object.entries(metrics.pipelineByStage)
+    ? Object.entries(metrics.pipelineByStage).filter(([stage]) => stage !== "Rejected")
     : [];
+  const totalCommissionCad = stages.reduce(
+    (sum, [stage]) => sum + (metrics?.commissionByStage?.[stage] ?? 0),
+    0,
+  );
   const totalInPipeline = stages.reduce((a, [, v]) => a + (v || 0), 0);
 
   return (
@@ -214,6 +222,27 @@ const DashboardPage = () => {
                 </div>
               );
             })}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "200px 1fr 40px 110px",
+                alignItems: "center",
+                gap: 12,
+                borderTop: "1px solid var(--ui-border)",
+                paddingTop: 10,
+              }}
+            >
+              <div style={{ color: "var(--ui-text)", fontWeight: 700 }}>Total (CAD)</div>
+              <div style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>
+                {metrics?.fx?.usdToCad
+                  ? `US$1 = CA$${metrics.fx.usdToCad.toFixed(4)} · Bank of Canada${metrics.fx.asOf ? `, ${metrics.fx.asOf}` : ""}`
+                  : ""}
+              </div>
+              <div style={{ textAlign: "right", fontWeight: 700 }}>{totalInPipeline}</div>
+              <div style={{ textAlign: "right", fontWeight: 700 }}>
+                CA${Math.round(totalCommissionCad).toLocaleString()}
+              </div>
+            </div>
           </div>
         ) : null}
       </div>
