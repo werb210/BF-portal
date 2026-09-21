@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/api";
 import { useSilo } from "@/context/SiloContext";
+import { moneyInline } from "@/lib/moneyByCurrency"; // BF_PORTAL_REPORT_CURRENCY_v388
 
 type RangeDays = 7 | 30 | 90 | 365;
 type Funnel = { visits: number; applications: number; submitted: number; funded: number };
-type Row = { name: string; value?: number; count?: number; applications?: number; funded?: number; approvals?: number; approvalRate?: number; revenue?: number; issueRate?: number };
+type Row = { name: string; value?: number; count?: number; applications?: number; funded?: number; approvals?: number; approvalRate?: number; revenue?: number; issueRate?: number; revenueByCurrency?: Record<string, number> };
 type Analytics = {
   revenueFunnel?: Funnel;
   applicationFunnel?: Record<string, number>;
@@ -122,7 +123,7 @@ export default function DashboardAnalytics() {
       <div className="drawer-section" style={{ padding: 16 }}><div className="drawer-section__title">Application funnel & drop-offs</div><p style={{ margin: "2px 0 8px", color: "var(--ui-text-muted)", fontSize: 12 }}>{/* BF_PORTAL_COMMISSION_TOTAL_CAD_v356 */}Applications created in the last {range} days, by current stage. The pipeline card above counts every open deal.</p>{stages.length === 0 ? <p style={{ color: "var(--ui-text-muted)" }}>No funnel data for this range.</p> : stages.map(([stage, count]) => <div key={stage} style={{ display: "grid", gridTemplateColumns: "160px 1fr 70px", gap: 10, alignItems: "center", marginTop: 8 }}><span>{stage}</span><div style={{ height: 8, background: "var(--ui-surface-strong)", borderRadius: 99 }}><div style={{ height: "100%", width: `${Math.round((count / maxStage) * 100)}%`, background: "var(--ui-accent-blue)", borderRadius: 99 }} /></div><strong style={{ textAlign: "right" }}>{fmt(count)}</strong></div>)}</div>
       <div className="grid gap-3 md:grid-cols-2">
         <MiniTable title="Acquisition channels" rows={merged.acquisitionChannels} valueLabel={(r) => `${fmt(r.applications ?? r.count ?? r.value)} apps`} />
-        <MiniTable title="Marketing performance" rows={merged.marketingPerformance} valueLabel={(r) => `$${fmt(r.revenue ?? r.value)}`} />
+        <MiniTable title="Marketing performance" rows={merged.marketingPerformance} valueLabel={(r) => moneyInline(r.revenueByCurrency) ?? `$${fmt(r.revenue ?? r.value)}`} />
         <MiniTable title="Funding by product" rows={merged.fundingByProduct} valueLabel={(r) => `${fmt(r.funded ?? r.count ?? r.value)} funded`} />
         <MiniTable title="Document upload issues" rows={merged.documentUploadIssues} valueLabel={(r) => r.issueRate !== undefined ? `${r.issueRate}% issue rate` : `${fmt(r.count ?? r.value)} issues`} />
         <MiniTable title="Top lenders by approval rate" rows={merged.topLendersByApprovalRate} valueLabel={(r) => r.approvalRate !== undefined ? `${r.approvalRate}% approvals` : `${fmt(r.approvals ?? r.value)} approvals`} />
