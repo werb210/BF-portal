@@ -336,14 +336,16 @@ export default function DocumentsTab({ applicationId }: Props) {
   }
 
   // BF_PORTAL_DOC_UPLOAD_MOVE_v316 - move a document filed under the wrong category.
-  async function handleMove(docId: string, filename: string | null, category: string) {
-    if (typeof window !== "undefined" && !window.confirm(`Move "${filename ?? "this document"}" to ${category}?`)) return;
+  async function handleMove(docId: string, filename: string | null, category: string): Promise<boolean> {
+    if (typeof window !== "undefined" && !window.confirm(`Move "${filename ?? "this document"}" to ${category}?`)) return false;
     setActionError(null);
     try {
       await api.post(`/api/documents/${encodeURIComponent(docId)}/category`, { category });
       await reload();
+      return true;
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Move failed");
+      return false;
     }
   }
 
@@ -527,6 +529,15 @@ export default function DocumentsTab({ applicationId }: Props) {
           onAccept: () => setAcceptDoc({ documentId: splitDoc.documentId as string, filename: splitDoc.filename, fromPane: true }),
           onReject: (reason: string) => void reviewFromPane(splitDoc.documentId as string, "reject", reason),
           hasNext: !!nextPendingAfter(splitDoc.documentId),
+          // BF_PORTAL_PREVIEW_ZOOM_v369 - move from inside the preview; the
+          // header updates to the new category so staff can then accept.
+          moveTargets: moveTargets(splitDoc.category),
+          onMove: (category: string) => {
+            const id = splitDoc.documentId as string;
+            void handleMove(id, splitDoc.filename, category).then((moved) => {
+              if (moved) setSplitDoc((previous) => (previous && previous.documentId === id ? { ...previous, category } : previous));
+            });
+          },
           onNext: () => {
             const next = nextPendingAfter(splitDoc.documentId as string);
             if (next) void handlePreview(next.documentId, next.filename);

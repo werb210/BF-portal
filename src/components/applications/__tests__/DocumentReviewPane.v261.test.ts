@@ -38,7 +38,7 @@ describe("review pane wiring", () => {
   });
   it("renders downloaded PDF bytes and blob images", () => {
     expect(read("src/components/applications/PdfPages.tsx")).toContain(
-      "getDocument({ data })",
+      "getDocument({ data, isEvalSupported: false })",
     );
     expect(view).toMatch(/<img\s+src=\{doc\.url\}/);
     expect(csp).toMatch(/img-src[^;]*blob:/);
