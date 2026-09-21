@@ -4,6 +4,8 @@ import { WidgetBridgePlugin, WIDGET_GROUP } from "@/native/widgetBridge";
 import { fetchLocalEvents } from "@/api/calendar";
 import { pipelineApi } from "@/core/engines/pipeline/pipeline.api";
 import { normalizeStageId } from "@/core/engines/pipeline/pipeline.types";
+import { isDraftLikeApplication, type DraftLikeCard } from "@/pages/pipeline/draftLike";
+import { BI_VISIBLE_PIPELINE_STAGES, resolveStageId } from "@/silos/bi/pipeline/biStages";
 
 export const WIDGET_KIND = "BorealPortalSummary";
 export const WIDGET_SILOS = ["BF", "BI", "SLF"] as const;
@@ -54,6 +56,55 @@ const toWidgetTask = (task?: TaskRow): WidgetTask | null => task ? ({
   contactName: task.contact_name ?? task.contactName ?? null,
 }) : null;
 
+// BF_PORTAL_WIDGET_LIVE_COUNTS_v365 - the pipeline figure on each widget is the
+// figure the portal shows for that silo. /api/widget/summary counts BF-Server's
+// own applications table, which holds no Insurance or SLF deals (those live on
+// BI-Server and slf-server), so those widgets always read 0, and its Financial
+// rule differed from the board header. Each silo now counts from the same call
+// its own screen uses; the summary figure stays as the fallback when offline.
+const listFrom = (payload: unknown): unknown[] | null => {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return null;
+  const p = payload as Record<string, unknown>;
+  for (const c of [p.items, p.applications, p.data]) {
+    if (Array.isArray(c)) return c;
+    if (c && typeof c === "object" && Array.isArray((c as Record<string, unknown>).items)) {
+      return (c as Record<string, unknown>).items as unknown[];
+    }
+  }
+  return null;
+};
+
+const biHideDemo = (): boolean => {
+  try { return localStorage.getItem("bi.dashboard.hide_demo") === "1"; } catch { return false; }
+};
+
+/** The count the portal shows for this silo, or null when it cannot be read. */
+export async function livePipelineCount(silo: WidgetSilo): Promise<number | null> {
+  try {
+    if (silo === "BF") {
+      // The Pipeline header: /api/portal/applications without drafts, minus junk drafts.
+      const list = listFrom(await api<unknown>("/api/portal/applications", { headers: { "X-Silo": silo } }));
+      return list ? (list as DraftLikeCard[]).filter((card) => !isDraftLikeApplication(card)).length : null;
+    }
+    if (silo === "BI") {
+      // The BI Dashboard's "Total in pipeline": applications in the visible stage columns.
+      const list = listFrom(await api<unknown>(`/api/v1/bi/applications${biHideDemo() ? "?hide_demo=true" : ""}`));
+      if (!list) return null;
+      const visible = BI_VISIBLE_PIPELINE_STAGES as readonly string[];
+      return (list as Array<{ stage?: string | null }>).filter((a) => {
+        const stage = resolveStageId(a?.stage) ?? String(a?.stage ?? "");
+        return visible.includes(stage);
+      }).length;
+    }
+    // The SLF page's "Deals": every deal synced from SLF.
+    const list = listFrom(await api<unknown>("/api/slf/deals?limit=500"));
+    return list ? list.length : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Publish every summary the signed-in user can access. */
 export async function publishWidgetSnapshot(): Promise<boolean> {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") return false;
@@ -81,7 +132,7 @@ export async function publishWidgetSnapshot(): Promise<boolean> {
       const expanded: WidgetSummary = {
         schemaVersion: 2,
         silo,
-        pipelineCount: safeNumber(summary.pipelineCount),
+        pipelineCount: (await livePipelineCount(silo)) ?? safeNumber(summary.pipelineCount),
         tasksDueToday: safeNumber(summary.tasksDueToday),
         unreadMessages: safeNumber(summary.unreadMessages),
         commissionEarned: safeNumber(summary.commissionEarned),

@@ -67,7 +67,7 @@ describe("widget snapshots", () => {
         silo: "untrusted", pipelineCount: "7", tasksDueToday: "bad", unreadMessages: Infinity,
         commissionEarned: "1250", currency: 99, asOf: null, injected: "must not persist",
       });
-      return Promise.resolve([]);
+      return Promise.resolve({});
     });
 
     expect(await publishWidgetSnapshot()).toBe(true);
