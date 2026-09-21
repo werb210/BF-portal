@@ -21,13 +21,16 @@ type DashboardMetrics = {
   newLeadsToday: number;
 };
 
-// BF_PORTAL_COMMISSION_CURRENCY_v352 - "CA$51,000 · US$12,000"; null when no amounts.
+// BF_PORTAL_COMMISSION_CURRENCY_v352 - CAD and USD amounts; null when no amounts.
+// BF_PORTAL_STAGE_COMMISSION_LINES_v378 - one currency per line, no " · ": the
+// joined string wrapped with the dot left dangling and widened the column,
+// pushing the Total row's figures left.
 function splitMoney(by?: Record<string, number>): string | null {
   if (!by) return null;
   const parts = ([["CAD", "CA$"], ["USD", "US$"]] as const)
     .filter(([code]) => (by[code] ?? 0) > 0)
     .map(([code, prefix]) => `${prefix}${Math.round(by[code] ?? 0).toLocaleString()}`);
-  return parts.length ? parts.join(" · ") : null;
+  return parts.length ? parts.join("\n") : null;
 }
 
 // BF_PORTAL_BLOCK_v_DASHBOARD_DENSITY_v1 — bigger stat values, a real per-stage
@@ -210,6 +213,8 @@ const DashboardPage = () => {
                       fontSize: 13,
                       fontWeight: 600,
                       textAlign: "right",
+                      whiteSpace: "pre-line",
+                      lineHeight: 1.35,
                     }}
                     title="Projected BF commission in this stage"
                   >
