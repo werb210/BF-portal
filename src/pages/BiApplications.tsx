@@ -1,5 +1,6 @@
 import { api } from "@/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { redactSensitive } from "@/lib/sensitive";
 
 type BiApplication = {
   id: number;
@@ -81,7 +82,7 @@ export default function BiApplications() {
       {selected && (
         <div className="detail-panel">
           <h2>Application Detail</h2>
-          <pre>{JSON.stringify(selected, null, 2)}</pre>
+          <pre>{JSON.stringify(redactSensitive(selected), null, 2)}</pre>
 
           <div className="btn-row">
             <button onClick={() => void updateStatus(selected.id, "approved")}>Approve</button>

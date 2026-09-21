@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import type { BiApplicationDetailData } from "../BIApplicationDetail";
+import { redactSensitive } from "@/lib/sensitive";
 
 type PgiEvent = {
   id: string;
@@ -64,13 +65,13 @@ export default function PgiCommsTab({ app }: { app: BiApplicationDetailData }) {
       {app.carrier_submission_request && (
         <details className="rounded-xl border border-card bg-brand-bgAlt p-4">
           <summary className="cursor-pointer text-sm font-semibold">Submission payload (sent to PGI)</summary>
-          <pre className="mt-3 overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-white/70">{JSON.stringify(app.carrier_submission_request, null, 2)}</pre>
+          <pre className="mt-3 overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-white/70">{JSON.stringify(redactSensitive(app.carrier_submission_request), null, 2)}</pre>
         </details>
       )}
       {app.carrier_submission_response && (
         <details className="rounded-xl border border-card bg-brand-bgAlt p-4">
           <summary className="cursor-pointer text-sm font-semibold">Submission response (from PGI)</summary>
-          <pre className="mt-3 overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-white/70">{JSON.stringify(app.carrier_submission_response, null, 2)}</pre>
+          <pre className="mt-3 overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-white/70">{JSON.stringify(redactSensitive(app.carrier_submission_response), null, 2)}</pre>
         </details>
       )}
 
@@ -89,7 +90,7 @@ export default function PgiCommsTab({ app }: { app: BiApplicationDetailData }) {
                 </div>
                 <details className="mt-2">
                   <summary className="cursor-pointer text-xs text-white/60 hover:text-white">Payload</summary>
-                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-white/70">{JSON.stringify(ev.payload, null, 2)}</pre>
+                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-white/70">{JSON.stringify(redactSensitive(ev.payload), null, 2)}</pre>
                 </details>
               </li>
             ))}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
 import { api } from "@/api";
 import { useAuth } from "../../auth/AuthContext";
+import { redactSensitive } from "@/lib/sensitive";
 
 export default function BIDashboard() {
   const { silo } = useSilo();
@@ -25,10 +26,10 @@ export default function BIDashboard() {
   return (
     <div>
       <h2>BI Applications</h2>
-      <pre>{JSON.stringify(applications, null, 2)}</pre>
+      <pre>{JSON.stringify(redactSensitive(applications), null, 2)}</pre>
 
       <h2>BI Commissions</h2>
-      <pre>{JSON.stringify(commissions, null, 2)}</pre>
+      <pre>{JSON.stringify(redactSensitive(commissions), null, 2)}</pre>
     </div>
   );
 }

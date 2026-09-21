@@ -3,6 +3,7 @@ import { useSilo } from "../../context/SiloContext";
 import { api } from "@/api";
 import { useAuth } from "../../auth/AuthContext";
 import type { SLFDeal } from "../../types/slf";
+import { redactSensitive } from "@/lib/sensitive";
 
 export default function SLFDashboard() {
   const { silo } = useSilo();
@@ -22,7 +23,7 @@ export default function SLFDashboard() {
   return (
     <div>
       <h2>SLF Deals</h2>
-      <pre>{JSON.stringify(deals, null, 2)}</pre>
+      <pre>{JSON.stringify(redactSensitive(deals), null, 2)}</pre>
     </div>
   );
 }

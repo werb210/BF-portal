@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import { fetchPortalApplication } from "@/api/applications";
+import { isSinKey, maskSin } from "@/lib/sensitive";
 
 // BF_PORTAL_CRM_CONTACT_PANELS_v1 — CRM contact detail panels:
 //  • ContactApplicantFields (LEFT) renders the applicant's Step-4 fields from the linked
@@ -61,7 +62,8 @@ function pickApplicant(raw: unknown): Record<string, any> | null {
 }
 
 function FieldRows({ data }: { data: Record<string, any> }) {
-  const rows = STEP4_FIELDS.map(([k, label]) => [label, data[k]] as const).filter(
+  // BF_PORTAL_SIN_MASK_v381 - SIN / SSN shows last four only (was printed in full).
+  const rows = STEP4_FIELDS.map(([k, label]) => [label, isSinKey(k) ? maskSin(data[k] ?? data.sin, "") : data[k]] as const).filter(
     ([, v]) => v != null && String(v).trim() !== "",
   );
   if (rows.length === 0) return null;
