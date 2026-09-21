@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import type { BiApplicationDetailData } from "../BIApplicationDetail";
+import { redactSensitive } from "@/lib/sensitive";
 
 type ActivityRow = {
   id: string;
@@ -148,7 +149,7 @@ export default function InsurerResponseTab({ app }: { app: BiApplicationDetailDa
                 {e.meta && Object.keys(e.meta).length > 0 && (
                   <details className="mt-2">
                     <summary className="cursor-pointer text-xs text-white/50 hover:text-white">meta</summary>
-                    <pre className="mt-1 overflow-auto rounded bg-black/40 p-2 text-[10px]">{JSON.stringify(e.meta, null, 2)}</pre>
+                    <pre className="mt-1 overflow-auto rounded bg-black/40 p-2 text-[10px]">{JSON.stringify(redactSensitive(e.meta), null, 2)}</pre>
                   </details>
                 )}
               </li>
@@ -172,13 +173,13 @@ export default function InsurerResponseTab({ app }: { app: BiApplicationDetailDa
               {submissionRequest && (
                 <div>
                   <div className="text-xs text-white/60 mb-1">Request body sent to carrier</div>
-                  <pre className="overflow-auto rounded bg-black/40 p-2 text-[10px] max-h-64">{JSON.stringify(submissionRequest, null, 2)}</pre>
+                  <pre className="overflow-auto rounded bg-black/40 p-2 text-[10px] max-h-64">{JSON.stringify(redactSensitive(submissionRequest), null, 2)}</pre>
                 </div>
               )}
               {submissionResponse && (
                 <div>
                   <div className="text-xs text-white/60 mb-1">Response body from carrier</div>
-                  <pre className="overflow-auto rounded bg-black/40 p-2 text-[10px] max-h-64">{JSON.stringify(submissionResponse, null, 2)}</pre>
+                  <pre className="overflow-auto rounded bg-black/40 p-2 text-[10px] max-h-64">{JSON.stringify(redactSensitive(submissionResponse), null, 2)}</pre>
                 </div>
               )}
             </div>

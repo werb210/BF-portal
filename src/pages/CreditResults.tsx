@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { redactSensitive } from "@/lib/sensitive";
 
 export default function CreditResults() {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ export default function CreditResults() {
     <div className="container">
       <h1>Your Credit Profile Summary</h1>
 
-      <pre>{JSON.stringify(data, null, 2)}</pre>
+      <pre>{JSON.stringify(redactSensitive(data), null, 2)}</pre>
 
       <button onClick={moveToApplication}>
         Continue to Full Application

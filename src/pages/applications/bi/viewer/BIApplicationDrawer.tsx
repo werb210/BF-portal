@@ -4,6 +4,7 @@ import { retryUnlessClientError } from "@/api/retryPolicy";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { useSilo } from "@/hooks/useSilo";
 import { biPipelineApi } from "../bi.pipeline.api";
+import { redactSensitive } from "@/lib/sensitive";
 
 const TABS = [
   // BF_NO_OVERVIEW_v38 — Block 38-C — overview tab removed (was screenshotted by accident)
@@ -109,7 +110,7 @@ const BIApplicationDrawer = ({ applicationId, onClose }: BIApplicationDrawerProp
         </div>
 
         <div className="application-drawer__content">
-          {tab === "application" ? <pre>{JSON.stringify(detail?.submitted_data ?? {}, null, 2)}</pre> : null}
+          {tab === "application" ? <pre>{JSON.stringify(redactSensitive(detail?.submitted_data ?? {}), null, 2)}</pre> : null}
 
           {tab === "documents" ? (
             documentsQuery.data?.length ? (

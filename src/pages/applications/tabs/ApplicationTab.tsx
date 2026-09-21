@@ -28,6 +28,7 @@ import { api } from "@/api"; // BF_PORTAL_BLOCK_v817_REMIND_CLIENT
 import ProductQuestionsPanel from "@/pages/applications/tabs/ProductQuestionsPanel"; // BF_PORTAL_PRODUCT_QUESTIONS_v292
 
 type AnyRecord = Record<string, any>;
+import { maskSin } from "@/lib/sensitive";
 type Props = { application: AnyRecord | null };
 
 function asObject(v: unknown): AnyRecord {
@@ -683,13 +684,8 @@ function fmtDate(v: unknown, fallback = "—"): string {
     : d.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" });
 }
 
-function maskSsn(v: unknown, fallback = "—"): string {
-  if (v === null || v === undefined || v === "") return fallback;
-  const digits = String(v).replace(/\D/g, "");
-  if (digits.length === 0) return fallback;
-  if (digits.length < 4) return "•".repeat(9);
-  return `•••-••-${digits.slice(-4)}`;
-}
+// BF_PORTAL_SIN_MASK_v381 - shared with CRM panels and raw JSON views.
+const maskSsn = maskSin;
 
 function maskDob(v: unknown, fallback = "—"): string {
   if (v === null || v === undefined || v === "") return fallback;
