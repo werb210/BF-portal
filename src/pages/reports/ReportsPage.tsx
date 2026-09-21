@@ -1,6 +1,7 @@
 // BF_PORTAL_REPORTS_UI_v1 - real Reports page over the existing dashboard endpoints.
 import { useEffect, useState, type CSSProperties } from "react";
 import { api } from "@/api";
+import { moneyLines } from "@/lib/moneyByCurrency"; // BF_PORTAL_REPORT_CURRENCY_v388
 
 type Metrics = {
   activeApplications?: number;
@@ -8,6 +9,9 @@ type Metrics = {
   commissionEarned?: number;
   pipelineByStage?: Record<string, number>;
   commissionByStage?: Record<string, number>;
+  // BF_PORTAL_REPORT_CURRENCY_v388 - native amounts per currency (BF-Server v351).
+  commissionEarnedByCurrency?: Record<string, number>;
+  commissionByStageCurrency?: Record<string, Record<string, number>>;
 };
 type FunnelStep = { label: string; count: number; conversionFromPrev?: number };
 type FundingRow = { product: string; total?: number | string; funded?: number | string };
@@ -50,7 +54,7 @@ export default function ReportsPage(): JSX.Element {
       <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
         <div style={kpi}><div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Active applications</div><div style={{ fontSize: 26, fontWeight: 700 }}>{m.activeApplications ?? 0}</div></div>
         <div style={kpi}><div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Deals won this month</div><div style={{ fontSize: 26, fontWeight: 700 }}>{m.dealsWonThisMonth ?? 0}</div></div>
-        <div style={kpi}><div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Commission earned</div><div style={{ fontSize: 26, fontWeight: 700 }}>{money(m.commissionEarned)}</div></div>
+        <div style={kpi}><div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Commission earned</div><div style={{ fontSize: 26, fontWeight: 700, whiteSpace: "pre-line" }}>{moneyLines(m.commissionEarnedByCurrency) ?? money(m.commissionEarned)}</div></div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -70,7 +74,7 @@ export default function ReportsPage(): JSX.Element {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead><tr><th style={th}>Stage</th><th style={{ ...th, textAlign: "right" }}>Commission</th></tr></thead>
               <tbody>{commissionEntries.map(([stage, amt]) => (
-                <tr key={stage}><td style={td}>{stage}</td><td style={{ ...td, textAlign: "right", fontWeight: 600 }}>{money(amt)}</td></tr>
+                <tr key={stage}><td style={td}>{stage}</td><td style={{ ...td, textAlign: "right", fontWeight: 600, whiteSpace: "pre-line" }}>{moneyLines(m.commissionByStageCurrency?.[stage]) ?? money(amt)}</td></tr>
               ))}</tbody>
             </table>
           )}
@@ -92,9 +96,10 @@ export default function ReportsPage(): JSX.Element {
           <div style={{ fontWeight: 600, marginBottom: 12 }}>Funding by product</div>
           {funding.length === 0 ? <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>No data.</div> : (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr><th style={th}>Product</th><th style={{ ...th, textAlign: "right" }}>Funded</th></tr></thead>
+              {/* BF_PORTAL_REPORT_CURRENCY_v388 - these are deal counts, not dollars. */}
+              <thead><tr><th style={th}>Product</th><th style={{ ...th, textAlign: "right" }}>Funded / applications</th></tr></thead>
               <tbody>{funding.map((r, i) => (
-                <tr key={i}><td style={td}>{r.product}</td><td style={{ ...td, textAlign: "right", fontWeight: 600 }}>{money(r.funded ?? r.total)}</td></tr>
+                <tr key={i}><td style={td}>{r.product}</td><td style={{ ...td, textAlign: "right", fontWeight: 600 }}>{Number(r.funded) || 0} of {Number(r.total) || 0}</td></tr>
               ))}</tbody>
             </table>
           )}
