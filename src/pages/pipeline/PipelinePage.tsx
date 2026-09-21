@@ -1,3 +1,4 @@
+import { isDraftLikeApplication } from "./draftLike"; // BF_PORTAL_WIDGET_LIVE_COUNTS_v365
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { useNavigate } from "react-router-dom";
@@ -62,25 +63,6 @@ type Card = {
   productCategory?: string | null;
   product_category?: string | null;
 };
-
-function isDraftLikeApplication(card: Card): boolean {
-  if (!card) return false;
-  // BF_PORTAL_UNNAMED_JUNK_UNLESS_SUBMITTED_v1 - refinement of the
-  // SUBMITTED_EXEMPT rule, which keyed on "real stage" and accidentally
-  // surfaced 60+ junk unnamed drafts sitting in Received. The correct
-  // discriminator is submitted_at (now on the card payload): an unnamed /
-  // placeholder-named card is junk unless the application was actually
-  // submitted. Bismillah Grocers (submitted, placeholder name) stays visible.
-  const name = String(card.business_legal_name ?? card.name ?? "").trim().toLowerCase();
-  const isSubmitted = Boolean((card as { submitted_at?: string | null }).submitted_at);
-  if (!name || name === "draft" || name === "draft application" || name === "unnamed application") {
-    return !isSubmitted;
-  }
-  const state = String(card.pipeline_state ?? "").toLowerCase();
-  const dateMs = new Date(card.created_at).getTime();
-  const invalidDate = Number.isNaN(dateMs);
-  return invalidDate && (state === "received" || state === "draft" || state === "new");
-}
 
 // v696: every card must land in exactly one column, otherwise it inflates the
 // header count without rendering (the "34 counted, 1 shown" bug). Any card whose
