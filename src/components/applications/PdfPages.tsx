@@ -1,9 +1,14 @@
 // BF_PORTAL_DOCUMENT_REVIEW_PANE_v261
 // Render downloaded PDF bytes to canvases so previews work with the portal CSP
 // and in the iPad app, where embedded PDF objects only show the first page.
+// BF_PORTAL_PREVIEW_ZOOM_v369 - pages render once at 2x and zoom is applied by
+// resizing the canvases, so zooming is instant and costs no extra memory.
+// BF_PORTAL_PDF_NO_EVAL_v369 - isEvalSupported:false closes the pdf.js 3.x
+// font-script hole (CVE-2024-4367) for applicant-uploaded PDFs.
 import { useEffect, useRef, useState } from "react";
 
 export const MAX_RENDERED_PAGES = 60;
+const RENDER_RATIO = 2;
 
 export function looksLikePdf(
   mimeType: string | null | undefined,
@@ -35,8 +40,18 @@ export function looksLikeImage(
   return /\.(png|jpe?g|gif|webp)$/i.test(String(filename ?? ""));
 }
 
-export default function PdfPages({ blob }: { blob: Blob }) {
+export default function PdfPages({
+  blob,
+  zoom = 1,
+  fitKey = "",
+}: {
+  blob: Blob;
+  zoom?: number;
+  fitKey?: string;
+}) {
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const fitWidth = useRef(0);
+  const zoomRef = useRef(zoom);
   const [state, setState] = useState<{
     status: "loading" | "ready" | "error";
     pages: number;
@@ -44,33 +59,44 @@ export default function PdfPages({ blob }: { blob: Blob }) {
   }>({ status: "loading", pages: 0 });
 
   useEffect(() => {
+    zoomRef.current = zoom;
+    const host = hostRef.current;
+    if (!host || !fitWidth.current) return;
+    host.querySelectorAll("canvas").forEach((canvas) => {
+      canvas.style.width = `${Math.round(fitWidth.current * zoom)}px`;
+    });
+  }, [zoom]);
+
+  useEffect(() => {
     let cancelled = false;
     const host = hostRef.current;
     if (!host) return;
     host.innerHTML = "";
+    setState({ status: "loading", pages: 0 });
     void (async () => {
       try {
         const pdfjs = await import("pdfjs-dist");
         const worker = await import("pdfjs-dist/build/pdf.worker.min.js?url");
         pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
         const data = new Uint8Array(await blob.arrayBuffer());
-        const pdf = await pdfjs.getDocument({ data }).promise;
+        const pdf = await pdfjs.getDocument({ data, isEvalSupported: false })
+          .promise;
         if (cancelled) return;
         const count = Math.min(pdf.numPages, MAX_RENDERED_PAGES);
         setState({ status: "ready", pages: pdf.numPages });
         const width = Math.max(280, host.clientWidth - 24);
-        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        fitWidth.current = width;
         for (let n = 1; n <= count; n += 1) {
           if (cancelled) return;
           const page = await pdf.getPage(n);
           const base = page.getViewport({ scale: 1 });
           const viewport = page.getViewport({
-            scale: (width / base.width) * ratio,
+            scale: (width / base.width) * RENDER_RATIO,
           });
           const canvas = document.createElement("canvas");
           canvas.width = Math.floor(viewport.width);
           canvas.height = Math.floor(viewport.height);
-          canvas.style.width = `${width}px`;
+          canvas.style.width = `${Math.round(width * zoomRef.current)}px`;
           canvas.style.display = "block";
           canvas.style.margin = "0 auto 12px";
           canvas.style.boxShadow = "0 1px 4px rgba(0,0,0,0.15)";
@@ -94,7 +120,7 @@ export default function PdfPages({ blob }: { blob: Blob }) {
     return () => {
       cancelled = true;
     };
-  }, [blob]);
+  }, [blob, fitKey]);
 
   return (
     <div
@@ -122,7 +148,11 @@ export default function PdfPages({ blob }: { blob: Blob }) {
           Open in tab for the rest.
         </div>
       ) : null}
-      <div ref={hostRef} data-testid="pdf-pages" />
+      <div
+        ref={hostRef}
+        data-testid="pdf-pages"
+        style={{ width: "fit-content", minWidth: "100%" }}
+      />
     </div>
   );
 }

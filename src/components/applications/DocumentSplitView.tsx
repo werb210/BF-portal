@@ -1,4 +1,7 @@
 // BF_PORTAL_SPLIT_VIEW_v205
+// BF_PORTAL_PREVIEW_ZOOM_v369 - zoom in/out, full screen with the review bar
+// still showing, and "Move to" beside Reject so staff can view, move and
+// accept without leaving the preview.
 // Document review beside the application instead of on top of it.
 import { useCallback, useEffect, useRef, useState } from "react";
 import PdfPages, { looksLikeImage, looksLikePdf } from "./PdfPages";
@@ -7,6 +10,22 @@ const MIN_PANE = 320;
 const DEFAULT_WIDTH = 560;
 const STORAGE_KEY = "boreal.splitview.width";
 const FULL_WIDTH_BELOW = 900;
+const ZOOM_KEY = "boreal.splitview.zoom";
+const FULL_KEY = "boreal.splitview.full";
+export const ZOOM_MIN = 1;
+export const ZOOM_MAX = 3;
+export const ZOOM_STEP = 0.25;
+
+export function stepZoom(current: number, direction: 1 | -1): number {
+  const next = Math.round((current + direction * ZOOM_STEP) * 100) / 100;
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next));
+}
+function readStoredZoom(): number {
+  try { const value = Number(sessionStorage.getItem(ZOOM_KEY)); return Number.isFinite(value) && value >= ZOOM_MIN && value <= ZOOM_MAX ? value : 1; } catch { return 1; }
+}
+function readStoredFull(): boolean {
+  try { return sessionStorage.getItem(FULL_KEY) === "1"; } catch { return false; }
+}
 
 export type SplitViewDoc = {
   url: string;
@@ -25,6 +44,8 @@ export type SplitViewReview = {
   onReject: (reason: string) => void;
   onNext?: () => void;
   hasNext: boolean;
+  moveTargets?: string[];
+  onMove?: (category: string) => void;
 };
 
 type Props = {
@@ -52,15 +73,30 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const dragging = useRef(false);
+  const [zoom, setZoom] = useState<number>(readStoredZoom);
+  const [expanded, setExpanded] = useState<boolean>(readStoredFull);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(ZOOM_KEY, String(zoom));
+      sessionStorage.setItem(FULL_KEY, expanded ? "1" : "0");
+    } catch {
+      // Storage can be unavailable in privacy modes; zoom still works.
+    }
+  }, [zoom, expanded]);
 
   useEffect(() => {
     if (!doc) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        // Leave full screen first; a second Escape closes the preview.
+        if (expanded) setExpanded(false);
+        else onClose();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [doc, onClose]);
+  }, [doc, onClose, expanded]);
 
   useEffect(() => {
     const onResize = () => setNarrow(window.innerWidth < FULL_WIDTH_BELOW);
@@ -134,6 +170,12 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
     fontWeight: 600,
     cursor: "pointer",
   } as const;
+  const tool = {
+    minWidth: 40, minHeight: 36, padding: "0 10px", borderRadius: 8,
+    border: "1px solid #d1d5db", background: "#fff", color: "#111827",
+    fontSize: 15, fontWeight: 600, cursor: "pointer",
+  } as const;
+  const moveTargets = review?.moveTargets ?? [];
 
   return (
     <div
@@ -143,7 +185,7 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
         top: 0,
         right: 0,
         bottom: 0,
-        width: narrow ? "100%" : width,
+        width: narrow || expanded ? "100%" : width,
         background: "#fff",
         borderLeft: "1px solid #e5e7eb",
         boxShadow: "-2px 0 12px rgba(0,0,0,0.06)",
@@ -152,7 +194,7 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
         zIndex: 40,
       }}
     >
-      {!narrow ? (
+      {!narrow && !expanded ? (
         <div
           role="separator"
           aria-orientation="vertical"
@@ -207,7 +249,15 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
             </div>
           ))}
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+          {isPdf || isImage ? (
+            <div role="group" aria-label="Zoom" style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <button type="button" data-testid="zoom-out" aria-label="Zoom out" disabled={zoom <= ZOOM_MIN} onClick={() => setZoom((current) => stepZoom(current, -1))} style={{ ...tool, opacity: zoom <= ZOOM_MIN ? 0.4 : 1 }}>−</button>
+              <button type="button" data-testid="zoom-reset" aria-label="Reset zoom" onClick={() => setZoom(1)} style={{ ...tool, minWidth: 64, fontSize: 13 }}>{Math.round(zoom * 100)}%</button>
+              <button type="button" data-testid="zoom-in" aria-label="Zoom in" disabled={zoom >= ZOOM_MAX} onClick={() => setZoom((current) => stepZoom(current, 1))} style={{ ...tool, opacity: zoom >= ZOOM_MAX ? 0.4 : 1 }}>+</button>
+            </div>
+          ) : null}
+          {!narrow ? <button type="button" data-testid="full-screen" aria-pressed={expanded} onClick={() => setExpanded((current) => !current)} style={{ ...tool, fontSize: 13 }}>{expanded ? "Exit full screen" : "Full screen"}</button> : null}
           <a
             href={doc.url}
             target="_blank"
@@ -241,7 +291,7 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
       </div>
 
       {isPdf && doc.blob ? (
-        <PdfPages blob={doc.blob} />
+        <PdfPages blob={doc.blob} zoom={zoom} fitKey={narrow || expanded ? "full" : "pane"} />
       ) : isImage ? (
         <div
           style={{
@@ -254,7 +304,7 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
           <img
             src={doc.url}
             alt={doc.filename ?? "Document"}
-            style={{ maxWidth: "100%", display: "block", margin: "0 auto" }}
+            style={{ width: zoom === 1 ? undefined : `${Math.round(zoom * 100)}%`, maxWidth: zoom === 1 ? "100%" : "none", display: "block", margin: "0 auto" }}
           />
         </div>
       ) : (
@@ -362,6 +412,12 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
                   >
                     Next ›
                   </button>
+                ) : null}
+                {review.onMove && moveTargets.length > 0 ? (
+                  <select aria-label="Move to another category" data-testid="pane-move" value="" disabled={!!review.working} onChange={(event) => { if (event.target.value) review.onMove?.(event.target.value); }} style={{ minHeight: 44, padding: "0 10px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", color: "#111827", fontSize: 15, maxWidth: 220 }}>
+                    <option value="">Move to…</option>
+                    {moveTargets.map((category) => <option key={category} value={category}>{category}</option>)}
+                  </select>
                 ) : null}
                 <button
                   type="button"
