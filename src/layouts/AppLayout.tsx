@@ -167,8 +167,21 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         className="app-sidebar"
       >
         {/* Brand header — mountain logo only (BF_PORTAL_BRAND_LOGO_ONLY_v1) */}
-        <div style={{ marginBottom: 24, padding: "0 4px", display: "flex", alignItems: "center" }}>
-          <img src="/images/Header.png" alt="Boreal Financial" style={{ height: 52, width: "auto" }} />
+        {/* BF_PORTAL_LOGO_FILL_v378 - Header.png is a 1536x1024 canvas with the
+            logo in a small band (about x 260-1115, y 360-610), so at 52px tall
+            the logo itself rendered about 12px high inside empty space. Show only
+            that band, scaled to the sidebar's width. */}
+        <div
+          data-testid="sidebar-logo"
+          style={{ marginBottom: 24, padding: "0 4px", width: "100%", boxSizing: "border-box" }}
+        >
+          <div style={{ position: "relative", width: "100%", aspectRatio: "855 / 250", overflow: "hidden" }}>
+            <img
+              src="/images/Header.png"
+              alt="Boreal Financial"
+              style={{ position: "absolute", width: "179.65%", maxWidth: "none", left: "-30.41%", top: "-144%" }}
+            />
+          </div>
         </div>
 
         <NavContent />
