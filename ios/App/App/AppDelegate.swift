@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import BackgroundTasks
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -9,6 +10,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // v128-push-categories
         BorealPushCategories.register()
+        // BF_PORTAL_WIDGET_SELF_REFRESH_v384 - must register before launch finishes.
+        WidgetBackgroundRefresh.register()
         // Override point for customization after application launch.
         return true
     }
@@ -86,5 +89,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, continue: userActivity, restorationHandler: { _ in })
+    }
+    // BF_PORTAL_WIDGET_SELF_REFRESH_v384 - with the scene lifecycle the app
+    // delegate's didEnterBackground is not called; queue the next refresh here.
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        WidgetBackgroundRefresh.schedule()
     }
 }

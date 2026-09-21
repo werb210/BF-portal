@@ -14,7 +14,9 @@ import { App } from "@capacitor/app";
 import { useNavigate } from "react-router-dom";
 import { useSilo } from "@/context/SiloContext";
 import { publishWidgetSnapshot } from "@/native/widgetSnapshot";
-import { mirrorSiloToWidget, WidgetBridgePlugin, WIDGET_GROUP, isNativeIOS } from "@/native/widgetBridge";
+import { mirrorSiloToWidget, WidgetBridgePlugin, WIDGET_GROUP, isNativeIOS, syncWidgetSession } from "@/native/widgetBridge";
+import { getAuthToken } from "@/lib/authToken"; // v384
+import { __apiBaseUrls } from "@/config/api"; // v384
 
 const POLL_MS = 10 * 60 * 1000;
 
@@ -52,12 +54,20 @@ export default function WidgetSnapshotProvider() {
     // Migration cleanup only: remove the sensitive value written by older builds.
     void WidgetBridgePlugin.removeItem({ group: WIDGET_GROUP, key: "widget_auth_token" }).catch(() => {});
 
+    // BF_PORTAL_WIDGET_SELF_REFRESH_v384 - keep the background-refresh session in step with sign-in.
+    const syncSession = () => void syncWidgetSession(getAuthToken(), __apiBaseUrls.bf);
+    const onStorage = (event: StorageEvent) => { if (event.key === null || /token/i.test(event.key)) syncSession(); };
+    window.addEventListener("storage", onStorage);
+
+    syncSession();
     void publishWidgetSnapshot();
     const timer = window.setInterval(() => {
+      syncSession();
       void publishWidgetSnapshot();
     }, POLL_MS);
 
     const stateHandle = App.addListener("appStateChange", ({ isActive }) => {
+      syncSession();
       if (isActive) void publishWidgetSnapshot();
     });
 
@@ -73,6 +83,7 @@ export default function WidgetSnapshotProvider() {
     });
 
     return () => {
+      window.removeEventListener("storage", onStorage);
       window.clearInterval(timer);
       void stateHandle.then((h) => h.remove());
       void urlHandle.then((h) => h.remove());
