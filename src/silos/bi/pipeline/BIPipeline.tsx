@@ -18,8 +18,9 @@ import {
   resolveStageId,
   type BiStageId,
 } from "./biStages";
+import { biSourceShort } from "./biSource"; // BF_PORTAL_BI_SOURCE_LABEL_v392
 
-type Source = "public" | "lender" | "referrer";
+type Source = "public" | "lender" | "referrer" | "bf_pgi_referral";
 type CarrierEvent = "quoted" | "declined" | "info_required" | "policy_bound" | "none";
 type Sort = "updated_desc" | "updated_asc" | "amount_desc" | "amount_asc";
 
@@ -29,6 +30,7 @@ type BIApplication = {
   application_code?: string | null;
   stage: string;
   source?: Source | string | null;
+  bf_application_id?: string | null; // v392
   business_name?: string | null;
   company_name?: string | null;
   guarantor_name?: string | null;
@@ -211,7 +213,8 @@ export default function BIPipeline() {
           Source
           <select value={filters.source} onChange={(e) => set({ source: e.target.value as Filters["source"] })} className="rounded border border-card bg-brand-surface px-2 py-1.5 text-sm text-white">
             <option value="">Any source</option>
-            <option value="public">Public</option>
+            <option value="public">Website</option>
+            <option value="bf_pgi_referral">BF referral</option>
             <option value="lender">Lender</option>
             <option value="referrer">Referrer</option>
           </select>
@@ -338,7 +341,7 @@ export default function BIPipeline() {
                         <strong className="text-sm break-words block">{company}</strong>
                         {app.guarantor_name && <div className="text-xs text-white/60 break-words">{app.guarantor_name}</div>}
                         <div className="text-[10px] text-white/40 mt-0.5">
-                          {app.source === "lender" ? `Lender${app.lender_name ? ` (${app.lender_name})` : ""}` : app.source === "referrer" ? "Referrer" : "Public"}
+                          {biSourceShort(app)}
                         </div>
                       </div>
                       <div className="mt-2 flex items-center gap-1.5 flex-wrap text-xs">

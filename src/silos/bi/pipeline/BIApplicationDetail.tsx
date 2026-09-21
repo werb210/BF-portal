@@ -10,6 +10,7 @@ import DocumentsTab from "./tabs/DocumentsTab";
 import RequirementsTab from "./tabs/RequirementsTab";
 import RequirementHistoryTab from "./tabs/RequirementHistoryTab";
 import PgiCommsTab from "./tabs/PgiCommsTab";
+import { biSourceLabel } from "./biSource"; // BF_PORTAL_BI_SOURCE_LABEL_v392
 
 type TabKey = "application" | "documents" | "requirements" | "history" | "pgi";
 
@@ -25,6 +26,8 @@ export type BiApplicationDetailData = {
   id: string;
   stage: BiStageId | string;
   source_type: "public" | "lender" | "referrer";
+  source?: string | null; // v392 - e.g. 'bf_pgi_referral'
+  bf_application_id?: string | null; // v392
   guarantor_name: string;
   guarantor_email: string;
   business_name: string;
@@ -116,12 +119,7 @@ export default function BIApplicationDetail() {
   // PUBLIC applications only. Lender + referrer apps (API or portal) auto-forward
   // to the carrier; staff don't touch their documents -> hide the button group.
   const isReadOnly = app.source_type === "lender" || app.source_type === "referrer";
-  const sourceLabel =
-    app.source_type === "lender"
-      ? `Lender-submitted${app.lender_name ? ` (${app.lender_name})` : ""}`
-      : app.source_type === "referrer"
-        ? "Referrer-submitted"
-        : "Public application";
+  const sourceLabel = biSourceLabel(app); // BF_PORTAL_BI_SOURCE_LABEL_v392
 
   return (
     <div className="text-white">
