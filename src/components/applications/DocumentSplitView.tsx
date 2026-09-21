@@ -5,6 +5,7 @@
 // Document review beside the application instead of on top of it.
 import { useCallback, useEffect, useRef, useState } from "react";
 import PdfPages, { looksLikeImage, looksLikePdf } from "./PdfPages";
+import { fileDownloadName } from "@/lib/downloadName";
 
 const MIN_PANE = 320;
 const DEFAULT_WIDTH = 560;
@@ -36,6 +37,7 @@ export type SplitViewDoc = {
   status?: string | null;
   category?: string | null;
   notices?: string[]; // BF_PORTAL_TAMPER_BADGES_v270
+  originalFilename?: string | null;
 };
 
 export type SplitViewReview = {
@@ -52,6 +54,8 @@ type Props = {
   doc: SplitViewDoc | null;
   onClose: () => void;
   review?: SplitViewReview | null;
+  /** Current accepted name, including renames made while the preview is open. */
+  downloadName?: string | null;
 };
 
 function readStoredWidth(): number {
@@ -64,7 +68,7 @@ function readStoredWidth(): number {
   }
 }
 
-export default function DocumentSplitView({ doc, onClose, review }: Props) {
+export default function DocumentSplitView({ doc, onClose, review, downloadName }: Props) {
   const [width, setWidth] = useState<number>(readStoredWidth);
   const [narrow, setNarrow] = useState(
     () => typeof window !== "undefined" && window.innerWidth < FULL_WIDTH_BELOW,
@@ -271,6 +275,19 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
           >
             Open in tab
           </a>
+          <a
+            data-testid="download-document"
+            href={doc.url}
+            download={fileDownloadName(downloadName ?? doc.filename, doc.originalFilename, doc.mimeType)}
+            style={{
+              fontSize: 13,
+              color: "var(--ui-accent-blue)",
+              textDecoration: "none",
+              padding: "4px 8px",
+            }}
+          >
+            Download
+          </a>
           <button
             type="button"
             onClick={onClose}
@@ -312,8 +329,11 @@ export default function DocumentSplitView({ doc, onClose, review }: Props) {
           This file type cannot be shown here.{" "}
           <a href={doc.url} target="_blank" rel="noopener noreferrer">
             Open it in a new tab
-          </a>
-          .
+          </a>{" "}
+          or{" "}
+          <a href={doc.url} download={fileDownloadName(downloadName ?? doc.filename, doc.originalFilename, doc.mimeType)}>
+            download it
+          </a>.
         </div>
       )}
 
