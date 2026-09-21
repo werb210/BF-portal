@@ -19,6 +19,7 @@ import { coverageHint, coverageTone, parseBankCoverage, type BankCoverage } from
 import { autoMovedText, misfiledBadgeText, type MisfiledFields } from "./misfiledBadges"; // BF_PORTAL_MISFILED_BADGES_v263
 import { buildDuplicateIndex, duplicateBadgeText, extraCopyIds, parseDuplicateGroups, type DuplicateGroup, type DuplicateRef } from "./documentDuplicates"; // BF_PORTAL_DOCUMENT_DUPLICATE_BADGES_v259
 import { apiBlob } from "@/utils/api";
+import { fileDownloadName, saveBlob } from "@/lib/downloadName";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
 // BF_PORTAL_SPLIT_VIEW_v205
@@ -101,8 +102,10 @@ function FraudScanRow({ scan, open, onToggle }: { scan: FraudScanState | undefin
 }
 
 const CATEGORY_GROUPS = [
-  { id: "banking",     label: "Banking",              matches: (c: string) => /bank|statement/i.test(c) },
-  { id: "financials",  label: "Financial Statements", matches: (c: string) => /financial|income|p_?l|profit|balance/i.test(c) },
+  { id: "banking",     label: "Banking",              matches: (c: string) => /bank|(?<!financial[\s_-])statement/i.test(c) },
+  // A/P and A/R, including aging reports, are financial statements. The old
+  // p_?l pattern also matched "applicable" and misfiled lease agreements.
+  { id: "financials",  label: "Financial Statements", matches: (c: string) => /financial|income|\bp[_&]?n?l\b|profit|balance|payable|receivable|\ba\/?[pr]\b|aging/i.test(c) },
   { id: "tax",         label: "Tax Documents",        matches: (c: string) => /tax|t1|t2|return/i.test(c) },
   { id: "legal",       label: "Legal & Corporate",    matches: (c: string) => /article|incorporation|bylaw|operating.?agreement|legal/i.test(c) },
   { id: "id",          label: "Identification",       matches: (c: string) => /\bid\b|driver|passport|license/i.test(c) },
@@ -218,6 +221,16 @@ export default function DocumentsTab({ applicationId }: Props) {
     }
   }, []);
 
+  async function handleDownload(docId: string) {
+    const row = docs.find((document) => document.documentId === docId);
+    try {
+      const blob = await apiBlob(`/api/portal/documents/${docId}/file`);
+      saveBlob(blob, fileDownloadName(row?.displayName ?? row?.filename, row?.filename, blob.type || null));
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Download failed");
+    }
+  }
+
   async function handlePreview(docId: string, filename: string | null) {
     if (previewing[docId]) return;
     setPreviewing((p) => ({ ...p, [docId]: true }));
@@ -232,7 +245,7 @@ export default function DocumentsTab({ applicationId }: Props) {
       setSplitDoc((previous) => {
         if (previous?.url) URL.revokeObjectURL(previous.url);
         const notices = row ? [tamperBadge(row)?.text, misfiledBadgeText(row), autoMovedText(row)].filter((n): n is string => !!n) : []; // v270
-        return { url: objectUrl as string, filename: row?.displayName ?? filename, mimeType: blob.type || null, blob, documentId: docId, status: row?.status ?? null, category: row?.category ?? null, notices };
+        return { url: objectUrl as string, filename: row?.displayName ?? filename, originalFilename: row?.filename ?? filename, mimeType: blob.type || null, blob, documentId: docId, status: row?.status ?? null, category: row?.category ?? null, notices };
       });
     } catch (e) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
@@ -495,6 +508,7 @@ export default function DocumentsTab({ applicationId }: Props) {
                   rejectOpen={!!rejectOpen[doc.documentId]}
                   rejectDraft={rejectDraft[doc.documentId] ?? ""}
                   onPreview={() => handlePreview(doc.documentId, doc.filename)}
+                  onDownload={() => void handleDownload(doc.documentId)}
                   onAccept={() => setAcceptDoc({ documentId: doc.documentId, filename: doc.filename, fromPane: false })}
                   onRejectOpen={() => setRejectOpen((r) => ({ ...r, [doc.documentId]: true }))}
                   onRejectCancel={() => {
@@ -520,6 +534,7 @@ export default function DocumentsTab({ applicationId }: Props) {
       {/* BF_PORTAL_SPLIT_VIEW_v205 */}
       <DocumentSplitView
         doc={splitDoc}
+        downloadName={splitDoc?.documentId ? (docs.find((document) => document.documentId === splitDoc.documentId)?.displayName ?? null) : null}
         onClose={() => setSplitDoc((previous) => {
           if (previous?.url) URL.revokeObjectURL(previous.url);
           return null;
@@ -568,6 +583,7 @@ function DocRow(props: {
   rejectOpen: boolean;
   rejectDraft: string;
   onPreview: () => void;
+  onDownload?: () => void;
   onAccept: () => void;
   onRejectOpen: () => void;
   onRejectCancel: () => void;
@@ -659,6 +675,11 @@ function DocRow(props: {
         >
           {previewing ? "Opening…" : "Preview"}
         </button>
+        {props.onDownload ? (
+          <button type="button" data-testid="row-download" onClick={props.onDownload} title="Download under the accepted name" style={styles.previewButton}>
+            Download
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={props.onScan}
