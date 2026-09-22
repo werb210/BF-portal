@@ -88,6 +88,9 @@ const issueFor = (node: SequenceNode, silo: SequenceSilo): string | null => {
     if (!node.emailTemplateId) return "Choose an email template";
     return null;
   }
+  // BF_PORTAL_BI_EMAIL_TEMPLATE_REQUIRED_v399 - BI email steps send a template;
+  // typed text was never sent, so the step went out blank.
+  if (silo === "bi" && node.kind === "email") return node.templateId ? null : "Choose an email template";
   if (node.templateId) return null;
   return node.body?.trim() ? null : "Pick a template or add a message body";
 };
@@ -168,7 +171,7 @@ export default function SequenceCanvas({ silo, templates = [], queues = [], staf
             <label className="text-sm">Email template<select data-testid="auto-email-template" aria-label="Email template" value={selected.emailTemplateId || ""} onChange={(e) => patch(selected.id, { emailTemplateId: e.target.value })} className={input}><option value="">Select an email template</option>{templates.filter((t) => t.channel === "email").map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
           </> : <>
             <label className="text-sm">Template<select value={selected.templateId || ""} onChange={(e) => patch(selected.id, { templateId: e.target.value })} className={input}><option value="">Select a template</option>{templates.filter((t) => !t.channel || t.channel === selected.kind).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
-            <label className="text-sm">Message recipient reads (when no template is selected)<textarea value={selected.body || ""} onChange={(e) => patch(selected.id, { body: e.target.value })} className={input} /></label>
+            {!(silo === "bi" && selected.kind === "email") && <label className="text-sm">Message recipient reads (when no template is selected)<textarea value={selected.body || ""} onChange={(e) => patch(selected.id, { body: e.target.value })} className={input} /></label>}
           </>}
           <label className="text-sm">Send if<select value={selected.condition} onChange={(e) => patch(selected.id, { condition: e.target.value })} className={input}><option value="always">Always</option><option value="if_no_open">No open yet</option><option value="if_no_click">No click yet</option><option value="if_no_reply">No reply yet</option></select></label>
         </>}
