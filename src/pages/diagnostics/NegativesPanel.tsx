@@ -41,6 +41,13 @@ export default function NegativesPanel() {
   const [matchType, setMatchType] = useState<"PHRASE" | "EXACT">("PHRASE");
   const [rows, setRows] = useState<Candidate[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  // BF_PORTAL_NEGATIVES_PLAIN_LANGUAGE_v420 - "Phrase" and "Exact" are Google's
+  // words for a mechanism. Staff need the consequence instead, per term, with the
+  // damage shown before they commit.
+  const [mode, setMode] = useState<Record<string, "only" | "containing">>({});
+  const [impact, setImpact] = useState<Record<string, { alsoBlocks: Array<{ searchTerm: string; cost: number; conversions: number }>; totalCost: number; convertingCount: number }>>({});
+  const modeFor = (term: string): "only" | "containing" =>
+    mode[term] ?? (term.includes(" ") ? "containing" : "only");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<AddResult | null>(null);
@@ -68,6 +75,21 @@ export default function NegativesPanel() {
   }, [days, minCost, campaignId]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const containing = Array.from(picked).filter((t) => modeFor(t) === "containing");
+    if (containing.length === 0) { setImpact({}); return; }
+    apiClient
+      .get<{ impact: Array<{ term: string; alsoBlocks: Array<{ searchTerm: string; cost: number; conversions: number }>; totalCost: number; convertingCount: number }> }>(
+        `/api/marketing/negative-impact?matchType=PHRASE&terms=${encodeURIComponent(containing.join("\n"))}` +
+        (campaignId.trim() ? `&campaignId=${encodeURIComponent(campaignId.trim())}` : ""))
+      .then((r) => {
+        const next: typeof impact = {};
+        for (const row of r?.impact ?? []) next[row.term] = row;
+        setImpact(next);
+      })
+      .catch(() => setImpact({}));
+  }, [picked, mode, campaignId]);
 
   const toggle = (term: string) => setPicked((previous) => {
     const next = new Set(previous);
