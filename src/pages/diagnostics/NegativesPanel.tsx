@@ -59,11 +59,13 @@ export default function NegativesPanel() {
 
   const load = useCallback(() => {
     setLoading(true); setErr(null); setResult(null);
-    apiClient.get<CandidatesResponse>(`/api/marketing/negative-candidates?days=${days}&minCost=${minCost}`)
+    // BF_PORTAL_NEGATIVES_CAMPAIGN_SCOPE_v415 - the campaign now scopes the list,
+    // not just the apply target. Before this, every campaign showed the same rows.
+    apiClient.get<CandidatesResponse>(`/api/marketing/negative-candidates?days=${days}&minCost=${minCost}` + (campaignId.trim() ? `&campaignId=${encodeURIComponent(campaignId.trim())}` : ""))
       .then((response) => { setRows(unwrapCandidates(response)); setPicked(new Set()); })
       .catch((error: Error) => setErr(error?.message ?? "Could not load candidates."))
       .finally(() => setLoading(false));
-  }, [days, minCost]);
+  }, [days, minCost, campaignId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -106,10 +108,10 @@ export default function NegativesPanel() {
             {[0, 1, 5, 10].map((value) => <option key={value} value={value}>${value}</option>)}
           </select>
         </label>
-        <label style={{ fontSize: 12, color: "var(--ui-text-muted)", flex: 1, minWidth: 200 }}>Campaign<br />
+        <label style={{ fontSize: 12, color: "var(--ui-text-muted)", flex: 1, minWidth: 200 }}>Campaign (filters the list and receives the negatives)<br />
           {campaigns.length > 0 ? (
             <select value={campaignId} onChange={(event) => setCampaignId(event.target.value)} data-testid="negatives-campaign-id" style={{ padding: "6px 10px", marginTop: 4, width: "100%", boxSizing: "border-box" }}>
-              <option value="">Select a campaign…</option>
+              <option value="">All campaigns — pick one to apply</option>
               {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaignLabel(campaign)}</option>)}
             </select>
           ) : (
