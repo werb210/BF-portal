@@ -11,6 +11,7 @@ import AbandonedPanel from "@/components/marketing/AbandonedPanel"; // BF_PORTAL
 import BFReferrerManagement from "./BFReferrerManagement"; // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
 import DiagnosticsPanel from "@/pages/diagnostics/DiagnosticsPage";
 import NegativesPanel from "@/pages/diagnostics/NegativesPanel";
+import AdsConversionStatus from "@/components/marketing/AdsConversionStatus"; // BF_PORTAL_ADS_CONVERSION_STATUS_v401
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
@@ -1506,6 +1507,7 @@ const MarketingDashboard = () => {
               <GoogleAdsPanel />
               <UtmBuilderPanel />
               <MayaSuggestionsPanel />
+              <AdsConversionStatus />
               <AdsConversionsPanel />
               <IcpBuilderPanel />
             </div>
