@@ -80,14 +80,27 @@ export default function NegativesPanel() {
     if (picked.size === 0 || !campaignId.trim()) return;
     setBusy(true); setErr(null); setResult(null);
     try {
-      const response = await apiClient.post<{ data?: AddResult } & AddResult>("/api/marketing/negative-keywords", {
-        campaignId: campaignId.trim(), terms: Array.from(picked), matchType,
-      });
-      const output = (response?.data ?? response) as AddResult;
-      setResult(output);
-      if (output?.added?.length) {
-        setRows((previous) => previous.filter((row) => !output.added.includes(row.searchTerm)));
-        setPicked((previous) => { const next = new Set(previous); output.added.forEach((term) => next.delete(term)); return next; });
+      const all = Array.from(picked);
+      const singles = all.filter((term) => !term.includes(" "));
+      const multi = all.filter((term) => term.includes(" "));
+      const batches = [
+        ...(multi.length ? [{ terms: multi, matchType }] : []),
+        ...(singles.length ? [{ terms: singles, matchType: "EXACT" as const }] : []),
+      ];
+      for (const batch of batches) {
+        const response = await apiClient.post<{ data?: AddResult } & AddResult>("/api/marketing/negative-keywords", {
+          // BF_PORTAL_NEGATIVES_PER_TERM_MATCH_v418 - a single-word term is only valid
+          // as EXACT, so it goes in its own request instead of being rejected.
+          campaignId: campaignId.trim(),
+          terms: batch.terms,
+          matchType: batch.matchType,
+        });
+        const output = (response?.data ?? response) as AddResult;
+        setResult(output);
+        if (output?.added?.length) {
+          setRows((previous) => previous.filter((row) => !output.added.includes(row.searchTerm)));
+          setPicked((previous) => { const next = new Set(previous); output.added.forEach((term) => next.delete(term)); return next; });
+        }
       }
     } catch (error) {
       setErr(error instanceof Error ? error.message : "Google Ads rejected the request.");
@@ -123,7 +136,7 @@ export default function NegativesPanel() {
           <select value={matchType} onChange={(event) => setMatchType(event.target.value as "PHRASE" | "EXACT")} style={{ padding: "6px 10px", marginTop: 4 }}><option value="PHRASE">Phrase</option><option value="EXACT">Exact</option></select>
         </label>
       </div>
-      {matchType === "PHRASE" && Array.from(picked).some((term) => !term.includes(" ")) && <div style={{ ...card, borderLeft: "3px solid #b8860b" }}>A single-word term as Phrase blocks every query containing it — “loans” would block “business loans”. Those will be rejected; switch to Exact for them.</div>}
+      {matchType === "PHRASE" && Array.from(picked).some((term) => !term.includes(" ")) && <div style={{ ...card, borderLeft: "3px solid #b8860b" }}>Single-word terms are sent as Exact automatically — Phrase on a single word would block every query containing it. Multi-word terms use the Match setting above.</div>}
       {loading && <Skeleton />}
       {err && <div style={{ ...card, color: "#b00020" }} data-testid="negatives-error">{err}</div>}
       {result && <div style={card} data-testid="negatives-result"><strong>{result.added.length} added.</strong>{result.failed.length > 0 && <ul style={{ marginTop: 8 }}>{result.failed.map((failure) => <li key={failure.term} style={{ color: "#b00020", fontSize: 13 }}>{failure.term} — {failure.error}</li>)}</ul>}</div>}
