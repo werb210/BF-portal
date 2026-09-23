@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { MayaMessage } from "./mayaMarkdown";
 import { sendMayaMessage } from "@/api/maya";
 
 type Msg = { role: "user" | "maya"; text: string; ts: number };
@@ -59,7 +60,11 @@ export default function MayaChat() {
 
       <div ref={scrollRef} style={listStyle}>
         {msgs.map((m) => (
-          <div key={m.ts} style={bubbleStyle(m.role)}>{m.text}</div>
+          <div key={m.ts} style={bubbleStyle(m.role)}>
+            {/* BF_PORTAL_MAYA_MARKDOWN_v439 - was raw text, so staff saw
+                **bold** and [label](url) literally. */}
+            {m.role === "user" ? m.text : <MayaMessage message={m.text} />}
+          </div>
         ))}
       </div>
 
