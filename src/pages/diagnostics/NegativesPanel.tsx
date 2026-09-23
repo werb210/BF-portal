@@ -1,6 +1,7 @@
 // BF_PORTAL_AD_NEGATIVES_v1
 // Weekly candidate list for negative keywords. Every row spent money and converted nothing.
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { chooseMatch, batchByMatch } from "./autoMatch";
 import { apiClient } from "@/api/client";
 import Skeleton from "@/components/Skeleton";
 // BF_PORTAL_NEGATIVES_CAMPAIGN_PICKER_v177 - the campaign ID was a free-text
@@ -38,7 +39,6 @@ export default function NegativesPanel() {
   const [campaignId, setCampaignId] = useState("");
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
   const [campaignsErr, setCampaignsErr] = useState<string | null>(null);
-  const [matchType, setMatchType] = useState<"PHRASE" | "EXACT">("PHRASE");
   const [rows, setRows] = useState<Candidate[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   // BF_PORTAL_NEGATIVES_PLAIN_LANGUAGE_v420 - "Phrase" and "Exact" are Google's
@@ -102,13 +102,10 @@ export default function NegativesPanel() {
     if (picked.size === 0 || !campaignId.trim()) return;
     setBusy(true); setErr(null); setResult(null);
     try {
-      const all = Array.from(picked);
-      const singles = all.filter((term) => !term.includes(" "));
-      const multi = all.filter((term) => term.includes(" "));
-      const batches = [
-        ...(multi.length ? [{ terms: multi, matchType }] : []),
-        ...(singles.length ? [{ terms: singles, matchType: "EXACT" as const }] : []),
-      ];
+      // v433 - the match type is derived per term, not chosen by the operator.
+      const allTerms = rows.map((row) => row.searchTerm);
+      const converting = rows.filter((row) => Number(row.conversions ?? 0) > 0).map((row) => row.searchTerm);
+      const batches = batchByMatch(Array.from(picked), allTerms, converting);
       for (const batch of batches) {
         const response = await apiClient.post<{ data?: AddResult } & AddResult>("/api/marketing/negative-keywords", {
           // BF_PORTAL_NEGATIVES_PER_TERM_MATCH_v418 - a single-word term is only valid
@@ -154,11 +151,10 @@ export default function NegativesPanel() {
           )}
           {campaignsErr && <span style={{ display: "block", marginTop: 4, color: "var(--ui-text-muted)" }}>{campaignsErr}</span>}
         </label>
-        <label style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Match<br />
-          <select value={matchType} onChange={(event) => setMatchType(event.target.value as "PHRASE" | "EXACT")} style={{ padding: "6px 10px", marginTop: 4 }}><option value="PHRASE">Phrase</option><option value="EXACT">Exact</option></select>
-        </label>
+        {/* BF_PORTAL_NEGATIVES_AUTO_MATCH_v433 - the panel picks the match type
+            per term now; the global dropdown made staff guess at blast radius. */}
       </div>
-      {matchType === "PHRASE" && Array.from(picked).some((term) => !term.includes(" ")) && <div style={{ ...card, borderLeft: "3px solid #b8860b" }}>Single-word terms are sent as Exact automatically — Phrase on a single word would block every query containing it. Multi-word terms use the Match setting above.</div>}
+            <div style={{ ...card, borderLeft: "3px solid #b8860b" }}>Tick the searches that wasted money. Each one is blocked the safest way automatically — the reason is shown beside it.</div>
       {loading && <Skeleton />}
       {err && <div style={{ ...card, color: "#b00020" }} data-testid="negatives-error">{err}</div>}
       {result && <div style={card} data-testid="negatives-result"><strong>{result.added.length} added.</strong>{result.failed.length > 0 && <ul style={{ marginTop: 8 }}>{result.failed.map((failure) => <li key={failure.term} style={{ color: "#b00020", fontSize: 13 }}>{failure.term} — {failure.error}</li>)}</ul>}</div>}
