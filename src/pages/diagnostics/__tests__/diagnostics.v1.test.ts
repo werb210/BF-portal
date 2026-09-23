@@ -12,6 +12,8 @@ describe("BF_PORTAL_DIAGNOSTICS_v1", () => {
     expect(page).toContain("/admin/submit-failures?days=");
   });
   it("uses BF-Server routes without a v1 prefix", () => expect(page).not.toContain("/api/v1/"));
-  it("surfaces wasted share and callable applicants", () => { expect(page).toContain("wastedShare"); expect(page).toContain("tel:${row.phone}"); });
+  it("surfaces wasted share and callable applicants", () => { expect(page).toContain("wastedShare"); // v428 - v424 moved this off tel: so the call goes through the Boreal
+    // Dialer (CallKit, recording, CRM log) instead of Apple's phone app.
+    expect(page).toContain("placeCall(row.phone!)"); expect(page).not.toContain("tel:${row.phone}"); });
   it("shows request errors", () => expect(page).toContain('data-testid="diag-error"'));
 });
