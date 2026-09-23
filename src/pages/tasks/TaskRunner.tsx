@@ -16,6 +16,7 @@ import { openDialer } from "@/dialer/store";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import SMSComposer from "@/components/sms/SMSComposer";
 import type { Contact } from "@/api/crm";
+import { placeCall } from "@/native/dialerLauncher";
 
 export type RunTask = {
   id: string; title: string; body: string | null; type: string; priority: string;
@@ -137,7 +138,7 @@ export default function TaskRunner({ tasks, onExit }: { tasks: RunTask[]; onExit
               <div className="border rounded-lg p-3 mt-4 text-sm" style={{ borderColor: "var(--ui-border)" }}>
                 <div className="font-semibold">{t.contact_name ?? "-"}{t.company_name ? ` - ${t.company_name}` : ""}</div>
                 <div className="flex gap-4 mt-1" style={{ color: "var(--ui-text-muted)" }}>
-                  {t.contact_phone && <a href={`tel:${t.contact_phone}`} className="underline">{t.contact_phone}</a>}
+                  {t.contact_phone && <a href="#" onClick={(e) => { e.preventDefault(); void placeCall(t.contact_phone!, t.contact_id ?? undefined); }} className="underline">{t.contact_phone}</a>}
                   {t.contact_email && <a href={`mailto:${t.contact_email}`} className="underline">{t.contact_email}</a>}
                   {t.contact_id && <Link to={`/crm/contacts/${t.contact_id}`} className="underline">Open contact -&gt;</Link>}
                 </div>
