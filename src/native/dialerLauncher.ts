@@ -23,3 +23,21 @@ export async function launchNativeBorealDialer(target: NativeDialerTarget): Prom
     return false;
   }
 }
+
+// BF_PORTAL_DIALER_HANDOFF_v424
+// Keep every "call this person" control on the recorded Boreal Dialer path when
+// running natively, while preserving the browser/installation fallback.
+export async function placeCall(phone: string, contactId?: string): Promise<"dialer" | "tel"> {
+  const number = String(phone ?? "").trim();
+  if (!number) return "tel";
+
+  if (Capacitor.isNativePlatform()) {
+    const opened = await launchNativeBorealDialer(
+      contactId ? { contactId } : { phone: number },
+    );
+    if (opened) return "dialer";
+  }
+
+  window.location.href = `tel:${number}`;
+  return "tel";
+}

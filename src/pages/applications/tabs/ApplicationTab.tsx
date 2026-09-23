@@ -26,6 +26,7 @@ import { getFormResponse, type PortalFormResponse } from "@/api/formResponses";
 import { formatMoneyOrRange } from "@/utils/moneyRange"; // BF_PORTAL_BLOCK_v864_MONEY_RANGE
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v817_REMIND_CLIENT
 import ProductQuestionsPanel from "@/pages/applications/tabs/ProductQuestionsPanel"; // BF_PORTAL_PRODUCT_QUESTIONS_v292
+import { placeCall } from "@/native/dialerLauncher";
 
 type AnyRecord = Record<string, any>;
 import { maskSin } from "@/lib/sensitive";
@@ -313,7 +314,7 @@ export default function ApplicationTab({ application }: Props) {
     ? String(dbaCandidate)
     : null;
 
-  // Call Client button (v225 -- tel: handoff to OS dialer)
+  // Call Client button (v424 -- hand off to the Boreal Dialer on native builds)
   const applicantName = joinName(applicant) || businessName;
   // BF_PORTAL_APPLICANT_CRM_LINK_v1 - the applicant name links to their CRM record.
   // BF_PORTAL_PARTNER_CRM_LINK_v1 - application_contacts already stores one row
@@ -381,13 +382,7 @@ export default function ApplicationTab({ application }: Props) {
   const applicationId = String(application.id ?? "");
   function callClient() {
     if (!phone) return;
-    // v697: actually place the call (was only opening the panel, never dialing).
-    import("@/dialer/actions").then(({ startOutboundPstn }) => {
-      void startOutboundPstn(phone, {
-        applicationId, applicationName: businessName,
-        contactName: applicantName, source: "application",
-      });
-    });
+    void placeCall(phone, applicantContactId ? String(applicantContactId) : undefined);
   }
 
   return (
