@@ -10,6 +10,19 @@ import Skeleton from "@/components/Skeleton";
 import { unwrapCampaigns, campaignLabel, type AdCampaign, type CampaignsResponse } from "./negativesCampaigns";
 
 type Candidate = { searchTerm: string; cost: number; clicks: number; impressions: number; conversions: number };
+// BF_PORTAL_NEGATIVES_UNDO_v435 - ads_negatives_log keeps Google's resourceName,
+// which is the only handle that can remove a criterion again.
+type AppliedNegative = { id: string; campaign_id: string; term: string; match_type: string; resource_name: string | null; added_at: string };
+type RecentResponse = { negatives?: AppliedNegative[] } | { data?: { negatives?: AppliedNegative[] } } | AppliedNegative[];
+
+function unwrapNegatives(response: RecentResponse | null | undefined): AppliedNegative[] {
+  if (Array.isArray(response)) return response;
+  const envelope = (response as { data?: { negatives?: AppliedNegative[] } } | null)?.data;
+  if (envelope && Array.isArray(envelope.negatives)) return envelope.negatives;
+  const direct = (response as { negatives?: AppliedNegative[] } | null)?.negatives;
+  return Array.isArray(direct) ? direct : [];
+}
+
 type AddResult = { added: string[]; failed: Array<{ term: string; error: string }> };
 
 // BF_PORTAL_NEGATIVES_TYPECHECK_v1
@@ -41,6 +54,30 @@ export default function NegativesPanel() {
   const [campaignsErr, setCampaignsErr] = useState<string | null>(null);
   const [rows, setRows] = useState<Candidate[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [applied, setApplied] = useState<AppliedNegative[]>([]);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [undoErr, setUndoErr] = useState<string | null>(null);
+
+  const loadApplied = useCallback(() => {
+    apiClient.get<RecentResponse>("/api/marketing/negative-keywords/recent")
+      .then((response) => setApplied(unwrapNegatives(response)))
+      .catch(() => setApplied([]));
+  }, []);
+
+  useEffect(() => { loadApplied(); }, [loadApplied]);
+
+  const undo = async (row: AppliedNegative) => {
+    setRemoving(row.id); setUndoErr(null);
+    try {
+      await apiClient.post(`/api/marketing/negative-keywords/${encodeURIComponent(row.id)}/remove`, {});
+      setApplied((previous) => previous.filter((item) => item.id !== row.id));
+      // The term is blocking nothing again, so it can reappear as a candidate.
+      load();
+    } catch (error) {
+      setUndoErr(error instanceof Error ? error.message : "Google Ads would not remove it.");
+    } finally { setRemoving(null); }
+  };
+
   // BF_PORTAL_NEGATIVES_PLAIN_LANGUAGE_v420 - "Phrase" and "Exact" are Google's
   // words for a mechanism. Staff need the consequence instead, per term, with the
   // damage shown before they commit.
@@ -121,6 +158,7 @@ export default function NegativesPanel() {
           setPicked((previous) => { const next = new Set(previous); output.added.forEach((term) => next.delete(term)); return next; });
         }
       }
+      loadApplied();
     } catch (error) {
       setErr(error instanceof Error ? error.message : "Google Ads rejected the request.");
     } finally { setBusy(false); }
@@ -202,6 +240,27 @@ export default function NegativesPanel() {
           })}
             {rows.length === 0 && <tr><td style={td} colSpan={5}>Nothing wasted in this window.</td></tr>}
           </tbody></table>
+      </div>}
+      {applied.length > 0 && <div style={card} data-testid="negatives-applied">
+        <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Blocked searches — you can undo any of these</h3>
+        {undoErr && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 8 }}>{undoErr}</div>}
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr><th style={th}>Search term</th><th style={th}>Blocks</th><th style={th}>Added</th><th style={{ ...th, width: 90 }} /></tr></thead>
+          <tbody>{applied.map((row) => <tr key={row.id}>
+            <td style={td}>{row.term}</td>
+            <td style={td}>{row.match_type === "PHRASE" ? "anything containing it" : "only this exact search"}</td>
+            <td style={td}>{row.added_at ? new Date(row.added_at).toLocaleString() : "—"}</td>
+            <td style={td}>
+              <button
+                onClick={() => void undo(row)}
+                disabled={removing === row.id || !row.resource_name}
+                title={row.resource_name ? "Stop blocking this search" : "Added before undo was recorded — remove it in Google Ads"}
+                data-testid={`negatives-undo-${row.id}`}
+                style={{ padding: "4px 10px", borderRadius: 6, cursor: row.resource_name ? "pointer" : "not-allowed", border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}
+              >{removing === row.id ? "Removing…" : "Undo"}</button>
+            </td>
+          </tr>)}</tbody>
+        </table>
       </div>}
     </div>
   );
