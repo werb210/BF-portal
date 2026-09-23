@@ -1,6 +1,6 @@
 // BF_PORTAL_AD_NEGATIVES_v1
 // Weekly candidate list for negative keywords. Every row spent money and converted nothing.
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { Fragment, useCallback, useEffect, useState, type CSSProperties } from "react";
 import { chooseMatch, batchByMatch } from "./autoMatch";
 import { apiClient } from "@/api/client";
 import Skeleton from "@/components/Skeleton";
@@ -166,7 +166,40 @@ export default function NegativesPanel() {
           </div>
         </div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th style={{ ...th, width: 36 }} /><th style={th}>Search term</th><th style={th}>Cost</th><th style={th}>Clicks</th><th style={th}>Impressions</th></tr></thead>
-          <tbody>{rows.map((row) => <tr key={row.searchTerm}><td style={td}><input type="checkbox" checked={picked.has(row.searchTerm)} onChange={() => toggle(row.searchTerm)} aria-label={`Select ${row.searchTerm}`} /></td><td style={td}>{row.searchTerm}</td><td style={td}>{money(row.cost)}</td><td style={td}>{row.clicks}</td><td style={td}>{row.impressions}</td></tr>)}
+          {/* BF_PORTAL_NEGATIVES_REASON_LINE_v434 - a ticked row explains what it
+              is about to block, before the operator commits to it. */}
+          <tbody>{rows.map((row) => {
+            const decision = picked.has(row.searchTerm)
+              ? chooseMatch(
+                  row.searchTerm,
+                  rows.map((candidate) => candidate.searchTerm),
+                  rows.filter((candidate) => Number(candidate.conversions ?? 0) > 0).map((candidate) => candidate.searchTerm),
+                )
+              : null;
+            const touchesAConverter = decision?.reason.includes("converted") ?? false;
+            return (
+              <Fragment key={row.searchTerm}>
+                <tr>
+                  <td style={td}><input type="checkbox" checked={picked.has(row.searchTerm)} onChange={() => toggle(row.searchTerm)} aria-label={`Select ${row.searchTerm}`} /></td>
+                  <td style={td}>{row.searchTerm}</td>
+                  <td style={td}>{money(row.cost)}</td>
+                  <td style={td}>{row.clicks}</td>
+                  <td style={td}>{row.impressions}</td>
+                </tr>
+                {decision && (
+                  <tr data-testid={`negatives-reason-${row.searchTerm}`}>
+                    <td />
+                    <td colSpan={4} style={{ ...td, borderTop: "none", paddingTop: 0, fontSize: 12, color: touchesAConverter ? "#b00020" : "var(--ui-text-muted)" }}>
+                      {decision.reason}
+                      {decision.alsoBlocks.length > 0 && (
+                        <span style={{ display: "block", marginTop: 2 }}>{decision.alsoBlocks.join(", ")}</span>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
             {rows.length === 0 && <tr><td style={td} colSpan={5}>Nothing wasted in this window.</td></tr>}
           </tbody></table>
       </div>}
