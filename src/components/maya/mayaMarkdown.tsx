@@ -20,7 +20,7 @@ export function renderInline(line: string): ReactNode[] {
     } else if (match[2]) {
       const label = match[2].slice(1, match[2].indexOf("]"));
       // Only http(s) reaches here - the pattern refuses javascript: and data:.
-      out.push(<a key={`l${key++}`} href={match[3]} target="_blank" rel="noopener noreferrer">{label}</a>);
+      out.push(<a key={`l${key++}`} href={match[3] ?? "#"} target="_blank" rel="noopener noreferrer">{label}</a>);
     }
     last = at + match[0].length;
   }
@@ -44,12 +44,17 @@ export function toBlocks(message: string): Block[] {
     const ol = /^(\d{1,2})\.\s+(.*)$/.exec(line);
     const ul = /^[-•]\s+(.*)$/.exec(line);
     const tail = blocks[blocks.length - 1];
+    // BF_PORTAL_MAYA_MARKDOWN_TYPES_v443 - RegExp.exec indexes as
+    // string | undefined under noUncheckedIndexedAccess, and `if (ol)` narrows
+    // the match object, not its groups. Capture once.
     if (ol) {
-      if (tail?.kind === "ol") tail.items.push(ol[2]);
-      else blocks.push({ kind: "ol", items: [ol[2]] });
+      const item = ol[2] ?? "";
+      if (tail?.kind === "ol") tail.items.push(item);
+      else blocks.push({ kind: "ol", items: [item] });
     } else if (ul) {
-      if (tail?.kind === "ul") tail.items.push(ul[1]);
-      else blocks.push({ kind: "ul", items: [ul[1]] });
+      const item = ul[1] ?? "";
+      if (tail?.kind === "ul") tail.items.push(item);
+      else blocks.push({ kind: "ul", items: [item] });
     } else if (tail?.kind === "p") {
       tail.lines.push(line);
     } else {

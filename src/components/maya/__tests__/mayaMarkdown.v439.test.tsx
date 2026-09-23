@@ -4,6 +4,15 @@ import { render, screen } from "@testing-library/react";
 import { MayaMessage, toBlocks } from "../mayaMarkdown";
 
 describe("v439 the staff Maya panel renders replies", () => {
+  // v443 - an empty capture group must not produce an undefined list item.
+  it("never yields an undefined list item", () => {
+    for (const block of toBlocks("1. \n2. Real item")) {
+      if ("items" in block) {
+        for (const item of block.items) expect(typeof item).toBe("string");
+      }
+    }
+  });
+
   it("renders bold instead of asterisks", () => {
     render(<MayaMessage message="**Equipment Financing**: $20,000 to $3,000,000" />);
     expect(screen.getByText("Equipment Financing").tagName).toBe("STRONG");
