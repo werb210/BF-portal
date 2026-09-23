@@ -2,6 +2,7 @@
 // below so it fits the narrow nav column. Screen-aware: attaches the
 // current screen context and executes Maya's navigate / dial actions.
 import { safeInternalPath } from "@/lib/safeInternalPath";
+import { MayaMessage } from "./mayaMarkdown";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { sendMayaMessage, type MayaAction } from "@/api/maya";
@@ -196,7 +197,9 @@ export default function MayaCommandBar() {
       </div>
       {reply && (
         <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--ui-text)", maxHeight: 160, overflowY: "auto", borderTop: "1px solid var(--ui-border)", paddingTop: 8 }}>
-          {reply}
+          {/* BF_PORTAL_COMMAND_BAR_RENDER_v450 - was raw text, so staff saw
+              **bold** and run-together lists. */}
+          <MayaMessage message={reply} />
         </div>
       )}
     </div>
