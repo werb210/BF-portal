@@ -1,3 +1,5 @@
+// BF_PORTAL_SECURE_TOKEN_STORAGE_v422 - restore Keychain tokens before render.
+import { hydrateSecureTokens } from "./lib/secureStore";
 import "./styles/globals.css";
 import { reportError } from "@/utils/errorReporter";
 import "@/lib/authSync";
@@ -56,6 +58,8 @@ async function assertBackend() {
 }
 
 async function bootstrap() {
+  await hydrateSecureTokens(["auth_token", "auth_user", "auth_phone", "msgraph_access_token"]).catch(() => undefined);
+
   if (!(await validateStartupToken())) return;
 
   await assertBackend();
