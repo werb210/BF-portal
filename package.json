@@ -19,6 +19,7 @@
     "scope:check": "node scripts/enforce-silo-scope.mjs --base=origin/main"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8.0.1",
     "@azure/msal-browser": "^3.30.0",
     "@boreal/shared-contract": "file:shared-contract",
     "@capacitor/app": "^8.1.0",
