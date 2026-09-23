@@ -1,4 +1,5 @@
 import { BrowserAuthError, PublicClientApplication } from "@azure/msal-browser";
+import { setGraphAccessToken } from "@/lib/graphToken";
 
 import { microsoftAuthConfig } from "@/config/microsoftAuth";
 import { withRequiredO365Scopes } from "@/auth/o365Scopes"; // BF_PORTAL_O365_SCOPES_v275
@@ -73,7 +74,10 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null, opts?: {
       return false;
     }
 
-    localStorage.setItem("msgraph_access_token", String(result.accessToken));
+    // BF_PORTAL_MSAL_TOKEN_SECURE_v425 - a live Graph token in localStorage is
+    // UserDefaults on the iPad build: unencrypted and in device backups. Keychain
+    // on native, session-scoped on web, and the plain copy is cleared either way.
+    await setGraphAccessToken(String(result.accessToken));
     console.log("[msal.silent] acquire.ok", {
       hasAccess: Boolean(result.accessToken),
       hasId: Boolean(result.idToken),
