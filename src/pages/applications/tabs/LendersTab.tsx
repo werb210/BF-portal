@@ -19,6 +19,7 @@ import {
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v_SIGNING_RESEND_v1 — collateral-required signal
 import { RejectReasonsModal } from "@/components/applications/RejectReasonsModal";
 import { getErrorMessage } from "@/utils/errors";
+import { describeDownloads, type SentLenderEntry } from "./sentLenderDownloads"; // BF_PORTAL_BLOCK_v459_PACKAGE_DOWNLOADS
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
 import { canWrite } from "@/auth/can";
@@ -298,6 +299,16 @@ export default function LendersTab({ applicationId }: Props) {
     const map = new Map<string, string | null>();
     for (const x of v_sentData?.sent ?? []) {
       if (x?.lenderId) map.set(String(x.lenderId), x.sentAt ?? null);
+    }
+    return map;
+  }, [v_sentData]);
+
+  // BF_PORTAL_BLOCK_v459_PACKAGE_DOWNLOADS - whether the lender opened a linked package.
+  const v_downloadMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const x of (v_sentData?.sent ?? []) as SentLenderEntry[]) {
+      const line = describeDownloads(x);
+      if (x?.lenderId && line) map.set(String(x.lenderId), line);
     }
     return map;
   }, [v_sentData]);
@@ -725,6 +736,11 @@ function describeSendFailure(err: unknown): string {
                     {m.lenderId && v_sentMap.has(String(m.lenderId)) && (
                       <div style={{ marginTop: 2, fontSize: 11, fontWeight: 700, color: "#16a34a" }}>
                         {"\u2713 Sent"}{v_sentMap.get(String(m.lenderId)) ? ` \u00b7 ${new Date(String(v_sentMap.get(String(m.lenderId)))).toLocaleDateString()}` : ""}
+                      </div>
+                    )}
+                    {m.lenderId && v_downloadMap.has(String(m.lenderId)) && (
+                      <div data-testid="lender-download-status" style={{ marginTop: 2, fontSize: 11, color: "var(--ui-text-muted)" }}>
+                        {v_downloadMap.get(String(m.lenderId))}
                       </div>
                     )}
                     {m.productName ? <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2 }}>{m.productName}</div> : null}
