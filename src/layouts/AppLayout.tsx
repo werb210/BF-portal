@@ -20,6 +20,9 @@ import { usePushRegistration } from "@/hooks/usePushRegistration";
 // BF_PORTAL_BLOCK_v640_IPAD_WORKSTATION_v1
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import ShortcutHelp from "@/components/ShortcutHelp";
+// BF_PORTAL_BLOCK_v478_BUILD_STAMP_AND_UPDATE_PROMPT
+import UpdatePromptBanner from "@/components/UpdatePromptBanner";
+import { buildStampLabel } from "@/lib/buildInfo";
 
 
 const TOPBAR_HEIGHT = 68;
@@ -208,12 +211,17 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
             </div>
           )}
         </div>
+        {/* BF_PORTAL_BLOCK_v478 - build stamp: which build this browser is running */}
+        <div data-testid="build-stamp" style={{ fontSize: 10, color: "var(--ui-text-muted)", opacity: 0.7, padding: "4px 4px max(8px, env(safe-area-inset-bottom))", flexShrink: 0 }}>
+          {buildStampLabel()}
+        </div>
       </aside>
 
       {/* ── Main ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <div style={{ position: "sticky", top: 0, zIndex: 30, flexShrink: 0 }}><Topbar onToggleSidebar={() => setMobileNavOpen((prev) => !prev)} /></div>
         <main style={{ height: `calc(100dvh - ${TOPBAR_HEIGHT}px)`, overflowY: "auto", padding: 24, background: "var(--bg-primary)" }}>
+          <UpdatePromptBanner />{/* BF_PORTAL_BLOCK_v478 - was built but never rendered */}
           {children ?? <Outlet />}
         </main>
       </div>
