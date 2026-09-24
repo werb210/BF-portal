@@ -109,10 +109,16 @@ function SequenceCreateModal({ onClose, onCreated }: { onClose: () => void; onCr
     if (!name.trim()) { alert("Name required"); return; }
     setBusy(true);
     try {
-      await api("/api/v1/bi/marketing/sequences", {
+      const created: any = await api("/api/v1/bi/marketing/sequences", {
         method: "POST",
         body: JSON.stringify({ name, description: description || null, status: "draft", pause_on_reply: pauseOnReply, steps }),
       });
+      // BF_PORTAL_BLOCK_v480_BI_SEQUENCE_SAVE_STARTS - start it straight away.
+      const newId: string | undefined = created?.sequence?.id ?? created?.data?.sequence?.id;
+      if (newId) {
+        try { await api(`/api/v1/bi/marketing/sequences/${newId}/start`, { method: "POST", body: "{}" }); }
+        catch (e) { alert(e instanceof Error ? `Saved, but not started: ${e.message}` : "Saved, but not started - press Start."); }
+      }
       onCreated();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Create failed");
