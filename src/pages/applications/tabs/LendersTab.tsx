@@ -327,6 +327,24 @@ export default function LendersTab({ applicationId }: Props) {
     return map;
   }, [v_sentData]);
 
+  // BF_PORTAL_BLOCK_v483_MARK_SENT_TO_LENDER - files sent outside the portal.
+  const v_manualSent = useMemo(() => {
+    const set = new Set<string>();
+    for (const x of (v_sentData?.sent ?? []) as SentLenderEntry[]) {
+      if (x?.lenderId && x.manual) set.add(String(x.lenderId));
+    }
+    return set;
+  }, [v_sentData]);
+  const markSentMutation = useMutation({
+    mutationFn: async (v: { lenderId: string; lenderName: string }) =>
+      api.post(`/api/applications/${encodeURIComponent(id)}/lenders/${encodeURIComponent(v.lenderId)}/mark-sent`, {}),
+    onSuccess: () => {
+      setSendError(null);
+      queryClient.invalidateQueries();
+    },
+    onError: (err: unknown) => setSendError(getErrorMessage(err, "Could not mark it as sent.")),
+  });
+
   const [selected, setSelected] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -761,7 +779,7 @@ function describeSendFailure(err: unknown): string {
                     <div style={{ fontWeight: 700 }}>{m.lenderName ?? "—"}</div>
                     {m.lenderId && v_sentMap.has(String(m.lenderId)) && (
                       <div style={{ marginTop: 2, fontSize: 11, fontWeight: 700, color: "#16a34a" }}>
-                        {"\u2713 Sent"}{v_sentMap.get(String(m.lenderId)) ? ` \u00b7 ${new Date(String(v_sentMap.get(String(m.lenderId)))).toLocaleDateString()}` : ""}
+                        {"\u2713 Sent"}{v_manualSent.has(String(m.lenderId)) ? " outside portal" : ""}{v_sentMap.get(String(m.lenderId)) ? ` \u00b7 ${new Date(String(v_sentMap.get(String(m.lenderId)))).toLocaleDateString()}` : ""}
                       </div>
                     )}
                     {m.lenderId && v_downloadMap.has(String(m.lenderId)) && (
@@ -834,6 +852,22 @@ function describeSendFailure(err: unknown): string {
                     >
                       {isUploading ? "Uploading…" : "Upload Term Sheet"}
                     </button>
+                    {lenderKey && !isSent && (
+                      <button
+                        type="button"
+                        data-testid={`lender-mark-sent-${m.id}`}
+                        disabled={markSentMutation.isPending || isStale}
+                        title="Record that you sent this file to the lender yourself (email, lender portal)"
+                        onClick={() => {
+                          const name = m.lenderName ?? "this lender";
+                          if (typeof window !== "undefined" && !window.confirm(`Record that you sent this file to ${name} outside the portal? It will show as sent and the file moves to Off to Lender.`)) return;
+                          markSentMutation.mutate({ lenderId: lenderKey, lenderName: name });
+                        }}
+                        style={{ ...styles.btn, marginLeft: 6 }}
+                      >
+                        {markSentMutation.isPending && markSentMutation.variables?.lenderId === lenderKey ? "Saving…" : "Mark as sent"}
+                      </button>
+                    )}
                   </td>
                 </tr>
                 {isSent && (

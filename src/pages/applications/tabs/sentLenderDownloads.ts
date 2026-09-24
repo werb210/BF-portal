@@ -8,6 +8,7 @@ export type SentLenderEntry = {
   viaLink?: boolean;
   downloadCount?: number;
   lastDownloadedAt?: string | null;
+  manual?: boolean; // BF_PORTAL_BLOCK_v483 - recorded by staff, sent outside the portal
 };
 
 export function describeDownloads(entry: SentLenderEntry | null | undefined): string | null {
