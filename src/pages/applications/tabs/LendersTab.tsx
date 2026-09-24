@@ -19,6 +19,7 @@ import {
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v_SIGNING_RESEND_v1 — collateral-required signal
 import { RejectReasonsModal } from "@/components/applications/RejectReasonsModal";
 import { getErrorMessage } from "@/utils/errors";
+import { signingNotice } from "./signingStatus"; // BF_PORTAL_BLOCK_v460_SIGNING_STARTED
 import { describeDownloads, type SentLenderEntry } from "./sentLenderDownloads"; // BF_PORTAL_BLOCK_v459_PACKAGE_DOWNLOADS
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
@@ -389,7 +390,16 @@ export default function LendersTab({ applicationId }: Props) {
   const mutation = useMutation({
     // BF_PORTAL_SEND_PENDING_CONFIRM_v1
     mutationFn: (ids: string[]) => createLenderSubmission(id, ids),
-    onSuccess: (payload) => {
+    onSuccess: (payload, ids) => {
+      // BF_PORTAL_BLOCK_v460_SIGNING_STARTED - a signing request is progress, not a failure.
+      const signing = signingNotice(payload, ids.length);
+      if (signing) {
+        setSendError(null);
+        setSendSuccess(signing);
+        setSelected([]);
+        queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
+        return;
+      }
       const notice = describeSendResult(payload);
       if (notice) {
         setSendError(notice);
@@ -479,7 +489,7 @@ function describeSendFailure(err: unknown): string {
       // let that read as success.
       if (result && Array.isArray(result.sent) && result.sent.length === 0) {
         setSendError("The server accepted the request but did not send to any lender. Check the lender's submission email.");
-      } else if (!describeSendResult(result)) {
+      } else if (!signingNotice(result, requestedCount) && !describeSendResult(result)) {
         const sentCount = result && Array.isArray(result.sent) ? result.sent.length : requestedCount;
         setSendSuccess(`Sent to ${sentCount} lender${sentCount === 1 ? "" : "s"}.`);
       }
