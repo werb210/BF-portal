@@ -272,6 +272,7 @@ export default function BIOutreach() {
             ? r.sequences
               .filter((s: any) => s && (s.source ?? "portal") === "portal")
               .filter((s: any) => s.status !== "archived")
+              .filter((s: any) => Number(s.step_count ?? 1) > 0) // BF_PORTAL_BLOCK_v480 - hide 0-step sequences
             : [];
         setSequences(list);
       } catch {
@@ -295,12 +296,13 @@ export default function BIOutreach() {
     // (Lawyers, LinkedIn, Todd's Outbound AI Sequence 1, Todd's outbound
     // sequence), which is why sequences appeared here that were never built.
     // Apollo is out of scope, so only portal sequences are enrollable.
-    void api<{ sequences?: Array<{ id: string; name: string; status?: string; source?: string }> }>("/api/v1/bi/marketing/sequences")
+    void api<{ sequences?: Array<{ id: string; name: string; status?: string; source?: string; step_count?: number }> }>("/api/v1/bi/marketing/sequences")
       .then((r) => {
         if (cancelled) return;
         setBiSequences((r?.sequences ?? [])
           .filter((sequence) => (sequence.source ?? "portal") === "portal")
-          .filter((sequence) => sequence.status !== "archived"));
+          .filter((sequence) => sequence.status !== "archived")
+          .filter((sequence) => Number(sequence.step_count ?? 1) > 0)); // BF_PORTAL_BLOCK_v480 - hide 0-step sequences
       })
       .catch(() => { if (!cancelled) setBiSequences([]); });
     return () => { cancelled = true; };

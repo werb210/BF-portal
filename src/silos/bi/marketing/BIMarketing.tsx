@@ -45,9 +45,18 @@ export default function BIMarketing() {
     }
     setBusy(true); setMessage(null);
     try {
-      await api.post("/api/v1/bi/marketing/sequences", { name, steps });
-      // BF_PORTAL_BI_SEQUENCES_v285 - a saved sequence is a draft; say how to make it send.
-      setMessage("Sequence saved as a draft. Press Start on it below, then add contacts from CRM → Outreach.");
+      const created: any = await api.post("/api/v1/bi/marketing/sequences", { name, steps });
+      // BF_PORTAL_BLOCK_v480_BI_SEQUENCE_SAVE_STARTS - Save used to leave a draft that
+      // needed a separate Start click. Start it straight away; /start keeps the
+      // server-side check that no email step is empty.
+      const newId: string | undefined = created?.sequence?.id ?? created?.data?.sequence?.id;
+      let started = false;
+      if (newId) {
+        try { await api.post(`/api/v1/bi/marketing/sequences/${newId}/start`, {}); started = true; } catch { started = false; }
+      }
+      setMessage(started
+        ? "Sequence saved and started. Add contacts from CRM → Outreach."
+        : "Sequence saved but could not be started - press Start on it below.");
       setSequenceName("");
       setListVersion((v) => v + 1);
     } catch (e) {
