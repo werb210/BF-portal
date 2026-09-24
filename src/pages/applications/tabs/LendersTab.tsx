@@ -78,6 +78,7 @@ const styles = {
   lockedHint: { fontSize: 13, color: "var(--ui-text-muted)", marginBottom: 12 } as const,
   lockedItem: { fontSize: 13, color: "var(--ui-text)", padding: "6px 0", borderBottom: "1px dashed var(--ui-border-soft)" } as const,
   footer: { position: "sticky" as const, bottom: 0, marginTop: 16, padding: "12px 20px", background: "var(--ui-surface-strong)", borderTop: "1px solid var(--ui-border)", display: "flex", justifyContent: "flex-end", gap: 8 } as const,
+  sendFeedback: { flex: "1 1 auto", alignSelf: "center", whiteSpace: "pre-line" as const, fontSize: 13, fontWeight: 600 } as const,
   modalOverlay: { position: "fixed" as const, inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 } as const,
   modalCard: { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 10, padding: 20, width: 420, maxWidth: "100%", maxHeight: "90vh", overflowY: "auto" as const, boxShadow: "0 12px 40px rgba(0,0,0,0.2)" } as const,
   modalTitle: { fontSize: 16, fontWeight: 700, color: "var(--ui-text)", marginBottom: 4 } as const,
@@ -304,6 +305,10 @@ export default function LendersTab({ applicationId }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v453_SEND_FEEDBACK — keep the result next to the action
+  // that produced it. A successful request needs visible feedback just as much
+  // as a refused or no-op request does.
+  const [sendSuccess, setSendSuccess] = useState<string | null>(null);
   const [recalculating, setRecalculating] = useState(false);
   const [recalcError, setRecalcError] = useState<string | null>(null);
   const [filesOpenFor, setFilesOpenFor] = useState<string | null>(null);
@@ -443,6 +448,7 @@ function describeSendFailure(err: unknown): string {
 
     setSending(true);
     setSendError(null);
+    setSendSuccess(null);
     try {
       const application = await api.get<ApplicationDocumentsResponse>(
         `/api/portal/applications/${encodeURIComponent(id)}`,
@@ -456,11 +462,15 @@ function describeSendFailure(err: unknown): string {
         );
         if (!confirmed) return;
       }
+      const requestedCount = selectedIds.length;
       const result = await mutation.mutateAsync(selectedIds) as unknown as { sent?: unknown[] } | undefined;
       // v451 - the server can answer ok:true having dispatched to nobody. Do not
       // let that read as success.
       if (result && Array.isArray(result.sent) && result.sent.length === 0) {
         setSendError("The server accepted the request but did not send to any lender. Check the lender's submission email.");
+      } else if (!describeSendResult(result)) {
+        const sentCount = result && Array.isArray(result.sent) ? result.sent.length : requestedCount;
+        setSendSuccess(`Sent to ${sentCount} lender${sentCount === 1 ? "" : "s"}.`);
       }
     } catch (err) {
       setSendError(describeSendFailure(err));
@@ -665,7 +675,6 @@ function describeSendFailure(err: unknown): string {
       )}
 
       {recalcError && <div style={{ ...styles.banner, ...styles.bannerError }}>{recalcError}</div>}
-      {sendError && <div style={{ ...styles.banner, ...styles.bannerError }}>{sendError}</div>}
       {uploadError && <div style={{ ...styles.banner, ...styles.bannerError }}>{uploadError}</div>}
       {reasonError && <div style={{ ...styles.banner, ...styles.bannerError }}>{reasonError}</div>}
       {closedNotice && <div data-testid="reject-closed-notice" style={{ ...styles.banner, ...styles.bannerStale }}>{closedNotice}</div>}
@@ -824,6 +833,16 @@ function describeSendFailure(err: unknown): string {
       )}
 
       <div data-testid="lenders-send-footer" style={styles.footer}>
+        <div
+          aria-live="polite"
+          data-testid="lenders-send-feedback"
+          style={{
+            ...styles.sendFeedback,
+            color: sendError ? "#b91c1c" : "#166534",
+          }}
+        >
+          {sendError ?? sendSuccess}
+        </div>
         <button
           type="button"
           onClick={handleSend}
