@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom"; // BF_PORTAL_BLOCK_v744_OUTREACH_CARD_OPENS_CRM
 import { api } from "@/api";
+import EmptyStepsRepair from "./EmptyStepsRepair"; // BF_PORTAL_BLOCK_v462_BI_EMPTY_STEP_REPAIR
 
 const PAGE = 100; // BF_PORTAL_BLOCK_v800_OUTREACH_PAGER_AND_BULK
 const STAGES = [
@@ -170,6 +171,8 @@ export default function BIOutreach() {
   const [biSequenceId, setBiSequenceId] = useState("");
   const [enrollBusy, setEnrollBusy] = useState(false);
   const [enrollResult, setEnrollResult] = useState<string | null>(null);
+  // BF_PORTAL_BLOCK_v462_BI_EMPTY_STEP_REPAIR - the sequence whose empty email steps need a template.
+  const [repairSequenceId, setRepairSequenceId] = useState<string | null>(null);
   // BF_PORTAL_BLOCK_v744_OUTREACH_CARD_OPENS_CRM — pipeline card opens the full BI CRM contact view.
   const navigate = useNavigate();
   const openContact = (id: string) => navigate(`/silo/bi/crm/contacts/${id}`, { state: { from: "outreach" } });
@@ -349,6 +352,8 @@ const ENROLL_SKIP_REASON_LABEL: Record<string, string> = {
       clearSelection();
     } catch (e: any) {
       setEnrollResult(e?.message ?? "Could not add contacts to the sequence.");
+      const code = e?.details?.error?.code ?? e?.code;
+      if (code === "empty_email_steps" || /no subject or message/.test(String(e?.message ?? ""))) setRepairSequenceId(biSequenceId);
     } finally {
       setEnrollBusy(false);
     }
@@ -590,6 +595,12 @@ const ENROLL_SKIP_REASON_LABEL: Record<string, string> = {
         </div>
       )}
       {enrollResult && <p role="status" className="rounded-xl border border-card bg-brand-surface px-4 py-2 text-sm">{enrollResult}</p>}
+      {repairSequenceId && (
+        <EmptyStepsRepair
+          sequenceId={repairSequenceId}
+          onFixed={() => { setRepairSequenceId(null); setEnrollResult("Templates saved. Press Add to sequence again."); }}
+        />
+      )}
 
       {(importResult || importError) && (
         <div

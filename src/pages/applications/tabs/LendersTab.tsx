@@ -394,8 +394,10 @@ export default function LendersTab({ applicationId }: Props) {
       // BF_PORTAL_BLOCK_v460_SIGNING_STARTED - a signing request is progress, not a failure.
       const signing = signingNotice(payload, ids.length);
       if (signing) {
+        // BF_PORTAL_BLOCK_v462_SIGNING_WHO - a missing mobile number is a real problem.
+        if (signing.tone === "error") { setSendSuccess(null); setSendError(signing.text); return; }
         setSendError(null);
-        setSendSuccess(signing);
+        setSendSuccess(signing.text);
         setSelected([]);
         queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
         return;
