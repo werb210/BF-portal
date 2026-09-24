@@ -7,6 +7,10 @@ import type { CSSProperties, ReactNode } from "react";
 
 const BOLD_OR_LINK = /(\*\*[^*]+\*\*)|(\[[^\]]+\]\((https?:\/\/[^)\s]+)\))/g;
 const listStyle: CSSProperties = { margin: "4px 0", paddingLeft: 18 };
+// BF_PORTAL_BLOCK_v484_MAYA_LIST_NUMBERS - Tailwind's base reset sets
+// list-style: none on every ol/ul, so Maya's numbered lists lost their numbers.
+const olStyle: CSSProperties = { ...listStyle, listStyleType: "decimal", listStylePosition: "outside" };
+const ulStyle: CSSProperties = { ...listStyle, listStyleType: "disc", listStylePosition: "outside" };
 
 export function renderInline(line: string): ReactNode[] {
   const out: ReactNode[] = [];
@@ -71,10 +75,10 @@ export function MayaMessage({ message }: { message: string }) {
     <>
       {blocks.map((block, index) => {
         if (block.kind === "ul") {
-          return <ul key={index} style={listStyle}>{block.items.map((item, i) => <li key={i}>{renderInline(item)}</li>)}</ul>;
+          return <ul key={index} style={ulStyle}>{block.items.map((item, i) => <li key={i}>{renderInline(item)}</li>)}</ul>;
         }
         if (block.kind === "ol") {
-          return <ol key={index} style={listStyle}>{block.items.map((item, i) => <li key={i}>{renderInline(item)}</li>)}</ol>;
+          return <ol key={index} style={olStyle}>{block.items.map((item, i) => <li key={i}>{renderInline(item)}</li>)}</ol>;
         }
         return (
           <p key={index} style={{ margin: index > 0 ? "6px 0 0" : 0 }}>
