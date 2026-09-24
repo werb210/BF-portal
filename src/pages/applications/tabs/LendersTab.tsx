@@ -19,6 +19,7 @@ import {
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v_SIGNING_RESEND_v1 — collateral-required signal
 import { RejectReasonsModal } from "@/components/applications/RejectReasonsModal";
 import { getErrorMessage } from "@/utils/errors";
+import toast from "react-hot-toast"; // BF_PORTAL_BLOCK_v488_MARK_SENT_FEEDBACK
 import { signingNotice } from "./signingStatus"; // BF_PORTAL_BLOCK_v460_SIGNING_STARTED
 import { describeSigningDelivery, type SigningSmsResponse } from "./signingDelivery"; // BF_PORTAL_BLOCK_v465_SIGNING_DELIVERY
 import { describeDownloads, type SentLenderEntry } from "./sentLenderDownloads"; // BF_PORTAL_BLOCK_v459_PACKAGE_DOWNLOADS
@@ -338,11 +339,18 @@ export default function LendersTab({ applicationId }: Props) {
   const markSentMutation = useMutation({
     mutationFn: async (v: { lenderId: string; lenderName: string }) =>
       api.post(`/api/applications/${encodeURIComponent(id)}/lenders/${encodeURIComponent(v.lenderId)}/mark-sent`, {}),
-    onSuccess: () => {
+    // BF_PORTAL_BLOCK_v488_MARK_SENT_FEEDBACK - the result used to show only in the
+    // footer beside Send, far below the row that was clicked. Pop it up.
+    onSuccess: (_data: unknown, v: { lenderId: string; lenderName: string }) => {
       setSendError(null);
+      toast.success(`Recorded as sent to ${v.lenderName}. Moved to Off to Lender.`);
       queryClient.invalidateQueries();
     },
-    onError: (err: unknown) => setSendError(getErrorMessage(err, "Could not mark it as sent.")),
+    onError: (err: unknown) => {
+      const msg = getErrorMessage(err, "Could not mark it as sent.");
+      setSendError(msg);
+      toast.error(`Mark as sent failed: ${msg}`);
+    },
   });
 
   const [selected, setSelected] = useState<string[]>([]);
