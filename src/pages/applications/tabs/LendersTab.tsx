@@ -390,6 +390,41 @@ export default function LendersTab({ applicationId }: Props) {
     setSelected((cur) => (cur.includes(matchId) ? cur.filter((x) => x !== matchId) : [...cur, matchId]));
   };
 
+// BF_PORTAL_SEND_BLOCKERS_v451
+// BF-Server refuses a send with 409 and a named blocker list. Those codes are
+// the only thing that tells an operator WHY nothing went out, so they must
+// reach the screen. Anything unmapped is shown raw rather than swallowed.
+const SEND_BLOCKER_LABELS: Record<string, string> = {
+  required_documents_not_accepted: "Some required documents have not been accepted yet",
+  open_tasks_remaining: "There are still open client tasks",
+  collateral_not_complete: "Collateral is required and not complete",
+  credit_summary_not_submitted: "The credit summary has not been submitted",
+  application_not_signed: "The application has not been signed",
+  product_questions_incomplete: "The product questions are not finished",
+  no_lenders_selected: "No lenders were selected",
+  missing_application_id: "The application could not be identified",
+};
+
+/** Pull a readable reason out of whatever shape the server refused with. */
+function describeSendFailure(err: unknown): string {
+  const body = (err as { response?: { data?: any }; data?: any } | null)?.response?.data
+    ?? (err as { data?: any } | null)?.data
+    ?? null;
+
+  const blockers: unknown = body?.blockers ?? body?.reasons ?? null;
+  if (Array.isArray(blockers) && blockers.length > 0) {
+    const lines = blockers.map((b) => SEND_BLOCKER_LABELS[String(b)] ?? String(b).replace(/_/g, " "));
+    return `This file was not sent. ${lines.length === 1 ? "" : "Outstanding:"}\n` +
+           lines.map((l) => `\u2022 ${l}`).join("\n");
+  }
+
+  const code = body?.error ? String(body.error) : null;
+  if (code) return `This file was not sent: ${SEND_BLOCKER_LABELS[code] ?? code.replace(/_/g, " ")}`;
+  if (body?.message) return `This file was not sent: ${String(body.message)}`;
+
+  return getErrorMessage(err, "This file was not sent, and the server gave no reason.");
+}
+
   const handleSend = async () => {
     if (sending || selectedIds.length === 0) return;
 
@@ -421,9 +456,14 @@ export default function LendersTab({ applicationId }: Props) {
         );
         if (!confirmed) return;
       }
-      await mutation.mutateAsync(selectedIds);
+      const result = await mutation.mutateAsync(selectedIds) as unknown as { sent?: unknown[] } | undefined;
+      // v451 - the server can answer ok:true having dispatched to nobody. Do not
+      // let that read as success.
+      if (result && Array.isArray(result.sent) && result.sent.length === 0) {
+        setSendError("The server accepted the request but did not send to any lender. Check the lender's submission email.");
+      }
     } catch (err) {
-      setSendError(getErrorMessage(err, "Unable to send to lenders."));
+      setSendError(describeSendFailure(err));
     } finally {
       setSending(false);
     }
