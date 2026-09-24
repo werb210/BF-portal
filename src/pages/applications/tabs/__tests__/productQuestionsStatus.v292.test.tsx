@@ -30,12 +30,13 @@ describe("status text", () => {
 });
 
 describe("Application tab panel", () => {
-  it("lets staff edit an answer but leaves blanks to the client", async () => {
+  it("lets staff edit an answer and answer a blank one (v469)", async () => {
     apiMock.get.mockResolvedValue(gaps);
     render(<ProductQuestionsPanel applicationId="app-1" />);
     await waitFor(() => expect(screen.getByText("Line of Credit questions")).toBeTruthy());
     expect(screen.getByText("Waiting on client")).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: /Edit/ })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^Edit / })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^Answer / }).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "Edit Fiscal year-end month" }));
     fireEvent.change(screen.getByLabelText("Edit Fiscal year-end month"), { target: { value: "March" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

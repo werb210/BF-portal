@@ -2,8 +2,8 @@
 // Staff side of product questions (BF-Server v288/v289). Shows the questions a
 // category change added (Line of Credit with Accord, Equipment), what the client
 // has answered, and what is still waiting. Staff can correct an answer the
-// client gave; blank questions stay with the client - the server refuses a
-// staff answer to a blank, and only the client's submission lifts the send block.
+// client gave, and (BF_PORTAL_BLOCK_v469_STAFF_ANSWERS) answer a question the
+// client left blank - e.g. a yes/no they gave over the phone (BF-Server v468).
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -84,10 +84,12 @@ export default function ProductQuestionsPanel({ applicationId }: { applicationId
                   <>
                     {q.options?.length ? (
                       <select aria-label={`Edit ${q.label}`} value={draft} onChange={(e) => setDraft(e.target.value)}>
+                        {!draft && <option value="">Choose...</option>}
                         {q.options.map((o) => <option key={o} value={o}>{o}</option>)}
                       </select>
                     ) : q.type === "yesno" ? (
                       <select aria-label={`Edit ${q.label}`} value={draft} onChange={(e) => setDraft(e.target.value)}>
+                        {!draft && <option value="">Choose...</option>}
                         <option value="Yes">Yes</option><option value="No">No</option>
                       </select>
                     ) : (
@@ -102,7 +104,11 @@ export default function ProductQuestionsPanel({ applicationId }: { applicationId
                     {canEdit && <button type="button" aria-label={`Edit ${q.label}`} onClick={() => { setEditing(q.id); setDraft(q.value); }}>Edit</button>}
                   </>
                 ) : (
-                  <span style={{ fontSize: 13, color: q.required ? "#92400e" : "var(--ui-text-muted)" }}>{q.required ? "Waiting on client" : "Not answered"}</span>
+                  <>
+                    <span style={{ fontSize: 13, color: q.required ? "#92400e" : "var(--ui-text-muted)" }}>{q.required ? "Waiting on client" : "Not answered"}</span>
+                    {/* BF_PORTAL_BLOCK_v469_STAFF_ANSWERS - staff can fill in a blank answer. */}
+                    {canEdit && <button type="button" aria-label={`Answer ${q.label}`} onClick={() => { setEditing(q.id); setDraft(""); }}>Answer</button>}
+                  </>
                 )}
               </div>
             </div>
