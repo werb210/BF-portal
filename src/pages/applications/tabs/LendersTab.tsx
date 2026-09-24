@@ -20,6 +20,7 @@ import { api } from "@/api"; // BF_PORTAL_BLOCK_v_SIGNING_RESEND_v1 — collater
 import { RejectReasonsModal } from "@/components/applications/RejectReasonsModal";
 import { getErrorMessage } from "@/utils/errors";
 import { signingNotice } from "./signingStatus"; // BF_PORTAL_BLOCK_v460_SIGNING_STARTED
+import { describeSigningDelivery, type SigningSmsResponse } from "./signingDelivery"; // BF_PORTAL_BLOCK_v465_SIGNING_DELIVERY
 import { describeDownloads, type SentLenderEntry } from "./sentLenderDownloads"; // BF_PORTAL_BLOCK_v459_PACKAGE_DOWNLOADS
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
@@ -228,6 +229,18 @@ export default function LendersTab({ applicationId }: Props) {
   const v_collateralRequired = Boolean(v_signing?.snapshot?.collateralRequired);
   // BF_PORTAL_BLOCK_v_COLLATERAL_THRESHOLD_v1 — Accord LOC collateral applies only above $250k.
   const v_collateralApplies = Boolean(v_signing?.collateralApplies);
+  // BF_PORTAL_BLOCK_v465_SIGNING_DELIVERY - what happened to the applicant's signing text.
+  // Polls briefly after a send because the carrier's answer arrives seconds later.
+  const { data: v_signingSms } = useQuery({
+    queryKey: ["signing-sms", id],
+    queryFn: () => api.get<SigningSmsResponse>(`/api/applications/${encodeURIComponent(id)}/signing-sms`),
+    enabled: Boolean(id),
+    refetchInterval: (query: any) => {
+      const st = String(query?.state?.data?.sms?.status ?? "").toLowerCase();
+      return st && st !== "delivered" && st !== "undelivered" && st !== "failed" ? 5000 : false;
+    },
+  });
+  const v_signingDelivery = describeSigningDelivery(v_signingSms ?? null);
   // BF_PORTAL_BLOCK_v_SENT_LENDERS_v1 — lenders that already received the package (sent_at), for the row marker.
   const { data: v_sentData } = useQuery({
     queryKey: ["sent-lenders", id],
@@ -400,6 +413,7 @@ export default function LendersTab({ applicationId }: Props) {
         setSendSuccess(signing.text);
         setSelected([]);
         queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
+        queryClient.invalidateQueries({ queryKey: ["signing-sms", id] });
         return;
       }
       const notice = describeSendResult(payload);
@@ -860,6 +874,20 @@ function describeSendFailure(err: unknown): string {
         <CollateralFacilitySection applicationId={id} />
       )}
 
+      {v_signingDelivery && (
+        <div
+          data-testid="signing-sms-status"
+          role={v_signingDelivery.tone === "error" ? "alert" : "status"}
+          style={{
+            marginTop: 12,
+            fontSize: 13,
+            fontWeight: 600,
+            color: v_signingDelivery.tone === "error" ? "#b91c1c" : v_signingDelivery.tone === "success" ? "#15803d" : "var(--ui-text-muted)",
+          }}
+        >
+          {v_signingDelivery.text}
+        </div>
+      )}
       <div data-testid="lenders-send-footer" style={styles.footer}>
         <div
           aria-live="polite"
