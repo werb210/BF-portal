@@ -393,7 +393,9 @@ export default function ApplicationTab({ application }: Props) {
         <div style={{ minWidth: 0 }}>
           <h2 style={styles.title}>{businessName}</h2>
           <div style={styles.subtitle}>
-            {fmt(application.status, "—")} · Submitted {fmtDate(application.submittedAt)}
+            {/* BF_PORTAL_BLOCK_v490 - the header showed the raw status ("RECEIVED") while
+                the pill and the Stage field showed the pipeline stage ("In Review"). */}
+            {fmt(application.stage ?? application.status, "—")} · Submitted {fmtDate(application.submittedAt)}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
