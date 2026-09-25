@@ -248,7 +248,7 @@ export default function NegativesPanel() {
           <thead><tr><th style={th}>Search term</th><th style={th}>Blocks</th><th style={th}>Added</th><th style={{ ...th, width: 90 }} /></tr></thead>
           <tbody>{applied.map((row) => <tr key={row.id}>
             <td style={td}>{row.term}</td>
-            <td style={td}>{row.match_type === "PHRASE" ? "anything containing it" : "only this exact search"}</td>
+            <td style={td}>{row.match_type === "PHRASE" ? "anything containing it" : row.match_type === "BROAD" ? "anything with all these words" : "only this exact search"}</td>{/* BF_PORTAL_BLOCK_v528 */}
             <td style={td}>{row.added_at ? new Date(row.added_at).toLocaleString() : "—"}</td>
             <td style={td}>
               <button

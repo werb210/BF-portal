@@ -3,7 +3,19 @@
 // Google's PHRASE and EXACT is a judgement about blast radius, made worse by the
 // fact that the words describe a mechanism rather than a consequence. The panel
 // makes the call from the data it already has.
-export type MatchType = "PHRASE" | "EXACT";
+export type MatchType = "PHRASE" | "EXACT" | "BROAD";
+
+// BF_PORTAL_BLOCK_v528 - BROAD blocks any search that has every word of the term,
+// in any order ("loan free business" for "free business loan"). It is only chosen
+// when the wasted variants on the list are reworded ones PHRASE would miss.
+function words(v: string): string[] {
+  return String(v ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+}
+export function hasAllWords(candidate: string, term: string): boolean {
+  const have = new Set(words(candidate));
+  const need = words(term);
+  return need.length > 0 && need.every((w) => have.has(w));
+}
 
 export type AutoMatch = {
   term: string;
@@ -44,6 +56,23 @@ export function chooseMatch(term: string, allTerms: string[], converting: string
     };
   }
 
+  // BF_PORTAL_BLOCK_v528 - nothing contains the phrase as written, but reworded
+  // versions of it (same words, other order or with words in between) are on the list.
+  if (family.length === 0) {
+    const broadFamily = allTerms
+      .map((x) => String(x ?? "").trim())
+      .filter((x) => x.toLowerCase() !== t && hasAllWords(x, t));
+    const broadKillsAConverter = converting.some((c) => hasAllWords(String(c ?? ""), t));
+    if (broadFamily.length > 0 && !broadKillsAConverter) {
+      return {
+        term,
+        matchType: "BROAD",
+        reason: `Blocks any search using all the words in "${term}", in any order — including ${broadFamily.length} other search${broadFamily.length === 1 ? "" : "es"} on this list.`,
+        alsoBlocks: broadFamily,
+      };
+    }
+  }
+
   if (family.length > 0) {
     return {
       term,
@@ -65,8 +94,10 @@ export function batchByMatch(
   const decided = picked.map((term) => chooseMatch(term, allTerms, converting));
   const phrase = decided.filter((d) => d.matchType === "PHRASE").map((d) => d.term);
   const exact = decided.filter((d) => d.matchType === "EXACT").map((d) => d.term);
+  const broad = decided.filter((d) => d.matchType === "BROAD").map((d) => d.term); // BF_PORTAL_BLOCK_v528
   return [
     ...(phrase.length ? [{ matchType: "PHRASE" as const, terms: phrase }] : []),
+    ...(broad.length ? [{ matchType: "BROAD" as const, terms: broad }] : []),
     ...(exact.length ? [{ matchType: "EXACT" as const, terms: exact }] : []),
   ];
 }
