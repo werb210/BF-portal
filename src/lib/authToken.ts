@@ -38,7 +38,8 @@ export function clearAuthToken() {
   const oldValue = localStorage.getItem(STORAGE_KEY);
   localStorage.removeItem(STORAGE_KEY);
   if (isNative()) void secureRemove(STORAGE_KEY);
-  emitStorageEvent(oldValue, null);
+  // BF_PORTAL_BLOCK_v533 - nothing was signed in, so there is no sign-out to announce.
+  if (oldValue !== null) emitStorageEvent(oldValue, null);
 }
 
 export const authToken = {
