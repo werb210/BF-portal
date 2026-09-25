@@ -19,6 +19,7 @@ import SettingsOverview from "./tabs/SettingsOverview";
 import TemplatesSettings from "./tabs/TemplatesSettings"; // v694
 import SnippetsSettings from "./tabs/SnippetsSettings"; // BF_PORTAL_SNIPPETS_TAB_v46
 import CollateralSettings from "./tabs/CollateralSettings"; // v694
+import BrokerImportsPage from "@/pages/brokerImports/BrokerImportsPage"; // BF_PORTAL_BLOCK_v526
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -27,6 +28,7 @@ const SettingsPage = () => {
   const { user } = useAuth();
   const { silo } = useSilo();
   const isAdmin = user?.role === "Admin";
+  const isStaff = user?.role === "Staff"; // BF_PORTAL_BLOCK_v526
   const isBI = String(silo ?? "").toUpperCase() === "BI";
 
   const tabs = useMemo(
@@ -40,8 +42,10 @@ const SettingsPage = () => {
       // PGI conversation as a lending one, and the server scopes by silo.
       { id: "snippets", label: "Snippets", visible: true, content: <SnippetsSettings /> },
       { id: "collateral", label: "Collateral", visible: !isBI, content: <CollateralSettings /> }, // v694
+      // BF_PORTAL_BLOCK_v526 - partner-broker zip imports live under Settings, not the sidebar.
+      { id: "broker-files", label: "Broker Files", visible: !isBI && (isAdmin || isStaff), content: <BrokerImportsPage /> },
     ],
-    [isAdmin, isBI]
+    [isAdmin, isStaff, isBI]
   );
 
   const safeTabs = Array.isArray(tabs) ? tabs : [];
