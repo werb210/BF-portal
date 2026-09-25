@@ -137,6 +137,19 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     media_url?: string | null; // BF_PORTAL_SMS_MEDIA_v1
   }>>([]);
   const [draft, setDraft] = useState("");
+  // BF_PORTAL_BLOCK_v498_SMS_ATTACH_PICTURE - one picture or PDF per text (MMS).
+  const [smsMedia, setSmsMedia] = useState<{ name: string; contentType: string; dataUrl: string } | null>(null);
+  const smsFileRef = useRef<HTMLInputElement | null>(null);
+  function pickSmsMedia(file: File | undefined) {
+    if (!file) return;
+    const allowed = ["image/jpeg", "image/png", "image/gif", "application/pdf"];
+    if (!allowed.includes(file.type)) { toast.error("Only JPG, PNG, GIF or PDF can be sent by text."); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Files sent by text must be 5 MB or smaller."); return; }
+    const reader = new FileReader();
+    reader.onload = () => setSmsMedia({ name: file.name, contentType: file.type, dataUrl: String(reader.result ?? "") });
+    reader.onerror = () => toast.error("Could not read that file.");
+    reader.readAsDataURL(file);
+  }
   // BF_PORTAL_SNIPPET_TRIGGER_v45 - snippets scoped to the sms channel.
   // BF\_PORTAL\_SNIPPETS\_ALL\_CHANNELS\_v55
   // This asked for channel="sms". Snippets are written channel-agnostic and get
@@ -364,7 +377,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
   async function send() {
     const selectedContact = selected;
     const selectedPhone = selectedContact?.phone ?? selectedContact?.phone_e164 ?? selectedContact?.mobile ?? null;
-    if (!draft.trim() || !selectedContact || !selectedPhone || sending) return;
+    if ((!draft.trim() && !smsMedia) || !selectedContact || !selectedPhone || sending) return; // BF_PORTAL_BLOCK_v498
     setSending(true);
     const pendingBody = draft.trim();
     const tmpId = `tmp-${Date.now()}`;
@@ -393,8 +406,10 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
         to: selectedPhone,
         body: pendingBody,
         contactId: selectedContact.id,
+        ...(smsMedia ? { media: smsMedia } : {}), // BF_PORTAL_BLOCK_v498
       });
       setDraft("");
+      setSmsMedia(null);
       loadMessages(selectedContact.id, selectedPhone);
       setTimeout(() => inputRef.current?.focus(), 50);
     } catch (error) {
@@ -817,6 +832,24 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                 flexShrink: 0,
               }}
             >
+              {/* BF_PORTAL_BLOCK_v498 - attach a picture or PDF */}
+              <input
+                ref={smsFileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,application/pdf"
+                data-testid="sms-attach-input"
+                style={{ display: "none" }}
+                onChange={(e) => { pickSmsMedia(e.target.files?.[0]); e.target.value = ""; }}
+              />
+              <button
+                type="button"
+                data-testid="sms-attach-button"
+                title={smsMedia ? `Attached: ${smsMedia.name} (click to remove)` : "Attach a picture or PDF"}
+                onClick={() => (smsMedia ? setSmsMedia(null) : smsFileRef.current?.click())}
+                style={{ width: 44, height: 44, borderRadius: "50%", border: "1px solid var(--ui-border)", background: smsMedia ? "var(--ui-accent-blue)" : "var(--ui-surface)", color: smsMedia ? "#fff" : "var(--ui-text)", fontSize: 18, cursor: "pointer", flexShrink: 0 }}
+              >
+                {smsMedia ? "\u2715" : "\ud83d\udcce"}
+              </button>
               <div
                 style={{
                   flex: 1,
@@ -841,7 +874,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                       void send();
                     }
                   }}
-                  placeholder="Text message"
+                  placeholder={smsMedia ? `Attached: ${smsMedia.name} - add a message (optional)` : "Text message"}
                   rows={1}
                   style={{
                     width: "100%",
@@ -860,7 +893,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
               </div>
               <button
                 onClick={() => void send()}
-                disabled={!draft.trim() || sending}
+                disabled={(!draft.trim() && !smsMedia) || sending}
                 style={{
                   width: 44,
                   height: 44,
