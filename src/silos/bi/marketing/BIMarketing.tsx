@@ -21,6 +21,22 @@ export default function BIMarketing() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [listVersion, setListVersion] = useState(0); // v285
+  // BF_PORTAL_BLOCK_v512_BI_SEQUENCE_SEND_FROM - BI sequence emails used to go out
+  // from BF's submissions mailbox because no sender was ever saved. Default to
+  // andrew@boreal.financial; the list adds the user's own and shared mailboxes.
+  const BI_DEFAULT_SENDER = "andrew@boreal.financial";
+  const [sendFrom, setSendFrom] = useState(BI_DEFAULT_SENDER);
+  const [senderOptions, setSenderOptions] = useState<string[]>([BI_DEFAULT_SENDER]);
+
+  useEffect(() => {
+    // BF_PORTAL_BLOCK_v512
+    api.get<{ mine?: { address?: string } | null; shared?: Array<{ address?: string }> }>("/api/crm/shared-mailboxes")
+      .then((r) => {
+        const found = [r?.mine?.address, ...((r?.shared ?? []).map((m) => m?.address))].filter((a): a is string => typeof a === "string" && a.includes("@"));
+        setSenderOptions(Array.from(new Set([BI_DEFAULT_SENDER, ...found.map((a) => a.toLowerCase())])));
+      })
+      .catch(() => setSenderOptions([BI_DEFAULT_SENDER]));
+  }, []);
 
   useEffect(() => {
     api.get<{ data?: { items?: SequenceTemplate[] }; items?: SequenceTemplate[] }>("/api/v1/bi/marketing/templates")
@@ -45,7 +61,7 @@ export default function BIMarketing() {
     }
     setBusy(true); setMessage(null);
     try {
-      const created: any = await api.post("/api/v1/bi/marketing/sequences", { name, steps });
+      const created: any = await api.post("/api/v1/bi/marketing/sequences", { name, steps, sender_rotation: [sendFrom || BI_DEFAULT_SENDER] }); // BF_PORTAL_BLOCK_v512
       // BF_PORTAL_BLOCK_v480_BI_SEQUENCE_SAVE_STARTS - Save used to leave a draft that
       // needed a separate Start click. Start it straight away; /start keeps the
       // server-side check that no email step is empty.
@@ -78,6 +94,12 @@ export default function BIMarketing() {
       <h3 className="mb-2 text-lg font-medium">Build a new sequence</h3>
       <label className="mb-4 block max-w-xl text-sm text-white/80">Sequence name
         <input id="bi-sequence-name" aria-label="Sequence name" value={sequenceName} onChange={(event) => setSequenceName(event.target.value)} className="mt-1 block w-full rounded border px-3 py-2 bg-transparent text-white" placeholder="Enter a sequence name" />
+      </label>
+      {/* BF_PORTAL_BLOCK_v512 - who BI sequence emails come from */}
+      <label className="mb-4 block max-w-xl text-sm text-white/80">Send emails from
+        <select data-testid="bi-sequence-send-from" aria-label="Send emails from" value={sendFrom} onChange={(event) => setSendFrom(event.target.value)} className="mt-1 block w-full rounded border px-3 py-2 bg-transparent text-white">
+          {senderOptions.map((a) => <option key={a} value={a} className="text-black">{a}</option>)}
+        </select>
       </label>
       <SequenceCanvas silo="bi" templates={templates} queues={queues} staff={staff} busy={busy} onSave={(steps) => saveSequence(steps as BISequenceStep[])} />
       {message && <p className="mt-2 text-sm text-white/70">{message}</p>}
