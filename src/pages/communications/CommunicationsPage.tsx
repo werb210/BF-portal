@@ -965,7 +965,18 @@ type MsgRow = {
   ctaLabel?: string | null;
   ctaAction?: string | null;
   attachments?: Array<{ name: string; contentType?: string | null; dataUrl: string }> | null;
+  readAt?: string | null; // BF_PORTAL_BLOCK_v508 - set when the client opened it
 };
+
+// BF_PORTAL_BLOCK_v508_MESSAGES_READ_RECEIPTS - the server has always returned
+// readAt for staff messages (the client portal marks them read on open); show it.
+function readReceipt(readAt: string | null | undefined): { tone: "success" | "muted"; text: string } {
+  if (!readAt) return { tone: "muted", text: "Delivered" };
+  const d = new Date(readAt);
+  return Number.isNaN(d.getTime())
+    ? { tone: "success", text: "Read" }
+    : { tone: "success", text: `Read ${d.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` };
+}
 
 function MessagesTab({ onStartConversation }: { onStartConversation: (contact: Contact) => void }) {
   const [open, setOpen] = useState(false);
@@ -1382,6 +1393,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
                     authorName: m.senderType === "staff" ? (m.senderName ?? "You") : selected.name,
                     created_at: m.createdAt ?? null,
                     attachments: m.attachments ?? undefined,
+                    delivery: (m.senderType === "staff" || m.source === "staff") ? readReceipt(m.readAt) : null, // BF_PORTAL_BLOCK_v508
                   }))}
                   emptyText="No messages yet — say hello."
                 />
