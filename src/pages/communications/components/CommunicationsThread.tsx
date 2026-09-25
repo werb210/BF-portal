@@ -27,6 +27,7 @@ export type CommRow = {
   type?: string | null;
   mediaUrl?: string | null;
   mediaDurationSeconds?: number | null;
+  delivery?: { tone: "success" | "error" | "muted"; text: string } | null; // BF_PORTAL_BLOCK_v500
 };
 
 type Props = {
@@ -85,6 +86,7 @@ export default function CommunicationsThread({ messages, emptyText, onHashtagCli
         body: pickBody(r),
         createdAt: pickCreatedAt(r),
         attachments: pickAttachments(r),
+        delivery: r.delivery ?? null,
       })),
     [messages, currentUserId]
   );

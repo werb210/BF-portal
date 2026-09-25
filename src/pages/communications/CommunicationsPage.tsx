@@ -7,6 +7,8 @@ import { withO365Refresh } from "@/api/o365Interceptor";
 import { o365ReasonFrom } from "@/auth/o365Scopes"; // BF_PORTAL_O365_RECONNECT_v275
 import { ApiError } from "@/api/http";
 import toast from "react-hot-toast"; // BF_PORTAL_COMMS_SMS_ERROR_TOAST_v1
+import { smsSegments } from "@/lib/smsSegments"; // BF_PORTAL_BLOCK_v500
+import { smsDeliveryTag } from "@/lib/smsDeliveryStatus"; // BF_PORTAL_BLOCK_v500
 import SecondaryButton from "@/components/forms/SecondaryButton";
 import { apiBlob } from "@/utils/api"; // BF_PORTAL_VOICEMAIL_AUDIO_v1
 
@@ -135,6 +137,8 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     from_number?: string;
     to_number?: string;
     media_url?: string | null; // BF_PORTAL_SMS_MEDIA_v1
+    delivery_status?: string | null; // BF_PORTAL_BLOCK_v500
+    delivery_error?: string | null;
   }>>([]);
   const [draft, setDraft] = useState("");
   // BF_PORTAL_BLOCK_v498_SMS_ATTACH_PICTURE - one picture or PDF per text (MMS).
@@ -812,12 +816,22 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   mediaUrl: m.media_url
                     ? `${API_BASE}/api/communications/messages/${m.id}/media?token=${encodeURIComponent(getAuthToken() ?? "")}`
                     : null,
+                  delivery: m.direction === "outbound" ? smsDeliveryTag(m.delivery_status, m.delivery_error) : null, // BF_PORTAL_BLOCK_v500
                 }))}
                 emptyText="No messages yet. Send the first one."
               />
               <div ref={bottomRef} />
             </div>
 
+            {draft.trim() ? (() => {
+              // BF_PORTAL_BLOCK_v500_SMS_SEGMENTS - length and how many texts it will be billed as.
+              const seg = smsSegments(draft);
+              return (
+                <div data-testid="sms-segments" style={{ padding: "2px 16px", fontSize: 11, color: seg.segments > 1 ? "#b45309" : "var(--ui-text-muted)" }}>
+                  {seg.chars} characters {"\u00b7"} {seg.segments} text{seg.segments === 1 ? "" : "s"}{seg.unicode ? " (emoji or special characters use 70 per text)" : ""}
+                </div>
+              );
+            })() : null}
             <ComposerPulldowns channel="sms" onInsertText={(text) => setDraft((previous) => previous + (previous && !previous.endsWith(" ") ? " " : "") + text)} />
             {/* Compose — padding-right keeps send button clear of floating dialer */}
             <div

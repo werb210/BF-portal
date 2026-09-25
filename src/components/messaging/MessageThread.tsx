@@ -11,6 +11,7 @@ export type ThreadMessage = {
   body: string;
   createdAt: string; // ISO
   attachments?: Array<{ name: string; contentType?: string | null; dataUrl: string }> | null;
+  delivery?: { tone: "success" | "error" | "muted"; text: string } | null; // BF_PORTAL_BLOCK_v500
 };
 
 type Props = {
@@ -121,6 +122,11 @@ export default function MessageThread({ messages, onHashtagClick, emptyText }: P
               <div className="msg-meta">
                 {m.authorName ? <span>{m.authorName}</span> : null}
                 <span>{formatTimestamp(m.createdAt)}</span>
+                {m.delivery ? (
+                  <span data-testid="msg-delivery" style={{ color: m.delivery.tone === "error" ? "#b91c1c" : m.delivery.tone === "success" ? "#16a34a" : undefined, fontWeight: m.delivery.tone === "error" ? 600 : undefined }}>
+                    {m.delivery.text}
+                  </span>
+                ) : null}
               </div>
             </div>
             {right && (
