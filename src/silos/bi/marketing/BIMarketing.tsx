@@ -24,7 +24,7 @@ export default function BIMarketing() {
   // BF_PORTAL_BLOCK_v512_BI_SEQUENCE_SEND_FROM - BI sequence emails used to go out
   // from BF's submissions mailbox because no sender was ever saved. Default to
   // andrew@boreal.financial; the list adds the user's own and shared mailboxes.
-  const BI_DEFAULT_SENDER = "andrew@boreal.financial";
+  const BI_DEFAULT_SENDER = "andrew.p@boreal.financial"; // BF_PORTAL_BLOCK_v519 - andrew@ is not a real mailbox
   const [sendFrom, setSendFrom] = useState(BI_DEFAULT_SENDER);
   const [senderOptions, setSenderOptions] = useState<string[]>([BI_DEFAULT_SENDER]);
 

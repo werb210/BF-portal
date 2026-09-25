@@ -52,7 +52,7 @@ describe("BI sequence names", () => {
     await waitFor(() => expect(post).toHaveBeenCalledWith("/api/v1/bi/marketing/sequences", {
       name: "Renewal follow-up",
       steps: [{ type: "email" }],
-      sender_rotation: ["andrew@boreal.financial"], // BF_PORTAL_BLOCK_v512
+      sender_rotation: ["andrew.p@boreal.financial"], // BF_PORTAL_BLOCK_v512
     }));
   });
 });
