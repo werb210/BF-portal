@@ -36,6 +36,7 @@ import CommunicationsThread from "@/pages/communications/components/Communicatio
 import { startOutboundPstn } from "@/dialer/actions";
 // BF_PORTAL_BLOCK_v312_COMPOSER_PULLDOWNS_v1
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
+import LinkPreviewCard from "@/components/communications/LinkPreviewCard"; // BF_PORTAL_BLOCK_v505
 import EmojiPicker from "@/components/communications/EmojiPicker"; // BF_PORTAL_BLOCK_v502
 import { useSnippets, useShortcutExpansion } from "@/hooks/useSnippets"; // BF_PORTAL_SNIPPET_TRIGGER_v45
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
@@ -3273,6 +3274,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                     ) : (
                       <div style={{ background: mine ? "var(--ui-accent-blue)" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                         {m.body && <div>{highlightMentions(m.body, memberNames)}</div>}
+                        {m.body ? <LinkPreviewCard text={m.body} /> : null}{/* BF_PORTAL_BLOCK_v505 */}
                         {(m.attachments ?? []).map((a, i) => (
                           a.contentType.startsWith("image/") ? (
                             <a key={i} href={a.dataUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: m.body || i > 0 ? 6 : 0 }}>
