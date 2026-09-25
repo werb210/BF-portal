@@ -9,7 +9,26 @@ export type SentLenderEntry = {
   downloadCount?: number;
   lastDownloadedAt?: string | null;
   manual?: boolean; // BF_PORTAL_BLOCK_v483 - recorded by staff, sent outside the portal
+  bounce?: { reason: string; recipient?: string | null; at?: string | null } | null; // BF_PORTAL_BLOCK_v495
 };
+
+// BF_PORTAL_BLOCK_v495_LENDER_BOUNCE_SHOWN - BF-Server v494 reads bounce notices
+// for lender package emails. A bounced send is not a send: say so in red.
+const BOUNCE_TEXT: Record<string, string> = {
+  bad_address: "address does not exist",
+  mailbox_full: "mailbox full",
+  too_large: "message too large",
+  blocked: "blocked by the lender's mail server",
+  rejected: "rejected by the lender's mail server",
+};
+
+export function describeBounce(entry: SentLenderEntry | null | undefined): string | null {
+  const b = entry?.bounce;
+  if (!b?.reason) return null;
+  const why = BOUNCE_TEXT[b.reason] ?? "not delivered";
+  const to = b.recipient ? ` (${b.recipient})` : "";
+  return `✗ Email bounced - ${why}${to}. Fix the lender's submission email and send again.`;
+}
 
 export function describeDownloads(entry: SentLenderEntry | null | undefined): string | null {
   if (!entry?.viaLink) return null;
