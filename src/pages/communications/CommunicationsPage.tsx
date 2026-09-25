@@ -36,6 +36,7 @@ import CommunicationsThread from "@/pages/communications/components/Communicatio
 import { startOutboundPstn } from "@/dialer/actions";
 // BF_PORTAL_BLOCK_v312_COMPOSER_PULLDOWNS_v1
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
+import EmojiPicker from "@/components/communications/EmojiPicker"; // BF_PORTAL_BLOCK_v502
 import { useSnippets, useShortcutExpansion } from "@/hooks/useSnippets"; // BF_PORTAL_SNIPPET_TRIGGER_v45
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
@@ -864,6 +865,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
               >
                 {smsMedia ? "\u2715" : "\ud83d\udcce"}
               </button>
+              <EmojiPicker onPick={(emoji) => setDraft((previous) => previous + emoji)} />{/* BF_PORTAL_BLOCK_v502 */}
               <div
                 style={{
                   flex: 1,
@@ -1398,6 +1400,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
               <>
                 <ComposerPulldowns channel="message" onInsertText={(text) => setDraft((previous) => previous + (previous && !previous.endsWith(" ") ? " " : "") + text)} />
                 <div style={{ borderTop: "1px solid var(--ui-border)", padding: "10px 16px", paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))", display: "flex", gap: 8, background: "var(--ui-surface-strong)" }}>
+                  <EmojiPicker onPick={(emoji) => setDraft((previous) => previous + emoji)} />{/* BF_PORTAL_BLOCK_v502 */}
                   <textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
@@ -3360,6 +3363,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={(e) => { void onPickFiles(e.target.files); e.target.value = ""; }} />
                 <button onClick={() => fileRef.current?.click()} title="Attach file" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{"\u{1F4CE}"}</button>
                 <button onClick={() => void toggleRecord()} title={recording ? "Stop recording" : "Record voice note"} style={{ padding: "10px 12px", background: recording ? "#ff3b30" : "var(--ui-surface-muted)", color: recording ? "#fff" : "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{recording ? "\u{23F9}\uFE0F" : "\u{1F3A4}"}</button>
+                <EmojiPicker onPick={(emoji) => onDraftChange(draft + emoji)} buttonStyle={{ width: 42, height: 42, borderRadius: 8 }} />{/* BF_PORTAL_BLOCK_v502 */}
                 <input value={draft} onChange={(e) => onDraftChange(e.target.value)} onKeyDown={(e) => { /* BF_PORTAL_SNIPPET_TRIGGER_v45 */ expandTeam(e); if (e.defaultPrevented) return; if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
                 <button onClick={() => void send()} disabled={editing ? !draft.trim() : (!draft.trim() && atts.length === 0)} style={{ padding: "10px 18px", background: "var(--ui-accent-blue)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>{editing ? "Save" : "Send"}</button>
               </div>

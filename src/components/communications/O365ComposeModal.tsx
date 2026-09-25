@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { api } from "@/api";
+import EmojiPicker from "@/components/communications/EmojiPicker"; // BF_PORTAL_BLOCK_v502
 import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
 import { useSnippets, snippetBody } from "@/hooks/useSnippets"; // BF_PORTAL_EMAIL_SNIPPET_v48
 import { RecipientAutocomplete } from "./RecipientAutocomplete"; // BF_PORTAL_RECIPIENT_AUTOSUGGEST_v53
@@ -783,6 +784,7 @@ export default function O365ComposeModal({
             <button type="button" title="Bulleted list" onMouseDown={(e) => { e.preventDefault(); exec("insertUnorderedList"); }} style={tbBtn}>• List</button>
             <button type="button" title="Numbered list" onMouseDown={(e) => { e.preventDefault(); exec("insertOrderedList"); }} style={tbBtn}>1. List</button>
             <button type="button" title="Insert link" onMouseDown={(e) => { e.preventDefault(); insertLinkPrompt(); }} style={tbBtn}>🔗</button>
+            <EmojiPicker compact onPick={(emoji) => { /* BF_PORTAL_BLOCK_v502 */ const sel = document.getSelection(); if (!bodyRef.current?.contains(sel?.anchorNode ?? null)) bodyRef.current?.focus(); document.execCommand("insertText", false, emoji); syncBody(); }} />
             <button type="button" title="Clear formatting" onMouseDown={(e) => { e.preventDefault(); exec("removeFormat"); }} style={tbBtn}>✕ⁿ</button>
           </div>
           <div
