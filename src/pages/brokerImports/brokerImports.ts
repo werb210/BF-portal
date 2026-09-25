@@ -1,9 +1,9 @@
 // BF_PORTAL_BLOCK_v522_BROKER_IMPORT - pure helpers for partner-broker files (tested).
-export type BrokerImportRow = { id:string; broker_name:string; zip_name:string|null; application_id:string|null; applicant_phone:string|null; status:string; summary:{businessName?:string|null; warnings?:string[]; documents?:{name:string;category:string;stored:boolean}[]; notFound?:string[]}|null; error:string|null; created_at:string; business_name:string|null; boreal_pct:string|number|null; broker_pct:string|number|null; deal_terms:string|null };
+export type BrokerImportRow = { id:string; broker_name:string; zip_name:string|null; application_id:string|null; applicant_phone:string|null; status:string; summary:{businessName?:string|null; warnings?:string[]; documents?:{name:string;category:string;stored:boolean}[]; notFound?:string[]; client_texted_at?:string|null}|null; /* BF_PORTAL_BLOCK_v531 */ error:string|null; created_at:string; business_name:string|null; boreal_pct:string|number|null; broker_pct:string|number|null; deal_terms:string|null };
 export type BrokerDeal = { boreal_pct:string|number|null; broker_pct:string|number|null; terms:string|null; notes:string|null; agreed_by_broker:string|null; agreed_on:string|null };
 
 export function statusLabel(status:string):string {
-  switch(status){case "processing":return "Reading files";case "awaiting_client":return "Waiting for client to sign in";case "claimed":return "Client is completing the application";case "failed":return "Import failed";default:return status;}
+  switch(status){case "processing":return "Reading files";case "awaiting_client":return "Waiting for client to sign in";case "claimed":return "Client is completing the application";case "failed":return "Import failed";case "discarded":return "Discarded";default:return status;}
 }
 export function categoryLabel(category:string):string {
   if(category === "other") return "Other (re-file if needed)";
