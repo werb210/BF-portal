@@ -22,7 +22,7 @@ import { getErrorMessage } from "@/utils/errors";
 import toast from "react-hot-toast"; // BF_PORTAL_BLOCK_v488_MARK_SENT_FEEDBACK
 import { signingNotice } from "./signingStatus"; // BF_PORTAL_BLOCK_v460_SIGNING_STARTED
 import { describeSigningDelivery, type SigningSmsResponse } from "./signingDelivery"; // BF_PORTAL_BLOCK_v465_SIGNING_DELIVERY
-import { describeDownloads, type SentLenderEntry } from "./sentLenderDownloads"; // BF_PORTAL_BLOCK_v459_PACKAGE_DOWNLOADS
+import { describeDownloads, describeBounce, type SentLenderEntry } from "./sentLenderDownloads"; // BF_PORTAL_BLOCK_v459_PACKAGE_DOWNLOADS + BF_PORTAL_BLOCK_v495
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
 import { canWrite } from "@/auth/can";
@@ -323,6 +323,16 @@ export default function LendersTab({ applicationId }: Props) {
     const map = new Map<string, string>();
     for (const x of (v_sentData?.sent ?? []) as SentLenderEntry[]) {
       const line = describeDownloads(x);
+      if (x?.lenderId && line) map.set(String(x.lenderId), line);
+    }
+    return map;
+  }, [v_sentData]);
+
+  // BF_PORTAL_BLOCK_v495_LENDER_BOUNCE_SHOWN
+  const v_bounceMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const x of (v_sentData?.sent ?? []) as SentLenderEntry[]) {
+      const line = describeBounce(x);
       if (x?.lenderId && line) map.set(String(x.lenderId), line);
     }
     return map;
@@ -788,6 +798,11 @@ function describeSendFailure(err: unknown): string {
                     {m.lenderId && v_sentMap.has(String(m.lenderId)) && (
                       <div style={{ marginTop: 2, fontSize: 11, fontWeight: 700, color: "#16a34a" }}>
                         {"\u2713 Sent"}{v_manualSent.has(String(m.lenderId)) ? " outside portal" : ""}{v_sentMap.get(String(m.lenderId)) ? ` \u00b7 ${new Date(String(v_sentMap.get(String(m.lenderId)))).toLocaleDateString()}` : ""}
+                      </div>
+                    )}
+                    {m.lenderId && v_bounceMap.has(String(m.lenderId)) && (
+                      <div data-testid="lender-bounce-status" style={{ marginTop: 2, fontSize: 11, fontWeight: 700, color: "#b91c1c" }}>
+                        {v_bounceMap.get(String(m.lenderId))}
                       </div>
                     )}
                     {m.lenderId && v_downloadMap.has(String(m.lenderId)) && (
