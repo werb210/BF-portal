@@ -1,5 +1,5 @@
 // BF_PORTAL_BLOCK_v625_INBOX_COMPOSE_FULL_v1 — full compose: To/CC/BCC,
-// subject, HTML-aware body, file attachments (≤3MB each, ≤10 total),
+// subject, HTML-aware body, file attachments (25 MB total, ≤10 files - BF_PORTAL_BLOCK_v514),
 // "Insert app link" button that pastes a portal deep-link into the body,
 // signature is auto-appended server-side (v635) so we just show an
 // indicator. Server-side /api/o365/mail/send (v634/v645) now passes
@@ -33,7 +33,11 @@ type CollateralOption = {
 type Attachment = { name: string; contentType: string; contentBytes: string; size: number };
 type OutlookDraftSummary = { id: string; subject: string; to: string[] };
 
-const MAX_ATTACH_BYTES = 3 * 1024 * 1024;
+// BF_PORTAL_BLOCK_v514_LARGE_EMAIL_ATTACHMENTS - BF-Server v513 uploads big files
+// through Graph upload sessions, so the old 3 MB per-file cap is gone. 25 MB
+// total per email is what most receiving mail servers accept.
+const MAX_ATTACH_BYTES = 25 * 1024 * 1024;
+const MAX_ATTACH_TOTAL_BYTES = 25 * 1024 * 1024;
 const MAX_ATTACH_COUNT = 10;
 
 function fileToBase64(file: File): Promise<string> {
@@ -308,8 +312,16 @@ export default function O365ComposeModal({
         break;
       }
       if (f.size > MAX_ATTACH_BYTES) {
-        setComposeError(`"${f.name}" is over 3MB. Attachments must be ≤3MB each.`);
+        setComposeError(`"${f.name}" is over 25 MB, the most one email can carry.`);
         continue;
+      }
+      {
+        // BF_PORTAL_BLOCK_v514 - total across all files, not just this one
+        const used = attachments.reduce((n, a) => n + a.size, 0) + next.reduce((n, a) => n + a.size, 0);
+        if (used + f.size > MAX_ATTACH_TOTAL_BYTES) {
+          setComposeError(`Adding "${f.name}" would take this email over 25 MB. Send large files in separate emails.`);
+          continue;
+        }
       }
       try {
         const contentBytes = await fileToBase64(f);
@@ -676,6 +688,9 @@ export default function O365ComposeModal({
       onClose();
       onSent?.();
     } catch (e: any) {
+      // BF_PORTAL_BLOCK_v514 - show the server's reason (e.g. 25 MB cap, upload failure)
+      const detail = e?.details?.detail ?? e?.details?.error?.message ?? null;
+      if (typeof detail === "string" && detail) { setComposeError(detail); return; }
       setComposeError(e?.message ?? "Send failed.");
     } finally {
       setComposeSending(false);
@@ -885,8 +900,8 @@ export default function O365ComposeModal({
             <button type="button" onClick={() => fileRef.current?.click()} style={{ padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", cursor: "pointer", fontSize: 13 }}>📎 Attach file</button>
             <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
               {attachments.length === 0
-                ? "Up to 10 files, 3MB each"
-                : `${attachments.length} file${attachments.length === 1 ? "" : "s"} · ${sizeKb} KB`}
+                ? "Up to 10 files, 25 MB total"
+                : `${attachments.length} file${attachments.length === 1 ? "" : "s"} · ${sizeKb >= 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`} of 25 MB`}
             </span>
           </div>
           {attachments.length > 0 && (
