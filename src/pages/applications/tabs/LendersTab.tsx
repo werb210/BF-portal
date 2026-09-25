@@ -29,6 +29,7 @@ import { canWrite } from "@/auth/can";
 // BF_PORTAL_BLOCK_v303_COLLATERAL_DOCTYPES_v1
 import CollateralFacilitySection from "@/pages/applications/tabs/CollateralFacilitySection";
 import ProductCategoryPicker from "@/pages/applications/tabs/ProductCategoryPicker"; // BF_PORTAL_PRODUCT_CATEGORY_PICKER_v287
+import BrokerDealPanel from "@/components/applications/BrokerDealPanel"; // BF_PORTAL_BLOCK_v522_BROKER_IMPORT
 // BF_PORTAL_PRODUCT_QUESTIONS_v292 - BF-Server v289 refuses to send while product questions are unanswered.
 type ProductQuestionsSummary = { blocking?: boolean; message?: string | null } | null | undefined;
 // BF_PORTAL_RESIGN_REQUEST_v295 - BF-Server v293 flags when the client signed before a switch to Line of Credit.
@@ -48,6 +49,7 @@ type ParkedApplication = {
     pipelineState?: string | null;
     parkedPreviousStage?: string | null;
     parkedReason?: string | null;
+    metadata?: { broker_import?: { broker_name?: string | null } | null } | null; // BF_PORTAL_BLOCK_v522_BROKER_IMPORT
   } | null;
 };
 type ApplicationDocument = { status?: string | null };
@@ -128,6 +130,7 @@ export default function LendersTab({ applicationId }: Props) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const canManage = canWrite((user as { role?: string | null } | null)?.role ?? null);
+  const [brokerBlock, setBrokerBlock] = useState<string | null>(null); // BF_PORTAL_BLOCK_v522_BROKER_IMPORT
   const id = applicationId ?? "";
   // BF_PORTAL_LENDERS_PARK_v36
   const [parking, setParking] = useState<string | null>(null);
@@ -650,6 +653,9 @@ function describeSendFailure(err: unknown): string {
             canEdit={canManage}
             onChanged={() => queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] })}
           />
+          {appRecord?.application?.metadata?.broker_import?.broker_name ? (
+            <BrokerDealPanel applicationId={id} brokerName={appRecord.application.metadata.broker_import.broker_name} canEdit={canManage} onStatus={setBrokerBlock} />
+          ) : null}
           {productQuestionsBlock(envelope) && (
             <div role="status" data-testid="product-questions-waiting" style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, background: "#fef3c7", color: "#92400e", fontSize: 13, maxWidth: 560 }}>
               {productQuestionsBlock(envelope)}
@@ -959,9 +965,9 @@ function describeSendFailure(err: unknown): string {
         <button
           type="button"
           onClick={handleSend}
-          disabled={sending || selectedIds.length === 0 || isStale || !!productQuestionsBlock(envelope)}
-          title={productQuestionsBlock(envelope) ?? undefined}
-          style={(sending || selectedIds.length === 0 || isStale || !!productQuestionsBlock(envelope)) ? styles.btnPrimaryDisabled : styles.btnPrimary}
+          disabled={!!brokerBlock || sending || selectedIds.length === 0 || isStale || !!productQuestionsBlock(envelope)}
+          title={productQuestionsBlock(envelope) ?? brokerBlock ?? undefined}
+          style={(!!brokerBlock || sending || selectedIds.length === 0 || isStale || !!productQuestionsBlock(envelope)) ? styles.btnPrimaryDisabled : styles.btnPrimary}
         >
           {sending ? "Sending…" : `Send (${selectedIds.length})`}
         </button>

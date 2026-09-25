@@ -32,6 +32,7 @@ type NavItem = { label: string; path: string; roles: string[]; capability?: stri
 const BF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",         roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
+  { label: "Broker Files", path: "/broker-imports", roles: ["Admin", "Staff"] }, // BF_PORTAL_BLOCK_v522_BROKER_IMPORT
   { label: "CRM",            path: "/crm/contacts",    roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
@@ -103,6 +104,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const canSee = (item: NavItem) => {
     const label = item.label.toLowerCase();
     if (isAdmin) return true;
+    if (label === "broker files") return isStaff; // BF_PORTAL_BLOCK_v522_BROKER_IMPORT
     if (isMarketing) return label !== "lenders";
     if (isStaff) return label !== "marketing";
     return false;
