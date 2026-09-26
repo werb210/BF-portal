@@ -1,6 +1,9 @@
 import UIKit
 import Capacitor
 import BackgroundTasks
+import AppIntents // BF_PORTAL_BLOCK_v556
+import CoreSpotlight
+import UniformTypeIdentifiers
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -57,6 +60,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the app was launched with an activity, including Universal Links.
         // Feel free to add additional processing here, but if you want the App API to support
         // tracking app url opens, make sure to keep this call
+        if PortalLaunch.handle(userActivity) { return true } // BF_PORTAL_BLOCK_v556 - Spotlight result
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
@@ -79,7 +83,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         if let url = connectionOptions.urlContexts.first?.url {
             _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: url, options: [:])
         }
-        if let activity = connectionOptions.userActivities.first {
+        if let activity = connectionOptions.userActivities.first, PortalLaunch.handle(activity) {
+            // BF_PORTAL_BLOCK_v556 - cold launch from a Spotlight result
+        } else if let activity = connectionOptions.userActivities.first {
             _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, continue: activity, restorationHandler: { _ in })
         }
     }
@@ -88,11 +94,137 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: url, options: [:])
     }
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        if PortalLaunch.handle(userActivity) { return } // BF_PORTAL_BLOCK_v556
         _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, continue: userActivity, restorationHandler: { _ in })
     }
     // BF_PORTAL_WIDGET_SELF_REFRESH_v384 - with the scene lifecycle the app
     // delegate's didEnterBackground is not called; queue the next refresh here.
     func sceneDidEnterBackground(_ scene: UIScene) {
         WidgetBackgroundRefresh.schedule()
+    }
+}
+
+// BF_PORTAL_BLOCK_v556 - Siri Shortcuts + Spotlight.
+// Both end the same way: a portal route is parked here and handed to the web app,
+// which navigates to it (PortalLauncherPlugin -> src/native/portalLauncher.ts).
+// A route starting with "maya:" is a command for Maya instead of a screen.
+extension Notification.Name {
+    static let borealPortalRoute = Notification.Name("borealPortalRoute")
+}
+
+enum PortalLaunch {
+    static let key = "boreal.portal.pendingRoute"
+    static let spotlightDomain = "boreal.portal"
+
+    static func open(_ route: String) {
+        UserDefaults.standard.set(route, forKey: key)
+        NotificationCenter.default.post(name: .borealPortalRoute, object: nil)
+    }
+
+    static func take() -> String {
+        let route = UserDefaults.standard.string(forKey: key) ?? ""
+        UserDefaults.standard.removeObject(forKey: key)
+        return route
+    }
+
+    static func handle(_ activity: NSUserActivity) -> Bool {
+        guard activity.activityType == CSSearchableItemActionType,
+              let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
+              id.hasPrefix("/") else { return false }
+        open(id)
+        return true
+    }
+}
+
+@objc(PortalLauncherPlugin)
+public class PortalLauncherPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "PortalLauncherPlugin"
+    public let jsName = "PortalLauncher"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "take", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "index", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "clearIndex", returnType: CAPPluginReturnPromise)
+    ]
+
+    override public func load() {
+        NotificationCenter.default.addObserver(self, selector: #selector(routeArrived), name: .borealPortalRoute, object: nil)
+    }
+
+    @objc func routeArrived() {
+        let route = PortalLaunch.take()
+        if !route.isEmpty { notifyListeners("route", data: ["route": route], retainUntilConsumed: true) }
+    }
+
+    @objc func take(_ call: CAPPluginCall) { call.resolve(["route": PortalLaunch.take()]) }
+
+    @objc func index(_ call: CAPPluginCall) {
+        let raw = call.getArray("items", JSObject.self) ?? []
+        let items: [CSSearchableItem] = raw.compactMap { item in
+            guard let route = item["route"] as? String, route.hasPrefix("/"),
+                  let title = item["title"] as? String, !title.isEmpty else { return nil }
+            let attrs = CSSearchableItemAttributeSet(contentType: UTType.text)
+            attrs.title = title
+            attrs.contentDescription = item["subtitle"] as? String
+            return CSSearchableItem(uniqueIdentifier: route, domainIdentifier: PortalLaunch.spotlightDomain, attributeSet: attrs)
+        }
+        let index = CSSearchableIndex.default()
+        index.deleteSearchableItems(withDomainIdentifiers: [PortalLaunch.spotlightDomain]) { _ in
+            index.indexSearchableItems(items) { error in
+                if let error = error { call.reject(error.localizedDescription) } else { call.resolve(["indexed": items.count]) }
+            }
+        }
+    }
+
+    @objc func clearIndex(_ call: CAPPluginCall) {
+        CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [PortalLaunch.spotlightDomain]) { _ in call.resolve() }
+    }
+}
+
+@available(iOS 16.0, *)
+struct OpenPipelineIntent: AppIntent {
+    static let title: LocalizedStringResource = "Open pipeline"
+    static let openAppWhenRun = true
+    @MainActor func perform() async throws -> some IntentResult { PortalLaunch.open("/pipeline"); return .result() }
+}
+@available(iOS 16.0, *)
+struct OpenTasksIntent: AppIntent {
+    static let title: LocalizedStringResource = "Open today's tasks"
+    static let openAppWhenRun = true
+    @MainActor func perform() async throws -> some IntentResult { PortalLaunch.open("/tasks?view=due_today"); return .result() }
+}
+@available(iOS 16.0, *)
+struct OpenCalendarIntent: AppIntent {
+    static let title: LocalizedStringResource = "Open calendar"
+    static let openAppWhenRun = true
+    @MainActor func perform() async throws -> some IntentResult { PortalLaunch.open("/calendar"); return .result() }
+}
+@available(iOS 16.0, *)
+struct OpenMessagesIntent: AppIntent {
+    static let title: LocalizedStringResource = "Open messages"
+    static let openAppWhenRun = true
+    @MainActor func perform() async throws -> some IntentResult { PortalLaunch.open("/communications?tab=inbox"); return .result() }
+}
+@available(iOS 16.0, *)
+struct OpenNewestApplicationIntent: AppIntent {
+    static let title: LocalizedStringResource = "Open the newest application"
+    static let openAppWhenRun = true
+    @MainActor func perform() async throws -> some IntentResult { PortalLaunch.open("maya:open the newest application"); return .result() }
+}
+@available(iOS 16.0, *)
+struct AskMayaIntent: AppIntent {
+    static let title: LocalizedStringResource = "Ask Maya"
+    static let openAppWhenRun = true
+    @Parameter(title: "What should Maya do?") var command: String
+    @MainActor func perform() async throws -> some IntentResult { PortalLaunch.open("maya:" + command); return .result() }
+}
+@available(iOS 16.0, *)
+struct BorealPortalShortcuts: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(intent: OpenPipelineIntent(), phrases: ["Open my \(.applicationName) pipeline", "Show the pipeline in \(.applicationName)"])
+        AppShortcut(intent: OpenNewestApplicationIntent(), phrases: ["Open the newest application in \(.applicationName)"])
+        AppShortcut(intent: OpenTasksIntent(), phrases: ["Show my tasks in \(.applicationName)"])
+        AppShortcut(intent: OpenCalendarIntent(), phrases: ["Open my \(.applicationName) calendar"])
+        AppShortcut(intent: OpenMessagesIntent(), phrases: ["Open messages in \(.applicationName)"])
+        AppShortcut(intent: AskMayaIntent(), phrases: ["Ask Maya in \(.applicationName)"])
     }
 }

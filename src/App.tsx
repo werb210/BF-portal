@@ -104,6 +104,7 @@ import DialerProvider from "@/dialer/DialerProvider";
 // BF_PORTAL_PUSH_NOTIFICATIONS_v1
 import PushNotificationsProvider from "@/native/PushNotificationsProvider";
 import WidgetSnapshotProvider from "@/native/WidgetSnapshotProvider";
+import PortalLauncherProvider from "@/native/PortalLauncherProvider"; // BF_PORTAL_BLOCK_v556
 import DialerPanel from "@/dialer/components/DialerPanel";
 import FloatingDialerButton from "@/dialer/components/FloatingDialerButton";
 import IncomingCallToast from "@/dialer/components/IncomingCallToast";
@@ -119,6 +120,7 @@ function AppShell() {
       <DialerProvider />
       <PushNotificationsProvider />
       <WidgetSnapshotProvider />{/* BF_PORTAL_WIDGET_SNAPSHOT_v13 */}
+      <PortalLauncherProvider />{/* BF_PORTAL_BLOCK_v556 */}
       <DialerPanel />
       <FloatingDialerButton />
       <IncomingCallToast />
