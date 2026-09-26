@@ -50,6 +50,9 @@ function ago(iso: string): string {
 export default function AbandonedPanel() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [days, setDays] = useState(90);
+  // BF_PORTAL_BLOCK_v543_ABANDONED_COUNTRY_FILTER - Canada / US / Both. A row with
+  // no country only shows under Both. The counts in the title follow the filter.
+  const [country, setCountry] = useState<"ALL" | "CA" | "US">("ALL");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,11 +70,13 @@ export default function AbandonedPanel() {
     return () => { cancelled = true; };
   }, [days]);
 
+  const all = items;
+  const shown = all ? all.filter((x) => country === "ALL" || x.country === country) : null;
   return (
     <div className="drawer-section">
       <div className="flex items-center justify-between mb-2">
         <div className="drawer-section__title">
-          Started, not submitted{items ? ` (${items.length})` : ""}
+          Started, not submitted{shown ? ` (${shown.length})` : ""}
           {/* BF_PORTAL_ABANDONED_REVENUE_v149 - the callable count is the one
               that decides whether this list is worth working today. */}
           {items && items.some((x) => x.belowCanadianFloor) ? (
@@ -79,11 +84,24 @@ export default function AbandonedPanel() {
               style={{ marginLeft: 8, fontWeight: 400, fontSize: "0.8rem", color: "var(--ui-text-muted)" }}
               data-testid="abandoned-callable"
             >
-              {items.filter((x) => !x.belowCanadianFloor).length} callable
-              &middot; {items.filter((x) => x.belowCanadianFloor).length} below the CA floor
+              {(shown ?? []).filter((x) => !x.belowCanadianFloor).length} callable
+              &middot; {(shown ?? []).filter((x) => x.belowCanadianFloor).length} below the CA floor
             </span>
           ) : null}
         </div>
+        <div style={{ display: "flex", gap: 8 }}>
+        <select
+          className="ui-input"
+          aria-label="Country"
+          data-testid="abandoned-country"
+          value={country}
+          onChange={(e) => setCountry(e.target.value as "ALL" | "CA" | "US")}
+          style={{ width: 130 }}
+        >
+          <option value="ALL">Both</option>
+          <option value="CA">Canada</option>
+          <option value="US">US</option>
+        </select>
         <select
           className="ui-input"
           value={days}
@@ -94,13 +112,14 @@ export default function AbandonedPanel() {
           <option value={90}>Last 90 days</option>
           <option value={365}>Last 12 months</option>
         </select>
+        </div>
       </div>
 
       {loading ? (
         <p style={{ color: "var(--ui-text-muted)", fontSize: "0.85rem" }}>Loading&hellip;</p>
-      ) : !items || items.length === 0 ? (
+      ) : !shown || shown.length === 0 ? (
         <p style={{ color: "var(--ui-text-muted)", fontSize: "0.85rem" }}>
-          Nobody has an unsubmitted application in this window.
+          {all && all.length > 0 ? "Nobody from this country has an unsubmitted application in this window." : "Nobody has an unsubmitted application in this window."}
         </p>
       ) : (
         <table className="text-sm" style={{ width: "100%", borderCollapse: "collapse", color: "var(--ui-text)" }}>
@@ -122,7 +141,7 @@ export default function AbandonedPanel() {
             </tr>
           </thead>
           <tbody>
-            {items.map((i) => (
+            {shown.map((i) => (
               <tr key={i.applicationId} style={{ borderTop: "1px solid var(--ui-border-soft)" }}>
                 <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
                   Step {i.step} &middot; {STEP_LABEL[i.step] ?? "-"}

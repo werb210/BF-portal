@@ -134,7 +134,7 @@ const DashboardPage = () => {
         <StatCard label="Active Applications" value={fmt(metrics?.activeApplications)} />
         <StatCard label="Deals Won This Month" value={fmt(metrics?.dealsWonThisMonth)} />
         <StatCard
-          label="Commission Earned"
+          label="Commission Earned (all time)" /* BF_PORTAL_BLOCK_v543 - it is every funded deal, not this month */
           focus="commission"
           value={
             metrics?.commissionEarned !== undefined
@@ -142,7 +142,7 @@ const DashboardPage = () => {
               : "—"
           }
         />
-        <StatCard label="New Leads Today" value={fmt(metrics?.newLeadsToday)} />
+        <StatCard label="New CRM Contacts Today" value={fmt(metrics?.newLeadsToday)} /> {/* BF_PORTAL_BLOCK_v543 - server v542 counts contacts created today */}
       </div>
 
       <div className="drawer-section" style={{ padding: "16px 18px" }}>
