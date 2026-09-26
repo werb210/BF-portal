@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { sendMayaMessage, type MayaAction } from "@/api/maya";
 import { startCall } from "@/api/call";
+import { MAYA_EVENT, takePendingMaya } from "@/native/portalLauncher"; // BF_PORTAL_BLOCK_v556
 import { getAuthToken } from "@/lib/authToken";
 import { resolveApiBase } from "@/config/api";
 
@@ -125,6 +126,13 @@ export default function MayaCommandBar() {
     recog.onend = () => setListening(false);
     recogRef.current = recog; setListening(true);
     try { recog.start(); } catch { setListening(false); }
+  }, [run]);
+  // BF_PORTAL_BLOCK_v556 - "Ask Maya" from Siri runs here like a typed command.
+  useEffect(() => {
+    const onMaya = () => { const command = takePendingMaya(); if (command) { setText(command); void run(command); } };
+    onMaya();
+    window.addEventListener(MAYA_EVENT, onMaya);
+    return () => window.removeEventListener(MAYA_EVENT, onMaya);
   }, [run]);
   const stopDictation = useCallback(() => { try { recogRef.current?.stop(); } catch { /* noop */ } setListening(false); }, []);
 
