@@ -62,6 +62,20 @@ export default function CreditSummaryV2({ applicationId }: { applicationId: stri
     } catch (error) { setMessage(`${label}: ${(error as Error).message}`); } finally { setBusy(null); }
   };
   const doc = row?.doc;
+  // BF_PORTAL_BLOCK_v541 - download the write-up as Word or PDF (Boreal template, signed by the submitter).
+  const download = async (format: "docx" | "pdf") => {
+    setBusy(format === "docx" ? "Preparing Word file" : "Preparing PDF"); setMessage(null);
+    try {
+      const res = await rawApiFetch(`/api/credit-summary-v2/${id}/export.${format}`, { method: "GET" });
+      if (!res.ok) { const j: any = await res.json().catch(() => ({})); throw new Error(j?.message ?? j?.error ?? `Download failed (${res.status})`); }
+      const blob = await res.blob();
+      const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? `Credit Summary.${format}`;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url; link.download = name; document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) { setMessage((e as Error).message); } finally { setBusy(null); }
+  };
   const submitted = row?.status === "submitted";
   const saveSection = (key: string) => async (body: unknown) => run("Save", `/api/credit-summary-v2/${id}/sections/${key}`, "PUT", body, () => "Saved.");
   const setFact = (factId: string, status: "confirmed" | "rejected") => run(status === "confirmed" ? "Confirm" : "Reject", `/api/credit-research/${id}/facts/${encodeURIComponent(factId)}`, "PUT", { status }, () => status === "confirmed" ? "Confirmed - Generate again to use it." : "Removed.");
@@ -73,6 +87,8 @@ export default function CreditSummaryV2({ applicationId }: { applicationId: stri
         <button type="button" style={btn} disabled={!!busy} onClick={() => void run("Read collateral", `/api/credit-collateral/${id}/extract`, "POST", undefined, (json) => `Read ${json?.documents ?? 0} aging / equipment / real-estate document(s).${json?.skipped?.length ? ` Skipped: ${json.skipped.join("; ")}` : ""}`)}>Read A/R, equipment &amp; real estate</button>
         <button type="button" style={btn} disabled={!!busy} onClick={() => void run("Research", `/api/credit-research/${id}/refresh`, "POST", undefined, (json) => `Found ${json?.facts ?? 0} fact(s).${json?.notes?.length ? ` ${json.notes.join(" ")}` : ""}`)}>Research company</button>
         <button type="button" style={{ ...btn, fontWeight: 600 }} disabled={!!busy} data-testid="cs2-generate" onClick={() => void run("Generate", `/api/credit-summary-v2/${id}/generate`, "POST", undefined, () => "Draft ready - review each section.")}>{doc ? "Generate again" : "Generate credit summary"}</button>
+        {doc && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-download-docx" onClick={() => void download("docx")}>Download Word</button>}
+        {doc && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-download-pdf" onClick={() => void download("pdf")}>Download PDF</button>}
         {doc && !submitted && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-submit" onClick={() => { if (window.confirm("Submit this credit summary? It will be signed with your name.")) void run("Submit", `/api/credit-summary-v2/${id}/submit`, "POST", undefined, () => "Submitted."); }}>Submit</button>}
       </div>
       {busy && <div>{busy}... this can take up to a minute.</div>}{message && <div role="status">{message}</div>}
