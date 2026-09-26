@@ -139,8 +139,11 @@ export default function ContactJourney({ contactId, endpoint, site = "boreal.fin
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    api
-      .get<{ data?: JourneyPayload } & Partial<JourneyPayload>>(endpoint ?? `/api/crm/contacts/${contactId}/journey`)
+    // BF_PORTAL_BLOCK_v573 - start inside a promise so any failure to even make the call
+    // (not only a failed request) lands in .catch and shows the empty state, never an
+    // unhandled error on the contact page.
+    Promise.resolve()
+      .then(() => api.get<{ data?: JourneyPayload } & Partial<JourneyPayload>>(endpoint ?? `/api/crm/contacts/${contactId}/journey`))
       .then((r) => {
         if (cancelled) return;
         const payload = (r?.data ?? r) as JourneyPayload;
