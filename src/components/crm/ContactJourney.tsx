@@ -131,7 +131,8 @@ const box: React.CSSProperties = {
 
 const subtle: React.CSSProperties = { color: "var(--ui-text-muted)", fontSize: "0.85rem" };
 
-export default function ContactJourney({ contactId }: { contactId: string }) {
+// BF_PORTAL_BLOCK_v570 - endpoint/site let the BI contact page reuse this (BI-Server v568).
+export default function ContactJourney({ contactId, endpoint, site = "boreal.financial" }: { contactId: string; endpoint?: string; site?: string }) {
   const [data, setData] = useState<JourneyPayload | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -139,7 +140,7 @@ export default function ContactJourney({ contactId }: { contactId: string }) {
     let cancelled = false;
     setLoading(true);
     api
-      .get<{ data?: JourneyPayload } & Partial<JourneyPayload>>(`/api/crm/contacts/${contactId}/journey`)
+      .get<{ data?: JourneyPayload } & Partial<JourneyPayload>>(endpoint ?? `/api/crm/contacts/${contactId}/journey`)
       .then((r) => {
         if (cancelled) return;
         const payload = (r?.data ?? r) as JourneyPayload;
@@ -154,7 +155,7 @@ export default function ContactJourney({ contactId }: { contactId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [contactId]);
+  }, [contactId, endpoint]);
 
   if (loading) return null;
   // BF_PORTAL_VISITOR_JOURNEY_EMPTY_v1 - say so explicitly rather than rendering nothing, so
@@ -169,7 +170,7 @@ export default function ContactJourney({ contactId }: { contactId: string }) {
         <ApplicationProgress apps={data?.applications ?? []} />
         <p style={subtle}>
           No browsing history recorded for this contact &mdash; page-by-page tracking only exists
-          for visitors who arrived via boreal.financial.
+          for visitors who arrived via {site}.
         </p>
       </section>
     );

@@ -37,7 +37,7 @@ describe("wiring in both silos", () => {
     const analytics = bi.slice(bi.indexOf("analytics={"), bi.indexOf("timeline={"));
     expect(analytics).toContain("/api/v1/bi/crm/contacts/${id}/stage-events");
     expect(analytics).toContain("/api/v1/bi/crm/contacts/${id}/ai-summary");
-    expect(analytics).toContain("<NoVisitorJourneyNotice />");
+    expect(analytics).toContain("endpoint={`/api/v1/bi/crm/contacts/${id}/journey`} site=\"boreal.insure\""); // v570
     const timeline = bi.slice(bi.indexOf("timeline={"));
     for (const part of ["<ActivityTimeline items={timelineItems} />", "<ContactEmailFeed contactId={id} />", "<ContactCallFeed contactId={id} />", "{contact.notes && ("]) expect(timeline).toContain(part);
   });
