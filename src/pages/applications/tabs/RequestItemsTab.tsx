@@ -223,8 +223,6 @@ export default function RequestItemsTab({ applicationId }: Props) {
     }
   };
 
-  const checkedDocs = docItems.filter(isChecked);
-  const total = checkedDocs.length + formsManual.size;
 
   const submit = async () => {
     if (total === 0) {
@@ -275,6 +273,11 @@ export default function RequestItemsTab({ applicationId }: Props) {
 
   const requiredItems = docItems.filter((it) => it.isRequired && isChecked(it));
   const requiredIn = requiredItems.filter(isUploaded).length;
+  // BF_PORTAL_BLOCK_v545 - a ticked document the client already uploaded is not
+  // something to ask for again: "Request from Client (5)" re-requested (and
+  // texted) five documents that were all in. Count and send only what is owed.
+  const checkedDocs = docItems.filter((it) => isChecked(it) && !isUploaded(it));
+  const total = checkedDocs.length + formsManual.size;
 
   const pill = (uploaded: boolean): CSSProperties => ({
     marginLeft: "auto",
