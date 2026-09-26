@@ -28,7 +28,8 @@ import { ActionBar } from "@/components/crm/ActionBar"; // BF_PORTAL_BLOCK_v334_
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
 import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
 import { ContactStageHistory } from "@/components/crm/ContactStageHistory";
-import ContactRecordTabs, { NoVisitorJourneyNotice } from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_CONTACT_RECORD_TABS_v272
+import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_CONTACT_RECORD_TABS_v272
+import ContactJourney from "@/components/crm/ContactJourney"; // BF_PORTAL_BLOCK_v570
 import { ContactEmailFeed, ContactCallFeed } from "@/components/crm/ContactCommsFeeds";
 import { ContactMarketingSource } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_AD_ATTRIBUTION_v1
 import type { TimelineItem } from "@/api/crm";
@@ -503,7 +504,7 @@ export default function BIContactDetailPage() {
             <>
               <ContactStageHistory contactId={id} endpoint={`/api/v1/bi/crm/contacts/${id}/stage-events`} showEmpty />
               <ContactAiSummary contactId={id} endpoint={`/api/v1/bi/crm/contacts/${id}/ai-summary`} />
-              <NoVisitorJourneyNotice />
+              <ContactJourney contactId={id} endpoint={`/api/v1/bi/crm/contacts/${id}/journey`} site="boreal.insure" />{/* BF_PORTAL_BLOCK_v570 */}
             </>
           }
           timeline={
