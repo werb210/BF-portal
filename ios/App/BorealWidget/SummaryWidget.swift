@@ -12,7 +12,8 @@ struct BorealSummaryWidget: Widget {
         }
         .configurationDisplayName("Boreal Portal")
         .description("Your actionable Boreal command centre.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        // BF_PORTAL_BLOCK_v592_WIDGET_SIZES - iPad extra-large, plus the three lock-screen sizes.
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge, .accessoryInline, .accessoryCircular, .accessoryRectangular])
     }
 }
 
@@ -23,14 +24,21 @@ private func deepLink(_ destination: String, _ silo: WidgetSilo, _ query: String
 struct SummaryWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: SummaryEntry
+    private var isAccessory: Bool { family == .accessoryInline || family == .accessoryCircular || family == .accessoryRectangular }
     var body: some View {
-        if entry.needsData {
+        if entry.needsData && isAccessory {
+            Text("Open Boreal").widgetURL(URL(string: "bfportal://dashboard")!) // BF_PORTAL_BLOCK_v592_WIDGET_SIZES
+        } else if entry.needsData {
             VStack(spacing: 4) { Text("Boreal").font(.headline); Text("Open the portal once to update").font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center) }
                 .widgetURL(URL(string: "bfportal://dashboard")!)
         } else {
             switch family {
             case .systemSmall: SmallSummary(entry: entry).widgetURL(entry.configuration.metrics[0].destination(silo: entry.silo))
             case .systemMedium: MediumSummary(entry: entry)
+            case .systemExtraLarge: ExtraLargeSummary(entry: entry) // BF_PORTAL_BLOCK_v592_WIDGET_SIZES
+            case .accessoryInline: InlineSummary(entry: entry).widgetURL(deepLink("pipeline", entry.silo))
+            case .accessoryCircular: CircularSummary(entry: entry).widgetURL(deepLink("pipeline", entry.silo))
+            case .accessoryRectangular: RectangularSummary(entry: entry).widgetURL(deepLink("pipeline", entry.silo))
             default: LargeSummary(entry: entry)
             }
         }
@@ -177,4 +185,82 @@ private enum NextItem {
     var title: String { switch self { case .task(let task): return task.title; case .meeting(let meeting): return meeting.title } }
     var symbol: String { switch self { case .task: return "checkmark.circle"; case .meeting: return "calendar" } }
     func destination(for silo: WidgetSilo) -> URL { switch self { case .task: return deepLink("tasks", silo); case .meeting: return deepLink("calendar", silo) } }
+}
+
+// BF_PORTAL_BLOCK_v592_WIDGET_SIZES
+private func attentionTotal(_ entry: SummaryEntry) -> Int {
+    entry.summary.tasksOverdue + entry.summary.documentsRequired + entry.summary.additionalStepsRequired + entry.summary.offersOutstanding
+}
+
+/// Lock screen, one line: "BF · 3 need attention".
+struct InlineSummary: View {
+    let entry: SummaryEntry
+    var body: some View {
+        let n = attentionTotal(entry)
+        Text(n > 0 ? "\(entry.silo.rawValue) · \(n) need attention" : "\(entry.silo.rawValue) · All clear")
+    }
+}
+
+/// Lock screen, circle: the needs-attention count.
+struct CircularSummary: View {
+    let entry: SummaryEntry
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("\(attentionTotal(entry))").font(.title2.bold()).minimumScaleFactor(0.6)
+            Text(entry.silo.rawValue).font(.system(size: 9, weight: .semibold))
+        }
+    }
+}
+
+/// Lock screen, rectangle: count, the most urgent item and what's next.
+struct RectangularSummary: View {
+    let entry: SummaryEntry
+    var body: some View {
+        let items = attention(entry)
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Boreal \(entry.silo.rawValue)").font(.headline).lineLimit(1)
+            if let first = items.first { Text("\(first.count) \(first.label)").lineLimit(1) }
+            else { Text("No urgent items").lineLimit(1) }
+            if let task = entry.summary.nextTask { Text("Next: \(task.title)").lineLimit(1) }
+            else if let meeting = entry.summary.nextMeeting { Text("Next: \(meeting.title)").lineLimit(1) }
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// iPad extra-large: every metric, every item that needs attention, and both the next task and meeting.
+struct ExtraLargeSummary: View {
+    let entry: SummaryEntry
+    var body: some View {
+        let items = attention(entry)
+        VStack(alignment: .leading, spacing: 10) {
+            CommandCentreHeader(entry: entry)
+            HStack(spacing: 8) { ForEach(entry.configuration.metrics.prefix(4), id: \.rawValue) { MetricCard(metric: $0, entry: entry) } }
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("NEEDS ATTENTION").font(.caption2.bold()).foregroundStyle(.secondary)
+                    if items.isEmpty { Label("No urgent items", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.secondary) }
+                    else { ForEach(Array(items.enumerated()), id: \.offset) { AttentionRow(item: $0.element, accent: entry.silo.accent) } }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("NEXT").font(.caption2.bold()).foregroundStyle(.secondary)
+                    if let task = entry.summary.nextTask {
+                        Link(destination: deepLink("tasks", entry.silo)) { NextRow(date: task.dueAt, title: task.title, symbol: "checkmark.circle") }.buttonStyle(.plain)
+                    }
+                    if let meeting = entry.summary.nextMeeting {
+                        Link(destination: deepLink("calendar", entry.silo)) { NextRow(date: meeting.start, title: meeting.title, symbol: "calendar") }.buttonStyle(.plain)
+                    }
+                    if entry.summary.nextTask == nil && entry.summary.nextMeeting == nil {
+                        Text("Nothing scheduled").font(.caption).foregroundStyle(.secondary)
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Spacer(minLength: 0)
+            HStack {
+                ForEach([("Pipeline", "pipeline", ""), ("CRM", "crm", ""), ("Tasks", "tasks", ""), ("Calendar", "calendar", ""), ("Inbox", "messages", "&filter=unread")], id: \.0) { item in
+                    Link(item.0, destination: deepLink(item.1, entry.silo, item.2)).font(.caption.bold()).buttonStyle(.plain).foregroundStyle(entry.silo.accent)
+                    Spacer()
+                }
+            }
+        }.padding(.vertical, 7)
+    }
 }
