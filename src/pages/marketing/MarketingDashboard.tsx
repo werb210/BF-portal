@@ -11,6 +11,7 @@ import AbandonedPanel from "@/components/marketing/AbandonedPanel"; // BF_PORTAL
 import BFReferrerManagement from "./BFReferrerManagement"; // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
 import DiagnosticsPanel from "@/pages/diagnostics/DiagnosticsPage";
 import NegativesPanel from "@/pages/diagnostics/NegativesPanel";
+import ClicksPanel from "@/pages/diagnostics/ClicksPanel"; // BF_PORTAL_BLOCK_v615_AD_CLICKS
 import AdsConversionStatus from "@/components/marketing/AdsConversionStatus"; // BF_PORTAL_ADS_CONVERSION_STATUS_v401
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
@@ -1471,7 +1472,7 @@ function AutomationsPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  const [adsTab, setAdsTab] = useState<"google" | "linkedin" | "microsoft" | "adwaste" | "negatives">("google");
+  const [adsTab, setAdsTab] = useState<"google" | "linkedin" | "microsoft" | "adwaste" | "negatives" | "clicks">("google");
 
   return (
     <div className="space-y-4">
@@ -1491,14 +1492,14 @@ const MarketingDashboard = () => {
       {tab === "ads" && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {(["google", "linkedin", "microsoft", "adwaste", "negatives"] as const).map((id) => (
+            {(["google", "linkedin", "microsoft", "adwaste", "negatives", "clicks"] as const).map((id) => (
               <button
                 key={id}
                 type="button"
                 className={`ui-button ${adsTab === id ? "ui-button--primary" : "ui-button--secondary"}`}
                 onClick={() => setAdsTab(id)}
               >
-                {id === "google" ? "Google Ads" : id === "linkedin" ? "LinkedIn Ads" : id === "microsoft" ? "Microsoft Ads" : id === "adwaste" ? "Ad Waste" : "Negatives"}
+                {id === "google" ? "Google Ads" : id === "linkedin" ? "LinkedIn Ads" : id === "microsoft" ? "Microsoft Ads" : id === "adwaste" ? "Ad Waste" : id === "clicks" ? "Clicks" : "Negatives"}
               </button>
             ))}
           </div>
@@ -1523,6 +1524,7 @@ const MarketingDashboard = () => {
           {adsTab === "microsoft" && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Microsoft Ads - coming soon.</div>}
           {adsTab === "adwaste" && <DiagnosticsPanel />}
           {adsTab === "negatives" && <NegativesPanel />}
+          {adsTab === "clicks" && <ClicksPanel />}
         </div>
       )}
       {tab === "email" && <BrandedEmailComposer />}
