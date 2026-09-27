@@ -8,11 +8,12 @@ import { apiClient } from "@/api/client";
 export type AdNode = { adId: string; label: string; clicks: number; keywords: Array<{ keyword: string; clicks: number }> };
 export type AdGroupNode = { adGroup: string; clicks: number; ads: AdNode[] };
 export type CampaignNode = { campaign: string; clicks: number; adGroups: AdGroupNode[] };
-export type ClickTree = { total: number; campaigns: CampaignNode[] };
+// BF_PORTAL_BLOCK_v621_ALL_ADS - the server now lists every ad (0 when never clicked).
+export type ClickTree = { total: number; campaigns: CampaignNode[]; adsListError?: string | null };
 
 export function unwrapClicks(res: unknown): ClickTree {
   const r = (res && typeof res === "object" && "data" in (res as any) ? (res as any).data : res) as Partial<ClickTree> | null;
-  return { total: Number(r?.total ?? 0), campaigns: Array.isArray(r?.campaigns) ? (r!.campaigns as CampaignNode[]) : [] };
+  return { total: Number(r?.total ?? 0), campaigns: Array.isArray(r?.campaigns) ? (r!.campaigns as CampaignNode[]) : [], ...(r?.adsListError ? { adsListError: String(r.adsListError) } : {}) };
 }
 
 const cell: CSSProperties = { padding: "8px 10px", borderBottom: "1px solid var(--ui-border, #E5E7EB)" };
@@ -38,6 +39,7 @@ export default function ClicksPanel() {
         <div style={{ fontSize: 12, letterSpacing: 1, color: "var(--ui-text-muted)" }}>GOOGLE ADS CLICKS IN THE CRM - ALL TIME</div>
         <div style={{ fontWeight: 600 }}>{tree.total} clicks</div>
       </div>
+      {tree.adsListError && <div data-testid="ad-clicks-list-warning" style={{ marginBottom: 8, padding: "8px 10px", borderRadius: 8, background: "#FEF3C7", color: "#92400E", fontSize: 13 }}>{tree.adsListError}</div>}
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
@@ -61,7 +63,7 @@ export default function ClicksPanel() {
                       <td style={{ ...num, fontWeight: 600 }}>{g.clicks}</td>
                     </tr>
                     {g.ads.map((a) => (
-                      <tr key={`${c.campaign}|${g.adGroup}|${a.adId}`} data-testid="ad-clicks-ad">
+                      <tr key={`${c.campaign}|${g.adGroup}|${a.adId}`} data-testid="ad-clicks-ad" style={a.clicks === 0 ? { color: "var(--ui-text-muted)" } : undefined}>
                         <td style={{ ...cell, paddingLeft: 52 }}>{a.label}</td>
                         <td style={{ ...cell, color: "var(--ui-text-muted)" }}>
                           {a.keywords.length ? a.keywords.map((k) => `${k.keyword} (${k.clicks})`).join(", ") : "-"}
