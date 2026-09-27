@@ -474,6 +474,15 @@ const ENROLL_SKIP_REASON_LABEL: Record<string, string> = {
         `/api/v1/bi/marketing/sequences/${sequenceId}/enroll`,
         { method: "POST", body: { contactIds: [contactId] } } as any,
       );
+      // BF_PORTAL_BLOCK_v584 - the server answers 200 even when it skips the contact (no CASL
+      // consent basis, suppressed, no email...). That showed "Enrolled" while nothing was
+      // ever sent. Nothing added + a skip reason is a failure, and the reason is shown.
+      const added = Number(r?.inserted ?? 0) + Number(r?.restarted ?? 0);
+      const skip = Array.isArray(r?.skips) ? r.skips[0] : null;
+      if (!r?.mock && added === 0 && skip) {
+        const reason = String(skip?.reason ?? "unknown");
+        return { ok: false, error: ENROLL_SKIP_REASON_LABEL[reason] ?? reason };
+      }
       return { ok: true, mock: Boolean(r?.mock) };
     } catch (e: any) {
       return { ok: false, error: e?.message ?? "enroll_failed" };
