@@ -11,8 +11,9 @@ describe("the commissions page tells the truth", () => {
     expect(dash).not.toContain("/bi/admin/commissions");
     expect(dash).not.toContain("useQuery");
   });
-  it("says it is not built instead of rendering an empty report", () => {
-    expect(dash).toContain("Commission reporting is not built yet");
+  // BF_PORTAL_BLOCK_v596 - reporting is built now (BI-Server v595); the page shows real figures.
+  it("reads the real commissions summary", () => {
+    expect(dash).toContain("/api/v1/bi/commissions/summary");
   });
   it("still respects the silo guard", () => {
     expect(dash).toContain('if (silo !== "bi") return null;');
