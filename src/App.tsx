@@ -108,6 +108,7 @@ import PortalLauncherProvider from "@/native/PortalLauncherProvider"; // BF_PORT
 import DialerPanel from "@/dialer/components/DialerPanel";
 import FloatingDialerButton from "@/dialer/components/FloatingDialerButton";
 import IncomingCallToast from "@/dialer/components/IncomingCallToast";
+import ShareToDealProvider from "@/native/ShareToDealProvider"; // BF_PORTAL_BLOCK_v594
 
 // VoiceBootstrap removed in v225. The in-portal Twilio Voice SDK dialer
 // was ripped in v224; the no-op bootstrap stub had no remaining purpose.
@@ -121,6 +122,7 @@ function AppShell() {
       <PushNotificationsProvider />
       <WidgetSnapshotProvider />{/* BF_PORTAL_WIDGET_SNAPSHOT_v13 */}
       <PortalLauncherProvider />{/* BF_PORTAL_BLOCK_v556 */}
+      <ShareToDealProvider />{/* BF_PORTAL_BLOCK_v594 */}
       <DialerPanel />
       <FloatingDialerButton />
       <IncomingCallToast />

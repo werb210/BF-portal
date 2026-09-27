@@ -53,7 +53,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         // Called when the app was launched with a url. Feel free to add additional processing here,
         // but if you want the App API to support tracking app url opens, make sure to keep this call
-        return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
+        return ApplicationDelegateProxy.shared.application(app, open: SharedFileImport.localCopy(url), options: options) // BF_PORTAL_BLOCK_v594
     }
 
     func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
@@ -81,7 +81,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         self.window = window
         window.makeKeyAndVisible()
         if let url = connectionOptions.urlContexts.first?.url {
-            _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: url, options: [:])
+            _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: SharedFileImport.localCopy(url), options: [:]) // BF_PORTAL_BLOCK_v594
         }
         if let activity = connectionOptions.userActivities.first, PortalLaunch.handle(activity) {
             // BF_PORTAL_BLOCK_v556 - cold launch from a Spotlight result
@@ -91,7 +91,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         guard let url = URLContexts.first?.url else { return }
-        _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: url, options: [:])
+        _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: SharedFileImport.localCopy(url), options: [:]) // BF_PORTAL_BLOCK_v594
     }
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         if PortalLaunch.handle(userActivity) { return } // BF_PORTAL_BLOCK_v556
@@ -226,5 +226,25 @@ struct BorealPortalShortcuts: AppShortcutsProvider {
         AppShortcut(intent: OpenCalendarIntent(), phrases: ["Open my \(.applicationName) calendar"])
         AppShortcut(intent: OpenMessagesIntent(), phrases: ["Open messages in \(.applicationName)"])
         AppShortcut(intent: AskMayaIntent(), phrases: ["Ask Maya in \(.applicationName)"])
+    }
+}
+
+// BF_PORTAL_BLOCK_v594_SHARE_TO_DEAL - a file shared into the portal can sit in another app's
+// container (Mail, Files). Copy it into our own temporary folder while we have access, and
+// pass the copy on, so the web layer can read it. Links (bfportal://...) pass through as-is.
+enum SharedFileImport {
+    static func localCopy(_ url: URL) -> URL {
+        guard url.isFileURL else { return url }
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Shared", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let target = folder.appendingPathComponent(UUID().uuidString + "-" + url.lastPathComponent)
+        do {
+            try FileManager.default.copyItem(at: url, to: target)
+            return target
+        } catch {
+            return url
+        }
     }
 }
