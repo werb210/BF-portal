@@ -3,6 +3,8 @@ import { api } from "@/api";
 import { contactDisplayName } from "@/utils/contactName";
 import { getAuthToken } from "@/lib/authToken"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
 import { API_BASE } from "@/config/api"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
+import { setViewingTeamChannel } from "@/components/team/TeamNotifier"; // BF_PORTAL_TEAM_NOTIFY_v644
+import { registerExistingPushPermission } from "@/hooks/usePushRegistration"; // BF_PORTAL_TEAM_NOTIFY_v644
 import { withO365Refresh } from "@/api/o365Interceptor";
 import { o365ReasonFrom } from "@/auth/o365Scopes"; // BF_PORTAL_O365_RECONNECT_v275
 import { ApiError } from "@/api/http";
@@ -2817,7 +2819,67 @@ type TeamChannel = {
   last_message: TeamMessage | null;
   unread_count: number;
   has_mention?: boolean; // BF_PORTAL_TEAM_MENTIONS_v1
+  muted?: boolean; // BF_PORTAL_TEAM_NOTIFY_v644
 };
+
+// BF_PORTAL_TEAM_NOTIFY_v644 - status (custom text/emoji, Do Not Disturb, idle Away).
+type TeamStatusRow = { user_id: string; status_text: string | null; status_emoji: string | null; status_until: string | null; dnd: boolean; dnd_until: string | null; away: boolean };
+
+export function statusUntil(choice: string, now: Date = new Date()): string | null {
+  const d = new Date(now.getTime());
+  if (choice === "1h") return new Date(d.getTime() + 3600_000).toISOString();
+  if (choice === "4h") return new Date(d.getTime() + 4 * 3600_000).toISOString();
+  if (choice === "today") { d.setHours(23, 59, 0, 0); return d.toISOString(); }
+  if (choice === "tomorrow8") { d.setDate(d.getDate() + 1); d.setHours(8, 0, 0, 0); return d.toISOString(); }
+  return null;
+}
+
+const STATUS_PRESETS: Array<[string, string]> = [["\u{1F4C5}", "In a meeting"], ["\u{1F3E6}", "At lender meeting"], ["\u{1F37D}\u{FE0F}", "Out for lunch"], ["\u{1F3E0}", "Working remotely"]];
+
+export function TeamStatusEditor({ current, onDone }: { current?: TeamStatusRow; onDone: (s: TeamStatusRow | null) => void }) {
+  const [text, setText] = useState(current?.status_text ?? "");
+  const [emoji, setEmoji] = useState(current?.status_emoji ?? "");
+  const [clearAfter, setClearAfter] = useState("never");
+  const [dnd, setDnd] = useState(current?.dnd ? "keep" : "off");
+  const [busy, setBusy] = useState(false);
+  const save = async (clearAll = false) => {
+    setBusy(true);
+    const body: Record<string, unknown> = clearAll
+      ? { status_text: null, status_emoji: null, status_until: null, dnd_until: null }
+      : { status_text: text.trim() || null, status_emoji: emoji.trim() || null, status_until: statusUntil(clearAfter) };
+    if (!clearAll && dnd !== "keep") body.dnd_until = dnd === "off" ? null : statusUntil(dnd);
+    try { const r = await api.put<{ status?: TeamStatusRow }>("/api/team/status", body); onDone(r?.status ?? null); } catch { onDone(null); } finally { setBusy(false); }
+  };
+  const field = { padding: "6px 8px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-input)", color: "var(--ui-text)", fontSize: 13 } as const;
+  return (
+    <div data-testid="team-status-editor" style={{ padding: 12, borderBottom: "1px solid var(--ui-border)", display: "grid", gap: 8, fontSize: 13 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {STATUS_PRESETS.map(([e, t]) => (
+          <button key={t} type="button" onClick={() => { setEmoji(e); setText(t); }} style={{ ...field, cursor: "pointer" }}>{e} {t}</button>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        <input value={emoji} onChange={(ev) => setEmoji(ev.target.value)} placeholder={"\u{1F642}"} aria-label="Status emoji" style={{ ...field, width: 44 }} />
+        <input value={text} onChange={(ev) => setText(ev.target.value)} placeholder="What's your status?" maxLength={100} aria-label="Status" style={{ ...field, flex: 1 }} />
+      </div>
+      <label style={{ display: "flex", gap: 6, alignItems: "center", color: "var(--ui-text-muted)" }}>Clear after
+        <select value={clearAfter} onChange={(ev) => setClearAfter(ev.target.value)} style={field}>
+          <option value="never">Don't clear</option><option value="1h">1 hour</option><option value="4h">4 hours</option><option value="today">Today</option>
+        </select>
+      </label>
+      <label style={{ display: "flex", gap: 6, alignItems: "center", color: "var(--ui-text-muted)" }}>Do Not Disturb
+        <select value={dnd} onChange={(ev) => setDnd(ev.target.value)} style={field} aria-label="Do Not Disturb">
+          {current?.dnd && <option value="keep">Keep as is</option>}
+          <option value="off">Off</option><option value="1h">For 1 hour</option><option value="tomorrow8">Until 8 am tomorrow</option>
+        </select>
+      </label>
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        <button type="button" disabled={busy} onClick={() => void save(true)} style={{ ...field, cursor: "pointer" }}>Clear status</button>
+        <button type="button" disabled={busy} onClick={() => void save()} style={{ ...field, cursor: "pointer", background: "var(--ui-accent-blue)", color: "#fff", border: "none" }}>Save</button>
+      </div>
+    </div>
+  );
+}
 type TeamUser = { id: string; name: string; email: string | null };
 
 function teamCurrentUserId(): string | null {
@@ -2871,6 +2933,9 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const [typingIds, setTypingIds] = useState<string[]>([]); // BF_PORTAL_TEAM_PRESENCE_v1
   const [reads, setReads] = useState<Record<string, string | null>>({});
   const [presence, setPresence] = useState<Record<string, string>>({});
+  const [statuses, setStatuses] = useState<Record<string, TeamStatusRow>>({}); // BF_PORTAL_TEAM_NOTIFY_v644
+  const [showStatus, setShowStatus] = useState(false);
+  const [notifPerm, setNotifPerm] = useState<string>(typeof Notification !== "undefined" ? Notification.permission : "unsupported");
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const lastTypingSent = useRef(0);
   const [mentionIds, setMentionIds] = useState<string[]>([]); // BF_PORTAL_TEAM_MENTIONS_v1
@@ -2952,6 +3017,31 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
       })
       .catch(() => undefined);
   }, []);
+  // BF_PORTAL_TEAM_NOTIFY_v644 - dots and statuses load when the tab opens (they used to wait for
+  // the first 8 s refresh or for a conversation to be opened), the open conversation is reported
+  // to the notifier, and a notification link (?channel=) opens its conversation.
+  const fetchStatuses = useCallback(() => {
+    void api<{ statuses?: TeamStatusRow[] }>("/api/team/statuses")
+      .then((r) => { const m: Record<string, TeamStatusRow> = {}; for (const st of r?.statuses ?? []) m[st.user_id] = st; setStatuses(m); })
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    fetchPresence(); fetchStatuses();
+    const t = setInterval(fetchStatuses, 30000);
+    return () => clearInterval(t);
+  }, [fetchPresence, fetchStatuses]);
+  useEffect(() => { setViewingTeamChannel(activeId); return () => setViewingTeamChannel(null); }, [activeId]);
+  useEffect(() => {
+    const ch = new URLSearchParams(window.location.search).get("channel");
+    if (ch) setActiveId(ch);
+  }, []);
+  const enableNotifications = () => {
+    if (typeof Notification === "undefined") return;
+    void Notification.requestPermission().then((perm) => {
+      setNotifPerm(perm);
+      if (perm === "granted") void registerExistingPushPermission().catch(() => undefined);
+    });
+  };
 
   const userName = useCallback((id: string | null): string => {
     if (!id) return "Staff";
@@ -3038,6 +3128,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
           }
         } else if (data?.type === "channel") {
           void loadChannels();
+        } else if (data?.type === "status" && data.status?.user_id) { // BF_PORTAL_TEAM_NOTIFY_v644
+          setStatuses((prev) => ({ ...prev, [String(data.status.user_id)]: data.status }));
         }
       } catch { /* ignore */ }
     };
@@ -3126,6 +3218,19 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
 
   // BF_PORTAL_TEAM_LIFECYCLE_v1 — reactions, edit, delete.
   const QUICK_REACTS = ["\u{1F44D}", "\u2764\uFE0F", "\u2705"];
+  // BF_PORTAL_TEAM_NOTIFY_v644 - mute a conversation (only @mentions alert) / mark unread from a message.
+  async function toggleMute(c: TeamChannel) {
+    const next = !c.muted;
+    setChannels((prev) => prev.map((x) => (x.id === c.id ? { ...x, muted: next } : x)));
+    try { await api.post(`/api/team/channels/${c.id}/mute`, { muted: next }); }
+    catch { setChannels((prev) => prev.map((x) => (x.id === c.id ? { ...x, muted: c.muted } : x))); }
+  }
+  async function markUnreadFrom(m: TeamMessage) {
+    if (!activeId) return;
+    try { await api.post(`/api/team/channels/${activeId}/unread`, { message_id: m.id }); setActiveId(null); void loadChannels(); }
+    catch { /* leave as is */ }
+  }
+
   async function toggleReaction(m: TeamMessage, emoji: string) {
     if (!activeId) return;
     const reacted = (m.reactions ?? []).some((r) => r.emoji === emoji && r.user_ids.includes(myId ?? ""));
@@ -3221,8 +3326,20 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
       <div style={{ width: 280, borderRight: "1px solid var(--ui-border)", overflowY: "auto", background: "var(--ui-surface-strong)", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--ui-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>Team</span>
-          <button onClick={() => setShowNew(true)} style={{ fontSize: 13, color: "var(--ui-accent-fg)", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+ New</button>
+          <span style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <button onClick={() => setShowStatus((v) => !v)} data-testid="team-status-button" title="Set your status" style={{ fontSize: 13, color: "var(--ui-text-muted)", background: "transparent", border: "none", cursor: "pointer", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {(() => { const me = myId ? statuses[myId] : undefined; return me?.status_text || me?.dnd ? (me.dnd ? "\u{1F319} " : "") + (me.status_emoji ?? "") + " " + (me.status_text ?? "Do not disturb") : "Set status"; })()}
+            </button>
+            <button onClick={() => setShowNew(true)} style={{ fontSize: 13, color: "var(--ui-accent-fg)", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+ New</button>
+          </span>
         </div>
+        {showStatus && <TeamStatusEditor current={myId ? statuses[myId] : undefined} onDone={(st) => { if (st) setStatuses((prev) => ({ ...prev, [st.user_id]: st })); setShowStatus(false); }} />}
+        {notifPerm === "default" && (
+          <div data-testid="team-notify-prompt" style={{ padding: "10px 16px", borderBottom: "1px solid var(--ui-border)", fontSize: 13, color: "var(--ui-text)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <span>Get alerts for new team messages</span>
+            <button onClick={enableNotifications} style={{ fontSize: 13, background: "var(--ui-accent-blue)", color: "#fff", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>Turn on</button>
+          </div>
+        )}
         {channels.length === 0 && <div style={{ padding: 20, color: "var(--ui-text-muted)", fontSize: 13 }}>No conversations yet. Tap &quot;+ New&quot; to start one.</div>}
         {channels.map((c) => (
           <div key={c.id} onClick={() => setActiveId(c.id)} style={{ padding: "10px 16px", cursor: "pointer", borderBottom: "1px solid var(--ui-surface-muted)", background: c.id === activeId ? "rgba(47, 168, 106, 0.12)" : "transparent", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -3231,15 +3348,24 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 {c.kind === "dm" && (() => {
                   const other = c.member_ids.find((id) => id !== myId);
                   const st = other ? (presence[other] ?? "offline") : "offline";
-                  const color = st === "available" ? "#34c759" : st === "busy" ? "#ff9500" : "var(--ui-border)";
-                  return <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flex: "0 0 auto" }} aria-label={st} />;
+                  const sx = other ? statuses[other] : undefined; // BF_PORTAL_TEAM_NOTIFY_v644 - idle Away shows yellow
+                  const shown = st !== "offline" && sx?.away ? "away" : st;
+                  const color = shown === "away" ? "#ffcc00" : st === "available" ? "#34c759" : st === "busy" ? "#ff9500" : "var(--ui-border)";
+                  return <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flex: "0 0 auto" }} aria-label={shown} title={shown} />;
                 })()}
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{c.kind === "channel" ? "# " : ""}{channelLabel(c)}</span>
+                {c.kind === "dm" && (() => {
+                  const other = c.member_ids.find((id) => id !== myId);
+                  const sx = other ? statuses[other] : undefined;
+                  if (!sx || (!sx.dnd && !sx.status_text && !sx.status_emoji)) return null;
+                  return <span data-testid="team-row-status" title={(sx.dnd ? "Do not disturb. " : "") + (sx.status_text ?? "")} style={{ fontWeight: 400, fontSize: 12, color: "var(--ui-text-muted)", overflow: "hidden", textOverflow: "ellipsis" }}>{sx.dnd ? "\u{1F319}" : ""}{sx.status_emoji ?? ""} {sx.status_text ?? ""}</span>;
+                })()}
               </div>
               {c.last_message && <div style={{ fontSize: 12, color: "var(--ui-text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.last_message.body}</div>}
             </div>
             {c.has_mention && <span style={{ background: "var(--ui-accent-blue)", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "0 5px", minWidth: 18, height: 18, lineHeight: "18px", textAlign: "center" }} aria-label="mention">@</span>}
-            {c.unread_count > 0 && <span style={{ background: "#ff3b30", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "0 6px", minWidth: 18, height: 18, lineHeight: "18px", textAlign: "center" }}>{c.unread_count}</span>}
+            <button onClick={(ev) => { ev.stopPropagation(); void toggleMute(c); }} data-testid="team-mute-toggle" title={c.muted ? "Unmute (alerts for everything)" : "Mute (alerts only for @mentions)"} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 12, opacity: c.muted ? 1 : 0.35, padding: "0 2px" }}>{c.muted ? "\u{1F515}" : "\u{1F514}"}</button>
+            {c.unread_count > 0 && <span style={{ background: c.muted ? "var(--ui-text-muted)" : "#ff3b30", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "0 6px", minWidth: 18, height: 18, lineHeight: "18px", textAlign: "center" }}>{c.unread_count}</span>}
           </div>
         ))}
       </div>
@@ -3319,6 +3445,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                           <button key={e} onClick={() => void toggleReaction(m, e)} title="React" style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1 }}>{e}</button>
                         ))}
                         <button onClick={() => { setReplyTo(m); setEditing(null); }} title="Reply" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Reply</button>
+                        <button onClick={() => void markUnreadFrom(m)} data-testid="team-mark-unread" title="Mark unread from here" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0 }}>{"\u25CF"}</button>
                         <button onClick={() => void togglePin(m)} title={m.pinned_at ? "Unpin" : "Pin"} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>{m.pinned_at ? "Unpin" : "Pin"}</button>
                         {mine && <button onClick={() => startEdit(m)} title="Edit" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Edit</button>}
                         {mine && <button onClick={() => void del(m)} title="Delete" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Delete</button>}
