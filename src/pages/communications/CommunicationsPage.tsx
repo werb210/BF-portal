@@ -41,6 +41,12 @@ import { startOutboundPstn } from "@/dialer/actions";
 import ComposerPulldowns from "@/components/communications/ComposerPulldowns";
 import LinkPreviewCard from "@/components/communications/LinkPreviewCard"; // BF_PORTAL_BLOCK_v505
 import EmojiPicker from "@/components/communications/EmojiPicker"; // BF_PORTAL_BLOCK_v502
+import FullEmojiPicker from "@/components/team/FullEmojiPicker"; // BF_PORTAL_TEAM_PHASE_B_v661
+import { FormatBar, renderTeamText } from "@/components/team/teamFormat";
+import ChannelBrowser from "@/components/team/ChannelBrowser";
+import ChannelSettings from "@/components/team/ChannelSettings";
+import TeamSearch from "@/components/team/TeamSearch";
+import ThreadPanel, { type ThreadEvent, type ThreadSummary } from "@/components/team/ThreadPanel";
 import { useSnippets, useShortcutExpansion } from "@/hooks/useSnippets"; // BF_PORTAL_SNIPPET_TRIGGER_v45
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
@@ -2844,7 +2850,7 @@ function MayaTab() {
 type TeamAttachment = { name: string; contentType: string; dataUrl: string }; // BF_PORTAL_TEAM_ATTACH_v1
 type TeamReaction = { emoji: string; user_ids: string[] }; // BF_PORTAL_TEAM_LIFECYCLE_v1
 type TeamReplyPreview = { id: string; sender_id: string | null; body: string };
-type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string; attachments?: TeamAttachment[] | null; edited_at?: string | null; deleted_at?: string | null; reply_to_id?: string | null; reactions?: TeamReaction[]; reply_to?: TeamReplyPreview | null; mentions?: string[] | null; pinned_at?: string | null };
+type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string; attachments?: TeamAttachment[] | null; edited_at?: string | null; deleted_at?: string | null; reply_to_id?: string | null; reactions?: TeamReaction[]; reply_to?: TeamReplyPreview | null; mentions?: string[] | null; pinned_at?: string | null; thread?: ThreadSummary | null; thread_root_id?: string | null };
 type TeamChannel = {
   id: string;
   kind: string;
@@ -2858,6 +2864,9 @@ type TeamChannel = {
   unread_count: number;
   has_mention?: boolean; // BF_PORTAL_TEAM_MENTIONS_v1
   muted?: boolean; // BF_PORTAL_TEAM_NOTIFY_v644
+  topic?: string | null; // BF_PORTAL_TEAM_PHASE_B_v661
+  is_private?: boolean;
+  archived_at?: string | null;
 };
 
 // BF_PORTAL_TEAM_NOTIFY_v644 - status (custom text/emoji, Do Not Disturb, idle Away).
@@ -2989,6 +2998,14 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const activeIdRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null); // BF_PORTAL_TEAM_ATTACH_v1
   const bottomRef = useRef<HTMLDivElement | null>(null); // BF_PORTAL_TEAM_SCROLL_v1
+  // BF_PORTAL_TEAM_PHASE_B_v661 - thread side panel, channel browser / details, search everywhere.
+  const [thread, setThread] = useState<{ channelId: string; rootId: string } | null>(null);
+  const [threadLive, setThreadLive] = useState<ThreadEvent | null>(null);
+  const threadSeq = useRef(0);
+  const [showBrowse, setShowBrowse] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSearchAll, setShowSearchAll] = useState(false);
+  const draftRef = useRef<HTMLTextAreaElement | null>(null);
   activeIdRef.current = activeId;
   const myId = teamCurrentUserId();
 
@@ -3072,6 +3089,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   useEffect(() => {
     const ch = new URLSearchParams(window.location.search).get("channel");
     if (ch) setActiveId(ch);
+    const th = new URLSearchParams(window.location.search).get("thread"); // BF_PORTAL_TEAM_PHASE_B_v661
+    if (ch && th) setThread({ channelId: ch, rootId: th });
   }, []);
   const enableNotifications = () => {
     if (typeof Notification === "undefined") return;
@@ -3164,6 +3183,12 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
           if (data.channel_id === activeIdRef.current && data.user_id) {
             setReads((prev) => ({ ...prev, [String(data.user_id)]: data.last_read_at ?? new Date().toISOString() }));
           }
+        } else if (data?.type === "thread_message" && data.root_id) { // BF_PORTAL_TEAM_PHASE_B_v661
+          if (data.channel_id === activeIdRef.current) {
+            setMessages((prev) => prev.map((m) => (m.id === data.root_id ? { ...m, thread: data.summary ?? m.thread } : m)));
+          }
+          threadSeq.current += 1;
+          setThreadLive({ root_id: String(data.root_id), message: data.message, summary: data.summary, seq: threadSeq.current });
         } else if (data?.type === "channel") {
           void loadChannels();
         } else if (data?.type === "status" && data.status?.user_id) { // BF_PORTAL_TEAM_NOTIFY_v644
@@ -3207,7 +3232,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
           if (activeIdRef.current !== aid) return; // channel changed mid-flight
           const next = Array.isArray(r?.messages) ? r.messages : [];
           setMessages((prev) =>
-            next.length === prev.length && next.every((m, i) => m.id === prev[i]?.id) ? prev : next,
+            next.length === prev.length && next.every((m, i) => m.id === prev[i]?.id && (m.thread?.reply_count ?? 0) === (prev[i]?.thread?.reply_count ?? 0)) ? prev : next,
           );
         })
         .catch(() => undefined);
@@ -3368,6 +3393,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
             <button onClick={() => setShowStatus((v) => !v)} data-testid="team-status-button" title="Set your status" style={{ fontSize: 13, color: "var(--ui-text-muted)", background: "transparent", border: "none", cursor: "pointer", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {(() => { const me = myId ? statuses[myId] : undefined; return me?.status_text || me?.dnd ? (me.dnd ? "\u{1F319} " : "") + (me.status_emoji ?? "") + " " + (me.status_text ?? "Do not disturb") : "Set status"; })()}
             </button>
+            <button onClick={() => setShowSearchAll(true)} data-testid="team-search-all" title="Search all conversations" style={{ fontSize: 14, background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)" }}>{"\u{1F50D}"}</button>{/* BF_PORTAL_TEAM_PHASE_B_v661 */}
+            <button onClick={() => setShowBrowse(true)} data-testid="team-browse" title="Browse channels" style={{ fontSize: 13, color: "var(--ui-text-muted)", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>Browse</button>
             <button onClick={() => setShowNew(true)} style={{ fontSize: 13, color: "var(--ui-accent-fg)", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+ New</button>
           </span>
         </div>
@@ -3391,7 +3418,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                   const color = shown === "away" ? "#ffcc00" : st === "available" ? "#34c759" : st === "busy" ? "#ff9500" : "var(--ui-border)";
                   return <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flex: "0 0 auto" }} aria-label={shown} title={shown} />;
                 })()}
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{c.kind === "channel" ? "# " : ""}{channelLabel(c)}</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", opacity: c.archived_at ? 0.6 : 1 }}>{c.kind === "channel" ? (c.is_private ? "\u{1F512} " : "# ") : ""}{channelLabel(c)}{c.archived_at ? " (archived)" : ""}</span>
                 {c.kind === "dm" && (() => {
                   const other = c.member_ids.find((id) => id !== myId);
                   const sx = other ? statuses[other] : undefined;
@@ -3414,7 +3441,11 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
           <>
             <div style={{ borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)" }}>
               <div style={{ padding: "12px 16px", fontWeight: 700, color: "var(--ui-text)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{active.kind === "channel" ? "# " : ""}{channelLabel(active)}</span>
+                <span style={{ overflow: "hidden", minWidth: 0, display: "flex", flexDirection: "column" }}>{/* BF_PORTAL_TEAM_PHASE_B_v661 */}
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{active.kind === "channel" ? (active.is_private ? "\u{1F512} " : "# ") : ""}{channelLabel(active)}{active.archived_at ? " (archived)" : ""}</span>
+                  {active.topic && <span data-testid="team-topic" style={{ fontWeight: 400, fontSize: 12, color: "var(--ui-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{active.topic}</span>}
+                </span>
+                {active.kind !== "dm" && <button onClick={() => setShowSettings(true)} data-testid="team-channel-details" title="Details, members, leave, archive" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", fontSize: 16, marginLeft: "auto" }}>{"\u2699\uFE0F"}</button>}
                 <button onClick={() => { setSearchOpen((v) => !v); setSearchQ(""); setSearchResults(null); }} title="Search" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", fontSize: 16 }}>{"\u{1F50D}"}</button>
               </div>
               {searchOpen && (
@@ -3449,7 +3480,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                       <div style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 13, fontStyle: "italic" }}>Message deleted</div>
                     ) : (
                       <div style={{ background: mine ? "var(--ui-accent-blue)" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                        {m.body && <div>{highlightMentions(m.body, memberNames)}</div>}
+                        {m.body && <div>{renderTeamText(m.body, memberNames)}</div>}
                         {m.body ? <LinkPreviewCard text={m.body} /> : null}{/* BF_PORTAL_BLOCK_v505 */}
                         {(m.attachments ?? []).map((a, i) => (
                           a.contentType.startsWith("image/") ? (
@@ -3464,6 +3495,11 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                         ))}
                         {m.edited_at && <div style={{ fontSize: 10, opacity: 0.7, marginTop: 2 }}>edited</div>}
                       </div>
+                    )}
+                    {m.thread && m.thread.reply_count > 0 && (
+                      <button data-testid="team-thread-link" onClick={() => setThread({ channelId: m.channel_id, rootId: m.id })} style={{ display: "block", marginTop: 3, marginLeft: mine ? "auto" : 0, background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 12, fontWeight: 600, color: "var(--ui-accent-fg)" }}>
+                        {"\u{1F4AC} "}{m.thread.reply_count} {m.thread.reply_count === 1 ? "reply" : "replies"}{m.thread.last_reply_at ? " \u00B7 last " + new Date(m.thread.last_reply_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""}
+                      </button>
                     )}
                     {!m.deleted_at && (m.reactions ?? []).length > 0 && (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4, justifyContent: mine ? "flex-end" : "flex-start" }}>
@@ -3482,7 +3518,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                         {QUICK_REACTS.map((e) => (
                           <button key={e} onClick={() => void toggleReaction(m, e)} title="React" style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1 }}>{e}</button>
                         ))}
-                        <button onClick={() => { setReplyTo(m); setEditing(null); }} title="Reply" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Reply</button>
+                        <FullEmojiPicker label="+" title="Add reaction" onPick={(e) => void toggleReaction(m, e)} align={mine ? "right" : "left"} buttonStyle={{ padding: "0 4px", fontSize: 12, lineHeight: 1, border: "none", background: "transparent", color: "var(--ui-text-muted)" }} />
+                        {!m.thread_root_id && <button onClick={() => { setThread({ channelId: m.channel_id, rootId: m.id }); setEditing(null); }} data-testid="team-reply-thread" title="Reply in thread" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Reply in thread</button>}
                         <button onClick={() => void markUnreadFrom(m)} data-testid="team-mark-unread" title="Mark unread from here" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0 }}>{"\u25CF"}</button>
                         <button onClick={() => void togglePin(m)} title={m.pinned_at ? "Unpin" : "Pin"} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>{m.pinned_at ? "Unpin" : "Pin"}</button>
                         {mine && <button onClick={() => startEdit(m)} title="Edit" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", padding: 0, fontSize: 12 }}>Edit</button>}
@@ -3538,12 +3575,13 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                   ))}
                 </div>
               )}
-              <div style={{ display: "flex", gap: 8 }}>
+              <FormatBar target={draftRef} value={draft} onChange={onDraftChange} />{/* BF_PORTAL_TEAM_PHASE_B_v661 */}
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
                 <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={(e) => { void onPickFiles(e.target.files); e.target.value = ""; }} />
                 <button onClick={() => fileRef.current?.click()} title="Attach file" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{"\u{1F4CE}"}</button>
                 <button onClick={() => void toggleRecord()} title={recording ? "Stop recording" : "Record voice note"} style={{ padding: "10px 12px", background: recording ? "#ff3b30" : "var(--ui-surface-muted)", color: recording ? "#fff" : "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{recording ? "\u{23F9}\uFE0F" : "\u{1F3A4}"}</button>
-                <EmojiPicker onPick={(emoji) => onDraftChange(draft + emoji)} buttonStyle={{ width: 42, height: 42, borderRadius: 8 }} />{/* BF_PORTAL_BLOCK_v502 */}
-                <input value={draft} onChange={(e) => onDraftChange(e.target.value)} onKeyDown={(e) => { /* BF_PORTAL_SNIPPET_TRIGGER_v45 */ expandTeam(e); if (e.defaultPrevented) return; if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Message…" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />
+                <FullEmojiPicker onPick={(emoji) => onDraftChange(draft + emoji)} buttonStyle={{ width: 42, height: 42, borderRadius: 8 }} />{/* BF_PORTAL_BLOCK_v502 */}
+                <textarea ref={draftRef} value={draft} rows={Math.min(8, Math.max(1, draft.split("\n").length))} disabled={Boolean(active?.archived_at)} data-testid="team-draft" onChange={(e) => onDraftChange(e.target.value)} onKeyDown={(e) => { /* BF_PORTAL_SNIPPET_TRIGGER_v45 */ expandTeam(e); if (e.defaultPrevented) return; if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder={active?.archived_at ? "This channel is archived" : "Message (Shift+Enter for a new line)"} style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14, resize: "none", fontFamily: "inherit", lineHeight: 1.35 }} />
                 <button onClick={() => void send()} disabled={editing ? !draft.trim() : (!draft.trim() && atts.length === 0)} style={{ padding: "10px 18px", background: "var(--ui-accent-blue)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>{editing ? "Save" : "Send"}</button>
               </div>
             </div>
@@ -3551,6 +3589,14 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
         )}
       </div>
 
+      {thread && active && thread.channelId === active.id && (
+        <ThreadPanel channelId={thread.channelId} rootId={thread.rootId} nameOf={userName} memberNames={memberNames} myId={myId} live={threadLive} disabled={Boolean(active.archived_at)}
+          onClose={() => setThread(null)} onSummary={(rootId, summary) => setMessages((prev) => prev.map((m) => (m.id === rootId ? { ...m, thread: summary } : m)))} />
+      )}
+      {showBrowse && <ChannelBrowser onClose={() => setShowBrowse(false)} onOpen={(id) => { setShowBrowse(false); void loadChannels(); setActiveId(id); }} onCreate={() => { setShowBrowse(false); setShowNew(true); }} />}
+      {showSettings && active && <ChannelSettings channel={active} users={users} myId={myId} onClose={() => setShowSettings(false)} onChanged={() => void loadChannels()} onLeft={() => { setShowSettings(false); setThread(null); setActiveId(null); void loadChannels(); }} />}
+      {showSearchAll && <TeamSearch nameOf={userName} onClose={() => setShowSearchAll(false)} onBrowse={() => { setShowSearchAll(false); setShowBrowse(true); }}
+        onOpen={(cid, root) => { setShowSearchAll(false); setActiveId(cid); setThread(root ? { channelId: cid, rootId: root } : null); }} />}
       {showNew && <NewTeamChatModal users={users.filter((u) => u.id !== myId)} onClose={() => setShowNew(false)} onCreated={(id) => { setShowNew(false); void loadChannels(); setActiveId(id); }} />}
     </div>
   );
@@ -3560,6 +3606,8 @@ function NewTeamChatModal({ users, onClose, onCreated }: { users: TeamUser[]; on
   const [mode, setMode] = useState<"dm" | "group" | "channel">("dm");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [name, setName] = useState("");
+  const [topic, setTopic] = useState(""); // BF_PORTAL_TEAM_PHASE_B_v661
+  const [isPrivate, setIsPrivate] = useState(false);
   const [busy, setBusy] = useState(false);
 
   function toggle(id: string) {
@@ -3574,11 +3622,12 @@ function NewTeamChatModal({ users, onClose, onCreated }: { users: TeamUser[]; on
   async function create() {
     setBusy(true);
     try {
-      const body: { kind: "dm" | "group" | "channel"; member_ids: string[]; name?: string } = { kind: mode, member_ids: Array.from(picked) };
+      const body: { kind: "dm" | "group" | "channel"; member_ids: string[]; name?: string; topic?: string; is_private?: boolean } = { kind: mode, member_ids: Array.from(picked) };
       if (mode !== "dm") body.name = name.trim();
+      if (mode === "channel") { body.topic = topic.trim(); body.is_private = isPrivate; } // BF_PORTAL_TEAM_PHASE_B_v661
       const r = await api.post<{ channel_id?: string }>("/api/team/channels", body);
       if (r?.channel_id) onCreated(r.channel_id);
-    } catch { /* ignore */ } finally { setBusy(false); }
+    } catch { window.alert(mode === "channel" ? "Couldn't create the channel. The name may already be taken." : "Couldn't start the conversation."); } finally { setBusy(false); }
   }
 
   const canCreate = mode === "dm" ? picked.size === 1 : (mode === "group" ? picked.size >= 1 : name.trim().length > 0);
@@ -3593,6 +3642,8 @@ function NewTeamChatModal({ users, onClose, onCreated }: { users: TeamUser[]; on
           ))}
         </div>
         {mode !== "dm" && <input value={name} onChange={(e) => setName(e.target.value)} placeholder={mode === "channel" ? "Channel name" : "Group name (optional)"} style={{ padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />}
+        {mode === "channel" && <input value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={250} placeholder="Topic (optional)" aria-label="Topic" style={{ padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 }} />}
+        {mode === "channel" && <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "var(--ui-text)" }}><input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} aria-label="Private channel" />Private (only people you add)</label>}
         <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{mode === "dm" ? "Pick one person" : "Pick people"}</div>
         <div style={{ overflowY: "auto", border: "1px solid var(--ui-border)", borderRadius: 8, maxHeight: 280 }}>
           {users.map((u) => (

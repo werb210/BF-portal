@@ -20,7 +20,8 @@ describe("v502 emoji picker", () => {
   it("is on all four composers", () => {
     const page = readFileSync(resolve(__dirname, "../../../pages/communications/CommunicationsPage.tsx"), "utf8");
     const email = readFileSync(resolve(__dirname, "../O365ComposeModal.tsx"), "utf8");
-    expect(page.match(/<EmojiPicker /g)?.length).toBe(3);
+    expect(page.match(/<EmojiPicker /g)?.length).toBe(2); // BF_PORTAL_TEAM_PHASE_B_v661 - Team uses the full picker
+    expect(page).toContain("<FullEmojiPicker onPick={(emoji) => onDraftChange(draft + emoji)}");
     expect(email).toContain('document.execCommand("insertText", false, emoji)');
   });
 });
