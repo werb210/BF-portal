@@ -2,7 +2,7 @@
 // iPad: Share -> Boreal Portal from Mail, Files or Photos. The file opens this sheet;
 // pick the deal and the category and it is uploaded to that application's documents,
 // exactly as the Documents tab upload does.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem } from "@capacitor/filesystem";
@@ -32,6 +32,11 @@ export default function ShareToDealProvider() {
   const [category, setCategory] = useState<string>(STAFF_DOC_CATEGORIES[0] ?? "Other");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  // BOREAL_SHARE_EXTENSION_v640 - several photos/files shared at once are shown one after another;
+  // the deal and category picked stay selected for the next one.
+  const queueRef = useRef<File[]>([]);
+  const fileRef = useRef<File | null>(null);
+  const [waiting, setWaiting] = useState(0);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -39,6 +44,8 @@ export default function ShareToDealProvider() {
       if (!isSharedFileUrl(url)) return;
       const f = await readShared(url);
       if (!f) return;
+      if (fileRef.current) { queueRef.current.push(f); setWaiting(queueRef.current.length); return; }
+      fileRef.current = f;
       setFile(f); setDeal(null); setQuery(""); setResult(null);
     };
     void App.getLaunchUrl().then((launch) => take(launch?.url)).catch(() => undefined);
@@ -56,7 +63,12 @@ export default function ShareToDealProvider() {
   const shown = useMemo(() => matchDeals(deals, query), [deals, query]);
   if (!file) return null;
 
-  const close = () => { setFile(null); setResult(null); };
+  const close = () => {
+    const next = queueRef.current.shift() ?? null;
+    setWaiting(queueRef.current.length);
+    fileRef.current = next;
+    setFile(next); setResult(null);
+  };
   const upload = async () => {
     if (!deal) return;
     setBusy(true); setResult(null);
@@ -83,7 +95,7 @@ export default function ShareToDealProvider() {
           <h2 className="text-lg font-semibold">Add to a deal</h2>
           <button type="button" onClick={close} className="text-sm text-slate-500">{result?.ok ? "Done" : "Cancel"}</button>
         </div>
-        <p className="mb-3 truncate text-sm text-slate-600">{file.name}</p>
+        <p className="mb-3 truncate text-sm text-slate-600">{file.name}{waiting > 0 ? " (" + waiting + " more after this)" : ""}</p>
         {deal ? (
           <div className="mb-3 flex items-center justify-between rounded-lg bg-slate-100 px-3 py-2 text-sm">
             <span className="font-medium">{deal.title}</span>
