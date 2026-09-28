@@ -16,6 +16,7 @@ import ContactJourney from "@/components/crm/ContactJourney"; // BF_PORTAL_VISIT
 import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_CONTACT_RECORD_TABS_v272
 import { ContactDocuments } from "@/components/crm/ContactDocuments"; // BF_PORTAL_CONTACT_DOCUMENTS_v1
 import { ContactDuplicates } from "@/components/crm/ContactDuplicates"; // BF_PORTAL_CONTACT_MERGE_v1
+import { NotifyContactButton } from "@/components/crm/NotifyContactButton"; // BF_PORTAL_NOTIFY_CONTACT_v627
 
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
@@ -91,6 +92,7 @@ export default function ContactDetailPage() {
           >
             Delete
           </button>
+          <NotifyContactButton contactId={id} contactName={contact.name} buttonStyle={actionBtn} onSent={() => setRefreshKey(k => k + 1)} />
         </div>
         <ActionBar
           scope={scope}
