@@ -32,9 +32,11 @@ export type AutoMatch = {
  * @param converting  searches known to have converted; PHRASE is never used if
  *                    it would catch one of these
  */
-export function chooseMatch(term: string, allTerms: string[], converting: string[] = []): AutoMatch {
+export function chooseMatch(term: string, allTerms: string[], converting: string[] = [], widen = true): AutoMatch {
   const t = String(term ?? "").trim().toLowerCase();
   if (!t) return { term, matchType: "EXACT", reason: "Blocks only this search.", alsoBlocks: [] };
+  // BF_PORTAL_NEGATIVES_EXACT_DEFAULT_v625 - wider blocks only when staff ask for them.
+  if (!widen) return { term, matchType: "EXACT", reason: "Blocks only this exact search.", alsoBlocks: [] };
 
   // Google rejects a single-word PHRASE negative outright.
   if (!t.includes(" ")) {
@@ -90,8 +92,9 @@ export function batchByMatch(
   picked: string[],
   allTerms: string[],
   converting: string[] = [],
+  widen?: Set<string>, // BF_PORTAL_NEGATIVES_EXACT_DEFAULT_v625 - when given, only these may go wider than EXACT
 ): Array<{ matchType: MatchType; terms: string[] }> {
-  const decided = picked.map((term) => chooseMatch(term, allTerms, converting));
+  const decided = picked.map((term) => chooseMatch(term, allTerms, converting, widen ? widen.has(term) : true));
   const phrase = decided.filter((d) => d.matchType === "PHRASE").map((d) => d.term);
   const exact = decided.filter((d) => d.matchType === "EXACT").map((d) => d.term);
   const broad = decided.filter((d) => d.matchType === "BROAD").map((d) => d.term); // BF_PORTAL_BLOCK_v528

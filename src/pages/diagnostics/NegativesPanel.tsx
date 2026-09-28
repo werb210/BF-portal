@@ -41,6 +41,19 @@ function unwrapCandidates(response: CandidatesResponse | null | undefined): Cand
   return Array.isArray(direct) ? direct : [];
 }
 
+// BF_PORTAL_NEGATIVES_GUARD_v625 - BF-Server v623 adds the protected searches, the
+// account's conversion count and whether the keyword check could run.
+type CandidateMeta = { protectedTerms: string[]; accountConversions: number | null; keywordCheck: string };
+function candidateMeta(response: unknown): CandidateMeta {
+  const r = (response ?? {}) as Record<string, unknown>;
+  const body = (r.data && typeof r.data === "object" ? r.data : r) as Record<string, unknown>;
+  return {
+    protectedTerms: Array.isArray(body.protectedTerms) ? (body.protectedTerms as unknown[]).map(String) : [],
+    accountConversions: typeof body.accountConversions === "number" ? body.accountConversions : null,
+    keywordCheck: typeof body.keywordCheck === "string" ? body.keywordCheck : "ok",
+  };
+}
+type Conflict = { kind: string; source: string; negative: string; matchType: string; resourceName: string; blocks: string[] };
 const money = (value: unknown) => `$${Number(value ?? 0).toFixed(2)}`;
 const card: CSSProperties = { background: "var(--ui-surface-strong)", borderRadius: 8, padding: 16, marginBottom: 16 };
 const th: CSSProperties = { textAlign: "left", padding: "8px 12px", fontSize: 12, textTransform: "uppercase", color: "var(--ui-text-muted)", borderBottom: "1px solid var(--ui-border)" };
@@ -48,7 +61,14 @@ const td: CSSProperties = { padding: "8px 12px", borderBottom: "1px solid var(--
 
 export default function NegativesPanel() {
   const [days, setDays] = useState(7);
-  const [minCost, setMinCost] = useState(1);
+  const [minCost, setMinCost] = useState(10);
+  // BF_PORTAL_NEGATIVES_GUARD_v625 - one $3 click is not evidence; default to 2 clicks and $10.
+  const [minClicks, setMinClicks] = useState(2);
+  const [widen, setWiden] = useState<Set<string>>(new Set());
+  const [meta, setMeta] = useState<CandidateMeta>({ protectedTerms: [], accountConversions: null, keywordCheck: "ok" });
+  const [conflicts, setConflicts] = useState<Conflict[]>([]);
+  const [conflictsErr, setConflictsErr] = useState<string | null>(null);
+  const [removingConflict, setRemovingConflict] = useState<string | null>(null);
   const [campaignId, setCampaignId] = useState("");
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
   const [campaignsErr, setCampaignsErr] = useState<string | null>(null);
@@ -105,13 +125,40 @@ export default function NegativesPanel() {
     setLoading(true); setErr(null); setResult(null);
     // BF_PORTAL_NEGATIVES_CAMPAIGN_SCOPE_v415 - the campaign now scopes the list,
     // not just the apply target. Before this, every campaign showed the same rows.
-    apiClient.get<CandidatesResponse>(`/api/marketing/negative-candidates?days=${days}&minCost=${minCost}` + (campaignId.trim() ? `&campaignId=${encodeURIComponent(campaignId.trim())}` : ""))
-      .then((response) => { setRows(unwrapCandidates(response)); setPicked(new Set()); })
+    apiClient.get<CandidatesResponse>(`/api/marketing/negative-candidates?days=${days}&minCost=${minCost}&minClicks=${minClicks}` + (campaignId.trim() ? `&campaignId=${encodeURIComponent(campaignId.trim())}` : ""))
+      .then((response) => { setRows(unwrapCandidates(response)); setMeta(candidateMeta(response)); setPicked(new Set()); setWiden(new Set()); })
       .catch((error: Error) => setErr(error?.message ?? "Could not load candidates."))
       .finally(() => setLoading(false));
-  }, [days, minCost, campaignId]);
+  }, [days, minCost, minClicks, campaignId]);
 
   useEffect(() => { load(); }, [load]);
+  // BF_PORTAL_NEGATIVES_CONFLICTS_v625 - negatives already in Google Ads that block our own keywords.
+  const loadConflicts = useCallback(() => {
+    setConflictsErr(null);
+    apiClient.get<{ conflicts?: Conflict[]; data?: { conflicts?: Conflict[] } }>(`/api/marketing/negative-conflicts` + (campaignId.trim() ? `?campaignId=${encodeURIComponent(campaignId.trim())}` : ""))
+      .then((response) => {
+        const direct = response?.conflicts;
+        const wrapped = response?.data?.conflicts;
+        setConflicts(Array.isArray(direct) ? direct : Array.isArray(wrapped) ? wrapped : []);
+      })
+      .catch((error: Error) => { setConflicts([]); setConflictsErr(error?.message ?? "Could not check for conflicts."); });
+  }, [campaignId]);
+  useEffect(() => { loadConflicts(); }, [loadConflicts]);
+  const removeConflict = async (row: Conflict) => {
+    setRemovingConflict(row.resourceName); setConflictsErr(null);
+    try {
+      await apiClient.post("/api/marketing/negative-conflicts/remove", { resourceName: row.resourceName });
+      setConflicts((previous) => previous.filter((item) => item.resourceName !== row.resourceName));
+      loadApplied();
+    } catch (error) {
+      setConflictsErr(error instanceof Error ? error.message : "Google Ads would not remove it.");
+    } finally { setRemovingConflict(null); }
+  };
+  const toggleWiden = (term: string) => setWiden((previous) => {
+    const next = new Set(previous);
+    if (next.has(term)) next.delete(term); else next.add(term);
+    return next;
+  });
 
   useEffect(() => {
     const containing = Array.from(picked).filter((t) => modeFor(t) === "containing");
@@ -141,8 +188,8 @@ export default function NegativesPanel() {
     try {
       // v433 - the match type is derived per term, not chosen by the operator.
       const allTerms = rows.map((row) => row.searchTerm);
-      const converting = rows.filter((row) => Number(row.conversions ?? 0) > 0).map((row) => row.searchTerm);
-      const batches = batchByMatch(Array.from(picked), allTerms, converting);
+      const converting = [...meta.protectedTerms, ...rows.filter((row) => Number(row.conversions ?? 0) > 0).map((row) => row.searchTerm)];
+      const batches = batchByMatch(Array.from(picked), allTerms, converting, widen);
       for (const batch of batches) {
         const response = await apiClient.post<{ data?: AddResult } & AddResult>("/api/marketing/negative-keywords", {
           // BF_PORTAL_NEGATIVES_PER_TERM_MATCH_v418 - a single-word term is only valid
@@ -164,7 +211,7 @@ export default function NegativesPanel() {
     } finally { setBusy(false); }
   };
 
-  const disabled = busy || picked.size === 0 || !campaignId.trim();
+  const disabled = busy || picked.size === 0 || !campaignId.trim() || meta.keywordCheck !== "ok";
   return (
     <div data-testid="negatives-panel">
       <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 16 }}>
@@ -175,7 +222,12 @@ export default function NegativesPanel() {
         </label>
         <label style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Min spend<br />
           <select value={minCost} onChange={(event) => setMinCost(Number(event.target.value))} style={{ padding: "6px 10px", marginTop: 4 }}>
-            {[0, 1, 5, 10].map((value) => <option key={value} value={value}>${value}</option>)}
+            {[0, 1, 5, 10, 25].map((value) => <option key={value} value={value}>${value}</option>)}
+          </select>
+        </label>
+        <label style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Min clicks<br />
+          <select value={minClicks} onChange={(event) => setMinClicks(Number(event.target.value))} data-testid="negatives-min-clicks" style={{ padding: "6px 10px", marginTop: 4 }}>
+            {[1, 2, 3, 5].map((value) => <option key={value} value={value}>{value}</option>)}
           </select>
         </label>
         <label style={{ fontSize: 12, color: "var(--ui-text-muted)", flex: 1, minWidth: 200 }}>Campaign (filters the list and receives the negatives)<br />
@@ -192,7 +244,22 @@ export default function NegativesPanel() {
         {/* BF_PORTAL_NEGATIVES_AUTO_MATCH_v433 - the panel picks the match type
             per term now; the global dropdown made staff guess at blast radius. */}
       </div>
-            <div style={{ ...card, borderLeft: "3px solid #b8860b" }}>Tick the searches that wasted money. Each one is blocked the safest way automatically — the reason is shown beside it.</div>
+            <div style={{ ...card, borderLeft: "3px solid #b8860b" }}>Tick the searches that wasted money. Each one blocks only that exact search unless you tick "also block similar searches". Searches that match one of your keywords, brought in a lead, or converted are never listed and can never be blocked.</div>
+      {meta.accountConversions === 0 && <div style={{ ...card, borderLeft: "3px solid #b00020" }} data-testid="negatives-no-conversions">Google Ads has recorded no conversions in the last 30 days, so "converted nothing" says nothing about these searches. Block only searches that are clearly off-topic.</div>}
+      {meta.keywordCheck !== "ok" && <div style={{ ...card, borderLeft: "3px solid #b00020" }} data-testid="negatives-keyword-check">Could not read your keywords from Google Ads. Adding negatives is paused until it can.</div>}
+      {(conflicts.length > 0 || conflictsErr) && <div style={{ ...card, borderLeft: "3px solid #b00020" }} data-testid="negatives-conflicts">
+        <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>These negatives are blocking your own keywords</h3>
+        {conflictsErr && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 8 }}>{conflictsErr}</div>}
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr><th style={th}>Negative</th><th style={th}>Where</th><th style={th}>Blocks your keywords</th><th style={{ ...th, width: 90 }} /></tr></thead>
+          <tbody>{conflicts.map((row) => <tr key={row.resourceName}>
+            <td style={td}>{row.negative}</td>
+            <td style={td}>{row.source}</td>
+            <td style={td}>{row.blocks.join(", ")}</td>
+            <td style={td}><button type="button" onClick={() => void removeConflict(row)} disabled={removingConflict === row.resourceName} data-testid={`negatives-conflict-remove-${row.negative}`} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}>{removingConflict === row.resourceName ? "Removing…" : "Remove"}</button></td>
+          </tr>)}</tbody>
+        </table>
+      </div>}
       {loading && <Skeleton />}
       {err && <div style={{ ...card, color: "#b00020" }} data-testid="negatives-error">{err}</div>}
       {result && <div style={card} data-testid="negatives-result"><strong>{result.added.length} added.</strong>{result.failed.length > 0 && <ul style={{ marginTop: 8 }}>{result.failed.map((failure) => <li key={failure.term} style={{ color: "#b00020", fontSize: 13 }}>{failure.term} — {failure.error}</li>)}</ul>}</div>}
@@ -211,7 +278,8 @@ export default function NegativesPanel() {
               ? chooseMatch(
                   row.searchTerm,
                   rows.map((candidate) => candidate.searchTerm),
-                  rows.filter((candidate) => Number(candidate.conversions ?? 0) > 0).map((candidate) => candidate.searchTerm),
+                  [...meta.protectedTerms, ...rows.filter((candidate) => Number(candidate.conversions ?? 0) > 0).map((candidate) => candidate.searchTerm)],
+                  widen.has(row.searchTerm),
                 )
               : null;
             const touchesAConverter = decision?.reason.includes("converted") ?? false;
@@ -229,6 +297,7 @@ export default function NegativesPanel() {
                     <td />
                     <td colSpan={4} style={{ ...td, borderTop: "none", paddingTop: 0, fontSize: 12, color: touchesAConverter ? "#b00020" : "var(--ui-text-muted)" }}>
                       {decision.reason}
+                      <label style={{ display: "block", marginTop: 2 }}><input type="checkbox" checked={widen.has(row.searchTerm)} onChange={() => toggleWiden(row.searchTerm)} data-testid={`negatives-widen-${row.searchTerm}`} /> also block similar searches</label>
                       {decision.alsoBlocks.length > 0 && (
                         <span style={{ display: "block", marginTop: 2 }}>{decision.alsoBlocks.join(", ")}</span>
                       )}
