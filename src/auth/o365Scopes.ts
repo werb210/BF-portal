@@ -10,6 +10,7 @@ export const REQUIRED_O365_SCOPES = [
   "Mail.ReadWrite",
   "Calendars.ReadWrite",
   "Tasks.ReadWrite",
+  "Files.ReadWrite", // BF_PORTAL_ONEDRIVE_ATTACHMENTS_v648 - save email attachments to OneDrive
   "offline_access",
 ] as const;
 
