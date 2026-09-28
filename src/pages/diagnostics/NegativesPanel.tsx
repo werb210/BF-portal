@@ -61,9 +61,10 @@ const td: CSSProperties = { padding: "8px 12px", borderBottom: "1px solid var(--
 
 export default function NegativesPanel() {
   const [days, setDays] = useState(7);
-  const [minCost, setMinCost] = useState(10);
-  // BF_PORTAL_NEGATIVES_GUARD_v625 - one $3 click is not evidence; default to 2 clicks and $10.
-  const [minClicks, setMinClicks] = useState(2);
+  const [minCost, setMinCost] = useState(1);
+  // BF_PORTAL_NEGATIVES_LIST_FIRST_v628 - defaults back to $1 and 1 click; the account's spend is small.
+  const [minClicks, setMinClicks] = useState(1);
+  const [showConflicts, setShowConflicts] = useState(false); // BF_PORTAL_NEGATIVES_LIST_FIRST_v628
   const [widen, setWiden] = useState<Set<string>>(new Set());
   const [meta, setMeta] = useState<CandidateMeta>({ protectedTerms: [], accountConversions: null, keywordCheck: "ok" });
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
@@ -247,19 +248,6 @@ export default function NegativesPanel() {
             <div style={{ ...card, borderLeft: "3px solid #b8860b" }}>Tick the searches that wasted money. Each one blocks only that exact search unless you tick "also block similar searches". Searches that match one of your keywords, brought in a lead, or converted are never listed and can never be blocked.</div>
       {meta.accountConversions === 0 && <div style={{ ...card, borderLeft: "3px solid #b00020" }} data-testid="negatives-no-conversions">Google Ads has recorded no conversions in the last 30 days, so "converted nothing" says nothing about these searches. Block only searches that are clearly off-topic.</div>}
       {meta.keywordCheck !== "ok" && <div style={{ ...card, borderLeft: "3px solid #b00020" }} data-testid="negatives-keyword-check">Could not read your keywords from Google Ads. Adding negatives is paused until it can.</div>}
-      {(conflicts.length > 0 || conflictsErr) && <div style={{ ...card, borderLeft: "3px solid #b00020" }} data-testid="negatives-conflicts">
-        <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>These negatives are blocking your own keywords</h3>
-        {conflictsErr && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 8 }}>{conflictsErr}</div>}
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr><th style={th}>Negative</th><th style={th}>Where</th><th style={th}>Blocks your keywords</th><th style={{ ...th, width: 90 }} /></tr></thead>
-          <tbody>{conflicts.map((row) => <tr key={row.resourceName}>
-            <td style={td}>{row.negative}</td>
-            <td style={td}>{row.source}</td>
-            <td style={td}>{row.blocks.join(", ")}</td>
-            <td style={td}><button type="button" onClick={() => void removeConflict(row)} disabled={removingConflict === row.resourceName} data-testid={`negatives-conflict-remove-${row.negative}`} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}>{removingConflict === row.resourceName ? "Removing…" : "Remove"}</button></td>
-          </tr>)}</tbody>
-        </table>
-      </div>}
       {loading && <Skeleton />}
       {err && <div style={{ ...card, color: "#b00020" }} data-testid="negatives-error">{err}</div>}
       {result && <div style={card} data-testid="negatives-result"><strong>{result.added.length} added.</strong>{result.failed.length > 0 && <ul style={{ marginTop: 8 }}>{result.failed.map((failure) => <li key={failure.term} style={{ color: "#b00020", fontSize: 13 }}>{failure.term} — {failure.error}</li>)}</ul>}</div>}
@@ -309,6 +297,23 @@ export default function NegativesPanel() {
           })}
             {rows.length === 0 && <tr><td style={td} colSpan={5}>Nothing wasted in this window.</td></tr>}
           </tbody></table>
+      </div>}
+      {(conflicts.length > 0 || conflictsErr) && <div style={{ ...card, borderLeft: "3px solid #b00020" }} data-testid="negatives-conflicts">
+        {/* BF_PORTAL_NEGATIVES_LIST_FIRST_v628 - below the search list and folded, so it can't push the list off screen. */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{conflicts.length} negative{conflicts.length === 1 ? " is" : "s are"} blocking your own keywords</h3>
+          {conflicts.length > 0 && <button type="button" onClick={() => setShowConflicts((v) => !v)} data-testid="negatives-conflicts-toggle" style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", cursor: "pointer" }}>{showConflicts ? "Hide" : "Show"}</button>}
+        </div>
+        {conflictsErr && <div style={{ color: "#b00020", fontSize: 13, marginTop: 8 }}>{conflictsErr}</div>}
+        {showConflicts && <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr><th style={th}>Negative</th><th style={th}>Where</th><th style={th}>Blocks your keywords</th><th style={{ ...th, width: 90 }} /></tr></thead>
+          <tbody>{conflicts.map((row) => <tr key={row.resourceName}>
+            <td style={td}>{row.negative}</td>
+            <td style={td}>{row.source}</td>
+            <td style={td}>{row.blocks.join(", ")}</td>
+            <td style={td}><button type="button" onClick={() => void removeConflict(row)} disabled={removingConflict === row.resourceName} data-testid={`negatives-conflict-remove-${row.negative}`} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}>{removingConflict === row.resourceName ? "Removing…" : "Remove"}</button></td>
+          </tr>)}</tbody>
+        </table>}
       </div>}
       {applied.length > 0 && <div style={card} data-testid="negatives-applied">
         <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Blocked searches — you can undo any of these</h3>

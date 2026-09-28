@@ -28,7 +28,7 @@ describe("v625 panel", () => {
   it("asks for min clicks and uses the server's protected searches", () => {
     expect(panel).toContain("minClicks=");
     expect(panel).toContain("meta.protectedTerms");
-    expect(panel).toContain("useState(10)");
+    expect(panel).toContain("minClicks, setMinClicks] = useState(");
   });
   it("warns when Google records no conversions or the keyword check failed", () => {
     expect(panel).toContain("negatives-no-conversions");
