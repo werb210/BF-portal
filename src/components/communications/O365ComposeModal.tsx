@@ -757,8 +757,9 @@ export default function O365ComposeModal({
 
         {showCcBcc ? (
           <>
-            <input type="text" placeholder="Cc (comma-separated)" value={composeCc} onChange={(e) => setComposeCc(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14 }} />
-            <input type="text" placeholder="Bcc (comma-separated)" value={composeBcc} onChange={(e) => setComposeBcc(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14 }} />
+            {/* BF_PORTAL_ONEDRIVE_ATTACHMENTS_v648 - Cc and Bcc suggest addresses exactly like To. */}
+            <RecipientAutocomplete value={composeCc} onChange={setComposeCc} placeholder="Cc (comma-separated)" style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14, width: "100%", boxSizing: "border-box" }} />
+            <RecipientAutocomplete value={composeBcc} onChange={setComposeBcc} placeholder="Bcc (comma-separated)" style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, fontSize: 14, width: "100%", boxSizing: "border-box" }} />
           </>
         ) : (
           <button type="button" onClick={() => setShowCcBcc(true)} style={{ alignSelf: "flex-start", padding: "4px 8px", border: "none", background: "transparent", color: "var(--ui-accent-blue)", cursor: "pointer", fontSize: 13 }}>+ Cc / Bcc</button>

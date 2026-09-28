@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core"; // BF_PORTAL_ONEDRIVE_ATTACHMENTS_v648
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/api";
 import { contactDisplayName } from "@/utils/contactName";
@@ -1506,6 +1507,10 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
   const [selectedId, setSelectedId] = useState<string>("");
   const [attachments, setAttachments] = useState<Array<{ id: string; name: string; contentType: string; size: number }>>([]); // BF_PORTAL_INBOX_ATTACHMENTS_v1
   const [attBusy, setAttBusy] = useState(false); // BF_PORTAL_INBOX_ATTACHMENTS_v1
+  // BF_PORTAL_ONEDRIVE_ATTACHMENTS_v648 - in the app, "Save all" puts attachments in OneDrive
+  // (Email Attachments / sender / date - subject); the app cannot download to a folder itself.
+  const inApp = Capacitor.isNativePlatform();
+  const [attNotice, setAttNotice] = useState<{ text: string; url?: string | null; reconnect?: boolean } | null>(null);
   const [selected, setSelected] = useState<{ subject: string; from?: { emailAddress?: { address: string; name?: string } }; toRecipients?: Array<{ emailAddress?: { address?: string } }>; ccRecipients?: Array<{ emailAddress?: { address?: string } }>; body?: { content: string; contentType: "html" | "text" }; receivedDateTime?: string } | null>(null); // BF_PORTAL_BLOCK_v835_INBOX_REPLY_ALL_FORWARD
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1673,6 +1678,32 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     a.href = url; a.download = d.name ?? att.name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, [mailboxForMessage, selectedId]);
+
+  const saveAllToOneDrive = useCallback(async (): Promise<void> => {
+    if (attBusy || !attachments.length || !selectedId) return;
+    setAttBusy(true); setAttNotice(null);
+    try {
+      const mb = mailboxForMessage(selectedId);
+      const q = mb ? "?mailbox=" + encodeURIComponent(mb) : "";
+      const r = await withO365Refresh(() => api.post<any>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/save-to-onedrive${q}`, {}));
+      const d = (r as any)?.data ?? r;
+      const saved = Array.isArray(d?.saved) ? d.saved.length : 0;
+      const failed = Array.isArray(d?.failed) ? d.failed.length : 0;
+      setAttNotice({
+        text: saved
+          ? "Saved " + saved + (saved === 1 ? " file" : " files") + " to OneDrive \u203A " + String(d?.folder ?? "Email Attachments").split("/").join(" \u203A ") + (failed ? " (" + failed + " could not be saved)" : "")
+          : "Nothing was saved to OneDrive.",
+        url: d?.folderUrl ?? null,
+      });
+    } catch (e: any) {
+      const code = e?.details?.error ?? e?.error ?? e?.response?.data?.error ?? "";
+      if (String(code) === "onedrive_permission_needed" || /onedrive_permission_needed|Reconnect Microsoft 365/i.test(String(e?.message ?? ""))) {
+        setAttNotice({ text: "OneDrive needs permission. Reconnect Microsoft 365 once, then try again.", reconnect: true });
+      } else {
+        setAttNotice({ text: "Could not save to OneDrive. Please try again." });
+      }
+    } finally { setAttBusy(false); }
+  }, [attBusy, attachments, selectedId, mailboxForMessage]);
 
   const downloadAllAttachments = useCallback(async (): Promise<void> => {
     if (attBusy || !attachments.length) return;
@@ -2354,8 +2385,15 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
               <div style={{ marginTop: 20, borderTop: "1px solid var(--ui-border)", paddingTop: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                   <strong style={{ fontSize: 13 }}>Attachments ({attachments.length})</strong>
-                  <button type="button" disabled={attBusy} onClick={() => void downloadAllAttachments()} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 6, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", cursor: attBusy ? "default" : "pointer" }}>{attBusy ? "Downloading..." : "Download all"}</button>
+                  <button type="button" disabled={attBusy} data-testid="attachments-save-all" onClick={() => void (inApp ? saveAllToOneDrive() : downloadAllAttachments())} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 6, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-surface-strong)", color: "var(--ui-accent-fg)", cursor: attBusy ? "default" : "pointer" }}>{attBusy ? (inApp ? "Saving..." : "Downloading...") : (inApp ? "Save all to OneDrive" : "Download all")}</button>
                 </div>
+                {attNotice && (
+                  <div data-testid="attachments-notice" style={{ fontSize: 12, marginBottom: 8, color: "var(--ui-text)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <span>{attNotice.text}</span>
+                    {attNotice.url && <a href={attNotice.url} target="_blank" rel="noreferrer" style={{ color: "var(--ui-accent-blue)" }}>Open folder</a>}
+                    {attNotice.reconnect && <button type="button" onClick={() => void handleReconnect()} style={{ fontSize: 12, border: "1px solid var(--ui-accent-blue)", borderRadius: 6, background: "transparent", color: "var(--ui-accent-fg)", cursor: "pointer", padding: "2px 8px" }}>Reconnect Microsoft 365</button>}
+                  </div>
+                )}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {attachments.map((att) => (
                     <div key={att.id} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
