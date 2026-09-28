@@ -64,6 +64,8 @@ export default function RequestItemsTab({ applicationId }: Props) {
   // for and never what had arrived, so tracking a deal meant counting the
   // Documents tab by eye against this list.
   const [satisfiedDocs, setSatisfiedDocs] = useState<Set<string>>(new Set());
+  // BF_PORTAL_SHARED_DOCS_v636 - documents BF-Server v635 copied from the client's other applications.
+  const [sharedFrom, setSharedFrom] = useState<Map<string, string>>(new Map());
   const [requestedForms, setRequestedForms] = useState<Set<string>>(new Set());
   const [formsWaived, setFormsWaived] = useState<Set<string>>(new Set());
   const [formsManual, setFormsManual] = useState<Set<string>>(new Set());
@@ -87,6 +89,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
         setRequired(Array.isArray(r?.required) ? r.required : []);
         setWaived(new Set((Array.isArray(r?.waived) ? r.waived : []).map(norm)));
         setSatisfiedDocs(new Set((Array.isArray(r?.satisfied) ? r.satisfied : []).map(norm)));
+        setSharedFrom(new Map((Array.isArray(r?.shared) ? r.shared : []).map((x: any) => [norm(x?.document_type), String(x?.from_name || "another application")] as [string, string])));
         setRequestedForms(new Set((Array.isArray(r?.forms) ? r.forms : []).map((x: any) => String(x).trim().toLowerCase())));
         setFormsWaived(new Set((Array.isArray(r?.formsWaived) ? r.formsWaived : []).map((x: any) => String(x).trim().toLowerCase())));
       })
@@ -95,6 +98,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
         setRequired([]);
         setWaived(new Set());
         setSatisfiedDocs(new Set());
+        setSharedFrom(new Map());
         setRequestedForms(new Set());
         setFormsWaived(new Set());
       });
@@ -268,6 +272,10 @@ export default function RequestItemsTab({ applicationId }: Props) {
   // non-rejected is filed under it, matched on either the stored document type
   // or the visible label, because the two are the same string for every
   // catalog and product document and differ only for legacy rows.
+  const sharedLabel = (it: DocItem): string | null => { // BF_PORTAL_SHARED_DOCS_v636
+    const from = sharedFrom.get(norm(it.label)) ?? (it.documentType ? sharedFrom.get(norm(it.documentType)) : undefined);
+    return from ? "Shared from " + from : null;
+  };
   const isUploaded = (it: DocItem) =>
     satisfiedDocs.has(norm(it.label)) || (!!it.documentType && satisfiedDocs.has(norm(it.documentType)));
 
@@ -335,7 +343,7 @@ export default function RequestItemsTab({ applicationId }: Props) {
                   <input type="checkbox" readOnly checked={checked} disabled={disabled} />{" "}
                   <span style={{ color: "var(--ui-text)" }}>{it.label}</span>
                   {it.isRequired && checked && (
-                    <span style={pill(isUploaded(it))}>{isUploaded(it) ? "Uploaded" : "Missing"}</span>
+                    <span style={pill(isUploaded(it))} title={sharedLabel(it) ?? undefined}>{isUploaded(it) ? (sharedLabel(it) ?? "Uploaded") : "Missing"}</span>
                   )}
                 </div>
               );
