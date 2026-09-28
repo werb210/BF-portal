@@ -15,7 +15,8 @@ describe("the checklist shows what has actually arrived", () => {
   });
 
   it("marks each required document Uploaded or Missing", () => {
-    expect(tab).toContain('isUploaded(it) ? "Uploaded" : "Missing"');
+    // BF_PORTAL_SHARED_DOCS_v636 - "Uploaded" becomes "Shared from <application>" for shared documents.
+    expect(tab).toContain('isUploaded(it) ? (sharedLabel(it) ?? "Uploaded") : "Missing"');
   });
 
   it("counts the required set at the top of the column", () => {
