@@ -23,7 +23,7 @@ function fakeToken(sub: string): string {
 
 describe("stale token detection", () => {
   it("rejects old test-mode token sub", () => {
-    expect(isValidUuidToken(fakeToken("test-user:+15878881837"))).toBe(false);
+    expect(isValidUuidToken(fakeToken("test-user:+14035550123"))).toBe(false);
   });
 
   it("rejects empty sub", () => {
@@ -31,7 +31,7 @@ describe("stale token detection", () => {
   });
 
   it("rejects phone-number sub", () => {
-    expect(isValidUuidToken(fakeToken("+15878881837"))).toBe(false);
+    expect(isValidUuidToken(fakeToken("+14035550123"))).toBe(false);
   });
 
   it("accepts valid UUID sub", () => {

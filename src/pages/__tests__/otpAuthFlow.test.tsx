@@ -44,7 +44,7 @@ describe("OTP auth flow", () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
 
     renderAuthRoutes("/login");
-    fireEvent.change(screen.getByTestId("phone-input"), { target: { value: "5878881837" } });
+    fireEvent.change(screen.getByTestId("phone-input"), { target: { value: "4035550123" } });
     fireEvent.click(screen.getByTestId("start-otp-button"));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
@@ -59,10 +59,10 @@ describe("OTP auth flow", () => {
     expect(requestInit).toEqual(
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ phone: "+15878881837" }),
+        body: JSON.stringify({ phone: "+14035550123" }),
       }),
     );
-    expect(localStorage.getItem("auth_phone")).toBe("+15878881837");
+    expect(localStorage.getItem("auth_phone")).toBe("+14035550123");
 
     await waitFor(() => expect(screen.getByTestId("location-path")).toHaveTextContent("/verify"));
     expect(screen.getByTestId("code-input")).toBeInTheDocument();
@@ -72,7 +72,7 @@ describe("OTP auth flow", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 400 }));
 
     renderAuthRoutes("/login");
-    fireEvent.change(screen.getByTestId("phone-input"), { target: { value: "+15878881837" } });
+    fireEvent.change(screen.getByTestId("phone-input"), { target: { value: "+14035550123" } });
     fireEvent.click(screen.getByTestId("start-otp-button"));
 
     await waitFor(() => expect(screen.getByText(/Unable to start OTP/i)).toBeInTheDocument());
@@ -89,9 +89,9 @@ describe("OTP auth flow", () => {
   it("entering 6-digit code auto-verifies and stores token", async () => {
     sessionStorage.setItem(
       "otp_flow",
-      JSON.stringify({ pendingPhone: "+15878881837", startRequested: true, startSucceeded: true }),
+      JSON.stringify({ pendingPhone: "+14035550123", startRequested: true, startSucceeded: true }),
     );
-    localStorage.setItem("auth_phone", "+15878881837");
+    localStorage.setItem("auth_phone", "+14035550123");
 
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ status: "ok", data: { token: "jwt-token" } }), {
@@ -115,7 +115,7 @@ describe("OTP auth flow", () => {
     expect(requestInit).toEqual(
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ phone: "+15878881837", code: "123456" }),
+        body: JSON.stringify({ phone: "+14035550123", code: "123456" }),
       }),
     );
 
@@ -125,9 +125,9 @@ describe("OTP auth flow", () => {
   it("failed verify remains on /verify, clears code, and shows an error", async () => {
     sessionStorage.setItem(
       "otp_flow",
-      JSON.stringify({ pendingPhone: "+15878881837", startRequested: true, startSucceeded: true }),
+      JSON.stringify({ pendingPhone: "+14035550123", startRequested: true, startSucceeded: true }),
     );
-    localStorage.setItem("auth_phone", "+15878881837");
+    localStorage.setItem("auth_phone", "+14035550123");
 
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 401 }));
 

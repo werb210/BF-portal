@@ -20,7 +20,7 @@ test("OTP login flow", async ({ page }) => {
   await page.goto("/login");
 
   await expect(page.getByTestId("login-screen")).toBeVisible();
-  await page.getByTestId("phone-input").fill("5878881837");
+  await page.getByTestId("phone-input").fill("4035550123");
 
   await expect(page).toHaveURL(/\/verify$/);
 

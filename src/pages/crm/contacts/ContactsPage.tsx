@@ -139,7 +139,13 @@ export default function ContactsPage() {
       setSelected(new Set());
       setRefreshKey((k) => k + 1);
     } catch (err) {
-      window.alert(`Mass delete failed: ${err instanceof Error ? err.message : String(err)}`);
+      // BF_PORTAL_CONTACT_DELETE_MESSAGE_v689 - the server refuses (409) to delete a contact that is on an
+      // application. Say so plainly instead of showing a bare error code.
+      const e = err as { status?: number; details?: unknown; message?: string };
+      const blocked = e?.status === 409 || /409|fk_protected/i.test(String(e?.message ?? "") + JSON.stringify(e?.details ?? ""));
+      window.alert(blocked
+        ? "This contact is on an application, so it can't be deleted. To fix a wrong phone number or name, open the contact and edit it instead."
+        : `Mass delete failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally { setBusyMass(null); }
   }
   async function massTag() {
