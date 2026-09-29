@@ -289,8 +289,14 @@ export default function DialerPanel() {
 
   if (!st.isOpen && !liveAny && !incoming) return null;
 
-  const headline = st.ctx.contactName || others[0]?.display_name || (connecting ? "Connecting…" : "New call");
-  const subline  = st.ctx.applicationName || others[0]?.phone_number || st.ctx.phone || "";
+  // BF_PORTAL_VOICE_AUDIT_v687 - between calls the header showed whoever was on the last call
+  // next to a different number (e.g. "Andrew Polturak" over the number being typed). When no call
+  // is live or ringing and the typed number is not the remembered contact's, it is a new call.
+  const typedDigits = phone.replace(/[^0-9]/g, "").slice(-10);
+  const ctxDigits = String(st.ctx.phone ?? "").replace(/[^0-9]/g, "").slice(-10);
+  const staleCtx = !liveAny && !incoming && typedDigits.length > 0 && typedDigits !== ctxDigits;
+  const headline = staleCtx ? "New call" : (st.ctx.contactName || others[0]?.display_name || (connecting ? "Connecting…" : "New call"));
+  const subline  = staleCtx ? "" : (st.ctx.applicationName || others[0]?.phone_number || st.ctx.phone || "");
   const silo     = conf?.silo;
 
   // DTMF: during live call, send through the SDK; in idle, build a number.
@@ -317,6 +323,7 @@ export default function DialerPanel() {
   const closePanel = () => {
     if (liveAny) { try { hangup(); } catch { /* best-effort */ } }
     st.close();
+    if (!liveAny) st.setCtx({}); // BF_PORTAL_VOICE_AUDIT_v687 - closing between calls forgets the last caller
     setExpander("none");
     setPhone("");
   };
@@ -340,7 +347,7 @@ export default function DialerPanel() {
           <div style={{ fontSize: 12, color: T.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subline}</div>
         </div>
         <SiloChip silo={silo} />
-        {st.ctx.contactId && (
+        {!staleCtx && st.ctx.contactId && (
           <a href={`/crm/contacts/${st.ctx.contactId}`}
              style={{ fontSize: 11, color: T.text, textDecoration: "none", padding: "5px 10px", borderRadius: 8, border: `1px solid ${T.borderStrong}`, whiteSpace: "nowrap" }}>
             Open Contact
