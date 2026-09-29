@@ -12,7 +12,7 @@ import { API_BASE } from "@/config/api";
 
 type Channel = { id: string; kind: string; name: string | null; muted?: boolean; member_ids?: string[] };
 type Status = { user_id: string; dnd?: boolean; away?: boolean };
-type Incoming = { channel_id: string; message: { id: string; sender_id: string | null; body: string; mentions?: string[] | null } };
+type Incoming = { channel_id: string; message: { id: string; sender_id: string | null; body: string; mentions?: string[] | null; bot?: string | null } };
 
 let viewingChannel: string | null = null;
 /** TeamTab reports the conversation on screen, so it does not alert for itself. */
@@ -80,7 +80,7 @@ export default function TeamNotifier() {
       const mentioned = (d.message.mentions ?? []).map(String).includes(me);
       const onScreen = viewingChannel === d.channel_id && document.visibilityState === "visible";
       if (!shouldAlert({ mine: d.message.sender_id === me, muted: Boolean(ch?.muted), mentioned, dnd: myDnd.current, onScreen })) return;
-      const sender = names.current.get(String(d.message.sender_id)) ?? "Team";
+      const sender = d.message.bot || (names.current.get(String(d.message.sender_id)) ?? "Team"); // BF_PORTAL_TEAM_PHASE_C_v672
       const where = ch?.kind === "dm" || !ch ? sender : ch.name ? "#" + ch.name : "Team chat";
       const title = mentioned ? sender + " mentioned you" : where;
       const body = (where !== sender ? sender + ": " : "") + (String(d.message.body ?? "").slice(0, 140) || "Sent an attachment");
@@ -112,6 +112,7 @@ export default function TeamNotifier() {
           if (d?.type === "message" && d.message) alertFor(d as Incoming);
           else if (d?.type === "channel") loadChannels();
           else if (d?.type === "status" && d.status?.user_id === me) myDnd.current = Boolean(d.status.dnd);
+          else if (d?.type === "reminder" && d.channel_id) { beep(); setBanner({ title: "Reminder", body: String(d.body ?? ""), channel: String(d.channel_id) }); } // BF_PORTAL_TEAM_PHASE_C_v672
         } catch { /* ignore */ }
       };
       ws.onerror = () => { try { ws?.close(); } catch { /* ignore */ } };

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/api";
 import FullEmojiPicker from "./FullEmojiPicker";
 import { FormatBar, renderTeamText } from "./teamFormat";
+import { SaveMenu, TeamCards } from "./TeamPhaseC"; // BF_PORTAL_TEAM_PHASE_C_v672
 
 export type ThreadMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string; deleted_at?: string | null; edited_at?: string | null; attachments?: Array<{ name: string; contentType: string; dataUrl: string }> | null; thread_root_id?: string | null };
 export type ThreadSummary = { reply_count: number; last_reply_at: string | null; participant_ids: string[] };
@@ -54,9 +55,11 @@ export default function ThreadPanel({ channelId, rootId, nameOf, memberNames, my
 
   const bubble = (m: ThreadMessage) => (
     <div key={m.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <div style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>{m.sender_id === myId ? "You" : nameOf(m.sender_id)} {"\u00B7"} {new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div>
+      <div style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>{m.sender_id === myId ? "You" : (m as { bot?: string | null }).bot || nameOf(m.sender_id)} {"\u00B7"} {new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div>
       <div style={{ fontSize: 14, color: "var(--ui-text)", wordBreak: "break-word" }}>
         {m.deleted_at ? <i style={{ color: "var(--ui-text-muted)" }}>Message deleted</i> : renderTeamText(m.body, memberNames)}
+        {!m.deleted_at && <TeamCards text={m.body} />}
+        {!m.deleted_at && <div style={{ marginTop: 2 }}><SaveMenu messageId={m.id} /></div>}
         {(m.attachments ?? []).map((a, i) => <a key={i} href={a.dataUrl} download={a.name} style={{ display: "block", fontSize: 13, color: "inherit", textDecoration: "underline" }}>{a.name}</a>)}
       </div>
     </div>
