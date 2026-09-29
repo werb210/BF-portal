@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 describe("verifyOtp error mapping", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("auth_phone", "+15878881837");
+    localStorage.setItem("auth_phone", "+14035550123");
     vi.resetModules();
   });
 
