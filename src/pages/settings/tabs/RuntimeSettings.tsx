@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import api from "@/api";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
+import GoogleHealthPanel from "./GoogleHealthPanel"; // BF_PORTAL_GOOGLE_HEALTH_v704
 import { getAuthToken } from "@/lib/authToken";
 import { getErrorMessage } from "@/utils/errors";
 
@@ -158,6 +159,8 @@ const RuntimeSettings = () => {
         </Button>
         {lastChecked && <span className="runtime-status__timestamp">Last checked at {lastChecked}</span>}
       </div>
+
+      <GoogleHealthPanel />
     </section>
   );
 };
