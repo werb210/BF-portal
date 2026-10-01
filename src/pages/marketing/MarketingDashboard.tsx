@@ -13,6 +13,7 @@ import DiagnosticsPanel from "@/pages/diagnostics/DiagnosticsPage";
 import NegativesPanel from "@/pages/diagnostics/NegativesPanel";
 import ClicksPanel from "@/pages/diagnostics/ClicksPanel"; // BF_PORTAL_BLOCK_v615_AD_CLICKS
 import AdsConversionStatus from "@/components/marketing/AdsConversionStatus"; // BF_PORTAL_ADS_CONVERSION_STATUS_v401
+import AutomationsBuilder from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUTOMATIONS_IN_MARKETING_v697
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
@@ -1437,8 +1438,8 @@ function AutomationsPanel() {
   );
   return (
     <section className="drawer-section">
-      <div className="drawer-section__title mb-2">Automations</div>
-      <p style={{ color: "var(--ui-text-muted)", fontSize: "0.85rem", marginBottom: 12 }}>Every background rule currently firing. Read-only for now &mdash; a builder to create your own is coming.</p>
+      <div className="drawer-section__title mb-2">Built-in system rules</div>
+      <p style={{ color: "var(--ui-text-muted)", fontSize: "0.85rem", marginBottom: 12 }}>These run automatically and cannot be edited. Your own automations are above.</p>
       {loading ? (
         <p style={{ color: "var(--ui-text-muted)", fontSize: "0.85rem" }}>Loading&hellip;</p>
       ) : rows.length === 0 ? (
@@ -1520,7 +1521,7 @@ const MarketingDashboard = () => {
       {tab === "links" && <LinkClicksPanel />}{/* BF_PORTAL_BF_LINKS_TAB_v15 */}
       {tab === "sms" && <SmsComposerPanel />}
       {tab === "sequences" && <SequencesPanel />}
-      {tab === "automations" && <AutomationsPanel />}
+      {tab === "automations" && (<><AutomationsBuilder /><AutomationsPanel /></>)}
       {tab === "analytics" && (
         <div className="space-y-4">
           <AnalyticsFunnel />
