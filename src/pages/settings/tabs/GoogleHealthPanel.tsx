@@ -25,7 +25,14 @@ export default function GoogleHealthPanel(): JSX.Element {
       const r = await api.get<GoogleReport>(`/api/_int/google-health${refresh ? "?refresh=1" : ""}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      setReport(r as GoogleReport);
+      // BF_PORTAL_GOOGLE_HEALTH_GUARD_v706 - never crash the Runtime page on an unexpected reply.
+      const data = r as Partial<GoogleReport> | null | undefined;
+      if (!data || !Array.isArray(data.checks)) {
+        setReport(null);
+        setError("The server sent an unexpected answer for the Google checks.");
+        return;
+      }
+      setReport({ checkedAt: String(data.checkedAt ?? new Date().toISOString()), checks: data.checks });
     } catch {
       setError("Could not run the Google checks. The server did not answer.");
     } finally {
