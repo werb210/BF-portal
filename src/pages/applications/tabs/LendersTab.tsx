@@ -30,6 +30,7 @@ import { canWrite } from "@/auth/can";
 import CollateralFacilitySection from "@/pages/applications/tabs/CollateralFacilitySection";
 import ProductCategoryPicker from "@/pages/applications/tabs/ProductCategoryPicker"; // BF_PORTAL_PRODUCT_CATEGORY_PICKER_v287
 import BrokerDealPanel from "@/components/applications/BrokerDealPanel"; // BF_PORTAL_BLOCK_v522_BROKER_IMPORT
+import FeeAgreementPanel from "@/components/applications/FeeAgreementPanel"; // BF_PORTAL_FEE_AGREEMENT_v709
 // BF_PORTAL_PRODUCT_QUESTIONS_v292 - BF-Server v289 refuses to send while product questions are unanswered.
 type ProductQuestionsSummary = { blocking?: boolean; message?: string | null } | null | undefined;
 // BF_PORTAL_RESIGN_REQUEST_v295 - BF-Server v293 flags when the client signed before a switch to Line of Credit.
@@ -656,6 +657,7 @@ function describeSendFailure(err: unknown): string {
           {appRecord?.application?.metadata?.broker_import?.broker_name ? (
             <BrokerDealPanel applicationId={id} brokerName={appRecord.application.metadata.broker_import.broker_name} canEdit={canManage} onStatus={setBrokerBlock} />
           ) : null}
+          <FeeAgreementPanel applicationId={id} />
           {productQuestionsBlock(envelope) && (
             <div role="status" data-testid="product-questions-waiting" style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, background: "#fef3c7", color: "#92400e", fontSize: 13, maxWidth: 560 }}>
               {productQuestionsBlock(envelope)}

@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { fetchRequiredDocs, type BiRequiredDoc } from "@/silos/bi/api/biRequiredDocs";
 import type { BiStageId } from "../biStages";
 import { biDocSlotLabel, biDocSlotIsCarrierBound } from "../biDocumentSlots"; // BI_DOC_LIST_v61
+import DocumentSplitView, { type SplitViewDoc } from "@/components/applications/DocumentSplitView"; // BF_PORTAL_BI_DOC_VIEWER_v709
 
 type Doc = {
   id: string;
@@ -74,6 +75,11 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
   // BF_PORTAL_BLOCK_1_22_BI_DOC_UI — load required docs from server.
   const [requiredDocs, setRequiredDocs] = useState<BiRequiredDoc[]>([]);
   const [requiredDocsError, setRequiredDocsError] = useState<string | null>(null);
+  // BF_PORTAL_BI_DOC_VIEWER_v709 - View opens the same docked viewer as the
+  // Financial Documents tab. Opening a blob URL in a new tab downloaded the
+  // file instead whenever BI-Server sent it as application/octet-stream
+  // (documents copied from Boreal Financial).
+  const [viewDoc, setViewDoc] = useState<SplitViewDoc | null>(null);
 
   const load = useCallback(async () => {
     const r = await api<{ documents: Doc[] }>(`/api/v1/bi/applications/${applicationId}/documents`);
@@ -148,11 +154,26 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
         return;
       }
       const blob = await resp.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, "_blank", "noopener,noreferrer");
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      const row = docs.find((d) => d.id === docId);
+      const url = URL.createObjectURL(blob);
+      setViewDoc((previous) => {
+        if (previous?.url) URL.revokeObjectURL(previous.url);
+        return { url, blob, mimeType: blob.type || null, filename: row?.file_name ?? null, originalFilename: row?.file_name ?? null, documentId: docId, status: row?.status ?? null, category: row?.category ?? null };
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not open document");
+    }
+  }
+
+  async function rejectWithReason(docId: string, reason: string) {
+    if (!reason.trim()) return;
+    try {
+      await biReviewDocument(applicationId, docId, "rejected", reason.trim());
+      toast.success("Rejected");
+      await load();
+      onMutated();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Reject failed");
     }
   }
 
@@ -251,6 +272,17 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
           )}
         </div>
       ))}
+      {/* BF_PORTAL_BI_DOC_VIEWER_v709 */}
+      <DocumentSplitView
+        doc={viewDoc}
+        onClose={() => setViewDoc((previous) => { if (previous?.url) URL.revokeObjectURL(previous.url); return null; })}
+        review={viewDoc?.documentId && !readOnly ? {
+          working: undefined,
+          hasNext: false,
+          onAccept: () => { void accept(viewDoc.documentId as string); },
+          onReject: (reason: string) => { void rejectWithReason(viewDoc.documentId as string, reason); },
+        } : null}
+      />
     </div>
   );
 }
