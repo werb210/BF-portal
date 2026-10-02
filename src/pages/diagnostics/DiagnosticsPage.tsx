@@ -29,8 +29,8 @@ function TableCard({ title, headers, children }: { title: string; headers: strin
   return <section style={card}><h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{title}</h2><div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>{headers.map((header) => <th key={header} style={th}>{header}</th>)}</tr></thead><tbody>{children}</tbody></table></div></section>;
 }
 
-export default function DiagnosticsPage() {
-  const [tab, setTab] = useState<Tab>("ads");
+export default function DiagnosticsPage({ only }: { only?: Tab[] } = {}) {
+  const [tab, setTab] = useState<Tab>(only?.[0] ?? "ads");
   const [days, setDays] = useState(90);
   const [data, setData] = useState<unknown>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -55,7 +55,7 @@ export default function DiagnosticsPage() {
     return () => { cancelled = true; };
   }, [load]);
 
-  const tabs: Array<[Tab, string]> = [["ads", "Ad waste"], ["queue", "Job queue"], ["funnel", "Submit funnel"], ["failures", "Submit failures"]];
+  const tabs: Array<[Tab, string]> = ([["ads", "Ad waste"], ["queue", "Job queue"], ["funnel", "Submit funnel"], ["failures", "Submit failures"]] as Array<[Tab, string]>).filter(([id]) => !only || only.includes(id));
   return <div style={{ padding: 24 }} data-testid="diagnostics-page">
     <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Diagnostics</h1>
     <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
@@ -79,7 +79,7 @@ function QueuePanel({ data }: { data: JobQueue }) {
   return <><TableCard title="Queue by type and status" headers={["Type", "Status", "Count", "Oldest", "Max attempts"]}>{(data.summary ?? []).map((row, index) => <tr key={index}><td style={td}>{row.type}</td><td style={td}>{row.status}</td><td style={td}>{row.count}</td><td style={td}>{row.oldest ? new Date(row.oldest).toLocaleString() : "—"}</td><td style={td}>{row.max_attempts}</td></tr>)}{(data.summary ?? []).length === 0 && <tr><td style={td} colSpan={5}>Queue is empty.</td></tr>}</TableCard><TableCard title="Stuck over an hour" headers={["Type", "Status", "Attempts", "Created", "Error"]}>{(data.stuck ?? []).map((row) => <tr key={row.id}><td style={td}>{row.type}</td><td style={td}>{row.status}</td><td style={td}>{row.attempts}</td><td style={td}>{new Date(row.created_at).toLocaleString()}</td><td style={{ ...td, color: "#b00020" }}>{row.error ?? "—"}</td></tr>)}{(data.stuck ?? []).length === 0 && <tr><td style={td} colSpan={5}>Nothing stuck. The queue is moving.</td></tr>}</TableCard></>;
 }
 function FunnelPanel({ data }: { data: Funnel }) {
-  return <><div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}><Stat label="Tapped submit" value={String(data.attempted ?? 0)} /><Stat label="Arrived" value={String(data.completed ?? 0)} /><Stat label="Completion rate" value={pct(data.completionRate)} alarm={(data.completionRate ?? 1) < 0.8} /></div><TableCard title="By status" headers={["Status", "Count"]}>{Object.entries(data.byStatus ?? {}).map(([status, count]) => <tr key={status}><td style={td}>{status}</td><td style={td}>{count}</td></tr>)}</TableCard></>;
+  return <><div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}><Stat label="Submit taps (all apps, repeats included)" value={String(data.attempted ?? 0)} /><Stat label="Arrived" value={String(data.completed ?? 0)} /><Stat label="Completion rate" value={pct(data.completionRate)} alarm={(data.completionRate ?? 1) < 0.8} /></div><TableCard title="By status" headers={["Status", "Count"]}>{Object.entries(data.byStatus ?? {}).map(([status, count]) => <tr key={status}><td style={td}>{status}</td><td style={td}>{count}</td></tr>)}</TableCard></>;
 }
 function FailuresPanel({ data }: { data: Failures }) {
   return <><TableCard title="Why submits failed" headers={["Error", "Count", "Latest"]}>{(data.grouped ?? []).map((row, index) => <tr key={index}><td style={td}>{row.error}</td><td style={td}>{row.count}</td><td style={td}>{row.latest ? new Date(row.latest).toLocaleString() : "—"}</td></tr>)}{(data.grouped ?? []).length === 0 && <tr><td style={td} colSpan={3}>No failed submits in this window.</td></tr>}</TableCard><TableCard title="Recent — callable" headers={["Business", "Phone", "Status", "Error"]}>{(data.recent ?? []).map((row) => <tr key={row.id}><td style={td}>{row.business_name ?? "—"}</td><td style={td}>{row.phone ? <a href="#" onClick={(e) => { e.preventDefault(); void placeCall(row.phone!); }} style={{ color: "var(--ui-link, #0B1F3A)" }}>{row.phone}</a> : "—"}</td><td style={td}>{row.status}</td><td style={{ ...td, color: "#b00020" }}>{row.error ?? "—"}</td></tr>)}{(data.recent ?? []).length === 0 && <tr><td style={td} colSpan={4}>Nobody stuck mid-submit.</td></tr>}</TableCard></>;

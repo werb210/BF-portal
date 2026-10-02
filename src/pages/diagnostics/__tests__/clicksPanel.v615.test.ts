@@ -13,8 +13,7 @@ describe("Marketing > Ads > Clicks", () => {
 
   it("is the tab to the right of Negatives and calls the CRM clicks endpoint", () => {
     const dash = readFileSync("src/pages/marketing/MarketingDashboard.tsx", "utf8");
-    expect(dash).toContain('"adwaste", "negatives", "clicks"');
-    expect(dash).toContain('adsTab === "clicks" && <ClicksPanel />');
+    expect(dash).toContain("<VisitorsPanel /><ClicksPanel />");
     expect(readFileSync("src/pages/diagnostics/ClicksPanel.tsx", "utf8")).toContain('"/api/marketing/ad-clicks"');
   });
 });

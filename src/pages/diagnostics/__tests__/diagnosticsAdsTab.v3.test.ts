@@ -16,7 +16,7 @@ const adsComponent = readFileSync(
 
 describe("BF_PORTAL_DIAGNOSTICS_ADS_TAB_v3", () => {
   it("sits with the other ad reports", () => {
-    expect(adsComponent).toContain("Ad Waste");
+    expect(adsComponent).toContain('<DiagnosticsPanel only={["ads"]} />');
     expect(adsComponent).toContain("DiagnosticsPanel");
   });
 
