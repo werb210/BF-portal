@@ -28,6 +28,20 @@ type Item = {
   nudgedAt: string | null;
 };
 
+export function dedupeByPerson<T extends { phone: string | null; contactId: string | null; applicationId: string; step: number; lastActivityAt: string }>(rows: T[]): T[] {
+  const keyOf = (row: T) => {
+    const digits = String(row.phone ?? "").replace(/[^0-9]/g, "");
+    return digits.length >= 10 ? digits : row.contactId || row.applicationId;
+  };
+  const best = new Map<string, T>();
+  for (const row of rows) {
+    const key = keyOf(row);
+    const previous = best.get(key);
+    if (!previous || row.step > previous.step || (row.step === previous.step && row.lastActivityAt > previous.lastActivityAt)) best.set(key, row);
+  }
+  return rows.filter((row) => best.get(keyOf(row)) === row);
+}
+
 const STEP_LABEL: Record<number, string> = {
   1: "Financial profile",
   2: "Product",
@@ -70,7 +84,8 @@ export default function AbandonedPanel() {
     return () => { cancelled = true; };
   }, [days]);
 
-  const all = items;
+  // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707 - one row per person, keeping their furthest application.
+  const all = items ? dedupeByPerson(items) : items;
   const shown = all ? all.filter((x) => country === "ALL" || x.country === country) : null;
   return (
     <div className="drawer-section">

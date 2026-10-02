@@ -14,11 +14,20 @@ import NegativesPanel from "@/pages/diagnostics/NegativesPanel";
 import ClicksPanel from "@/pages/diagnostics/ClicksPanel"; // BF_PORTAL_BLOCK_v615_AD_CLICKS
 import AdsConversionStatus from "@/components/marketing/AdsConversionStatus"; // BF_PORTAL_ADS_CONVERSION_STATUS_v401
 import AutomationsBuilder from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUTOMATIONS_IN_MARKETING_v697
+import { AdsStoryPanel, VisitorsPanel, DropoffPanel, AudiencesNote } from "@/components/marketing/GoogleAdsAnalytics"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
+import GoogleHealthPanel from "@/pages/settings/tabs/GoogleHealthPanel"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
 // data, two different places to look for it. BF now gets the tab too.
 type MarketingTab = "analytics" | "automations" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads";
+// BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
+type AdsTab = "story" | "campaigns" | "negatives" | "visitors" | "dropoff" | "audiences" | "website" | "health" | "linkedin" | "microsoft";
+const ADS_TABS: Array<[AdsTab, string]> = [
+  ["story", "Story"], ["campaigns", "Campaigns & Keywords"], ["negatives", "Search Terms & Negatives"], ["visitors", "Visitors"],
+  ["dropoff", "Drop-off"], ["audiences", "Audiences"], ["website", "Website (GA4)"], ["health", "Health"],
+  ["linkedin", "LinkedIn Ads"], ["microsoft", "Microsoft Ads"],
+];
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "analytics", label: "Analytics" },
@@ -28,7 +37,7 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "sms", label: "SMS" },
   { id: "email", label: "Email" },
   { id: "links", label: "Links" }, // BF_PORTAL_BF_LINKS_TAB_v15
-  { id: "ads", label: "Ads" },
+  { id: "ads", label: "Google Ads & Analytics" }, // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 ];
 
 type FunnelStep = {
@@ -203,14 +212,16 @@ function MayaSuggestionsPanel() {
   const [items, setItems] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [configured, setConfigured] = useState(true);
+  const [caveat, setCaveat] = useState<string | null>(null); // BF_PORTAL_ADS_PAUSE_GUARD_v707
   useEffect(() => {
     let cancelled = false;
     api
       .get<{ data?: { configured: boolean; suggestions: Suggestion[] } } & { configured?: boolean; suggestions?: Suggestion[] }>("/api/marketing/google-ads/suggestions")
       .then((res) => {
         if (cancelled) return;
-        const d = (res?.data ?? res) as { configured?: boolean; suggestions?: Suggestion[] };
+        const d = (res?.data ?? res) as { configured?: boolean; suggestions?: Suggestion[]; caveat?: string };
         setConfigured(d?.configured !== false);
+        setCaveat(d?.caveat ?? null);
         setItems(d?.suggestions ?? []);
       })
       .catch(() => { if (!cancelled) setItems([]); })
@@ -223,6 +234,7 @@ function MayaSuggestionsPanel() {
       <div className="drawer-section__title mb-1">Maya's recommendations</div>
       <p style={{ color: "var(--ui-text-muted)", marginBottom: 8, fontSize: "0.85rem" }}>Suggestions from your Google Ads data. Make the change in Google Ads; Boreal's Google Ads access is for reporting only.</p>
       {loading && <p style={{ color: "var(--ui-text-muted)" }}>Loading...</p>}
+      {!loading && caveat && <p data-testid="maya-caveat" style={{ color: "#8a4b00", marginBottom: 8, fontSize: "0.85rem" }}>{caveat}</p>}
       {!loading && !configured && <p style={{ color: "var(--ui-text-muted)" }}>Connect Google Ads to see recommendations.</p>}
       {!loading && configured && items.length === 0 && <p style={{ color: "var(--ui-text-muted)" }}>No recommendations right now.</p>}
       {!loading && configured && items.map((sug) => (
@@ -1068,59 +1080,7 @@ function AnalyticsFunnel() {
 }
 
 // BF_PORTAL_MARKETING_GA4_DISPLAY_v1 — Analytics tab also renders live Google
-// BF_PORTAL_SOURCES_v1 - conversion by marketing source from GET /api/marketing/sources.
-type SourceRow = { source: string; started: number; submitted: number; conversion: number };
-function SourcesPanel() {
-  const [days, setDays] = useState(90);
-  const [sources, setSources] = useState<SourceRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    api
-      .get<{ data?: { sources?: SourceRow[] }; sources?: SourceRow[] }>("/api/marketing/sources", { params: { days } })
-      .then((res) => {
-        if (cancelled) return;
-        const next = res?.data?.sources ?? res?.sources ?? [];
-        setSources(Array.isArray(next) ? next : []);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load sources");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [days]);
-  const top = sources.reduce((m, s) => Math.max(m, s.started), 1);
-  return (
-    <section className="drawer-section">
-      <div className="flex items-center justify-between mb-3">
-        <div className="drawer-section__title">Conversion by source</div>
-        <select value={days} onChange={(e) => setDays(Number(e.target.value) || 90)} className="border rounded px-2 py-1 text-sm" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
-          <option value={30}>Last 30 days</option>
-          <option value={90}>Last 90 days</option>
-          <option value={365}>Last 365 days</option>
-        </select>
-      </div>
-      {loading && <p style={{ color: "var(--ui-text-muted)" }}>Loading sources...</p>}
-      {error && <p role="alert" style={{ color: "#dc2626" }}>{error}</p>}
-      {!loading && !error && sources.length === 0 && <p style={{ color: "var(--ui-text-muted)" }}>No attributed applications in this period yet. Tag campaign links with utm_source to see them here.</p>}
-      {!loading && !error && sources.length > 0 && (
-        <div className="space-y-2">
-          {sources.map((s) => {
-            const width = Math.max(2, Math.round((s.started / top) * 100));
-            return <div key={s.source}><div className="flex items-center justify-between text-sm" style={{ color: "var(--ui-text)" }}><span>{s.source}</span><span style={{ color: "var(--ui-text-muted)" }}>{s.submitted}/{s.started} submitted &middot; {s.conversion}%</span></div><div style={{ height: 10, borderRadius: 6, background: "var(--ui-border)", overflow: "hidden", marginTop: 4 }}><div style={{ width: `${width}%`, height: "100%", background: "var(--ui-accent-blue)" }} /></div></div>;
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
+// BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707 - Conversion by source is folded into Story.
 
 // Analytics (GA4) traffic from GET /api/marketing/ga4 (respondOk envelope).
 type Ga4Row = { dim: string; sessions: number; users: number };
@@ -1462,7 +1422,7 @@ function AutomationsPanel() {
 
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
-  const [adsTab, setAdsTab] = useState<"google" | "linkedin" | "microsoft" | "adwaste" | "negatives" | "clicks">("google");
+  const [adsTab, setAdsTab] = useState<AdsTab>("story");
 
   return (
     <div className="space-y-4">
@@ -1482,39 +1442,20 @@ const MarketingDashboard = () => {
       {tab === "ads" && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {(["google", "linkedin", "microsoft", "adwaste", "negatives", "clicks"] as const).map((id) => (
-              <button
-                key={id}
-                type="button"
-                className={`ui-button ${adsTab === id ? "ui-button--primary" : "ui-button--secondary"}`}
-                onClick={() => setAdsTab(id)}
-              >
-                {id === "google" ? "Google Ads" : id === "linkedin" ? "LinkedIn Ads" : id === "microsoft" ? "Microsoft Ads" : id === "adwaste" ? "Ad Waste" : id === "clicks" ? "Clicks" : "Negatives"}
-              </button>
+            {ADS_TABS.map(([id, label]) => (
+              <button key={id} type="button" className={`ui-button ${adsTab === id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setAdsTab(id)}>{label}</button>
             ))}
           </div>
-          {adsTab === "google" && (
-            <div className="space-y-4">
-              <GoogleAdsPanel />
-              <UtmBuilderPanel />
-              <MayaSuggestionsPanel />
-              <AdsConversionStatus />
-              <AdsConversionsPanel />
-              <IcpBuilderPanel />
-            </div>
-          )}
-          {adsTab === "linkedin" && (
-            <div className="space-y-4">
-              <LinkedInAdsPanel />
-              <LinkedInSuggestionsPanel />
-              <LinkedInConversionsPanel />
-              <LinkedInAudiencePanel />
-            </div>
-          )}
-          {adsTab === "microsoft" && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Microsoft Ads - coming soon.</div>}
-          {adsTab === "adwaste" && <DiagnosticsPanel />}
+          {adsTab === "story" && <AdsStoryPanel />}
+          {adsTab === "campaigns" && <div className="space-y-4"><GoogleAdsPanel /><MayaSuggestionsPanel /><DiagnosticsPanel only={["ads"]} /><UtmBuilderPanel /></div>}
           {adsTab === "negatives" && <NegativesPanel />}
-          {adsTab === "clicks" && <ClicksPanel />}
+          {adsTab === "visitors" && (<div className="space-y-4"><VisitorsPanel /><ClicksPanel /></div>)}
+          {adsTab === "dropoff" && (<div className="space-y-4"><DropoffPanel /><AbandonedPanel /></div>)}
+          {adsTab === "audiences" && (<div className="space-y-4"><AudiencesNote /><IcpBuilderPanel /></div>)}
+          {adsTab === "website" && (<div className="space-y-4"><Ga4Panel /><ClarityPanel /></div>)}
+          {adsTab === "health" && (<div className="space-y-4"><GoogleHealthPanel /><AdsConversionStatus /><AdsConversionsPanel /><DiagnosticsPanel only={["queue", "funnel", "failures"]} /></div>)}
+          {adsTab === "linkedin" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}
+          {adsTab === "microsoft" && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Microsoft Ads - coming soon.</div>}
         </div>
       )}
       {tab === "email" && <BrandedEmailComposer />}
@@ -1525,11 +1466,7 @@ const MarketingDashboard = () => {
       {tab === "analytics" && (
         <div className="space-y-4">
           <AnalyticsFunnel />
-          <AbandonedPanel />{/* BF_PORTAL_ABANDONED_PANEL_v49 */}
           <SequencePerfPanel />
-          <SourcesPanel />
-          <Ga4Panel />
-          <ClarityPanel />
         </div>
       )}
       {tab === "referrers" && <BFReferrerManagement />}
