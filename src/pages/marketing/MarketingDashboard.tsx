@@ -2,7 +2,7 @@
 // not in the left nav. Two previous attempts filed it in sidebar groups.
 // BF_PORTAL_MARKETING_FUNNEL_LIVE_v1 — Analytics tab renders the live
 // application funnel from GET /api/marketing/funnel (respondOk envelope).
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; // BF_PORTAL_BRANDED_EMAIL_COMPOSER_MOUNT_v1
 import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORTAL_LINK_CLICKS_PANEL_v9
@@ -770,7 +770,19 @@ function SmsComposerPanel() {
       .catch(() => setSeg({ configured: false, all: 0, segments: [] }));
     loadTemplates();
   }, []);
-  const count = tag === "__all__" ? (seg?.all ?? 0) : (seg?.segments.find((x) => x.tag === tag)?.n ?? 0);
+  // BF_PORTAL_SMS_SEND_SAFETY_v710 - the button shows the server's exact
+  // audience (consent, Canadian mobiles, one text per phone), from the same
+  // planner the send uses; the segment list counts contacts, not texts.
+  const [exact, setExact] = useState<number | null>(null);
+  const loadExact = useCallback(() => {
+    setExact(null);
+    const q = tag === "__all__" ? "" : `?tag=${encodeURIComponent(tag)}`;
+    api.get<{ data?: { n?: number }; n?: number }>(`/api/marketing/sms/audience-count${q}`)
+      .then((res) => setExact(Number(res?.data?.n ?? res?.n ?? 0)))
+      .catch(() => setExact(null));
+  }, [tag]);
+  useEffect(() => { loadExact(); }, [loadExact]);
+  const count = exact ?? 0;
   const post = async (test?: string) => {
     setBusy(true); setMsg(null);
     try {
@@ -781,6 +793,7 @@ function SmsComposerPanel() {
       else {
         if (tag !== "__all__") payload.tag = tag;
         if (currentSmsTemplateId) payload.templateId = currentSmsTemplateId; // BF_PORTAL_TEMPLATE_ANALYTICS_v1
+        payload.expectedCount = count; // BF_PORTAL_SMS_SEND_SAFETY_v710 - the server refuses if this changed
       }
       const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>("/api/marketing/sms/send", payload);
       const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; smsSent?: number; emailSent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number };
@@ -789,7 +802,12 @@ function SmsComposerPanel() {
       else if (r?.test) setMsg(r.ok ? "Test sent." : `Test failed${r ? "" : ""}.`);
       else if (r?.queued) { void pollSendJob(String(r.jobId), Number(r.total ?? count), setMsg); }
       else setMsg(`SMS: ${r?.smsSent ?? 0}${r?.failed ? `, failed: ${r.failed}` : ""}.`);
-    } catch { setMsg("Send failed."); } finally { setBusy(false); }
+    } catch {
+      // BF_PORTAL_SMS_SEND_SAFETY_v710 - nothing is sent when this fails (the
+      // server queues or refuses); re-read the audience before another try.
+      setMsg("Not sent. The audience may have changed - check the number and send again.");
+      loadExact();
+    } finally { setBusy(false); }
   };
   if (seg && !seg.configured) {
     return <section className="drawer-section"><div className="drawer-section__title mb-2">SMS</div><p style={{ color: "var(--ui-text-muted)" }}>Not connected yet. Once your toll-free 800 number clears A2P verification, set TWILIO_SMS_FROM and bulk SMS will be available here.</p></section>;
@@ -829,7 +847,7 @@ function SmsComposerPanel() {
             <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="+1..." className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
           </label>
           <button type="button" disabled={busy || !body || !testTo} onClick={() => void post(testTo)} className="ui-button ui-button--secondary">Send test</button>
-          <button type="button" disabled={busy || !body || !count} onClick={() => { if (window.confirm(`Send this SMS to ${count} recipients? It will hold for 5 minutes and you can cancel.`)) void post(); }} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
+          <button type="button" disabled={busy || !body || !count || exact === null} onClick={() => { if (window.confirm(`Send this SMS to ${count} people (one text per phone number)? It goes out in 5 minutes and you can cancel until then.`)) void post(); }} className="ui-button ui-button--primary">{busy ? "Queuing..." : exact === null ? "Counting..." : `Send to ${count}`}</button>
         </div>
         <SendStatus msg={msg} onCancel={(id) => { void cancelSendJob(id).then((ok) => setMsg(ok ? "Canceled - nothing was sent." : "Too late to cancel - already sending.")); }} />
       </div>
