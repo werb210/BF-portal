@@ -15,6 +15,7 @@ import ClicksPanel from "@/pages/diagnostics/ClicksPanel"; // BF_PORTAL_BLOCK_v6
 import AdsConversionStatus from "@/components/marketing/AdsConversionStatus"; // BF_PORTAL_ADS_CONVERSION_STATUS_v401
 import AutomationsBuilder from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUTOMATIONS_IN_MARKETING_v697
 import { AdsStoryPanel, VisitorsPanel, DropoffPanel, AudiencesNote } from "@/components/marketing/GoogleAdsAnalytics"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
+import CustomerMatchPanel from "@/components/marketing/CustomerMatchPanel"; // BF_PORTAL_CUSTOMER_MATCH_LISTS_v711
 import GoogleHealthPanel from "@/pages/settings/tabs/GoogleHealthPanel"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
@@ -1480,7 +1481,7 @@ const MarketingDashboard = () => {
           {adsTab === "negatives" && <NegativesPanel />}
           {adsTab === "visitors" && (<div className="space-y-4"><VisitorsPanel /><ClicksPanel /></div>)}
           {adsTab === "dropoff" && (<div className="space-y-4"><DropoffPanel /><AbandonedPanel /></div>)}
-          {adsTab === "audiences" && (<div className="space-y-4"><AudiencesNote /><IcpBuilderPanel /></div>)}
+          {adsTab === "audiences" && (<div className="space-y-4"><AudiencesNote /><CustomerMatchPanel /><IcpBuilderPanel /></div>)}{/* BF_PORTAL_CUSTOMER_MATCH_LISTS_v711 */}
           {adsTab === "website" && (<div className="space-y-4"><Ga4Panel /><ClarityPanel /></div>)}
           {adsTab === "health" && (<div className="space-y-4"><GoogleHealthPanel /><AdsConversionStatus /><AdsConversionsPanel /><DiagnosticsPanel only={["queue", "funnel", "failures"]} /></div>)}
           </div>
