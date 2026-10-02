@@ -5,9 +5,13 @@ import { money, roasText, duration, visitorOutcome } from "../GoogleAdsAnalytics
 import { dedupeByPerson } from "../AbandonedPanel";
 const dash = readFileSync("src/pages/marketing/MarketingDashboard.tsx", "utf8");
 describe("Google Ads & Analytics section", () => {
-  it("is one section with every report as a sub-tab, LinkedIn and Microsoft kept", () => {
-    expect(dash).toContain('label: "Google Ads & Analytics"');
-    for (const t of ['["story", "Story"]', '["campaigns", "Campaigns & Keywords"]', '["negatives", "Search Terms & Negatives"]', '["visitors", "Visitors"]', '["dropoff", "Drop-off"]', '["audiences", "Audiences"]', '["website", "Website (GA4)"]', '["health", "Health"]', '["linkedin", "LinkedIn Ads"]', '["microsoft", "Microsoft Ads"]']) expect(dash).toContain(t);
+  it("is one Ads section: Google, Microsoft and LinkedIn, with every Google report under Google", () => {
+    // BF_PORTAL_ADS_SERVICES_v709
+    expect(dash).toContain('{ id: "ads", label: "Ads" }');
+    expect(dash).toContain('[["google", "Google"], ["microsoft", "Microsoft"], ["linkedin", "LinkedIn"]]');
+    for (const t of ['["story", "Story"]', '["campaigns", "Campaigns & Keywords"]', '["negatives", "Search Terms & Negatives"]', '["visitors", "Visitors"]', '["dropoff", "Drop-off"]', '["audiences", "Audiences"]', '["website", "Website (GA4)"]', '["health", "Health"]']) expect(dash).toContain(t);
+    expect(dash).toContain('adsService === "linkedin"');
+    expect(dash).toContain('adsService === "microsoft"');
   });
   it("removes the duplicates", () => {
     expect(dash).not.toContain("function SourcesPanel");

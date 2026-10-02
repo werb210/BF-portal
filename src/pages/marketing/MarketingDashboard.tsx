@@ -22,11 +22,14 @@ import GoogleHealthPanel from "@/pages/settings/tabs/GoogleHealthPanel"; // BF_P
 // data, two different places to look for it. BF now gets the tab too.
 type MarketingTab = "analytics" | "automations" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads";
 // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
-type AdsTab = "story" | "campaigns" | "negatives" | "visitors" | "dropoff" | "audiences" | "website" | "health" | "linkedin" | "microsoft";
+// BF_PORTAL_ADS_SERVICES_v709 - "Ads" section: one sub-tab per ad service
+// (Google, Microsoft, LinkedIn); every Google report sits under Google.
+type AdsService = "google" | "microsoft" | "linkedin";
+const ADS_SERVICES: Array<[AdsService, string]> = [["google", "Google"], ["microsoft", "Microsoft"], ["linkedin", "LinkedIn"]];
+type AdsTab = "story" | "campaigns" | "negatives" | "visitors" | "dropoff" | "audiences" | "website" | "health";
 const ADS_TABS: Array<[AdsTab, string]> = [
   ["story", "Story"], ["campaigns", "Campaigns & Keywords"], ["negatives", "Search Terms & Negatives"], ["visitors", "Visitors"],
   ["dropoff", "Drop-off"], ["audiences", "Audiences"], ["website", "Website (GA4)"], ["health", "Health"],
-  ["linkedin", "LinkedIn Ads"], ["microsoft", "Microsoft Ads"],
 ];
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
@@ -37,7 +40,7 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "sms", label: "SMS" },
   { id: "email", label: "Email" },
   { id: "links", label: "Links" }, // BF_PORTAL_BF_LINKS_TAB_v15
-  { id: "ads", label: "Google Ads & Analytics" }, // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
+  { id: "ads", label: "Ads" }, // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707 + BF_PORTAL_ADS_SERVICES_v709
 ];
 
 type FunnelStep = {
@@ -1423,6 +1426,7 @@ function AutomationsPanel() {
 const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>("analytics");
   const [adsTab, setAdsTab] = useState<AdsTab>("story");
+  const [adsService, setAdsService] = useState<AdsService>("google"); // BF_PORTAL_ADS_SERVICES_v709
 
   return (
     <div className="space-y-4">
@@ -1441,7 +1445,14 @@ const MarketingDashboard = () => {
 
       {tab === "ads" && (
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-testid="ads-services">
+            {ADS_SERVICES.map(([id, label]) => (
+              <button key={id} type="button" className={`ui-button ${adsService === id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setAdsService(id)}>{label}</button>
+            ))}
+          </div>
+          {adsService === "google" && (
+          <div className="space-y-4">
+          <div className="flex flex-wrap gap-2" data-testid="ads-google-tabs">
             {ADS_TABS.map(([id, label]) => (
               <button key={id} type="button" className={`ui-button ${adsTab === id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setAdsTab(id)}>{label}</button>
             ))}
@@ -1454,8 +1465,10 @@ const MarketingDashboard = () => {
           {adsTab === "audiences" && (<div className="space-y-4"><AudiencesNote /><IcpBuilderPanel /></div>)}
           {adsTab === "website" && (<div className="space-y-4"><Ga4Panel /><ClarityPanel /></div>)}
           {adsTab === "health" && (<div className="space-y-4"><GoogleHealthPanel /><AdsConversionStatus /><AdsConversionsPanel /><DiagnosticsPanel only={["queue", "funnel", "failures"]} /></div>)}
-          {adsTab === "linkedin" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}
-          {adsTab === "microsoft" && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Microsoft Ads - coming soon.</div>}
+          </div>
+          )}
+          {adsService === "linkedin" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}
+          {adsService === "microsoft" && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Microsoft Ads - coming soon.</div>}
         </div>
       )}
       {tab === "email" && <BrandedEmailComposer />}
