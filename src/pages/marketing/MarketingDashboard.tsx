@@ -737,7 +737,7 @@ function EmailComposerPanel() {
   );
 }
 // BF_PORTAL_SMS_COMPOSER_v1 - bulk SMS + 36h fallback-email cascade (BF silo).
-type SmsSegments = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
+type SmsSegments = { configured: boolean; all: number; segments: { tag: string; n: number }[]; audiences?: { tag: string; label: string }[] }; // BF_PORTAL_SMS_AUDIENCES_v726 audiences
 type SmsTemplateRow = { id: string; name: string; body: string | null; link_url: string | null }; // BF_PORTAL_BLOCK_v204_SMS_TEMPLATES
 function SmsComposerPanel() {
   const [seg, setSeg] = useState<SmsSegments | null>(null);
@@ -820,6 +820,8 @@ function SmsComposerPanel() {
         <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Audience
           <select value={tag} onChange={(e) => setTag(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
             <option value="__all__">All contacts with a mobile ({seg?.all ?? 0})</option>
+            {/* BF_PORTAL_SMS_AUDIENCES_v726 - audiences no tag can express; the exact count shows on the Send button */}
+            {(seg?.audiences ?? []).map((a) => <option key={a.tag} value={a.tag}>{a.label}</option>)}
             {(seg?.segments ?? []).map((x) => <option key={x.tag} value={x.tag}>{x.tag} ({x.n})</option>)}
           </select>
         </label>
