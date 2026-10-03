@@ -5,7 +5,7 @@ import { renderReport } from "../ReportDataCards";
 
 describe("batch 2 report cards", () => {
   it("revenue forecast", () => {
-    render(<>{renderReport("revenue_forecast", { total: 1200, stages: [{ stage: "Off to Lender", files: 2, amount: 100000, odds: 0.4, expected_commission: 1200 }] })}</>);
+    render(<>{renderReport("revenue_forecast", { total: 1200, full_total: 3000, stages: [{ stage: "Off to Lender", files: 2, amount: 100000, full_commission: 3000, odds: 0.4, expected_commission: 1200 }] })}</>);
     expect(screen.getByText("Off to Lender")).toBeTruthy();
     expect(screen.getByText("40%")).toBeTruthy();
   });
