@@ -1,0 +1,27 @@
+# BF_PORTAL_DESKTOP_APP_v718 - builds and publishes the Windows installer.
+name: Desktop app (Windows)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Use the portal icon
+        shell: pwsh
+        run: Copy-Item ../public/icons/icon-512x512.png icon.png
+      - run: npm install --no-audit --no-fund
+      - run: npm run dist:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
