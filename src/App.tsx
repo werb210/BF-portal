@@ -23,7 +23,7 @@ import ProtectedRoute from "@/routes/ProtectedRoute";
 import RequireRole from "@/components/auth/RequireRole";
 import Login from "@/pages/Login";
 import Verify from "@/pages/Verify";
-import DashboardPage from "@/pages/dashboard/DashboardPage";
+import DashboardHome from "@/pages/dashboard/DashboardHome"; // BF_PORTAL_DASHBOARD_BOARD_v730 (replaces DashboardPage on /portal)
 import LendersPage from "@/pages/lenders/LendersPage";
 // BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE
 import PipelineRouter from "@/pages/pipeline/PipelineRouter";
@@ -208,7 +208,7 @@ const AppRoutes = () => {
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/settings/:tab" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/marketing/*" element={<ProtectedRoute><RequireRole roles={["Admin", "Marketing"]}><MarketingPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/portal/*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/portal/*" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
         <Route path="/dashboard" element={<Navigate to="/portal" replace />} />
         <Route
           path="/pipeline"
