@@ -32,7 +32,10 @@ const EMPTY = {
   etransfer_email: "",
 };
 
-export default function ReferrerSignupPage() {
+// BF_PORTAL_BROKER_PORTAL_v717 - shared by /broker/signup.
+export default function ReferrerSignupPage({ kind = "referrer" }: { kind?: "referrer" | "broker" } = {}) {
+  const isBroker = kind === "broker";
+  const base = isBroker ? "/broker" : "/referrer";
   usePageMeta(
     "Become a Referral Partner | Boreal Financial",
     "Refer your clients to Boreal Financial. One application across 80+ lenders, no cost to them and no credit pull. Sign up and get paid when a deal funds.",
@@ -48,7 +51,7 @@ export default function ReferrerSignupPage() {
   const navigate = useNavigate();
 
   const set = (k: keyof typeof EMPTY, v: string) => setForm((s) => ({ ...s, [k]: v }));
-  const required = form.full_name && form.email && form.phone && form.street && form.city && form.province && form.postal_code;
+  const required = form.full_name && form.email && form.phone && form.street && form.city && form.province && form.postal_code && (!isBroker || form.company_name);
 
   async function submit() {
     if (!required) {
@@ -60,11 +63,11 @@ export default function ReferrerSignupPage() {
     try {
       const res = await api<SignupResp>("/api/referrer/signup", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify(isBroker ? { ...form, kind: "broker" } : form),
       });
       if (res.alreadyActive) {
         setNotice("You already have an account. Please log in.");
-        navigate("/referrer/login");
+        navigate(base + "/login");
         return;
       }
       setReferrerId(res.referrerId);
@@ -100,7 +103,7 @@ export default function ReferrerSignupPage() {
           sessionStorage.setItem("referrer_token", res.token);
           sessionStorage.setItem("referrer_user", JSON.stringify({ ...res.user, userType: "referrer" }));
           if (pollRef.current) window.clearInterval(pollRef.current);
-          navigate("/referrer");
+          if (isBroker) navigate("/broker"); else navigate("/referrer");
         }
       } catch {
         // 409 agreement_not_signed is expected until they finish; keep polling.
@@ -140,11 +143,11 @@ export default function ReferrerSignupPage() {
         <div className="text-center">
           <img src={logoUrl} alt="Boreal" style={{ display: "block", margin: "0 auto 18px", height: 88, width: "auto" }} />
           <h1 className="text-2xl font-semibold text-white">Boreal Financial</h1>
-          <p className="mt-1 text-sm font-medium text-white/70">Referral Portal</p>
+          <p className="mt-1 text-sm font-medium text-white/70">{isBroker ? "Broker Portal" : "Referral Portal"}</p>
         </div>
       <div className="w-full bg-white border border-slate-200 rounded-xl p-6 shadow-md space-y-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Become a Boreal referral partner</h2>
+          <h2 className="text-lg font-semibold text-slate-900">{isBroker ? "Send your files to Boreal" : "Become a Boreal referral partner"}</h2>
           <p className="text-sm leading-relaxed text-slate-600">
             Your clients get one application across 80+ lenders, with no cost to
             them and no credit pull. You get paid when a deal funds. Sign the
@@ -163,7 +166,7 @@ export default function ReferrerSignupPage() {
             <input className="w-full border rounded p-2 bg-white text-slate-900" type="tel" placeholder="Mobile phone *"
               value={form.phone} onChange={(e) => set("phone", e.target.value)} />
           </div>
-          <input className="w-full border rounded p-2 bg-white text-slate-900" placeholder="Company name (optional)"
+          <input className="w-full border rounded p-2 bg-white text-slate-900" placeholder={isBroker ? "Brokerage legal name *" : "Company name (optional)"}
             value={form.company_name} onChange={(e) => set("company_name", e.target.value)} />
           <input className="w-full border rounded p-2 bg-white text-slate-900" placeholder="Street address *"
             value={form.street} onChange={(e) => set("street", e.target.value)} />
@@ -188,8 +191,8 @@ export default function ReferrerSignupPage() {
         </button>
 
         <p className="text-center text-sm text-slate-500">
-          Already a referral partner?{" "}
-          <button type="button" className="underline text-blue-700 font-medium" onClick={() => navigate("/referrer/login")}>
+          {isBroker ? "Already signed up?" : "Already a referral partner?"}{" "}
+          <button type="button" className="underline text-blue-700 font-medium" onClick={() => navigate(base + "/login")}>
             Log in
           </button>
         </p>
