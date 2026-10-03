@@ -12,7 +12,7 @@ describe("Boreal Staff for Windows", () => {
     expect(main).toContain("backgroundThrottling: false");
   });
   it("closing the window hides it to the tray; only Quit exits", () => {
-    expect(main).toContain("if (IS_WIN && !quitting) { event.preventDefault(); mainWindow.hide(); }");
+    expect(main).toContain("if (KEEP_ALIVE && !quitting) { event.preventDefault(); mainWindow.hide(); }"); // BF_PORTAL_DESKTOP_MAC_v723: Windows and Mac
     expect(main).toContain("new Tray(");
   });
   it("runs once, starts at Windows sign-in hidden, and updates itself", () => {

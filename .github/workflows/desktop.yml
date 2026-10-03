@@ -1,5 +1,6 @@
 # BF_PORTAL_DESKTOP_APP_v718 - builds and publishes the Windows installer.
-name: Desktop app (Windows)
+# BF_PORTAL_DESKTOP_MAC_v723 - and the Mac installer (.dmg, Apple-chip and Intel), unsigned for now.
+name: Desktop app (Windows and Mac)
 
 on:
   workflow_dispatch:
@@ -25,3 +26,27 @@ jobs:
       - run: npm run dist:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  mac:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Use the portal icon
+        run: cp ../public/icons/icon-512x512.png icon.png
+      - run: npm install --no-audit --no-fund
+      # Unsigned for now, so it is not published as an update; download the .dmg from
+      # this run's Artifacts ("Boreal-Staff-Portal-Mac").
+      - run: npm run dist:mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Boreal-Staff-Portal-Mac
+          path: desktop/release/*.dmg
+          if-no-files-found: error

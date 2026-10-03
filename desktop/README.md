@@ -43,3 +43,15 @@ run GitHub Actions > **Desktop app (Windows)** > **Run workflow**. The installer
 appears under Releases (`Boreal-Staff-Portal-Setup-<version>.exe`). It is not
 code-signed yet, so the first install shows a SmartScreen **More info > Run
 anyway** prompt once. Quit from the tray icon to stop calls ringing on that PC.
+
+## Mac (BF_PORTAL_DESKTOP_MAC_v723)
+
+Like Windows, the Mac app keeps running after its window is closed (menu-bar icon
+to reopen or quit), so the dialler stays connected and calls ring on the Mac and the
+iPhone dialler together. It starts at login, hidden.
+
+GitHub Actions > "Desktop app (Windows and Mac)" > Run workflow also builds the Mac
+installers. Download them from that run's Artifacts ("Boreal-Staff-Portal-Mac"): the
+arm64 .dmg for Apple-chip Macs, the x64 one for Intel. The app is not signed yet, so
+the first launch needs right-click > Open > Open. It cannot update itself until it is
+signed with Boreal's Apple Developer ID; install new versions by hand until then.
