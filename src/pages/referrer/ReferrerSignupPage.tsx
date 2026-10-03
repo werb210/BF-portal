@@ -36,9 +36,12 @@ const EMPTY = {
 export default function ReferrerSignupPage({ kind = "referrer" }: { kind?: "referrer" | "broker" } = {}) {
   const isBroker = kind === "broker";
   const base = isBroker ? "/broker" : "/referrer";
+  // BF_PORTAL_BROKER_SIGNUP_TEXT_v725 - the broker link had the referrer's wording.
   usePageMeta(
-    "Become a Referral Partner | Boreal Financial",
-    "Refer your clients to Boreal Financial. One application across 80+ lenders, no cost to them and no credit pull. Sign up and get paid when a deal funds.",
+    isBroker ? "Broker Portal | Boreal Financial" : "Become a Referral Partner | Boreal Financial",
+    isBroker
+      ? "Place your clients' files with Boreal's lenders. Upload a file, agree the split for that file, and follow it to funding."
+      : "Refer your clients to Boreal Financial. One application across 80+ lenders, no cost to them and no credit pull. Sign up and get paid when a deal funds.",
   );
   const [form, setForm] = useState({ ...EMPTY });
   const [stage, setStage] = useState<"form" | "sign">("form");
@@ -148,11 +151,18 @@ export default function ReferrerSignupPage({ kind = "referrer" }: { kind?: "refe
       <div className="w-full bg-white border border-slate-200 rounded-xl p-6 shadow-md space-y-3">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">{isBroker ? "Send your files to Boreal" : "Become a Boreal referral partner"}</h2>
+          {isBroker ? (
+            <p className="text-sm leading-relaxed text-slate-600">
+              Place your clients' files with Boreal's lenders. Upload a file, agree the commission split for that file,
+              and follow it through to funding. Sign the broker agreement below to get started - it takes a few minutes.
+            </p>
+          ) : (
           <p className="text-sm leading-relaxed text-slate-600">
             Your clients get one application across 80+ lenders, with no cost to
             them and no credit pull. You get paid when a deal funds. Sign the
             referral agreement below to get started - it takes a few minutes.
           </p>
+          )}
         </div>
 
         {notice && <p className="text-sm text-green-700">{notice}</p>}
@@ -179,7 +189,7 @@ export default function ReferrerSignupPage({ kind = "referrer" }: { kind?: "refe
               value={form.postal_code} onChange={(e) => set("postal_code", e.target.value)} />
           </div>
           <input className="w-full border rounded p-2 bg-white text-slate-900" type="email"
-            placeholder="e-Transfer email for commission payouts (optional)"
+            placeholder={isBroker ? "Email for broker payouts (optional)" : "e-Transfer email for commission payouts (optional)"}
             value={form.etransfer_email} onChange={(e) => set("etransfer_email", e.target.value)} />
         </div>
 
