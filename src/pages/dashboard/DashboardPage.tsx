@@ -6,6 +6,7 @@ import { api } from "@/api";
 import { useSilo } from "@/context/SiloContext";
 // BF_PORTAL_DASHBOARD_ANALYTICS_v1
 import DashboardAnalytics from "@/pages/dashboard/DashboardAnalytics";
+import ReportsBoard from "@/pages/reports/ReportsBoard"; // BF_PORTAL_REPORTS_SECTION_v714
 
 type DashboardMetrics = {
   activeApplications: number;
@@ -254,6 +255,12 @@ const DashboardPage = () => {
 
       {/* BF_PORTAL_DASHBOARD_ANALYTICS_v1 */}
       <DashboardAnalytics />
+
+      {/* BF_PORTAL_REPORTS_SECTION_v714 - reports you send here from Reports, in your order */}
+      <section style={{ marginTop: 16 }}>
+        <h2 style={{ fontSize: 16, margin: "0 0 8px", color: "var(--ui-text)" }}>My reports</h2>
+        <ReportsBoard mode="dashboard" />
+      </section>
     </div>
   );
 };

@@ -38,14 +38,3 @@ export default function ContactRecordTabs({ analytics, timeline }: { analytics: 
     </div>
   );
 }
-
-export function NoVisitorJourneyNotice() {
-  return (
-    <section style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }} data-testid="bi-visitor-journey-notice">
-      <strong>Visitor journey</strong>
-      <p style={{ color: "var(--ui-text-muted)", fontSize: 13, marginBottom: 0 }}>
-        Page-by-page browsing history is only recorded for visitors to boreal.financial. The Boreal Insurance website does not record it yet.
-      </p>
-    </section>
-  );
-}
