@@ -4,6 +4,12 @@ const { app, BrowserWindow, session, shell, Tray, Menu, nativeImage } = require(
 const path = require("path");
 
 const IS_WIN = process.platform === "win32";
+// BF_PORTAL_DESKTOP_MAC_v723 - the Mac app keeps the dialler alive the same way:
+// closing the window hides it (menu-bar icon to reopen or quit), it starts at login,
+// and it runs once. Mac updates stay manual until the app is signed with Boreal's
+// Apple Developer ID (macOS only lets signed apps update themselves).
+const IS_MAC = process.platform === "darwin";
+const KEEP_ALIVE = IS_WIN || IS_MAC;
 
 const APP_URL = process.env.BOREAL_PORTAL_URL || "https://staff.boreal.financial";
 const APP_ORIGIN = new URL(APP_URL).origin;
@@ -25,9 +31,9 @@ let mainWindow = null;
 let tray = null;
 let quitting = false;
 
-if (IS_WIN && !app.requestSingleInstanceLock()) {
+if (KEEP_ALIVE && !app.requestSingleInstanceLock()) {
   app.quit();
-} else if (IS_WIN) {
+} else if (KEEP_ALIVE) {
   app.on("second-instance", () => showWindow());
 }
 
@@ -85,7 +91,7 @@ function createWindow(startHidden = false) {
   });
 
   mainWindow.on("close", (event) => {
-    if (IS_WIN && !quitting) { event.preventDefault(); mainWindow.hide(); }
+    if (KEEP_ALIVE && !quitting) { event.preventDefault(); mainWindow.hide(); }
   });
   mainWindow.on("closed", () => { mainWindow = null; });
 }
@@ -124,11 +130,25 @@ app.whenReady().then(() => {
       .catch((error) => console.warn("update check failed", error && error.message));
     checkForUpdates();
     setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
+  } else if (IS_MAC) {
+    // BF_PORTAL_DESKTOP_MAC_v723 - start at login (hidden), menu-bar icon, dock click reopens.
+    app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+    const startHidden = app.getLoginItemSettings().wasOpenedAsHidden || process.argv.includes("--hidden");
+    createWindow(startHidden);
+    const barIcon = nativeImage.createFromPath(path.join(__dirname, "icon.png"));
+    tray = new Tray(barIcon.isEmpty() ? barIcon : barIcon.resize({ width: 18, height: 18 }));
+    tray.setToolTip("Boreal Staff Portal - the dialler is on");
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: "Open Boreal Staff Portal", click: () => showWindow() },
+      { type: "separator" },
+      { label: "Quit (calls stop ringing on this Mac)", click: () => { quitting = true; app.quit(); } },
+    ]));
   } else {
     createWindow();
   }
 
   app.on("activate", () => {
+    if (KEEP_ALIVE) { showWindow(); return; }
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
@@ -136,5 +156,5 @@ app.whenReady().then(() => {
 app.on("before-quit", () => { quitting = true; });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin" && !IS_WIN) app.quit();
+  if (!KEEP_ALIVE) app.quit();
 });

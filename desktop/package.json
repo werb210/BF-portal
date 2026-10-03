@@ -7,7 +7,8 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --mac --arm64",
-    "dist:win": "electron-builder --win --publish always"
+    "dist:win": "electron-builder --win --publish always",
+    "dist:mac": "electron-builder --mac --publish never"
   },
   "devDependencies": {
     "electron": "43.2.0",
@@ -16,11 +17,25 @@
   "build": {
     "appId": "com.boreal.portal.desktop",
     "productName": "Boreal Staff Portal",
-    "directories": { "output": "release" },
-    "files": ["main.cjs", "package.json", "icon.png"],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "package.json",
+      "icon.png"
+    ],
     "mac": {
       "category": "public.app-category.finance",
-      "target": [{ "target": "dmg", "arch": ["arm64"] }],
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
       "icon": "../public/icons/icon-512x512.png",
       "identity": null,
       "extendInfo": {
@@ -28,7 +43,14 @@
       }
     },
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "icon.png"
     },
     "nsis": {
@@ -38,12 +60,14 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Boreal Staff Portal"
     },
-    "publish": [{
-      "provider": "github",
-      "owner": "werb210",
-      "repo": "BF-portal",
-      "releaseType": "release"
-    }]
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "werb210",
+        "repo": "BF-portal",
+        "releaseType": "release"
+      }
+    ]
   },
   "dependencies": {
     "electron-updater": "6.6.2"
