@@ -819,11 +819,17 @@ function SmsComposerPanel() {
       <div className="space-y-2">
         <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Audience
           <select value={tag} onChange={(e) => setTag(e.target.value)} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }}>
-            <option value="__all__">All contacts with a mobile ({seg?.all ?? 0})</option>
+            {/* BF_PORTAL_SMS_TEXTABLE_LABEL_v728 - this number is people who may be texted (consent, Canadian mobile), not every contact */}
+            <option value="__all__">Everyone you can text ({seg?.all ?? 0})</option>
             {/* BF_PORTAL_SMS_AUDIENCES_v726 - audiences no tag can express; the exact count shows on the Send button */}
             {(seg?.audiences ?? []).map((a) => <option key={a.tag} value={a.tag}>{a.label}</option>)}
             {(seg?.segments ?? []).map((x) => <option key={x.tag} value={x.tag}>{x.tag} ({x.n})</option>)}
           </select>
+          {seg && typeof (seg as any).ineligible === "number" && (seg as any).ineligible > 0 && (
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--ui-text-muted)" }} data-testid="sms-not-textable">
+              {(seg as any).ineligible} other contact(s) with a mobile can't be texted: no consent on record, consent expired, opted out, or not a Canadian mobile.
+            </p>
+          )}
         </label>
         <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Message
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={400} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
