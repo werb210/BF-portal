@@ -11,6 +11,7 @@ describe("BF Referrer Management (v1)", () => {
   });
   it("is added as a Referrers tab in Marketing", () => {
     expect(dash).toContain('{ id: "referrers", label: "Referrers" }');
-    expect(dash).toContain("<BFReferrerManagement />");
+    // BF_PORTAL_PARTNERS_TABS_v720 - now inside the Referrers / Brokers sub-tabs.
+    expect(dash).toContain("<ReferrersAndBrokers");
   });
 });

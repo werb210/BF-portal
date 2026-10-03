@@ -223,7 +223,8 @@ const AppRoutes = () => {
         {/* BF_PORTAL_BLOCK_v91_BI_LENDERS_PAGE_v1 */}
         <Route path="/bi-lenders" element={<ProtectedRoute><BiLendersPage /></ProtectedRoute>} />
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
-        <Route path="/broker-imports" element={<Navigate to="/settings/broker-files" replace />} /> {/* BF_PORTAL_BLOCK_v526 - Broker Files lives in Settings */}
+        <Route path="/broker-imports" element={<Navigate to="/marketing?tab=referrers&sub=brokers" replace />} /> {/* BF_PORTAL_PARTNERS_TABS_v720 - Broker Files lives in Marketing > Referrers > Brokers */}
+        <Route path="/settings/broker-files" element={<Navigate to="/marketing?tab=referrers&sub=brokers" replace />} />
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}><div style={{ padding: 16 }}><h1 style={{ fontSize: 20, margin: "0 0 12px", color: "var(--ui-text)" }}>Reports</h1><ReportsBoard /></div></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_REPORTS_SECTION_v714 */}
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
         <Route

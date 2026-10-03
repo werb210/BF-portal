@@ -8,7 +8,7 @@ import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; 
 import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORTAL_LINK_CLICKS_PANEL_v9
 import SequenceCanvas, { type BFSequenceStep } from "@/components/marketing/SequenceCanvas";
 import AbandonedPanel from "@/components/marketing/AbandonedPanel"; // BF_PORTAL_ABANDONED_PANEL_v49
-import BFReferrerManagement from "./BFReferrerManagement"; // BF_PORTAL_BF_REFERRER_MANAGEMENT_v1
+import ReferrersAndBrokers from "./ReferrersAndBrokers"; // BF_PORTAL_PARTNERS_TABS_v720 (wraps BFReferrerManagement)
 import DiagnosticsPanel from "@/pages/diagnostics/DiagnosticsPage";
 import NegativesPanel from "@/pages/diagnostics/NegativesPanel";
 import ClicksPanel from "@/pages/diagnostics/ClicksPanel"; // BF_PORTAL_BLOCK_v615_AD_CLICKS
@@ -1443,7 +1443,8 @@ function AutomationsPanel() {
 }
 
 const MarketingDashboard = () => {
-  const [tab, setTab] = useState<MarketingTab>("analytics");
+  // BF_PORTAL_PARTNERS_TABS_v720 - ?tab=referrers (old Broker Files links land on Referrers > Brokers).
+  const [tab, setTab] = useState<MarketingTab>(() => (new URLSearchParams(window.location.search).get("tab") === "referrers" ? "referrers" : "analytics"));
   const [adsTab, setAdsTab] = useState<AdsTab>("story");
   const [adsService, setAdsService] = useState<AdsService>("google"); // BF_PORTAL_ADS_SERVICES_v709
 
@@ -1501,7 +1502,7 @@ const MarketingDashboard = () => {
           <SequencePerfPanel />
         </div>
       )}
-      {tab === "referrers" && <BFReferrerManagement />}
+      {tab === "referrers" && <ReferrersAndBrokers initial={new URLSearchParams(window.location.search).get("sub") === "brokers" ? "brokers" : "referrers"} />}{/* BF_PORTAL_PARTNERS_TABS_v720 */}
       {/* BF_PORTAL_TEMPLATE_PERF_EMAIL_ONLY_v1 - Template performance reports
           email sends, opens, clicks, and replies, so keep it on the Email tab. */}
       {tab === "email" && <TemplateAnalyticsPanel />}
