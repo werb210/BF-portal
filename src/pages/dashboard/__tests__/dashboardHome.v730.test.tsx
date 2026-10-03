@@ -1,0 +1,16 @@
+// BF_PORTAL_DASHBOARD_BOARD_v730
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+const get = vi.fn(), put = vi.fn();
+vi.mock("@/api", () => ({ api: { get: (...args: unknown[]) => get(...args), put: (...args: unknown[]) => put(...args) } }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ isAuthenticated: true, isLoading: false }) }));
+vi.mock("@/pages/reports/ReportsBoard", () => ({ CardBody: ({ report }: { report: string }) => <div>body-{report}</div> }));
+import DashboardHome, { defaultCards, reorder, withBuiltins } from "../DashboardHome";
+beforeEach(() => { get.mockReset(); put.mockReset(); put.mockResolvedValue({ ok: true }); vi.spyOn(window, "confirm").mockReturnValue(true); get.mockImplementation(async (url: string) => { if (url.startsWith("/api/dashboard/metrics")) return { activeApplications: 8, dealsWonThisMonth: 0, commissionEarned: 0, newLeadsToday: 1, pipelineByStage: { "Off to Lender": 5 }, commissionByStage: { "Off to Lender": 131020 } }; if (url.startsWith("/api/dashboard/analytics")) return { revenueFunnel: { visits: 645, applications: 8, submitted: 8, funded: 0 }, applicationFunnel: { Hold: 5 } }; if (url.startsWith("/api/reports/catalog")) return { reports: [{ key: "stuck_deals", title: "Stuck deals", silo: "BF", size: "full", description: "d" }] }; return { tabs: [{ id: "t", name: "Sales", cards: [] }], dashboard: null }; }); });
+describe("movable Dashboard", () => {
+  it("shows every standard section as a card by default", async () => { render(<MemoryRouter><DashboardHome /></MemoryRouter>); expect(await screen.findByTestId("dash-card-dash_kpis")).toBeTruthy(); for (const key of ["dash_pipeline", "dash_totals", "dash_dropoffs", "dash_acquisition", "dash_marketing_perf", "dash_funding_product", "dash_doc_issues", "dash_top_lenders"]) expect(screen.getByTestId(`dash-card-${key}`)).toBeTruthy(); expect(await screen.findByText("645")).toBeTruthy(); });
+  it("resizes and saves without touching Reports tabs", async () => { render(<MemoryRouter><DashboardHome /></MemoryRouter>); fireEvent.click(await screen.findByLabelText("Options for Pipeline by stage")); fireEvent.click(screen.getByText("Small")); await waitFor(() => expect(put).toHaveBeenCalled()); const body = put.mock.calls[0]![1] as any; expect(body.dashboard.cards.find((c: any) => c.report === "dash_pipeline").size).toBe("third"); expect(body.tabs).toEqual([{ id: "t", name: "Sales", cards: [] }]); });
+  it("offers removed sections and reports", async () => { render(<MemoryRouter><DashboardHome /></MemoryRouter>); fireEvent.click(await screen.findByLabelText("Options for Key numbers")); fireEvent.click(screen.getByText("Remove")); fireEvent.click(screen.getByTestId("dash-add")); expect(screen.getByTestId("dash-library").textContent).toContain("Key numbers"); expect(screen.getByTestId("dash-library").textContent).toContain("Stuck deals"); });
+  it("restores builtins around legacy saved reports", () => { const out = withBuiltins([{ id: "a", report: "stuck_deals", size: "full" }]); expect(out[0]!.report).toBe("dash_kpis"); expect(out.at(-1)!.report).toBe("stuck_deals"); expect(reorder(defaultCards(), "dash_top_lenders", "dash_kpis")[0]!.report).toBe("dash_top_lenders"); });
+});
