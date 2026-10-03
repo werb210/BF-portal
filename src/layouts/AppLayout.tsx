@@ -37,6 +37,7 @@ const BF_NAV: NavItem[] = [
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
   { label: "Lenders",        path: "/lenders",         roles: ["Admin", "Staff"] },
+  { label: "Reports",        path: "/reports",         roles: ["Admin", "Staff", "Ops", "Marketing"] }, // BF_PORTAL_REPORTS_SECTION_v714
   { label: "Settings",       path: "/settings",        roles: ["Admin", "Staff", "Ops"] },
 ];
 
@@ -50,6 +51,7 @@ const BI_NAV: NavItem[] = [
   { label: "Lender", path: "/silo/bi/lender", roles: ["Admin", "Staff"] },
   { label: "Marketing", path: "/silo/bi/marketing", roles: ["Admin"] },
   { label: "Outreach", path: "/silo/bi/outreach", roles: ["Admin"] }, // BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_v1
+  { label: "Reports", path: "/reports", roles: ["Admin", "Staff", "Ops", "Marketing"] }, // BF_PORTAL_REPORTS_SECTION_v714
 ];
 
 // BF_PORTAL_SLF_SINGLE_NAV_v1 - SLF is a read-only mirror of slf-server with
