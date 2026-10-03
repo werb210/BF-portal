@@ -59,6 +59,8 @@ type Card = {
   parked_at?: string | null;
   parked_reason?: string | null;
   partner_name?: string | null;
+  broker_name?: string | null; // BF_PORTAL_BROKER_PIPELINE_v724
+  broker_split_status?: string | null;
   partner_contact_id?: string | null;
   productCategory?: string | null;
   product_category?: string | null;
@@ -416,6 +418,8 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
               <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.phone}</div>
             )}
             {/* v_PARTNER_NAME_LINK: partner name -> their CRM contact, mirrors the applicant link */}
+            {/* BF_PORTAL_BROKER_PIPELINE_v724 - broker files: who sent it, client status, split status */}
+            {card.broker_name && <BrokerBadges card={card} />}
             {card.partner_name && (
               card.partner_contact_id ? (
                 <button
@@ -575,6 +579,26 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// BF_PORTAL_BROKER_PIPELINE_v724
+export function brokerBadgeLabels(card: { broker_name?: string | null; broker_split_status?: string | null; pipeline_state?: string | null }): string[] {
+  if (!card.broker_name) return [];
+  const out = ["From " + card.broker_name];
+  if (String(card.pipeline_state ?? "").toLowerCase() === "draft") out.push("Waiting for client");
+  const split = card.broker_split_status;
+  out.push(split === "accepted" ? "Split agreed" : split === "countered" ? "Broker countered" : split === "proposed" ? "Split proposed" : "No split yet");
+  return out;
+}
+
+function BrokerBadges({ card }: { card: { broker_name?: string | null; broker_split_status?: string | null; pipeline_state?: string | null } }) {
+  return (
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }} data-testid="broker-badges">
+      {brokerBadgeLabels(card).map((label) => (
+        <span key={label} style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 999, border: "1px solid var(--ui-border)", background: label === "Split agreed" ? "#dcfce7" : label.startsWith("From ") ? "#e0e7ff" : "#fef3c7", color: "#1f2937" }}>{label}</span>
+      ))}
     </div>
   );
 }

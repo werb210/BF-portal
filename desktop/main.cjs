@@ -1,6 +1,6 @@
 // BF_PORTAL_DESKTOP_APP_v718 - Windows keeps the dialler connected in the tray,
 // starts hidden at sign-in, runs once, and updates from GitHub releases.
-const { app, BrowserWindow, session, shell, Tray, Menu, nativeImage } = require("electron");
+const { app, BrowserWindow, session, shell, Tray, Menu, nativeImage, ipcMain, Notification } = require("electron");
 const path = require("path");
 
 const IS_WIN = process.platform === "win32";
@@ -70,6 +70,8 @@ function createWindow(startHidden = false) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // BF_PORTAL_DESKTOP_ALERTS_v724 - incoming-call pop-up and unread badge bridge.
+      preload: path.join(__dirname, "preload.cjs"),
       // Keep the dialler and ringtone active while the window is hidden.
       backgroundThrottling: false,
     },
@@ -157,4 +159,34 @@ app.on("before-quit", () => { quitting = true; });
 
 app.on("window-all-closed", () => {
   if (!KEEP_ALIVE) app.quit();
+});
+
+// BF_PORTAL_DESKTOP_ALERTS_v724 - an incoming call brings the window to the front with
+// a pop-up naming the caller; the unread count shows on the taskbar (Windows: red dot
+// and tray tooltip) or the Dock (Mac: number badge). Only the portal page may ask.
+const BADGE_DOT = nativeImage.createFromDataURL("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWElEQVR4nGNgoBAw4pK4o6b2H5mvcusWVrUYguga0QG6QUykaMamhgmXBLGGMOFTSAxgItV2dFdQxwUDbwCuRIIPwPRQzwukuAJZLRMuCWI0MzBQITNRDACMliQa+qnBwQAAAABJRU5ErkJggg==");
+let callNote = null;
+
+ipcMain.on("boreal:incoming-call", (event, info) => {
+  if (!isPortalUrl(event.sender.getURL())) return;
+  showWindow();
+  if (mainWindow) {
+    mainWindow.setAlwaysOnTop(true);
+    setTimeout(() => { if (mainWindow) mainWindow.setAlwaysOnTop(false); }, 4000);
+    if (IS_WIN) mainWindow.flashFrame(true);
+  }
+  if (Notification.isSupported()) {
+    if (callNote) callNote.close();
+    callNote = new Notification({ title: "Incoming call: " + (info && info.name ? info.name : "Unknown caller"), body: info && info.detail ? info.detail : "Answer in Boreal Staff Portal", silent: true });
+    callNote.on("click", () => showWindow());
+    callNote.show();
+  }
+});
+
+ipcMain.on("boreal:badge", (event, count) => {
+  if (!isPortalUrl(event.sender.getURL())) return;
+  const n = Math.max(0, Math.min(999, Number(count) || 0));
+  if (IS_MAC) app.setBadgeCount(n);
+  if (IS_WIN && mainWindow) mainWindow.setOverlayIcon(n > 0 ? BADGE_DOT : null, n > 0 ? n + " unread" : "");
+  if (tray) tray.setToolTip("Boreal Staff Portal" + (n > 0 ? " - " + n + " unread" : " - the dialler is on"));
 });

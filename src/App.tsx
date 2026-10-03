@@ -49,6 +49,7 @@ import AiCommsPage from "@/pages/AiCommsPage";
 import AIChatDashboard from "@/pages/AIChatDashboard";
 import AIKnowledgeManager from "@/pages/admin/AIKnowledgeManager";
 import ReportsBoard from "@/pages/reports/ReportsBoard"; // BF_PORTAL_REPORTS_SECTION_v714 (replaces the hidden ReportsPage)
+import DesktopBridge from "@/desktop/DesktopBridge"; // BF_PORTAL_DESKTOP_ALERTS_v724
 import AutomationsPage from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUTOMATIONS_UI_v1
 // BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1
 // Five removed admin pages all call /api/admin/* endpoints that do not exist
@@ -121,6 +122,7 @@ function AppShell() {
     <>
       <SessionGuard />
       <DialerProvider />
+      <DesktopBridge />{/* BF_PORTAL_DESKTOP_ALERTS_v724 */}
       <PushNotificationsProvider />
       <WidgetSnapshotProvider />{/* BF_PORTAL_WIDGET_SNAPSHOT_v13 */}
       <PortalLauncherProvider />{/* BF_PORTAL_BLOCK_v556 */}
