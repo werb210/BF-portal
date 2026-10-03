@@ -16,7 +16,10 @@ function normalizeNAPhone(value: string): string | null {
   return null;
 }
 
-export default function ReferrerLoginPage() {
+// BF_PORTAL_BROKER_PORTAL_v717 - shared by the broker phone-code login.
+export default function ReferrerLoginPage({ kind = "referrer" }: { kind?: "referrer" | "broker" } = {}) {
+  const isBroker = kind === "broker";
+  const base = isBroker ? "/broker" : "/referrer";
   const [step, setStep] = useState<"enter" | "verify">("enter");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -64,7 +67,7 @@ export default function ReferrerLoginPage() {
       });
       sessionStorage.setItem("referrer_token", r.token);
       sessionStorage.setItem("referrer_user", JSON.stringify(r.user));
-      navigate(r.profileComplete === false ? "/referrer/profile" : "/referrer");
+      navigate(isBroker ? base : r.profileComplete === false ? "/referrer/profile" : "/referrer");
     } catch (e) {
       // BF_PORTAL_REFERRER_UNIFY_UI_v1 - do NOT reset autoVerifiedFor here; a
       // failed code must not auto-retry (that caused the 401 loop). The
@@ -79,8 +82,8 @@ export default function ReferrerLoginPage() {
   // If a referrer token already exists, go straight to the portal instead of the login
   // (which auto-sends a code on mount).
   useEffect(() => {
-    if (sessionStorage.getItem("referrer_token")) navigate("/referrer", { replace: true });
-  }, [navigate]);
+    if (sessionStorage.getItem("referrer_token")) navigate("/referrer".replace("/referrer", base), { replace: true });
+  }, [navigate, base]);
 
   // Auto-forward: send the code once a valid phone is entered. Short debounce so it does not
   // fire mid-keystroke; the button stays visible so nothing feels hijacked.
@@ -107,13 +110,13 @@ export default function ReferrerLoginPage() {
         <div className="text-center">
           <img src={logoUrl} alt="Boreal" style={{ display: "block", margin: "0 auto 18px", height: 88, width: "auto" }} />
           <h1 className="text-2xl font-semibold text-white">Boreal Financial Group</h1>
-          <p className="mt-1 text-sm font-medium text-white/70">Referral Portal</p>
+          <p className="mt-1 text-sm font-medium text-white/70">{isBroker ? "Broker Portal" : "Referral Portal"}</p>
         </div>
 
         <div className="w-full bg-white border border-slate-200 rounded-xl p-6 shadow-md">
           <p className="text-sm text-slate-700 mb-4 text-center">
-            Welcome to the Boreal Financial Group Referral Portal. If this is your first visit, please click the{" "}
-            <Link to="/referrer/signup" className="font-semibold text-blue-700 underline">Sign up</Link> link.
+            Welcome to the Boreal Financial {isBroker ? "Broker" : "Group Referral"} Portal. If this is your first visit, please click the{" "}
+            {isBroker ? <Link to="/broker/signup" className="font-semibold text-blue-700 underline">Sign up</Link> : <Link to="/referrer/signup" className="font-semibold text-blue-700 underline">Sign up</Link>} link.
           </p>
 
           {step === "enter" ? (

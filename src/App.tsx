@@ -79,6 +79,7 @@ import CreditReadiness from "@/pages/CreditReadiness";
 import ReferrerPortalLayout from "@/pages/referrer/ReferrerPortalLayout";
 import ReferrerLoginPage from "@/pages/referrer/ReferrerLoginPage";
 import ReferrerSignupPage from "@/pages/referrer/ReferrerSignupPage"; // REFERRER_SIGNUP_UI_v1
+import BrokerPortalRoutes from "@/pages/broker/BrokerPortal"; // BF_PORTAL_BROKER_PORTAL_v717
 // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
 import BISilo from "@/silos/bi/BISilo";
 import LenderPortalPage from "@/pages/lender/LenderPortalPage";
@@ -185,6 +186,7 @@ const AppRoutes = () => {
         <Route path="/referrer/signup" element={<ReferrerSignupPage />} />{/* REFERRER_SIGNUP_UI_v1 */}
         <Route path="/referrer/login" element={<ReferrerLoginPage />} />
         <Route path="/referrer/*" element={<ReferrerPortalLayout />} />
+        <Route path="/broker/*" element={<BrokerPortalRoutes />} />
         <Route path="/lender-portal/login" element={<LenderLoginPage />} />
         {/* LENDER_PORTAL_ONE_PAGE_v1 - single page; legacy paths redirect */}
         <Route path="/lender-portal" element={<LenderPortalPage />} />
