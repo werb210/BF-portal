@@ -2,11 +2,12 @@
   "name": "boreal-portal-desktop",
   "version": "1.0.0",
   "private": true,
-  "description": "Electron desktop shell for the Boreal staff portal",
+  "description": "Electron desktop shell for the Boreal staff portal (macOS and Windows)",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --mac --arm64"
+    "dist": "electron-builder --mac --arm64",
+    "dist:win": "electron-builder --win --publish always"
   },
   "devDependencies": {
     "electron": "43.2.0",
@@ -16,7 +17,7 @@
     "appId": "com.boreal.portal.desktop",
     "productName": "Boreal Staff Portal",
     "directories": { "output": "release" },
-    "files": ["main.cjs", "package.json"],
+    "files": ["main.cjs", "package.json", "icon.png"],
     "mac": {
       "category": "public.app-category.finance",
       "target": [{ "target": "dmg", "arch": ["arm64"] }],
@@ -25,6 +26,26 @@
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Boreal uses the microphone for staff phone calls placed through the in-app dialer."
       }
-    }
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Boreal Staff Portal"
+    },
+    "publish": [{
+      "provider": "github",
+      "owner": "werb210",
+      "repo": "BF-portal",
+      "releaseType": "release"
+    }]
+  },
+  "dependencies": {
+    "electron-updater": "6.6.2"
   }
 }
