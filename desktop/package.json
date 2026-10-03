@@ -21,9 +21,10 @@
       "output": "release"
     },
     "files": [
+      "icon.png",
       "main.cjs",
       "package.json",
-      "icon.png"
+      "preload.cjs"
     ],
     "mac": {
       "category": "public.app-category.finance",
