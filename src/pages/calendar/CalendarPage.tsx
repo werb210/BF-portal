@@ -310,8 +310,9 @@ function CalendarContent() {
       <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
         <FindATimePanel />
         {/* BF_PORTAL_CAL_TASKS_HUBSPOT_v1 - full HubSpot-style Tasks panel. */}
-        <MeetingRoomsPanel />{/* BF_PORTAL_MEETING_ROOMS_v736 */}
+        {/* BF_PORTAL_TASKS_ABOVE_ROOMS_v739 - Tasks first, Conference rooms below */}
         <CalendarTasksPanel currentUserId={(user as { id?: string } | null)?.id ?? ""} />
+        <MeetingRoomsPanel />{/* BF_PORTAL_MEETING_ROOMS_v736 */}
       </div>
 
       {selectedEvent && (
