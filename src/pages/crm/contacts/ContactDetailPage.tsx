@@ -17,6 +17,7 @@ import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL
 import { ContactDocuments } from "@/components/crm/ContactDocuments"; // BF_PORTAL_CONTACT_DOCUMENTS_v1
 import { ContactDuplicates } from "@/components/crm/ContactDuplicates"; // BF_PORTAL_CONTACT_MERGE_v1
 import { NotifyContactButton } from "@/components/crm/NotifyContactButton"; // BF_PORTAL_NOTIFY_CONTACT_v627
+import MeetingRoomsPanel from "@/pages/calendar/MeetingRoomsPanel"; // BF_PORTAL_MEETING_PARTICIPANTS_v737
 
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
@@ -29,6 +30,7 @@ export default function ContactDetailPage() {
   const scope: Scope = { kind: "contact", id };
   const [contact, setContact] = useState<ContactRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [confOpen, setConfOpen] = useState(false); // BF_PORTAL_MEETING_PARTICIPANTS_v737
   const [err, setErr] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]); // BF_PORTAL_BLOCK_v756_CONTACT_OWNER_EDIT
@@ -93,6 +95,8 @@ export default function ContactDetailPage() {
             Delete
           </button>
           <NotifyContactButton contactId={id} contactName={contact.name} buttonStyle={actionBtn} onSent={() => setRefreshKey(k => k + 1)} />
+          {/* BF_PORTAL_MEETING_PARTICIPANTS_v737 - schedule a conference call with this contact */}
+          <button type="button" style={actionBtn} onClick={() => setConfOpen((o) => !o)}>Schedule conference</button>
         </div>
         <ActionBar
           scope={scope}
@@ -152,6 +156,7 @@ export default function ContactDetailPage() {
         )}
         {/* BF_PORTAL_CONTACT_MERGE_v1 - the CRM is fragmenting live leads across duplicate
             records; surface them where the rep is already looking. Hidden when there are none. */}
+        {confOpen && <MeetingRoomsPanel hideList defaultTitle={"Call with " + contact.name} initialPeople={[{ contactId: id, name: contact.name, email: (contact as { email?: string | null }).email ?? null, phone: (contact as { phone?: string | null }).phone ?? null }]} />}
         <ContactDuplicates contactId={id} onMerged={() => window.location.reload()} />
         <ContactAdvisors applicationIds={contact.applicationIds} />
         {/* BF_PORTAL_CREDIT_READINESS_v1 - below Company and Advisors, hidden when empty */}

@@ -3,13 +3,17 @@
 // (staff included) joins by calling (866) 631-8939, pressing 3 and entering the code.
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
+import PeoplePicker, { type Person } from "@/components/meetings/PeoplePicker"; // BF_PORTAL_MEETING_PARTICIPANTS_v737
 
 export type Meeting = { id: string; code: string; title: string; starts_at: string; duration_min: number; joinUrl: string; oneTap: string; invite: string; open: boolean };
 const NAVY = "#0B1F3A", MUTED = "#51617D";
 
-export default function MeetingRoomsPanel() {
+// BF_PORTAL_MEETING_PARTICIPANTS_v737 - people are added by name search (up to 10 including
+// you); they are emailed the invite. From a CRM contact the contact is already filled in.
+export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "", hideList = false }: { initialPeople?: Person[]; defaultTitle?: string; hideList?: boolean }) {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [title, setTitle] = useState("");
+  const [people, setPeople] = useState<Person[]>(initialPeople);
+  const [title, setTitle] = useState(defaultTitle);
   const [when, setWhen] = useState("");
   const [minutes, setMinutes] = useState(60);
   const [msg, setMsg] = useState<string | null>(null);
@@ -24,9 +28,9 @@ export default function MeetingRoomsPanel() {
     if (!title.trim() || !when) { setMsg("Add a title and a start time."); return; }
     setBusy(true); setMsg(null);
     try {
-      const r = await api.post<{ meeting: Meeting }>("/api/meetings", { title: title.trim(), startsAt: new Date(when).toISOString(), durationMin: minutes });
-      setTitle(""); setWhen("");
-      setMsg("Meeting created. Access code " + r.meeting.code + " - copy the invite below.");
+      const r = await api.post<{ meeting: Meeting; invited?: number; refused?: number }>("/api/meetings", { title: title.trim(), startsAt: new Date(when).toISOString(), durationMin: minutes, participants: people.map(({ contactId, userId, name, email, phone }) => ({ contactId, userId, name, email, phone })) });
+      setTitle(""); setWhen(""); setPeople([]);
+      setMsg("Meeting created. Access code " + r.meeting.code + "." + (r.invited ? " Invite emailed to " + r.invited + " people." : "") + (r.refused ? " " + r.refused + " not added - a room holds 10 people." : "") + " Copy the invite for anyone without email.");
       load();
     } catch { setMsg("Could not create the meeting. Please try again."); }
     finally { setBusy(false); }
@@ -50,8 +54,9 @@ export default function MeetingRoomsPanel() {
         </select>
         <button type="button" className="ui-button ui-button--primary" disabled={busy} onClick={() => void create()}>{busy ? "Creating..." : "Create meeting"}</button>
       </div>
+      <div style={{ marginTop: 10 }}><PeoplePicker value={people} onChange={setPeople} /></div>
       {msg && <p role="status" style={{ fontSize: 13, margin: "8px 0 0" }}>{msg}</p>}
-      <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+      {!hideList && <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
         {!meetings.length && <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>No upcoming meetings.</p>}
         {meetings.map((m) => (
           <div key={m.id} data-testid="meeting-row" style={{ border: "1px solid #E4EAF2", borderRadius: 8, padding: 10, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
@@ -65,7 +70,7 @@ export default function MeetingRoomsPanel() {
             <button type="button" className="ui-button ui-button--secondary" onClick={() => void cancel(m)}>Cancel</button>
           </div>
         ))}
-      </div>
+      </div>}
     </section>
   );
 }
