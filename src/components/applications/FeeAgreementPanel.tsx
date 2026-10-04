@@ -14,6 +14,7 @@ export type FeeAgreementStatus = {
   createdAt?: string | null;
   sentAt?: string | null;
   signedAt?: string | null;
+  texts?: Array<{ toLast4: string; status: string | null; errorCode: string | null; createdAt: string }>; // BF_PORTAL_FEE_DIAGNOSE_v743
   notices?: Array<{ channel: string; error: string | null; createdAt: string }>; // BF_PORTAL_FEE_NOTICE_DELIVERY_v740
 };
 
@@ -57,11 +58,25 @@ export function describeFeeAgreement(a: FeeAgreementStatus | null): { tone: "sig
 const SEND_BTN = { background: "#0B1F3A", color: "#ffffff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 14, fontWeight: 600, cursor: "pointer" } as const;
 export const isMediaFile = (category?: string | null): boolean => /media|film/i.test(String(category ?? ""));
 
+// BF_PORTAL_FEE_DIAGNOSE_v743 - what the carrier did with each text (Twilio accepting it is not delivery).
+export function textLine(t: { toLast4: string; status: string | null; errorCode: string | null; createdAt: string }): { bad: boolean; text: string } {
+  const when = new Date(t.createdAt).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const st = (t.status || "sent").toLowerCase();
+  const bad = /undelivered|failed/.test(st);
+  const label = st === "delivered" ? "delivered" : bad ? "NOT delivered" + (t.errorCode ? " (Twilio error " + t.errorCode + ")" : "") : st;
+  return { bad, text: when + " - text to mobile ending " + (t.toLast4 || "?") + ": " + label };
+}
+
 export default function FeeAgreementPanel({ applicationId, productCategory }: { applicationId: string; productCategory?: string | null }) {
   const [data, setData] = useState<FeeAgreementStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [noteOk, setNoteOk] = useState(true);
+  const [diag, setDiag] = useState<{ ok: boolean; problems: string[] } | null>(null); // BF_PORTAL_FEE_DIAGNOSE_v743
+  const diagnose = async () => {
+    try { const r = await api.get<{ ok: boolean; problems: string[] }>("/api/portal/applications/" + encodeURIComponent(applicationId) + "/fee-agreement/diagnose"); setDiag({ ok: Boolean(r?.ok), problems: Array.isArray(r?.problems) ? r.problems : [] }); }
+    catch (e: any) { setDiag({ ok: false, problems: [String(e?.message ?? "Could not run the check.")] }); }
+  };
   const [reload, setReload] = useState(0);
   useEffect(() => {
     let alive = true;
@@ -101,6 +116,8 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
       style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, fontSize: 13, maxWidth: 560, background: signed ? "#ecfdf5" : "#fef3c7", color: signed ? "#065f46" : "#92400e" }}>
       {d.text}
       {!signed && <div style={{ marginTop: 6 }}><button type="button" disabled={busy} onClick={() => void send()} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #0B1F3A" }}>{busy ? "Sending..." : "Send again"}</button>{note && <span style={{ marginLeft: 8, color: noteOk ? "#065f46" : "#991b1b", fontWeight: 600 }}>{note}</span>}</div>}
+      {data?.texts && data.texts.length > 0 && <div data-testid="fee-texts" style={{ marginTop: 8, fontSize: 12 }}><div style={{ fontWeight: 600, color: "#0B1F3A" }}>Texts to the client</div>{data.texts.map((t, i) => { const l = textLine(t); return <div key={i} style={{ color: l.bad ? "#991b1b" : "#0B1F3A", fontWeight: l.bad ? 600 : 400 }}>{l.text}</div>; })}</div>}
+      {!signed && <div style={{ marginTop: 8 }}><button type="button" onClick={() => void diagnose()} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #0B1F3A", padding: "6px 12px", fontSize: 13 }}>Check delivery setup</button>{diag && <div data-testid="fee-diagnose" style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: diag.ok ? "#065f46" : "#991b1b" }}>{diag.ok ? "Everything needed to text, email and sign is set up." : diag.problems.map((p, i) => <div key={i}>{p}</div>)}</div>}</div>}
       {data?.notices && data.notices.length > 0 && <div data-testid="fee-notices" style={{ marginTop: 8, fontSize: 12, color: "#0B1F3A" }}><div style={{ fontWeight: 600 }}>Notices to the client</div>{data.notices.map((n, i) => <div key={i} style={{ color: n.channel === "none" ? "#991b1b" : "#0B1F3A" }}>{noticeLine(n)}</div>)}</div>}
     </div>
   );
