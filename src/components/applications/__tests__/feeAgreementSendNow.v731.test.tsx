@@ -4,13 +4,13 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 const get = vi.fn(); const post = vi.fn();
 vi.mock("@/api", () => ({ api: { get: (...a: unknown[]) => get(...a), post: (...a: unknown[]) => post(...a) } }));
 import FeeAgreementPanel from "../FeeAgreementPanel";
-beforeEach(() => { get.mockReset(); post.mockReset(); post.mockResolvedValue({ ok: true }); vi.spyOn(window, "prompt").mockReturnValue("Bondit Media"); });
+beforeEach(() => { get.mockReset(); post.mockReset(); post.mockResolvedValue({ ok: true }); });
 describe("send the fee agreement by hand", () => {
   it("offers the button on a Media file with no agreement, and sends it", async () => {
     get.mockResolvedValue({ required: false });
     render(<FeeAgreementPanel applicationId="app-1" productCategory="Media" />);
     fireEvent.click(await screen.findByText("Send fee agreement to client"));
-    await waitFor(() => expect(post).toHaveBeenCalledWith("/api/portal/applications/app-1/fee-agreement/send", { lenderName: "Bondit Media" }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/api/portal/applications/app-1/fee-agreement/send", { lenderName: undefined }));
   });
   it("no button on non-Media files", async () => {
     get.mockResolvedValue({ required: false });

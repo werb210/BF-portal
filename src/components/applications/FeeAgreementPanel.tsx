@@ -26,13 +26,16 @@ export function describeFeeAgreement(a: FeeAgreementStatus | null): { tone: "sig
   }
   const how = a.signerIsApplicant === false ? "emailed to " + who + (a.signerEmail ? " (" + a.signerEmail + ")" : "") : "sent to " + who + " to sign in the client portal";
   const when = a.sentAt ? " on " + day(a.sentAt) : a.createdAt ? " on " + day(a.createdAt) : "";
-  const why = a.lenderName ? " " + a.lenderName + " has no broker agreement with Boreal." : "";
-  return { tone: "waiting", text: "Fee agreement (2% on funding) " + how + when + ". Waiting for signature." + why };
+  // BF_PORTAL_FEE_AGREEMENT_PANEL_FIX_v738 - no more "<lender> has no broker agreement" line: on a
+  // hand-sent agreement it just repeated whatever lender name was typed, and read as an error.
+  return { tone: "waiting", text: "Fee agreement (2% on funding) " + how + when + ". Waiting for signature." };
 }
 
 // BF_PORTAL_FEE_AGREEMENT_SEND_NOW_v731 - staff can send the agreement themselves on any
 // Media file (for files sent to a lender by hand, outside the portal), and send it again
 // while it is waiting.
+// A real-looking button: navy, white text, rounded - it was rendering as plain text.
+const SEND_BTN = { background: "#0B1F3A", color: "#ffffff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 14, fontWeight: 600, cursor: "pointer" } as const;
 export const isMediaFile = (category?: string | null): boolean => /media|film/i.test(String(category ?? ""));
 
 export default function FeeAgreementPanel({ applicationId, productCategory }: { applicationId: string; productCategory?: string | null }) {
@@ -49,7 +52,7 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
     return () => { alive = false; };
   }, [applicationId, reload]);
   const send = async () => {
-    const lenderName = window.prompt("Which lender is this file with? (shown to staff on the agreement record)", "") ?? null;
+    const lenderName = null; // BF_PORTAL_FEE_AGREEMENT_PANEL_FIX_v738 - no pop-up question; one click sends it
     setBusy(true); setNote(null);
     try {
       await api.post("/api/portal/applications/" + encodeURIComponent(applicationId) + "/fee-agreement/send", { lenderName: lenderName || undefined });
@@ -65,7 +68,7 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
     if (!media || data === null) return null;
     return (
       <div data-testid="fee-agreement-send" style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <button type="button" className="ui-button ui-button--secondary" disabled={busy} onClick={() => void send()}>{busy ? "Sending..." : "Send fee agreement to client"}</button>
+        <button type="button" disabled={busy} onClick={() => void send()} style={SEND_BTN}>{busy ? "Sending..." : "Send fee agreement to client"}</button>
         <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Media file with no client fee agreement yet (2% on funding).</span>
         {note && <span role="status" style={{ fontSize: 12 }}>{note}</span>}
       </div>
@@ -76,7 +79,7 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
     <div data-testid="fee-agreement-panel" role="status"
       style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, fontSize: 13, maxWidth: 560, background: signed ? "#ecfdf5" : "#fef3c7", color: signed ? "#065f46" : "#92400e" }}>
       {d.text}
-      {!signed && <div style={{ marginTop: 6 }}><button type="button" className="ui-button ui-button--secondary" disabled={busy} onClick={() => void send()}>{busy ? "Sending..." : "Send again"}</button>{note && <span style={{ marginLeft: 8 }}>{note}</span>}</div>}
+      {!signed && <div style={{ marginTop: 6 }}><button type="button" disabled={busy} onClick={() => void send()} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #0B1F3A" }}>{busy ? "Sending..." : "Send again"}</button>{note && <span style={{ marginLeft: 8 }}>{note}</span>}</div>}
     </div>
   );
 }
