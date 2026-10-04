@@ -17,7 +17,7 @@ export function buildStampLabel(sha: string = buildSha(), iso: string | null = b
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return `Build ${sha}`;
   const when = d.toLocaleString("en-CA", {
-    timeZone: "America/Edmonton", month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+    timeZone: "America/Regina" /* BF_PORTAL_ALBERTA_TIME_v742 - Alberta is UTC-6 all year since 2026 */, month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
   });
   return `Build ${sha} - ${when}`;
 }
