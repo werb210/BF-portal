@@ -43,7 +43,13 @@ export function reorder(cards: DashCard[], id: string, beforeId: string | null):
   return next;
 }
 
-const box: CSSProperties = { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8, padding: 12 };
+// BF_PORTAL_DASHBOARD_CONTRAST_v733 - every card sets its own dark text on its own light
+// background; text was inheriting a light page colour and vanished on the white cards.
+// Fixed colours (not theme variables): the cards are always white, so their text is always
+// Boreal navy - whatever colour scheme the browser or a parent element asks for.
+export const CARD_BG = "#ffffff";
+export const CARD_TEXT = "#0B1F3A";
+const box: CSSProperties = { background: CARD_BG, color: CARD_TEXT, border: "1px solid #E4EAF2", borderRadius: 8, padding: 12 };
 const span: Record<Size, number> = { third: 2, half: 3, full: 6 };
 const fmt = (value?: number) => value == null ? "—" : Number(value).toLocaleString();
 const newId = () => Math.random().toString(36).slice(2, 10);
@@ -52,7 +58,7 @@ const splitMoney = (values?: Record<string, number>) => {
   return parts.length ? parts.join("\n") : null;
 };
 function Stat({ label, value }: { label: string; value: string }) { return <div className="drawer-section"><div className="drawer-section__title">{label}</div><div style={{ fontSize: 26, fontWeight: 700, whiteSpace: "pre-line" }}>{value}</div></div>; }
-function MiniTable({ rows, value }: { rows: Row[]; value: (row: Row) => string }) { return rows.length ? <>{rows.slice(0, 6).map((row) => <div key={row.name} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderTop: "1px solid var(--ui-border)" }}><strong>{row.name}</strong><span>{value(row)}</span></div>)}</> : <div style={{ color: "var(--ui-text-muted)" }}>No data for this range.</div>; }
+function MiniTable({ rows, value }: { rows: Row[]; value: (row: Row) => string }) { return rows.length ? <>{rows.slice(0, 6).map((row) => <div key={row.name} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderTop: "1px solid var(--ui-border)" }}><strong>{row.name}</strong><span>{value(row)}</span></div>)}</> : <div style={{ color: "#51617D" }}>No data for this range.</div>; }
 
 // BF_PORTAL_DASHBOARD_MONEY_ADMIN_v732 - commission and revenue figures are for Admin only (Todd, Andrew).
 export function builtinBody(key: string, { metrics, analytics, range, isAdmin = false }: { metrics: Metrics | null; analytics: Analytics; range: number; isAdmin?: boolean }): ReactNode {
@@ -67,7 +73,7 @@ export function builtinBody(key: string, { metrics, analytics, range, isAdmin = 
   if (key === "dash_totals") return <div className="grid gap-3 grid-cols-2 md:grid-cols-4"><Stat label="GA4 Visits" value={fmt(funnel.visits)} /><Stat label="Applications" value={fmt(funnel.applications)} /><Stat label="Submitted" value={fmt(funnel.submitted)} /><Stat label="Funded" value={fmt(funnel.funded)} /><small style={{ gridColumn: "1 / -1" }}>Last {range} days</small></div>;
   if (key === "dash_dropoffs") { const stages = Object.entries(analytics.applicationFunnel ?? {}); const max = Math.max(1, ...stages.map(([, count]) => count)); return stages.length ? <>{stages.map(([stage, count]) => <div key={stage} style={{ display: "grid", gridTemplateColumns: "160px 1fr 70px", gap: 10, marginTop: 8 }}><span>{stage}</span><div style={{ height: 8, background: "var(--ui-surface)" }}><div style={{ width: `${count / max * 100}%`, height: "100%", background: "var(--ui-accent-blue)" }} /></div><strong>{count}</strong></div>)}</> : <span>No funnel data for this range.</span>; }
   if (key === "dash_acquisition") return <MiniTable rows={(analytics.acquisitionChannels ?? []) as Row[]} value={(r) => `${fmt(r.applications ?? r.count ?? r.value)} apps`} />;
-  if (key === "dash_marketing_perf" && !isAdmin) return <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>Revenue figures are for Admin only.</div>;
+  if (key === "dash_marketing_perf" && !isAdmin) return <div style={{ color: "#51617D", fontSize: 13 }}>Revenue figures are for Admin only.</div>;
   if (key === "dash_marketing_perf") return <MiniTable rows={(analytics.marketingPerformance ?? []) as Row[]} value={(r) => moneyInline(r.revenueByCurrency) ?? `$${fmt(r.revenue ?? r.value)}`} />;
   if (key === "dash_funding_product") return <MiniTable rows={(analytics.fundingByProduct ?? []) as Row[]} value={(r) => `${fmt(r.funded ?? r.count ?? r.value)} funded`} />;
   if (key === "dash_doc_issues") return <MiniTable rows={(analytics.documentUploadIssues ?? []) as Row[]} value={(r) => r.issueRate == null ? `${fmt(r.count ?? r.value)} issues` : `${r.issueRate}% issue rate`} />;
@@ -103,7 +109,7 @@ export default function DashboardHome() {
   const present = new Set((cards ?? []).map((card) => card.report));
   const addable = [...BUILTINS.filter((item) => !present.has(item.key)).map((item) => ({ ...item, description: "Standard Dashboard section" })), ...catalog.filter((item) => item.silo === silo && !isBuiltin(item.key) && !present.has(item.key))];
   const onDragEnd = (event: DragEndEvent) => { const from = event.active.data.current?.id as string | undefined, to = event.over?.data.current?.id as string | undefined; if (cards && from && to) void save(reorder(cards, from, to)); };
-  return <div className="space-y-4" data-testid="dashboard-home"><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}><h1>Dashboard</h1><div><div role="group" aria-label="Analytics date range" style={{ display: "inline-flex", gap: 6 }}>{[7, 30, 90, 365].map((days) => <button key={days} type="button" onClick={() => setRange(days)}>{days}d</button>)}</div><button type="button" className="ui-button ui-button--primary" data-testid="dash-add" onClick={() => setAdding(!adding)}>+ Add report</button><button type="button" className="ui-button ui-button--secondary" onClick={() => { if (window.confirm("Put the Dashboard back to the standard layout? Reports you added are removed.")) void save(defaultCards()); }}>Reset layout</button></div></div>
+  return <div className="space-y-4" data-testid="dashboard-home" style={{ color: CARD_TEXT }}><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}><h1>Dashboard</h1><div><div role="group" aria-label="Analytics date range" style={{ display: "inline-flex", gap: 6 }}>{[7, 30, 90, 365].map((days) => <button key={days} type="button" onClick={() => setRange(days)}>{days}d</button>)}</div><button type="button" className="ui-button ui-button--primary" data-testid="dash-add" onClick={() => setAdding(!adding)}>+ Add report</button><button type="button" className="ui-button ui-button--secondary" onClick={() => { if (window.confirm("Put the Dashboard back to the standard layout? Reports you added are removed.")) void save(defaultCards()); }}>Reset layout</button></div></div>
     {metricsFailed && <div role="alert">Couldn't load dashboard data <button type="button" onClick={loadMetrics}>Retry</button></div>}{message && <p role="status">{message}</p>}
     {adding && <div style={box} data-testid="dash-library">{!addable.length && <p>Everything is already on your Dashboard.</p>}{addable.map((item) => <button key={item.key} type="button" className="ui-button ui-button--secondary" onClick={() => { void save([...(cards ?? []), { id: isBuiltin(item.key) ? item.key : newId(), report: item.key, size: item.size }]); setAdding(false); }}><strong>{item.title}</strong><br /><small>{item.description}</small></button>)}</div>}
     {cards === null ? <AppLoading /> : <DndContext sensors={sensors} onDragEnd={onDragEnd}><div style={{ display: "grid", gridTemplateColumns: "repeat(6,minmax(0,1fr))", gap: 12 }}>{cards.map((card) => <BoardCard key={card.id} card={card} wide={wide} title={titles.get(card.report) ?? card.report} onRemove={() => void save(cards.filter((item) => item.id !== card.id))} onSize={(size) => void save(cards.map((item) => item.id === card.id ? { ...item, size } : item))}>{isBuiltin(card.report) ? builtinBody(card.report, { metrics, analytics, range, isAdmin }) : <CardBody report={card.report} days={card.days} />}</BoardCard>)}</div></DndContext>}
