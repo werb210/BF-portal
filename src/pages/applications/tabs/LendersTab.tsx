@@ -657,7 +657,9 @@ function describeSendFailure(err: unknown): string {
           {appRecord?.application?.metadata?.broker_import?.broker_name ? (
             <BrokerDealPanel applicationId={id} brokerName={appRecord.application.metadata.broker_import.broker_name} canEdit={canManage} onStatus={setBrokerBlock} />
           ) : null}
-          <FeeAgreementPanel applicationId={id} productCategory={(appRecord as { product_category?: string | null } | undefined)?.product_category ?? null} />{/* BF_PORTAL_FEE_AGREEMENT_SEND_NOW_v731 */}
+          {/* BF_PORTAL_FEE_AGREEMENT_BUTTON_FIX_v732 - the button read a field the file record does not have, so it
+              never appeared; it now uses the same product category the picker above shows. */}
+          <FeeAgreementPanel applicationId={id} productCategory={(envelope as { inputs?: { productCategory?: string | null } | null }).inputs?.productCategory ?? (appRecord as { application?: { productCategory?: string | null; product_category?: string | null }; product_category?: string | null } | undefined)?.application?.productCategory ?? (appRecord as { application?: { product_category?: string | null } } | undefined)?.application?.product_category ?? (appRecord as { product_category?: string | null } | undefined)?.product_category ?? null} />
           {productQuestionsBlock(envelope) && (
             <div role="status" data-testid="product-questions-waiting" style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, background: "#fef3c7", color: "#92400e", fontSize: 13, maxWidth: 560 }}>
               {productQuestionsBlock(envelope)}
