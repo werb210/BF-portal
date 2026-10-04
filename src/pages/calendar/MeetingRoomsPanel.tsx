@@ -8,6 +8,20 @@ import PeoplePicker, { type Person } from "@/components/meetings/PeoplePicker"; 
 export type Meeting = { id: string; code: string; title: string; starts_at: string; duration_min: number; joinUrl: string; oneTap: string; invite: string; open: boolean };
 const NAVY = "#0B1F3A", MUTED = "#51617D";
 
+// BF_PORTAL_MEETING_NOTIFY_v741 - say exactly what went out: the Outlook event, texts, emails, and anything that failed.
+export type MeetingDelivery = { calendar: "created" | "updated" | "cancelled" | "skipped" | "failed"; calendarError: string | null; emailed: number; texted: number; errors: string[] };
+export function describeMeetingDelivery(d: MeetingDelivery | null | undefined): { ok: boolean; text: string } {
+  if (!d) return { ok: true, text: "" };
+  const parts: string[] = [];
+  if (d.calendar === "created") parts.push("Added to your Outlook calendar" + (d.emailed ? " and calendar invitations sent to " + d.emailed + (d.emailed === 1 ? " person" : " people") : ""));
+  else if (d.calendar === "updated") parts.push("Outlook event updated" + (d.emailed ? ", invitations sent to " + d.emailed + " new " + (d.emailed === 1 ? "person" : "people") : ""));
+  else if (d.calendar === "cancelled") parts.push("Outlook event cancelled - attendees are notified");
+  else if (d.emailed) parts.push("Invite emailed to " + d.emailed + (d.emailed === 1 ? " person" : " people"));
+  if (d.texted) parts.push("texted " + d.texted + (d.texted === 1 ? " person" : " people"));
+  const problems = d.errors.length ? " Problems: " + d.errors.join("; ") + "." : "";
+  return { ok: d.errors.length === 0, text: (parts.length ? parts.join(", ") + "." : "Nothing was sent.") + problems };
+}
+
 // BF_PORTAL_MEETING_PARTICIPANTS_v737 - people are added by name search (up to 10 including
 // you); they are emailed the invite. From a CRM contact the contact is already filled in.
 export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "", hideList = false }: { initialPeople?: Person[]; defaultTitle?: string; hideList?: boolean }) {
@@ -17,6 +31,7 @@ export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "
   const [when, setWhen] = useState("");
   const [minutes, setMinutes] = useState(60);
   const [msg, setMsg] = useState<string | null>(null);
+  const [msgOk, setMsgOk] = useState(true); // BF_PORTAL_MEETING_NOTIFY_v741
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
@@ -28,17 +43,19 @@ export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "
     if (!title.trim() || !when) { setMsg("Add a title and a start time."); return; }
     setBusy(true); setMsg(null);
     try {
-      const r = await api.post<{ meeting: Meeting; invited?: number; refused?: number }>("/api/meetings", { title: title.trim(), startsAt: new Date(when).toISOString(), durationMin: minutes, participants: people.map(({ contactId, userId, name, email, phone }) => ({ contactId, userId, name, email, phone })) });
+      const r = await api.post<{ meeting: Meeting; invited?: number; refused?: number; delivery?: MeetingDelivery }>("/api/meetings", { title: title.trim(), startsAt: new Date(when).toISOString(), durationMin: minutes, participants: people.map(({ contactId, userId, name, email, phone }) => ({ contactId, userId, name, email, phone })) });
       setTitle(""); setWhen(""); setPeople([]);
-      setMsg("Meeting created. Access code " + r.meeting.code + "." + (r.invited ? " Invite emailed to " + r.invited + " people." : "") + (r.refused ? " " + r.refused + " not added - a room holds 10 people." : "") + " Copy the invite for anyone without email.");
+      const told = describeMeetingDelivery(r.delivery);
+      setMsgOk(told.ok);
+      setMsg("Meeting created. Access code " + r.meeting.code + ". " + told.text + (r.refused ? " " + r.refused + " not added - a room holds 10 people." : ""));
       load();
-    } catch { setMsg("Could not create the meeting. Please try again."); }
+    } catch { setMsgOk(false); setMsg("Could not create the meeting. Please try again."); }
     finally { setBusy(false); }
   };
   const copy = async (text: string) => { try { await navigator.clipboard.writeText(text); setMsg("Invite copied."); } catch { setMsg("Copy failed - select the text and copy it."); } };
   const cancel = async (m: Meeting) => {
     if (!window.confirm("Cancel " + m.title + "? The access code stops working.")) return;
-    try { await api.post("/api/meetings/" + encodeURIComponent(m.id) + "/cancel", {}); load(); } catch { setMsg("Could not cancel the meeting."); }
+    try { const r = await api.post<{ delivery?: MeetingDelivery | null }>("/api/meetings/" + encodeURIComponent(m.id) + "/cancel", {}); const told = describeMeetingDelivery(r?.delivery); setMsgOk(told.ok); setMsg("Meeting cancelled. " + told.text); load(); } catch { setMsgOk(false); setMsg("Could not cancel the meeting."); }
   };
 
   const input = { padding: "8px 10px", border: "1px solid #E4EAF2", borderRadius: 8, color: NAVY, background: "#fff" } as const;
@@ -55,7 +72,7 @@ export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "
         <button type="button" className="ui-button ui-button--primary" disabled={busy} onClick={() => void create()}>{busy ? "Creating..." : "Create meeting"}</button>
       </div>
       <div style={{ marginTop: 10 }}><PeoplePicker value={people} onChange={setPeople} /></div>
-      {msg && <p role="status" style={{ fontSize: 13, margin: "8px 0 0" }}>{msg}</p>}
+      {msg && <p role="status" style={{ fontSize: 13, margin: "8px 0 0", color: msgOk ? "#065f46" : "#991b1b", fontWeight: 600 }}>{msg}</p>}
       {!hideList && <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
         {!meetings.length && <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>No upcoming meetings.</p>}
         {meetings.map((m) => (
