@@ -257,7 +257,7 @@ function MayaSuggestionsPanel() {
 }
 // BF_PORTAL_UTM_BUILDER_v1 - campaign URL builder (consistent utm tagging).
 function UtmBuilderPanel() {
-  const [base, setBase] = useState("https://boreal.financial");
+  const [base, setBase] = useState("https://www.boreal.financial"); // BF_PORTAL_WWW_AND_FEE_COLOUR_v744 - www is the host that serves every page
   const [source, setSource] = useState("google");
   const [medium, setMedium] = useState("cpc");
   const [campaign, setCampaign] = useState("");

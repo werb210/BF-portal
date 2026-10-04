@@ -113,7 +113,7 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
   const signed = d.tone === "signed";
   return (
     <div data-testid="fee-agreement-panel" role="status"
-      style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, fontSize: 13, maxWidth: 560, background: signed ? "#ecfdf5" : "#fef3c7", color: signed ? "#065f46" : "#92400e" }}>
+      style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, fontSize: 13, maxWidth: 560, background: signed ? "#ecfdf5" : "#eff6ff", color: signed ? "#065f46" : "#0B1F3A", border: signed ? "1px solid #a7f3d0" : "1px solid #bfdbfe" /* BF_PORTAL_WWW_AND_FEE_COLOUR_v744 - waiting is not a warning */ }}>
       {d.text}
       {!signed && <div style={{ marginTop: 6 }}><button type="button" disabled={busy} onClick={() => void send()} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #0B1F3A" }}>{busy ? "Sending..." : "Send again"}</button>{note && <span style={{ marginLeft: 8, color: noteOk ? "#065f46" : "#991b1b", fontWeight: 600 }}>{note}</span>}</div>}
       {data?.texts && data.texts.length > 0 && <div data-testid="fee-texts" style={{ marginTop: 8, fontSize: 12 }}><div style={{ fontWeight: 600, color: "#0B1F3A" }}>Texts to the client</div>{data.texts.map((t, i) => { const l = textLine(t); return <div key={i} style={{ color: l.bad ? "#991b1b" : "#0B1F3A", fontWeight: l.bad ? 600 : 400 }}>{l.text}</div>; })}</div>}
