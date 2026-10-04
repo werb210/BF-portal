@@ -30,7 +30,7 @@ describe("v543 country filter", () => {
     expect(screen.queryByText("Canada One")).toBeNull();
   });
   it("dashboard labels say what the numbers are", () => {
-    const d = fs.readFileSync("src/pages/dashboard/DashboardPage.tsx", "utf8");
+    const d = fs.readFileSync("src/pages/dashboard/DashboardHome.tsx", "utf8"); // BF_PORTAL_DASHBOARD_CLEANUP_v732
     expect(d).toContain("Commission Earned (all time)");
     expect(d).toContain("New CRM Contacts Today");
   });

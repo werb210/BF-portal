@@ -6,6 +6,6 @@ describe("Reports wiring", () => {
   it("Reports is in the sidebar for every staff role and the Dashboard shows My reports", () => {
     const nav = readFileSync("src/layouts/AppLayout.tsx", "utf8");
     expect(nav).toContain('{ label: "Reports",        path: "/reports",         roles: ["Admin", "Staff", "Ops", "Marketing"] }');
-    expect(readFileSync("src/pages/dashboard/DashboardPage.tsx", "utf8")).toContain('<ReportsBoard mode="dashboard" />');
+    expect(readFileSync("src/pages/dashboard/DashboardHome.tsx", "utf8")).toContain("builtinBody(card.report"); // BF_PORTAL_DASHBOARD_CLEANUP_v732
   });
 });
