@@ -14,7 +14,26 @@ export type FeeAgreementStatus = {
   createdAt?: string | null;
   sentAt?: string | null;
   signedAt?: string | null;
+  notices?: Array<{ channel: string; error: string | null; createdAt: string }>; // BF_PORTAL_FEE_NOTICE_DELIVERY_v740
 };
+
+// BF_PORTAL_FEE_NOTICE_DELIVERY_v740 - say what the server actually delivered, not a fixed "Sent".
+export type FeeDelivery = { push: boolean; sms: boolean; email: boolean; phoneLast4: string | null; emailTo: string | null; errors: string[] };
+export function describeDelivery(d: FeeDelivery | null | undefined): { ok: boolean; text: string } {
+  if (!d) return { ok: true, text: "Sent." };
+  const parts: string[] = [];
+  if (d.sms) parts.push("texted to the mobile ending " + (d.phoneLast4 ?? "?"));
+  if (d.email) parts.push("emailed to " + (d.emailTo ?? "the client"));
+  if (d.push) parts.push("app notice sent");
+  const sent = parts.length ? "Sent: " + parts.join(", ") + "." : "Nothing was sent.";
+  const problems = d.errors && d.errors.length ? " Not delivered: " + d.errors.join("; ") + "." : "";
+  return { ok: parts.length > 0, text: sent + problems };
+}
+const NOTICE_LABEL: Record<string, string> = { sms: "Text sent", email: "Email sent", push: "App notice sent" };
+export function noticeLine(n: { channel: string; error: string | null; createdAt: string }): string {
+  const when = new Date(n.createdAt).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return when + " - " + (NOTICE_LABEL[n.channel] ?? ("Not sent" + (n.error ? ": " + n.error : "")));
+}
 
 const day = (v?: string | null): string => (v ? new Date(v).toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" }) : "");
 
@@ -42,6 +61,7 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
   const [data, setData] = useState<FeeAgreementStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [noteOk, setNoteOk] = useState(true);
   const [reload, setReload] = useState(0);
   useEffect(() => {
     let alive = true;
@@ -55,11 +75,12 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
     const lenderName = null; // BF_PORTAL_FEE_AGREEMENT_PANEL_FIX_v738 - no pop-up question; one click sends it
     setBusy(true); setNote(null);
     try {
-      await api.post("/api/portal/applications/" + encodeURIComponent(applicationId) + "/fee-agreement/send", { lenderName: lenderName || undefined });
-      setNote("Sent. The client gets a text (or email) to sign in the client portal.");
+      const r = await api.post<{ delivery?: FeeDelivery | null }>("/api/portal/applications/" + encodeURIComponent(applicationId) + "/fee-agreement/send", { lenderName: lenderName || undefined });
+      const told = describeDelivery(r?.delivery);
+      setNoteOk(told.ok); setNote(told.text);
       setReload((n) => n + 1);
     } catch (e: any) {
-      setNote(e?.response?.data?.message ?? e?.message ?? "Could not send the agreement.");
+      setNoteOk(false); setNote(e?.response?.data?.message ?? e?.data?.message ?? e?.message ?? "Could not send the agreement.");
     } finally { setBusy(false); }
   };
   const d = describeFeeAgreement(data);
@@ -70,7 +91,7 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
       <div data-testid="fee-agreement-send" style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <button type="button" disabled={busy} onClick={() => void send()} style={SEND_BTN}>{busy ? "Sending..." : "Send fee agreement to client"}</button>
         <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Media file with no client fee agreement yet (2% on funding).</span>
-        {note && <span role="status" style={{ fontSize: 12 }}>{note}</span>}
+        {note && <span role="status" style={{ fontSize: 12, color: noteOk ? "#065f46" : "#991b1b", fontWeight: 600 }}>{note}</span>}
       </div>
     );
   }
@@ -79,7 +100,8 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
     <div data-testid="fee-agreement-panel" role="status"
       style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, fontSize: 13, maxWidth: 560, background: signed ? "#ecfdf5" : "#fef3c7", color: signed ? "#065f46" : "#92400e" }}>
       {d.text}
-      {!signed && <div style={{ marginTop: 6 }}><button type="button" disabled={busy} onClick={() => void send()} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #0B1F3A" }}>{busy ? "Sending..." : "Send again"}</button>{note && <span style={{ marginLeft: 8 }}>{note}</span>}</div>}
+      {!signed && <div style={{ marginTop: 6 }}><button type="button" disabled={busy} onClick={() => void send()} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #0B1F3A" }}>{busy ? "Sending..." : "Send again"}</button>{note && <span style={{ marginLeft: 8, color: noteOk ? "#065f46" : "#991b1b", fontWeight: 600 }}>{note}</span>}</div>}
+      {data?.notices && data.notices.length > 0 && <div data-testid="fee-notices" style={{ marginTop: 8, fontSize: 12, color: "#0B1F3A" }}><div style={{ fontWeight: 600 }}>Notices to the client</div>{data.notices.map((n, i) => <div key={i} style={{ color: n.channel === "none" ? "#991b1b" : "#0B1F3A" }}>{noticeLine(n)}</div>)}</div>}
     </div>
   );
 }
