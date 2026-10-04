@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import RequireRole from "@/components/auth/RequireRole";
 import SecondaryButton from "@/components/forms/SecondaryButton";
 import CalendarTasksPanel from "./CalendarTasksPanel";
+import MeetingRoomsPanel from "./MeetingRoomsPanel"; // BF_PORTAL_MEETING_ROOMS_v736
 import FindATimePanel from "@/components/o365/FindATimePanel"; // BF_PORTAL_O365_UI_v1
 import DateTimePicker from "@/components/ui/DateTimePicker"; // BF_PORTAL_CAL_DATETIMEPICKER_v1
 
@@ -309,6 +310,7 @@ function CalendarContent() {
       <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
         <FindATimePanel />
         {/* BF_PORTAL_CAL_TASKS_HUBSPOT_v1 - full HubSpot-style Tasks panel. */}
+        <MeetingRoomsPanel />{/* BF_PORTAL_MEETING_ROOMS_v736 */}
         <CalendarTasksPanel currentUserId={(user as { id?: string } | null)?.id ?? ""} />
       </div>
 
