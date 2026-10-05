@@ -13,6 +13,8 @@ import CalendarTasksPanel from "./CalendarTasksPanel";
 import MeetingRoomsPanel from "./MeetingRoomsPanel"; // BF_PORTAL_MEETING_ROOMS_v736
 import FindATimePanel from "@/components/o365/FindATimePanel"; // BF_PORTAL_O365_UI_v1
 import DateTimePicker from "@/components/ui/DateTimePicker"; // BF_PORTAL_CAL_DATETIMEPICKER_v1
+import { startOutboundPstn } from "@/dialer/actions"; // BF_PORTAL_CALENDAR_CALL_v745
+import { phoneFromEvent, prettyPhone } from "./eventPhone";
 
 type ApiCalendarEvent = {
   id?: string;
@@ -322,6 +324,20 @@ function CalendarContent() {
             <p><strong>Date/Time:</strong> {selectedEvent.start.toLocaleString()} - {selectedEvent.end.toLocaleString()}</p>
             <p><strong>Attendees:</strong> {Array.isArray(selectedEvent.resource.attendees) ? selectedEvent.resource.attendees.join(", ") : (selectedEvent.resource.attendees ?? "—")}</p>
             <p><strong>Location:</strong> {selectedEvent.resource.location ?? "—"}</p>
+            {/* BF_PORTAL_CALENDAR_CALL_v745 - call the person straight from the event. */}
+            {(() => {
+              const callTo = phoneFromEvent(selectedEvent.resource.location, String(selectedEvent.resource.notes ?? "").replace(/<[^>]+>/g, " "));
+              if (!callTo) return null;
+              return (
+                <p style={{ margin: "10px 0" }}>
+                  <button type="button" data-testid="calendar-event-call"
+                    onClick={() => { void startOutboundPstn(callTo, { contactName: selectedEvent.title, source: "calendar" }); setSelectedEvent(null); }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0B5D3B", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer" }}>
+                    Call {prettyPhone(callTo)}
+                  </button>
+                </p>
+              );
+            })()}
             {(selectedEvent.resource.teams_link || selectedEvent.resource.teamsLink) && (
               <p style={{ margin: "10px 0" }}>
                 <a target="_blank" rel="noreferrer"
