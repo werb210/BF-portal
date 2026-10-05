@@ -425,6 +425,8 @@ export default function LendersTab({ applicationId }: Props) {
     not_ready: "Not sent: the application is not signed yet, or the credit summary is outstanding.",
     // BF_PORTAL_SEND_REASON_v746 - BF-Server v752 says which one.
     application_not_signed: "Not sent: the client has not signed the application yet. The signing text has gone to the client.",
+    // BF_PORTAL_SBA_SEND_FOR_SIGNING_v749 - an SBA client signs the application with the SBA forms.
+    sba_signing_not_started: "Not sent: press Send for signing on the SBA Signing tab first. The client signs the application and SBA forms together.",
     credit_summary_not_submitted: "Not sent: the credit summary has not been submitted. Open Credit Summary, generate it and press Submit.",
     already_sent: "Nothing to send: every selected lender has already received the package.",
     dispatch_in_progress: "Another send is already running for this application. Try again in a moment.",
