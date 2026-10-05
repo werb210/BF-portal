@@ -3,8 +3,11 @@ import { useCallback, useEffect, useState } from "react";
 import { rawApiFetch } from "@/api";
 import { OVERVIEW_ROWS, ROW_LABELS, bulletsToText, cell, money, risksToText, textToBullets, textToRisks, type Section, type SummaryRow } from "./creditSummaryV2Helpers";
 
-const card = { border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, marginBottom: 16, background: "#fff" } as const;
-const btn = { padding: "6px 12px", marginRight: 8, marginBottom: 8 } as const;
+// BF_PORTAL_CREDIT_SUMMARY_READABLE_v746 - the cards set a white background but no text colour, so text and
+// buttons inherited the portal's light text and were invisible (white on white): the tab looked empty and
+// the summary could not be generated or submitted, which blocked every send to lenders.
+const card = { border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, marginBottom: 16, background: "#fff", color: "#0f172a" } as const;
+const btn = { padding: "6px 12px", marginRight: 8, marginBottom: 8, background: "#0B1F3A", color: "#ffffff", border: "1px solid #0B1F3A", borderRadius: 6, cursor: "pointer" } as const;
 const th = { textAlign: "left", padding: "4px 8px", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" } as const;
 const td = { padding: "4px 8px", borderBottom: "1px solid #f1f5f9", verticalAlign: "top" } as const;
 
@@ -80,7 +83,7 @@ export default function CreditSummaryV2({ applicationId }: { applicationId: stri
   const saveSection = (key: string) => async (body: unknown) => run("Save", `/api/credit-summary-v2/${id}/sections/${key}`, "PUT", body, () => "Saved.");
   const setFact = (factId: string, status: "confirmed" | "rejected") => run(status === "confirmed" ? "Confirm" : "Reject", `/api/credit-research/${id}/facts/${encodeURIComponent(factId)}`, "PUT", { status }, () => status === "confirmed" ? "Confirmed - Generate again to use it." : "Removed.");
 
-  return <div data-testid="credit-summary-v2" style={{ maxWidth: 1000 }}>
+  return <div data-testid="credit-summary-v2" style={{ maxWidth: 1000, color: "#0f172a" }}>
     <div style={card}>
       <div style={{ display: "flex", flexWrap: "wrap" }}>
         <button type="button" style={btn} disabled={!!busy} onClick={() => void run("Read financials", `/api/credit-financials/${id}/extract`, "POST", undefined, (json) => `Read ${json?.documents ?? 0} financial document(s).${json?.skipped?.length ? ` Skipped: ${json.skipped.join("; ")}` : ""}`)}>Read financials</button>
