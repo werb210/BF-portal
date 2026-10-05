@@ -31,5 +31,12 @@ export function coverageTone(c: BankCoverage): CoverageTone {
 export function coverageHint(c: BankCoverage): string | null {
   if (c.missingMonths.length === 0) return null;
   if (c.undatedStatements > 0) return "Some statements could not be dated. Add the period when accepting them (e.g. July) and the months will update.";
+  // BF_PORTAL_BANK_TOO_OLD_v746 - statements were uploaded but none fall in the window lenders need:
+  // they are simply too old. Say so, instead of a bare "0 of 6 months".
+  if (c.statements > 0 && c.requiredMonths > 0 && c.missingMonths.length >= c.requiredMonths) {
+    const first = c.missingMonths[0];
+    const last = c.missingMonths[c.missingMonths.length - 1];
+    return "The uploaded statements are older than the most recent " + c.requiredMonths + " months lenders need. Ask the applicant for " + (first === last ? first : first + " to " + last) + ".";
+  }
   return "Request the missing months from the applicant.";
 }

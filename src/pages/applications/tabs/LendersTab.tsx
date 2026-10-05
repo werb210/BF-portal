@@ -423,6 +423,9 @@ export default function LendersTab({ applicationId }: Props) {
   // no way to tell without a DB query.
   const SEND_REASONS: Record<string, string> = {
     not_ready: "Not sent: the application is not signed yet, or the credit summary is outstanding.",
+    // BF_PORTAL_SEND_REASON_v746 - BF-Server v752 says which one.
+    application_not_signed: "Not sent: the client has not signed the application yet. The signing text has gone to the client.",
+    credit_summary_not_submitted: "Not sent: the credit summary has not been submitted. Open Credit Summary, generate it and press Submit.",
     already_sent: "Nothing to send: every selected lender has already received the package.",
     dispatch_in_progress: "Another send is already running for this application. Try again in a moment.",
     no_selected_lenders: "Nothing to send: no lenders are finalized on this application.",
