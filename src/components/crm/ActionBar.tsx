@@ -109,7 +109,7 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, goog
         />
       )}
       {open === "meeting" && (
-        <MeetingPopup scope={scope} defaultPhone={contactPhone} defaultEmail={contactEmail} onClose={close} onCreated={() => { onAction?.("meeting"); onChanged?.(); }} />
+        <MeetingPopup scope={scope} defaultPhone={contactPhone} defaultEmail={contactEmail} defaultName={contactName} onClose={close} onCreated={() => { onAction?.("meeting"); onChanged?.(); }} />
       )}
     </>
   );
