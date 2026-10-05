@@ -1,4 +1,5 @@
 # BF_PORTAL_DESKTOP_APP_v718 - builds and publishes the Windows installer.
+# BF_PORTAL_DESKTOP_RELEASE_TAG_v748 - tag first, and keep the Windows installer as a run artifact too.
 # BF_PORTAL_DESKTOP_MAC_v723 - and the Mac installer (.dmg, Apple-chip and Intel), unsigned for now.
 name: Desktop app (Windows and Mac)
 
@@ -23,9 +24,32 @@ jobs:
         shell: pwsh
         run: Copy-Item ../public/icons/icon-512x512.png icon.png
       - run: npm install --no-audit --no-fund
+      # BF_PORTAL_DESKTOP_RELEASE_TAG_v748 - create the release tag before publishing. electron-builder uploads
+      # several files at once and each tried to create the release and its tag; the second request was rejected
+      # ("Published releases must have a valid tag") and the job failed. Pushing the tag first removes the race.
+      - name: Make sure the release tag exists
+        shell: bash
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          git fetch --tags --quiet
+          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+            echo "Tag $VERSION already exists"
+          else
+            git tag "$VERSION"
+            git push origin "$VERSION"
+            echo "Created tag $VERSION"
+          fi
       - run: npm run dist:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # BF_PORTAL_DESKTOP_RELEASE_TAG_v748 - the installer is also kept on the run, like the Mac one, so it can be
+      # downloaded from this run's Artifacts even if publishing to Releases fails.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Boreal-Staff-Portal-Windows
+          path: desktop/release/*.exe
+          if-no-files-found: warn
 
   mac:
     runs-on: macos-latest
