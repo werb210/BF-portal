@@ -23,3 +23,14 @@ export function prettyPhone(e164: string): string {
   const d = e164.replace(/[^0-9]/g, "").slice(-10);
   return "(" + d.slice(0, 3) + ") " + d.slice(3, 6) + "-" + d.slice(6);
 }
+
+// BF_PORTAL_JOIN_ROOM_v750 - the meeting room behind an event, from the join link the room writes into the event
+// (".../api/meetings/join/<slug>"). Null when the event is not a Boreal meeting room.
+const ROOM_RE = /\/api\/meetings\/join\/([A-Za-z0-9_-]{6,64})/;
+export function roomSlugFromEvent(...texts: Array<string | null | undefined>): string | null {
+  for (const t of texts) {
+    const m = t ? ROOM_RE.exec(String(t)) : null;
+    if (m) return m[1]!;
+  }
+  return null;
+}
