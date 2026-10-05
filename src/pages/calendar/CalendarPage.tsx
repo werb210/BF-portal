@@ -13,8 +13,8 @@ import CalendarTasksPanel from "./CalendarTasksPanel";
 import MeetingRoomsPanel from "./MeetingRoomsPanel"; // BF_PORTAL_MEETING_ROOMS_v736
 import FindATimePanel from "@/components/o365/FindATimePanel"; // BF_PORTAL_O365_UI_v1
 import DateTimePicker from "@/components/ui/DateTimePicker"; // BF_PORTAL_CAL_DATETIMEPICKER_v1
-import { startOutboundPstn } from "@/dialer/actions"; // BF_PORTAL_CALENDAR_CALL_v745
-import { phoneFromEvent, prettyPhone } from "./eventPhone";
+import { startOutboundPstn, joinMeetingRoom } from "@/dialer/actions"; // BF_PORTAL_CALENDAR_CALL_v745 / BF_PORTAL_JOIN_ROOM_v750
+import { phoneFromEvent, prettyPhone, roomSlugFromEvent } from "./eventPhone";
 
 type ApiCalendarEvent = {
   id?: string;
@@ -334,6 +334,20 @@ function CalendarContent() {
                     onClick={() => { void startOutboundPstn(callTo, { contactName: selectedEvent.title, source: "calendar" }); setSelectedEvent(null); }}
                     style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0B5D3B", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer" }}>
                     Call {prettyPhone(callTo)}
+                  </button>
+                </p>
+              );
+            })()}
+            {/* BF_PORTAL_JOIN_ROOM_v750 - join a Boreal meeting room straight from the event. */}
+            {(() => {
+              const slug = roomSlugFromEvent(String(selectedEvent.resource.notes ?? "").replace(/<[^>]+>/g, " "), selectedEvent.resource.location);
+              if (!slug) return null;
+              return (
+                <p style={{ margin: "10px 0" }}>
+                  <button type="button" data-testid="calendar-event-join-room"
+                    onClick={() => { void joinMeetingRoom(slug, selectedEvent.title); setSelectedEvent(null); }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0B5D3B", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer" }}>
+                    Join room
                   </button>
                 </p>
               );
