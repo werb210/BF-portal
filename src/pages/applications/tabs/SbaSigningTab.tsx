@@ -56,6 +56,24 @@ export default function SbaSigningTab({ applicationId }: { applicationId: string
 
   useEffect(() => { void load(); }, [load]);
 
+  // BF_PORTAL_SBA_SEND_FOR_SIGNING_v749 - one signing per owner: the Boreal application plus their SBA forms.
+  const sendForSigning = async () => {
+    setBusy(true); setNotice(null); setError(null);
+    try {
+      const r = await api.post<any>(`/api/applications/${encodeURIComponent(applicationId)}/sba-signing/send`, {});
+      const out = ((r as any)?.data ?? r) ?? {};
+      const owners: Array<{ ownerIndex: number; name: string; started: boolean; delivery: string }> = out.owners ?? [];
+      const lines = owners.map((o) => `Owner ${o.ownerIndex}${o.name ? " (" + o.name + ")" : ""}: ${o.started ? "sent - signs in the " + o.delivery : "NOT sent - check the owner's email"}`);
+      const told = out.notice ? ` Owner 1 was ${[out.notice.sms ? "texted" : "", out.notice.email ? "emailed" : ""].filter(Boolean).join(" and ") || "not notified - call them"}.` : "";
+      setNotice((out.ok ? "Sent for signing. " : "Not sent. ") + lines.join("; ") + "." + told);
+      await load();
+    } catch (e) {
+      setError(getErrorMessage(e, "Could not send for signing. If the forms are not complete yet the applicant has to finish them first."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const resend = async () => {
     setBusy(true); setNotice(null); setError(null);
     try {
@@ -90,7 +108,7 @@ export default function SbaSigningTab({ applicationId }: { applicationId: string
     </div>
     <div style={s.card}>
       <div style={s.h}>Envelopes ({envelopes.length})</div>
-      {envelopes.length === 0 ? <div style={s.note}>No envelopes yet. They are created automatically when the last SBA form is submitted, or by Resend below once the forms are complete.</div> : envelopes.map((e, i) => <div key={i} style={{ padding: "10px 0", borderBottom: "1px solid var(--ui-border-soft)" }}>
+      {envelopes.length === 0 ? <div style={s.note}>No envelopes yet. Press Send for signing below once the applicant has submitted the SBA forms.</div> : envelopes.map((e, i) => <div key={i} style={{ padding: "10px 0", borderBottom: "1px solid var(--ui-border-soft)" }}>
         <div style={s.row}><span style={s.val}>Owner {e.ownerIndex ?? i + 1}</span><span style={s.label}>{e.email || "no email on file"}</span></div>
         <div style={s.note}>{(e.docNames?.length ?? e.docIds?.length ?? 0)} document{(e.docNames?.length ?? e.docIds?.length ?? 0) === 1 ? "" : "s"}{e.docNames?.length ? `: ${e.docNames.join(", ")}` : ""}</div>
         {(e.ives4506cLenderIds?.length ?? 0) === 0 && <div style={s.note} data-testid={`sba-no-4506c-${e.ownerIndex ?? i + 1}`}>No 4506-C. Set the IVES participant fields on the selected lender, then resend - the package cannot be dispatched without one.</div>}
@@ -98,10 +116,11 @@ export default function SbaSigningTab({ applicationId }: { applicationId: string
       </div>)}
     </div>
     <div style={s.card}>
-      <div style={s.h}>Resend signing links</div>
-      <div style={s.note}>SignNow embedded links expire 45 minutes after they are issued. Resending rebuilds every owner's envelope from the current form data and issues fresh links, so use it after the applicant edits anything too.</div>
-      <div style={{ marginTop: 12 }}><button type="button" data-testid="sba-resend" disabled={busy || !data.formsComplete} onClick={() => void resend()} style={busy || !data.formsComplete ? s.btnOff : s.btn}>{busy ? "Sending…" : "Resend signing links"}</button>
+      <div style={s.h}>Send for signing</div>
+      <div style={s.note}>Each owner signs once: the Boreal application and their SBA forms together (1919 for owner 1, 912, 4506-C for each SBA lender with IVES details, and 413). Owner 1 is texted and emailed to sign in the client portal; other owners get an email from SignNow. Pressing it again replaces any unsigned envelopes, so use it after the applicant edits anything.</div>
+      <div style={{ marginTop: 12 }}><button type="button" data-testid="sba-send-for-signing" disabled={busy || !data.formsComplete} onClick={() => void sendForSigning()} style={busy || !data.formsComplete ? s.btnOff : s.btn}>{busy ? "Sending…" : "Send for signing"}</button>
       {!data.formsComplete && <span style={{ ...s.label, marginLeft: 10 }}>Available once the applicant has submitted every SBA form.</span>}</div>
+      <div style={{ ...s.note, marginTop: 10 }}>SBA forms only, without the application: <button type="button" data-testid="sba-resend" disabled={busy || !data.formsComplete} onClick={() => void resend()} style={{ border: 0, background: "none", color: "var(--ui-accent, #B08D3F)", cursor: "pointer", padding: 0, fontSize: 12, textDecoration: "underline" }}>resend SBA form links</button></div>
     </div>
   </div>;
 }
