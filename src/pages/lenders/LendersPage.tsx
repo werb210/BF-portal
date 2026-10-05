@@ -15,6 +15,7 @@ import {
 import { getErrorMessage } from "@/utils/errors";
 import { api } from "@/api";
 import ModalFooterWithDelete from "@/components/ModalFooterWithDelete";
+import SbaIvesFields, { EMPTY_SBA, sbaMissing, type LenderSba } from "./components/SbaIvesFields"; // BF_PORTAL_LENDER_SBA_IVES_v747
 import { phoneInputHandler, formatDollar, formatRate, unformatDollar } from "@/utils/format";
 import { CATEGORY_ORDER, CATEGORY_LABELS, CREDIT_SCORE_BANDS, bfBandFromMin, bfMinFromBand, ProductCoreFields } from "./productFormShared"; // PRODUCT_CORE_FIELDS_SHARED_v1
 
@@ -160,6 +161,14 @@ function CreateLenderModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  // BF_PORTAL_LENDER_SBA_IVES_v747 - offers SBA + IVES details, loaded and saved through their own endpoint.
+  const [sba, setSba] = useState<LenderSba>(EMPTY_SBA);
+  useEffect(() => {
+    if (!lender?.id) return;
+    let live = true;
+    api<LenderSba>("/api/portal/lenders/" + lender.id + "/sba").then((v) => { if (live && v) setSba({ ...EMPTY_SBA, ...v }); }).catch(() => undefined);
+    return () => { live = false; };
+  }, [lender?.id]);
 
   function set(key: string, value: string) {
     setForm((p) => ({ ...p, [key]: value }));
@@ -199,6 +208,8 @@ function CreateLenderModal({
     if (!form.contactEmail.trim()) next.contactEmail = "Contact email is required.";
     if (!form.submissionMethod) next.submissionMethod = "Submission method is required.";
     if (Object.keys(next).length) { setErrors(next); return; }
+    const sbaGaps = sbaMissing(sba); // BF_PORTAL_LENDER_SBA_IVES_v747
+    if (sbaGaps.length) { setServerError("This lender offers SBA loans, so these are needed: " + sbaGaps.join(", ") + "."); return; }
 
     setSaving(true);
     setServerError(null);
@@ -233,6 +244,11 @@ function CreateLenderModal({
         status: "ACTIVE",
       } as any;
       const saved = lender?.id ? await bfSaveLender(lender.id, payload) : await createLender(payload);
+      // BF_PORTAL_LENDER_SBA_IVES_v747
+      const savedId = (saved as any)?.id ?? lender?.id;
+      if (savedId && sba.offersSba !== null) {
+        await api("/api/portal/lenders/" + savedId + "/sba", { method: "PUT", body: JSON.stringify(sba) });
+      }
       onCreated(saved);
     } catch (err) {
       setServerError(getErrorMessage(err, "Failed to create lender."));
@@ -386,6 +402,8 @@ function CreateLenderModal({
             </div>
           )}
         </div>
+
+        <SbaIvesFields value={sba} onChange={setSba} />
 
         <ModalFooterWithDelete
           onCancel={onClose}

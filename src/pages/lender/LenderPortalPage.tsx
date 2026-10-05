@@ -12,6 +12,7 @@ import { api } from "@/api";
 import logoWhite from "@/assets/logo-boreal-mountains-white.svg"; // BF_PORTAL_LENDER_HEADER_v1
 import { formatDollar, unformatDollar } from "@/utils/format";
 import { Field, inputStyle } from "@/pages/lenders/components/lenderFieldShared";
+import SbaIvesFields, { EMPTY_SBA, sbaMissing, type LenderSba } from "@/pages/lenders/components/SbaIvesFields"; // BF_PORTAL_LENDER_SBA_IVES_v747
 import {
   ProductCoreFields,
   type ProductCoreForm,
@@ -241,6 +242,12 @@ export default function LenderPortalPage() {
     void loadUploads();
   }, [loadProducts, loadUploads]);
 
+  // BF_PORTAL_LENDER_SBA_IVES_v747 - the lender says whether it offers SBA loans and gives its IVES details.
+  const [sba, setSba] = useState<LenderSba>(EMPTY_SBA);
+  useEffect(() => {
+    api<LenderSba>("/api/lender/me/sba", { headers: authHeader() }).then((v) => { if (v) setSba({ ...EMPTY_SBA, ...v }); }).catch(() => undefined);
+  }, []);
+
   function openProfileEdit() {
     setProfileDraft({ ...profile });
     setProfileSaveErr(null);
@@ -249,7 +256,10 @@ export default function LenderPortalPage() {
 
   async function saveProfile() {
     setProfileSaving(true); setProfileSaveErr(null);
+    const sbaGaps = sbaMissing(sba); // BF_PORTAL_LENDER_SBA_IVES_v747
+    if (sbaGaps.length) { setProfileSaveErr("You offer SBA loans, so these are needed: " + sbaGaps.join(", ") + "."); setProfileSaving(false); return; }
     try {
+      if (sba.offersSba !== null) await api("/api/lender/me/sba", { method: "PUT", body: JSON.stringify(sba), headers: authHeader() });
       const { name: _companyName, ...editable } = profileDraft;
       const updated = await api<Profile>("/api/lender/me", { method: "PATCH", body: JSON.stringify(editable), headers: authHeader() });
       setProfile(updated ?? profileDraft);
@@ -559,6 +569,7 @@ export default function LenderPortalPage() {
                 style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
               />
             </Field>
+            <SbaIvesFields value={sba} onChange={setSba} />
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 }}>
               <button className="ui-button" onClick={() => setEditingProfile(false)} disabled={profileSaving}>Cancel</button>
               <button className="ui-button ui-button--primary" onClick={() => void saveProfile()} disabled={profileSaving}>
