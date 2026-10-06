@@ -24,10 +24,10 @@
     "@boreal/shared-contract": "file:shared-contract",
     "@capacitor/app": "^8.1.0",
     "@capacitor/app-launcher": "^8.0.1",
-    "@capacitor/core": "8.4.0",
+    "@capacitor/core": "8.5.2",
     "@capacitor/device": "^8.0.2",
     "@capacitor/filesystem": "^8.1.2",
-    "@capacitor/ios": "8.4.0",
+    "@capacitor/ios": "8.5.2",
     "@capacitor/keyboard": "^8.0.3",
     "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",
@@ -65,7 +65,7 @@
     "esbuild": "0.21.5"
   },
   "devDependencies": {
-    "@capacitor/cli": "8.4.0",
+    "@capacitor/cli": "8.5.2",
     "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
