@@ -43,8 +43,11 @@ export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "
     if (!title.trim() || !when) { setMsg("Add a title and a start time."); return; }
     setBusy(true); setMsg(null);
     try {
-      const r = await api.post<{ meeting: Meeting; invited?: number; refused?: number; delivery?: MeetingDelivery }>("/api/meetings", { title: title.trim(), startsAt: new Date(when).toISOString(), durationMin: minutes, participants: people.map(({ contactId, userId, name, email, phone }) => ({ contactId, userId, name, email, phone })) });
+      const r = await api.post<{ meeting: Meeting; invited?: number; refused?: number; delivery?: MeetingDelivery; duplicate?: boolean }>("/api/meetings", { title: title.trim(), startsAt: new Date(when).toISOString(), durationMin: minutes, participants: people.map(({ contactId, userId, name, email, phone }) => ({ contactId, userId, name, email, phone })) });
       setTitle(""); setWhen(""); setPeople([]);
+      // BF_PORTAL_NO_DUPLICATE_ROOMS_v751 - pressing Create again (e.g. after a slow "Could not create" answer) returns
+      // the room already made; say so instead of announcing a new meeting.
+      if (r.duplicate) { setMsgOk(true); setMsg("This meeting was already created - access code " + r.meeting.code + ". No second room was made."); load(); return; }
       const told = describeMeetingDelivery(r.delivery);
       setMsgOk(told.ok);
       setMsg("Meeting created. Access code " + r.meeting.code + ". " + told.text + (r.refused ? " " + r.refused + " not added - a room holds 10 people." : ""));
