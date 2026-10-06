@@ -485,7 +485,8 @@ export default function DialerPanel() {
               <strong>Phone not ready.</strong>{" "}
               {st.error === "no_voice_token" ? "Could not get a voice token from the server."
                 : st.error === "device_not_registered" ? "The phone engine did not finish registering — reload the page."
-                : st.error === "mic_permission_denied" ? "Microphone permission is blocked — allow it in the browser, then reload."
+                : st.error === "mic_permission_denied" ? ((window as any).borealDesktop ? "Microphone is blocked for this app - turn on Boreal Staff Portal in System Settings > Privacy & Security > Microphone, then reopen the app." : "Microphone permission is blocked - allow it in the browser, then reload.")
+                : st.error === "invalid_phone" ? "That phone number can't be dialled - check the number on the contact or application." /* BF_PORTAL_CALL_FAILS_VISIBLY_v752 */
                 : st.error === "bootstrap_failed" ? "The dialer failed to start. Reload the page; if it persists, the voice service is down."
                 : st.error ? `Reason: ${st.error}`
                 : "The phone engine has not registered yet — reload the page."}

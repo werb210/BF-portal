@@ -117,6 +117,14 @@ function docProgressLabel(p: DocProgress | undefined): { text: string; color: st
   return { text: `${p.total} received \u00b7 ${p.accepted} accepted`, color: "#92400e", bg: "#fef3c7" };
 }
 
+// BF_PORTAL_CALL_FAILS_VISIBLY_v752
+export function pickCallPhone(details: any, applicant: any): string | null {
+  const c = [details?.callPhone, applicant?.phone, applicant?.mobile, applicant?.mobilePhone, applicant?.phoneNumber, applicant?.phone_number,
+    details?.rawPayload?.readiness?.phone, details?.business?.phone, details?.businessDetails?.phone];
+  for (const v of c) { const s = typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : ""; if (s.replace(/\D+/g, "").length >= 10) return s; }
+  return null;
+}
+
 export default function PipelinePage() {
   // BF_PIPELINE_SHOW_DRAFTS_v24
   const [showDrafts, setShowDrafts] = useState(false);
@@ -333,7 +341,9 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
       const payload: any = await api.get(`/api/applications/${card.id}/details`);
       const details = payload?.data ?? payload?.application ?? payload ?? null;
       const a = details?.applicantDetails ?? details?.applicantInfo ?? {};
-      const phone = a?.phone ?? a?.phoneNumber ?? null;
+      // BF_PORTAL_CALL_FAILS_VISIBLY_v752 - the CRM contact's phone (staff may have corrected it) wins, then every
+      // name the applicant's phone has been stored under.
+      const phone = pickCallPhone(details, a);
       if (!phone) {
         window.alert("No phone number on file for this applicant.");
         return;
