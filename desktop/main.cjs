@@ -99,6 +99,14 @@ function createWindow(startHidden = false) {
 }
 
 app.whenReady().then(() => {
+  // BF_PORTAL_CALL_FAILS_VISIBLY_v752 - ask macOS for the microphone up front. Without this the first call can be
+  // refused silently by macOS privacy settings, and the dialler can't place or answer calls.
+  if (IS_MAC) {
+    try {
+      const { systemPreferences } = require("electron");
+      if (systemPreferences.getMediaAccessStatus("microphone") !== "granted") void systemPreferences.askForMediaAccess("microphone");
+    } catch { /* older Electron or no camera/mic subsystem: the portal still shows the mic error in the dialler */ }
+  }
   // The dialer needs the microphone; nothing outside the portal gets anything.
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback) => {
     callback(isPortalUrl(contents.getURL()) && GRANTED_PERMISSIONS.has(permission));
