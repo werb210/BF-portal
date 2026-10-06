@@ -38,7 +38,8 @@
         }
       ],
       "icon": "../public/icons/icon-512x512.png",
-      "identity": null,
+      "identity": "-",
+      "hardenedRuntime": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Boreal uses the microphone for staff phone calls placed through the in-app dialer."
       }

@@ -69,6 +69,19 @@ jobs:
       - run: npm run dist:mac
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      # BF_PORTAL_DESKTOP_ADHOC_SIGN_v754 - macOS drops notifications from an app with no valid signature (the
+      # unsigned build created them, macOS showed none, not even in Notification Centre). Until Boreal's Apple
+      # Developer ID is set up the app is ad-hoc signed; fail the build if any .app is not validly signed.
+      - name: Check the Mac app is signed
+        run: |
+          set -e
+          found=0
+          for app in release/mac*/*.app; do
+            found=1
+            codesign --verify --deep --strict --verbose=2 "$app"
+            codesign -dv "$app" 2>&1 | grep -E "Signature=adhoc|Authority="
+          done
+          test "$found" = 1
       - uses: actions/upload-artifact@v4
         with:
           name: Boreal-Staff-Portal-Mac
