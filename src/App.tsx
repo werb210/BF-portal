@@ -48,6 +48,7 @@ import IssueInboxPage from "@/pages/IssueInboxPage";
 import AiCommsPage from "@/pages/AiCommsPage";
 import AIChatDashboard from "@/pages/AIChatDashboard";
 import AIKnowledgeManager from "@/pages/admin/AIKnowledgeManager";
+import LibraryPage from "@/pages/library/LibraryPage"; // BF_PORTAL_LIBRARY_PAGE_v762
 import ReportsBoard from "@/pages/reports/ReportsBoard"; // BF_PORTAL_REPORTS_SECTION_v714 (replaces the hidden ReportsPage)
 import DesktopBridge from "@/desktop/DesktopBridge"; // BF_PORTAL_DESKTOP_ALERTS_v724
 import AutomationsPage from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUTOMATIONS_UI_v1
@@ -227,6 +228,7 @@ const AppRoutes = () => {
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
         <Route path="/broker-imports" element={<Navigate to="/marketing?tab=referrers&sub=brokers" replace />} /> {/* BF_PORTAL_PARTNERS_TABS_v720 - Broker Files lives in Marketing > Referrers > Brokers */}
         <Route path="/settings/broker-files" element={<Navigate to="/marketing?tab=referrers&sub=brokers" replace />} />
+        <Route path="/library" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}><LibraryPage /></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_LIBRARY_PAGE_v762 */}
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}><div style={{ padding: 16 }}><h1 style={{ fontSize: 20, margin: "0 0 12px", color: "var(--ui-text)" }}>Reports</h1><ReportsBoard /></div></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_REPORTS_SECTION_v714 */}
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
         <Route

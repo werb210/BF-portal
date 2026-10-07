@@ -2972,7 +2972,15 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const [users, setUsers] = useState<TeamUser[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<TeamMessage[]>([]);
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(() => {
+    // BF_PORTAL_LIBRARY_PAGE_v762 - "Share in Team chat" from the Library arrives as ?share=<link>&name=<file>; start the
+    // message with it so staff only pick the conversation (and tick Read this if needed).
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const share = p.get("share");
+      return share && /^https:\/\//.test(share) ? (p.get("name") ? p.get("name") + ": " : "") + share : "";
+    } catch { return ""; }
+  });
   // BF_PORTAL_SNIPPET_TRIGGER_v45 - snippets scoped to the team channel.
   // BF\_PORTAL\_SNIPPETS\_ALL\_CHANNELS\_v55 - same fault as the SMS box above.
   const expandTeamSnippets = useSnippets();
