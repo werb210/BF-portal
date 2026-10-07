@@ -119,13 +119,13 @@ describe("BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_AND_CONTACT_NAME_v1 -- 6-tab BI na
   });
 
   // BF_PORTAL_REPORTS_SECTION_v714 - Reports added to the BI sidebar (reports by silo).
-  it("BI sidebar has exactly 7 items (Dashboard, Pipeline, CRM, Lender, Marketing, Outreach, Reports)", () => {
+  it("BI sidebar has exactly 8 items (Dashboard, Pipeline, CRM, Lender, Marketing, Outreach, Reports, Library)" /* BF_PORTAL_LIBRARY_PAGE_v762 */, () => {
     renderLayout("BI", "Admin");
-    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing", "Outreach", "Reports"];
+    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing", "Outreach", "Reports", "Library"];
     for (const label of expectedLabels) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole("link")).toHaveLength(7);
+    expect(screen.getAllByRole("link")).toHaveLength(8);
   });
 });
 
