@@ -77,7 +77,13 @@ function createWindow(startHidden = false) {
     },
   });
 
-  void mainWindow.loadURL(APP_URL);
+  // BF_PORTAL_DESKTOP_FRESH_v761 - the portal's offline cache (service worker) served whatever build was live when the
+  // app was installed: the "new version" prompt is never shown and the app never really closes (tray), so the waiting
+  // update never took over and staff kept seeing an old sign-in page. Clear it on every launch, then load the live site.
+  // Sign-in (cookies and saved tokens) is kept.
+  void session.defaultSession.clearStorageData({ storages: ["serviceworkers", "cachestorage"] })
+    .catch((err) => console.warn("[desktop] could not clear the old portal cache", err))
+    .finally(() => { void mainWindow?.loadURL(APP_URL); });
 
   // Microsoft sign-in opens a popup; everything else belongs in the browser.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
