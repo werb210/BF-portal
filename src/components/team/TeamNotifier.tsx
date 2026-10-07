@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/api";
 import { getAuthToken } from "@/lib/authToken";
 import { API_BASE } from "@/config/api";
+import { TEAM_MESSAGE_EVENT } from "@/pages/dashboard/TeamMessagesCard"; // BF_PORTAL_DASH_TEAM_MESSAGES_v758
 
 type Channel = { id: string; kind: string; name: string | null; muted?: boolean; member_ids?: string[] };
 type Status = { user_id: string; dnd?: boolean; away?: boolean };
@@ -109,6 +110,8 @@ export default function TeamNotifier() {
       ws.onmessage = (ev) => {
         try {
           const d = JSON.parse(typeof ev.data === "string" ? ev.data : "{}");
+          // BF_PORTAL_DASH_TEAM_MESSAGES_v758 - tell the Dashboard card (and anything else listening) to refresh.
+          if (d?.type === "message" || d?.type === "read") { try { window.dispatchEvent(new CustomEvent(TEAM_MESSAGE_EVENT, { detail: { channel_id: d.channel_id } })); } catch { /* old browser */ } }
           if (d?.type === "message" && d.message) alertFor(d as Incoming);
           else if (d?.type === "channel") loadChannels();
           else if (d?.type === "status" && d.status?.user_id === me) myDnd.current = Boolean(d.status.dnd);
