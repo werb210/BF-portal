@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { moneyInline } from "@/lib/moneyByCurrency";
 import { normalizeAnalyticsResponse } from "./DashboardAnalytics";
 import { CardBody } from "@/pages/reports/ReportsBoard";
+import TeamMessagesCard from "./TeamMessagesCard"; // BF_PORTAL_DASH_TEAM_MESSAGES_v758
 
 export type Size = "third" | "half" | "full";
 export type DashCard = { id: string; report: string; size: Size; days?: number };
@@ -19,6 +20,7 @@ type Analytics = ReturnType<typeof normalizeAnalyticsResponse>;
 
 export const BUILTINS: Array<{ key: string; title: string; size: Size }> = [
   { key: "dash_kpis", title: "Key numbers", size: "full" },
+  { key: "dash_team", title: "New team messages", size: "full" }, // BF_PORTAL_DASH_TEAM_MESSAGES_v758
   { key: "dash_pipeline", title: "Pipeline by stage", size: "full" },
   { key: "dash_totals", title: "Visits to funded", size: "full" },
   { key: "dash_dropoffs", title: "Application funnel and drop-offs", size: "full" },
@@ -30,6 +32,16 @@ export const BUILTINS: Array<{ key: string; title: string; size: Size }> = [
 ];
 export const isBuiltin = (key: string) => BUILTINS.some((item) => item.key === key);
 export const defaultCards = (): DashCard[] => BUILTINS.map(({ key, size }) => ({ id: key, report: key, size }));
+// BF_PORTAL_DASH_TEAM_MESSAGES_v758 - layouts saved before the Team card existed get it once, under
+// Key numbers. A local flag remembers that, so removing the card later keeps it removed.
+export const TEAM_CARD_FLAG = "bf.dash.teamCardAdded.v758";
+export function withTeamCardOnce(cards: DashCard[], alreadyAdded: boolean): { cards: DashCard[]; added: boolean } {
+  if (alreadyAdded || cards.some((c) => c.report === "dash_team")) return { cards, added: false };
+  const at = cards.findIndex((c) => c.report === "dash_kpis");
+  const next = [...cards];
+  next.splice(at < 0 ? 0 : at + 1, 0, { id: "dash_team", report: "dash_team", size: "full" });
+  return { cards: next, added: true };
+}
 export function withBuiltins(saved?: DashCard[] | null): DashCard[] {
   if (!saved?.length) return defaultCards();
   return saved.some((card) => isBuiltin(card.report)) ? saved : [...defaultCards(), ...saved];
@@ -64,6 +76,7 @@ function MiniTable({ rows, value }: { rows: Row[]; value: (row: Row) => string }
 
 // BF_PORTAL_DASHBOARD_MONEY_ADMIN_v732 - commission and revenue figures are for Admin only (Todd, Andrew).
 export function builtinBody(key: string, { metrics, analytics, range, isAdmin = false }: { metrics: Metrics | null; analytics: Analytics; range: number; isAdmin?: boolean }): ReactNode {
+  if (key === "dash_team") return <TeamMessagesCard />; // BF_PORTAL_DASH_TEAM_MESSAGES_v758
   if (key === "dash_kpis" && !isAdmin) return <div className="grid gap-3 grid-cols-2 md:grid-cols-3"><Stat label="Active Applications" value={fmt(metrics?.activeApplications)} /><Stat label="Deals Won This Month" value={fmt(metrics?.dealsWonThisMonth)} /><Stat label="New CRM Contacts Today" value={fmt(metrics?.newLeadsToday)} /></div>;
   if (key === "dash_kpis") return <div className="grid gap-3 grid-cols-2 md:grid-cols-4"><Stat label="Active Applications" value={fmt(metrics?.activeApplications)} /><Stat label="Deals Won This Month" value={fmt(metrics?.dealsWonThisMonth)} /><Stat label="Commission Earned (all time)" value={metrics ? splitMoney(metrics.commissionEarnedByCurrency) ?? `$${fmt(metrics.commissionEarned)}` : "—"} /><Stat label="New CRM Contacts Today" value={fmt(metrics?.newLeadsToday)} /></div>;
   if (key === "dash_pipeline") {
@@ -103,7 +116,14 @@ export default function DashboardHome() {
   const loadMetrics = useCallback(() => { setMetricsFailed(false); api.get<Metrics>(`/api/dashboard/metrics?silo=${encodeURIComponent(silo)}`).then(setMetrics).catch(() => setMetricsFailed(true)); }, [silo]);
   useEffect(() => { if (isAuthenticated) loadMetrics(); }, [isAuthenticated, loadMetrics]);
   useEffect(() => { if (isAuthenticated) api.get<unknown>(`/api/dashboard/analytics?range=${range}&silo=${encodeURIComponent(silo)}`).then((data) => setAnalytics(normalizeAnalyticsResponse(data))).catch(() => setAnalytics(normalizeAnalyticsResponse(null))); }, [isAuthenticated, range, silo]);
-  useEffect(() => { if (!isAuthenticated) return; Promise.all([api.get<{ reports: CatalogItem[] }>(`/api/reports/catalog?silo=${silo}&for=dashboard`).catch(() => ({ reports: [] })), api.get<{ tabs?: unknown[]; dashboard?: { cards?: DashCard[] } | null }>(`/api/reports/layouts?silo=${silo}`).catch(() => ({ tabs: [], dashboard: null }))]).then(([c, layout]) => { setCatalog(c.reports ?? []); setTabs(layout.tabs ?? []); setCards(withBuiltins(layout.dashboard?.cards)); }); }, [isAuthenticated, silo]);
+  useEffect(() => { if (!isAuthenticated) return; Promise.all([api.get<{ reports: CatalogItem[] }>(`/api/reports/catalog?silo=${silo}&for=dashboard`).catch(() => ({ reports: [] })), api.get<{ tabs?: unknown[]; dashboard?: { cards?: DashCard[] } | null }>(`/api/reports/layouts?silo=${silo}`).catch(() => ({ tabs: [], dashboard: null }))]).then(([c, layout]) => { setCatalog(c.reports ?? []); setTabs(layout.tabs ?? []);
+    // BF_PORTAL_DASH_TEAM_MESSAGES_v758
+    let flagged = false; try { flagged = window.localStorage.getItem(TEAM_CARD_FLAG) === "1"; } catch { flagged = false; }
+    const withTeam = withTeamCardOnce(withBuiltins(layout.dashboard?.cards), flagged);
+    setCards(withTeam.cards);
+    try { window.localStorage.setItem(TEAM_CARD_FLAG, "1"); } catch { /* private mode - the card may be offered again */ }
+    if (withTeam.added && layout.dashboard?.cards?.length) void api.put("/api/reports/layouts", { silo, tabs: layout.tabs ?? [], dashboard: { cards: withTeam.cards } }).catch((err: unknown) => console.warn("[dashboard] could not save the added Team card", err));
+  }); }, [isAuthenticated, silo]);
   const save = useCallback(async (next: DashCard[]) => { setCards(next); try { await api.put("/api/reports/layouts", { silo, tabs, dashboard: { cards: next } }); setMessage(null); } catch { setMessage("Could not save your Dashboard layout. Your last change may be lost if you leave this page."); } }, [silo, tabs]);
   const titles = useMemo(() => new Map([...catalog.map((r) => [r.key, r.title] as const), ...BUILTINS.map((r) => [r.key, r.title] as const)]), [catalog]);
   if (isLoading) return <AppLoading />;
