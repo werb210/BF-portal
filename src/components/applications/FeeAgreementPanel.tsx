@@ -16,7 +16,20 @@ export type FeeAgreementStatus = {
   signedAt?: string | null;
   texts?: Array<{ toLast4: string; status: string | null; errorCode: string | null; createdAt: string }>; // BF_PORTAL_FEE_DIAGNOSE_v743
   notices?: Array<{ channel: string; error: string | null; createdAt: string }>; // BF_PORTAL_FEE_NOTICE_DELIVERY_v740
+  // BF_PORTAL_FEE_MANUAL_SIGN_v759 - signed outside the portal (negotiated), recorded by staff.
+  signedManually?: boolean;
+  manualNote?: string | null;
+  manualSignedByName?: string | null;
+  feePercent?: number | null;
+  feeAmount?: number | null;
 };
+
+// BF_PORTAL_FEE_MANUAL_SIGN_v759
+export function feeTerms(a: Pick<FeeAgreementStatus, "feePercent" | "feeAmount">): string {
+  if (a.feeAmount !== null && a.feeAmount !== undefined) return "$" + Math.round(Number(a.feeAmount)).toLocaleString("en-CA") + " fixed fee";
+  if (a.feePercent !== null && a.feePercent !== undefined) return Number(a.feePercent) + "% on funding";
+  return "2% on funding";
+}
 
 // BF_PORTAL_FEE_NOTICE_DELIVERY_v740 - say what the server actually delivered, not a fixed "Sent".
 export type FeeDelivery = { push: boolean; sms: boolean; email: boolean; phoneLast4: string | null; emailTo: string | null; errors: string[] };
@@ -41,6 +54,9 @@ const day = (v?: string | null): string => (v ? new Date(v).toLocaleDateString("
 export function describeFeeAgreement(a: FeeAgreementStatus | null): { tone: "signed" | "waiting"; text: string } | null {
   if (!a || !a.required) return null;
   const who = a.signerName || "the client";
+  if (a.status === "signed" && a.signedManually) {
+    return { tone: "signed", text: "Fee agreement (" + feeTerms(a) + ") signed outside the portal by " + who + (a.signedAt ? " on " + day(a.signedAt) : "") + ". Marked signed by " + (a.manualSignedByName || "staff") + (a.manualNote ? ". Note: " + a.manualNote : "") + "." };
+  }
   if (a.status === "signed") {
     return { tone: "signed", text: "Fee agreement (2% on funding) signed by " + who + (a.signedAt ? " on " + day(a.signedAt) : "") + ". The signed copy is in Documents." };
   }
@@ -65,6 +81,57 @@ export function textLine(t: { toLast4: string; status: string | null; errorCode:
   const bad = /undelivered|failed/.test(st);
   const label = st === "delivered" ? "delivered" : bad ? "NOT delivered" + (t.errorCode ? " (Twilio error " + t.errorCode + ")" : "") : st;
   return { bad, text: when + " - text to mobile ending " + (t.toLast4 || "?") + ": " + label };
+}
+
+// BF_PORTAL_FEE_MANUAL_SIGN_v759 - for an agreement negotiated with the client and signed by hand.
+export function ManualSignForm({ applicationId, onDone }: { applicationId: string; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [signedOn, setSignedOn] = useState(() => new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString().slice(0, 10));
+  const [kind, setKind] = useState<"standard" | "percent" | "fixed">("standard");
+  const [value, setValue] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!open) {
+    return <button type="button" data-testid="fee-mark-signed-open" onClick={() => setOpen(true)} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #0B1F3A", padding: "6px 12px", fontSize: 13 }}>Mark as signed (outside the portal)</button>;
+  }
+  const save = async () => {
+    setError(null);
+    if (!note.trim()) { setError("Add a short note about what was agreed."); return; }
+    if (kind !== "standard" && !(Number(value) >= 0 && value.trim() !== "")) { setError(kind === "percent" ? "Enter the agreed percent." : "Enter the agreed amount."); return; }
+    setBusy(true);
+    try {
+      await api.post("/api/portal/applications/" + encodeURIComponent(applicationId) + "/fee-agreement/mark-signed", {
+        note: note.trim(), signedOn,
+        feePercent: kind === "percent" ? Number(value) : null,
+        feeAmount: kind === "fixed" ? Number(value) : null,
+      });
+      setOpen(false);
+      onDone();
+    } catch (e: any) {
+      setError(e?.details?.message ?? e?.response?.data?.message ?? e?.message ?? "Could not save.");
+    } finally { setBusy(false); }
+  };
+  const field = { padding: "6px 8px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, color: "#0B1F3A", background: "#ffffff" } as const;
+  return (
+    <div data-testid="fee-mark-signed-form" style={{ marginTop: 8, padding: 10, border: "1px solid #cbd5e1", borderRadius: 8, background: "#ffffff", color: "#0B1F3A", display: "grid", gap: 8, maxWidth: 520 }}>
+      <strong>Mark the fee agreement as signed</strong>
+      <span style={{ fontSize: 12 }}>For an agreement you negotiated and the client signed outside the portal. Upload the signed copy in Documents.</span>
+      <label style={{ fontSize: 13 }}>Signed on <input type="date" value={signedOn} onChange={(e) => setSignedOn(e.target.value)} style={{ ...field, marginLeft: 6 }} /></label>
+      <div role="radiogroup" aria-label="Agreed fee" style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 13 }}>
+        <label><input type="radio" checked={kind === "standard"} onChange={() => setKind("standard")} /> 2% (standard)</label>
+        <label><input type="radio" checked={kind === "percent"} onChange={() => setKind("percent")} /> Different percent</label>
+        <label><input type="radio" checked={kind === "fixed"} onChange={() => setKind("fixed")} /> Fixed amount</label>
+      </div>
+      {kind !== "standard" && <input type="number" min="0" step={kind === "percent" ? "0.1" : "1"} inputMode="decimal" aria-label={kind === "percent" ? "Agreed percent" : "Agreed amount"} placeholder={kind === "percent" ? "e.g. 1.5" : "e.g. 25000"} value={value} onChange={(e) => setValue(e.target.value)} style={{ ...field, maxWidth: 180 }} />}
+      <textarea aria-label="Note" rows={2} placeholder="What was agreed, e.g. Version 3 signed by email on Oct 6." value={note} onChange={(e) => setNote(e.target.value)} style={{ ...field, resize: "vertical" }} />
+      {error && <span role="alert" style={{ color: "#991b1b", fontSize: 12, fontWeight: 600 }}>{error}</span>}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button type="button" disabled={busy} onClick={() => void save()} style={SEND_BTN}>{busy ? "Saving..." : "Mark as signed"}</button>
+        <button type="button" disabled={busy} onClick={() => setOpen(false)} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #cbd5e1" }}>Cancel</button>
+      </div>
+    </div>
+  );
 }
 
 export default function FeeAgreementPanel({ applicationId, productCategory }: { applicationId: string; productCategory?: string | null }) {
@@ -107,14 +174,25 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
         <button type="button" disabled={busy} onClick={() => void send()} style={SEND_BTN}>{busy ? "Sending..." : "Send fee agreement to client"}</button>
         <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Media file with no client fee agreement yet (2% on funding).</span>
         {note && <span role="status" style={{ fontSize: 12, color: noteOk ? "#065f46" : "#991b1b", fontWeight: 600 }}>{note}</span>}
+        <ManualSignForm applicationId={applicationId} onDone={() => setReload((n) => n + 1)} /> {/* BF_PORTAL_FEE_MANUAL_SIGN_v759 */}
       </div>
     );
   }
   const signed = d.tone === "signed";
+  // BF_PORTAL_FEE_MANUAL_SIGN_v759 - undo a manual mark made by mistake.
+  const undoManual = async () => {
+    if (!window.confirm("Undo the manual signature? The agreement goes back to waiting for the client.")) return;
+    setBusy(true); setNote(null);
+    try { await api.post("/api/portal/applications/" + encodeURIComponent(applicationId) + "/fee-agreement/unmark-signed", {}); setReload((n) => n + 1); }
+    catch (e: any) { setNoteOk(false); setNote(e?.details?.message ?? e?.message ?? "Could not undo."); }
+    finally { setBusy(false); }
+  };
   return (
     <div data-testid="fee-agreement-panel" role="status"
       style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, fontSize: 13, maxWidth: 560, background: signed ? "#ecfdf5" : "#eff6ff", color: signed ? "#065f46" : "#0B1F3A", border: signed ? "1px solid #a7f3d0" : "1px solid #bfdbfe" /* BF_PORTAL_WWW_AND_FEE_COLOUR_v744 - waiting is not a warning */ }}>
       {d.text}
+      {!signed && <div style={{ marginTop: 6 }}><ManualSignForm applicationId={applicationId} onDone={() => setReload((n) => n + 1)} /></div>}
+      {signed && data?.signedManually && <div style={{ marginTop: 6 }}><button type="button" data-testid="fee-unmark" disabled={busy} onClick={() => void undoManual()} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #0B1F3A", padding: "4px 10px", fontSize: 12 }}>Undo</button>{note && <span style={{ marginLeft: 8, color: noteOk ? "#065f46" : "#991b1b", fontWeight: 600 }}>{note}</span>}</div>}
       {!signed && <div style={{ marginTop: 6 }}><button type="button" disabled={busy} onClick={() => void send()} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #0B1F3A" }}>{busy ? "Sending..." : "Send again"}</button>{note && <span style={{ marginLeft: 8, color: noteOk ? "#065f46" : "#991b1b", fontWeight: 600 }}>{note}</span>}</div>}
       {data?.texts && data.texts.length > 0 && <div data-testid="fee-texts" style={{ marginTop: 8, fontSize: 12 }}><div style={{ fontWeight: 600, color: "#0B1F3A" }}>Texts to the client</div>{data.texts.map((t, i) => { const l = textLine(t); return <div key={i} style={{ color: l.bad ? "#991b1b" : "#0B1F3A", fontWeight: l.bad ? 600 : 400 }}>{l.text}</div>; })}</div>}
       {!signed && <div style={{ marginTop: 8 }}><button type="button" onClick={() => void diagnose()} style={{ ...SEND_BTN, background: "#ffffff", color: "#0B1F3A", border: "1px solid #0B1F3A", padding: "6px 12px", fontSize: 13 }}>Check delivery setup</button>{diag && <div data-testid="fee-diagnose" style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: diag.ok ? "#065f46" : "#991b1b" }}>{diag.ok ? "Everything needed to text, email and sign is set up." : diag.problems.map((p, i) => <div key={i}>{p}</div>)}</div>}</div>}
