@@ -1,6 +1,6 @@
 {
   "name": "boreal-portal-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Electron desktop shell for the Boreal staff portal (macOS and Windows)",
   "main": "main.cjs",
