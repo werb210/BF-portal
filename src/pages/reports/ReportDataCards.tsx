@@ -12,7 +12,33 @@ function T({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
   return <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>{headers.map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} style={td}>{c}</td>)}</tr>)}</tbody></table></div>;
 }
 
+// BF_PORTAL_REPORTS_BATCH5_v760 - cards for BF-Server v776 reports.
+const mins = (m: unknown) => { const n = Number(m); if (m === null || m === undefined || !Number.isFinite(n)) return "-"; return n < 60 ? Math.round(n) + " min" : n < 1440 ? (Math.round(n / 6) / 10) + " h" : (Math.round(n / 144) / 10) + " days"; };
+const dd = (v: unknown) => (v === null || v === undefined ? "-" : String(v) + " d");
+export function CommissionReceivableCard({ d }: { d: any }) {
+  const [items, setItems] = useState<any[]>(d.items ?? []);
+  const [err, setErr] = useState<string | null>(null);
+  const mark = async (i: any, clear = false) => {
+    setErr(null);
+    let amount: number | null = null;
+    if (!clear) { const a = window.prompt("Commission received for " + (i.name ?? "this file") + " (leave blank for " + money(i.expected) + "):", ""); if (a === null) return; amount = a.trim() === "" ? Number(i.expected) : Number(a.replace(/[$,\s]/g, "")); if (!Number.isFinite(amount) || amount < 0) { setErr("That is not an amount."); return; } }
+    try {
+      await api.post("/api/reports/commission-received", clear ? { applicationId: i.application_id, clear: true } : { applicationId: i.application_id, amount });
+      setItems((prev) => prev.map((x) => x.application_id === i.application_id ? { ...x, commission_received_at: clear ? null : new Date().toISOString(), received_amount: clear ? null : amount } : x));
+    } catch { setErr("Could not save. Only Admin can record commission."); }
+  };
+  const open = items.filter((x) => !x.commission_received_at);
+  return <><p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--ui-text)" }}><strong>{open.length}</strong> funded file(s) with commission not yet received{(d.buckets ?? []).filter((b: any) => b.files).map((b: any) => " · " + b.age + ": " + money(b.expected)).join("")}</p>
+    {err && <p role="alert" style={{ color: "#991b1b", fontSize: 12, fontWeight: 600 }}>{err}</p>}
+    <T headers={["File", "Lender", "Funded", "Days", "Expected", "Received", ""]} rows={items.map((i: any) => [i.name ?? "-", i.lender ?? "-", i.funded_at ? String(i.funded_at).slice(0, 10) : "-", i.days_since_funded, money(i.expected) + (i.currency && i.currency !== "CAD" ? " " + i.currency : ""), i.commission_received_at ? money(i.received_amount ?? i.expected) + " on " + String(i.commission_received_at).slice(0, 10) : "Not yet", i.commission_received_at ? <button key="u" type="button" onClick={() => void mark(i, true)} style={{ fontSize: 12 }}>Undo</button> : <button key="m" type="button" data-testid="commission-mark-received" onClick={() => void mark(i)} style={{ fontSize: 12 }}>Mark received</button>])} /></>;
+}
+
 export function renderReport(report: string, d: any): ReactNode {
+  if (report === "deal_velocity") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Median days for files funded in the last {d.days} days.</p><T headers={["Product", "Funded", "Start to submitted", "Submitted to offer", "Offer to funded", "Start to funded"]} rows={(d.rows ?? []).map((r: any) => [r.product, r.funded, dd(r.to_submit), dd(r.to_offer), dd(r.offer_to_funded), dd(r.total)])} /></>;
+  if (report === "win_rate") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Files submitted in the last {d.days} days. Win rate = funded out of funded + lost.</p><T headers={["Month", "Submitted", "Funded", "Lost", "Open", "Win rate"]} rows={(d.months ?? []).map((r: any) => [r.label, r.submitted, r.funded, r.lost, r.open, r.win_rate === null ? "-" : r.win_rate + "%"])} /><div style={{ height: 8 }} /><T headers={["Product", "Submitted", "Funded", "Lost", "Open", "Win rate"]} rows={(d.products ?? []).map((r: any) => [r.label, r.submitted, r.funded, r.lost, r.open, r.win_rate === null ? "-" : r.win_rate + "%"])} /></>;
+  if (report === "call_outcomes") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Outbound calls, last {d.days} days{d.own ? " - your own calls" : ""}.</p><T headers={["Person", "Result", "Calls"]} rows={(d.rows ?? []).map((r: any) => [r.staff, r.outcome, r.calls])} /></>;
+  if (report === "client_reply_time") return <><T headers={["Channel", "Client messages", "Answered", "Median reply"]} rows={(d.channels ?? []).map((c: any) => [c.channel, c.messages, c.answered, mins(c.median_minutes)])} /><p style={{ margin: "10px 0 6px", fontSize: 13, color: "var(--ui-text)" }}><strong>Waiting for a reply now:</strong> {(d.waiting ?? []).length}</p><T headers={["Client", "Channel", "Waiting"]} rows={(d.waiting ?? []).map((w: any) => [w.name, w.channel, mins(w.minutes_waiting)])} /></>;
+  if (report === "commission_receivable") return <CommissionReceivableCard d={d} />;
   if (report === "stuck_deals") return <><p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--ui-text)" }}>{d.stuck} file(s) have sat {d.threshold}+ days in their stage.</p><T headers={["File", "Stage", "Days in stage", "Amount"]} rows={(d.items ?? []).map((i: any) => [<a key="a" href={"/applications/" + i.application_id} style={{ color: "var(--ui-text)" }}>{i.name}</a>, i.stage ?? "-", <strong key="d" style={{ color: i.days_in_stage >= d.threshold ? "#b91c1c" : "var(--ui-text)" }}>{i.days_in_stage}</strong>, i.requested_amount ? money(i.requested_amount) : "-"])} /></>;
   if (report === "lender_scorecard") return <T headers={["Lender", "Sent", "Offers", "Funded", "Days to offer"]} rows={(d.lenders ?? []).map((l: any) => [l.lender, l.sent, l.offers, l.funded, l.days_to_offer ?? "-"])} />;
   if (report === "speed_to_lead") return <><p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--ui-text)" }}>{d.submitted} submitted in the last {d.days} days; {d.not_called} not called yet.</p><T headers={["Staff", "Calls", "Median minutes to first call"]} rows={(d.staff ?? []).map((s: any) => [s.staff, s.calls, s.median_minutes ?? "-"])} /></>;

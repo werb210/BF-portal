@@ -43,6 +43,7 @@ import LinkPreviewCard from "@/components/communications/LinkPreviewCard"; // BF
 import EmojiPicker from "@/components/communications/EmojiPicker"; // BF_PORTAL_BLOCK_v502
 import FullEmojiPicker from "@/components/team/FullEmojiPicker"; // BF_PORTAL_TEAM_PHASE_B_v661
 import { FormatBar, renderTeamText } from "@/components/team/teamFormat";
+import { ReadThisBar, ShareFileModal, applyReadThisEvent, type ReadReceipt } from "@/components/team/ReadThis"; // BF_PORTAL_READ_THIS_v760
 import ChannelBrowser from "@/components/team/ChannelBrowser";
 import ChannelSettings from "@/components/team/ChannelSettings";
 import TeamSearch from "@/components/team/TeamSearch";
@@ -2852,7 +2853,7 @@ function MayaTab() {
 type TeamAttachment = { name: string; contentType: string; dataUrl: string }; // BF_PORTAL_TEAM_ATTACH_v1
 type TeamReaction = { emoji: string; user_ids: string[] }; // BF_PORTAL_TEAM_LIFECYCLE_v1
 type TeamReplyPreview = { id: string; sender_id: string | null; body: string };
-type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string; attachments?: TeamAttachment[] | null; edited_at?: string | null; deleted_at?: string | null; reply_to_id?: string | null; reactions?: TeamReaction[]; reply_to?: TeamReplyPreview | null; mentions?: string[] | null; pinned_at?: string | null; thread?: ThreadSummary | null; thread_root_id?: string | null; bot?: string | null };
+type TeamMessage = { id: string; channel_id: string; sender_id: string | null; body: string; created_at: string; attachments?: TeamAttachment[] | null; edited_at?: string | null; deleted_at?: string | null; reply_to_id?: string | null; reactions?: TeamReaction[]; reply_to?: TeamReplyPreview | null; mentions?: string[] | null; pinned_at?: string | null; thread?: ThreadSummary | null; thread_root_id?: string | null; bot?: string | null; read_this?: boolean; read_by?: ReadReceipt[] /* BF_PORTAL_READ_THIS_v760 */ };
 type TeamChannel = {
   id: string;
   kind: string;
@@ -2977,6 +2978,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const expandTeamSnippets = useSnippets();
   const expandTeam = useShortcutExpansion(expandTeamSnippets, (next) => setDraft(next));
   const [atts, setAtts] = useState<TeamAttachment[]>([]); // BF_PORTAL_TEAM_ATTACH_v1
+  const [readThis, setReadThis] = useState(false); // BF_PORTAL_READ_THIS_v760
+  const [shareOpen, setShareOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<TeamMessage | null>(null); // BF_PORTAL_TEAM_LIFECYCLE_v1
   const [editing, setEditing] = useState<TeamMessage | null>(null);
   const [typingIds, setTypingIds] = useState<string[]>([]); // BF_PORTAL_TEAM_PRESENCE_v1
@@ -3168,6 +3171,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
             setMessages((prev) => prev.map((m) => (m.id === data.message.id ? data.message : m)));
             fetchPins(data.channel_id);
           }
+        } else if (data?.type === "read_this") { // BF_PORTAL_READ_THIS_v760
+          if (data.channel_id === activeIdRef.current) setMessages((prev) => applyReadThisEvent(prev, data));
         } else if (data?.type === "reaction") {
           if (data.channel_id === activeIdRef.current && data.message_id) {
             setMessages((prev) => prev.map((m) => (m.id === data.message_id ? { ...m, reactions: data.reactions ?? [] } : m)));
@@ -3269,13 +3274,15 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
     const outAtts = atts;
     const replyId = replyTo?.id ?? null;
     const outMentions = mentionIds.filter((id) => body.includes(`@${userName(id)}`));
+    const outReadThis = readThis; // BF_PORTAL_READ_THIS_v760
+    setReadThis(false);
     setDraft("");
     setAtts([]);
     setReplyTo(null);
     setMentionIds([]);
     setMentionQuery(null);
     try {
-      const r = await api.post<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages`, { body, attachments: outAtts, reply_to_id: replyId, mentions: outMentions });
+      const r = await api.post<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages`, { body, attachments: outAtts, reply_to_id: replyId, mentions: outMentions, ...(outReadThis ? { read_this: true } : {}) });
       const message = r?.message;
       if (message) setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
       void loadChannels();
@@ -3485,7 +3492,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                       <div style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 13, fontStyle: "italic" }}>Message deleted</div>
                     ) : (
                       <div style={{ background: mine ? "var(--ui-accent-blue)" : "var(--ui-surface-strong)", color: mine ? "#fff" : "var(--ui-text)", border: mine ? "none" : "1px solid var(--ui-border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                        {m.body && <div>{renderTeamText(m.body, memberNames)}</div>}{m.body && !m.deleted_at && <TeamCards text={m.body} />}
+                        {m.body && <div>{renderTeamText(m.body, memberNames)}</div>}{m.body && !m.deleted_at && <TeamCards text={m.body} />}{!m.deleted_at && <ReadThisBar message={m} meId={myId} memberIds={(active?.member_ids ?? []).map(String)} name={(id) => userName(id)} onRead={(r) => setMessages((prev) => applyReadThisEvent(prev, { message_id: m.id, user_id: r.user_id, read_at: r.read_at }))} />}{/* BF_PORTAL_READ_THIS_v760 */}
                         {m.body ? <LinkPreviewCard text={m.body} /> : null}{/* BF_PORTAL_BLOCK_v505 */}
                         {(m.attachments ?? []).map((a, i) => (
                           a.contentType.startsWith("image/") ? (
@@ -3584,6 +3591,9 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
               <FormatBar target={draftRef} value={draft} onChange={onDraftChange} />{/* BF_PORTAL_TEAM_PHASE_B_v661 */}
               <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
                 <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={(e) => { void onPickFiles(e.target.files); e.target.value = ""; }} />
+                <button type="button" data-testid="team-share-file" onClick={() => setShareOpen(true)} title="Share a file from OneDrive or the Staff Library" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Share file</button>{/* BF_PORTAL_READ_THIS_v760 */}
+                <label title="Recipients get Mark as read; you see who has read it" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--ui-text)", padding: "0 4px", whiteSpace: "nowrap" }}><input type="checkbox" data-testid="team-read-this" checked={readThis} onChange={(e) => setReadThis(e.target.checked)} /> Read this</label>
+                <ShareFileModal open={shareOpen} onClose={() => setShareOpen(false)} onPick={(f) => { setShareOpen(false); onDraftChange((draft ? draft.replace(/\s*$/, "") + "\n" : "") + f.name + ": " + f.url); }} />
                 <button onClick={() => fileRef.current?.click()} title="Attach file" style={{ padding: "10px 12px", background: "var(--ui-surface-muted)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{"\u{1F4CE}"}</button>
                 <button onClick={() => void toggleRecord()} title={recording ? "Stop recording" : "Record voice note"} style={{ padding: "10px 12px", background: recording ? "#ff3b30" : "var(--ui-surface-muted)", color: recording ? "#fff" : "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 8, cursor: "pointer", fontSize: 16 }}>{recording ? "\u{23F9}\uFE0F" : "\u{1F3A4}"}</button>
                 <FullEmojiPicker onPick={(emoji) => onDraftChange(draft + emoji)} buttonStyle={{ width: 42, height: 42, borderRadius: 8 }} />{/* BF_PORTAL_BLOCK_v502 */}
