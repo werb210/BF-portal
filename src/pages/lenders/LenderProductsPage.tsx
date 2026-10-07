@@ -581,6 +581,13 @@ const LenderProductsContent = () => {
       await refetchProducts();
       closeModal();
     } catch (error) {
+      // BF_PORTAL_PRODUCT_DELETE_GONE_v757 - 404 means it is already gone (usually deleted with its lender): that is a successful delete.
+      if ((error as { status?: number })?.status === 404) {
+        await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+        await refetchProducts();
+        closeModal();
+        return;
+      }
       setSubmitError(getErrorMessage(error, "Delete failed."));
     }
   };

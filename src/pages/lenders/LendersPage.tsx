@@ -182,6 +182,8 @@ function CreateLenderModal({
     try {
       await api.delete(`/api/portal/lenders/${lender.id}`);
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
+      // BF_PORTAL_PRODUCT_DELETE_GONE_v757 - the server deletes a lender's products with it, so drop them from the list now.
+      await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
       onClose();
     } catch (err) {
       const status = (err as { status?: number })?.status;
@@ -611,6 +613,12 @@ function CreateProductModal({
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
       onClose();
     } catch (err) {
+      // BF_PORTAL_PRODUCT_DELETE_GONE_v757 - 404 means it is already gone (usually deleted with its lender): that is a successful delete.
+      if ((err as { status?: number })?.status === 404) {
+        await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+        onClose();
+        return;
+      }
       setServerError(getErrorMessage(err, "Delete failed."));
     } finally {
       setSaving(false);
