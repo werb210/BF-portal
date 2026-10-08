@@ -1,7 +1,7 @@
 // BF_PORTAL_v67_BLOCK_2_1 — shared iMessage-style thread.
 // Sender (current user) on the right, recipient on the left.
 // Used by mini-portal and staff Communications tabs.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import "./MessageThread.css";
 
 export type ThreadMessage = {
@@ -102,9 +102,7 @@ export default function MessageThread({ messages, onHashtagClick, emptyText }: P
                   <div style={{ marginTop: m.body ? 6 : 0, display: "flex", flexDirection: "column", gap: 4 }}>
                     {m.attachments.map((a, i) =>
                       (a.contentType ?? "").startsWith("image/") ? (
-                        <a key={i} href={a.dataUrl} target="_blank" rel="noreferrer">
-                          <img src={a.dataUrl} alt={a.name} style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, display: "block" }} />
-                        </a>
+                        <ThreadImage key={i} url={a.dataUrl} name={a.name} />
                       ) : (a.contentType ?? "").startsWith("audio/") ? (
                         <div key={i} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           <span style={{ fontSize: 12, opacity: 0.8 }}>🎙 {a.name}</span>
@@ -137,4 +135,12 @@ export default function MessageThread({ messages, onHashtagClick, emptyText }: P
       })}
     </div>
   );
+}
+
+// BF_PORTAL_MMS_FALLBACK_v765 - a picture that fails to load used to show as a broken image with no explanation. Now it
+// says so and offers the link (the server logs the reason as "[mms-media] ...").
+export function ThreadImage({ url, name }: { url: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <a href={url} target="_blank" rel="noreferrer" data-testid="thread-image-failed" style={{ fontSize: 12, textDecoration: "underline", color: "inherit" }}>Image couldn't load - open it</a>;
+  return <a href={url} target="_blank" rel="noreferrer"><img src={url} alt={name} onError={() => setFailed(true)} style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, display: "block" }} /></a>;
 }
