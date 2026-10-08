@@ -33,7 +33,38 @@ export function CommissionReceivableCard({ d }: { d: any }) {
     <T headers={["File", "Lender", "Funded", "Days", "Expected", "Received", ""]} rows={items.map((i: any) => [i.name ?? "-", i.lender ?? "-", i.funded_at ? String(i.funded_at).slice(0, 10) : "-", i.days_since_funded, money(i.expected) + (i.currency && i.currency !== "CAD" ? " " + i.currency : ""), i.commission_received_at ? money(i.received_amount ?? i.expected) + " on " + String(i.commission_received_at).slice(0, 10) : "Not yet", i.commission_received_at ? <button key="u" type="button" onClick={() => void mark(i, true)} style={{ fontSize: 12 }}>Undo</button> : <button key="m" type="button" data-testid="commission-mark-received" onClick={() => void mark(i)} style={{ fontSize: 12 }}>Mark received</button>])} /></>;
 }
 
+// BF_PORTAL_REPORTS6_10_v765 - Goals: this month's targets with progress bars; Admin sets targets inline.
+function Bar({ value, target }: { value: number; target: number | null }) {
+  if (!target) return <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>No target</span>;
+  const pct = Math.min(100, Math.round((value / target) * 100));
+  return <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 140 }}><div style={{ flex: 1, height: 8, borderRadius: 4, background: "var(--ui-border)" }}><div style={{ width: pct + "%", height: 8, borderRadius: 4, background: pct >= 100 ? "#15803d" : "#1d4ed8" }} /></div><span style={{ fontSize: 12 }}>{pct}%</span></div>;
+}
+export function GoalsCard({ d }: { d: any }) {
+  const [rows, setRows] = useState<any[]>(d.rows ?? []);
+  const [err, setErr] = useState<string | null>(null);
+  const edit = async (r: any) => {
+    setErr(null);
+    const f = window.prompt("Funding target for " + r.name + " this month (blank for none):", r.fundingTarget ?? "");
+    if (f === null) return;
+    const c = window.prompt("Commission target for " + r.name + " this month (blank for none):", r.commissionTarget ?? "");
+    if (c === null) return;
+    try {
+      await api.put("/api/reports/goals", { userId: r.userId, fundingTarget: f.trim(), commissionTarget: c.trim() });
+      setRows((prev) => prev.map((x) => x.userId === r.userId ? { ...x, fundingTarget: f.trim() === "" ? null : Number(f), commissionTarget: c.trim() === "" ? null : Number(c) } : x));
+    } catch { setErr("Could not save the targets. Use plain numbers."); }
+  };
+  return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>{d.month}. Funded = requested amount of files funded this month; commission = commission marked received this month.</p>
+    {err && <p role="alert" style={{ color: "#991b1b", fontSize: 12, fontWeight: 600 }}>{err}</p>}
+    <T headers={["Person", "Funded", "Funding goal", "Commission", "Commission goal", ""]} rows={rows.map((r: any) => [r.name, money(r.funded), <Bar key="f" value={r.funded} target={r.fundingTarget} />, money(r.commission), <Bar key="c" value={r.commission} target={r.commissionTarget} />, d.canEdit ? <button key="e" type="button" onClick={() => void edit(r)} style={{ fontSize: 12, padding: "2px 8px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", cursor: "pointer" }}>Set goals</button> : ""])} /></>;
+}
+
 export function renderReport(report: string, d: any): ReactNode {
+  // BF_PORTAL_REPORTS6_10_v765 - cards for BF-Server v780 reports.
+  if (report === "pipeline_movement") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Last {d.days} days.</p><T headers={["", "Files", "Amount"]} rows={(d.rows ?? []).map((r: any) => [r.label, r.files, money(r.amount)])} /></>;
+  if (report === "average_deal_size") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Requested amounts, files started in the last {d.days} days.</p><T headers={["Product", "Files", "Average", "Median", "Funded average"]} rows={(d.byProduct ?? []).map((r: any) => [r.label, r.files, money(r.average), money(r.median), r.funded_average === null ? "-" : money(r.funded_average)])} /><div style={{ height: 10 }} /><T headers={["Lead source", "Files", "Average", "Median", "Funded average"]} rows={(d.bySource ?? []).map((r: any) => [r.label, r.files, money(r.average), money(r.median), r.funded_average === null ? "-" : money(r.funded_average)])} /></>;
+  if (report === "goals") return <GoalsCard d={d} />;
+  if (report === "meetings") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Client bookings made in the last {d.days} days. {d.note}</p><T headers={["Person", "Booked", "Held", "Cancelled", "Upcoming", "Led to funded"]} rows={(d.rows ?? []).map((r: any) => [r.label, r.booked, r.held, r.cancelled, r.upcoming, r.led_to_funded])} /></>;
+  if (report === "tasks_report") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Completed counts cover the last {d.days} days.</p><T headers={["Person", "Open", "Overdue", "Completed", "On time"]} rows={(d.rows ?? []).map((r: any) => [r.label, r.open, r.overdue, r.completed, r.on_time])} /></>;
   if (report === "deal_velocity") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Median days for files funded in the last {d.days} days.</p><T headers={["Product", "Funded", "Start to submitted", "Submitted to offer", "Offer to funded", "Start to funded"]} rows={(d.rows ?? []).map((r: any) => [r.product, r.funded, dd(r.to_submit), dd(r.to_offer), dd(r.offer_to_funded), dd(r.total)])} /></>;
   if (report === "win_rate") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Files submitted in the last {d.days} days. Win rate = funded out of funded + lost.</p><T headers={["Month", "Submitted", "Funded", "Lost", "Open", "Win rate"]} rows={(d.months ?? []).map((r: any) => [r.label, r.submitted, r.funded, r.lost, r.open, r.win_rate === null ? "-" : r.win_rate + "%"])} /><div style={{ height: 8 }} /><T headers={["Product", "Submitted", "Funded", "Lost", "Open", "Win rate"]} rows={(d.products ?? []).map((r: any) => [r.label, r.submitted, r.funded, r.lost, r.open, r.win_rate === null ? "-" : r.win_rate + "%"])} /></>;
   if (report === "call_outcomes") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Outbound calls, last {d.days} days{d.own ? " - your own calls" : ""}.</p><T headers={["Person", "Result", "Calls"]} rows={(d.rows ?? []).map((r: any) => [r.staff, r.outcome, r.calls])} /></>;
