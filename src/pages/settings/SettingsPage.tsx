@@ -20,6 +20,7 @@ import SettingsOverview from "./tabs/SettingsOverview";
 import TemplatesSettings from "./tabs/TemplatesSettings"; // v694
 import SnippetsSettings from "./tabs/SnippetsSettings"; // BF_PORTAL_SNIPPETS_TAB_v46
 import CollateralSettings from "./tabs/CollateralSettings"; // v694
+import LibraryPage from "@/pages/library/LibraryPage"; // BF_PORTAL_LIBRARY_IN_SETTINGS_v764
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -43,6 +44,8 @@ const SettingsPage = () => {
       // PGI conversation as a lending one, and the server scopes by silo.
       { id: "snippets", label: "Snippets", visible: true, content: <SnippetsSettings /> },
       { id: "collateral", label: "Collateral", visible: !isBI, content: <CollateralSettings /> }, // v694
+      // BF_PORTAL_LIBRARY_IN_SETTINGS_v764 - the Staff Library (lender forms, Read This) lives here, not in the sidebar.
+      { id: "library", label: "Library", visible: true, content: <LibraryPage /> },
       // BF_PORTAL_PARTNERS_TABS_v720 - Broker Files moved to Marketing > Referrers > Brokers.
     ],
     [isAdmin, isStaff, isBI]
