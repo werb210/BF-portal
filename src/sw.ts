@@ -9,7 +9,12 @@ declare const self: ServiceWorkerGlobalScope;
 
 const WB_MANIFEST_MARKER = "__WB_MANIFEST";
 
-precacheAndRoute(self.__WB_MANIFEST || []);
+// BF_PORTAL_ALWAYS_FRESH_v763 - opening staff.boreal.financial/ used to be answered from this cache's saved index.html
+// (precache maps "/" to "/index.html"), which loaded the PREVIOUS build; the new one only appeared after a second
+// reload, so a merged-and-deployed change (e.g. the Library page) looked missing. With directoryIndex pointed at a name that never exists, "/" goes to
+// the network-first navigation route below like every other page: the newest build whenever the server is reachable,
+// the saved copy only when offline.
+precacheAndRoute(self.__WB_MANIFEST || [], { directoryIndex: "__never_serve_saved_index__", cleanURLs: false });
 cleanupOutdatedCaches();
 
 // BF_PORTAL_SW_v710_NO_API_INTERCEPT - the SW must NEVER intercept /api/ calls.
