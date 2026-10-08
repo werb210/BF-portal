@@ -43,8 +43,10 @@ describe("Staff Library page", () => {
     await waitFor(() => expect(post).toHaveBeenCalledWith("/api/o365/library/ensure", {}));
   });
   it("is in the sidebar and routed, and Team chat starts the message with the shared file", () => {
-    expect(readFileSync("src/layouts/AppLayout.tsx", "utf8")).toContain('{ label: "Library",        path: "/library"');
-    expect(readFileSync("src/App.tsx", "utf8")).toContain('<Route path="/library"');
+    // BF_PORTAL_LIBRARY_IN_SETTINGS_v764 - a Settings tab now; /library forwards there.
+    expect(readFileSync("src/layouts/AppLayout.tsx", "utf8")).not.toContain('path: "/library"');
+    expect(readFileSync("src/pages/settings/SettingsPage.tsx", "utf8")).toContain('{ id: "library", label: "Library", visible: true, content: <LibraryPage /> }');
+    expect(readFileSync("src/App.tsx", "utf8")).toContain('<Route path="/library" element={<Navigate to="/settings/library" replace />} />');
     expect(readFileSync("src/pages/communications/CommunicationsPage.tsx", "utf8")).toContain('const share = p.get("share");');
     expect(humanSize(5 * 1024 * 1024)).toBe("5.0 MB");
   });
