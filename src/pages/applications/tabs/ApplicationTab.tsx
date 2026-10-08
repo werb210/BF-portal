@@ -103,6 +103,7 @@ function signingReasonLabel(reason?: string): string {
   switch (String(reason ?? "")) {
     case "collateral_incomplete": return "Collateral & Facility incomplete";
     case "lender_not_finalized": return "No lender finalized yet";
+    case "sba_use_sba_signing": return "SBA file - send it from the SBA Signing tab"; // BF_PORTAL_SBA_BANNER_v766
     case "docs_not_accepted": return "Documents not all accepted";
     case "tasks_incomplete": return "Client tasks not all complete";
     case "signing_unavailable": return "Signing service unavailable";
