@@ -5,6 +5,7 @@ import { api } from "@/api";
 import SiloContext from "@/context/SiloContext";
 import { AdsStoryPanel, DropoffPanel, VisitorsPanel } from "@/components/marketing/GoogleAdsAnalytics";
 import BIDashboard from "@/silos/bi/dashboard/BIDashboard";
+import BIInsuranceReports from "./BIInsuranceReports"; // BF_PORTAL_REPORTS15_18_v769
 import { ReportDataCard } from "./ReportDataCards";
 
 export type ReportDef = { key: string; title: string; silo: string; group: "money" | "marketing" | "operations"; size: "half" | "full"; description: string };
@@ -41,6 +42,7 @@ export function CardBody({ report, days }: { report: string; days?: number }): R
   if (report === "ads_dropoff") return <DropoffPanel />;
   if (report === "ads_visitors") return <VisitorsPanel />;
   if (report === "bi_dashboard") return <BIDashboard />;
+  if (report === "bi_insurance") return <BIInsuranceReports />; // BF_PORTAL_REPORTS15_18_v769
   return <ReportDataCard report={report} days={days} />;
 }
 
