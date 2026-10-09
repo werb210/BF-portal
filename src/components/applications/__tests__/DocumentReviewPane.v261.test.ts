@@ -38,7 +38,7 @@ describe("review pane wiring", () => {
   });
   it("renders downloaded PDF bytes and blob images", () => {
     expect(read("src/components/applications/PdfPages.tsx")).toContain(
-      "getDocument({ data, isEvalSupported: false })",
+      "getDocument({ data })", // BF_PORTAL_DEPS_v779 - pdf.js 6 removed the eval switch
     );
     expect(view).toMatch(/<img\s+src=\{doc\.url\}/);
     expect(csp).toMatch(/img-src[^;]*blob:/);

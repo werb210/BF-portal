@@ -75,11 +75,13 @@ export default function PdfPages({
     setState({ status: "loading", pages: 0 });
     void (async () => {
       try {
-        const pdfjs = await import("pdfjs-dist");
-        const worker = await import("pdfjs-dist/build/pdf.worker.min.js?url");
+        // BF_PORTAL_DEPS_v779 - pdf.js 6 (fixes both malicious-PDF script advisories); legacy build for older iPad Safari.
+        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+        const worker = await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url");
         pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
         const data = new Uint8Array(await blob.arrayBuffer());
-        const pdf = await pdfjs.getDocument({ data, isEvalSupported: false })
+        // pdf.js 6 no longer evaluates font code at all, so the old isEvalSupported switch is gone.
+        const pdf = await pdfjs.getDocument({ data })
           .promise;
         if (cancelled) return;
         const count = Math.min(pdf.numPages, MAX_RENDERED_PAGES);
@@ -103,7 +105,7 @@ export default function PdfPages({
           canvas.setAttribute("aria-label", `Page ${n}`);
           host.appendChild(canvas);
           const ctx = canvas.getContext("2d");
-          if (ctx) await page.render({ canvasContext: ctx, viewport }).promise;
+          if (ctx) await page.render({ canvas, canvasContext: ctx, viewport }).promise;
         }
       } catch (error) {
         if (!cancelled)
