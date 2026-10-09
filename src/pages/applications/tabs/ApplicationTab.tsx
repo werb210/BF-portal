@@ -168,7 +168,7 @@ export default function ApplicationTab({ application }: Props) {
   };
   const [v817_sending, v817_setSending] = useState(false);
   const [v817_note, v817_setNote] = useState<string | null>(null);
-  const [v_sign, v_setSign] = useState<{ reason: string; canSend: boolean } | null>(null);
+  const [v_sign, v_setSign] = useState<{ reason: string; canSend: boolean; isSba?: boolean } | null>(null);
   const [v_signBusy, v_setSignBusy] = useState(false);
   const [v_signNote, v_setSignNote] = useState<string | null>(null);
   const [v_resetBusy, v_setResetBusy] = useState(false); // BF_PORTAL_RESET_SIGNING_v1
@@ -194,8 +194,8 @@ export default function ApplicationTab({ application }: Props) {
       )
       .then((r) => {
         if (!active) return;
-        const d = ((r as any)?.data ?? r) as { reason?: string; canSend?: boolean };
-        v_setSign({ reason: String(d?.reason ?? "unknown"), canSend: Boolean(d?.canSend) });
+        const d = ((r as any)?.data ?? r) as { reason?: string; canSend?: boolean; isSba?: boolean };
+        v_setSign({ reason: String(d?.reason ?? "unknown"), canSend: Boolean(d?.canSend), isSba: Boolean(d?.isSba) });
       })
       .catch(() => { /* non-fatal */ });
     return () => { active = false; };
@@ -245,13 +245,15 @@ export default function ApplicationTab({ application }: Props) {
       v_setResetBusy(false);
     }
   }
-  async function v_resendSigning() {
+  async function v_resendSigning(again = false) {
     if (v_signBusy || !v784_appId) return;
+    // BF_PORTAL_SBA_SIGN_AGAIN_v775 - signing again replaces every owner's signed set.
+    if (again && typeof window !== "undefined" && !window.confirm("Every owner signs the application and SBA forms again. The new signed copies replace the old ones. Continue?")) return;
     v_setSignBusy(true);
     v_setSignNote(null);
     try {
       const r = await api.post<{ data?: { ok?: boolean; reason?: string } } & { ok?: boolean; reason?: string }>(
-        `/api/applications/${encodeURIComponent(v784_appId)}/resend-signing`, {},
+        `/api/applications/${encodeURIComponent(v784_appId)}/resend-signing`, again ? { again: true } : {},
       );
       const d = ((r as any)?.data ?? r) as { ok?: boolean; reason?: string };
       if (d?.ok) v_setSignNote("Signing sent ✓ - the client signs in their portal"); // BF_PORTAL_SBA_ONE_BUTTON_v771
@@ -442,6 +444,20 @@ export default function ApplicationTab({ application }: Props) {
               data-testid="send-for-signing"
             >
               {v_signBusy ? "Sending…" : "Send for signing"}
+            </button>
+          )}
+          {/* BF_PORTAL_SBA_SIGN_AGAIN_v775 - on an SBA file that is signed or out for signing, have everyone sign again
+              (after the applicant edits anything). Send for signing hides once signing has started. */}
+          {v_sign?.isSba && (v_sign.reason === "signed" || v_sign.reason === "started") && (
+            <button
+              type="button"
+              onClick={() => void v_resendSigning(true)}
+              disabled={v_signBusy}
+              title="Every owner signs the application and SBA forms again"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-surface-strong)", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: v_signBusy ? "wait" : "pointer", fontSize: 14, whiteSpace: "nowrap" }}
+              data-testid="sign-again"
+            >
+              {v_signBusy ? "Sending…" : "Sign again"}
             </button>
           )}
           {v_signNote && (v_signNote.startsWith("Not sent") || v_signNote.startsWith("Could not")) && (
