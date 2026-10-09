@@ -81,7 +81,7 @@ export default function LibraryPage() {
         setNotice({ ok: true, text: "Uploading " + f.name + "..." });
         await uploadInPieces(f, folder.id, (pct) => setNotice({ ok: true, text: "Uploading " + f.name + "... " + pct + "%" }));
         done++;
-      } catch (e: any) { failed.push(f.name + (e?.details?.message ? " (" + e.details.message + ")" : "")); }
+      } catch (e: any) { const why = e?.details?.message || e?.details?.detail || e?.message; failed.push(f.name + (why ? " (" + String(why).slice(0, 160) + ")" : "")); } // BF_PORTAL_LIBRARY_ERROR_REASON_v773 - always say why
     }
     setNotice(failed.length ? { ok: false, text: (done ? "Uploaded " + done + ". " : "") + "Not uploaded: " + failed.join(", ") } : { ok: true, text: "Uploaded " + done + (done === 1 ? " file." : " files.") });
     setBusy(false); void load();
