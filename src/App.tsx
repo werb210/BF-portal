@@ -1,4 +1,4 @@
-import BiLendersPage from "@/pages/BiLendersPage";
+const BiLendersPage = lazy(() => import("@/pages/BiLendersPage"));
 // BF_PORTAL_SHORTCUTS_MOUNT_v1 - v640 targeted AppLayout and its anchors
 // did not match, so the hook shipped and nothing ever called it. Mount it
 // here, inside the Router, which is where navigate() is available.
@@ -23,34 +23,33 @@ import ProtectedRoute from "@/routes/ProtectedRoute";
 import RequireRole from "@/components/auth/RequireRole";
 import Login from "@/pages/Login";
 import Verify from "@/pages/Verify";
-import DashboardHome from "@/pages/dashboard/DashboardHome"; // BF_PORTAL_DASHBOARD_BOARD_v730 (replaces DashboardPage on /portal)
-import LendersPage from "@/pages/lenders/LendersPage";
+const DashboardHome = lazy(() => import("@/pages/dashboard/DashboardHome")); // BF_PORTAL_DASHBOARD_BOARD_v730 (replaces DashboardPage on /portal)
+const LendersPage = lazy(() => import("@/pages/lenders/LendersPage"));
 // BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE
-import PipelineRouter from "@/pages/pipeline/PipelineRouter";
-import MayaPage from "@/pages/MayaPage";
-import ApplyPage from "@/pages/ApplyPage";
-import CRMPage from "@/pages/crm/CRMPage";
-import CalendarPage from "@/pages/calendar/CalendarPage";
-import CommunicationsPage from "@/pages/communications/CommunicationsPage";
-import SettingsPage from "@/pages/settings/SettingsPage";
+const PipelineRouter = lazy(() => import("@/pages/pipeline/PipelineRouter"));
+const MayaPage = lazy(() => import("@/pages/MayaPage"));
+const ApplyPage = lazy(() => import("@/pages/ApplyPage"));
+const CRMPage = lazy(() => import("@/pages/crm/CRMPage"));
+const CalendarPage = lazy(() => import("@/pages/calendar/CalendarPage"));
+const CommunicationsPage = lazy(() => import("@/pages/communications/CommunicationsPage"));
+const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 // BF_PORTAL_AUDIT_EVENTS_v1
-import AuditEvents from "@/pages/AuditEvents";
-import MarketingPage from "@/pages/marketing/MarketingPage";
-import TasksPage from "@/pages/tasks/TasksPage"; // BF_PORTAL_TASKS_V1
-import BIDashboardPage from "@/pages/bi/BIDashboardPage";
-import BICommissionDashboard from "@/pages/bi/BICommissionDashboard";
-import BIReferrersPage from "@/pages/bi/BIReferrersPage";
+const AuditEvents = lazy(() => import("@/pages/AuditEvents"));
+const MarketingPage = lazy(() => import("@/pages/marketing/MarketingPage"));
+const TasksPage = lazy(() => import("@/pages/tasks/TasksPage")); // BF_PORTAL_TASKS_V1
+const BIDashboardPage = lazy(() => import("@/pages/bi/BIDashboardPage"));
+const BICommissionDashboard = lazy(() => import("@/pages/bi/BICommissionDashboard"));
+const BIReferrersPage = lazy(() => import("@/pages/bi/BIReferrersPage"));
 // BF_PORTAL_BLOCK_v213_CANONICAL_BI_PIPELINE_REDIRECT_v1 — import removed;
 // /bi/pipeline now redirects and PipelineRouter no longer renders it.
 // The orphan component is still exported in case test files reference it.
-import Leads from "@/pages/Leads";
-import IssueInboxPage from "@/pages/IssueInboxPage";
-import AiCommsPage from "@/pages/AiCommsPage";
-import AIChatDashboard from "@/pages/AIChatDashboard";
-import AIKnowledgeManager from "@/pages/admin/AIKnowledgeManager";
-import ReportsBoard from "@/pages/reports/ReportsBoard"; // BF_PORTAL_REPORTS_SECTION_v714 (replaces the hidden ReportsPage)
+const Leads = lazy(() => import("@/pages/Leads"));
+const IssueInboxPage = lazy(() => import("@/pages/IssueInboxPage"));
+const AiCommsPage = lazy(() => import("@/pages/AiCommsPage"));
+const AIChatDashboard = lazy(() => import("@/pages/AIChatDashboard"));
+const ReportsBoard = lazy(() => import("@/pages/reports/ReportsBoard")); // BF_PORTAL_REPORTS_SECTION_v714 (replaces the hidden ReportsPage)
 import DesktopBridge from "@/desktop/DesktopBridge"; // BF_PORTAL_DESKTOP_ALERTS_v724
-import AutomationsPage from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUTOMATIONS_UI_v1
+const AutomationsPage = lazy(() => import("@/pages/admin/AutomationsPage")); // BF_PORTAL_AUTOMATIONS_UI_v1
 // BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1
 // Five removed admin pages all call /api/admin/* endpoints that do not exist
 // on BF-Server (verified: /api/admin/ai-documents, /api/admin/issue-reports,
@@ -61,30 +60,26 @@ import AutomationsPage from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUTOMA
 // by URL. Removing the imports + Route definitions eliminates the broken
 // surface. The page component files stay in src/pages/admin/ as orphans;
 // can be deleted in a follow-up cleanup pass.
-import GlobalAdmin from "@/pages/GlobalAdmin";
-import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
-import LeadsPage from "@/pages/admin/LeadsPage";
-import AiPolicyEditorPage from "@/pages/admin/AiPolicyEditorPage";
+const GlobalAdmin = lazy(() => import("@/pages/GlobalAdmin"));
+const LeadsPage = lazy(() => import("@/pages/admin/LeadsPage"));
 // BF_PORTAL_ADMIN_NAV_ROUTES_v1 - wire previously-dead admin nav pages
-import IssueReportsPage from "@/pages/admin/IssueReportsPage";
-import WebsiteLeadsPage from "@/pages/admin/WebsiteLeadsPage";
-import AIKnowledgeBasePage from "@/pages/admin/AIKnowledgeBasePage";
-import LiveChatQueuePage from "@/pages/admin/LiveChatQueuePage";
-import ConversionDashboardPage from "@/pages/admin/ConversionDashboardPage";
-import Operations from "@/pages/admin/Operations";
-import MayaIntelligence from "@/pages/admin/MayaIntelligence";
-import AiLiveChatPage from "@/pages/ai/AiLiveChatPage";
-import AiChatDashboard from "@/pages/admin/AiChatDashboard";
-import AiIssueReports from "@/pages/admin/AiIssueReports";
-import CreditReadiness from "@/pages/CreditReadiness";
-import ReferrerPortalLayout from "@/pages/referrer/ReferrerPortalLayout";
-import ReferrerLoginPage from "@/pages/referrer/ReferrerLoginPage";
-import ReferrerSignupPage from "@/pages/referrer/ReferrerSignupPage"; // REFERRER_SIGNUP_UI_v1
-import BrokerPortalRoutes from "@/pages/broker/BrokerPortal"; // BF_PORTAL_BROKER_PORTAL_v717
+const IssueReportsPage = lazy(() => import("@/pages/admin/IssueReportsPage"));
+const WebsiteLeadsPage = lazy(() => import("@/pages/admin/WebsiteLeadsPage"));
+const AIKnowledgeBasePage = lazy(() => import("@/pages/admin/AIKnowledgeBasePage"));
+const LiveChatQueuePage = lazy(() => import("@/pages/admin/LiveChatQueuePage"));
+const ConversionDashboardPage = lazy(() => import("@/pages/admin/ConversionDashboardPage"));
+const Operations = lazy(() => import("@/pages/admin/Operations"));
+const MayaIntelligence = lazy(() => import("@/pages/admin/MayaIntelligence"));
+const AiLiveChatPage = lazy(() => import("@/pages/ai/AiLiveChatPage"));
+const CreditReadiness = lazy(() => import("@/pages/CreditReadiness"));
+const ReferrerPortalLayout = lazy(() => import("@/pages/referrer/ReferrerPortalLayout"));
+const ReferrerLoginPage = lazy(() => import("@/pages/referrer/ReferrerLoginPage"));
+const ReferrerSignupPage = lazy(() => import("@/pages/referrer/ReferrerSignupPage")); // REFERRER_SIGNUP_UI_v1
+const BrokerPortalRoutes = lazy(() => import("@/pages/broker/BrokerPortal")); // BF_PORTAL_BROKER_PORTAL_v717
 // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
-import BISilo from "@/silos/bi/BISilo";
-import LenderPortalPage from "@/pages/lender/LenderPortalPage";
-import LenderLoginPage from "@/pages/lender/LenderLoginPage";
+const BISilo = lazy(() => import("@/silos/bi/BISilo"));
+const LenderPortalPage = lazy(() => import("@/pages/lender/LenderPortalPage"));
+const LenderLoginPage = lazy(() => import("@/pages/lender/LenderLoginPage"));
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
@@ -182,6 +177,8 @@ const AppRoutes = () => {
       <OfflineBanner />{/* BF_PORTAL_OFFLINE_OUTBOX_v251 */}
       <InstallPromptBanner />
       <IOSInstallBanner />
+      {/* BF_PORTAL_AUDIT2_v778 - pages load on demand (the whole portal was one 2.9 MB download). */}
+      <Suspense fallback={<div data-testid="route-loading" style={{ padding: 24 }}>Loading…</div>}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/verify" element={<Verify />} />
@@ -282,7 +279,6 @@ const AppRoutes = () => {
         <Route path="/chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/ai-chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AIChatDashboard /></RequireRole></ProtectedRoute>} />
         <Route path="/ai-comms" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/ai" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AIKnowledgeManager /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/automations" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AutomationsPage /></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_AUTOMATIONS_UI_v1 */}
         {/* BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1 -- five routes
             removed here (/admin/ai-knowledge, /admin/issue-reports,
@@ -290,9 +286,7 @@ const AppRoutes = () => {
             because their pages call /api/admin/* endpoints that don't
             exist on BF-Server. See import block comment above. */}
         <Route path="/admin/support" element={<ProtectedRoute><RequireRole roles={["Admin"]}><GlobalAdmin /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/analytics" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AnalyticsDashboard /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/leads" element={<ProtectedRoute><RequireRole roles={["Admin"]}><LeadsPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/ai-policy" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AiPolicyEditorPage /></RequireRole></ProtectedRoute>} />
         {/* BF_PORTAL_ADMIN_NAV_ROUTES_v1 */}
         <Route path="/admin/issue-reports" element={<ProtectedRoute><RequireRole roles={["Admin"]}><IssueReportsPage /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/website-leads" element={<ProtectedRoute><RequireRole roles={["Admin"]}><WebsiteLeadsPage /></RequireRole></ProtectedRoute>} />
@@ -302,11 +296,10 @@ const AppRoutes = () => {
         <Route path="/admin/operations" element={<ProtectedRoute><RequireRole roles={["Admin"]}><Operations /></RequireRole></ProtectedRoute>} />
         <Route path="/admin/maya" element={<ProtectedRoute><RequireRole roles={["Admin"]}><MayaIntelligence /></RequireRole></ProtectedRoute>} />
         <Route path="/portal/ai" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiLiveChatPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/ai/chats" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiChatDashboard /></RequireRole></ProtectedRoute>} />
-        <Route path="/admin/ai/issues" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiIssueReports /></RequireRole></ProtectedRoute>} />
         <Route path="/continuations" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><CreditReadiness /></RequireRole></ProtectedRoute>} />
         </Route>
       </Routes>
+      </Suspense>
       <ShortcutHelp open={shortcutHelpOpen} onClose={() => setShortcutHelpOpen(false)} />
     </>
   );
