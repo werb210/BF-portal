@@ -171,6 +171,9 @@ export default function BIOutreach() {
   const [biSequenceId, setBiSequenceId] = useState("");
   const [enrollBusy, setEnrollBusy] = useState(false);
   const [enrollResult, setEnrollResult] = useState<string | null>(null);
+  // BF_PORTAL_BI_CONSENT_v773 - contacts skipped for "no CASL consent basis", so staff can record one and retry.
+  const [consentNeeded, setConsentNeeded] = useState<{ sequenceId: string; contactIds: string[] } | null>(null);
+  const [consentBasis, setConsentBasis] = useState<string>("");
   // BF_PORTAL_BLOCK_v462_BI_EMPTY_STEP_REPAIR - the sequence whose empty email steps need a template.
   const [repairSequenceId, setRepairSequenceId] = useState<string | null>(null);
   // BF_PORTAL_BLOCK_v744_OUTREACH_CARD_OPENS_CRM — pipeline card opens the full BI CRM contact view.
@@ -319,6 +322,24 @@ const ENROLL_SKIP_REASON_LABEL: Record<string, string> = {
   already_enrolled: "already in this sequence",
 };
 
+  // BF_PORTAL_BI_CONSENT_v773 - BI-Server v719 stores the basis with who recorded it and when.
+  const recordConsentAndEnroll = useCallback(async () => {
+    if (!consentNeeded || !consentBasis) return;
+    setEnrollBusy(true);
+    try {
+      await api(`/api/v1/bi/crm/outreach/contacts/consent`, { method: "POST", body: { contact_ids: consentNeeded.contactIds, basis: consentBasis } } as any);
+      const result: any = await api(`/api/v1/bi/marketing/sequences/${consentNeeded.sequenceId}/enroll`, { method: "POST", body: { contactIds: consentNeeded.contactIds } } as any);
+      const added = Number(result?.inserted ?? 0);
+      const left = Number(result?.skipped ?? 0);
+      setEnrollResult(`Consent recorded. ${added} added${left ? `; ${left} still skipped` : ""}.`);
+      setConsentNeeded(null);
+    } catch (e: any) {
+      setEnrollResult(e?.message ?? "Could not record consent.");
+    } finally {
+      setEnrollBusy(false);
+    }
+  }, [consentNeeded, consentBasis]);
+
   const addSelectedToSequence = useCallback(async () => {
     const contactIds = Array.from(selectedIds);
     if (!biSequenceId || !contactIds.length || enrollBusy) return;
@@ -351,6 +372,9 @@ const ENROLL_SKIP_REASON_LABEL: Record<string, string> = {
           .join(", ")})`;
       }
       setEnrollResult(`${enrolled} added${skipped ? `; ${skipped} skipped${detail}` : ""}.`);
+      const noConsent = skips.filter((s) => s?.reason === "no_consent_basis" && s?.contact_id).map((s) => String(s.contact_id));
+      setConsentNeeded(noConsent.length ? { sequenceId: biSequenceId, contactIds: noConsent } : null);
+      setConsentBasis("");
       clearSelection();
     } catch (e: any) {
       setEnrollResult(e?.message ?? "Could not add contacts to the sequence.");
@@ -606,6 +630,18 @@ const ENROLL_SKIP_REASON_LABEL: Record<string, string> = {
         </div>
       )}
       {enrollResult && <p role="status" className="rounded-xl border border-card bg-brand-surface px-4 py-2 text-sm">{enrollResult}</p>}
+      {consentNeeded && (
+        <div data-testid="bi-consent-panel" className="rounded-xl border border-card bg-brand-surface px-4 py-3 text-sm flex flex-wrap items-center gap-2">
+          <span>Record the CASL consent basis for {consentNeeded.contactIds.length} contact{consentNeeded.contactIds.length === 1 ? "" : "s"}, then add {consentNeeded.contactIds.length === 1 ? "it" : "them"}:</span>
+          <select data-testid="bi-consent-basis" value={consentBasis} onChange={(e) => setConsentBasis(e.target.value)} className="rounded-md border border-card bg-brand-surface px-2 py-1">
+            <option value="">Choose a basis...</option>
+            <option value="express">Express consent (they agreed to receive our emails)</option>
+            <option value="implied_published">Implied - business email published, message fits their role</option>
+            <option value="implied_relationship">Implied - existing business relationship (lasts 2 years)</option>
+          </select>
+          <button type="button" data-testid="bi-consent-save" disabled={!consentBasis || enrollBusy} onClick={() => void recordConsentAndEnroll()} className="px-3 py-1 rounded-md bg-blue-500/30 hover:bg-blue-500/40 disabled:opacity-50">Record consent and add</button>
+        </div>
+      )}
       {repairSequenceId && (
         <EmptyStepsRepair
           sequenceId={repairSequenceId}
