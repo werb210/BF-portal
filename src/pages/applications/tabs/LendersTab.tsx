@@ -441,6 +441,39 @@ export default function LendersTab({ applicationId }: Props) {
     collateral_incomplete: "Not sent: the Collateral & Facility section is incomplete.",
   };
 
+  // BF_PORTAL_LENDER_RESEND_v776 - send the current package again to a lender that already has it (e.g. after the
+  // client signed again). Normal Send skips lenders that already received the package.
+  const [resendBusy, setResendBusy] = useState<string | null>(null);
+  const RESEND_REASONS: Record<string, string> = {
+    not_sent_before: "This lender has not received the package yet - tick it and press Send.",
+    dispatch_in_progress: "Another send for this file is running - try again in a minute.",
+    dispatch_failed: "The package could not be sent. Try again; if it fails again, check the lender's submission email.",
+    lender_not_found: "Lender not found.",
+    fraud_hold: "This file is on a fraud hold.",
+  };
+  const resendToLender = async (lenderId: string, lenderName: string) => {
+    if (!id || resendBusy) return;
+    if (typeof window !== "undefined" && !window.confirm(`Send the current package to ${lenderName} again?`)) return;
+    setResendBusy(lenderId);
+    setSendError(null);
+    setSendSuccess(null);
+    try {
+      const r: any = await api.post(`/api/applications/${encodeURIComponent(id)}/lenders/${encodeURIComponent(lenderId)}/resend`, {});
+      const d = r?.data ?? r;
+      if (d?.ok) {
+        setSendSuccess(`Package sent to ${lenderName} again.`);
+        queryClient.invalidateQueries({ queryKey: ["application", id] });
+      } else {
+        const reason = String(d?.reason ?? "");
+        const text = RESEND_REASONS[reason] ?? SEND_REASONS[reason] ?? `Not sent (${reason || "unknown"}).`;
+        setSendError(d?.detail ? `${text} (${d.detail})` : text);
+      }
+    } catch (e: any) {
+      setSendError(e?.message ?? "Could not resend.");
+    } finally {
+      setResendBusy(null);
+    }
+  };
   const describeSendResult = (payload: unknown): string | null => {
     const orch = (payload as { orchestrator?: { stageA?: { reason?: string }; stageB?: { fired?: boolean; reason?: string; detail?: string } } } | null)?.orchestrator;
     const stageB = orch?.stageB;
@@ -941,6 +974,16 @@ function describeSendFailure(err: unknown): string {
                           style={styles.btn}
                         >
                           {recorded ? "Edit pass reasons" : "Record pass"}
+                        </button>
+                        <button
+                          type="button"
+                          data-testid={`lender-resend-${m.id}`}
+                          disabled={resendBusy !== null || !lenderKey}
+                          onClick={() => void resendToLender(lenderKey, m.lenderName ?? "this lender")}
+                          title="Send the current package to this lender again (after the client signs again)"
+                          style={styles.btn}
+                        >
+                          {resendBusy === lenderKey ? "Sending..." : "Resend"}
                         </button>
                       </div>
                     </td>
