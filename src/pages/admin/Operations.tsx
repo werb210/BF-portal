@@ -16,7 +16,14 @@ export default function Operations() {
   const [chats, setChats] = useState<ChatEscalation[]>([]);
   const [issueFilter, setIssueFilter] = useState("ALL");
 
-  if (auth.status !== "authenticated" || auth.user.role !== "Admin") {
+  const isAdmin = auth.status === "authenticated" && auth.user.role === "Admin";
+  // BF_PORTAL_AUDIT_v777 - effect declared before the early return (rules of hooks); only loads for admins.
+  useEffect(() => {
+    if (isAdmin) void refreshData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
+
+  if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
 
@@ -41,9 +48,6 @@ export default function Operations() {
     await refreshData();
   }
 
-  useEffect(() => {
-    void refreshData();
-  }, []);
 
   return <div style={{ padding: 24 }}><h1>Operations Dashboard</h1><section><h2>Capital Readiness Preview</h2><CapitalScorePreview /></section><section><h2>New Contacts</h2>{contacts.map((c) => <div key={c.id} style={{ border: "1px solid var(--ui-border)", padding: 16, borderRadius: 8, marginBottom: 16 }}><strong>{c.company}</strong> — {c.firstName} {c.lastName}<div>{c.email} | {c.phone}</div></div>)}</section><section><h2>Issue Reports</h2><label htmlFor="statusFilter" className="sr-only">Filter by status</label><select id="statusFilter" onChange={(e) => setIssueFilter(e.target.value)}><option value="ALL">All</option><option value="OPEN">Open</option><option value="IN_PROGRESS">In Progress</option><option value="CLOSED">Closed</option></select>{[...issues].filter((i) => issueFilter === "ALL" || i.status === issueFilter).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((i) => <div key={i.id} style={{ border: "1px solid var(--ui-border)", padding: 16, borderRadius: 8, marginBottom: 16 }}><p>{i.message}</p>{i.screenshotBase64 && <img src={`data:image/png;base64,${i.screenshotBase64}`} alt="Operations overview graphic" style={{ maxWidth: 400 }} />}<div>Status: {i.status}</div><button onClick={() => void updateIssueStatus(i.id, "IN_PROGRESS")}>Start</button><button onClick={() => void updateIssueStatus(i.id, "CLOSED")}>Close</button></div>)}</section><section><h2>Chat Escalations</h2>{chats.map((chat) => <div key={chat.id} style={{ border: "1px solid var(--ui-border)", padding: 16, borderRadius: 8, marginBottom: 16 }}><strong>{chat.name} ({chat.email})</strong><pre>{chat.transcript}</pre></div>)}</section></div>;
 }

@@ -1,11 +1,11 @@
-import { useMemo } from "react";
+import { useContext, useMemo } from "react";
 import MessageThread, { type ThreadMessage } from "@/components/messaging/MessageThread";
 // BF_PORTAL_v68_BLOCK_2_2_FIX — useAuth degraded to optional.
 // If the provider isn't in the tree (legacy tests, isolated story renders,
 // embedded contexts), we fall through to the row's `direction` field
 // instead of throwing. The direction field is reliable on every code path
 // that produces these rows server-side.
-import { useAuth } from "@/hooks/useAuth";
+import { AuthContext } from "@/auth/AuthContext";
 
 export type CommRow = {
   id: string;
@@ -69,13 +69,10 @@ function deriveRole(r: CommRow, currentUserId: string | null): "self" | "other" 
 
 export default function CommunicationsThread({ messages, emptyText, onHashtagClick }: Props) {
   // BF_PORTAL_v68_BLOCK_2_2_FIX — degrade gracefully if AuthProvider absent
-  let currentUserId: string | null = null;
-  try {
-    const { user } = useAuth();
-    currentUserId = (user as { id?: string | null } | null)?.id ?? null;
-  } catch {
-    currentUserId = null;
-  }
+  // BF_PORTAL_AUDIT_v777 - read the context directly (no throw when the provider is absent) instead of calling the
+  // hook inside try/catch, which breaks the rules of hooks.
+  const auth = useContext(AuthContext);
+  const currentUserId: string | null = (auth?.user as { id?: string | null } | null | undefined)?.id ?? null;
 
   const items: ThreadMessage[] = useMemo(
     () =>

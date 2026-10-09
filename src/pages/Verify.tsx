@@ -11,11 +11,10 @@ export default function Verify() {
   const lastSubmittedCodeRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
 
-  if (!hasPendingOtpVerification()) {
-    return <Navigate to="/login" replace />;
-  }
-
-  const phone = getOtpFlowState().pendingPhone;
+  // BF_PORTAL_AUDIT_v777 - hooks must run on every render; the early return used to sit above this effect, so the
+  // login code screen could crash with "Rendered fewer hooks than expected" when the OTP state cleared mid-render.
+  const pending = hasPendingOtpVerification();
+  const phone = pending ? getOtpFlowState().pendingPhone : null;
 
   useEffect(() => {
     if (!phone || code.length !== 6) return;
@@ -51,6 +50,10 @@ export default function Verify() {
 
     void handleVerify();
   }, [code, phone]);
+
+  if (!pending) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div data-testid="verify-screen" className="min-h-screen w-screen flex items-center justify-center bg-[#020817] px-4 py-12">
