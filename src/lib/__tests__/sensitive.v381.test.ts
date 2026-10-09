@@ -36,7 +36,7 @@ describe("redactSensitive", () => {
     });
     expect(out.applicant.ssn).toBe("•••-••-6789");
     expect(out.applicant.partner.partnerSin).toBe("•••-••-4321");
-    expect(out.guarantors[0].sin).toBe("•••-••-2333");
+    expect(out.guarantors[0]?.sin).toBe("•••-••-2333");
     expect(out.applicant.firstName).toBe("Ann");
     expect(out.business).toBe("Acme");
     expect(JSON.stringify(out)).not.toMatch(/123456789|987654321|111222333/);

@@ -53,6 +53,9 @@ jobs:
         run: node scripts/check-case-collisions.mjs
 
       - run: npm run typecheck
+      # BF_PORTAL_AUDIT_v777 - the test files' types (tsconfig.tests.json) and lint were never checked in CI.
+      - run: npm run typecheck:all
+      - run: npm run lint
       - run: npm run build
       - run: npm run test:ci
 

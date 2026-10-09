@@ -2,9 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 import CommunicationsThread, { type CommRow } from "../CommunicationsThread";
 
-vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => ({ user: { id: "user-staff-1" } }),
-}));
+// BF_PORTAL_AUDIT_v777 - the thread reads AuthContext directly now (rules of hooks).
+vi.mock("@/auth/AuthContext", async () => {
+  const React = await import("react");
+  return { AuthContext: React.createContext({ user: { id: "user-staff-1" } }) };
+});
 
 describe("CommunicationsThread", () => {
   it("maps direction='outbound' to self and 'inbound' to other", () => {

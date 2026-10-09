@@ -35,11 +35,12 @@ const businessUnitToSilo = (businessUnit: BusinessUnit): "bf" | "bi" | "slf" => 
 
 export const useBusinessUnit = () => {
   const context = useContext(BusinessUnitContext);
+  // BF_PORTAL_AUDIT_v777 - read both contexts on every render (rules of hooks).
+  const legacySiloContext = useContext(SiloContext);
   if (context) {
     return context;
   }
 
-  const legacySiloContext = useContext(SiloContext);
   if (legacySiloContext) {
     const businessUnit = siloToBusinessUnit(legacySiloContext.silo);
     return {
