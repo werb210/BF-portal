@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { api } from "@/api";
 
 type Item = { id: string; name: string; webUrl: string | null; size: number | null; lastModified: string | null; isFolder: boolean };
-const MAX_BYTES = 25 * 1024 * 1024;
+// BF_PORTAL_LIBRARY_BIG_UPLOAD_v772 - up to 200 MB, sent to OneDrive in pieces through BF-Server v790.
+const MAX_BYTES = 200 * 1024 * 1024;
 
 export const teamShareLink = (name: string, url: string) =>
   "/communications?tab=team&share=" + encodeURIComponent(url) + "&name=" + encodeURIComponent(name);
@@ -17,13 +18,22 @@ export function humanSize(bytes: number | null): string {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-function readBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result ?? "").replace(/^data:[^,]*,/, ""));
-    r.onerror = () => reject(r.error ?? new Error("Could not read the file"));
-    r.readAsDataURL(file);
-  });
+
+// BF_PORTAL_LIBRARY_BIG_UPLOAD_v772 - open a OneDrive upload session, then send the file in the pieces the server
+// asks for (5 MB). Each piece is a normal request, so a 200 MB file never sits in memory as one body.
+export async function uploadInPieces(file: File, folderId: string | null, onProgress?: (pct: number) => void): Promise<void> {
+  const s = await api.post<{ uploadUrl?: string; chunkBytes?: number }>("/api/o365/library/upload-session", { name: file.name, folderId, size: file.size });
+  const uploadUrl = String(s?.uploadUrl ?? "");
+  const step = Number(s?.chunkBytes) > 0 ? Number(s.chunkBytes) : 5 * 1024 * 1024;
+  if (!uploadUrl) throw new Error("OneDrive did not open an upload");
+  for (let start = 0; start < file.size; start += step) {
+    const end = Math.min(start + step, file.size);
+    const r = await api.post<{ done?: boolean }>("/api/o365/library/upload-chunk", file.slice(start, end), {
+      headers: { "Content-Type": "application/octet-stream", "x-upload-url": uploadUrl, "x-chunk-start": String(start), "x-total-size": String(file.size) },
+    });
+    onProgress?.(Math.round((end / file.size) * 100));
+    if (r?.done) return;
+  }
 }
 
 const btn = { padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontWeight: 600, cursor: "pointer" } as const;
@@ -65,10 +75,11 @@ export default function LibraryPage() {
     setBusy(true); setNotice(null);
     let done = 0; const failed: string[] = [];
     for (const f of Array.from(files)) {
-      if (f.size > MAX_BYTES) { failed.push(f.name + " (over 25 MB - upload it in OneDrive)"); continue; }
+      if (f.size > MAX_BYTES) { failed.push(f.name + " (over 200 MB - upload it in OneDrive)"); continue; }
+      if (f.size === 0) { failed.push(f.name + " (empty file)"); continue; }
       try {
         setNotice({ ok: true, text: "Uploading " + f.name + "..." });
-        await api.post("/api/o365/library/upload", { name: f.name, folderId: folder.id, contentBase64: await readBase64(f) });
+        await uploadInPieces(f, folder.id, (pct) => setNotice({ ok: true, text: "Uploading " + f.name + "... " + pct + "%" }));
         done++;
       } catch (e: any) { failed.push(f.name + (e?.details?.message ? " (" + e.details.message + ")" : "")); }
     }

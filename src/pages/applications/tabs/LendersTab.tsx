@@ -426,7 +426,12 @@ export default function LendersTab({ applicationId }: Props) {
     // BF_PORTAL_SEND_REASON_v746 - BF-Server v752 says which one.
     application_not_signed: "Not sent: the client has not signed the application yet. The signing text has gone to the client.",
     // BF_PORTAL_SBA_SEND_FOR_SIGNING_v749 - an SBA client signs the application with the SBA forms.
-    sba_signing_not_started: "Not sent: press Send for signing on the SBA Signing tab first. The client signs the application and SBA forms together.",
+    // BF_PORTAL_SBA_PACKAGE_READINESS_v770 - BF-Server v788 holds SBA packages with these reasons.
+    sba_signing_not_started: "Not sent: signing has not started yet. Press Send again; if it still does not start, check the Application tab banner for what is missing.",
+    sba_4506c_missing_for_lender: "Not sent: the client has not signed an IRS 4506-C for this lender. Press Send for signing on the Application tab so every owner signs again with it included, then press Send here.",
+    sba_4506c_missing: "Not sent: no IRS 4506-C was signed. Edit the lender, answer Yes to \"Do you offer SBA loans?\" and fill in the IVES details, then press Send for signing on the Application tab.",
+    sba_forms_not_signed: "Not sent: not every owner has signed the application and SBA forms yet (or a 4506-C is more than 120 days old). Check the SBA Signing tab.",
+    sba_check_failed: "Not sent: the SBA checks could not run. Try again in a minute.",
     credit_summary_not_submitted: "Not sent: the credit summary has not been submitted. Open Credit Summary, generate it and press Submit.",
     already_sent: "Nothing to send: every selected lender has already received the package.",
     dispatch_in_progress: "Another send is already running for this application. Try again in a moment.",
@@ -437,12 +442,20 @@ export default function LendersTab({ applicationId }: Props) {
   };
 
   const describeSendResult = (payload: unknown): string | null => {
-    const orch = (payload as { orchestrator?: { stageB?: { fired?: boolean; reason?: string } } } | null)?.orchestrator;
+    const orch = (payload as { orchestrator?: { stageA?: { reason?: string }; stageB?: { fired?: boolean; reason?: string; detail?: string } } } | null)?.orchestrator;
     const stageB = orch?.stageB;
     if (!orch || stageB?.fired === true) return null;
+    // BF_PORTAL_SBA_ONE_BUTTON_v771 - Send now starts SBA signing; say why when it could not.
+    const a = String(orch.stageA?.reason ?? "");
+    if (a === "preconditions_not_met") return SEND_REASONS.preconditions_not_met ?? null;
+    if (a === "sba_forms_incomplete") return "Not sent: the client has not finished the SBA forms in their portal yet. Signing starts when you press Send after they submit them.";
+    if (a === "no_envelopes_created") return "Not sent: SignNow did not create the signing. Check every owner has an email address on the application, then press Send again.";
     const reason = String(stageB?.reason ?? "").trim();
     if (!reason) return "Not sent. The application is not ready to dispatch yet.";
-    return SEND_REASONS[reason] ?? `Not sent (${reason}).`;
+    // BF_PORTAL_SBA_PACKAGE_READINESS_v770 - the server names what is missing (documents, lender).
+    const detail = String(stageB?.detail ?? "").trim();
+    const text = SEND_REASONS[reason] ?? `Not sent (${reason}).`;
+    return detail ? `${text} (${detail})` : text;
   };
 
   const mutation = useMutation({

@@ -27,7 +27,9 @@ export function signingNotice(payload: unknown, lenderCount: number): SigningMes
   const orch = (payload as { orchestrator?: Orchestrator } | null)?.orchestrator;
   if (!orch || orch.stageB?.fired === true) return null;
   const a = orch.stageA ?? {};
-  const waiting = a.reason === "already_started" && orch.stageB?.reason === "not_ready";
+  // BF_PORTAL_SBA_ONE_BUTTON_v771 - BF-Server v752/v788 renamed "not_ready"; keep recognising every "still unsigned" reason.
+  const WAITING_B = ["not_ready", "application_not_signed", "sba_forms_not_signed"];
+  const waiting = a.reason === "already_started" && WAITING_B.includes(String(orch.stageB?.reason ?? ""));
   if (a.fired !== true && !waiting) return null;
 
   const lenders = lenderCount === 1 ? "the selected lender" : "the selected lenders";

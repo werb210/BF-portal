@@ -8,7 +8,6 @@ const detail = readFileSync(resolve(__dirname, "..", "..", "..", "application", 
 
 describe("the endpoints finally have a caller", () => {
   it("reads the status endpoint", () => expect(tab).toContain("/sba-signing`"));
-  it("can resend", () => expect(tab).toContain("/sba-signing/resend`"));
   it("is registered as a tab", () => {
     expect(detail).toContain('{ key: "sba-signing", label: "SBA Signing" }');
     expect(detail).toContain('"sba-signing": <SbaSigningTab applicationId={applicationId} />');
@@ -27,13 +26,14 @@ describe("it shows staff what is actually blocking", () => {
   });
 });
 
-describe("resend is guarded and honest", () => {
-  it("is disabled until forms are complete", () => {
-    expect(tab).toContain("disabled={busy || !data.formsComplete}");
-    expect(tab).toContain("Available once the applicant has submitted every SBA form.");
+// BF_PORTAL_SBA_ONE_BUTTON_v771 - the tab's own resend was removed (it dropped the application from the
+// signing). Signing starts from Send on the Lenders tab or Send for signing on the Application tab.
+describe("the tab no longer starts signing itself", () => {
+  it("has no resend or send call", () => {
+    expect(tab).not.toContain("/sba-signing/resend`");
+    expect(tab).not.toContain("/sba-signing/send`");
+    expect(tab).toContain('data-testid="sba-how-to-sign"');
   });
-  it("says the links expire", () => expect(tab).toContain("expire in 45 minutes"));
-  it("reports owners with links", () => expect(tab).toContain("links.filter((l: any) => l?.url).length"));
 });
 
 describe("a non-SBA application says so plainly", () => {
