@@ -46,6 +46,30 @@ export function CardBody({ report, days }: { report: string; days?: number }): R
   return <ReportDataCard report={report} days={days} />;
 }
 
+// BF_PORTAL_REPORTS_MASONRY_v774 - each card spans as many 4 px grid rows as it is tall, and "dense" packing lets a
+// short card move up into the gap beside a tall one (e.g. Decline reasons under Speed to lead). Wide cards still
+// span the full width.
+const MASONRY_ROW = 4;
+const MASONRY_GAP = 12;
+export const MASONRY_GRID: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 420px), 1fr))", columnGap: MASONRY_GAP, rowGap: 0, gridAutoRows: `${MASONRY_ROW}px`, gridAutoFlow: "row dense", alignItems: "start" };
+export function masonrySpan(heightPx: number): number {
+  return Math.max(1, Math.ceil((heightPx + MASONRY_GAP) / MASONRY_ROW));
+}
+function MasonryCell({ full, children }: { full: boolean; children: ReactNode }) {
+  const [span, setSpan] = useState(1);
+  const [node, setNode] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!node) return;
+    const measure = () => setSpan(masonrySpan(node.getBoundingClientRect().height));
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, [node]);
+  return <div data-masonry-span={span} style={{ gridColumn: full ? "1 / -1" : "auto", gridRowEnd: `span ${span}` }}><div ref={setNode}>{children}</div></div>;
+}
+
 function DraggableCard({ tabId, card, def, onRemove, onDashboard, onResize, children }: { tabId: string; card: Card; def?: ReportDef; onRemove: () => void; onDashboard?: () => void; onResize: () => void; children: ReactNode }) {
   const drag = useDraggable({ id: `card:${tabId}:${card.id}`, data: { type: "card", tabId, cardId: card.id } });
   const drop = useDroppable({ id: `before:${tabId}:${card.id}`, data: { type: "before", tabId, cardId: card.id } });
@@ -97,6 +121,7 @@ export default function ReportsBoard({ mode = "reports" }: { mode?: "reports" | 
     {!isTeam && current && <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center" }}><button type="button" className="ui-button ui-button--primary" onClick={() => setAdding((v) => !v)} data-testid="reports-add">+ Add report</button>{msg && <span role="status" style={{ color: "var(--ui-text)", fontSize: 13 }}>{msg}</span>}</div>}
     {adding && current && <div style={{ ...box, marginBottom: 12, display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }} data-testid="reports-library">{!catalog.some((r) => r.silo === silo) && <p style={{ color: "var(--ui-text-muted)" }}>No reports for this silo yet.</p>}{catalog.filter((r) => r.silo === silo).map((r) => <button key={r.key} type="button" className="ui-button ui-button--secondary" style={{ textAlign: "left", whiteSpace: "normal", height: "auto", padding: 10 }} onClick={() => { void updateCurrent([...current.cards, { id: newId(), report: r.key, size: r.size }]); setAdding(false); }}><strong>{r.title}</strong><br /><span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{r.description}</span></button>)}</div>}
     {current && !current.cards.length && !adding && <p style={{ color: "var(--ui-text-muted)" }}>{isTeam ? "This team tab is empty." : "No reports here yet. Press + Add report."}</p>}
-    {current && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 420px), 1fr))", gap: 12 }}>{current.cards.map((card) => isTeam ? <section key={card.id} style={{ ...box, gridColumn: card.size === "full" ? "1 / -1" : "auto" }}><strong style={{ color: "var(--ui-text)" }}>{byKey.get(card.report)?.title ?? card.report}</strong><CardBody report={card.report} days={card.days} /></section> : <DraggableCard key={card.id} tabId={current.id} card={card} def={byKey.get(card.report)} onRemove={() => void updateCurrent(current.cards.filter((c) => c.id !== card.id))} onResize={() => void updateCurrent(current.cards.map((c) => c.id === card.id ? { ...c, size: c.size === "full" ? "half" : "full" } : c))} onDashboard={mode === "reports" ? () => void save({ ...layout, dashboard: { cards: [...(layout.dashboard?.cards ?? []), { ...card, id: newId() }] } }).then(() => setMsg("Added to your Dashboard.")) : undefined}><CardBody report={card.report} days={card.days} /></DraggableCard>)}</div>}
+    {/* BF_PORTAL_REPORTS_MASONRY_v774 - cards pack into the space under shorter cards instead of lining up in rows. */}
+    {current && <div data-testid="reports-masonry" style={MASONRY_GRID}>{current.cards.map((card) => <MasonryCell key={card.id} full={card.size === "full"}>{isTeam ? <section style={{ ...box }}><strong style={{ color: "var(--ui-text)" }}>{byKey.get(card.report)?.title ?? card.report}</strong><CardBody report={card.report} days={card.days} /></section> : <DraggableCard tabId={current.id} card={card} def={byKey.get(card.report)} onRemove={() => void updateCurrent(current.cards.filter((c) => c.id !== card.id))} onResize={() => void updateCurrent(current.cards.map((c) => c.id === card.id ? { ...c, size: c.size === "full" ? "half" : "full" } : c))} onDashboard={mode === "reports" ? () => void save({ ...layout, dashboard: { cards: [...(layout.dashboard?.cards ?? []), { ...card, id: newId() }] } }).then(() => setMsg("Added to your Dashboard.")) : undefined}><CardBody report={card.report} days={card.days} /></DraggableCard>}</MasonryCell>)}</div>}
   </DndContext></div>;
 }
