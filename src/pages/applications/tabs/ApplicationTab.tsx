@@ -104,6 +104,9 @@ function signingReasonLabel(reason?: string): string {
     case "collateral_incomplete": return "Collateral & Facility incomplete";
     case "lender_not_finalized": return "No lender finalized yet";
     case "sba_use_sba_signing": return "SBA file - send it from the SBA Signing tab"; // BF_PORTAL_SBA_BANNER_v766
+    // BF_PORTAL_SBA_ONE_BUTTON_v771
+    case "sba_forms_incomplete": return "Client has not finished the SBA forms in their portal yet";
+    case "no_envelopes_created": return "SignNow did not create the signing - check each owner has an email address";
     case "docs_not_accepted": return "Documents not all accepted";
     case "tasks_incomplete": return "Client tasks not all complete";
     case "signing_unavailable": return "Signing service unavailable";
@@ -251,7 +254,7 @@ export default function ApplicationTab({ application }: Props) {
         `/api/applications/${encodeURIComponent(v784_appId)}/resend-signing`, {},
       );
       const d = ((r as any)?.data ?? r) as { ok?: boolean; reason?: string };
-      if (d?.ok) v_setSignNote("Signing sent ✓");
+      if (d?.ok) v_setSignNote("Signing sent ✓ - the client signs in their portal"); // BF_PORTAL_SBA_ONE_BUTTON_v771
       else v_setSignNote(`Not sent — ${signingReasonLabel(d?.reason)}`);
     } catch {
       v_setSignNote("Could not send for signing");

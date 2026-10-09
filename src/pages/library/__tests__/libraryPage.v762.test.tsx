@@ -15,7 +15,7 @@ beforeEach(() => {
   get.mockImplementation(async (url: string) => url.includes("item=F1")
     ? { configured: true, url: "https://lib", items: [{ id: "X1", name: "Bizcap form.pdf", webUrl: "https://od/X1", size: 2048, lastModified: "2026-10-07T00:00:00Z", isFolder: false }] }
     : { configured: true, url: "https://lib", items: [{ id: "F1", name: "Lender Forms", webUrl: "https://od/F1", size: null, lastModified: null, isFolder: true }] });
-  post.mockResolvedValue({ ok: true });
+  post.mockImplementation(async (url: string) => url.endsWith("/upload-session") ? { ok: true, uploadUrl: "https://x.sharepoint.com/u", chunkBytes: 5242880 } : url.endsWith("/upload-chunk") ? { ok: true, done: true } : { ok: true });
 });
 
 describe("Staff Library page", () => {
@@ -33,7 +33,8 @@ describe("Staff Library page", () => {
     await screen.findByText(/Bizcap form\.pdf/);
     const file = new File(["hello"], "New form.pdf", { type: "application/pdf" });
     fireEvent.change(screen.getByTestId("library-file-input"), { target: { files: [file] } });
-    await waitFor(() => expect(post).toHaveBeenCalledWith("/api/o365/library/upload", { name: "New form.pdf", folderId: "F1", contentBase64: btoa("hello") }));
+    // BF_PORTAL_LIBRARY_BIG_UPLOAD_v772 - uploads now go through an upload session in pieces.
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/api/o365/library/upload-session", { name: "New form.pdf", folderId: "F1", size: 5 }));
     expect(await screen.findByText("Uploaded 1 file.")).toBeTruthy();
   });
   it("offers to create the library when there is none", async () => {

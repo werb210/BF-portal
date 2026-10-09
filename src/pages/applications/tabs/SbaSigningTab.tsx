@@ -20,6 +20,20 @@ type Status = {
   missingForms?: string[];
   envelopes?: Envelope[];
   allSigned?: boolean;
+  // BF_PORTAL_SBA_PACKAGE_READINESS_v770 - from BF-Server v788.
+  selectedLenders?: Array<{ lenderId: string; name: string; ives: boolean; offersSba: boolean | null }>;
+  ivesFallback?: boolean;
+  packageBlock?: { reason: string; detail?: string } | null;
+};
+
+// BF_PORTAL_SBA_PACKAGE_READINESS_v770
+const PACKAGE_BLOCK_TEXT: Record<string, string> = {
+  sba_signing_not_started: "Waiting for Send on the Lenders tab.",
+  preconditions_not_met: "Held: documents or client tasks are still outstanding.",
+  sba_4506c_missing_for_lender: "Held: a saved lender has no signed 4506-C. Press Send for signing on the Application tab so every owner signs one for it.",
+  sba_4506c_missing: "Held: no 4506-C was signed. Add the IVES details to the lender, then press Send for signing on the Application tab.",
+  sba_forms_not_signed: "Held: waiting for every owner to sign.",
+  sba_check_failed: "The SBA checks could not run. Refresh in a minute.",
 };
 
 const s = {
@@ -41,8 +55,6 @@ const s = {
 export default function SbaSigningTab({ applicationId }: { applicationId: string }) {
   const [data, setData] = useState<Status | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -56,39 +68,6 @@ export default function SbaSigningTab({ applicationId }: { applicationId: string
 
   useEffect(() => { void load(); }, [load]);
 
-  // BF_PORTAL_SBA_SEND_FOR_SIGNING_v749 - one signing per owner: the Boreal application plus their SBA forms.
-  const sendForSigning = async () => {
-    setBusy(true); setNotice(null); setError(null);
-    try {
-      const r = await api.post<any>(`/api/applications/${encodeURIComponent(applicationId)}/sba-signing/send`, {});
-      const out = ((r as any)?.data ?? r) ?? {};
-      const owners: Array<{ ownerIndex: number; name: string; started: boolean; delivery: string }> = out.owners ?? [];
-      const lines = owners.map((o) => `Owner ${o.ownerIndex}${o.name ? " (" + o.name + ")" : ""}: ${o.started ? "sent - signs in the " + o.delivery : "NOT sent - check the owner's email"}`);
-      const told = out.notice ? ` Owner 1 was ${[out.notice.sms ? "texted" : "", out.notice.email ? "emailed" : ""].filter(Boolean).join(" and ") || "not notified - call them"}.` : "";
-      setNotice((out.ok ? "Sent for signing. " : "Not sent. ") + lines.join("; ") + "." + told);
-      await load();
-    } catch (e) {
-      setError(getErrorMessage(e, "Could not send for signing. If the forms are not complete yet the applicant has to finish them first."));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const resend = async () => {
-    setBusy(true); setNotice(null); setError(null);
-    try {
-      const r = await api.post<any>(`/api/applications/${encodeURIComponent(applicationId)}/sba-signing/resend`, {});
-      const links = ((r as any)?.data ?? r)?.links ?? [];
-      const withUrl = links.filter((l: any) => l?.url).length;
-      setNotice(`New signing links issued for ${withUrl} of ${links.length} owner${links.length === 1 ? "" : "s"}. They expire in 45 minutes.`);
-      await load();
-    } catch (e) {
-      setError(getErrorMessage(e, "Could not resend. If the forms are not complete yet the applicant has to finish them first."));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   if (error && !data) return <div style={s.wrap}><div style={s.err}>{error}</div></div>;
   if (!data) return <div style={s.wrap}><div style={s.label}>Loading…</div></div>;
 
@@ -96,31 +75,37 @@ export default function SbaSigningTab({ applicationId }: { applicationId: string
 
   const envelopes = data.envelopes ?? [];
   const missing = data.missingForms ?? [];
+  const lenders = data.selectedLenders ?? [];
 
   return <div style={s.wrap}>
     {error && <div style={s.err}>{error}</div>}
-    {notice && <div style={s.ok} data-testid="sba-resend-notice">{notice}</div>}
     <div style={s.card}>
       <div style={s.h}>SBA signing</div>
       <div style={s.row}><span style={s.label}>Applicant forms complete</span><span style={s.pill(!!data.formsComplete)} data-testid="sba-forms-complete">{data.formsComplete ? "Complete" : "Outstanding"}</span></div>
       <div style={s.row}><span style={s.label}>All owners signed</span><span style={s.pill(!!data.allSigned)} data-testid="sba-all-signed">{data.allSigned ? "Signed" : "Not yet"}</span></div>
       {missing.length > 0 && <div style={s.note} data-testid="sba-missing-forms">Waiting on: {missing.join(", ")}. The applicant fills these in their portal under SBA Forms; signing cannot start until they are submitted.</div>}
     </div>
+    {/* BF_PORTAL_SBA_PACKAGE_READINESS_v770 - only once BF-Server v788 is live (it sends selectedLenders). */}
+    {data.selectedLenders !== undefined && <div style={s.card} data-testid="sba-lenders-card">
+      <div style={s.h}>Lenders and IRS 4506-C</div>
+      {lenders.length === 0 ? <div style={s.note} data-testid="sba-no-lenders">No lender saved on this file yet. The 4506-C names the lender that may pull the tax transcripts, so the lender comes first: Lenders tab, tick it and press Send. That starts the signing; nothing goes to the lender until every owner has signed.{data.ivesFallback ? " Without a saved lender the 4506-C names the default IVES participant." : " Without a saved lender no 4506-C is created and the package will be held."}</div>
+        : lenders.map((l) => <div key={l.lenderId} style={s.row}><span style={s.val}>{l.name || l.lenderId}</span><span style={s.pill(l.ives)} data-testid={`sba-lender-ives-${l.lenderId}`}>{l.ives ? "4506-C included" : (data.ivesFallback ? "Default IVES participant" : "No IVES details - no 4506-C")}</span></div>)}
+      {data.packageBlock && <div style={s.note} data-testid="sba-package-block">{PACKAGE_BLOCK_TEXT[data.packageBlock.reason] ?? `Held: ${data.packageBlock.reason}`}{data.packageBlock.detail ? ` (${data.packageBlock.detail})` : ""}</div>}
+      {!data.packageBlock && envelopes.length > 0 && data.allSigned && <div style={s.note} data-testid="sba-package-ready">Signed and complete - the package can go to the saved lenders.</div>}
+        </div>}
     <div style={s.card}>
       <div style={s.h}>Envelopes ({envelopes.length})</div>
-      {envelopes.length === 0 ? <div style={s.note}>No envelopes yet. Press Send for signing below once the applicant has submitted the SBA forms.</div> : envelopes.map((e, i) => <div key={i} style={{ padding: "10px 0", borderBottom: "1px solid var(--ui-border-soft)" }}>
+      {envelopes.length === 0 ? <div style={s.note}>No envelopes yet. Signing starts when you press Send on the Lenders tab.</div> : envelopes.map((e, i) => <div key={i} style={{ padding: "10px 0", borderBottom: "1px solid var(--ui-border-soft)" }}>
         <div style={s.row}><span style={s.val}>Owner {e.ownerIndex ?? i + 1}</span><span style={s.label}>{e.email || "no email on file"}</span></div>
         <div style={s.note}>{(e.docNames?.length ?? e.docIds?.length ?? 0)} document{(e.docNames?.length ?? e.docIds?.length ?? 0) === 1 ? "" : "s"}{e.docNames?.length ? `: ${e.docNames.join(", ")}` : ""}</div>
-        {(e.ives4506cLenderIds?.length ?? 0) === 0 && <div style={s.note} data-testid={`sba-no-4506c-${e.ownerIndex ?? i + 1}`}>No 4506-C. Set the IVES participant fields on the selected lender, then resend - the package cannot be dispatched without one.</div>}
+        {(e.ives4506cLenderIds?.length ?? 0) === 0 && <div style={s.note} data-testid={`sba-no-4506c-${e.ownerIndex ?? i + 1}`}>No 4506-C. Set the IVES participant fields on the selected lender, then press Send for signing on the Application tab - the package cannot be dispatched without one.</div>}
         {e.groupId && <div style={s.mono}>group {e.groupId}</div>}
       </div>)}
     </div>
-    <div style={s.card}>
-      <div style={s.h}>Send for signing</div>
-      <div style={s.note}>Each owner signs once: the Boreal application and their SBA forms together (1919 for owner 1, 912, 4506-C for each SBA lender with IVES details, and 413). Owner 1 is texted and emailed to sign in the client portal; other owners get an email from SignNow. Pressing it again replaces any unsigned envelopes, so use it after the applicant edits anything.</div>
-      <div style={{ marginTop: 12 }}><button type="button" data-testid="sba-send-for-signing" disabled={busy || !data.formsComplete} onClick={() => void sendForSigning()} style={busy || !data.formsComplete ? s.btnOff : s.btn}>{busy ? "Sending…" : "Send for signing"}</button>
-      {!data.formsComplete && <span style={{ ...s.label, marginLeft: 10 }}>Available once the applicant has submitted every SBA form.</span>}</div>
-      <div style={{ ...s.note, marginTop: 10 }}>SBA forms only, without the application: <button type="button" data-testid="sba-resend" disabled={busy || !data.formsComplete} onClick={() => void resend()} style={{ border: 0, background: "none", color: "var(--ui-accent, #B08D3F)", cursor: "pointer", padding: 0, fontSize: 12, textDecoration: "underline" }}>resend SBA form links</button></div>
+    {/* BF_PORTAL_SBA_ONE_BUTTON_v771 - one way to sign: this tab shows status only. */}
+    <div style={s.card} data-testid="sba-how-to-sign">
+      <div style={s.h}>How signing starts</div>
+      <div style={s.note}>Same as every other file: on the Lenders tab tick the lender and press Send. Every owner then signs once: the Boreal application and their SBA forms together (1919 for owner 1, 912, a 4506-C for each saved lender with IVES details, and 413). Owner 1 is texted and signs in the client portal; other owners get an email from SignNow. Once everyone has signed the package goes to the lender on its own. After the applicant edits anything, press Send for signing on the Application tab to have them sign again.</div>
     </div>
   </div>;
 }

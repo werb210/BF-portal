@@ -126,8 +126,10 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
 
   const requestPath = withQuery(path, options.params);
 
+  // BF_PORTAL_LIBRARY_BIG_UPLOAD_v772 - binary bodies (file pieces) go as they are; only plain objects become JSON.
+  const isBinary = (typeof Blob !== "undefined" && options.body instanceof Blob) || options.body instanceof ArrayBuffer;
   const body =
-    options.body && !(options.body instanceof FormData)
+    options.body && !(options.body instanceof FormData) && !isBinary
       ? typeof options.body === "string"
         ? options.body
         : JSON.stringify(options.body)
