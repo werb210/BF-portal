@@ -62,6 +62,9 @@ describe("move from inside the preview", () => {
 });
 
 describe("hostile PDFs", () => {
-  it("pdf.js never evaluates font scripts", () =>
-    expect(pages).toContain("isEvalSupported: false"));
+  // BF_PORTAL_DEPS_v779 - pdf.js 6 has no font-script evaluation at all; pin the patched version and build instead.
+  it("uses the patched pdf.js 6 legacy build", () => {
+    expect(pages).toContain('import("pdfjs-dist/legacy/build/pdf.mjs")');
+    expect(JSON.parse(readFileSync("package.json", "utf8")).dependencies["pdfjs-dist"]).toMatch(/^6\./);
+  });
 });
