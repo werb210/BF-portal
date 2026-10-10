@@ -528,7 +528,23 @@ const ProfileSettings = () => {
             </span>
           )}
           {profile.microsoftConnected && (
-            <Button type="button" variant="ghost" onClick={() => setMicrosoftConnection({ connected: false, email: undefined })}>Disconnect</Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={async () => {
+                // BF_PORTAL_V780 - forget the Microsoft connection on the server too, not just on screen.
+                setMicrosoftError(null);
+                try {
+                  await api.post("/api/o365-oauth/disconnect", {});
+                  setMicrosoftConnection({ connected: false, email: undefined });
+                  void fetchProfile();
+                } catch (err) {
+                  setMicrosoftError(getErrorMessage(err as Error, "Could not disconnect Microsoft."));
+                }
+              }}
+            >
+              Disconnect
+            </Button>
           )}
           {!hideMicrosoftButton && isLinkingMicrosoft && (
             <span className="text-xs text-slate-500">Connecting…</span>

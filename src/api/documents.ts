@@ -46,9 +46,3 @@ export const restoreDocumentVersion = (documentId: string, version: number) =>
 
 export const fetchDocumentVersions = (documentId: string, options?: RequestOptions) =>
   api.get<DocumentVersion[]>(`/documents/${documentId}/versions`, options);
-
-
-export const getDocuments = async (applicationId: string) => {
-  requireAuth();
-  return api.get<unknown>(`/api/documents/${applicationId}`);
-};

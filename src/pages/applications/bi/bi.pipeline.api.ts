@@ -13,18 +13,6 @@ const BI_API_PREFIX = "/api/v1/bi";
 const BI_TOKEN_KEY = "bi_access_token";
 const BI_REFRESH_TOKEN_KEY = "bi_refresh_token";
 
-type BIAuthResponse = {
-  token: string;
-  refresh_token?: string;
-};
-
-const saveBiTokens = (auth: BIAuthResponse) => {
-  localStorage.setItem(BI_TOKEN_KEY, auth.token);
-  if (auth.refresh_token) {
-    localStorage.setItem(BI_REFRESH_TOKEN_KEY, auth.refresh_token);
-  }
-};
-
 const clearBiTokens = () => {
   localStorage.removeItem(BI_TOKEN_KEY);
   localStorage.removeItem(BI_REFRESH_TOKEN_KEY);
@@ -46,19 +34,6 @@ const parsePayload = async <T>(response: Response): Promise<T> => {
     return body.data as T;
   }
   return body as T;
-};
-
-const refreshBiToken = async () => {
-  const refreshToken = localStorage.getItem(BI_REFRESH_TOKEN_KEY);
-  if (!refreshToken) return false;
-  const response = await rawApiFetch("/api/v1/otp/refresh", {
-    method: "POST",
-    body: { refresh_token: refreshToken }
-  });
-  if (!response.ok) return false;
-  const payload = await parsePayload<BIAuthResponse>(response);
-  saveBiTokens(payload);
-  return true;
 };
 
 const biRequest = async <T>(path: string, options: RequestInit & { params?: Record<string, string> } = {}): Promise<T> => {
@@ -83,21 +58,8 @@ const biRequest = async <T>(path: string, options: RequestInit & { params?: Reco
       headers
     });
 
-  let response = await execute();
-
-  if (response.status === 401) {
-    const refreshed = await refreshBiToken().catch(() => false);
-    if (refreshed) {
-      const nextToken = getBiToken();
-      response = await rawApiFetch(`${path}${query}`, {
-        ...options,
-        headers: {
-          ...(options.headers as Record<string, string> | undefined),
-          ...(nextToken ? { Authorization: `Bearer ${nextToken}` } : {})
-        }
-      });
-    }
-  }
+  // BF_PORTAL_V780 - BI screens use the staff sign-in token; the old BI refresh/login addresses never existed on BI-Server.
+  const response = await execute();
 
   if (response.status === 401) {
     clearBiTokens();
@@ -186,25 +148,6 @@ export const biPipelineApi = {
       method: "PATCH",
       body: JSON.stringify({ status })
     }),
-  requestOtp: (email: string) =>
-    biRequest<{ otp_request_id: string }>("/api/v1/otp/request", {
-      method: "POST",
-      body: JSON.stringify({ email })
-    }),
-  verifyOtp: async (otpRequestId: string, code: string) => {
-    const auth = await biRequest<BIAuthResponse>("/api/v1/otp/verify", {
-      method: "POST",
-      body: JSON.stringify({ otp_request_id: otpRequestId, code })
-    });
-    saveBiTokens(auth);
-  },
-  staffLogin: async (email: string, password: string) => {
-    const auth = await biRequest<BIAuthResponse>("/api/v1/staff/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password })
-    });
-    saveBiTokens(auth);
-  },
   hasToken: () => Boolean(getBiToken()),
   clearTokens: clearBiTokens
 };

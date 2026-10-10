@@ -603,15 +603,6 @@ export const recalculateLenderMatches = (applicationId: string) =>
 export const createLenderSubmission = (applicationId: string, lenderProductIds: string[]) =>
   api.post(`/api/portal/lender-submissions`, { applicationId, lenderProductIds });
 
-export const fetchLenderSubmissions = (applicationId: string, options?: RequestOptions) =>
-  api.get<LenderSubmission[]>(`/api/portal/lender-submissions`, {
-    ...options,
-    params: { applicationId, ...(options?.params ?? {}) }
-  });
-
-export const retryLenderSubmission = (applicationId: string, lenderProductId?: string) =>
-  api.post(`/api/portal/lender-submissions/${applicationId}/submit`, lenderProductId ? { lenderProductId } : undefined);
-
 export const retryLenderTransmission = async (_transmissionId: string) => null;
 
 export async function fetchClientLenders(): Promise<ClientLender[]> {
@@ -622,18 +613,6 @@ export async function fetchClientLenders(): Promise<ClientLender[]> {
   }
   if (normalized && typeof normalized === "object" && Array.isArray((normalized as { items?: unknown }).items)) {
     return (normalized as { items: ClientLender[] }).items;
-  }
-  return [];
-}
-
-export async function fetchClientLenderProducts(): Promise<ClientLenderProduct[]> {
-  const payload = await api.get<unknown>("/api/portal/lender-products");
-  const normalized = (payload as { data?: unknown }).data ?? payload;
-  if (Array.isArray(normalized)) {
-    return normalized as ClientLenderProduct[];
-  }
-  if (normalized && typeof normalized === "object" && Array.isArray((normalized as { items?: unknown }).items)) {
-    return (normalized as { items: ClientLenderProduct[] }).items;
   }
   return [];
 }
@@ -663,42 +642,6 @@ const parseRequirementResponse = (data: unknown) => {
   }
   return { requirements: [] as LenderProductRequirementApi[] };
 };
-
-export async function fetchClientLenderProductRequirements(productId: string) {
-  const payload = await api.get<unknown>(`/api/portal/lender-products/${productId}/requirements`);
-  const normalized = (payload as { data?: unknown }).data ?? payload;
-  const parsed = parseRequirementResponse(normalized);
-  return {
-    requirements: parsed.requirements.map(normalizeRequirement),
-    documentTypes: parsed.documentTypes
-  };
-}
-
-export const createLenderProductRequirement = async (
-  productId: string,
-  payload: Omit<LenderProductRequirementApi, "id">
-) => {
-  const requirement = await api.post<LenderProductRequirementApi>(
-    `/api/portal/lender-products/${productId}/requirements`,
-    payload
-  );
-  return normalizeRequirement(ensureEntityHasId(requirement, "requirement"));
-};
-
-export const updateLenderProductRequirement = async (
-  productId: string,
-  requirementId: string,
-  payload: Omit<LenderProductRequirementApi, "id">
-) => {
-  const requirement = await api.put<LenderProductRequirementApi>(
-    `/api/portal/lender-products/${productId}/requirements/${requirementId}`,
-    payload
-  );
-  return normalizeRequirement(ensureEntityHasId(requirement, "requirement", requirementId));
-};
-
-export const deleteLenderProductRequirement = (productId: string, requirementId: string) =>
-  api.delete(`/api/portal/lender-products/${productId}/requirements/${requirementId}`);
 
 // BF_PORTAL_BLOCK_v186_LENDERS_TAB_POLISH_v1 — uploadLenderTermSheet
 export type TermSheetFields = {
