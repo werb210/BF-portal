@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 const page = readFileSync(join(process.cwd(), "src", "pages", "tasks", "TasksPage.tsx"), "utf-8");
 const app = readFileSync(join(process.cwd(), "src", "App.tsx"), "utf-8");
-const nav = readFileSync(join(process.cwd(), "src", "components", "layout", "Sidebar.tsx"), "utf-8");
 describe("tasks milestone 1 (portal)", () => {
   it("has the four standard views and filters", () => {
     for (const v of ["Due today", "Overdue", "Upcoming", "Completed"]) expect(page).toContain(v);
@@ -15,9 +14,8 @@ describe("tasks milestone 1 (portal)", () => {
     expect(page).toContain("/complete");
     expect(page).toContain('action: "complete"');
   });
-  it("is routed and in the sidebar", () => {
+  it("is routed", () => { // BF_PORTAL_DEAD_PAGES_v781 - the nav check read the unused Sidebar.tsx, now deleted
     expect(app).toContain('path="/tasks"');
-    expect(nav).toContain('{ label: "Tasks", path: "/tasks" }');
   });
 });
 

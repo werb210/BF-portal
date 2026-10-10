@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const sidebar = readFileSync(resolve(__dirname, "..", "..", "..", "components", "layout", "Sidebar.tsx"), "utf-8");
+// BF_PORTAL_DEAD_PAGES_v781 - the unused Sidebar.tsx was deleted; the real left nav is layouts/AppLayout.tsx.
+const sidebar = readFileSync(resolve(__dirname, "..", "..", "..", "layouts", "AppLayout.tsx"), "utf-8");
 const app = readFileSync(resolve(__dirname, "..", "..", "..", "App.tsx"), "utf-8");
 
 const adsComponent = readFileSync(
