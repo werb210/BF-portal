@@ -45,8 +45,6 @@ const BIReferrersPage = lazy(() => import("@/pages/bi/BIReferrersPage"));
 // The orphan component is still exported in case test files reference it.
 const Leads = lazy(() => import("@/pages/Leads"));
 const IssueInboxPage = lazy(() => import("@/pages/IssueInboxPage"));
-const AiCommsPage = lazy(() => import("@/pages/AiCommsPage"));
-const AIChatDashboard = lazy(() => import("@/pages/AIChatDashboard"));
 const ReportsBoard = lazy(() => import("@/pages/reports/ReportsBoard")); // BF_PORTAL_REPORTS_SECTION_v714 (replaces the hidden ReportsPage)
 import DesktopBridge from "@/desktop/DesktopBridge"; // BF_PORTAL_DESKTOP_ALERTS_v724
 const AutomationsPage = lazy(() => import("@/pages/admin/AutomationsPage")); // BF_PORTAL_AUTOMATIONS_UI_v1
@@ -276,9 +274,7 @@ const AppRoutes = () => {
         <Route path="/apply" element={<ApplyPage />} />
         <Route path="/leads" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><Leads /></RequireRole></ProtectedRoute>} />
         <Route path="/issues" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><IssueInboxPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
-        <Route path="/ai-chat" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AIChatDashboard /></RequireRole></ProtectedRoute>} />
-        <Route path="/ai-comms" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><AiCommsPage /></RequireRole></ProtectedRoute>} />
+        {/* BF_PORTAL_DEAD_PAGES_v781 - /chat, /ai-chat and /ai-comms removed: in no menu, and they called server addresses that do not exist. */}
         <Route path="/admin/automations" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AutomationsPage /></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_AUTOMATIONS_UI_v1 */}
         {/* BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1 -- five routes
             removed here (/admin/ai-knowledge, /admin/issue-reports,
