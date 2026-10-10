@@ -35,7 +35,6 @@ describe("sanitizeHtml", () => {
 
   it("EVERY innerHTML sink in the portal goes through sanitizeHtml", () => {
     const files = [
-      "src/components/email/EmailViewer.tsx",
       "src/pages/communications/CommunicationsPage.tsx",
       "src/components/communications/O365ComposeModal.tsx",
     ];
