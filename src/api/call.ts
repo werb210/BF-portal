@@ -7,13 +7,3 @@ export async function startCall(to: string) {
     body: JSON.stringify({ to }),
   });
 }
-
-export async function sendStatus(callId: string, status: string) {
-  return api(ENDPOINTS.voiceStatus, {
-    method: "POST",
-    body: JSON.stringify({
-      callId,
-      status,
-    }),
-  });
-}
