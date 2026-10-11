@@ -38,7 +38,7 @@ export default function AuditEvents() {
       setError("Could not load audit events.");
     };
     try {
-      void apiClient.get<AuditEvent[]>(`/admin/audit/events${query}`).then(
+      void apiClient.get<AuditEvent[]>(`/api/admin/audit/events${query}`).then(
         (rows) => setEvents(Array.isArray(rows) ? rows : []),
         onFailure,
       );

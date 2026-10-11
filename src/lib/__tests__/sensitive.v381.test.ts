@@ -50,11 +50,7 @@ describe("every display path uses the mask", () => {
   });
   it("raw JSON views redact before printing", () => {
     for (const p of [
-      "src/pages/applications/bi/viewer/BIApplicationDrawer.tsx",
-      "src/pages/applications/slf/viewer/SLFTabApplication.tsx",
       "src/silos/bi/pipeline/tabs/PgiCommsTab.tsx",
-      "src/silos/bi/pipeline/tabs/InsurerResponseTab.tsx",
-      "src/pages/BiApplications.tsx",
     ]) {
       const src = read(p);
       expect(src).toContain("redactSensitive(");

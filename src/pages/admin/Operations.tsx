@@ -4,7 +4,7 @@ import api from "@/api";
 import { Navigate } from "react-router-dom";
 import CapitalScorePreview from "@/components/CapitalScorePreview";
 
-const API_PREFIX = "";
+const API_PREFIX = "/api"; // BF_PORTAL_API_PREFIX_v784
 type Contact = { id: string; company: string; firstName: string; lastName: string; email: string; phone: string; createdAt: string };
 type Issue = { id: string; message: string; screenshotBase64?: string; status: string; createdAt: string };
 type ChatEscalation = { id: string; name: string; email: string; transcript: string; status: string; createdAt: string };
@@ -29,9 +29,9 @@ export default function Operations() {
 
   async function refreshData() {
     const [contactsRes, issuesRes, chatsRes] = await Promise.all([
-      api.get<Contact[]>("/admin/contacts"),
-      api.get<Issue[]>("/admin/issues"),
-      api.get<ChatEscalation[]>("/admin/chats"),
+      api.get<Contact[]>(`${API_PREFIX}/admin/contacts`),
+      api.get<Issue[]>(`${API_PREFIX}/admin/issues`),
+      api.get<ChatEscalation[]>(`${API_PREFIX}/admin/chats`),
     ]);
 
     setContacts(contactsRes);

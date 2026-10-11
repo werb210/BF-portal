@@ -8,7 +8,7 @@ const notes = "Test Monday, October 5, 2026 at 2:30 p.m. (Alberta time) Join by 
 describe("Join room on a conference event", () => {
   it("finds the room from the meeting link in the event", () => {
     expect(roomSlugFromEvent(notes)).toBe("2367a2ac98b1");
-    expect(roomSlugFromEvent("Phone call - Boreal calls 5878881837")).toBeNull();
+    expect(roomSlugFromEvent("Phone call - Boreal calls 5555550123")).toBeNull();
   });
   it("a room event still offers no Call button for Boreal's own 866 line", () => {
     expect(phoneFromEvent("Phone (866) 631-8939, press 3, code 799151", notes)).toBeNull();

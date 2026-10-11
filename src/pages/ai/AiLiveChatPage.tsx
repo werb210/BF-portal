@@ -1,12 +1,7 @@
-import { Navigate, useParams } from "react-router-dom";
+// BF_PORTAL_AI_PAGE_v784 - this route used to redirect to itself when no
+// :sessionId was present (it never is on /portal/ai), so it rendered nothing.
 import AiLiveChat from "@/modules/ai/AiLiveChat";
 
 export default function AiLiveChatPage() {
-  const { sessionId } = useParams<{ sessionId: string }>();
-
-  if (!sessionId) {
-    return <Navigate to="/portal/ai" replace />;
-  }
-
-  return <AiLiveChat sessionId={sessionId} />;
+  return <AiLiveChat />;
 }

@@ -10,7 +10,6 @@ const { post } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/api", () => ({ api: { get: vi.fn(async () => ({ items: [], queues: [] })), post } }));
-vi.mock("../MarketingT", async () => { const { createElement } = await import("react"); return { default: () => createElement("div", null, "x") }; });
 vi.mock("@/components/marketing/BrandedEmailComposer", async () => { const { createElement } = await import("react"); return { default: () => createElement("div", null, "Email") }; });
 vi.mock("@/components/marketing/SequenceCanvas", async () => {
   const { createElement } = await import("react");

@@ -1,9 +1,48 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { api } from "@/api";
 import { ANNUAL_REVENUE, AR_BALANCE, COLLATERAL, MONTHLY_REVENUE, YEARS_IN_BUSINESS } from "@/constants/creditEnums";
 
+// BF_PORTAL_CREDIT_READINESS_SUBMIT_v784 - this navigated to /credit-results,
+// which has no route in the portal (blank screen). Submit the answers to the
+// server and show the result, with the client's application link, here.
+type ReadinessResult = {
+  score: number | string | null;
+  tier: string | null;
+  link: string | null;
+};
+
+function firstString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function readReadinessResult(res: any): ReadinessResult {
+  const r = res?.result ?? res ?? {};
+  const score = r.score ?? r.readiness_score ?? r.readinessScore ?? null;
+  return {
+    score: typeof score === "number" || typeof score === "string" ? score : null,
+    tier: firstString(r.tier, r.readiness_tier, r.readinessTier, r.rating),
+    link: firstString(
+      r.applicationUrl,
+      r.application_url,
+      r.continuationUrl,
+      r.continuation_url,
+      r.continueUrl,
+      r.redirectUrl,
+      r.redirect_url,
+      r.link,
+      r.url,
+    ),
+  };
+}
+
 export default function CreditReadiness() {
-  const navigate = useNavigate();
+  const [result, setResult] = useState<ReadinessResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const [form, setForm] = useState({
     companyName: "",
@@ -22,13 +61,30 @@ export default function CreditReadiness() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    setResult(null);
+    setCopied(false);
+    try {
+      const res = await api.post("/api/website/credit-readiness", form);
+      setResult(readReadinessResult(res));
+    } catch (err) {
+      setError(err instanceof Error && err.message !== "API_ERROR" ? `Could not submit: ${err.message}` : "Could not submit. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-    // Store temporarily (later this will POST to server)
-    sessionStorage.setItem("creditReadiness", JSON.stringify(form));
-
-    navigate("/credit-results");
+  const copyLink = async () => {
+    if (!result?.link) return;
+    try {
+      await navigator.clipboard.writeText(result.link);
+      setCopied(true);
+    } catch {
+      setError("Could not copy the link. Select it and copy it manually.");
+    }
   };
 
   return (
@@ -136,8 +192,31 @@ export default function CreditReadiness() {
           ))}
         </select>
 
-        <button type="submit">Check Credit Readiness</button>
+        <button type="submit" disabled={submitting}>{submitting ? "Checking..." : "Check Credit Readiness"}</button>
       </form>
+
+      {error ? (
+        <p role="alert" style={{ color: "#B91C1C", background: "#FEF2F2", padding: 8, borderRadius: 8 }}>{error}</p>
+      ) : null}
+
+      {result ? (
+        <section aria-label="Credit readiness result" style={{ marginTop: 16, padding: 16, borderRadius: 12, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}>
+          <h2 style={{ marginTop: 0 }}>Result</h2>
+          <p style={{ margin: "4px 0" }}>Score: {result.score ?? "n/a"}</p>
+          <p style={{ margin: "4px 0" }}>Readiness: {result.tier ?? "n/a"}</p>
+          {result.link ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
+              <span>Client application link:</span>
+              <a href={result.link} target="_blank" rel="noreferrer" style={{ color: "var(--ui-text)", textDecoration: "underline", wordBreak: "break-all" }}>
+                {result.link}
+              </a>
+              <button type="button" onClick={() => void copyLink()}>{copied ? "Copied" : "Copy"}</button>
+            </div>
+          ) : (
+            <p style={{ margin: "4px 0", color: "var(--ui-text-muted)" }}>No application link was returned.</p>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

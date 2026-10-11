@@ -10,10 +10,6 @@ vi.mock("@/api", () => ({
     post,
   },
 }));
-vi.mock("../MarketingT", async () => {
-  const { createElement } = await import("react");
-  return { default: () => createElement("div", null, "Apollo") };
-});
 vi.mock("@/components/marketing/BrandedEmailComposer", async () => {
   const { createElement } = await import("react");
   return { default: () => createElement("div", null, "Email") };

@@ -2,10 +2,12 @@ import React from "react";
 import { logger } from "@/utils/logger";
 // BF_PORTAL_ERROR_REPORTING_v1
 import { reportError } from "@/utils/errorReporter";
+import { isChunkLoadError } from "@/lib/lazyWithRetry";
 
 interface State {
   hasError: boolean;
   errorMessage: string | null;
+  chunkError: boolean;
 }
 
 type ErrorBoundaryProps = React.PropsWithChildren<{
@@ -15,11 +17,15 @@ type ErrorBoundaryProps = React.PropsWithChildren<{
 export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, State> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, errorMessage: null };
+    this.state = { hasError: false, errorMessage: null, chunkError: false };
   }
 
   static getDerivedStateFromError(error: unknown) {
-    return { hasError: true, errorMessage: error instanceof Error ? error.message : String(error ?? "Unknown error") };
+    return {
+      hasError: true,
+      errorMessage: error instanceof Error ? error.message : String(error ?? "Unknown error"),
+      chunkError: isChunkLoadError(error),
+    };
   }
 
   componentDidCatch(error: unknown, errorInfo: unknown) {
@@ -34,11 +40,28 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, S
   // reload. Clearing the state remounts the subtree, which recovers from a
   // transient render error without losing the session.
   reset = () => {
-    this.setState({ hasError: false, errorMessage: null });
+    this.setState({ hasError: false, errorMessage: null, chunkError: false });
+  };
+
+  // BF_PORTAL_LAZY_RETRY_v784 - a stale tab after a deploy cannot recover by
+  // remounting; it needs the new index.html.
+  reload = () => {
+    window.location.reload();
   };
 
   render() {
     if (this.state.hasError) {
+      if (this.state.chunkError) {
+        return (
+          <div role="alert" style={{ padding: 24, color: "var(--ui-text, #0B1F3A)" }}>
+            <h2 style={{ margin: "0 0 8px" }}>The portal was updated</h2>
+            <p style={{ margin: "0 0 16px", color: "var(--ui-text-muted, #51617D)" }}>
+              A newer version is available. Reload to continue.
+            </p>
+            <button type="button" onClick={this.reload}>Reload</button>
+          </div>
+        );
+      }
       if (this.props.fallback) return this.props.fallback;
       return (
         <div role="alert" style={{ padding: 24 }}>

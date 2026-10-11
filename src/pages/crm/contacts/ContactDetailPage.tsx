@@ -10,8 +10,6 @@ import { ContactStageHistory } from "@/components/crm/ContactStageHistory"; // B
 import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
 import { ContactApplicantFields, ContactAdvisors, ContactPartners, ContactMarketingSource, ContactCreditReadiness } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_CONTACT_PANELS_v1 + BF_PORTAL_CREDIT_READINESS_v1
 import { EntityEditModal } from "@/components/EntityEditModal";
-import MarketingHeader from "@/pages/crm/contacts/MarketingHeader";
-import MarketingTab from "@/pages/crm/contacts/tabs/MarketingTab";
 import ContactJourney from "@/components/crm/ContactJourney"; // BF_PORTAL_VISITOR_JOURNEY_v1
 import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_CONTACT_RECORD_TABS_v272
 import { ContactDocuments } from "@/components/crm/ContactDocuments"; // BF_PORTAL_CONTACT_DOCUMENTS_v1
@@ -73,7 +71,6 @@ export default function ContactDetailPage() {
         >← Back to contacts</Link>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}><h2 style={{ marginTop: 0, marginBottom: 0 }}>{contact.name}</h2><span style={roleBadge}>{formatRole(contact.role)}</span></div>
         {contact.job_title && <div style={subtle}>{contact.job_title}</div>}
-        {isBiSilo && <MarketingHeader contactId={id} />}
         {contact.email && (
           <a href={`mailto:${contact.email}`} style={{ color: "#0091ae" }}>{contact.email}</a>
         )}
@@ -129,11 +126,8 @@ export default function ContactDetailPage() {
               <ContactStageHistory contactId={id} showEmpty />
               <ContactAiSummary contactId={id} />
               <ContactJourney contactId={id} /> {/* BF_PORTAL_VISITOR_JOURNEY_v1 */}
-              {isBiSilo && (
-                <div style={{ marginTop: 16, border: "1px solid var(--ui-border-soft)", borderRadius: 6, padding: 16 }}>
-                  <MarketingTab contactId={id} />
-                </div>
-              )} {/* BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_v1_TAB */}
+              {/* BF_PORTAL_APOLLO_RETIRED_v784 - the BI Apollo marketing header and tab
+                  called /api/v1/bi/contacts/:id/marketing and /enrich, both retired. */}
             </>
           }
           timeline={
