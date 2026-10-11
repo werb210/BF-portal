@@ -2,13 +2,15 @@
 // which does not exist. POST /api/credit/score is real, and it also creates a
 // CRM lead and texts the intake team, so it must only be sent for a real
 // business that staff typed in.
+// BF_PORTAL_CAPITAL_SCORE_FIELDS_v785 - the server reads annualRevenue and
+// yearsInBusiness (years) and replies {score, message}; it has no credit score
+// field, so sending revenue/months scored every business 60.
 import { useState, type FormEvent } from "react";
 import { api } from "@/api";
 
 type ScoringResponse = {
   score?: number | null;
-  rating?: string | null;
-  tier?: string | null;
+  message?: string | null;
 };
 
 const EMPTY = {
@@ -17,8 +19,7 @@ const EMPTY = {
   email: "",
   phone: "",
   annualRevenue: "",
-  timeInBusiness: "",
-  creditScore: "",
+  yearsInBusiness: "",
 };
 
 const inputStyle = {
@@ -48,9 +49,8 @@ export default function CapitalScorePreview() {
         fullName: form.fullName.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
-        revenue: Number(form.annualRevenue),
-        timeInBusiness: Number(form.timeInBusiness),
-        creditScore: Number(form.creditScore),
+        annualRevenue: Number(form.annualRevenue),
+        yearsInBusiness: Number(form.yearsInBusiness),
       });
       setScore(data ?? {});
     } catch (err) {
@@ -73,8 +73,7 @@ export default function CapitalScorePreview() {
       <input aria-label="Email" placeholder="Email" type="email" required value={form.email} onChange={(e) => update("email", e.target.value)} style={inputStyle} />
       <input aria-label="Phone" placeholder="Phone" type="tel" required value={form.phone} onChange={(e) => update("phone", e.target.value)} style={inputStyle} />
       <input aria-label="Annual revenue" placeholder="Annual revenue ($)" type="number" min={0} required value={form.annualRevenue} onChange={(e) => update("annualRevenue", e.target.value)} style={inputStyle} />
-      <input aria-label="Months in business" placeholder="Months in business" type="number" min={0} required value={form.timeInBusiness} onChange={(e) => update("timeInBusiness", e.target.value)} style={inputStyle} />
-      <input aria-label="Credit score" placeholder="Credit score" type="number" min={300} max={900} required value={form.creditScore} onChange={(e) => update("creditScore", e.target.value)} style={inputStyle} />
+      <input aria-label="Years in business" placeholder="Years in business" type="number" min={0} step="any" required value={form.yearsInBusiness} onChange={(e) => update("yearsInBusiness", e.target.value)} style={inputStyle} />
       <button type="submit" disabled={busy} style={{ padding: "8px 12px", borderRadius: 8, border: 0, background: "#1D4ED8", color: "#fff", justifySelf: "start" }}>
         {busy ? "Scoring..." : "Score and save lead"}
       </button>
@@ -84,7 +83,7 @@ export default function CapitalScorePreview() {
       {score ? (
         <div>
           <p style={{ margin: 0 }}>Score: {score.score ?? "n/a"}</p>
-          <p style={{ margin: 0 }}>Rating: {score.rating ?? score.tier ?? "n/a"}</p>
+          {score.message ? <p style={{ margin: 0 }}>{score.message}</p> : null}
         </div>
       ) : null}
     </form>

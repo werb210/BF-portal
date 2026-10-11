@@ -24,6 +24,17 @@ function countOf(res: unknown): number {
   return 0;
 }
 
+// BF_PORTAL_GLOBAL_ADMIN_SLF_STATS_v785 - /api/slf/deals caps at 100 rows, so
+// the SLF count is the sum of the per-stage counts from /api/slf/stats.
+function slfDealCount(res: unknown): number {
+  const byStage = ((res ?? {}) as { byStage?: unknown }).byStage;
+  if (!Array.isArray(byStage)) throw new Error("SLF stats missing byStage");
+  return byStage.reduce((sum: number, row) => {
+    const n = Number((row as { n?: unknown } | null)?.n);
+    return Number.isFinite(n) ? sum + n : sum;
+  }, 0);
+}
+
 function show(value: Count): string {
   if (value === null) return "Loading...";
   return String(value);
@@ -37,10 +48,10 @@ export default function GlobalAdmin() {
 
   useEffect(() => {
     let alive = true;
-    const load = (key: keyof CountState, request: () => Promise<unknown>) => {
+    const load = (key: keyof CountState, request: () => Promise<unknown>, count: (res: unknown) => number = countOf) => {
       request()
         .then((res) => {
-          if (alive) setCounts((prev) => ({ ...prev, [key]: countOf(res) }));
+          if (alive) setCounts((prev) => ({ ...prev, [key]: count(res) }));
         })
         .catch(() => {
           if (alive) setCounts((prev) => ({ ...prev, [key]: "unavailable" }));
@@ -48,7 +59,7 @@ export default function GlobalAdmin() {
     };
     load("bfApplications", () => bfApi.get("/api/portal/applications"));
     load("biApplications", () => biApi.get("/api/v1/bi/applications"));
-    load("slfDeals", () => slfApi.get("/api/slf/deals"));
+    load("slfDeals", () => slfApi.get("/api/slf/stats"), slfDealCount);
     return () => {
       alive = false;
     };

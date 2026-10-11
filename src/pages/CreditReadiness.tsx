@@ -5,6 +5,8 @@ import { ANNUAL_REVENUE, AR_BALANCE, COLLATERAL, MONTHLY_REVENUE, YEARS_IN_BUSIN
 // BF_PORTAL_CREDIT_READINESS_SUBMIT_v784 - this navigated to /credit-results,
 // which has no route in the portal (blank screen). Submit the answers to the
 // server and show the result, with the client's application link, here.
+// BF_PORTAL_CREDIT_READINESS_FIELDS_v785 - field names match BF-Server v785,
+// which replies {success, leadId, redirect, readinessScore, readinessTier}.
 type ReadinessResult = {
   score: number | string | null;
   tier: string | null;
@@ -20,11 +22,12 @@ function firstString(...values: unknown[]): string | null {
 
 function readReadinessResult(res: any): ReadinessResult {
   const r = res?.result ?? res ?? {};
-  const score = r.score ?? r.readiness_score ?? r.readinessScore ?? null;
+  const score = r.readinessScore ?? r.score ?? r.readiness_score ?? null;
   return {
     score: typeof score === "number" || typeof score === "string" ? score : null,
-    tier: firstString(r.tier, r.readiness_tier, r.readinessTier, r.rating),
+    tier: firstString(r.readinessTier, r.tier, r.readiness_tier, r.rating),
     link: firstString(
+      r.redirect,
       r.applicationUrl,
       r.application_url,
       r.continuationUrl,
@@ -50,11 +53,11 @@ export default function CreditReadiness() {
     phone: "",
     email: "",
     industry: "",
-    yearsInBusiness: "",
-    annualRevenue: "",
-    monthlyRevenue: "",
-    arBalance: "",
-    availableCollateral: "",
+    salesHistoryYears: "",
+    annualRevenueRange: "",
+    avgMonthlyRevenueRange: "",
+    accountsReceivableRange: "",
+    fixedAssetsValueRange: "",
   });
 
   const update = (field: string, value: string) => {
@@ -139,8 +142,8 @@ export default function CreditReadiness() {
 
         <select
           required
-          value={form.yearsInBusiness}
-          onChange={(e) => update("yearsInBusiness", e.target.value)}
+          value={form.salesHistoryYears}
+          onChange={(e) => update("salesHistoryYears", e.target.value)}
         >
           <option value="">Years in business</option>
           {YEARS_IN_BUSINESS.map((option) => (
@@ -150,8 +153,8 @@ export default function CreditReadiness() {
 
         <select
           required
-          value={form.annualRevenue}
-          onChange={(e) => update("annualRevenue", e.target.value)}
+          value={form.annualRevenueRange}
+          onChange={(e) => update("annualRevenueRange", e.target.value)}
         >
           <option value="">Annual revenue</option>
           {ANNUAL_REVENUE.map((option) => (
@@ -161,8 +164,8 @@ export default function CreditReadiness() {
 
         <select
           required
-          value={form.monthlyRevenue}
-          onChange={(e) => update("monthlyRevenue", e.target.value)}
+          value={form.avgMonthlyRevenueRange}
+          onChange={(e) => update("avgMonthlyRevenueRange", e.target.value)}
         >
           <option value="">Average monthly revenue</option>
           {MONTHLY_REVENUE.map((option) => (
@@ -172,8 +175,8 @@ export default function CreditReadiness() {
 
         <select
           required
-          value={form.arBalance}
-          onChange={(e) => update("arBalance", e.target.value)}
+          value={form.accountsReceivableRange}
+          onChange={(e) => update("accountsReceivableRange", e.target.value)}
         >
           <option value="">Account Receivables</option>
           {AR_BALANCE.map((option) => (
@@ -183,8 +186,8 @@ export default function CreditReadiness() {
 
         <select
           required
-          value={form.availableCollateral}
-          onChange={(e) => update("availableCollateral", e.target.value)}
+          value={form.fixedAssetsValueRange}
+          onChange={(e) => update("fixedAssetsValueRange", e.target.value)}
         >
           <option value="">Available collateral</option>
           {COLLATERAL.map((option) => (
@@ -202,8 +205,8 @@ export default function CreditReadiness() {
       {result ? (
         <section aria-label="Credit readiness result" style={{ marginTop: 16, padding: 16, borderRadius: 12, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}>
           <h2 style={{ marginTop: 0 }}>Result</h2>
-          <p style={{ margin: "4px 0" }}>Score: {result.score ?? "n/a"}</p>
-          <p style={{ margin: "4px 0" }}>Readiness: {result.tier ?? "n/a"}</p>
+          {result.score !== null && result.score !== "" ? <p style={{ margin: "4px 0" }}>Score: {result.score}</p> : null}
+          {result.tier ? <p style={{ margin: "4px 0" }}>Readiness: {result.tier}</p> : null}
           {result.link ? (
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
               <span>Client application link:</span>

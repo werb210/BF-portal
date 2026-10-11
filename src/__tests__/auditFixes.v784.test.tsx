@@ -37,7 +37,7 @@ describe("v784 audit fixes", () => {
     siloGet.mockImplementation(async (silo: string, path: string) => {
       if (silo === "BF" && path === "/api/portal/applications") return [{}, {}, {}];
       if (silo === "BI" && path === "/api/v1/bi/applications") throw new Error("BI down");
-      if (silo === "SLF" && path === "/api/slf/deals") return { items: [{}, {}] };
+      if (silo === "SLF" && path === "/api/slf/stats") return { byStage: [{ stage: "new", n: "2" }] };
       throw new Error("unexpected " + silo + " " + path);
     });
     render(<GlobalAdmin />);
