@@ -143,6 +143,8 @@ function kindBadge(kind: TimelineItem["kind"]): CSSProperties {
     message: { bg: "#e0f7fa", fg: "#006064" },
     call_logged: { bg: "#e3f2fd", fg: "#0d47a1" },
     email_activity: { bg: "#e8f5e9", fg: "#1b5e20" },
+    recording: { bg: "#e3f2fd", fg: "#0d47a1" }, // BF_PORTAL_v786_CRM_FIXES
+    automation: { bg: "#e0f2f1", fg: "#004d40" },
   };
   const c = palette[kind];
   return {

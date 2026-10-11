@@ -39,14 +39,15 @@ type CallRow = {
 // portal/client messages, talk-to-a-human and ad attribution were sent by the server
 // and discarded here.
 type Kind = "note" | "task" | "call" | "email" | "meeting" | "voicemail" | "sms"
-  | "message" | "call_logged" | "email_activity" | "system";
-type ItemKind = "note" | "task" | "meeting" | "voicemail" | "sms" | "message" | "call_logged" | "email_activity" | "system";
-const ITEM_KINDS: ReadonlySet<string> = new Set<ItemKind>(["note", "task", "meeting", "voicemail", "sms", "message", "call_logged", "email_activity", "system"]);
-const KIND_LABEL: Partial<Record<Kind, string>> = { call_logged: "call (logged)", email_activity: "email", message: "message", system: "system" };
+  | "message" | "call_logged" | "email_activity" | "system" | "recording" | "automation";
+// BF_PORTAL_v786_CRM_FIXES - 'recording' (audio + transcript) and 'automation' (workflow step) items.
+type ItemKind = "note" | "task" | "meeting" | "voicemail" | "sms" | "message" | "call_logged" | "email_activity" | "system" | "recording" | "automation";
+const ITEM_KINDS: ReadonlySet<string> = new Set<ItemKind>(["note", "task", "meeting", "voicemail", "sms", "message", "call_logged", "email_activity", "system", "recording", "automation"]);
+const KIND_LABEL: Partial<Record<Kind, string>> = { call_logged: "call (logged)", email_activity: "email", message: "message", system: "system", recording: "recording", automation: "automation" };
 // Filter tabs group related kinds.
 const groupOf = (k: Kind): Kind =>
   k === "email_activity" ? "email"
-    : k === "call_logged" || k === "voicemail" ? "call"
+    : k === "call_logged" || k === "voicemail" || k === "recording" ? "call"
     : k === "sms" ? "message"
     : k;
 type FilterTab = "all" | Kind;
@@ -135,7 +136,15 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
               <time style={tsStyle}>{entry.ts ? new Date(entry.ts).toLocaleString() : ""}</time>
             </header>
 
-            {entry.kind !== "email" && entry.kind !== "call" && (
+            {entry.kind === "recording" && (
+              <RecordingCard item={entry.item} isOpen={isOpen} onToggle={() => setOpenId(isOpen ? null : key)} />
+            )}
+
+            {entry.kind === "automation" && (
+              <div data-testid="timeline-automation" style={{ color: "var(--ui-text)" }}>{automationLine(entry.item)}</div>
+            )}
+
+            {entry.kind !== "email" && entry.kind !== "call" && entry.kind !== "recording" && entry.kind !== "automation" && (
               <>
                 {entry.item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{entry.item.title}</div>}
                 {entry.item.body && <div style={{ color: "var(--ui-text-muted)", marginTop: 4, whiteSpace: "pre-wrap" }}>{entry.item.body}</div>}
@@ -239,6 +248,41 @@ function CallCard({ call, isOpen, onToggle }: { call: CallRow; isOpen: boolean; 
   );
 }
 
+/** "Automation: <workflow name> - <step>" for an automation timeline item. */
+export function automationLine(item: Pick<TimelineItem, "title" | "body" | "workflow_name" | "step">): string {
+  const name = (item.workflow_name || item.title || "Workflow").trim();
+  const step = (item.step || item.body || "").trim();
+  return "Automation: " + name + (step ? " - " + step : "");
+}
+
+function recordingSrc(url: string): string {
+  // Relative server paths go through the API origin with the auth token, like call recordings.
+  if (/^https?:/i.test(url)) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}${sep}token=${encodeURIComponent(getAuthToken() ?? "")}`;
+}
+
+function RecordingCard({ item, isOpen, onToggle }: { item: TimelineItem; isOpen: boolean; onToggle: () => void }) {
+  const url = item.recording_url || (item.extra && /^(https?:|\/)/.test(item.extra) ? item.extra : null);
+  const transcript = (item.transcript || item.body || "").trim();
+  return (
+    <div data-testid="timeline-recording">
+      {item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{item.title}</div>}
+      {url ? (
+        <audio controls preload="none" src={recordingSrc(url)} style={{ width: "100%", marginTop: 8, height: 36 }} />
+      ) : (
+        <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginTop: 6 }}>No recording.</div>
+      )}
+      {transcript && (
+        <button type="button" onClick={onToggle} style={{ marginTop: 6, background: "transparent", border: "none", color: "var(--ui-accent-blue)", fontSize: 13, cursor: "pointer", padding: 0 }}>
+          {isOpen ? "Hide transcript" : "Show transcript"}
+        </button>
+      )}
+      {isOpen && transcript && <div style={{ marginTop: 6, fontSize: 13, color: "var(--ui-text)", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{transcript}</div>}
+    </div>
+  );
+}
+
 function Tab({ id, label, current, onClick }: { id: FilterTab; label: string; current: FilterTab; onClick: (v: FilterTab) => void }) {
   const active = current === id;
   return (
@@ -277,6 +321,8 @@ function kindBadge(kind: Kind): CSSProperties {
     call_logged: { bg: "#e3f2fd", fg: "#0d47a1" },
     email_activity: { bg: "#e8f5e9", fg: "#1b5e20" },
     system: { bg: "#f3f4f6", fg: "#374151" },
+    recording: { bg: "#e3f2fd", fg: "#0d47a1" },
+    automation: { bg: "#e0f2f1", fg: "#004d40" },
   };
   const c = palette[kind];
   return {

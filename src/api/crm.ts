@@ -188,12 +188,19 @@ export type TimelineItem = {
   // 'system'; this union omitted them, which is part of why they never rendered.
   // BF_PORTAL_TIMELINE_EVERY_CHANNEL_v359 - BF-Server v358 kinds.
   kind: "note" | "task" | "call" | "email" | "meeting" | "voicemail" | "sms" | "system"
-    | "message" | "call_logged" | "email_activity";
+    | "message" | "call_logged" | "email_activity"
+    // BF_PORTAL_v786_CRM_FIXES - BF-Server v786 kinds.
+    | "recording" | "automation";
   id: string;
   ts: string;
   title: string | null;
   body: string | null;
   extra: string | null;
+  // recording: audio + transcript; automation: workflow name + step label.
+  recording_url?: string | null;
+  transcript?: string | null;
+  workflow_name?: string | null;
+  step?: string | null;
 };
 
 export type SharedMailbox = { address: string; display_name: string };

@@ -24,7 +24,9 @@ export function describeMeetingDelivery(d: MeetingDelivery | null | undefined): 
 
 // BF_PORTAL_MEETING_PARTICIPANTS_v737 - people are added by name search (up to 10 including
 // you); they are emailed the invite. From a CRM contact the contact is already filled in.
-export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "", hideList = false }: { initialPeople?: Person[]; defaultTitle?: string; hideList?: boolean }) {
+export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "", hideList = false, contactId }: { initialPeople?: Person[]; defaultTitle?: string; hideList?: boolean; contactId?: string | null }) {
+  // BF_PORTAL_v786_CRM_FIXES - the meeting is linked to its contact (explicit, or the first contact in the room).
+  const linkedContactId = contactId ?? initialPeople.find((p) => p.contactId)?.contactId ?? null;
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [people, setPeople] = useState<Person[]>(initialPeople);
   const [title, setTitle] = useState(defaultTitle);
@@ -43,7 +45,7 @@ export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "
     if (!title.trim() || !when) { setMsg("Add a title and a start time."); return; }
     setBusy(true); setMsg(null);
     try {
-      const r = await api.post<{ meeting: Meeting; invited?: number; refused?: number; delivery?: MeetingDelivery; duplicate?: boolean }>("/api/meetings", { title: title.trim(), startsAt: new Date(when).toISOString(), durationMin: minutes, participants: people.map(({ contactId, userId, name, email, phone }) => ({ contactId, userId, name, email, phone })) });
+      const r = await api.post<{ meeting: Meeting; invited?: number; refused?: number; delivery?: MeetingDelivery; duplicate?: boolean }>("/api/meetings", { title: title.trim(), startsAt: new Date(when).toISOString(), durationMin: minutes, participants: people.map(({ contactId, userId, name, email, phone }) => ({ contactId, userId, name, email, phone })), ...(linkedContactId ? { contactId: linkedContactId } : {}) });
       setTitle(""); setWhen(""); setPeople([]);
       // BF_PORTAL_NO_DUPLICATE_ROOMS_v751 - pressing Create again (e.g. after a slow "Could not create" answer) returns
       // the room already made; say so instead of announcing a new meeting.

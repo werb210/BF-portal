@@ -1,0 +1,36 @@
+/* BF_PORTAL_v786_WORKFLOW_BUILDER - builder colours. Every text colour here passes WCAG AA
+   (4.5:1) on its background in both themes. */
+:root {
+  --wf-canvas: #eef2f7;
+  --wf-danger: #b91c1c;
+  --wf-link: #0b6170;
+  --wf-highlight: #f59e0b;
+  --wf-edge: #94a3b8;
+  --wf-badge-bg: #e0f2f1;
+  --wf-badge-fg: #004d40;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wf-canvas: #0f1217;
+    --wf-danger: #fca5a5;
+    --wf-link: #5eead4;
+    --wf-highlight: #fbbf24;
+    --wf-edge: #64748b;
+    --wf-badge-bg: #134e4a;
+    --wf-badge-fg: #ccfbf1;
+  }
+}
+:root[data-theme="dark"] {
+  --wf-canvas: #0f1217;
+  --wf-danger: #fca5a5;
+  --wf-link: #5eead4;
+  --wf-highlight: #fbbf24;
+  --wf-edge: #64748b;
+  --wf-badge-bg: #134e4a;
+  --wf-badge-fg: #ccfbf1;
+}
+.wf-canvas .react-flow__node { cursor: default; }
+.wf-canvas .react-flow__handle { opacity: 0; pointer-events: none; }
+.wf-canvas .react-flow__controls button { background: var(--ui-surface-strong); color: var(--ui-text); border-color: var(--ui-border); fill: var(--ui-text); }
+.wf-canvas .react-flow__minimap { background: var(--ui-surface-strong); }
+.wf-card-flash { outline: 3px solid var(--wf-highlight); outline-offset: 2px; }
