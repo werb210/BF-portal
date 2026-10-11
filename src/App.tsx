@@ -1,4 +1,4 @@
-const BiLendersPage = lazy(() => import("@/pages/BiLendersPage"));
+const BiLendersPage = lazyWithRetry(() => import("@/pages/BiLendersPage"));
 // BF_PORTAL_SHORTCUTS_MOUNT_v1 - v640 targeted AppLayout and its anchors
 // did not match, so the hook shipped and nothing ever called it. Mount it
 // here, inside the Router, which is where navigate() is available.
@@ -9,7 +9,8 @@ import SavedCopyNotice from "@/offline/SavedCopyNotice"; // BF_PORTAL_OFFLINE_RE
 import OfflineBanner from "@/offline/OfflineBanner"; // BF_PORTAL_OFFLINE_OUTBOX_v251
 import ShortcutHelp from "@/components/ShortcutHelp";
 // BF_PORTAL_BLOCK_v90_REVERT_LENDER_SPA_v1
-import React, { Suspense, lazy, useCallback, useEffect, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useState } from "react";
+import { lazyWithRetry } from "@/lib/lazyWithRetry"; // BF_PORTAL_LAZY_RETRY_v784
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { roleIn } from "@/auth/roles";
@@ -23,31 +24,31 @@ import ProtectedRoute from "@/routes/ProtectedRoute";
 import RequireRole from "@/components/auth/RequireRole";
 import Login from "@/pages/Login";
 import Verify from "@/pages/Verify";
-const DashboardHome = lazy(() => import("@/pages/dashboard/DashboardHome")); // BF_PORTAL_DASHBOARD_BOARD_v730 (replaces DashboardPage on /portal)
-const LendersPage = lazy(() => import("@/pages/lenders/LendersPage"));
+const DashboardHome = lazyWithRetry(() => import("@/pages/dashboard/DashboardHome")); // BF_PORTAL_DASHBOARD_BOARD_v730 (replaces DashboardPage on /portal)
+const LendersPage = lazyWithRetry(() => import("@/pages/lenders/LendersPage"));
 // BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE
-const PipelineRouter = lazy(() => import("@/pages/pipeline/PipelineRouter"));
-const MayaPage = lazy(() => import("@/pages/MayaPage"));
-const ApplyPage = lazy(() => import("@/pages/ApplyPage"));
-const CRMPage = lazy(() => import("@/pages/crm/CRMPage"));
-const CalendarPage = lazy(() => import("@/pages/calendar/CalendarPage"));
-const CommunicationsPage = lazy(() => import("@/pages/communications/CommunicationsPage"));
-const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
+const PipelineRouter = lazyWithRetry(() => import("@/pages/pipeline/PipelineRouter"));
+const MayaPage = lazyWithRetry(() => import("@/pages/MayaPage"));
+const ApplyPage = lazyWithRetry(() => import("@/pages/ApplyPage"));
+const CRMPage = lazyWithRetry(() => import("@/pages/crm/CRMPage"));
+const CalendarPage = lazyWithRetry(() => import("@/pages/calendar/CalendarPage"));
+const CommunicationsPage = lazyWithRetry(() => import("@/pages/communications/CommunicationsPage"));
+const SettingsPage = lazyWithRetry(() => import("@/pages/settings/SettingsPage"));
 // BF_PORTAL_AUDIT_EVENTS_v1
-const AuditEvents = lazy(() => import("@/pages/AuditEvents"));
-const MarketingPage = lazy(() => import("@/pages/marketing/MarketingPage"));
-const TasksPage = lazy(() => import("@/pages/tasks/TasksPage")); // BF_PORTAL_TASKS_V1
-const BIDashboardPage = lazy(() => import("@/pages/bi/BIDashboardPage"));
-const BICommissionDashboard = lazy(() => import("@/pages/bi/BICommissionDashboard"));
-const BIReferrersPage = lazy(() => import("@/pages/bi/BIReferrersPage"));
+const AuditEvents = lazyWithRetry(() => import("@/pages/AuditEvents"));
+const MarketingPage = lazyWithRetry(() => import("@/pages/marketing/MarketingPage"));
+const TasksPage = lazyWithRetry(() => import("@/pages/tasks/TasksPage")); // BF_PORTAL_TASKS_V1
+const BIDashboardPage = lazyWithRetry(() => import("@/pages/bi/BIDashboardPage"));
+const BICommissionDashboard = lazyWithRetry(() => import("@/pages/bi/BICommissionDashboard"));
+const BIReferrersPage = lazyWithRetry(() => import("@/pages/bi/BIReferrersPage"));
 // BF_PORTAL_BLOCK_v213_CANONICAL_BI_PIPELINE_REDIRECT_v1 — import removed;
 // /bi/pipeline now redirects and PipelineRouter no longer renders it.
 // The orphan component is still exported in case test files reference it.
-const Leads = lazy(() => import("@/pages/Leads"));
-const IssueInboxPage = lazy(() => import("@/pages/IssueInboxPage"));
-const ReportsBoard = lazy(() => import("@/pages/reports/ReportsBoard")); // BF_PORTAL_REPORTS_SECTION_v714 (replaces the hidden ReportsPage)
+const Leads = lazyWithRetry(() => import("@/pages/Leads"));
+const IssueInboxPage = lazyWithRetry(() => import("@/pages/IssueInboxPage"));
+const ReportsBoard = lazyWithRetry(() => import("@/pages/reports/ReportsBoard")); // BF_PORTAL_REPORTS_SECTION_v714 (replaces the hidden ReportsPage)
 import DesktopBridge from "@/desktop/DesktopBridge"; // BF_PORTAL_DESKTOP_ALERTS_v724
-const AutomationsPage = lazy(() => import("@/pages/admin/AutomationsPage")); // BF_PORTAL_AUTOMATIONS_UI_v1
+const AutomationsPage = lazyWithRetry(() => import("@/pages/admin/AutomationsPage")); // BF_PORTAL_AUTOMATIONS_UI_v1
 // BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1
 // Five removed admin pages all call /api/admin/* endpoints that do not exist
 // on BF-Server (verified: /api/admin/ai-documents, /api/admin/issue-reports,
@@ -58,26 +59,26 @@ const AutomationsPage = lazy(() => import("@/pages/admin/AutomationsPage")); // 
 // by URL. Removing the imports + Route definitions eliminates the broken
 // surface. The page component files stay in src/pages/admin/ as orphans;
 // can be deleted in a follow-up cleanup pass.
-const GlobalAdmin = lazy(() => import("@/pages/GlobalAdmin"));
-const LeadsPage = lazy(() => import("@/pages/admin/LeadsPage"));
+const GlobalAdmin = lazyWithRetry(() => import("@/pages/GlobalAdmin"));
+const LeadsPage = lazyWithRetry(() => import("@/pages/admin/LeadsPage"));
 // BF_PORTAL_ADMIN_NAV_ROUTES_v1 - wire previously-dead admin nav pages
-const IssueReportsPage = lazy(() => import("@/pages/admin/IssueReportsPage"));
-const WebsiteLeadsPage = lazy(() => import("@/pages/admin/WebsiteLeadsPage"));
-const AIKnowledgeBasePage = lazy(() => import("@/pages/admin/AIKnowledgeBasePage"));
-const LiveChatQueuePage = lazy(() => import("@/pages/admin/LiveChatQueuePage"));
-const ConversionDashboardPage = lazy(() => import("@/pages/admin/ConversionDashboardPage"));
-const Operations = lazy(() => import("@/pages/admin/Operations"));
-const MayaIntelligence = lazy(() => import("@/pages/admin/MayaIntelligence"));
-const AiLiveChatPage = lazy(() => import("@/pages/ai/AiLiveChatPage"));
-const CreditReadiness = lazy(() => import("@/pages/CreditReadiness"));
-const ReferrerPortalLayout = lazy(() => import("@/pages/referrer/ReferrerPortalLayout"));
-const ReferrerLoginPage = lazy(() => import("@/pages/referrer/ReferrerLoginPage"));
-const ReferrerSignupPage = lazy(() => import("@/pages/referrer/ReferrerSignupPage")); // REFERRER_SIGNUP_UI_v1
-const BrokerPortalRoutes = lazy(() => import("@/pages/broker/BrokerPortal")); // BF_PORTAL_BROKER_PORTAL_v717
+const IssueReportsPage = lazyWithRetry(() => import("@/pages/admin/IssueReportsPage"));
+const WebsiteLeadsPage = lazyWithRetry(() => import("@/pages/admin/WebsiteLeadsPage"));
+const AIKnowledgeBasePage = lazyWithRetry(() => import("@/pages/admin/AIKnowledgeBasePage"));
+const LiveChatQueuePage = lazyWithRetry(() => import("@/pages/admin/LiveChatQueuePage"));
+const ConversionDashboardPage = lazyWithRetry(() => import("@/pages/admin/ConversionDashboardPage"));
+const Operations = lazyWithRetry(() => import("@/pages/admin/Operations"));
+const MayaIntelligence = lazyWithRetry(() => import("@/pages/admin/MayaIntelligence"));
+const AiLiveChatPage = lazyWithRetry(() => import("@/pages/ai/AiLiveChatPage"));
+const CreditReadiness = lazyWithRetry(() => import("@/pages/CreditReadiness"));
+const ReferrerPortalLayout = lazyWithRetry(() => import("@/pages/referrer/ReferrerPortalLayout"));
+const ReferrerLoginPage = lazyWithRetry(() => import("@/pages/referrer/ReferrerLoginPage"));
+const ReferrerSignupPage = lazyWithRetry(() => import("@/pages/referrer/ReferrerSignupPage")); // REFERRER_SIGNUP_UI_v1
+const BrokerPortalRoutes = lazyWithRetry(() => import("@/pages/broker/BrokerPortal")); // BF_PORTAL_BROKER_PORTAL_v717
 // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
-const BISilo = lazy(() => import("@/silos/bi/BISilo"));
-const LenderPortalPage = lazy(() => import("@/pages/lender/LenderPortalPage"));
-const LenderLoginPage = lazy(() => import("@/pages/lender/LenderLoginPage"));
+const BISilo = lazyWithRetry(() => import("@/silos/bi/BISilo"));
+const LenderPortalPage = lazyWithRetry(() => import("@/pages/lender/LenderPortalPage"));
+const LenderLoginPage = lazyWithRetry(() => import("@/pages/lender/LenderLoginPage"));
 import { useAuth } from "@/auth/AuthContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
@@ -136,7 +137,7 @@ function AuthenticatedShell() {
   return <AppShell />;
 }
 
-const FloatingChat = lazy(() => import("./components/FloatingChat"));
+const FloatingChat = lazyWithRetry(() => import("./components/FloatingChat"));
 
 const AppRoutes = () => {
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);

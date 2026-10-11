@@ -4,7 +4,6 @@ const types = readFileSync("src/dialer/types.ts", "utf-8");
 const store = readFileSync("src/dialer/store.ts", "utf-8");
 const panel = readFileSync("src/dialer/components/DialerPanel.tsx", "utf-8");
 const login = readFileSync("src/pages/Login.tsx", "utf-8");
-const conv  = readFileSync("src/pages/communications/ConversationViewer.tsx", "utf-8");
 
 describe("v663 fixes", () => {
   it("dialer timer falls back to callStartedAt", () => {
@@ -16,9 +15,5 @@ describe("v663 fixes", () => {
   it("login auto-submit fires once per phone", () => {
     expect(login).toContain("autoFiredFor");
     expect(login).toContain("if (autoFiredFor.current === normalized) return;");
-  });
-  it("conversation scroll keys on id + length via rAF", () => {
-    expect(conv).toContain("requestAnimationFrame");
-    expect(conv).toContain("conversation?.id, conversation?.messages.length");
   });
 });

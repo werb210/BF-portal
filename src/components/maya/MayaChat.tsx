@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { MayaMessage } from "./mayaMarkdown";
 import { sendMayaMessage } from "@/api/maya";
+import MayaPendingActions from "./MayaPendingActions"; // BF_PORTAL_MAYA_PENDING_ACTIONS_v784
 
 type Msg = { role: "user" | "maya"; text: string; ts: number };
 
@@ -10,6 +11,7 @@ export default function MayaChat() {
   const [msgs, setMsgs] = useState<Msg[]>([{ role: "maya", text: GREETING, ts: Date.now() }]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [pendingKey, setPendingKey] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export default function MayaChat() {
       ]);
     } finally {
       setSending(false);
+      setPendingKey((k) => k + 1);
     }
   }
 
@@ -69,6 +72,9 @@ export default function MayaChat() {
       </div>
 
       <div style={composerStyle}>
+        <div style={{ marginBottom: 8 }}>
+          <MayaPendingActions refreshKey={pendingKey} />
+        </div>
 
         <div style={{ display: "flex", gap: 8 }}>
           <input
@@ -105,7 +111,7 @@ const listStyle: CSSProperties = {
 const bubbleStyle = (role: "user" | "maya"): CSSProperties => ({
   alignSelf: role === "user" ? "flex-end" : "flex-start",
   background: role === "user" ? "var(--accent-neutral)" : "var(--ui-surface-muted)", /* RESKIN3::MAYA1 */
-  color: role === "user" ? "#fff" : "#000",
+  color: role === "user" ? "#fff" : "var(--ui-text)", /* BF_PORTAL_MAYA_DARK_v784 - was #000 on the dark surface */
   padding: "8px 12px", borderRadius: 12, maxWidth: "85%", whiteSpace: "pre-wrap", lineHeight: 1.4,
 });
 const composerStyle: CSSProperties = { padding: 12, borderTop: "1px solid var(--ui-border)" };

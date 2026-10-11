@@ -264,12 +264,13 @@ export default function LeadsPage() {
               </ul>
 
               {selectedLead.source === "credit_readiness_bridge" && (
-                <div className="mt-6 border-t border-slate-700 pt-4">
-                  <h3 className="text-sm font-semibold mb-3 text-slate-300">
+                <div className="mt-6 border-t border-slate-200 pt-4">
+                  {/* BF_PORTAL_LEADS_CONTRAST_v784 - slate-300/400 on white failed contrast */}
+                  <h3 className="text-sm font-semibold mb-3 text-slate-900">
                     Credit Readiness Snapshot
                   </h3>
 
-                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-400">
+                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-800">
                     <div>Industry</div><div>{selectedLead.industry ?? "-"}</div>
                     <div>Years in Business</div><div>{selectedLead.metadata?.yearsInBusiness ?? "-"}</div>
                     <div>Annual Revenue</div><div>{selectedLead.metadata?.annualRevenue ?? "-"}</div>
@@ -283,8 +284,8 @@ export default function LeadsPage() {
               {selectedLead.linkedApplicationId && (
                 <div className="mt-4">
                   <a
-                    href={`/pipeline/${selectedLead.linkedApplicationId}`}
-                    className="text-blue-400 hover:underline text-sm"
+                    href={`/applications/${selectedLead.linkedApplicationId}`}
+                    className="text-blue-700 underline text-sm"
                   >
                     View Application
                   </a>

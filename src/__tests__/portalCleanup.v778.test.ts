@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 const app = readFileSync("src/App.tsx", "utf8");
 describe("portal clean-up", () => {
   it("pages load on demand behind one Suspense; login screens stay immediate", () => {
-    expect((app.match(/= lazy\(\(\) => import\("@\//g) ?? []).length).toBeGreaterThan(30);
+    expect((app.match(/= lazyWithRetry\(\(\) => import\("@\//g) ?? []).length).toBeGreaterThan(30);
     expect(app).toContain('import Login from "@/pages/Login";');
     expect(app).toContain('import Verify from "@/pages/Verify";');
     expect(app).toContain('data-testid="route-loading"');

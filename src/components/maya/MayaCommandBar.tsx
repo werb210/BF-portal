@@ -3,6 +3,7 @@
 // current screen context and executes Maya's navigate / dial actions.
 import { safeInternalPath } from "@/lib/safeInternalPath";
 import { MayaMessage } from "./mayaMarkdown";
+import MayaPendingActions from "./MayaPendingActions"; // BF_PORTAL_MAYA_PENDING_ACTIONS_v784
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { sendMayaMessage, type MayaAction } from "@/api/maya";
@@ -61,6 +62,7 @@ export default function MayaCommandBar() {
   const recogRef = useRef<SpeechRecognitionLike | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(false);
+  const [pendingKey, setPendingKey] = useState(0);
 
   // MAYA_VOICE_OUTPUT_v1 — speak Maya's reply via BF-Server /api/settings/maya-tts
   // (nova by default). Best-effort: any failure is silent and never blocks the
@@ -110,7 +112,7 @@ export default function MayaCommandBar() {
       }
       setText("");
     } catch { setReply("Sorry — I couldn't reach Maya just now."); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setPendingKey((k) => k + 1); }
   }, [busy, navigate, speak]);
 
   const startDictation = useCallback(() => {
@@ -210,6 +212,7 @@ export default function MayaCommandBar() {
           <MayaMessage message={reply} />
         </div>
       )}
+      <MayaPendingActions refreshKey={pendingKey} />
     </div>
   );
 }

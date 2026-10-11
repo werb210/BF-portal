@@ -32,10 +32,10 @@ describe("audit events page", () => {
   it("passes the principal filter to the server", async () => {
     get.mockResolvedValue([]);
     render(<AuditEvents />);
-    await waitFor(() => expect(get).toHaveBeenCalledWith("/admin/audit/events"));
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/api/admin/audit/events"));
     fireEvent.click(screen.getByTestId("audit-filter-service"));
     await waitFor(() =>
-      expect(get).toHaveBeenCalledWith("/admin/audit/events?principal=service"));
+      expect(get).toHaveBeenCalledWith("/api/admin/audit/events?principal=service"));
   });
 
   it("explains a failed load instead of spinning forever", async () => {

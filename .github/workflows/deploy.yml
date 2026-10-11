@@ -26,11 +26,6 @@ jobs:
           echo "VITE_MSAL_REDIRECT_URI=${{ secrets.VITE_MSAL_REDIRECT_URI }}" >> .env
           echo "VITE_MSAL_SCOPES=${{ secrets.VITE_MSAL_SCOPES }}" >> .env
 
-      # 🔍 Debug (proves fix)
-      - name: Debug env
-        run: |
-          cat .env
-
       # ❌ REMOVE ALL previous "verify env" steps — they are wrong
 
       - name: Build and Deploy

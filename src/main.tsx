@@ -15,6 +15,7 @@ import { api } from "@/api";
 import { getActiveSilo } from "@/config/api";
 import { API_BASE } from "@/config/api";
 import { registerPortalSW } from "./pwa/registerSW";
+import { reloadOnceForChunkError } from "@/lib/lazyWithRetry";
 
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import App from "./App";
@@ -41,6 +42,14 @@ window.addEventListener("unhandledrejection", (e) => {
 window.addEventListener("error", (e) => {
   console.error("❌ RUNTIME ERROR:", e.error);
   reportError("runtime", e.error, { filename: e.filename, line: e.lineno });
+});
+
+// BF_PORTAL_LAZY_RETRY_v784 - Vite fires this when a preload of a hashed
+// chunk fails (usually a stale tab after a deploy). Reload once, guarded by
+// the same sessionStorage timestamp as lazyWithRetry; if we already reloaded
+// recently, let the error propagate to the ErrorBoundary.
+window.addEventListener("vite:preloadError", (event) => {
+  if (reloadOnceForChunkError()) event.preventDefault();
 });
 
 console.log("🔥 PORTAL BOOT");

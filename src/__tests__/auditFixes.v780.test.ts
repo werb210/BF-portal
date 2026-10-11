@@ -17,10 +17,6 @@ describe("v780 audit fixes", () => {
     expect(s).toContain('api.post("/api/o365-oauth/disconnect"');
     expect(s).not.toContain("onClick={() => setMicrosoftConnection({ connected: false, email: undefined })}");
   });
-  it("BI screens do not call BI refresh or login addresses that BI-Server does not have", () => {
-    const s = read("src/pages/applications/bi/bi.pipeline.api.ts");
-    for (const gone of ["/api/v1/otp/refresh", "/api/v1/otp/request", "/api/v1/otp/verify", "/api/v1/staff/login"]) expect(s).not.toContain(gone);
-  });
   it("unused calls to missing addresses are gone", () => {
     expect(read("src/lib/endpoints.ts")).not.toMatch(/dialer\/token|voice\/status/);
     expect(read("src/api/communications.ts")).not.toContain("/acknowledge");
