@@ -5,6 +5,9 @@ import { crmApi, type Scope } from "@/api/crm";
 import DateTimePicker from "@/components/ui/DateTimePicker";
 import { api } from "@/api"; // BF_PORTAL_MEETING_CONFERENCE_v745
 import { describeMeetingDelivery, type MeetingDelivery } from "@/pages/calendar/MeetingRoomsPanel";
+// BF_PORTAL_v786_CRM_FIXES - attendees are picked by name or email instead of typed blind.
+import PeoplePicker, { type Person } from "@/components/meetings/PeoplePicker";
+import { RecipientAutocomplete } from "@/components/communications/RecipientAutocomplete";
 
 // BF_PORTAL_BLOCK_v336_MEETING_TYPE_v1
 // BF_PORTAL_MEETING_CONFERENCE_v745 - "conference" books a Boreal conference room (dial-in code) from the same form.
@@ -32,23 +35,29 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
   const [meetingType, setMeetingType] = useState<MeetingType>("teams");
   const [phone, setPhone] = useState(defaultPhone ?? "");
   const [roomResult, setRoomResult] = useState<{ ok: boolean; text: string } | null>(null); // BF_PORTAL_MEETING_CONFERENCE_v745
+  const contactId = scope.kind === "contact" ? scope.id : undefined;
+  // BF_PORTAL_v786_CRM_FIXES - conference attendees, pre-filled with the contact.
+  const [people, setPeople] = useState<Person[]>(() => defaultEmail || defaultName
+    ? [{ contactId: contactId ?? null, name: defaultName || defaultEmail || "", email: defaultEmail ?? null, phone: defaultPhone ?? null, kind: "contact" }]
+    : []);
 
   // BF_PORTAL_MEETING_CONFERENCE_v745 - create the room through /api/meetings (the same call the Calendar's
   // Conference rooms panel makes): Outlook event, emailed and texted invites, a 6-digit access code.
   async function saveConference(): Promise<void> {
-    const emails = attendees.split(",").map((a) => a.trim()).filter(Boolean);
     const contactEmail = (defaultEmail ?? "").trim().toLowerCase();
-    const participants = emails.map((email) => {
-      const isContact = !!contactEmail && email.toLowerCase() === contactEmail;
+    const participants = people.map((p) => {
+      const isContact = (!!contactId && p.contactId === contactId) || (!!contactEmail && (p.email ?? "").toLowerCase() === contactEmail);
       return {
-        contactId: isContact && scope.kind === "contact" ? scope.id : undefined,
-        name: isContact && defaultName ? defaultName : email,
-        email,
-        phone: isContact ? (phone.trim() || null) : null,
+        contactId: isContact ? contactId : (p.contactId ?? undefined),
+        userId: p.userId ?? undefined,
+        name: p.name || p.email || "",
+        email: p.email ?? null,
+        phone: isContact ? (phone.trim() || p.phone || null) : (p.phone ?? null),
       };
     });
     const r = await api.post<{ meeting: { code: string }; refused?: number; delivery?: MeetingDelivery }>("/api/meetings", {
       title, startsAt: new Date(start).toISOString(), durationMin: roomMinutes(start, end), participants,
+      ...(contactId ? { contactId } : {}),
     });
     const told = describeMeetingDelivery(r.delivery);
     setRoomResult({ ok: told.ok, text: "Conference room booked. Access code " + r.meeting.code + ". Callers dial (866) 631-8939, press 3 and enter the code. " + told.text + (r.refused ? " " + r.refused + " not added - a room holds 10 people." : "") });
@@ -115,12 +124,19 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
           <DateTimePicker value={end} onChange={setEnd} />
         </label>
       </div>
-      <input
-        value={attendees}
-        onChange={(e) => setAttendees(e.target.value)}
-        placeholder="Attendees (comma-separated emails)"
-        style={{ ...popupInputStyle, marginBottom: 8 }}
-      />
+      {/* BF_PORTAL_v786_CRM_FIXES - name/email autosuggest for attendees */}
+      {meetingType === "conference" ? (
+        <div style={{ marginBottom: 8 }}><PeoplePicker value={people} onChange={setPeople} /></div>
+      ) : (
+        <div data-testid="meeting-attendees" style={{ marginBottom: 8 }}>
+          <RecipientAutocomplete
+            value={attendees}
+            onChange={setAttendees}
+            placeholder="Attendees - type a name or email"
+            style={popupInputStyle}
+          />
+        </div>
+      )}
       <select value={meetingType} onChange={(e) => setMeetingType(e.target.value as MeetingType)} style={{ ...popupInputStyle, marginBottom: 8 }}>
         <option value="teams">Microsoft Teams meeting (auto link)</option>
         <option value="phone">Phone call (we call the client)</option>

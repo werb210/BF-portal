@@ -49,6 +49,7 @@ const IssueInboxPage = lazyWithRetry(() => import("@/pages/IssueInboxPage"));
 const ReportsBoard = lazyWithRetry(() => import("@/pages/reports/ReportsBoard")); // BF_PORTAL_REPORTS_SECTION_v714 (replaces the hidden ReportsPage)
 import DesktopBridge from "@/desktop/DesktopBridge"; // BF_PORTAL_DESKTOP_ALERTS_v724
 const AutomationsPage = lazyWithRetry(() => import("@/pages/admin/AutomationsPage")); // BF_PORTAL_AUTOMATIONS_UI_v1
+const WorkflowEditor = lazyWithRetry(() => import("@/pages/automations/workflow/WorkflowEditor")); // BF_PORTAL_v786_WORKFLOW_BUILDER
 // BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1
 // Five removed admin pages all call /api/admin/* endpoints that do not exist
 // on BF-Server (verified: /api/admin/ai-documents, /api/admin/issue-reports,
@@ -192,6 +193,8 @@ const AppRoutes = () => {
         <Route path="/lender-portal/deals" element={<Navigate to="/lender-portal" replace />} />
         <Route path="/lender-portal/deals/:id" element={<Navigate to="/lender-portal" replace />} />
         <Route path="/lender-portal/products" element={<Navigate to="/lender-portal" replace />} />
+        {/* BF_PORTAL_v786_WORKFLOW_BUILDER - full-screen workflow editor (no app shell) */}
+        <Route path="/automations/:id" element={token ? <ProtectedRoute><RequireRole roles={["Admin", "Marketing"]}><WorkflowEditor /></RequireRole></ProtectedRoute> : <Navigate to="/login" replace />} />
         <Route element={token ? <AuthenticatedShell /> : <Navigate to="/login" replace />}>
           <Route path="/" element={<Navigate to="/portal" replace />} />
         <Route path="/applications" element={<Navigate to="/pipeline" replace />} />
