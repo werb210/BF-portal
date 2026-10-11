@@ -8,6 +8,8 @@
   --wf-edge: #94a3b8;
   --wf-badge-bg: #e0f2f1;
   --wf-badge-fg: #004d40;
+  --wf-failed-bg: #b91c1c;
+  --wf-failed-fg: #ffffff;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -18,6 +20,8 @@
     --wf-edge: #64748b;
     --wf-badge-bg: #134e4a;
     --wf-badge-fg: #ccfbf1;
+    --wf-failed-bg: #7f1d1d;
+    --wf-failed-fg: #fee2e2;
   }
 }
 :root[data-theme="dark"] {
@@ -28,6 +32,8 @@
   --wf-edge: #64748b;
   --wf-badge-bg: #134e4a;
   --wf-badge-fg: #ccfbf1;
+  --wf-failed-bg: #7f1d1d;
+  --wf-failed-fg: #fee2e2;
 }
 .wf-canvas .react-flow__node { cursor: default; }
 .wf-canvas .react-flow__handle { opacity: 0; pointer-events: none; }

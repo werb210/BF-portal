@@ -1,11 +1,15 @@
 // BF_PORTAL_v786_WORKFLOW_BUILDER - "Create workflow" menu: From scratch, From template
 // (library cards) and With AI (describe it in plain English; the draft opens in the editor, off).
+// BF_PORTAL_v787_BUILDER_FIXES - draft-from-text only drafts ({name, graph, settings, goal}); the
+// portal then creates it off (POST /api/automations) in the topbar silo. A 422 still carries the
+// draft, which is created the same way and opened with its issues.
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PanelShell } from "./SidePanel";
 import type { Silo } from "./types";
 import { btn, input, muted, primary } from "./ui";
-import { errorText, workflowApi, type LibraryItem } from "./workflowApi";
+import { errorCode, errorIssues, errorText, normalizeDraft, workflowApi, type Draft, type LibraryItem } from "./workflowApi";
+import type { Issue } from "./types";
 
 type Mode = null | "menu" | "template" | "ai";
 
@@ -16,7 +20,7 @@ export default function CreateWorkflowMenu({ silo = "BF" }: { silo?: Silo }) {
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const open = (id?: string) => navigate("/automations/" + (id ? encodeURIComponent(id) : "new" + (silo === "BI" ? "?silo=BI" : "")));
+  const open = (id?: string, issues?: Issue[]) => navigate("/automations/" + (id ? encodeURIComponent(id) : "new" + (silo !== "BF" ? "?silo=" + silo : "")), issues?.length ? { state: { issues } } : undefined);
 
   const showTemplates = () => {
     setMode("template"); setError(null);
@@ -31,8 +35,19 @@ export default function CreateWorkflowMenu({ silo = "BF" }: { silo?: Silo }) {
   const draft = async () => {
     if (!prompt.trim()) { setError("Describe what the workflow should do."); return; }
     setBusy(true); setError(null);
-    try { const w = await workflowApi.draftFromText(prompt.trim(), silo); if (w.id) open(w.id); else setError("The draft was created but has no id."); }
-    catch (e) { setError(errorText(e, "Could not draft a workflow from that description.")); }
+    let draft: Draft | null = null;
+    let issues: Issue[] = [];
+    try { draft = await workflowApi.draftFromText(prompt.trim(), silo); }
+    catch (e) {
+      const raw = (e as { details?: { draft?: unknown } })?.details?.draft;
+      if (errorCode(e) === "draft_invalid" && raw && typeof raw === "object") { draft = normalizeDraft(raw); issues = errorIssues(e); }
+      else { setError(errorText(e, "Could not draft a workflow from that description.")); setBusy(false); return; }
+    }
+    try {
+      const w = await workflowApi.createFromDraft(draft, silo);
+      if (w.id) open(w.id, issues);
+      else setError("The draft was created but has no id.");
+    } catch (e) { setError(errorText(e, "Could not save the drafted workflow.", "Only admins and marketing can create workflows.")); }
     finally { setBusy(false); }
   };
 

@@ -39,15 +39,23 @@ type CallRow = {
 // portal/client messages, talk-to-a-human and ad attribution were sent by the server
 // and discarded here.
 type Kind = "note" | "task" | "call" | "email" | "meeting" | "voicemail" | "sms"
-  | "message" | "call_logged" | "email_activity" | "system" | "recording" | "automation";
-// BF_PORTAL_v786_CRM_FIXES - 'recording' (audio + transcript) and 'automation' (workflow step) items.
-type ItemKind = "note" | "task" | "meeting" | "voicemail" | "sms" | "message" | "call_logged" | "email_activity" | "system" | "recording" | "automation";
-const ITEM_KINDS: ReadonlySet<string> = new Set<ItemKind>(["note", "task", "meeting", "voicemail", "sms", "message", "call_logged", "email_activity", "system", "recording", "automation"]);
-const KIND_LABEL: Partial<Record<Kind, string>> = { call_logged: "call (logged)", email_activity: "email", message: "message", system: "system", recording: "recording", automation: "automation" };
+  | "message" | "call_logged" | "email_activity" | "system" | "automation";
+// BF_PORTAL_v786_CRM_FIXES - 'automation' (workflow step) items.
+// BF_PORTAL_v787_BUILDER_FIXES - no 'recording' items: the call card already plays each recording
+// through the media proxy, and the timeline copy (a raw Twilio URL) duplicated it and could not play.
+// The server sends automation steps as kind 'system' titled "Automation: ..."; they render as automation.
+type ItemKind = "note" | "task" | "meeting" | "voicemail" | "sms" | "message" | "call_logged" | "email_activity" | "system" | "automation";
+export const ITEM_KINDS: ReadonlySet<string> = new Set<ItemKind>(["note", "task", "meeting", "voicemail", "sms", "message", "call_logged", "email_activity", "system", "automation"]);
+const KIND_LABEL: Partial<Record<Kind, string>> = { call_logged: "call (logged)", email_activity: "email", message: "message", system: "system", automation: "automation" };
+
+/** An automation step: kind 'automation', or the server's kind 'system' titled "Automation: ...". */
+export function isAutomationItem(t: Pick<TimelineItem, "kind" | "title">): boolean {
+  return t.kind === "automation" || (t.kind === "system" && /^Automation:/i.test((t.title ?? "").trim()));
+}
 // Filter tabs group related kinds.
 const groupOf = (k: Kind): Kind =>
   k === "email_activity" ? "email"
-    : k === "call_logged" || k === "voicemail" || k === "recording" ? "call"
+    : k === "call_logged" || k === "voicemail" ? "call"
     : k === "sms" ? "message"
     : k;
 type FilterTab = "all" | Kind;
@@ -99,7 +107,7 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
       // 'call'/'email' stay excluded here because they are fetched from their own
       // endpoints below; including them would double-render every call and email.
       if (ITEM_KINDS.has(t.kind)) {
-        out.push({ kind: t.kind as ItemKind, id: t.id, ts: tsOf(t.ts), item: t });
+        out.push({ kind: isAutomationItem(t) ? "automation" : t.kind as ItemKind, id: t.id, ts: tsOf(t.ts), item: t });
       }
     }
     for (const e of emails) out.push({ kind: "email", id: e.id, ts: tsOf(e.created_at), email: e });
@@ -136,15 +144,14 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
               <time style={tsStyle}>{entry.ts ? new Date(entry.ts).toLocaleString() : ""}</time>
             </header>
 
-            {entry.kind === "recording" && (
-              <RecordingCard item={entry.item} isOpen={isOpen} onToggle={() => setOpenId(isOpen ? null : key)} />
-            )}
-
             {entry.kind === "automation" && (
-              <div data-testid="timeline-automation" style={{ color: "var(--ui-text)" }}>{automationLine(entry.item)}</div>
+              <div data-testid="timeline-automation" style={{ color: "var(--ui-text)", display: "flex", alignItems: "center", gap: 6 }}>
+                <AutomationIcon />
+                <span>{automationLine(entry.item)}</span>
+              </div>
             )}
 
-            {entry.kind !== "email" && entry.kind !== "call" && entry.kind !== "recording" && entry.kind !== "automation" && (
+            {entry.kind !== "email" && entry.kind !== "call" && entry.kind !== "automation" && (
               <>
                 {entry.item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{entry.item.title}</div>}
                 {entry.item.body && <div style={{ color: "var(--ui-text-muted)", marginTop: 4, whiteSpace: "pre-wrap" }}>{entry.item.body}</div>}
@@ -250,36 +257,19 @@ function CallCard({ call, isOpen, onToggle }: { call: CallRow; isOpen: boolean; 
 
 /** "Automation: <workflow name> - <step>" for an automation timeline item. */
 export function automationLine(item: Pick<TimelineItem, "title" | "body" | "workflow_name" | "step">): string {
+  const title = (item.title || "").trim();
+  if (!item.workflow_name && /^Automation:/i.test(title)) return title;
   const name = (item.workflow_name || item.title || "Workflow").trim();
   const step = (item.step || item.body || "").trim();
   return "Automation: " + name + (step ? " - " + step : "");
 }
 
-function recordingSrc(url: string): string {
-  // Relative server paths go through the API origin with the auth token, like call recordings.
-  if (/^https?:/i.test(url)) return url;
-  const sep = url.includes("?") ? "&" : "?";
-  return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}${sep}token=${encodeURIComponent(getAuthToken() ?? "")}`;
-}
-
-function RecordingCard({ item, isOpen, onToggle }: { item: TimelineItem; isOpen: boolean; onToggle: () => void }) {
-  const url = item.recording_url || (item.extra && /^(https?:|\/)/.test(item.extra) ? item.extra : null);
-  const transcript = (item.transcript || item.body || "").trim();
+/** The workflow (lightning bolt) icon automation items carry. */
+function AutomationIcon() {
   return (
-    <div data-testid="timeline-recording">
-      {item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{item.title}</div>}
-      {url ? (
-        <audio controls preload="none" src={recordingSrc(url)} style={{ width: "100%", marginTop: 8, height: 36 }} />
-      ) : (
-        <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginTop: 6 }}>No recording.</div>
-      )}
-      {transcript && (
-        <button type="button" onClick={onToggle} style={{ marginTop: 6, background: "transparent", border: "none", color: "var(--ui-accent-blue)", fontSize: 13, cursor: "pointer", padding: 0 }}>
-          {isOpen ? "Hide transcript" : "Show transcript"}
-        </button>
-      )}
-      {isOpen && transcript && <div style={{ marginTop: 6, fontSize: 13, color: "var(--ui-text)", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{transcript}</div>}
-    </div>
+    <svg data-testid="automation-icon" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-label="Automation" role="img" style={{ flexShrink: 0 }}>
+      <path d="M13 2 3 14h9l-1 8 10-12h-9Z" />
+    </svg>
   );
 }
 
@@ -321,7 +311,6 @@ function kindBadge(kind: Kind): CSSProperties {
     call_logged: { bg: "#e3f2fd", fg: "#0d47a1" },
     email_activity: { bg: "#e8f5e9", fg: "#1b5e20" },
     system: { bg: "#f3f4f6", fg: "#374151" },
-    recording: { bg: "#e3f2fd", fg: "#0d47a1" },
     automation: { bg: "#e0f2f1", fg: "#004d40" },
   };
   const c = palette[kind];

@@ -96,19 +96,13 @@ describe("MeetingPopup", () => {
 });
 
 describe("UnifiedTimeline", () => {
-  it("renders recordings with audio and an expandable transcript, and automation items", async () => {
+  // BF_PORTAL_v787_BUILDER_FIXES - recording items are no longer rendered (the call card plays them).
+  it("renders automation items", async () => {
     calls.timeline = [
-      { kind: "recording", id: "r1", ts: "2026-10-10T15:00:00Z", title: "Call recording", body: null, extra: null, recording_url: "/api/recordings/r1/media", transcript: "Hello Jane, this is Andrew." },
       { kind: "automation", id: "a1", ts: "2026-10-09T15:00:00Z", title: null, body: null, extra: null, workflow_name: "New lead nurture", step: "Send email: Welcome" },
     ];
     render(<UnifiedTimeline contactId="c1" scope={{ kind: "contact", id: "c1" }} />);
-    const rec = await screen.findByTestId("timeline-recording");
-    const audio = rec.querySelector("audio")!;
-    expect(audio.getAttribute("src")).toContain("/api/recordings/r1/media?token=");
-    expect(screen.queryByText("Hello Jane, this is Andrew.")).toBeNull();
-    fireEvent.click(within(rec).getByRole("button", { name: "Show transcript" }));
-    expect(screen.getByText("Hello Jane, this is Andrew.")).toBeInTheDocument();
-    expect(screen.getByTestId("timeline-automation")).toHaveTextContent("Automation: New lead nurture - Send email: Welcome");
+    expect(await screen.findByTestId("timeline-automation")).toHaveTextContent("Automation: New lead nurture - Send email: Welcome");
   });
 
   it("formats automation lines from title/body when the named fields are missing", () => {

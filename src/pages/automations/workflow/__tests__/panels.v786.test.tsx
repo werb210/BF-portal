@@ -11,9 +11,9 @@ const catalog = normalizeCatalog({
   fields: { score: { label: "Score", type: "number" }, lifecycle_stage: { label: "Lifecycle Stage", type: "select", options: ["lead", "customer"] } },
   operators: ["eq", "gte", "is_set"],
   triggers: [
-    { key: "contact.created", label: "Contact is created", group: "Contact", fields: ["lifecycle_stage"] },
-    { key: "application.stage_changed", label: "Application stage changes", group: "Application", fields: [] },
-    { key: "email.opened", label: "Marketing email opened", group: "Email", fields: [] },
+    { type: "contact.created", label: "Contact is created", group: "Contacts", filterFields: ["lifecycle_stage"] },
+    { type: "application.stage_changed", label: "Application stage changes", group: "Applications", filterFields: [] },
+    { type: "email.opened", label: "Marketing email opened", group: "Engagement", filterFields: [] },
   ],
   templates: { email: [{ id: "t1", name: "Welcome email", subject: "Welcome aboard", body: "<p>Hi {{first_name}}</p><script>alert(1)</script>" }], sms: [{ id: "s1", name: "Missed call", body: "Sorry we missed you" }] },
 });
@@ -89,12 +89,12 @@ describe("BranchEditor", () => {
   });
 
   it("SMS form offers a template or custom text and the message type", () => {
-    let node: WorkflowNode = { kind: "action", action: "send_sms", params: { templateId: "", body: "", purpose: "transactional" }, next: null };
+    let node: WorkflowNode = { kind: "action", action: "send_sms", params: { templateId: "", body: "", kind: "transactional" }, next: null };
     const { rerender } = render(<NodeDetails node={node} onChange={(n) => { node = n; }} ctx={ctx} />);
     fireEvent.change(screen.getByLabelText("Text message"), { target: { value: "Hi {{first_name}}" } });
     rerender(<NodeDetails node={node} onChange={(n) => { node = n; }} ctx={ctx} />);
     fireEvent.change(screen.getByLabelText("Message type"), { target: { value: "marketing" } });
-    expect(node).toMatchObject({ params: { body: "Hi {{first_name}}", purpose: "marketing" } });
+    expect(node).toMatchObject({ params: { body: "Hi {{first_name}}", kind: "marketing" } });
   });
 });
 
@@ -103,9 +103,9 @@ describe("TriggerPanel", () => {
     const onSave = vi.fn();
     render(<TriggerPanel catalog={catalog} triggers={[]} reenroll="never" onSave={onSave} onClose={vi.fn()} />);
     const picker = screen.getByTestId("trigger-picker");
-    expect(within(picker).getByRole("heading", { name: "Contact" })).toBeInTheDocument();
-    expect(within(picker).getByRole("heading", { name: "Application" })).toBeInTheDocument();
-    expect(within(picker).getByRole("heading", { name: "Email" })).toBeInTheDocument();
+    expect(within(picker).getByRole("heading", { name: "Contacts" })).toBeInTheDocument();
+    expect(within(picker).getByRole("heading", { name: "Applications" })).toBeInTheDocument();
+    expect(within(picker).getByRole("heading", { name: "Engagement" })).toBeInTheDocument();
     fireEvent.click(within(picker).getByRole("button", { name: "Contact is created" }));
     fireEvent.click(screen.getByText("+ Add condition"));
     fireEvent.change(screen.getByLabelText("Property"), { target: { value: "lifecycle_stage" } });

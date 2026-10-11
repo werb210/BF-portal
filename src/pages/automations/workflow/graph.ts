@@ -1,8 +1,12 @@
 // BF_PORTAL_v786_WORKFLOW_BUILDER - pure helpers over the workflow graph: read and write the
 // pointer behind a "+", insert / delete / move / clone steps, number the cards, lay the tree
 // out top-down, and describe each step in one line of plain English.
-import { ACTIONS, defOf, newId } from "./actions";
-import type { Catalog, Condition, Graph, ListRef, Slot, Trigger, UserRef, WorkflowNode, WorkflowRef } from "./types";
+// BF_PORTAL_v787_BUILDER_FIXES - nodes carry id === key (insert, copy, clone, paste), weekdays are
+// numbers 0-6 with Sunday = 0, delays use minutes/hours/days only, and workflows saved by the v786
+// builder (internal_email, set_property, purpose, taskType, weeks, "mon"...) are converted to the
+// BF-Server ACTION_TYPES form when they load.
+import { DEFAULT_WEBHOOK_FIELDS, WEBHOOK_FIELDS, defOf, newId } from "./actions";
+import type { Catalog, Condition, Graph, Issue, ListRef, Slot, Trigger, UserRef, WorkflowNode, WorkflowRef } from "./types";
 
 export const START: Slot = { parent: "trigger", port: "start" };
 export const slotKey = (slot: Slot): string => slot.parent + "|" + slot.port;
@@ -96,7 +100,7 @@ export function insertAt(graph: Graph, slot: Slot, id: string, node: WorkflowNod
   const rest = getPointer(graph, slot);
   const port = continuationPort(node);
   if (!port && rest) throw new GraphError("Go to other action can only be the last step on a path.");
-  let placed: Graph = { ...graph, nodes: { ...graph.nodes, [id]: node } };
+  let placed: Graph = { ...graph, nodes: { ...graph.nodes, [id]: { ...node, id } } };
   if (port) placed = setPointer(placed, { parent: id, port }, rest);
   return setPointer(placed, slot, id);
 }
@@ -151,16 +155,34 @@ export function moveNode(graph: Graph, id: string, slot: Slot): Graph {
   return insertAt(rest, slot, id, placed);
 }
 
-/** A fresh copy of one node: new branch ids, every exit empty. */
-export function detachedCopy(node: WorkflowNode): WorkflowNode {
-  const clone = JSON.parse(JSON.stringify(node)) as WorkflowNode;
-  switch (clone.kind) {
-    case "action": return { ...clone, next: null };
-    case "delay": return clone.mode === "until_event" ? { ...clone, next: null, timeoutNext: null } : { ...clone, next: null };
-    case "branch": return { ...clone, noneNext: null, branches: clone.branches.map((b) => ({ ...b, id: newId("b"), next: null })) };
-    case "value_branch": return { ...clone, noneNext: null, cases: clone.cases.map((c) => ({ ...c, id: newId("c"), next: null })) };
-    default: return clone;
+/**
+ * Copies of the nodes `ids` under fresh ids (each copy's id equals its new key). Links between
+ * copied nodes (next, noneNext, timeoutNext, branch and case next, goto target) point at the
+ * copies; links leaving the set are cleared, except a goto target, which is a reference and is kept.
+ */
+export function copyNodes(nodes: Record<string, WorkflowNode>, ids: string[]): { nodes: Record<string, WorkflowNode>; idMap: Record<string, string> } {
+  const idMap: Record<string, string> = {};
+  for (const id of ids) if (nodes[id]) idMap[id] = newId();
+  const link = (target: string | null | undefined) => (target && idMap[target] ? idMap[target]! : null);
+  const out: Record<string, WorkflowNode> = {};
+  for (const [oldId, id] of Object.entries(idMap)) {
+    const clone = JSON.parse(JSON.stringify(nodes[oldId])) as WorkflowNode;
+    let copy: WorkflowNode;
+    switch (clone.kind) {
+      case "action": copy = { ...clone, next: link(clone.next) }; break;
+      case "delay": copy = clone.mode === "until_event" ? { ...clone, next: link(clone.next), timeoutNext: link(clone.timeoutNext) } : { ...clone, next: link(clone.next) }; break;
+      case "branch": copy = { ...clone, noneNext: link(clone.noneNext), branches: clone.branches.map((b) => ({ ...b, id: newId("b"), next: link(b.next) })) }; break;
+      case "value_branch": copy = { ...clone, noneNext: link(clone.noneNext), cases: clone.cases.map((c) => ({ ...c, id: newId("c"), next: link(c.next) })) }; break;
+      default: copy = { ...clone, target: idMap[clone.target] ?? clone.target };
+    }
+    out[id] = { ...copy, id };
   }
+  return { nodes: out, idMap };
+}
+
+/** A fresh copy of one node: a new id, new branch ids, every exit empty. */
+export function detachedCopy(node: WorkflowNode): WorkflowNode {
+  return Object.values(copyNodes({ copy: node }, ["copy"]).nodes)[0]!;
 }
 
 /** Clone a step directly below itself. Returns the graph and the new id. */
@@ -319,7 +341,12 @@ export function describeConditions(conditions: Condition[], logic: "all" | "any"
   return conditions.map((c) => describeCondition(c, catalog)).join(logic === "any" ? " or " : " and ");
 }
 
-const WEEKDAY: Record<string, string> = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" };
+/** Weekday names by server number (0 = Sunday). */
+export const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+/** Display order Mon..Sun as [number, label]. */
+export const WEEKDAYS_DISPLAY: Array<[number, string]> = [1, 2, 3, 4, 5, 6, 0].map((n) => [n, WEEKDAY_NAMES[n]!]);
+export const DELAY_UNITS = ["minutes", "hours", "days"] as const;
+export const STAFF_CHANNEL_LABEL: Record<string, string> = { email: "Email", sms: "Text", in_app: "Notify", team: "Post to Team chat for" };
 
 /** One line describing what a step does, e.g. "Set Lifecycle Stage to Lead". */
 export function summarize(node: WorkflowNode, ctx: SummaryContext = {}): string {
@@ -328,7 +355,7 @@ export function summarize(node: WorkflowNode, ctx: SummaryContext = {}): string 
     const p = node.params;
     if (node.mode === "duration") return Number(p.amount) > 0 ? "Delay " + plural(Number(p.amount), str(p.unit) || "days") : "Delay: set how long";
     if (node.mode === "until_time") {
-      const days = Array.isArray(p.weekdays) ? (p.weekdays as string[]).map((d) => WEEKDAY[d] ?? d) : [];
+      const days = Array.isArray(p.weekdays) ? [...(p.weekdays as number[])].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map((d) => WEEKDAY_NAMES[d] ?? String(d)) : [];
       return "Delay until " + (str(p.time) || "a time") + (days.length ? " on " + days.join(", ") : "");
     }
     const event = catalog?.events.find((e) => e.key === str(p.event))?.label ?? (str(p.event) || "an event");
@@ -354,19 +381,21 @@ export function summarize(node: WorkflowNode, ctx: SummaryContext = {}): string 
       return str(p.body) ? "Send SMS: \"" + clip(str(p.body)) + "\"" : "Send SMS: write the message";
     }
     case "notify_client": return "Notify client: " + (str(p.title) || clip(str(p.body)) || "write the message");
-    case "internal_email": return "Email " + who(p, ctx) + ": " + (str(p.subject) || "add a subject");
-    case "internal_sms": return "Text " + who(p, ctx) + (str(p.body) ? ": \"" + clip(str(p.body)) + "\"" : "");
-    case "in_app_notification": return "Notify " + who(p, ctx) + " in the app";
+    case "notify_staff": {
+      const channel = str(p.channel) || "in_app";
+      if (channel === "team") return "Post staff notice to Team chat" + (str(p.message) ? ": \"" + clip(str(p.message)) + "\"" : "");
+      return (STAFF_CHANNEL_LABEL[channel] ?? "Notify") + " " + who(p, ctx) + (channel === "in_app" ? " in the app" : "") + (str(p.message) ? ": \"" + clip(str(p.message)) + "\"" : "");
+    }
     case "team_post": return "Post to Team chat" + (str(p.channel) ? " #" + str(p.channel) : "");
     case "rotate_owner": {
       const n = Array.isArray(p.userIds) ? p.userIds.length : 0;
-      return n ? "Rotate owner between " + plural(n, "people") : "Rotate owner: choose people";
+      return n ? "Rotate owner between " + plural(n, "people") : "Rotate owner between all active staff";
     }
     case "assign_owner": return "Assign owner: " + (userName(str(p.userId), ctx) || "choose a person");
     case "create_task": return "Create task: " + (str(p.title) || "add a title");
     case "add_note": return str(p.body) ? "Add note: \"" + clip(str(p.body)) + "\"" : "Add note";
-    case "set_property": return str(p.field) ? "Set " + fieldLabel(str(p.field), catalog) + " to " + (str(p.value) ? valueLabel(str(p.field), str(p.value), catalog) : "(empty)") : "Set a contact property";
-    case "set_stage": return "Set application stage to " + (str(p.stage) || "(choose a stage)");
+    case "set_contact_field": return str(p.field) ? "Set " + fieldLabel(str(p.field), catalog) + " to " + (str(p.value) ? valueLabel(str(p.field), str(p.value), catalog) : "(empty)") : "Set a contact property";
+    case "set_application_stage": return "Set application stage to " + (str(p.stage) || "(choose a stage)");
     case "add_tag": return "Add tag \"" + (str(p.tag) || "?") + "\"";
     case "remove_tag": return "Remove tag \"" + (str(p.tag) || "?") + "\"";
     case "add_to_list": return "Add to list: " + (ctx.lists?.find((l) => l.id === str(p.listId))?.name ?? (str(p.listId) || "choose a list"));
@@ -378,7 +407,7 @@ export function summarize(node: WorkflowNode, ctx: SummaryContext = {}): string 
       try { host = url ? new URL(url).host : ""; } catch { /* keep raw */ }
       return "Trigger webhook" + (host ? ": " + host : "");
     }
-    default: return ACTIONS.find((a) => a.key === node.action)?.label ?? node.action;
+    default: return defOf(node)?.label ?? node.action;
   }
 }
 
@@ -387,7 +416,8 @@ function userName(id: string, ctx: SummaryContext): string {
 }
 
 function who(p: Record<string, unknown>, ctx: SummaryContext): string {
-  return str(p.to) === "user" ? userName(str(p.userId), ctx) || "a person" : "the owner";
+  const to = str(p.to);
+  return !to || to === "owner" ? "the owner" : userName(to, ctx) || "a person";
 }
 
 /** What still has to be filled in before the server will run this step. Empty = ready. */
@@ -396,7 +426,7 @@ export function missingParams(node: WorkflowNode, nodes: Record<string, Workflow
   if (node.kind === "delay") {
     const p = node.params;
     if (node.mode === "duration" && !(Number(p.amount) > 0)) out.push("Set how long to wait");
-    if (node.mode === "until_time" && !/^\d{1,2}:\d{2}$/.test(str(p.time))) out.push("Choose a time of day");
+    if (node.mode === "until_time" && !/^\d{2}:\d{2}$/.test(str(p.time))) out.push("Choose a time of day");
     if (node.mode === "until_event") {
       if (!str(p.event)) out.push("Choose the event");
       if (!(Number(p.timeoutAmount) > 0)) out.push("Set how long to wait before timing out");
@@ -425,16 +455,14 @@ export function missingParams(node: WorkflowNode, nodes: Record<string, Workflow
     case "send_email": need("templateId", "Choose an email template"); break;
     case "send_sms": if (!str(p.templateId) && !str(p.body)) out.push("Choose a template or write the message"); break;
     case "notify_client": need("body", "Write the message"); break;
-    case "internal_email": need("subject", "Add a subject"); need("body", "Write the message"); if (str(p.to) === "user") need("userId", "Choose who gets it"); break;
-    case "internal_sms":
-    case "in_app_notification": need("body", "Write the message"); if (str(p.to) === "user") need("userId", "Choose who gets it"); break;
+    case "notify_staff": need("message", "Write the message"); if (str(p.channel) !== "team") need("to", "Choose who gets it"); break;
     case "team_post": need("channel", "Name the channel"); need("body", "Write the message"); break;
-    case "rotate_owner": if (!Array.isArray(p.userIds) || p.userIds.length === 0) out.push("Choose who to rotate between"); break;
+    // rotate_owner with nobody chosen rotates between all active staff (BF-Server graph.ts).
     case "assign_owner": need("userId", "Choose the owner"); break;
-    case "create_task": need("title", "Give the task a title"); if (str(p.assignTo) === "user") need("userId", "Choose who gets the task"); break;
+    case "create_task": need("title", "Give the task a title"); break;
     case "add_note": need("body", "Write the note"); break;
-    case "set_property": need("field", "Choose a property"); break;
-    case "set_stage": need("stage", "Choose a stage"); break;
+    case "set_contact_field": need("field", "Choose a property"); break;
+    case "set_application_stage": need("stage", "Choose a stage"); break;
     case "add_tag":
     case "remove_tag": need("tag", "Choose a tag"); break;
     case "add_to_list":
@@ -449,8 +477,91 @@ export function missingParams(node: WorkflowNode, nodes: Record<string, Workflow
 export function triggerSummary(triggers: Trigger[], catalog?: Catalog | null): string {
   if (triggers.length === 0) return "Choose what starts this workflow";
   return triggers.map((t) => {
-    const label = catalog?.triggers.find((x) => x.key === t.type)?.label ?? t.type;
+    const label = catalog?.triggers.find((x) => x.type === t.type)?.label ?? t.type;
     const filters = t.filters.filter((f) => f.field);
     return label + (filters.length ? " and " + describeConditions(filters, t.filterLogic, catalog) : "");
   }).join("; or ");
+}
+
+/** Trigger problems, keyed like the server: nodeId "trigger:<index>". */
+export function triggerIssues(triggers: Trigger[]): Issue[] {
+  const out: Issue[] = [];
+  triggers.forEach((t, i) => {
+    if (t.type === "date.relative" && !str(t.params?.field)) out.push({ nodeId: "trigger:" + i, message: "Choose the date field" });
+    if (t.type === "no_reply" && !(Number(t.params?.days) >= 1)) out.push({ nodeId: "trigger:" + i, message: "Set how many days without a reply" });
+    if (t.filters.some((f) => !f.field)) out.push({ nodeId: "trigger:" + i, message: "Finish or remove the empty filter" });
+  });
+  return out;
+}
+
+// ---- v786 -> server form ------------------------------------------------------------
+
+const OLD_WEEKDAY: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+type Params = Record<string, unknown>;
+
+function weekdayNumbers(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return [];
+  const out = raw.map((d) => (typeof d === "number" ? d : OLD_WEEKDAY[String(d).slice(0, 3).toLowerCase()] ?? Number(d))).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  return Array.from(new Set(out));
+}
+
+/** "weeks" is not a server unit: convert to days x 7. */
+function unitPair(amount: unknown, unit: unknown): [number, string] {
+  const n = Number(amount);
+  const u = str(unit);
+  if (u === "weeks" || u === "week") return [Number.isFinite(n) ? n * 7 : 7, "days"];
+  return [Number.isFinite(n) ? n : 0, (DELAY_UNITS as readonly string[]).includes(u) ? u : "days"];
+}
+
+const recipient = (p: Params) => (str(p.to) === "user" ? str(p.userId) || "owner" : str(p.to) || "owner");
+const OLD_STAFF_CHANNEL: Record<string, string> = { internal_email: "email", internal_sms: "sms", in_app_notification: "in_app" };
+const WEBHOOK_KEYS = new Set(WEBHOOK_FIELDS.map(([k]) => k));
+
+/** One action's params in the server form (old v786 names and params converted). */
+function serverAction(action: string, p: Params): { action: string; params: Params } {
+  if (OLD_STAFF_CHANNEL[action] || action === "notify_staff") {
+    const message = str(p.message) || [str(p.subject), str(p.body)].filter(Boolean).join("\n");
+    return { action: "notify_staff", params: { channel: OLD_STAFF_CHANNEL[action] ?? (str(p.channel) || "in_app"), to: recipient(p), message } };
+  }
+  if (action === "set_property" || action === "set_contact_field") return { action: "set_contact_field", params: { field: str(p.field), value: p.value ?? "" } };
+  if (action === "set_stage" || action === "set_application_stage") return { action: "set_application_stage", params: { stage: str(p.stage) } };
+  if (action === "send_sms") {
+    const { purpose, ...rest } = p;
+    const kind = str(p.kind) || str(purpose);
+    return { action, params: { ...rest, kind: kind === "marketing" ? "marketing" : "transactional" } };
+  }
+  if (action === "create_task") {
+    const { taskType, dueHours, assignTo, userId, ...rest } = p;
+    const assignee = p.assignee !== undefined ? str(p.assignee) || "owner" : str(assignTo) === "user" && str(userId) ? str(userId) : "owner";
+    const due = Number(p.dueInHours ?? dueHours ?? 24);
+    return { action, params: { ...rest, type: str(p.type ?? taskType).toUpperCase() || "TODO", priority: str(p.priority).toUpperCase() || "MEDIUM", dueInHours: Number.isFinite(due) ? due : 24, assignee } };
+  }
+  if (action === "webhook") {
+    const { fields, ...rest } = p;
+    const include = Array.isArray(p.includeFields)
+      ? (p.includeFields as unknown[]).map(str)
+      : Array.isArray(fields) ? (fields as Array<{ key?: unknown }>).map((f) => str(f?.key)).filter((k) => WEBHOOK_KEYS.has(k)) : [];
+    return { action, params: { ...rest, url: str(p.url), method: "POST", includeFields: include.length || Array.isArray(p.includeFields) ? include : [...DEFAULT_WEBHOOK_FIELDS] } };
+  }
+  return { action, params: p };
+}
+
+/** One node in the server form, with id === key. */
+export function toServerNode(node: WorkflowNode, key: string): WorkflowNode {
+  if (node.kind === "action") return { ...node, ...serverAction(node.action, (node.params ?? {}) as Params), id: key };
+  if (node.kind === "delay") {
+    const p = (node.params ?? {}) as Params;
+    if (node.mode === "duration") { const [amount, unit] = unitPair(p.amount, p.unit); return { ...node, params: { ...p, amount, unit }, id: key }; }
+    if (node.mode === "until_time") return { ...node, params: { ...p, weekdays: weekdayNumbers(p.weekdays) }, id: key };
+    const [timeoutAmount, timeoutUnit] = unitPair(p.timeoutAmount, p.timeoutUnit);
+    return { ...node, params: { ...p, timeoutAmount, timeoutUnit }, id: key };
+  }
+  return { ...node, id: key };
+}
+
+/** The whole graph in the server form: ids match keys, old v786 names and params converted. */
+export function toServerGraph(graph: Graph): Graph {
+  const nodes: Record<string, WorkflowNode> = {};
+  for (const [key, node] of Object.entries(graph.nodes)) if (node && typeof node === "object") nodes[key] = toServerNode(node, key);
+  return { ...graph, nodes };
 }

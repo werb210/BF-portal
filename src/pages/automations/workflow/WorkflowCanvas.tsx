@@ -1,6 +1,8 @@
 // BF_PORTAL_v786_WORKFLOW_BUILDER - the Actions canvas: the graph laid out top-down (trigger
 // card, numbered step cards, a "+" on every connector, branch labels, end markers) on React
 // Flow, with zoom, fit, pan and a minimap. Cards can be dragged onto a "+" to move them.
+// BF_PORTAL_v787_BUILDER_FIXES - Performance badges come from byNode {entered, failed}; trigger
+// issues ("trigger:<i>") mark the trigger card.
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Background, Controls, Handle, MiniMap, Position, ReactFlow, applyNodeChanges, type Edge, type Node, type NodeChange, type NodeProps, type ReactFlowInstance } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -8,6 +10,7 @@ import "./workflow.css";
 import { CATEGORY_COLOR, defOf, type Category } from "./actions";
 import { CARD_H, CARD_W, END_H, END_W, LABEL_H, LABEL_W, PLUS, TRIGGER_H, TRIGGER_W, layoutGraph, missingParams, summarize, triggerSummary, type LayoutItem, type SummaryContext } from "./graph";
 import type { Catalog, Graph, Reenroll, Slot } from "./types";
+import type { NodeStat } from "./workflowApi";
 import { Icon, NAVY, iconBtn, linkBtn, muted } from "./ui";
 
 export type CanvasProps = {
@@ -17,7 +20,9 @@ export type CanvasProps = {
   ctx: Omit<SummaryContext, "numbers" | "nodes" | "catalog">;
   numbers: Record<string, number>;
   issues: Record<string, string[]>;
-  counts?: Record<string, number> | null;
+  counts?: Record<string, NodeStat> | null;
+  /** Problems with the triggers (server "trigger:<i>" issues and local checks). */
+  triggerIssues?: string[];
   highlight?: Set<string> | null;
   flashId?: string | null;
   movingId?: string | null;
@@ -57,7 +62,7 @@ export default function WorkflowCanvas(props: CanvasProps) {
   // Review issues: scroll to the card that needs changes.
   useEffect(() => {
     if (!flashId || !flow.current) return;
-    const item = layout.items.find((i) => i.type === "step" && i.nodeId === flashId);
+    const item = layout.items.find((i) => (flashId === "trigger" ? i.type === "trigger" : i.type === "step" && i.nodeId === flashId));
     if (item) void flow.current.setCenter(item.x, item.y + CARD_H / 2, { zoom: 1, duration: 300 });
   }, [flashId, layout]);
 
@@ -116,15 +121,17 @@ const nodeTypes = { trigger: TriggerNode, step: StepNode, plus: PlusNode, label:
 function TriggerCard({ p }: { p: CanvasProps }) {
   const triggers = p.graph.triggers;
   const reOn = p.reenroll !== "never";
+  const problems = p.triggerIssues ?? [];
+  const bad = triggers.length === 0 || problems.length > 0;
   return (
-    <div data-testid="trigger-card" style={{ width: TRIGGER_W, height: TRIGGER_H, boxSizing: "border-box", background: "var(--ui-surface-strong)", color: "var(--ui-text)", border: "2px solid " + (triggers.length ? "var(--ui-border)" : "var(--wf-danger)"), borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div data-testid="trigger-card" data-has-issues={bad ? "true" : "false"} className={p.flashId === "trigger" ? "wf-card-flash" : undefined} style={{ width: TRIGGER_W, height: TRIGGER_H, boxSizing: "border-box", background: "var(--ui-surface-strong)", color: "var(--ui-text)", border: "2px solid " + (bad ? "var(--wf-danger)" : "var(--ui-border)"), borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <div style={{ height: 4, background: "#f97316" }} />
       <div style={{ padding: "8px 12px", flex: 1, minHeight: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 14 }}><Icon.bolt /> Contact enrolls when...</div>
         <div title={triggerSummary(triggers, p.catalog)} style={{ fontSize: 13, marginTop: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{triggerSummary(triggers, p.catalog)}</div>
       </div>
       <div style={{ display: "flex", alignItems: "center", padding: "6px 12px", borderTop: "1px solid var(--ui-border)" }}>
-        <span style={muted}>Re-enroll {reOn ? "on" : "off"}</span>
+        {problems.length > 0 ? <span data-testid="trigger-changes-needed" title={problems.join("; ")} style={{ fontSize: 12, fontWeight: 600, color: "var(--wf-danger)" }}>Changes needed</span> : <span style={muted}>Re-enroll {reOn ? "on" : "off"}</span>}
         <button type="button" className="nodrag" style={{ ...linkBtn, marginLeft: "auto" }} onClick={p.onTrigger}>Details</button>
       </div>
       <Handle type="source" position={Position.Bottom} style={hidden} isConnectable={false} />
@@ -141,7 +148,7 @@ function StepCard({ p, nodeId }: { p: CanvasProps; nodeId: string }) {
   const number = p.numbers[nodeId];
   const problems = [...missingParams(node, p.graph.nodes), ...(p.issues[nodeId] ?? [])];
   const summary = summarize(node, { ...p.ctx, catalog: p.catalog, numbers: p.numbers, nodes: p.graph.nodes });
-  const count = p.counts ? p.counts[nodeId] ?? 0 : null;
+  const stat = p.counts ? p.counts[nodeId] ?? { entered: 0, failed: 0 } : null;
   const onPath = p.highlight?.has(nodeId);
   const isMoving = p.movingId === nodeId;
   const title = (number ? number + ". " : "") + (def?.title ?? "Step");
@@ -154,7 +161,8 @@ function StepCard({ p, nodeId }: { p: CanvasProps; nodeId: string }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ color: CATEGORY_COLOR[category], display: "inline-flex" }}><CatIcon /></span>
           <strong style={{ fontSize: 14, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</strong>
-          {count !== null && <span data-testid="step-count" title="Contacts that reached this step" style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 10, background: "var(--wf-badge-bg)", color: "var(--wf-badge-fg)" }}>{count}</span>}
+          {stat !== null && <span data-testid="step-count" title="Contacts that entered this step" style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 10, background: "var(--wf-badge-bg)", color: "var(--wf-badge-fg)" }}>{stat.entered}</span>}
+          {stat !== null && stat.failed > 0 && <span data-testid="step-failed" title="Contacts that failed at this step" style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 10, background: "var(--wf-failed-bg)", color: "var(--wf-failed-fg)" }}>{stat.failed} failed</span>}
           {problems.length > 0 && <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: "var(--wf-danger)", display: "inline-block" }} />}
         </div>
         <div title={summary} style={{ fontSize: 13, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary}</div>
