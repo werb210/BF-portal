@@ -1,7 +1,8 @@
 // BF_PORTAL_v786_WORKFLOW_BUILDER - the Details form for every kind of step.
+// BF_PORTAL_v787_BUILDER_FIXES - forms write the BF-Server params (graphActions.ts).
 import DOMPurify from "dompurify";
-import { defOf, newId } from "./actions";
-import { fieldLabel } from "./graph";
+import { TASK_PRIORITIES, TASK_TYPES, WEBHOOK_FIELDS, defOf, newId } from "./actions";
+import { DELAY_UNITS, WEEKDAYS_DISPLAY, fieldLabel } from "./graph";
 import type { Branch, BranchNode, Catalog, DelayNode, ListRef, UserRef, ValueBranchNode, WorkflowNode, WorkflowRef } from "./types";
 import { ConditionRows, Field, Icon, ValueInput, iconBtn, input, linkBtn, muted } from "./ui";
 
@@ -35,17 +36,26 @@ function UserSelect({ users, value, onChange, ariaLabel = "Person" }: { users: U
   );
 }
 
-function Recipient({ params, set, users }: { params: Record<string, unknown>; set: (k: string, v: unknown) => void; users: UserRef[] }) {
+/** "owner" or a staff userId, written straight into one param (notify_staff.to, create_task.assignee). */
+function OwnerOrUser({ value, onChange, users, title, ariaLabel }: { value: string; onChange: (v: string) => void; users: UserRef[]; title: string; ariaLabel: string }) {
+  const v = value || "owner";
   return (
-    <Field title="Send to">
-      <select aria-label="Send to" value={str(params.to) || "owner"} onChange={(e) => set("to", e.target.value)} style={full}>
-        <option value="owner">The contact owner</option>
-        <option value="user">A specific person</option>
+    <Field title={title}>
+      <select aria-label={ariaLabel} value={v} onChange={(e) => onChange(e.target.value)} style={full}>
+        <option value="owner">Contact owner</option>
+        {v !== "owner" && !users.some((u) => u.id === v) && <option value={v}>Staff user {v}</option>}
+        {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
       </select>
-      {str(params.to) === "user" && <div style={{ marginTop: 6 }}><UserSelect users={users} value={str(params.userId)} onChange={(v) => set("userId", v)} /></div>}
     </Field>
   );
 }
+
+/** Fields set_contact_field may set: only the catalog's set_contact_field "field" param options. */
+export function settableFields(catalog: Catalog): string[] {
+  return catalog.actions.find((a) => a.action === "set_contact_field")?.params.find((p) => p.key === "field")?.options ?? [];
+}
+
+const prettyKey = (key: string) => key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 
 export function BranchEditor({ node, onChange, catalog }: { node: BranchNode; onChange: (n: BranchNode) => void; catalog: Catalog }) {
   const setBranch = (i: number, change: Partial<Branch>) => onChange({ ...node, branches: node.branches.map((b, idx) => (idx === i ? { ...b, ...change } : b)) });
@@ -111,8 +121,7 @@ function ValueBranchEditor({ node, onChange, catalog }: { node: ValueBranchNode;
   );
 }
 
-const WEEKDAYS: Array<[string, string]> = [["mon", "Mon"], ["tue", "Tue"], ["wed", "Wed"], ["thu", "Thu"], ["fri", "Fri"], ["sat", "Sat"], ["sun", "Sun"]];
-const UNITS = ["minutes", "hours", "days", "weeks"];
+const UNITS: readonly string[] = DELAY_UNITS;
 
 function DelayEditor({ node, onChange, catalog }: { node: DelayNode; onChange: (n: DelayNode) => void; catalog: Catalog }) {
   const p = node.params;
@@ -128,15 +137,15 @@ function DelayEditor({ node, onChange, catalog }: { node: DelayNode; onChange: (
     );
   }
   if (node.mode === "until_time") {
-    const days = Array.isArray(p.weekdays) ? (p.weekdays as string[]) : [];
+    const days = Array.isArray(p.weekdays) ? (p.weekdays as number[]) : [];
     return (
       <>
         <Field title="Time of day"><input aria-label="Time of day" type="time" value={str(p.time)} onChange={(e) => set("time", e.target.value)} style={input} /></Field>
         <Field title="On these days" hint="Leave all unticked for the next day the time comes round.">
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {WEEKDAYS.map(([key, name]) => (
-              <label key={key} style={{ fontSize: 13, color: "var(--ui-text)" }}>
-                <input type="checkbox" checked={days.includes(key)} onChange={(e) => set("weekdays", e.target.checked ? [...days, key] : days.filter((d) => d !== key))} /> {name}
+            {WEEKDAYS_DISPLAY.map(([day, name]) => (
+              <label key={day} style={{ fontSize: 13, color: "var(--ui-text)" }}>
+                <input type="checkbox" checked={days.includes(day)} onChange={(e) => set("weekdays", e.target.checked ? [...days, day].sort((a, b) => a - b) : days.filter((d) => d !== day))} /> {name}
               </label>
             ))}
           </div>
@@ -149,7 +158,7 @@ function DelayEditor({ node, onChange, catalog }: { node: DelayNode; onChange: (
       <Field title="Wait until this happens">
         <select aria-label="Event" value={str(p.event)} onChange={(e) => set("event", e.target.value)} style={full}>
           <option value="">Choose an event</option>
-          {(catalog.events.length ? catalog.events : catalog.triggers.map((t) => ({ key: t.key, label: t.label }))).map((ev) => <option key={ev.key} value={ev.key}>{ev.label}</option>)}
+          {(catalog.events.length ? catalog.events : catalog.triggers.map((t) => ({ key: t.type, label: t.label }))).map((ev) => <option key={ev.key} value={ev.key}>{ev.label}</option>)}
         </select>
       </Field>
       <Field title="Stop waiting after" hint='Two exits: "Event happened" and "Timed out".'>
@@ -173,10 +182,10 @@ function EmailForm({ params, set, catalog }: { params: Record<string, unknown>; 
         </select>
       </Field>
       {catalog.templates.email.length === 0 && <div style={{ ...muted, marginBottom: 12 }}>No email templates yet. Create one in Marketing first.</div>}
-      {t && (
+      {t?.body && (
         <div data-testid="email-preview" style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: 10, marginBottom: 12, background: "var(--ui-surface-muted)", color: "var(--ui-text)" }}>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>Subject: {t.subject || t.name}</div>
-          {t.body ? <div style={{ fontSize: 13, maxHeight: 220, overflow: "auto" }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t.body) }} /> : <div style={muted}>No preview available.</div>}
+          <div style={{ fontSize: 13, maxHeight: 220, overflow: "auto" }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t.body) }} />
         </div>
       )}
       <TokenHelp catalog={catalog} />
@@ -198,8 +207,8 @@ function SmsForm({ params, set, catalog }: { params: Record<string, unknown>; se
       {custom ? (
         <Field title="Text message"><textarea aria-label="Text message" value={str(params.body)} onChange={(e) => set("body", e.target.value)} style={area} /></Field>
       ) : t?.body ? <div data-testid="sms-preview" style={{ ...muted, marginBottom: 12, whiteSpace: "pre-wrap" }}>{t.body}</div> : null}
-      <Field title="Type">
-        <select aria-label="Message type" value={str(params.purpose) || "transactional"} onChange={(e) => set("purpose", e.target.value)} style={full}>
+      <Field title="Message type">
+        <select aria-label="Message type" value={str(params.kind) || "transactional"} onChange={(e) => set("kind", e.target.value)} style={full}>
           <option value="transactional">Transactional - about their application (always sent)</option>
           <option value="marketing">Marketing - only to people who agreed to marketing texts</option>
         </select>
@@ -239,21 +248,27 @@ export function NodeDetails({ node, onChange, ctx }: { node: WorkflowNode; onCha
     case "send_email": return <EmailForm params={p} set={set} catalog={catalog} />;
     case "send_sms": return <SmsForm params={p} set={set} catalog={catalog} />;
     case "notify_client": return <>{text("title", "Title")}{text("body", "Message", true)}<div style={{ ...muted, marginBottom: 12 }}>Sent in the client app; by text when they have no app.</div><TokenHelp catalog={catalog} /></>;
-    case "internal_email": return <><Recipient params={p} set={set} users={users} />{text("subject", "Subject")}{text("body", "Message", true)}<TokenHelp catalog={catalog} /></>;
-    case "internal_sms":
-    case "in_app_notification": return <><Recipient params={p} set={set} users={users} />{text("body", "Message", true)}<TokenHelp catalog={catalog} /></>;
+    case "notify_staff": return (
+      <>
+        {str(p.channel) === "team"
+          ? <div style={{ ...muted, marginBottom: 12 }}>Posted in the #automations Team channel.</div>
+          : <OwnerOrUser title="To" ariaLabel="To" users={users} value={str(p.to)} onChange={(v) => set("to", v)} />}
+        {text("message", "Message", true)}
+        <TokenHelp catalog={catalog} />
+      </>
+    );
     case "team_post": return <>{text("channel", "Channel (for example leads)")}{text("body", "Message", true)}<TokenHelp catalog={catalog} /></>;
     case "rotate_owner": {
       const ids = Array.isArray(p.userIds) ? (p.userIds as string[]) : [];
       return (
-        <Field title="Rotate between" hint="Each new contact goes to the next person in turn.">
+        <Field title="Rotate between" hint="Each new contact goes to the next person in turn. Tick nobody to rotate between all active staff.">
           <div style={{ display: "grid", gap: 4 }}>
             {users.map((u) => (
               <label key={u.id} style={{ fontSize: 13, color: "var(--ui-text)" }}>
                 <input type="checkbox" checked={ids.includes(u.id)} onChange={(e) => set("userIds", e.target.checked ? [...ids, u.id] : ids.filter((x) => x !== u.id))} /> {u.name}
               </label>
             ))}
-            {users.length === 0 && <span style={muted}>No staff found.</span>}
+            {ids.length === 0 && <span data-testid="rotate-all" style={{ fontSize: 13, fontWeight: 600, color: "var(--ui-text)" }}>All active staff</span>}
           </div>
         </Field>
       );
@@ -264,27 +279,26 @@ export function NodeDetails({ node, onChange, ctx }: { node: WorkflowNode; onCha
         {text("title", "Task title")}
         {text("body", "Notes (optional)", true)}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <Field title="Type"><select aria-label="Task type" value={str(p.taskType) || "TODO"} onChange={(e) => set("taskType", e.target.value)} style={full}>{["TODO", "CALL", "EMAIL", "SMS"].map((v) => <option key={v} value={v}>{v === "TODO" ? "To-do" : v === "SMS" ? "Text" : v.charAt(0) + v.slice(1).toLowerCase()}</option>)}</select></Field>
-          <Field title="Priority"><select aria-label="Priority" value={str(p.priority) || "MEDIUM"} onChange={(e) => set("priority", e.target.value)} style={full}>{["LOW", "MEDIUM", "HIGH"].map((v) => <option key={v} value={v}>{v.charAt(0) + v.slice(1).toLowerCase()}</option>)}</select></Field>
-          <Field title="Due in (hours)"><input aria-label="Due in hours" type="number" min={0} value={Number(p.dueHours ?? 24)} onChange={(e) => set("dueHours", Number(e.target.value))} style={full} /></Field>
-          <Field title="Assign to"><select aria-label="Assign to" value={str(p.assignTo) || "owner"} onChange={(e) => set("assignTo", e.target.value)} style={full}><option value="owner">The contact owner</option><option value="user">A specific person</option></select></Field>
+          <Field title="Type"><select aria-label="Task type" value={str(p.type) || "TODO"} onChange={(e) => set("type", e.target.value)} style={full}>{TASK_TYPES.map((v) => <option key={v} value={v}>{v === "TODO" ? "To-do" : v === "SMS" ? "Text" : v.charAt(0) + v.slice(1).toLowerCase()}</option>)}</select></Field>
+          <Field title="Priority"><select aria-label="Priority" value={str(p.priority) || "MEDIUM"} onChange={(e) => set("priority", e.target.value)} style={full}>{TASK_PRIORITIES.map((v) => <option key={v} value={v}>{v.charAt(0) + v.slice(1).toLowerCase()}</option>)}</select></Field>
+          <Field title="Due in (hours)"><input aria-label="Due in hours" type="number" min={0} value={Number(p.dueInHours ?? 24)} onChange={(e) => set("dueInHours", Number(e.target.value))} style={full} /></Field>
         </div>
-        {str(p.assignTo) === "user" && <Field title="Assignee"><UserSelect ariaLabel="Assignee" users={users} value={str(p.userId)} onChange={(v) => set("userId", v)} /></Field>}
+        <OwnerOrUser title="Assign to" ariaLabel="Assign to" users={users} value={str(p.assignee)} onChange={(v) => set("assignee", v)} />
       </>
     );
     case "add_note": return text("body", "Note", true);
-    case "set_property": return (
+    case "set_contact_field": return (
       <>
-        <Field title="Property">
+        <Field title="Property" hint={settableFields(catalog).length ? undefined : "The server has not listed any contact fields that can be set."}>
           <select aria-label="Contact property" value={str(p.field)} onChange={(e) => onChange({ ...node, params: { ...p, field: e.target.value, value: "" } })} style={full}>
             <option value="">Choose a property</option>
-            {catalog.fields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+            {settableFields(catalog).map((key) => <option key={key} value={key}>{catalog.fields.find((f) => f.key === key)?.label ?? prettyKey(key)}</option>)}
           </select>
         </Field>
         {str(p.field) && <Field title="New value"><ValueInput ariaLabel="New value" catalog={catalog} fieldKey={str(p.field)} value={str(p.value)} onChange={(v) => set("value", v)} /></Field>}
       </>
     );
-    case "set_stage": return (
+    case "set_application_stage": return (
       <Field title="Application stage">
         <select aria-label="Application stage" value={str(p.stage)} onChange={(e) => set("stage", e.target.value)} style={full}>
           <option value="">Choose a stage</option>
@@ -312,7 +326,7 @@ export function NodeDetails({ node, onChange, ctx }: { node: WorkflowNode; onCha
       </Field>
     );
     case "webhook": {
-      const fields = Array.isArray(p.fields) ? (p.fields as Array<{ key: string; value: string }>) : [];
+      const include = Array.isArray(p.includeFields) ? (p.includeFields as string[]) : [];
       const url = str(p.url);
       return (
         <>
@@ -320,15 +334,14 @@ export function NodeDetails({ node, onChange, ctx }: { node: WorkflowNode; onCha
             <input aria-label="Webhook address" placeholder="https://" value={url} onChange={(e) => set("url", e.target.value)} style={full} />
           </Field>
           {url && !/^https:\/\//i.test(url) && <div role="alert" style={{ color: "var(--wf-danger)", fontSize: 13, marginBottom: 8 }}>Use an https:// address.</div>}
-          <div style={{ ...muted, marginBottom: 6 }}>Fields sent in the JSON body (values can use tokens)</div>
-          {fields.map((f, i) => (
-            <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-              <input aria-label={"Field " + (i + 1) + " name"} placeholder="name" value={f.key} onChange={(e) => set("fields", fields.map((x, j) => (j === i ? { ...x, key: e.target.value } : x)))} style={{ ...input, flex: 1 }} />
-              <input aria-label={"Field " + (i + 1) + " value"} placeholder="value" value={f.value} onChange={(e) => set("fields", fields.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} style={{ ...input, flex: 1 }} />
-              <button type="button" style={iconBtn} aria-label={"Remove field " + (i + 1)} onClick={() => set("fields", fields.filter((_, j) => j !== i))}><Icon.trash /></button>
-            </div>
-          ))}
-          <button type="button" style={linkBtn} onClick={() => set("fields", [...fields, { key: "", value: "" }])}>+ Add field</button>
+          <div style={{ ...muted, marginBottom: 6 }}>Sent as a POST with a JSON body holding the workflow, enrollment, contact and application ids plus these fields:</div>
+          <div data-testid="webhook-fields" style={{ display: "grid", gap: 4 }}>
+            {WEBHOOK_FIELDS.map(([key, name]) => (
+              <label key={key} style={{ fontSize: 13, color: "var(--ui-text)" }}>
+                <input type="checkbox" checked={include.includes(key)} onChange={(e) => onChange({ ...node, params: { ...p, method: "POST", includeFields: e.target.checked ? [...include, key] : include.filter((x) => x !== key) } })} /> {name}
+              </label>
+            ))}
+          </div>
         </>
       );
     }

@@ -9,7 +9,7 @@ import CreateWorkflowMenu from "@/pages/automations/workflow/CreateWorkflowMenu"
 import { triggerSummary } from "@/pages/automations/workflow/graph";
 import type { Catalog, Workflow } from "@/pages/automations/workflow/types";
 import { btn, muted } from "@/pages/automations/workflow/ui";
-import { errorText, workflowApi } from "@/pages/automations/workflow/workflowApi";
+import { errorText, toSilo, workflowApi } from "@/pages/automations/workflow/workflowApi";
 
 const card: React.CSSProperties = { border: "1px solid var(--ui-border)", borderRadius: 8, padding: 16, marginBottom: 12, background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
 
@@ -22,7 +22,7 @@ export function describeWorkflow(w: Workflow, catalog: Catalog | null): string {
 export default function AutomationsPage(): JSX.Element {
   const navigate = useNavigate();
   const siloCtx = useContext(SiloContext);
-  const silo = String((siloCtx as { silo?: string } | null)?.silo ?? "").toUpperCase() === "BI" ? "BI" : "BF";
+  const silo = toSilo((siloCtx as { silo?: string } | null)?.silo); // BF_PORTAL_v787_BUILDER_FIXES - BF, BI or SLF
   const [cat, setCat] = useState<Catalog | null>(null);
   const [rules, setRules] = useState<Workflow[] | null>(null);
   const [msg, setMsg] = useState<string | null>(null);

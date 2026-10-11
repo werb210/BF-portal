@@ -10,7 +10,7 @@ const make = (key: string): WorkflowNode => ACTIONS.find((a) => a.key === key)!.
 const empty = (): Graph => ({ triggers: [], startNodeId: null, nodes: {} });
 const catalog = normalizeCatalog({
   fields: { lifecycle_stage: { label: "Lifecycle Stage", type: "select", options: [{ value: "lead", label: "Lead" }, { value: "customer", label: "Customer" }] }, score: { label: "Score", type: "number" } },
-  triggers: [{ key: "contact.created", label: "Contact is created", group: "Contact", fields: ["lifecycle_stage"] }],
+  triggers: [{ type: "contact.created", label: "Contact is created", group: "Contacts", filterFields: ["lifecycle_stage"] }],
   templates: { email: [{ id: "t1", name: "Welcome email", subject: "Welcome" }], sms: [] },
   events: [{ key: "email.opened", label: "Email is opened" }],
 });
@@ -59,7 +59,7 @@ describe("delete", () => {
   it("clears Go to targets that were deleted", () => {
     let g = insertAt(sample(), { parent: "c", port: "next" }, "g", { kind: "goto", target: "d" });
     g = deleteBranch(g, "d");
-    expect(g.nodes.g).toEqual({ kind: "goto", target: "" });
+    expect(g.nodes.g).toEqual({ id: "g", kind: "goto", target: "" });
     expect(missingParams(g.nodes.g!, g.nodes)).toEqual(["Choose the action to go to"]);
   });
 });
@@ -112,7 +112,7 @@ describe("layout", () => {
 
 describe("summaries", () => {
   it("describes each step in plain English", () => {
-    expect(summarize({ kind: "action", action: "set_property", params: { field: "lifecycle_stage", value: "lead" }, next: null }, { catalog })).toBe("Set Lifecycle Stage to Lead");
+    expect(summarize({ kind: "action", action: "set_contact_field", params: { field: "lifecycle_stage", value: "lead" }, next: null }, { catalog })).toBe("Set Lifecycle Stage to Lead");
     expect(summarize({ kind: "action", action: "send_email", params: { templateId: "t1" }, next: null }, { catalog })).toBe("Send email: Welcome email");
     expect(summarize({ kind: "delay", mode: "duration", params: { amount: 2, unit: "days" }, next: null })).toBe("Delay 2 days");
     expect(summarize({ kind: "delay", mode: "duration", params: { amount: 1, unit: "hours" }, next: null })).toBe("Delay 1 hour");
@@ -127,7 +127,7 @@ describe("summaries", () => {
     expect(missingParams(make("delay_duration"))).toEqual([]);
   });
   it("searches the action list", () => {
-    expect(searchActions("sms").map((a) => a.key)).toEqual(["internal_sms", "send_sms"]);
+    expect(searchActions("sms").map((a) => a.key)).toEqual(["notify_staff_sms", "send_sms"]);
     expect(searchActions("delay")).toHaveLength(3);
   });
 });

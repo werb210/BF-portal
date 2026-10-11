@@ -20,7 +20,8 @@ vi.mock("@/api", () => {
   const post = vi.fn(async (url: string, body: any) => {
     calls.post.push([url, body]);
     if (url === "/api/automations/from-library") return { id: "w9", name: "New lead follow-up", enabled: false };
-    if (url === "/api/automations/draft-from-text") return { id: "w10", name: "AI draft", enabled: false };
+    if (url === "/api/automations/draft-from-text") return { name: "AI draft", graph: { triggers: [{ type: "contact.created", filters: [], filterLogic: "all" }], startNodeId: "a", nodes: { a: { id: "a", kind: "action", action: "add_note", params: { body: "x" }, next: null } } }, settings: { reenroll: "never" }, goal: null };
+    if (url === "/api/automations") return { id: "w10", name: "AI draft", enabled: false };
     return {};
   });
   const patch = vi.fn(async (url: string, body: any) => { calls.patch.push([url, body]); return {}; });
@@ -86,6 +87,7 @@ describe("Automations list and Create workflow menu", () => {
     fireEvent.click(within(panel).getByRole("button", { name: "Draft workflow" }));
     await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("/automations/w10"));
     expect(calls.post).toContainEqual(["/api/automations/draft-from-text", { prompt: "Text new leads, wait 2 days, then create a call task", silo: "BF" }]);
+    expect(calls.post.find(([u]) => u === "/api/automations")?.[1]).toMatchObject({ name: "AI draft", silo: "BF", enabled: false });
     expect(calls.patch).toEqual([]);
   });
 });

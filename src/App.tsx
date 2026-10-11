@@ -194,7 +194,7 @@ const AppRoutes = () => {
         <Route path="/lender-portal/deals/:id" element={<Navigate to="/lender-portal" replace />} />
         <Route path="/lender-portal/products" element={<Navigate to="/lender-portal" replace />} />
         {/* BF_PORTAL_v786_WORKFLOW_BUILDER - full-screen workflow editor (no app shell) */}
-        <Route path="/automations/:id" element={token ? <ProtectedRoute><RequireRole roles={["Admin", "Marketing"]}><WorkflowEditor /></RequireRole></ProtectedRoute> : <Navigate to="/login" replace />} />
+        <Route path="/automations/:id" element={token ? <ProtectedRoute><RequireRole roles={["Admin", "Marketing", "Staff"]}><WorkflowEditor /></RequireRole></ProtectedRoute> : <Navigate to="/login" replace />} /> {/* BF_PORTAL_v787_BUILDER_FIXES - Staff open it read-only */}
         <Route element={token ? <AuthenticatedShell /> : <Navigate to="/login" replace />}>
           <Route path="/" element={<Navigate to="/portal" replace />} />
         <Route path="/applications" element={<Navigate to="/pipeline" replace />} />

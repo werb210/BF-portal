@@ -1,28 +1,29 @@
 // BF_PORTAL_v786_WORKFLOW_BUILDER - Settings, Performance and History tabs.
+// BF_PORTAL_v787_BUILDER_FIXES - the silo is read-only (the topbar silo), quiet hours are the hours
+// sending is allowed, and history rows use the server's label and path.
 import { useEffect, useState } from "react";
 import type { Enrollment, Performance } from "./workflowApi";
 import { workflowApi, errorText } from "./workflowApi";
 import { defOf } from "./actions";
 import type { Catalog, Goal, Settings, Silo, WorkflowNode } from "./types";
-import { ConditionRows, Field, btn, input, muted, primary } from "./ui";
+import { ConditionRows, btn, input, muted, primary } from "./ui";
 
 const panel: React.CSSProperties = { maxWidth: 760, margin: "0 auto", padding: 24, color: "var(--ui-text)" };
 const section: React.CSSProperties = { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8, padding: 16, marginBottom: 16 };
 const h3: React.CSSProperties = { margin: "0 0 10px", fontSize: 15 };
 
-export function SettingsTab({ catalog, silo, settings, goal, onChange }: { catalog: Catalog; silo: Silo; settings: Settings; goal: Goal; onChange: (change: { silo?: Silo; settings?: Settings; goal?: Goal }) => void }) {
+const SILO_NAME: Record<Silo, string> = { BF: "BF - Boreal Financial", BI: "BI - Boreal Insurance", SLF: "SLF" };
+
+export function SettingsTab({ catalog, silo, settings, goal, onChange, readOnly = false }: { catalog: Catalog; silo: Silo; settings: Settings; goal: Goal; onChange: (change: { settings?: Settings; goal?: Goal }) => void; readOnly?: boolean }) {
   const set = (change: Partial<Settings>) => onChange({ settings: { ...settings, ...change } });
   const qh = settings.quietHours;
   return (
     <div style={panel} data-testid="settings-tab">
+      <fieldset disabled={readOnly} style={{ border: "none", margin: 0, padding: 0, minWidth: 0 }}>
       <section style={section}>
         <h3 style={h3}>Business</h3>
-        <Field title="Silo" hint="Which business this workflow runs for.">
-          <select aria-label="Silo" value={silo} onChange={(e) => onChange({ silo: e.target.value as Silo })} style={input}>
-            <option value="BF">BF - Boreal Financial</option>
-            <option value="BI">BI - Boreal Insurance</option>
-          </select>
-        </Field>
+        <div data-testid="workflow-silo" style={{ fontSize: 14 }}>Silo: <strong>{SILO_NAME[silo] ?? silo}</strong></div>
+        <div style={{ ...muted, marginTop: 4 }}>New workflows use the silo selected in the top bar.</div>
       </section>
       <section style={section}>
         <h3 style={h3}>Re-enrollment</h3>
@@ -33,14 +34,14 @@ export function SettingsTab({ catalog, silo, settings, goal, onChange }: { catal
         </select>
       </section>
       <section style={section}>
-        <h3 style={h3}>Quiet hours</h3>
+        <h3 style={h3}>Sending hours</h3>
         <label style={{ fontSize: 13, display: "block", marginBottom: 8 }}>
-          <input type="checkbox" checked={qh.enabled} onChange={(e) => set({ quietHours: { ...qh, enabled: e.target.checked } })} /> Hold texts and emails during quiet hours and send them when quiet hours end
+          <input type="checkbox" checked={qh.enabled} onChange={(e) => set({ quietHours: { ...qh, enabled: e.target.checked } })} /> Only send texts and emails during set hours; anything due outside them waits for the next start time
         </label>
         {qh.enabled && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <label style={{ fontSize: 13 }}>From <input aria-label="Quiet hours start" type="time" value={qh.start} onChange={(e) => set({ quietHours: { ...qh, start: e.target.value } })} style={input} /></label>
-            <label style={{ fontSize: 13 }}>to <input aria-label="Quiet hours end" type="time" value={qh.end} onChange={(e) => set({ quietHours: { ...qh, end: e.target.value } })} style={input} /></label>
+          <div data-testid="send-window" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <label style={{ fontSize: 13 }}>Send only between <input aria-label="Send from" type="time" value={qh.start} onChange={(e) => set({ quietHours: { ...qh, start: e.target.value } })} style={input} /></label>
+            <label style={{ fontSize: 13 }}>and <input aria-label="Send until" type="time" value={qh.end} onChange={(e) => set({ quietHours: { ...qh, end: e.target.value } })} style={input} /></label>
             <label style={{ fontSize: 13 }}>Time zone <select aria-label="Time zone" value={qh.tz} onChange={(e) => set({ quietHours: { ...qh, tz: e.target.value } })} style={input}>
               {["America/Vancouver", "America/Edmonton", "America/Regina", "America/Winnipeg", "America/Toronto", "America/Halifax", "America/St_Johns"].map((tz) => <option key={tz} value={tz}>{tz}</option>)}
             </select></label>
@@ -68,6 +69,7 @@ export function SettingsTab({ catalog, silo, settings, goal, onChange }: { catal
           <button type="button" style={btn} onClick={() => onChange({ goal: { logic: "all", conditions: [{ field: "", op: catalog.operators[0] ?? "eq", value: "" }] } })}>Set a goal</button>
         )}
       </section>
+      </fieldset>
     </div>
   );
 }
@@ -90,18 +92,18 @@ export function PerformanceStats({ perf }: { perf: Performance | null }) {
           <div style={{ fontSize: 22, fontWeight: 700, color: "var(--ui-text)" }}>{v}</div>
         </div>
       ))}
-      <div style={{ ...muted, alignSelf: "center" }}>Each card on the canvas shows how many contacts reached that step.</div>
+      <div style={{ ...muted, alignSelf: "center" }}>Each card on the canvas shows how many contacts entered that step, and how many failed there.</div>
     </div>
   );
 }
 
-export function HistoryPanel({ workflowId, items, selected, onSelect, nodes, numbers, onEnrolled }: {
+export function HistoryPanel({ workflowId, items, selected, onSelect, nodes, numbers, onEnrolled, canEnroll = true }: {
   workflowId: string | null; items: Enrollment[] | null; selected: string | null; onSelect: (id: string | null) => void;
-  nodes: Record<string, WorkflowNode>; numbers: Record<string, number>; onEnrolled: () => void;
+  nodes: Record<string, WorkflowNode>; numbers: Record<string, number>; onEnrolled: () => void; canEnroll?: boolean;
 }) {
   const [enrolling, setEnrolling] = useState(false);
-  const stepName = (id: string | null) => {
-    if (!id) return "-";
+  const stepName = (id: string | null, kind?: string) => {
+    if (!id) return kind === "goal" ? "Goal" : "-";
     const n = nodes[id];
     return (numbers[id] ? numbers[id] + ". " : "") + (n ? defOf(n)?.title ?? "Step" : "Removed step");
   };
@@ -110,7 +112,7 @@ export function HistoryPanel({ workflowId, items, selected, onSelect, nodes, num
     <div data-testid="history-panel" style={{ padding: 16, color: "var(--ui-text)", overflowY: "auto", height: "100%", boxSizing: "border-box" }}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
         <h3 style={{ margin: 0, fontSize: 15, flex: 1 }}>Enrollment history</h3>
-        <button type="button" style={primary} disabled={!workflowId} onClick={() => setEnrolling(true)}>Enroll contact</button>
+        {canEnroll && <button type="button" style={primary} disabled={!workflowId} onClick={() => setEnrolling(true)}>Enroll contact</button>}
       </div>
       {enrolling && workflowId && <EnrollBox workflowId={workflowId} onDone={() => { setEnrolling(false); onEnrolled(); }} onCancel={() => setEnrolling(false)} />}
       {items === null ? <div style={muted}>Loading...</div> : items.length === 0 ? <div style={muted}>No contacts have been enrolled yet.</div> : (
@@ -120,7 +122,7 @@ export function HistoryPanel({ workflowId, items, selected, onSelect, nodes, num
             {items.map((e) => (
               <tr key={e.id} data-testid="history-row" onClick={() => onSelect(selected === e.id ? null : e.id)} aria-selected={selected === e.id}
                 style={{ cursor: "pointer", borderTop: "1px solid var(--ui-border)", background: selected === e.id ? "var(--ui-surface-muted)" : "transparent" }}>
-                <td style={{ padding: 6, fontWeight: 600 }}>{e.contactName}</td>
+                <td style={{ padding: 6, fontWeight: 600 }}>{e.label}</td>
                 <td style={{ padding: 6 }}>{e.enrolledAt ? new Date(e.enrolledAt).toLocaleString() : "-"}</td>
                 <td style={{ padding: 6, textTransform: "capitalize" }}>{e.status.replace(/_/g, " ")}</td>
                 <td style={{ padding: 6 }}>{stepName(e.currentNodeId)}</td>
@@ -131,12 +133,13 @@ export function HistoryPanel({ workflowId, items, selected, onSelect, nodes, num
       )}
       {current && (
         <div data-testid="history-steps" style={{ marginTop: 16 }}>
-          <h4 style={{ margin: "0 0 6px", fontSize: 14 }}>{current.contactName}: path through the workflow</h4>
-          {current.steps.length === 0 ? <div style={muted}>No steps have run yet.</div> : (
+          <h4 style={{ margin: "0 0 6px", fontSize: 14 }}>{current.label}: path through the workflow</h4>
+          {current.lastError && <div role="alert" style={{ fontSize: 13, color: "var(--wf-danger)", marginBottom: 6 }}>Last error: {current.lastError}</div>}
+          {current.path.length === 0 ? <div style={muted}>No steps have run yet.</div> : (
             <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
-              {current.steps.map((s, i) => (
+              {current.path.map((s, i) => (
                 <li key={i} style={{ marginBottom: 4 }}>
-                  <strong>{stepName(s.nodeId)}</strong> - {s.result || "done"}{s.detail ? " (" + s.detail + ")" : ""} <span style={muted}>{s.at ? new Date(s.at).toLocaleString() : ""}</span>
+                  <strong>{stepName(s.nodeId, s.kind)}</strong> - {s.result || "done"} <span style={muted}>{s.at ? new Date(s.at).toLocaleString() : ""}</span>
                 </li>
               ))}
             </ol>

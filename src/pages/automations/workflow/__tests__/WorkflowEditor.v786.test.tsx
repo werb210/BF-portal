@@ -21,7 +21,7 @@ const workflow = {
   goal: null,
 };
 const catalog = {
-  triggers: [{ key: "contact.created", label: "Contact is created", group: "Contact", fields: ["lifecycle_stage"] }],
+  triggers: [{ type: "contact.created", label: "Contact is created", group: "Contacts", filterFields: ["lifecycle_stage"] }],
   fields: { lifecycle_stage: { label: "Lifecycle Stage", type: "select", options: [{ value: "lead", label: "Lead" }] } },
   operators: ["eq"],
   templates: { email: [{ id: "t1", name: "Welcome email" }], sms: [] },
@@ -35,10 +35,10 @@ vi.mock("@/api", () => {
     if (url === "/api/automations") return [{ id: "w1", name: "New lead nurture" }, { id: "w2", name: "Re-engage" }];
     if (url === "/api/automations/lists") return [{ id: "l1", name: "Hot leads" }];
     if (url === "/api/users") return { users: [{ id: "u1", first_name: "Andrew", last_name: "P" }] };
-    if (url === "/api/automations/w1/performance") return { enrolled: 40, active: 12, completed: 20, goalReached: 10, steps: { n1: 40, n2: 31, n3: 18 } };
+    if (url === "/api/automations/w1/performance") return { enrolled: 40, active: 12, completed: 20, goalReached: 10, byNode: { n1: { entered: 40, failed: 0 }, n2: { entered: 31, failed: 0 }, n3: { entered: 18, failed: 2 } } };
     if (url === "/api/automations/w1/history") return [
-      { id: "e1", contactId: "c1", contactName: "Jane Doe", enrolledAt: "2026-10-01T15:00:00Z", status: "active", currentNodeId: "n2", steps: [{ nodeId: "n1", at: "2026-10-01T15:00:01Z", result: "Lifecycle Stage set to Lead" }] },
-      { id: "e2", contactId: "c2", contactName: "Bob Ray", enrolledAt: "2026-10-02T15:00:00Z", status: "completed", currentNodeId: null, steps: [] },
+      { id: "e1", contact_id: "c1", label: "Jane Doe", created_at: "2026-10-01T15:00:00Z", status: "active", current_node_id: "n2", path: [{ nodeId: "n1", kind: "action", at: "2026-10-01T15:00:01Z", result: "Lifecycle Stage set to Lead" }] },
+      { id: "e2", contact_id: "c2", label: "Bob Ray", created_at: "2026-10-02T15:00:00Z", status: "completed", current_node_id: null, path: [] },
     ];
     if (url.startsWith("/api/meetings/people")) return { people: [{ contactId: "c9", name: "Zed Contact", email: "zed@example.com" }] };
     return [];
@@ -107,7 +107,7 @@ describe("WorkflowEditor", () => {
     const [url, body] = calls.patch[0]!;
     expect(url).toBe("/api/automations/w1");
     const newId = body.graph.nodes.n1.next as string;
-    expect(body.graph.nodes[newId]).toEqual({ kind: "action", action: "add_tag", params: { tag: "hot" }, next: "n2" });
+    expect(body.graph.nodes[newId]).toEqual({ id: newId, kind: "action", action: "add_tag", params: { tag: "hot" }, next: "n2" });
     expect(body).toMatchObject({ name: "New lead nurture", silo: "BF", enabled: false, goal: null });
   });
 
@@ -176,17 +176,18 @@ describe("WorkflowEditor", () => {
     expect(card("n1")).toHaveTextContent("2. Edit record");
   });
 
-  it("settings tab edits silo, quiet hours and the goal", async () => {
+  it("settings tab shows the silo read-only and edits the goal", async () => {
     renderEditor();
     await screen.findByText("New lead nurture");
     fireEvent.click(screen.getByRole("tab", { name: "Settings" }));
     expect(screen.getByText("Contacts leave the workflow when they meet the goal.")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Silo"), { target: { value: "BI" } });
+    expect(screen.queryByLabelText("Silo")).toBeNull();
+    expect(screen.getByTestId("workflow-silo")).toHaveTextContent("BF - Boreal Financial");
     fireEvent.click(screen.getByRole("button", { name: "Set a goal" }));
     fireEvent.change(within(screen.getByTestId("goal-section")).getByLabelText("Property"), { target: { value: "lifecycle_stage" } });
     fireEvent.change(within(screen.getByTestId("goal-section")).getByLabelText("Value"), { target: { value: "lead" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(calls.patch.length).toBe(1));
-    expect(calls.patch[0]![1]).toMatchObject({ silo: "BI", goal: { logic: "all", conditions: [{ field: "lifecycle_stage", op: "eq", value: "lead" }] } });
+    expect(calls.patch[0]![1]).toMatchObject({ silo: "BF", goal: { logic: "all", conditions: [{ field: "lifecycle_stage", op: "eq", value: "lead" }] } });
   });
 });
