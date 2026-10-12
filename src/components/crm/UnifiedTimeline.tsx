@@ -6,8 +6,9 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { crmApi, type Scope, type TimelineItem } from "@/api/crm";
 import { api } from "@/api";
-import { API_BASE } from "@/config/api"; // BF_PORTAL_RECORDING_PROXY_v1
-import { getAuthToken } from "@/lib/authToken";
+// BF_PORTAL_v789_AUTHED_MEDIA - recordings load with the Authorization header when played (blob: URL),
+// instead of an <audio> src carrying ?token=<staff JWT>.
+import { AuthedAudio } from "@/components/media/AuthedMedia";
 
 type EmailRow = {
   id: string;
@@ -82,13 +83,15 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
   const [filter, setFilter] = useState<FilterTab>("all");
   const [openId, setOpenId] = useState<string | null>(null);
 
+  // BF_PORTAL_v789_HOOK_DEPS - depend on the scope's fields, not the object (callers pass a new one each render).
+  const { kind: scopeKind, id: scopeId } = scope;
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setErr(null);
     (async () => {
       const [tl, em, ca] = await Promise.all([
-        crmApi.timeline(scope).then((r) => (Array.isArray(r) ? r : [])).catch(() => [] as TimelineItem[]),
+        crmApi.timeline({ kind: scopeKind, id: scopeId }).then((r) => (Array.isArray(r) ? r : [])).catch(() => [] as TimelineItem[]),
         api.get<{ items?: EmailRow[] }>(`/api/crm/contacts/${encodeURIComponent(contactId)}/emails`).then((r) => r?.items ?? []).catch(() => [] as EmailRow[]),
         api.get<{ items?: CallRow[] }>(`/api/crm/contacts/${encodeURIComponent(contactId)}/calls`).then((r) => r?.items ?? []).catch(() => [] as CallRow[]),
       ]);
@@ -99,7 +102,7 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [contactId, scope.kind, scope.id, refreshKey]);
+  }, [contactId, scopeKind, scopeId, refreshKey]);
 
   const entries = useMemo<Entry[]>(() => {
     const out: Entry[] = [];
@@ -131,7 +134,7 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
       </div>
 
       {loading && <div style={empty}>Loading...</div>}
-      {err && <div style={{ ...empty, color: "#b00020" }}>{err}</div>}
+      {err && <div style={{ ...empty, color: "var(--ui-text-danger)" }}>{err}</div>}
       {!loading && !err && filtered.length === 0 && <div style={empty}>No activity yet.</div>}
 
       {filtered.map((entry) => {
@@ -182,7 +185,7 @@ function EmailCard({ email, isOpen, onToggle }: { email: EmailRow; isOpen: boole
         style={{ width: "100%", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}
       >
         <span style={{ fontWeight: 600, color: "var(--ui-text)", fontSize: 14 }}>{email.subject || "(no subject)"}</span>
-        <span style={{ fontSize: 12, color: ((email.open_count ?? 0) > 0 || email.opened_at) ? "#059669" : "#9ca3af", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 12, color: ((email.open_count ?? 0) > 0 || email.opened_at) ? "var(--ui-text-success)" : "var(--ui-text-muted)", /* BF_PORTAL_v789_CONTRAST */ whiteSpace: "nowrap" }}>
           {(email.open_count ?? 0) > 0
             ? `Opened${(email.open_count ?? 0) > 1 ? ` ${email.open_count}x` : ""}`
             : email.opened_at ? "Opened" : "Sent"}
@@ -236,9 +239,9 @@ function CallCard({ call, isOpen, onToggle }: { call: CallRow; isOpen: boolean; 
         {call.direction || "call"}{fmtDur(call.recording_duration_sec)}
       </div>
       {call.recording_url ? (
-        <audio controls preload="none" src={`${API_BASE}/api/communications/recordings/by-conference/${call.conference_id}/media?token=${encodeURIComponent(getAuthToken() ?? "")}`} style={{ width: "100%", marginTop: 8, height: 36 }} />
+        <AuthedAudio path={`/api/communications/recordings/by-conference/${encodeURIComponent(call.conference_id)}/media`} style={{ marginTop: 8 }} />
       ) : (
-        <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6 }}>No recording.</div>
+        <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginTop: 6 }}>No recording.</div>
       )}
       {hasTranscript && (
         <button type="button" onClick={onToggle} style={{ marginTop: 6, background: "transparent", border: "none", color: "var(--ui-accent-blue)", fontSize: 13, cursor: "pointer", padding: 0 }}>

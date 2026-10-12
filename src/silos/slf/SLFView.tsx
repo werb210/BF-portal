@@ -53,11 +53,11 @@ const titleCase = (s?: string | null): string =>
 const fullName = (d: SlfDeal): string => [d.first_name, d.last_name].filter(Boolean).join(" ").trim();
 
 function KV({ obj }: { obj: Record<string, unknown> | null }) {
-  if (!obj) return <p className="text-sm text-slate-400">None</p>;
+  if (!obj) return <p className="text-sm text-ui-muted">None</p>;
   const entries = Object.entries(obj).filter(
     ([, v]) => v !== null && v !== undefined && typeof v !== "object"
   );
-  if (entries.length === 0) return <p className="text-sm text-slate-400">None</p>;
+  if (entries.length === 0) return <p className="text-sm text-ui-muted">None</p>;
   return (
     <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
       {entries.map(([k, v]) => (
@@ -75,7 +75,7 @@ function Section({ title, count, children }: { title: string; count?: number; ch
     <section className="border-t border-slate-200 px-4 py-3">
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
         {title}
-        {typeof count === "number" ? <span className="ml-1 text-slate-400">({count})</span> : null}
+        {typeof count === "number" ? <span className="ml-1 text-ui-muted">({count})</span> : null}
       </h3>
       {children}
     </section>
@@ -92,10 +92,11 @@ function DealDrawer({ id, onClose }: { id: string | null; onClose: () => void })
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <aside className="fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col overflow-y-auto bg-white shadow-xl">
+      {/* BF_PORTAL_v789_CONTRAST - light surface with light text tokens in every theme. */}
+      <aside className="ui-surface-light fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col overflow-y-auto bg-ui-surface shadow-xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="text-base font-semibold text-slate-900">
-            SLF Deal #{id} <span className="ml-2 text-xs font-normal text-slate-400">read-only</span>
+            SLF Deal #{id} <span className="ml-2 text-xs font-normal text-ui-muted">read-only</span>
           </h2>
           <button type="button" onClick={onClose} className="rounded px-2 py-1 text-sm text-slate-500 hover:bg-slate-100">
             Close
@@ -121,7 +122,7 @@ function DealDrawer({ id, onClose }: { id: string | null; onClose: () => void })
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400">None</p>
+                <p className="text-sm text-ui-muted">None</p>
               )}
             </Section>
             <Section title="Contracts" count={data.contracts?.length ?? 0}>
@@ -134,7 +135,7 @@ function DealDrawer({ id, onClose }: { id: string | null; onClose: () => void })
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400">None</p>
+                <p className="text-sm text-ui-muted">None</p>
               )}
             </Section>
             <Section title="Offers" count={data.offers?.length ?? 0}>
@@ -147,7 +148,7 @@ function DealDrawer({ id, onClose }: { id: string | null; onClose: () => void })
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400">None</p>
+                <p className="text-sm text-ui-muted">None</p>
               )}
             </Section>
             <Section title="Files" count={data.files?.length ?? 0}>
@@ -160,7 +161,7 @@ function DealDrawer({ id, onClose }: { id: string | null; onClose: () => void })
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-slate-400">None</p>
+                <p className="text-sm text-ui-muted">None</p>
               )}
             </Section>
             <Section title="Notes" count={data.notes?.length ?? 0}>
@@ -175,7 +176,7 @@ function DealDrawer({ id, onClose }: { id: string | null; onClose: () => void })
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-slate-400">None</p>
+                <p className="text-sm text-ui-muted">None</p>
               )}
             </Section>
           </div>
@@ -210,7 +211,9 @@ export default function SLFView() {
   const totalAmount = deals.reduce((sum, d) => sum + num(d.amount), 0);
 
   return (
-    <div className="flex h-full flex-col">
+    // BF_PORTAL_v789_CONTRAST - the SLF board is drawn light (slate text on white/slate-50 columns), so it
+    // carries the light text tokens in the dark theme too instead of slate-900 on the dark page.
+    <div className="ui-surface-light flex h-full flex-col bg-ui-surface">
       <div className="border-b border-slate-200 px-6 py-4">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-semibold text-slate-900">Site Level Financial</h1>
@@ -284,7 +287,7 @@ export default function SLFView() {
                       ) : null}
                     </button>
                   ))}
-                  {cards.length === 0 ? <p className="px-1 py-2 text-xs text-slate-400">Empty</p> : null}
+                  {cards.length === 0 ? <p className="px-1 py-2 text-xs text-ui-muted">Empty</p> : null}
                 </div>
               </div>
             );

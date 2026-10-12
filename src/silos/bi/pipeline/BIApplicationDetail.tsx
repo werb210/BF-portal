@@ -11,9 +11,10 @@ import RequirementsTab from "./tabs/RequirementsTab";
 import RequirementHistoryTab from "./tabs/RequirementHistoryTab";
 import PgiCommsTab from "./tabs/PgiCommsTab";
 import CarriersTab from "./tabs/CarriersTab"; // BF_PORTAL_BLOCK_v560
+import NotesTab from "./tabs/NotesTab"; // BF_PORTAL_v789_BI_APP_NOTES
 import { biSourceLabel } from "./biSource"; // BF_PORTAL_BI_SOURCE_LABEL_v392
 
-type TabKey = "application" | "documents" | "requirements" | "history" | "pgi" | "carriers";
+type TabKey = "application" | "documents" | "requirements" | "history" | "pgi" | "notes" | "carriers";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "application", label: "Application" },
@@ -21,6 +22,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "requirements", label: "Requirements" },
   { key: "history", label: "Requirement History" },
   { key: "pgi", label: "PGI Comms" },
+  { key: "notes", label: "Notes" }, // BF_PORTAL_v789_BI_APP_NOTES
   { key: "carriers", label: "Carriers" }, // BF_PORTAL_BLOCK_v560
 ];
 
@@ -70,6 +72,8 @@ function tabFromQuery(raw: string | null): TabKey {
       return "history";
     case "pgi":
       return "pgi";
+    case "notes":
+      return "notes";
     case "carriers":
       return "carriers";
     default:
@@ -184,6 +188,7 @@ export default function BIApplicationDetail() {
         {tab === "requirements" && <RequirementsTab applicationId={app.id} sourceType={app.source_type} readOnly={isReadOnly} />}
         {tab === "history" && <RequirementHistoryTab applicationId={app.id} />}
         {tab === "pgi" && <PgiCommsTab app={app} />}
+        {tab === "notes" && <NotesTab applicationId={app.id} />}
         {tab === "carriers" && <CarriersTab applicationId={app.id} readOnly={isReadOnly} />}
       </section>
     </div>

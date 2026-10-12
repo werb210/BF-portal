@@ -1,8 +1,9 @@
-import { BrowserAuthError, PublicClientApplication } from "@azure/msal-browser";
+import { BrowserAuthError, InteractionRequiredAuthError, PublicClientApplication } from "@azure/msal-browser";
 import { setGraphAccessToken } from "@/lib/graphToken";
 
 import { microsoftAuthConfig } from "@/config/microsoftAuth";
-import { withRequiredO365Scopes } from "@/auth/o365Scopes"; // BF_PORTAL_O365_SCOPES_v275
+import { featureO365Scopes, signInO365Scopes } from "@/auth/o365Scopes"; // BF_PORTAL_O365_SCOPES_v275 + v789
+import { api } from "@/api";
 
 const isIos = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
 
@@ -13,7 +14,9 @@ export const msalClient = new PublicClientApplication({
     redirectUri: microsoftAuthConfig.redirectUri,
   },
   cache: {
-    cacheLocation: "localStorage",
+    // BF_PORTAL_v789_MSAL_SESSION_STORAGE - Microsoft refresh and access tokens no longer persist in
+    // localStorage across browser restarts; they live for the tab session.
+    cacheLocation: "sessionStorage",
     storeAuthStateInCookie: isIos,
   },
 });
@@ -65,7 +68,7 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null, opts?: {
     // relies on the iframe re-auth path which modern browsers block.
     // Aligns with config/microsoftAuth.ts which already had it.
     const scopesEnv = import.meta.env.VITE_MSAL_SCOPES || "User.Read,Mail.Send,Mail.ReadWrite,Calendars.ReadWrite,Tasks.ReadWrite,offline_access";
-    const scopes = withRequiredO365Scopes(String(scopesEnv)); // BF_PORTAL_O365_SCOPES_v275
+    const scopes = signInO365Scopes(String(scopesEnv)); // BF_PORTAL_O365_SCOPES_v275
 
     console.log("[msal.silent] acquire.start", { username: account.username ?? null, scopes });
     const result = await msalClient.acquireTokenSilent({ account, scopes });
@@ -152,7 +155,7 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null, opts?: {
       try {
         if (typeof sessionStorage !== "undefined") sessionStorage.setItem(REDIRECT_GUARD_KEY, "1");
         const scopesEnv = import.meta.env.VITE_MSAL_SCOPES || "User.Read,Mail.Send,Mail.ReadWrite,Mail.ReadWrite.Shared,Calendars.ReadWrite,Tasks.ReadWrite,offline_access";
-        const scopes = withRequiredO365Scopes(String(scopesEnv)); // BF_PORTAL_O365_SCOPES_v275
+        const scopes = signInO365Scopes(String(scopesEnv)); // BF_PORTAL_O365_SCOPES_v275
         const account = msalClient.getActiveAccount() ?? msalClient.getAllAccounts()[0] ?? null;
         console.log("[msal.silent] iframe blocked — falling back to acquireTokenRedirect", { name });
         await msalClient.acquireTokenRedirect({ scopes, account: account ?? undefined });
@@ -169,4 +172,64 @@ export async function bfAcquireSilentO365Tokens(authJwt: string | null, opts?: {
     console.warn("[msal.silent] acquire failed", { name, message });
     return false;
   }
+}
+
+// BF_PORTAL_v789_INCREMENTAL_CONSENT - ask for an extra Microsoft permission (Mail.ReadWrite,
+// Files.ReadWrite) at the moment a feature needs it. Silent first; with `interactive` a consent popup is
+// shown when Microsoft needs one (call it from a click). The resulting token is handed to BF-Server,
+// which makes the Graph calls. Returns true when the token now carries the scopes.
+const grantedScopes = new Set<string>();
+const lastSilentMiss = new Map<string, number>();
+const SILENT_RETRY_MS = 5 * 60_000;
+const SILENT_TIMEOUT_MS = 8_000;
+
+function isInteractionRequired(error: unknown): boolean {
+  const e = error as { name?: string; message?: string; errorCode?: string } | null;
+  return error instanceof InteractionRequiredAuthError
+    || e?.name === "InteractionRequiredAuthError"
+    || /interaction_required|consent_required|login_required|no_account/i.test(`${e?.errorCode ?? ""} ${e?.message ?? ""}`);
+}
+
+export async function ensureO365Scopes(extra: readonly string[], opts: { interactive?: boolean } = {}): Promise<boolean> {
+  const key = extra.map((s) => s.toLowerCase()).sort().join(" ");
+  if (extra.every((s) => grantedScopes.has(s.toLowerCase()))) return true;
+  if (!opts.interactive && Date.now() - (lastSilentMiss.get(key) ?? 0) < SILENT_RETRY_MS) return false;
+  await ensureMsalInitialized();
+  const scopesEnv = import.meta.env.VITE_MSAL_SCOPES || "User.Read,Mail.Send,Calendars.ReadWrite,Tasks.ReadWrite,offline_access";
+  const scopes = featureO365Scopes(String(scopesEnv), extra);
+  const account = msalClient.getActiveAccount() ?? msalClient.getAllAccounts()[0] ?? null;
+
+  let result: { accessToken?: string; expiresOn?: Date | null } | null = null;
+  try {
+    if (!account) throw new Error("no_account");
+    // A silent call can hang when another tab holds the MSAL lock; never let a feature wait on it forever.
+    result = await Promise.race([
+      msalClient.acquireTokenSilent({ scopes, account }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("silent_timeout")), SILENT_TIMEOUT_MS)),
+    ]);
+  } catch (error) {
+    if (!opts.interactive) {
+      lastSilentMiss.set(key, Date.now());
+      return false;
+    }
+    if (!isInteractionRequired(error) && (error as Error)?.message !== "silent_timeout") throw error;
+    result = await msalClient.acquireTokenPopup({ scopes, account: account ?? undefined });
+  }
+  if (!result?.accessToken) return false;
+
+  await setGraphAccessToken(String(result.accessToken));
+  await api.post("/api/users/me/o365-tokens", {
+    access_token: result.accessToken,
+    expires_in: result.expiresOn ? Math.max(0, Math.floor((result.expiresOn.getTime() - Date.now()) / 1000)) : null,
+    account_id: account?.homeAccountId ?? null,
+  });
+  for (const s of extra) grantedScopes.add(s.toLowerCase());
+  lastSilentMiss.delete(key);
+  return true;
+}
+
+/** Test seam. */
+export function __resetO365Consent(): void {
+  grantedScopes.clear();
+  lastSilentMiss.clear();
 }

@@ -2,8 +2,8 @@ import { Capacitor } from "@capacitor/core";
 import { api } from "@/api";
 import { WidgetBridgePlugin, WIDGET_GROUP } from "@/native/widgetBridge";
 import { fetchLocalEvents } from "@/api/calendar";
-import { pipelineApi } from "@/core/engines/pipeline/pipeline.api";
-import { normalizeStageId } from "@/core/engines/pipeline/pipeline.types";
+import { pipelineApi } from "@/pipeline/pipeline.api";
+import { normalizeStageId } from "@/pipeline/pipeline.types";
 import { isDraftLikeApplication, type DraftLikeCard } from "@/pages/pipeline/draftLike";
 import { BI_VISIBLE_PIPELINE_STAGES, resolveStageId } from "@/silos/bi/pipeline/biStages";
 

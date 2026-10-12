@@ -1,7 +1,8 @@
 // BF_PORTAL_BLOCK_v664_BI_CONTACTS_BULK
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
+import { listStaffUsers } from "@/api/sharedShell"; // BF_PORTAL_v789_SHARED_SHELL
 import { useAuth } from "@/hooks/useAuth";
 import { exportRowsToCsv } from "@/utils/csvExport";
 import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
@@ -93,8 +94,7 @@ export default function BIContactsList() {
     let cancelled = false;
     (async () => {
       try {
-        const r = await api.get<{ users?: Array<{ id: string; first_name?: string; last_name?: string }> } | Array<{ id: string; first_name?: string; last_name?: string }>>("/api/users");
-        const list = Array.isArray(r) ? r : (r?.users ?? []);
+        const list = await listStaffUsers();
         if (!cancelled) setOwners(list);
       } catch {
         if (!cancelled) setOwners([]);
@@ -103,12 +103,13 @@ export default function BIContactsList() {
     return () => { cancelled = true; };
   }, []);
 
-  const ownerName = (id: string | null): string => {
-    if (!id) return "—";
+  // BF_PORTAL_v789_HOOK_DEPS - memoised so the rows memo below can list it.
+  const ownerName = useCallback((id: string | null): string => {
+    if (!id) return "\u2014";
     const owner = owners.find((u) => u.id === id);
     const name = owner ? `${owner.first_name ?? ""} ${owner.last_name ?? ""}`.trim() : "";
-    return name || "—";
-  };
+    return name || "\u2014";
+  }, [owners]);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,7 +193,7 @@ export default function BIContactsList() {
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{ownerName(r.outreach_owner_id)}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows, isAdmin, selected, owners, hiddenCols]);
+  )), [rows, isAdmin, selected, ownerName, hiddenCols]);
 
   const colCount = isAdmin ? 7 : 6; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 (+Tags col)
 

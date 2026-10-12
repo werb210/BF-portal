@@ -1,6 +1,11 @@
+// BF_PORTAL_v789_SOURCE_GREP - rewritten as a behaviour test. The native (Swift / Xcode) side cannot run
+// under Vitest, so its files are imported as data and checked against what the JS side actually calls.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import pluginSwift from "../../../ios/App/App/WidgetBridgePlugin.swift?raw";
+import bridgeSwift from "../../../ios/App/App/BorealBridgeViewController.swift?raw";
+import summaryWidgetSwift from "../../../ios/App/BorealWidget/SummaryWidget.swift?raw";
+import entitlements from "../../../ios/App/App/App.entitlements?raw";
+import pbxproj from "../../../ios/App/App.xcodeproj/project.pbxproj?raw";
 
 const h = vi.hoisted(() => ({
   native: true,
@@ -10,14 +15,25 @@ const h = vi.hoisted(() => ({
   getItem: vi.fn(async () => ({ value: null as string | null })),
   reloadAllTimelines: vi.fn(async () => {}),
   reloadTimelines: vi.fn(async () => {}),
+  registered: [] as string[],
+  preferences: vi.fn(),
 }));
+vi.mock("@capacitor/preferences", () => ({
+  Preferences: new Proxy({}, { get: (_t, prop) => (...args: unknown[]) => h.preferences(prop, ...args) }),
+}));
+vi.mock("@/api", () => {
+  const apiFn = vi.fn() as any;
+  apiFn.get = vi.fn();
+  apiFn.post = vi.fn();
+  return { api: apiFn, default: apiFn, rawApiFetch: vi.fn() };
+});
 
 vi.mock("@capacitor/core", () => ({
   Capacitor: {
     isNativePlatform: () => h.native,
     getPlatform: () => h.platform,
   },
-  registerPlugin: () => ({
+  registerPlugin: (name: string) => (h.registered.push(name), {
     setItem: h.setItem,
     removeItem: h.removeItem,
     getItem: h.getItem,
@@ -30,6 +46,7 @@ import {
   mirrorSiloToWidget,
   WIDGET_GROUP,
 } from "../widgetBridge";
+import { WIDGET_KIND } from "../widgetSnapshot";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -66,41 +83,46 @@ describe("native widget state bridge", () => {
   });
 });
 
-describe("source regressions", () => {
-  const source = (relativePath: string) =>
-    readFileSync(path.join(process.cwd(), relativePath), "utf8");
-
-  it("does not use Capacitor Preferences for widget storage", () => {
-    const bridge = source("src/native/widgetBridge.ts");
-    expect(bridge).not.toContain("Preferences.configure");
-    expect(bridge).not.toContain("@capacitor/preferences");
+describe("native side matches what the JS calls", () => {
+  it("does not use Capacitor Preferences for widget storage", async () => {
+    await mirrorSiloToWidget("BI");
+    await mirrorSiloToWidget(null);
+    expect(h.preferences).not.toHaveBeenCalled();
+    expect(h.setItem).toHaveBeenCalledTimes(1);
+    expect(h.removeItem).toHaveBeenCalledWith({ group: WIDGET_GROUP, key: "widget_active_silo" });
   });
 
   it("uses the matching WidgetKit kind", () => {
-    expect(source("src/native/widgetSnapshot.ts")).toContain(
-      'WIDGET_KIND = "BorealPortalSummary"',
-    );
+    expect(WIDGET_KIND).toBe("BorealPortalSummary");
+    const kinds = Array.from(summaryWidgetSwift.matchAll(/kind:\s*"([^"]+)"/g), (m) => m[1]);
+    expect(kinds).toContain(WIDGET_KIND);
   });
 
-  it("opens App Group defaults and can refresh all WidgetKit timelines", () => {
-    const swift = source("ios/App/App/WidgetBridgePlugin.swift");
-    expect(swift).toContain("UserDefaults(suiteName:");
-    expect(swift).not.toContain("UserDefaults.standard");
-    expect(swift).toContain("WidgetCenter.shared.reloadAllTimelines()");
+  it("the plugin the JS registers exists natively with every method the JS calls", () => {
+    expect(h.registered).toContain("WidgetBridgePlugin");
+    expect(pluginSwift).toMatch(/jsName = "WidgetBridgePlugin"/);
+    const methods = Array.from(pluginSwift.matchAll(/CAPPluginMethod\(name: "(\w+)"/g), (m) => m[1]);
+    expect(methods).toEqual(expect.arrayContaining(["setItem", "removeItem", "getItem", "reloadAllTimelines", "reloadTimelines"]));
+  });
+
+  it("opens App Group defaults (the group the app is entitled to) and can refresh all WidgetKit timelines", () => {
+    expect(pluginSwift).toContain("UserDefaults(suiteName:");
+    expect(pluginSwift).not.toContain("UserDefaults.standard");
+    expect(pluginSwift).toContain("WidgetCenter.shared.reloadAllTimelines()");
+    expect(entitlements).toContain(`<string>${WIDGET_GROUP}</string>`);
   });
 
   it("registers a plugin instance from the custom bridge controller", () => {
-    const swift = source("ios/App/App/BorealBridgeViewController.swift");
-    expect(swift).toContain("registerPluginInstance(WidgetBridgePlugin())");
-    expect(swift).not.toContain("registerPluginType");
+    expect(bridgeSwift).toContain("registerPluginInstance(WidgetBridgePlugin())");
+    expect(bridgeSwift).not.toContain("registerPluginType");
   });
 
   it("compiles both bridge files in the App source phase only", () => {
-    const project = source("ios/App/App.xcodeproj/project.pbxproj");
-    const appSources = project.match(/\n\t\t504EC3001FED79650016851F \/\* Sources \*\/ = \{[\s\S]*?runOnlyForDeploymentPostprocessing = 0;/)?.[0] ?? "";
-    const widgetSources = project.match(/\n\t\tB0EA29000000000000000010 \/\* Sources \*\/ = \{[\s\S]*?runOnlyForDeploymentPostprocessing = 0;/)?.[0] ?? "";
+    const appSources = pbxproj.match(/\n\t\t504EC3001FED79650016851F \/\* Sources \*\/ = \{[\s\S]*?runOnlyForDeploymentPostprocessing = 0;/)?.[0] ?? "";
+    const widgetSources = pbxproj.match(/\n\t\tB0EA29000000000000000010 \/\* Sources \*\/ = \{[\s\S]*?runOnlyForDeploymentPostprocessing = 0;/)?.[0] ?? "";
     expect(appSources).toContain("WidgetBridgePlugin.swift in Sources");
     expect(appSources).toContain("BorealBridgeViewController.swift in Sources");
+    expect(widgetSources).not.toBe("");
     expect(widgetSources).not.toContain("WidgetBridgePlugin.swift");
     expect(widgetSources).not.toContain("BorealBridgeViewController.swift");
   });

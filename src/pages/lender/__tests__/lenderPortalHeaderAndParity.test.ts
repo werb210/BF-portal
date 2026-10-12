@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 const page = readFileSync(path.join(process.cwd(), "src", "pages", "lender", "LenderPortalPage.tsx"), "utf-8");
 const lendersPage = readFileSync(path.join(process.cwd(), "src", "pages", "lenders", "LendersPage.tsx"), "utf-8");
-const createModal = readFileSync(path.join(process.cwd(), "src", "pages", "lenders", "components", "CreateLenderModal.tsx"), "utf-8");
+// BF_PORTAL_v789_DEAD_CODE - CreateLenderModal.tsx was unreachable from main.tsx and is deleted.
 
 describe("lender portal header contrast", () => {
   it("group name, welcome line and logo are white", () => {
@@ -28,8 +28,6 @@ describe("company form parity", () => {
 
   it("staff create and edit forms include Website + Description", () => {
     expect(lendersPage).toContain("STAFF_LENDER_WEB_DESC_v1");
-    expect(createModal).toContain('data-testid="lender-website"');
-    expect(createModal).toContain('data-testid="lender-description"');
   });
 });
 

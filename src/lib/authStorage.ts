@@ -1,5 +1,6 @@
 import { clearOfflineCopies } from "@/offline/readCache";
 import { clearToken, getToken } from "@/lib/authToken";
+import { removeSessionItem } from "@/lib/secureStore";
 import { decodeJwt } from "@/auth/jwt";
 
 const readRoleFromToken = (token: string | null): string | null => {
@@ -19,6 +20,9 @@ export function getUserRole(): string | null {
 
 export function clearAuth() {
   clearToken();
+  // BF_PORTAL_v789_CLEAR_AUTH - the signed-in user's profile and phone go too (localStorage and Keychain).
+  removeSessionItem("auth_user");
+  removeSessionItem("auth_phone");
   clearOfflineCopies(); // BF_PORTAL_OFFLINE_READ_CACHE_v252 - saved copies never outlive the session
 }
 

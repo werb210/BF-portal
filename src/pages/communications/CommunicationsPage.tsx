@@ -3,11 +3,16 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { api } from "@/api";
 import { contactDisplayName } from "@/utils/contactName";
 import { getAuthToken } from "@/lib/authToken"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
+import { teamSocketUrl } from "@/lib/urlTicket"; // BF_PORTAL_v789_URL_TICKET
 import { API_BASE } from "@/config/api"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
 import { setViewingTeamChannel } from "@/components/team/TeamNotifier"; // BF_PORTAL_TEAM_NOTIFY_v644
 import { registerExistingPushPermission } from "@/hooks/usePushRegistration"; // BF_PORTAL_TEAM_NOTIFY_v644
-import { withO365Refresh } from "@/api/o365Interceptor";
-import { o365ReasonFrom } from "@/auth/o365Scopes"; // BF_PORTAL_O365_RECONNECT_v275
+import { withO365Scopes } from "@/api/o365Interceptor";
+import { FILES_READWRITE_SCOPES, MAIL_READWRITE_SCOPES, o365ReasonFrom } from "@/auth/o365Scopes"; // BF_PORTAL_O365_RECONNECT_v275
+
+// BF_PORTAL_v789_INCREMENTAL_CONSENT - reading the inbox is what needs Mail.ReadWrite; it is requested
+// here (silently once granted, by the Reconnect button the first time) rather than at sign-in.
+const withMailScopes = <T,>(call: () => Promise<T>): Promise<T> => withO365Scopes(MAIL_READWRITE_SCOPES, call);
 import { ApiError } from "@/api/http";
 import toast from "react-hot-toast"; // BF_PORTAL_COMMS_SMS_ERROR_TOAST_v1
 import { smsSegments } from "@/lib/smsSegments"; // BF_PORTAL_BLOCK_v500
@@ -270,9 +275,8 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
             return tbs - tas;
           });
           setContacts(mapped as Contact[]);
-          if (!selected && mapped[0]) {
-            setSelected(mapped[0] as Contact);
-          }
+          // BF_PORTAL_v789_HOOK_DEPS - pick the first thread only when nothing is selected yet.
+          if (mapped[0]) setSelected((cur) => cur ?? (mapped[0] as Contact));
           setHasSentMessages(true);
         } else {
           // BF_PORTAL_BLOCK_57R_CAL_DOCS_DELETE_REFERRER_COMMS_v2
@@ -303,13 +307,15 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
       })
   }, []);
 
+  // BF_PORTAL_v789_HOOK_DEPS - the thread depends on the selected contact's id only.
+  const selectedContactId = selected ? String(selected.id ?? "") : null;
   useEffect(() => {
-    if (!selected) {
+    if (selectedContactId === null) {
       setThreadMessages([]);
       return;
     }
     setContactMeta((prev) => {
-      const id = String(selected.id ?? "");
+      const id = selectedContactId;
       const existing = id ? prev[id] : undefined;
       if (!existing) return prev;
       return { ...prev, [id]: { unread: 0, latest: existing.latest } };
@@ -319,7 +325,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
       try {
         const r = await api<{ messages?: Message[]; data?: Message[] } | Message[]>(
           "/api/communications/sms/thread",
-          { params: { contactId: String(selected.id ?? "") } },
+          { params: { contactId: selectedContactId } },
         );
         const list = Array.isArray(r) ? r : (r?.messages ?? r?.data ?? []);
         if (!cancelled) setThreadMessages(list);
@@ -330,7 +336,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
     return () => {
       cancelled = true;
     };
-  }, [selected?.id]);
+  }, [selectedContactId]);
 
   const loadMessages = useCallback((contactId: string, phone?: string | null) => {
     const params: Record<string, string> = {};
@@ -500,9 +506,13 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
   const messages = selected ? threadMessages : [];
 
 
+  // BF_PORTAL_v789_HOOK_DEPS - follow the forced contact when its id changes (latest object via a ref).
+  const forcedContactRef = useRef(forcedContact);
+  forcedContactRef.current = forcedContact;
+  const forcedContactId = forcedContact?.id;
   useEffect(() => {
-    if (forcedContact?.id) setSelected(forcedContact);
-  }, [forcedContact?.id]);
+    if (forcedContactId && forcedContactRef.current) setSelected(forcedContactRef.current);
+  }, [forcedContactId]);
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr)", flex: 1, minHeight: 0, height: "100%", overflow: "hidden", background: "var(--ui-surface-muted)" }}>
@@ -825,11 +835,10 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
                   authorRole: m.direction === "outbound" ? "self" : "other",
                   authorName: m.direction === "outbound" ? "You" : selected.name,
                   created_at: m.created_at,
-                  // BF_PORTAL_SMS_MEDIA_v1 — inbound MMS image via the BF-Server proxy
-                  // (Twilio media needs Basic auth; token rides the query for <img>).
-                  mediaUrl: m.media_url
-                    ? `${API_BASE}/api/communications/messages/${m.id}/media?token=${encodeURIComponent(getAuthToken() ?? "")}`
-                    : null,
+                  // BF_PORTAL_SMS_MEDIA_v1 - inbound MMS image via the BF-Server proxy.
+                  // BF_PORTAL_v789_AUTHED_MEDIA - fetched with the Authorization header when opened,
+                  // shown from a blob: URL; no token in the URL.
+                  mediaPath: m.media_url ? `/api/communications/messages/${encodeURIComponent(m.id)}/media` : null,
                   delivery: m.direction === "outbound" ? smsDeliveryTag(m.delivery_status, m.delivery_error) : null, // BF_PORTAL_BLOCK_v500
                 }))}
                 emptyText="No messages yet. Send the first one."
@@ -1026,6 +1035,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
   const [bcSending, setBcSending] = useState(false);
   const [bcResult, setBcResult] = useState<string | null>(null);
 
+  const selectedRowContactId = selected?.contactId; // BF_PORTAL_v789_HOOK_DEPS
   // BF_PORTAL_BLOCK_v621_MESSAGES_TAB_FALLBACK_v1 — when messages-list returns
   // empty, fall back to /api/crm/contacts so the left list isn't blank even
   // before any messages have been exchanged with a contact.
@@ -1067,7 +1077,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
         }
         if (cancelled) return;
         setRows(mapped);
-        if (!selected && mapped[0]) setSelected(mapped[0]);
+        if (mapped[0]) setSelected((cur) => cur ?? mapped[0] ?? null);
       } catch {
         if (!cancelled) setRows([]);
       }
@@ -1076,10 +1086,9 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
       cancelled = true;
     };
     // Re-fetch on selection change so the unread count + last preview update
-    // after a send. The ESLint exhaustive-deps lint reports `selected` here;
-    // intentional — we re-fetch the list after every selection-driven send.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected?.contactId]);
+    // after a send. BF_PORTAL_v789_HOOK_DEPS - the first row is picked with a functional update, so the
+    // effect no longer reads `selected` and needs no lint suppression.
+  }, [selectedRowContactId]);
 
   // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1 — poll the thread list so brand-new
   // inbound conversations appear without a manual remount.
@@ -1513,6 +1522,10 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     const m = messages.find((mm) => mm.id === messageId);
     return m?._mailbox ?? "";
   }, [active, messages]);
+  // BF_PORTAL_v789_HOOK_DEPS - the body/attachment loads follow the selected id and mailbox; they read the
+  // current message list through this ref instead of re-running whenever the list refreshes.
+  const mailboxForMessageRef = useRef(mailboxForMessage);
+  mailboxForMessageRef.current = mailboxForMessage;
   const [selectedId, setSelectedId] = useState<string>("");
   const [attachments, setAttachments] = useState<Array<{ id: string; name: string; contentType: string; size: number }>>([]); // BF_PORTAL_INBOX_ATTACHMENTS_v1
   const [attBusy, setAttBusy] = useState(false); // BF_PORTAL_INBOX_ATTACHMENTS_v1
@@ -1549,7 +1562,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     let cancelled = false;
     (async () => {
       try {
-        const r = await withO365Refresh(() =>
+        const r = await withMailScopes(() =>
           api<{ mine: { address: string; display_name: string } | null; shared: { address: string; display_name: string }[] }>("/api/crm/shared-mailboxes")
         );
         if (cancelled) return;
@@ -1593,7 +1606,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
           if (mailboxes.mine) targets.push({ addr: "", label: `${mailboxes.mine.display_name} (mine)` });
           for (const mb of mailboxes.shared) targets.push({ addr: mb.address, label: mb.display_name });
           const results = await Promise.allSettled(targets.map((t) =>
-            withO365Refresh(() => api<typeof messages>("/api/crm/inbox", { params: { ...(t.addr ? { mailbox: t.addr } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) } }))
+            withMailScopes(() => api<typeof messages>("/api/crm/inbox", { params: { ...(t.addr ? { mailbox: t.addr } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) } }))
               .then((rr) => (Array.isArray(rr) ? rr : []).map((mm) => ({ ...mm, _mailbox: t.addr, _mailboxLabel: t.label })))
           ));
           if (cancelled) return;
@@ -1608,7 +1621,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
           setNeedsReconnect(false);
         } else {
           const params = { ...(active ? { mailbox: active } : {}), sort: sortDir, ...(browseFolderId ? { folderId: browseFolderId } : { folder }), ...(query ? { q: query } : {}) };
-          const r = await withO365Refresh(() =>
+          const r = await withMailScopes(() =>
             api<typeof messages>("/api/crm/inbox", { params })
           );
           if (cancelled) return;
@@ -1640,9 +1653,9 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     let cancelled = false;
     (async () => {
       try {
-        const mbBody = active === ALL_MAILBOXES ? (messages.find((mm) => mm.id === selectedId)?._mailbox ?? "") : active;
+        const mbBody = mailboxForMessageRef.current(selectedId);
         const params = mbBody ? { mailbox: mbBody } : {};
-        const r = await withO365Refresh(() =>
+        const r = await withMailScopes(() =>
           api<typeof selected>(`/api/crm/inbox/${encodeURIComponent(selectedId)}`, { params })
         );
         if (!cancelled) setSelected(r);
@@ -1658,9 +1671,9 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     setAttachments([]);
     if (!selectedId) return;
     let cancelled = false;
-    const mbAtt = active === ALL_MAILBOXES ? (messages.find((mm) => mm.id === selectedId)?._mailbox ?? "") : active;
+    const mbAtt = mailboxForMessageRef.current(selectedId);
     const params = mbAtt ? { mailbox: mbAtt } : {};
-    withO365Refresh(() => api<{ data?: Array<{ id: string; name: string; contentType: string; size: number }> } | Array<{ id: string; name: string; contentType: string; size: number }>>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments`, { params }))
+    withMailScopes(() => api<{ data?: Array<{ id: string; name: string; contentType: string; size: number }> } | Array<{ id: string; name: string; contentType: string; size: number }>>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments`, { params }))
       .then((r) => {
         const list = Array.isArray(r) ? r : ((r as { data?: Array<{ id: string; name: string; contentType: string; size: number }> }).data ?? []);
         if (!cancelled) setAttachments(Array.isArray(list) ? list : []);
@@ -1675,7 +1688,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     if (!selectedId) return;
     const mbDl = mailboxForMessage(selectedId);
     const params = mbDl ? { mailbox: mbDl } : {};
-    const resp = await withO365Refresh(() => api<{ data?: { name?: string; contentType?: string; contentBytes?: string } } & { name?: string; contentType?: string; contentBytes?: string }>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/${encodeURIComponent(att.id)}`, { params }));
+    const resp = await withMailScopes(() => api<{ data?: { name?: string; contentType?: string; contentBytes?: string } } & { name?: string; contentType?: string; contentBytes?: string }>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/${encodeURIComponent(att.id)}`, { params }));
     const d = (resp as { data?: { name?: string; contentType?: string; contentBytes?: string } }).data ?? (resp as { name?: string; contentType?: string; contentBytes?: string });
     if (!d?.contentBytes) return;
     const bin = atob(d.contentBytes);
@@ -1694,7 +1707,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     try {
       const mb = mailboxForMessage(selectedId);
       const q = mb ? "?mailbox=" + encodeURIComponent(mb) : "";
-      const r = await withO365Refresh(() => api.post<any>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/save-to-onedrive${q}`, {}));
+      const r = await withO365Scopes(FILES_READWRITE_SCOPES, () => api.post<any>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/save-to-onedrive${q}`, {}), { interactive: true });
       const d = (r as any)?.data ?? r;
       const saved = Array.isArray(d?.saved) ? d.saved.length : 0;
       const failed = Array.isArray(d?.failed) ? d.failed.length : 0;
@@ -1732,36 +1745,10 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     setReconnecting(true);
     setErr(null);
     try {
-      const msal = (window as unknown as { msalInstance?: {
-        getAllAccounts?: () => Array<{ homeAccountId?: string }>;
-        acquireTokenSilent: (req: unknown) => Promise<{ accessToken: string; refreshToken?: string; expiresOn?: Date }>;
-        acquireTokenPopup: (req: unknown) => Promise<{ accessToken: string; refreshToken?: string; expiresOn?: Date }>;
-      } }).msalInstance;
-      if (!msal) {
-        setErr("Microsoft 365 is not configured. Reload and try again.");
-        return;
-      }
-      const scopes = [
-        "User.Read", "Mail.Send", "Mail.ReadWrite", "Mail.Send.Shared",
-        "Calendars.ReadWrite", "Tasks.ReadWrite", "offline_access",
-      ];
-      const accounts = msal.getAllAccounts?.() ?? [];
-      let result: { accessToken: string; refreshToken?: string; expiresOn?: Date };
-      try {
-        if (!accounts.length) throw new Error("no_account");
-        result = await msal.acquireTokenSilent({ scopes, account: accounts[0] });
-      } catch {
-        result = await msal.acquireTokenPopup({ scopes });
-      }
-      if (!result?.accessToken) throw new Error("no_token");
-      await api.post("/api/users/me/o365-tokens", {
-        access_token: result.accessToken,
-        refresh_token: result.refreshToken ?? null,
-        expires_in: result.expiresOn
-          ? Math.max(0, Math.floor((result.expiresOn.getTime() - Date.now()) / 1000))
-          : null,
-        account_id: accounts[0]?.homeAccountId ?? null,
-      });
+      // BF_PORTAL_v789_INCREMENTAL_CONSENT - the inbox's own permission, asked for on this click.
+      const { ensureO365Scopes } = await import("@/auth/msal");
+      const ok = await ensureO365Scopes([...MAIL_READWRITE_SCOPES, "Mail.Send.Shared"], { interactive: true });
+      if (!ok) throw new Error("no_token");
       setNeedsReconnect(false);
       setReconnectAttempts((n) => n + 1);
     } catch (e: unknown) {
@@ -2000,7 +1987,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
             if (mailboxes.mine) targets.push({ addr: "", label: `${mailboxes.mine.display_name} (mine)` });
             for (const mb of mailboxes.shared) targets.push({ addr: mb.address, label: mb.display_name });
             const results = await Promise.allSettled(targets.map((t) =>
-              withO365Refresh(() => api<typeof messages>("/api/crm/inbox", { params: { ...(t.addr ? { mailbox: t.addr } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) } }))
+              withMailScopes(() => api<typeof messages>("/api/crm/inbox", { params: { ...(t.addr ? { mailbox: t.addr } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) } }))
                 .then((rr) => (Array.isArray(rr) ? rr : []).map((mm) => ({ ...mm, _mailbox: t.addr, _mailboxLabel: t.label })))
             ));
             const merged = results.flatMap((res) => (res.status === "fulfilled" ? res.value : []));
@@ -2009,7 +1996,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
             setMessages(merged);
           } else {
             const params = active ? { mailbox: active } : {};
-            const r = await withO365Refresh(() => api<typeof messages>("/api/crm/inbox", { params }));
+            const r = await withMailScopes(() => api<typeof messages>("/api/crm/inbox", { params }));
             if (Array.isArray(r)) setMessages(r);
           }
         } catch { /* background poll: swallow */ }
@@ -2028,7 +2015,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     const run = async (): Promise<void> => {
       const entries = await Promise.allSettled(targets.map(async (addr) => {
         const params = { ...(addr ? { mailbox: addr } : {}), folder: "inbox" as const };
-        const r = await withO365Refresh(() => api<Array<{ isRead?: boolean }>>("/api/crm/inbox", { params }));
+        const r = await withMailScopes(() => api<Array<{ isRead?: boolean }>>("/api/crm/inbox", { params }));
         const n = (Array.isArray(r) ? r : []).filter((mm) => mm.isRead === false).length;
         return [addr, n] as const;
       }));
@@ -2355,7 +2342,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
                   const atts: Array<{ name: string; contentType: string; contentBytes: string; size: number }> = [];
                   for (const a of attachments) {
                     try {
-                      const resp = await withO365Refresh(() => api<{ data?: { name?: string; contentType?: string; contentBytes?: string } } & { name?: string; contentType?: string; contentBytes?: string }>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/${encodeURIComponent(a.id)}`, { params }));
+                      const resp = await withMailScopes(() => api<{ data?: { name?: string; contentType?: string; contentBytes?: string } } & { name?: string; contentType?: string; contentBytes?: string }>(`/api/crm/inbox/${encodeURIComponent(selectedId)}/attachments/${encodeURIComponent(a.id)}`, { params }));
                       const d = (resp as { data?: { name?: string; contentType?: string; contentBytes?: string } }).data ?? (resp as { name?: string; contentType?: string; contentBytes?: string });
                       if (d?.contentBytes) atts.push({ name: d.name ?? a.name, contentType: d.contentType ?? a.contentType, contentBytes: d.contentBytes, size: a.size });
                     } catch { /* skip unreadable attachment */ }
@@ -3157,10 +3144,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   }, [activeId, loadChannels, fetchReads, fetchPresence, fetchPins]);
 
   useEffect(() => {
-    const token = getAuthToken();
-    if (!token) return;
-    const authToken: string = token;
-    const wsBase = API_BASE.replace(/^http/, "ws");
+    if (!getAuthToken()) return;
     let ws: WebSocket | null = null;
     let closed = false;
     let retry = 0;
@@ -3216,20 +3200,24 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
       if (closed || timer) return;
       retry += 1;
       const delay = Math.min(30000, 1000 * 2 ** Math.min(retry, 5)); // 2s..30s backoff
-      timer = setTimeout(() => { timer = null; connect(); }, delay);
+      timer = setTimeout(() => { timer = null; void connect(); }, delay);
     };
-    function connect() {
+    // BF_PORTAL_v789_URL_TICKET - a fresh short-lived ticket in the URL for every connect, not the JWT.
+    async function connect() {
       if (closed) return;
-      try { ws = new WebSocket(`${wsBase}/api/team/ws?token=${encodeURIComponent(authToken)}`); }
+      let url: string | null;
+      try { url = await teamSocketUrl(API_BASE); } catch { scheduleReconnect(); return; }
+      if (closed || !url) return;
+      try { ws = new WebSocket(url); }
       catch { scheduleReconnect(); return; }
       ws.onopen = () => { retry = 0; };
       ws.onmessage = handle;
       ws.onerror = () => { try { ws?.close(); } catch { /* ignore */ } };
       ws.onclose = () => { scheduleReconnect(); };
     }
-    connect();
+    void connect();
     return () => { closed = true; if (timer) clearTimeout(timer); try { ws?.close(); } catch { /* ignore */ } };
-  }, [loadChannels, myId]);
+  }, [loadChannels, myId, fetchPins]);
 
   // BF_PORTAL_BLOCK_v804_TEAM_POLL — gentle fallback auto-refresh so messages and unread
   // counts stay current even when the WebSocket drops (Azure SWA / flaky networks). Fixed

@@ -3,6 +3,7 @@
 // Used by mini-portal and staff Communications tabs.
 import { useMemo, useState } from "react";
 import "./MessageThread.css";
+import { AuthedAudio, AuthedImage } from "@/components/media/AuthedMedia";
 
 export type ThreadMessage = {
   id: string;
@@ -10,7 +11,7 @@ export type ThreadMessage = {
   authorName?: string;
   body: string;
   createdAt: string; // ISO
-  attachments?: Array<{ name: string; contentType?: string | null; dataUrl: string }> | null;
+  attachments?: Array<{ name: string; contentType?: string | null; dataUrl: string; authPath?: string | null }> | null;
   delivery?: { tone: "success" | "error" | "muted"; text: string } | null; // BF_PORTAL_BLOCK_v500
 };
 
@@ -101,7 +102,12 @@ export default function MessageThread({ messages, onHashtagClick, emptyText }: P
                 {m.attachments && m.attachments.length > 0 && (
                   <div style={{ marginTop: m.body ? 6 : 0, display: "flex", flexDirection: "column", gap: 4 }}>
                     {m.attachments.map((a, i) =>
-                      (a.contentType ?? "").startsWith("image/") ? (
+                      // BF_PORTAL_v789_AUTHED_MEDIA - protected media loads through the api client when opened.
+                      a.authPath ? (
+                        (a.contentType ?? "").startsWith("audio/")
+                          ? <AuthedAudio key={i} path={a.authPath} label={`Play ${a.name.toLowerCase()}`} style={{ maxWidth: 260 }} />
+                          : <AuthedImage key={i} path={a.authPath} name={a.name} />
+                      ) : (a.contentType ?? "").startsWith("image/") ? (
                         <ThreadImage key={i} url={a.dataUrl} name={a.name} />
                       ) : (a.contentType ?? "").startsWith("audio/") ? (
                         <div key={i} style={{ display: "flex", flexDirection: "column", gap: 2 }}>

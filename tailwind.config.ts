@@ -12,6 +12,15 @@ const config: Config = {
           accent: "#F2994A",
           accentHover: "#E8892F",
         },
+        // BF_PORTAL_v789_CONTRAST - theme tokens as utilities (text-ui-muted, bg-ui-surface, ...).
+        ui: {
+          text: "var(--ui-text)",
+          muted: "var(--ui-text-muted)",
+          danger: "var(--ui-text-danger)",
+          success: "var(--ui-text-success)",
+          surface: "var(--ui-surface-strong)",
+          "surface-muted": "var(--ui-surface-muted)",
+        },
       },
       borderColor: {
         subtle: "var(--ui-border-soft)",

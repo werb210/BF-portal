@@ -8,6 +8,7 @@ import { describeMeetingDelivery, type MeetingDelivery } from "@/pages/calendar/
 // BF_PORTAL_v786_CRM_FIXES - attendees are picked by name or email instead of typed blind.
 import PeoplePicker, { type Person } from "@/components/meetings/PeoplePicker";
 import { RecipientAutocomplete } from "@/components/communications/RecipientAutocomplete";
+import { logBiActivity, type CrmTarget } from "@/api/biCrmActivity"; // BF_PORTAL_v789_BI_ACTIVITY
 
 // BF_PORTAL_BLOCK_v336_MEETING_TYPE_v1
 // BF_PORTAL_MEETING_CONFERENCE_v745 - "conference" books a Boreal conference room (dial-in code) from the same form.
@@ -20,9 +21,12 @@ export function roomMinutes(startIso: string, endIso: string): number {
 
 // BF_PORTAL_MEETING_NO_PUBLIC_BOOKING_v1 — public self-book banner removed;
 // the contact's email is pre-filled as an attendee so the invite is sent.
-export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultEmail, defaultName }: {
-  scope: Scope; onClose: () => void; onCreated: () => void; defaultPhone?: string; defaultEmail?: string; defaultName?: string;
+// BF_PORTAL_v789_BI_ACTIVITY - target "bi" logs the meeting to BI-Server only: no BF-Server calendar
+// event, conference room or contact lookup, so the conference option and the autocomplete are hidden.
+export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultEmail, defaultName, target = "bf" }: {
+  scope: Scope; onClose: () => void; onCreated: () => void; defaultPhone?: string; defaultEmail?: string; defaultName?: string; target?: CrmTarget;
 }): JSX.Element {
+  const isBi = target === "bi";
   const [title, setTitle] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -67,6 +71,24 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
   async function save(): Promise<void> {
     setSaving(true); setErr(null);
     try {
+      if (isBi) {
+        await logBiActivity(scope, {
+          event_type: "meeting",
+          body: description.trim() || title.trim(),
+          meta: {
+            title: title.trim(),
+            start_at: start ? new Date(start).toISOString() : null,
+            end_at: end ? new Date(end).toISOString() : null,
+            meeting_type: meetingType,
+            location: meetingType === "phone" ? phone.trim() : meetingType === "inperson" ? location : "",
+            attendees: attendees.split(",").map((a) => a.trim()).filter(Boolean),
+            internal_note: internalNote,
+          },
+        });
+        onCreated();
+        onClose();
+        return;
+      }
       if (meetingType === "conference") { await saveConference(); return; }
       await crmApi.meetings.create(scope, {
         title,
@@ -95,18 +117,19 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
 
   return (
     <PopupShell
-      title="Meeting"
+      title={isBi ? "Log meeting" : "Meeting"}
       onClose={onClose}
       width={640}
       primaryAction={roomResult ? { label: "Done", disabled: false, onClick: onClose } : {
-        label: saving ? "Scheduling…" : "Schedule",
-        disabled: !title.trim() || !start || !end || saving,
+        label: saving ? (isBi ? "Saving..." : "Scheduling\u2026") : isBi ? "Log meeting" : "Schedule",
+        disabled: !title.trim() || !start || (!end && !isBi) || saving,
         onClick: save,
       }}
     >
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        aria-label="Meeting title"
         placeholder="Title"
         style={{ ...popupInputStyle, marginBottom: 8 }}
       />
@@ -125,7 +148,16 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
         </label>
       </div>
       {/* BF_PORTAL_v786_CRM_FIXES - name/email autosuggest for attendees */}
-      {meetingType === "conference" ? (
+      {isBi ? (
+        <input
+          data-testid="meeting-attendees"
+          aria-label="Attendees"
+          value={attendees}
+          onChange={(e) => setAttendees(e.target.value)}
+          placeholder="Attendees - emails, comma separated"
+          style={{ ...popupInputStyle, marginBottom: 8 }}
+        />
+      ) : meetingType === "conference" ? (
         <div style={{ marginBottom: 8 }}><PeoplePicker value={people} onChange={setPeople} /></div>
       ) : (
         <div data-testid="meeting-attendees" style={{ marginBottom: 8 }}>
@@ -140,18 +172,18 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
       <select value={meetingType} onChange={(e) => setMeetingType(e.target.value as MeetingType)} style={{ ...popupInputStyle, marginBottom: 8 }}>
         <option value="teams">Microsoft Teams meeting (auto link)</option>
         <option value="phone">Phone call (we call the client)</option>
-        <option value="conference">Conference call (dial-in code, up to 10 people)</option>
+        {!isBi && <option value="conference">Conference call (dial-in code, up to 10 people)</option>}
         <option value="inperson">In person / other</option>
       </select>
-      {meetingType === "teams" && (
-        <div style={{ fontSize: 12, color: "#516f90", marginBottom: 8 }}>A Microsoft Teams join link is created automatically and included in the invite to attendees.</div>
+      {meetingType === "teams" && !isBi && (
+        <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 8 }}>A Microsoft Teams join link is created automatically and included in the invite to attendees.</div>
       )}
       {meetingType === "phone" && (
         <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number to call" style={{ ...popupInputStyle, marginBottom: 8 }} />
       )}
       {meetingType === "conference" && (
         <>
-          <div style={{ fontSize: 12, color: "#334e68", marginBottom: 8 }}>Books a Boreal conference room. Everyone dials (866) 631-8939, presses 3 and enters the access code. Attendees get the invite by email, and by text when a phone number is known.</div>
+          <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 8 }}>Books a Boreal conference room. Everyone dials (866) 631-8939, presses 3 and enters the access code. Attendees get the invite by email, and by text when a phone number is known.</div>
           <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Client's mobile for the text invite (optional)" style={{ ...popupInputStyle, marginBottom: 8 }} />
         </>
       )}
@@ -162,6 +194,7 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         rows={4}
+        aria-label="Meeting description"
         placeholder="Description for attendees…"
         style={{ ...popupInputStyle, marginBottom: 8 }}
       />
@@ -172,7 +205,7 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
         placeholder="Internal note (not sent to attendees)…"
         style={popupInputStyle}
       />
-      {err && <div style={{ color: "#b00020", marginTop: 8 }}>{err}</div>}
+      {err && <div role="alert" style={{ color: "var(--ui-text-danger)", marginTop: 8 }}>{err}</div>}
       {roomResult && <div role="status" data-testid="meeting-room-result" style={{ marginTop: 8, fontWeight: 600, color: roomResult.ok ? "#065f46" : "#991b1b" }}>{roomResult.text}</div>}
     </PopupShell>
   );

@@ -8,11 +8,17 @@
 #
 # This gate scans every API path string referenced inside src/silos/bi/.
 # Every match must start with /api/v1/.
+#
+# BF_PORTAL_v789_SHARED_SHELL - runs in CI. Shared BF-Server calls a BI screen makes on purpose (staff,
+# mailboxes, task queues, telephony, BF lenders) live in src/api/sharedShell.ts, outside the silo. Test
+# files are skipped: they never reach BI-Server, and some assert that a call goes to BF-Server.
 set -euo pipefail
 
+EXCLUDES=(--exclude-dir=__tests__ --exclude='*.test.ts' --exclude='*.test.tsx')
+
 # Capture quoted "/api/..." strings AND template-literal `/api/...` strings
-PATHS_QUOTED=$(grep -rnoE '"/api/[^"]+"' src/silos/bi/ 2>/dev/null || true)
-PATHS_TEMPLATE=$(grep -rnoE '`/api/[^`]+`' src/silos/bi/ 2>/dev/null || true)
+PATHS_QUOTED=$(grep -rnoE "${EXCLUDES[@]}" '"/api/[^"]+"' src/silos/bi/ 2>/dev/null || true)
+PATHS_TEMPLATE=$(grep -rnoE "${EXCLUDES[@]}" '`/api/[^`]+`' src/silos/bi/ 2>/dev/null || true)
 ALL="$PATHS_QUOTED
 $PATHS_TEMPLATE"
 
@@ -29,10 +35,10 @@ fi
 # calls will now go to BI-Server (per silo-based routing) and 404 if BI-Server
 # doesn't implement them.
 ENTRY_FILES="src/pages/bi src/silos/bi"
-WARN=$(grep -rnoE '("|`)/api/(?!v1/)[^"`]+("|`)' $ENTRY_FILES 2>/dev/null || true)
+WARN=$(grep -rnoE "${EXCLUDES[@]}" '("|`)/api/[^"`]+("|`)' $ENTRY_FILES 2>/dev/null | grep -vE '/api/v1/' || true)
 if [ -n "$WARN" ]; then
-  echo "WARN: the following BI-routed files call non-/api/v1/* paths."
-  echo "      Under BI_HARD_ISOLATION_v59 these now go to BI-Server (404 unless implemented):"
+  echo "WARN: the following BI pages call non-/api/v1/* paths, which go to BF-Server (resolveApiBase)."
+  echo "      Check each is a shared-shell call; if so, consider moving it to src/api/sharedShell.ts:"
   echo "$WARN"
 fi
 

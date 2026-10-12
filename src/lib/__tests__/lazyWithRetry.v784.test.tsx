@@ -1,9 +1,27 @@
 // BF_PORTAL_LAZY_RETRY_v784
+// BF_PORTAL_v789_SOURCE_GREP - rewritten as a behaviour test.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { readFileSync } from "node:fs";
+import rootConfig from "../../../staticwebapp.config.json";
+import publicConfig from "../../../public/staticwebapp.config.json";
 import { render, screen } from "@testing-library/react";
 import { Suspense } from "react";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
+
+const h = vi.hoisted(() => ({ lendersLoaded: false }));
+// Count every React.lazy() call and every lazyWithRetry() call, so App's pages can be checked.
+vi.mock("react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react")>();
+  return { ...actual, lazy: vi.fn(actual.lazy) };
+});
+vi.mock("@/lib/lazyWithRetry", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/lazyWithRetry")>();
+  const spy = vi.fn(actual.lazyWithRetry);
+  return { ...actual, lazyWithRetry: spy, default: spy };
+});
+vi.mock("@/pages/lenders/LendersPage", () => {
+  h.lendersLoaded = true;
+  return { default: () => null };
+});
 import {
   CHUNK_RELOAD_KEY,
   isChunkLoadError,
@@ -90,22 +108,31 @@ describe("lazyWithRetry", () => {
     expect(reload).not.toHaveBeenCalled();
   });
 
-  it("App uses it for every lazy page, main.tsx handles vite:preloadError, and index.html is not cached", () => {
-    const app = readFileSync("src/App.tsx", "utf8");
-    expect(app).not.toMatch(/[^A-Za-z]lazy\(/);
-    expect(app).toContain("lazyWithRetry(() => import(\"@/pages/lenders/LendersPage\"))");
-    const main = readFileSync("src/main.tsx", "utf8");
-    expect(main).toContain("vite:preloadError");
-    expect(main).toContain("reloadOnceForChunkError");
-    for (const f of ["staticwebapp.config.json", "public/staticwebapp.config.json"]) {
-      const cfg = JSON.parse(readFileSync(f, "utf8"));
-      const byRoute = Object.fromEntries(cfg.routes.map((r: { route: string; headers: Record<string, string> }) => [r.route, r.headers["Cache-Control"]]));
+  it("App loads every page through lazyWithRetry, on demand", async () => {
+    const react = await import("react");
+    const lazySpy = vi.mocked(react.lazy);
+    const retrySpy = vi.mocked(lazyWithRetry);
+    lazySpy.mockClear();
+    retrySpy.mockClear();
+    await import("@/App");
+    expect(retrySpy.mock.calls.length).toBeGreaterThan(30);
+    // Every React.lazy() made while loading the App came from lazyWithRetry - none bypass the retry.
+    expect(lazySpy.mock.calls.length).toBe(retrySpy.mock.calls.length);
+    // LendersPage (the page in the original stale-chunk report) is not in the main bundle.
+    expect(h.lendersLoaded).toBe(false);
+  });
+
+  // Dropped: "main.tsx handles vite:preloadError with reloadOnceForChunkError". main.tsx renders the app as a
+  // top-level side effect and cannot be imported in a test; reloadOnceForChunkError itself is tested above.
+  it("index.html is never cached, hashed assets are, in both static web app configs", () => {
+    for (const cfg of [rootConfig, publicConfig]) {
+      const byRoute = Object.fromEntries(cfg.routes.map((r: { route: string; headers?: Record<string, string> }) => [r.route, r.headers?.["Cache-Control"]]));
       expect(byRoute["/"]).toBe("no-cache, no-store, must-revalidate");
       expect(byRoute["/index.html"]).toBe("no-cache, no-store, must-revalidate");
       expect(byRoute["/assets/*"]).toBe("public, max-age=31536000, immutable");
       expect(cfg.navigationFallback.rewrite).toBe("/index.html");
       expect(cfg.globalHeaders["Content-Security-Policy"]).toContain("default-src 'self'");
-      expect(cfg.mimeTypes[".mjs"]).toBe("text/javascript");
+      expect((cfg.mimeTypes as Record<string, string>)[".mjs"]).toBe("text/javascript");
     }
   });
 });

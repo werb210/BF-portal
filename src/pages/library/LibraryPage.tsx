@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api";
+import { withO365Scopes } from "@/api/o365Interceptor"; // BF_PORTAL_v789_INCREMENTAL_CONSENT - Files.ReadWrite on use
+import { FILES_READWRITE_SCOPES } from "@/auth/o365Scopes";
 
 type Item = { id: string; name: string; webUrl: string | null; size: number | null; lastModified: string | null; isFolder: boolean };
 // BF_PORTAL_LIBRARY_BIG_UPLOAD_v772 - up to 200 MB, sent to OneDrive in pieces through BF-Server v790.
@@ -22,7 +24,7 @@ export function humanSize(bytes: number | null): string {
 // BF_PORTAL_LIBRARY_BIG_UPLOAD_v772 - open a OneDrive upload session, then send the file in the pieces the server
 // asks for (5 MB). Each piece is a normal request, so a 200 MB file never sits in memory as one body.
 export async function uploadInPieces(file: File, folderId: string | null, onProgress?: (pct: number) => void): Promise<void> {
-  const s = await api.post<{ uploadUrl?: string; chunkBytes?: number }>("/api/o365/library/upload-session", { name: file.name, folderId, size: file.size });
+  const s = await withO365Scopes(FILES_READWRITE_SCOPES, () => api.post<{ uploadUrl?: string; chunkBytes?: number }>("/api/o365/library/upload-session", { name: file.name, folderId, size: file.size }), { interactive: true });
   const uploadUrl = String(s?.uploadUrl ?? "");
   const step = Number(s?.chunkBytes) > 0 ? Number(s.chunkBytes) : 5 * 1024 * 1024;
   if (!uploadUrl) throw new Error("OneDrive did not open an upload");
@@ -54,7 +56,7 @@ export default function LibraryPage() {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const r = await api.get<{ configured?: boolean; url?: string; items?: Item[] }>("/api/o365/library" + (folder.id ? "?item=" + encodeURIComponent(folder.id) : ""));
+      const r = await withO365Scopes(FILES_READWRITE_SCOPES, () => api.get<{ configured?: boolean; url?: string; items?: Item[] }>("/api/o365/library" + (folder.id ? "?item=" + encodeURIComponent(folder.id) : "")));
       if (r?.configured === false) { setState("missing"); return; }
       setLibUrl(r?.url ?? null); setItems(r?.items ?? []); setState("ready");
     } catch (e: any) {
@@ -65,7 +67,7 @@ export default function LibraryPage() {
 
   const create = async () => {
     setBusy(true);
-    try { await api.post("/api/o365/library/ensure", {}); await load(); }
+    try { await withO365Scopes(FILES_READWRITE_SCOPES, () => api.post("/api/o365/library/ensure", {}), { interactive: true }); await load(); }
     catch (e: any) { setNotice({ ok: false, text: e?.status === 412 ? "Connect Microsoft 365 in Settings first." : "Could not create the Staff Library." }); }
     finally { setBusy(false); }
   };
@@ -91,7 +93,7 @@ export default function LibraryPage() {
     const name = window.prompt("Folder name");
     if (!name || !name.trim()) return;
     setBusy(true);
-    try { await api.post("/api/o365/library/folder", { name: name.trim(), folderId: folder.id }); setNotice({ ok: true, text: "Folder created." }); await load(); }
+    try { await withO365Scopes(FILES_READWRITE_SCOPES, () => api.post("/api/o365/library/folder", { name: name.trim(), folderId: folder.id }), { interactive: true }); setNotice({ ok: true, text: "Folder created." }); await load(); }
     catch { setNotice({ ok: false, text: "Could not create the folder." }); }
     finally { setBusy(false); }
   };

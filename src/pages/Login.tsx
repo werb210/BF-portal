@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { normalizePhone } from "@/utils/normalizePhone";
 import { clearOtpFlowState, setOtpStartRequested, setOtpStartSucceeded } from "@/auth/otpFlow";
 import { API_BASE } from "@/config/api";
+import { writeSessionItem } from "@/lib/secureStore";
 import logoUrl from "@/assets/logo-boreal-mountains-white.svg";
 import { loginWithPasskey, passkeysSupported } from "@/auth/passkey"; // BF_PORTAL_WEBAUTHN_v1
 
@@ -22,6 +23,7 @@ export default function Login() {
   const [error, setError] = useState<StartError>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoFiredFor = useRef<string | null>(null);
+  const startOtpRef = useRef<((event?: FormEvent<HTMLFormElement>, explicitPhone?: string) => Promise<void>) | null>(null);
   const navigate = useNavigate();
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const handlePasskeyLogin = async () => {
@@ -66,10 +68,12 @@ export default function Login() {
     if (autoFiredFor.current === normalized) return;
     autoFiredFor.current = normalized;
     const t = window.setTimeout(() => {
-      void handleStartOTP(undefined, normalized);
+      void startOtpRef.current?.(undefined, normalized);
     }, 350);
     return () => window.clearTimeout(t);
-  }, [phone, isSubmitting]); // eslint-disable-line react-hooks/exhaustive-deps
+    // BF_PORTAL_v789_HOOK_DEPS - the latest handleStartOTP is read through a ref, so a re-render never
+    // cancels the pending auto-submit and the dependency list is complete without a lint suppression.
+  }, [phone, isSubmitting]);
 
   const normalizedPhone = useMemo(() => normalizeNorthAmericanPhone(phone), [phone]);
 
@@ -100,7 +104,7 @@ export default function Login() {
         throw new Error("OTP start failed");
       }
 
-      localStorage.setItem("auth_phone", targetPhone);
+      writeSessionItem("auth_phone", targetPhone); // BF_PORTAL_v789_NATIVE_SESSION_MEMORY
       setOtpStartSucceeded(targetPhone);
       navigate("/verify");
     } catch {
@@ -111,6 +115,7 @@ export default function Login() {
       setIsSubmitting(false);
     }
   };
+  startOtpRef.current = handleStartOTP; // BF_PORTAL_v789_HOOK_DEPS
 
   return (
     // BF_PORTAL_BLOCK_v210_STAFF_LOGIN_OTP_CONSISTENCY_v1 — page bg + card

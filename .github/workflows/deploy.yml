@@ -1,17 +1,26 @@
 name: deploy
 
+# BF_PORTAL_v789_DEPLOY_AFTER_CI - deploy only a main commit whose CI run succeeded (it used to deploy on
+# every push to main, in parallel with CI, so a red build could ship).
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
 
 jobs:
   build_and_deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout
+      - name: Checkout the commit CI passed
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       # ✅ CRITICAL: Create .env file for Vite (THIS is the fix)
       - name: Inject env for Vite

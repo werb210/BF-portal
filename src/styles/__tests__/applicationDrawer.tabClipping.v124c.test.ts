@@ -1,58 +1,64 @@
 // BF_PORTAL_BLOCK_v124c_DRAWER_TAB_CLIPPING_v1
-import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+// BF_PORTAL_v789_SOURCE_GREP - rewritten as a behaviour test: the shipped stylesheet is applied in the DOM
+// and the drawer's elements are checked with getComputedStyle.
+import { afterAll, beforeAll, describe, it, expect } from "vitest";
+import css from "@/styles/globals.css?raw";
 
 describe("BF_PORTAL_BLOCK_v124c_DRAWER_TAB_CLIPPING_v1", () => {
-  const css = readFileSync(
-    join(__dirname, "..", "globals.css"),
-    "utf8"
-  );
+  let style: HTMLStyleElement;
+  beforeAll(() => {
+    style = document.createElement("style");
+    style.textContent = css;
+    document.head.appendChild(style);
+    document.body.innerHTML = `
+      <div class="application-drawer">
+        <div class="application-card">
+          <div class="application-drawer__tabs"></div>
+          <div class="application-card__content"></div>
+        </div>
+      </div>`;
+  });
+  afterAll(() => {
+    style.remove();
+    document.body.innerHTML = "";
+  });
+  const cs = (sel: string) => getComputedStyle(document.querySelector(sel)!);
 
-  it("anchor present in globals.css", () => {
-    expect(css).toContain("BF_PORTAL_BLOCK_v124c_DRAWER_TAB_CLIPPING_v1");
+  it(".application-card is a shrinkable flex column that clips its overflow", () => {
+    const s = cs(".application-drawer > .application-card");
+    expect(s.display).toBe("flex");
+    expect(s.flexDirection).toBe("column");
+    expect(s.minWidth).toBe("0");
+    expect(s.flex).toBe("1 1 auto");
+    expect(s.overflow).toBe("hidden");
   });
 
-  it(".application-card rule exists with flex column + min-width:0", () => {
-    const ruleStart = css.indexOf(".application-card {");
-    expect(ruleStart, ".application-card rule missing").toBeGreaterThan(-1);
-    const ruleEnd = css.indexOf("}", ruleStart);
-    const body = css.slice(ruleStart, ruleEnd);
-    expect(body).toContain("display: flex");
-    expect(body).toContain("flex-direction: column");
-    expect(body).toContain("min-width: 0");
-    expect(body).toContain("flex: 1 1 auto");
-    expect(body).toContain("overflow: hidden");
+  it(".application-card__content scrolls and can shrink", () => {
+    const s = cs(".application-card__content");
+    expect(s.overflow).toBe("auto");
+    expect(s.minWidth).toBe("0");
+    expect(s.flex).toBe("1 1 auto");
   });
 
-  it(".application-card__content rule exists with overflow:auto", () => {
-    const ruleStart = css.indexOf(".application-card__content {");
-    expect(ruleStart, ".application-card__content rule missing").toBeGreaterThan(-1);
-    const ruleEnd = css.indexOf("}", ruleStart);
-    const body = css.slice(ruleStart, ruleEnd);
-    expect(body).toContain("overflow: auto");
-    expect(body).toContain("min-width: 0");
-    expect(body).toContain("flex: 1 1 auto");
+  it(".application-drawer__tabs scrolls horizontally and is never squeezed", () => {
+    const s = cs(".application-drawer__tabs");
+    expect(s.overflowX).toBe("auto");
+    expect(s.flexShrink).toBe("0");
+    expect(s.minWidth).toBe("0");
   });
 
-  it(".application-drawer__tabs gets flex-shrink:0 + min-width:0", () => {
-    const ruleStart = css.indexOf(".application-drawer__tabs {");
-    expect(ruleStart).toBeGreaterThan(-1);
-    const ruleEnd = css.indexOf("}", ruleStart);
-    const body = css.slice(ruleStart, ruleEnd);
-    expect(body).toContain("overflow-x: auto");
-    expect(body).toContain("flex-shrink: 0");
-    expect(body).toContain("min-width: 0");
+  it(".application-card comes after .application-drawer__content in the cascade", () => {
+    // Read from the parsed stylesheet (CSSOM): later rules of equal specificity win, so the card's
+    // overflow: hidden overrides the drawer content's overflow-y: auto where both apply.
+    // (jsdom does not resolve the overflow shorthand against an earlier overflow-y longhand, so this is
+    // checked on the rule order rather than with getComputedStyle.)
+    const selectors = Array.from(style.sheet!.cssRules).map((r) => (r as CSSStyleRule).selectorText ?? "");
+    const drawerContent = selectors.indexOf(".application-drawer__content");
+    const card = selectors.indexOf(".application-card");
+    expect(drawerContent).toBeGreaterThan(-1);
+    expect(card).toBeGreaterThan(drawerContent);
   });
 
-  it(".application-card rule appears AFTER .application-drawer__content", () => {
-    const cardIdx = css.indexOf(".application-card {");
-    const drawerContentIdx = css.indexOf(".application-drawer__content {");
-    expect(cardIdx).toBeGreaterThan(drawerContentIdx);
-    expect(drawerContentIdx).toBeGreaterThan(-1);
-  });
-
-  it("no JS/TSX file was modified — pure CSS block", () => {
-    expect(css.includes(".application-card {")).toBe(true);
-  });
+  // Dropped: "anchor present in globals.css" (a comment marker, no behaviour) and "no JS/TSX file was
+  // modified" (it only re-checked that the .application-card rule exists, covered above).
 });

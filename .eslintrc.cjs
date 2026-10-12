@@ -18,7 +18,10 @@ module.exports = {
   },
 
   rules: {
-    "react-hooks/rules-of-hooks": "error"
+    "react-hooks/rules-of-hooks": "error",
+    // BF_PORTAL_v789_HOOK_DEPS - stale closures from incomplete dependency lists; a warning so the
+    // existing backlog can be worked down file by file.
+    "react-hooks/exhaustive-deps": "warn"
   },
 
   overrides: [

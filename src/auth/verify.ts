@@ -1,5 +1,6 @@
 import { normalizePhone } from "@/utils/normalizePhone";
 import { setAuthToken } from "@/lib/authToken";
+import { readSessionItem, writeSessionItem } from "@/lib/secureStore"; // BF_PORTAL_v789_NATIVE_SESSION_MEMORY
 
 const SERVER_ERROR_MESSAGES: Record<string, string> = {
   no_account: "Your account hasn't been set up yet. Contact your administrator.",
@@ -10,7 +11,7 @@ const SERVER_ERROR_MESSAGES: Record<string, string> = {
 
 export async function verifyOtp(code: string) {
   try {
-    const storedPhone = localStorage.getItem("auth_phone");
+    const storedPhone = readSessionItem("auth_phone");
 
     if (!storedPhone) {
       throw new Error("Missing phone number. Restart login.");
@@ -56,7 +57,7 @@ export async function verifyOtp(code: string) {
     setAuthToken(token);
 
     if (data.user) {
-      localStorage.setItem("auth_user", JSON.stringify(data.user));
+      writeSessionItem("auth_user", JSON.stringify(data.user));
     }
 
     return { success: true };

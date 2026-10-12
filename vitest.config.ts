@@ -19,5 +19,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: "./src/test/setup.ts",
+    // BF_PORTAL_v789_CONTRAST - let src/styles/__tests__/contrast.v789.test.ts import the real stylesheet (?raw).
+    css: { include: [/globals\.css/] },
   },
 });

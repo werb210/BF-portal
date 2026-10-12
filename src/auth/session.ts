@@ -1,4 +1,4 @@
-import { clearAuthToken, setAuthToken } from "@/lib/authToken";
+import { clearAuthToken, getAuthToken, setAuthToken } from "@/lib/authToken";
 const STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY || "auth_token";
 const SESSION_EVENT = "bf-session-changed";
 
@@ -11,7 +11,7 @@ export type BfSession = {
 
 export function getToken() {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(STORAGE_KEY);
+  return getAuthToken(); // BF_PORTAL_v789_NATIVE_SESSION_MEMORY
 }
 
 export function setToken(token: string) {
@@ -32,7 +32,7 @@ export function clearToken() {
 
 export function bfReadToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("auth_token") || localStorage.getItem("bf_jwt_token") || getToken();
+  return getAuthToken() || localStorage.getItem("bf_jwt_token");
 }
 
 export function bfBroadcastSession(session: BfSession): void {

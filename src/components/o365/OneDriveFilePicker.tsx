@@ -2,6 +2,8 @@
 // (GET /api/o365/files/recent, GET /api/o365/files/search, POST /api/o365/files/:id/link).
 import { useEffect, useState } from "react";
 import { api } from "@/api";
+import { withO365Scopes } from "@/api/o365Interceptor"; // BF_PORTAL_v789_INCREMENTAL_CONSENT - Files.ReadWrite on use
+import { FILES_READWRITE_SCOPES } from "@/auth/o365Scopes";
 
 type DriveFile = {
   id: string;
@@ -32,8 +34,7 @@ export default function OneDriveFilePicker() {
     const path = trimmed
       ? `/api/o365/files/search?q=${encodeURIComponent(trimmed)}`
       : "/api/o365/files/recent";
-    api
-      .get<{ files?: DriveFile[] }>(path)
+    withO365Scopes(FILES_READWRITE_SCOPES, () => api.get<{ files?: DriveFile[] }>(path))
       .then((r) => { setFiles(Array.isArray(r.files) ? r.files : []); setConnected(true); })
       .catch(() => setConnected(false))
       .finally(() => setLoading(false));
@@ -43,7 +44,7 @@ export default function OneDriveFilePicker() {
 
   const copyLink = async (id: string) => {
     try {
-      const r = await api.post<{ link?: string | null }>(`/api/o365/files/${encodeURIComponent(id)}/link`, {});
+      const r = await withO365Scopes(FILES_READWRITE_SCOPES, () => api.post<{ link?: string | null }>(`/api/o365/files/${encodeURIComponent(id)}/link`, {}), { interactive: true });
       if (r.link) {
         await navigator.clipboard.writeText(r.link).catch(() => {});
         setCopied(id);

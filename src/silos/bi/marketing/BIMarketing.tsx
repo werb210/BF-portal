@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
+import { getSharedMailboxes, getTaskQueues, listStaffUsers } from "@/api/sharedShell"; // BF_PORTAL_v789_SHARED_SHELL
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer";
 import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORTAL_LINK_CLICKS_PANEL_v9
 import SequenceCanvas, { type BISequenceStep, type SequenceQueue, type SequenceStaff, type SequenceTemplate } from "@/components/marketing/SequenceCanvas";
@@ -30,7 +31,7 @@ export default function BIMarketing() {
 
   useEffect(() => {
     // BF_PORTAL_BLOCK_v512
-    api.get<{ mine?: { address?: string } | null; shared?: Array<{ address?: string }> }>("/api/crm/shared-mailboxes")
+    getSharedMailboxes()
       .then((r) => {
         const found = [r?.mine?.address, ...((r?.shared ?? []).map((m) => m?.address))].filter((a): a is string => typeof a === "string" && a.includes("@"));
         setSenderOptions(Array.from(new Set([BI_DEFAULT_SENDER, ...found.map((a) => a.toLowerCase())])));
@@ -41,11 +42,10 @@ export default function BIMarketing() {
   useEffect(() => {
     api.get<{ data?: { items?: SequenceTemplate[] }; items?: SequenceTemplate[] }>("/api/v1/bi/marketing/templates")
       .then((r) => setTemplates(r.data?.items ?? r.items ?? [])).catch(() => setTemplates([]));
-    api.get<{ data?: { queues?: SequenceQueue[] }; queues?: SequenceQueue[] }>("/api/tasks/queues")
+    getTaskQueues<SequenceQueue>()
       .then((r) => setQueues(r.data?.queues ?? r.queues ?? [])).catch(() => setQueues([]));
-    api.get<{ users?: Array<{ id: string; first_name?: string; last_name?: string; email?: string }> } | Array<{ id: string; first_name?: string; last_name?: string; email?: string }>>("/api/users")
-      .then((response) => {
-        const users = Array.isArray(response) ? response : response.users ?? [];
+    listStaffUsers()
+      .then((users) => {
         setStaff(users.map((user) => ({
           id: user.id,
           name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email || user.id,

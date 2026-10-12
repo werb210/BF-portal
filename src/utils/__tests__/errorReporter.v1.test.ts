@@ -4,6 +4,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 vi.mock("@/lib/authToken", () => ({ getAuthToken: () => "tok" }));
 
 const { reportError, shouldReport, __resetErrorReporter } = await import("../errorReporter");
+const { __apiBaseUrls } = await import("@/config/api");
 
 beforeEach(() => {
 __resetErrorReporter();
@@ -38,7 +39,9 @@ expect(() => reportError("runtime", new Error("boom"))).not.toThrow();
 it("sends the detail needed to locate the failure", () => {
 reportError("boundary", new Error("kaboom"));
 const [url, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0]!;
-expect(url).toBe("/api/client/issues");
+// BF_PORTAL_v789_ERROR_REPORT_URL - BF-Server's absolute base, not the portal's own host.
+expect(url).toBe(`${__apiBaseUrls.bf}/api/client/issues`);
+expect(String(url)).toMatch(/^https?:\/\//);
 const body = JSON.parse(String((init as RequestInit).body));
 expect(body).toMatchObject({ source: "boundary", message: "kaboom" });
 expect(body.stack).toContain("kaboom");

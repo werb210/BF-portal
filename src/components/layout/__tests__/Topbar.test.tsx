@@ -21,10 +21,6 @@ vi.mock("@/components/notifications/NotificationCenter", () => ({
   default: () => <div data-testid="notification-center" />,
 }));
 
-vi.mock("@/components/MayaStatus", () => ({
-  default: () => <div data-testid="maya-status" />,
-}));
-
 vi.mock("@/api", () => {
   const mock = Object.assign(vi.fn().mockResolvedValue({ status: "ok" }), {
     post: vi.fn().mockResolvedValue({ status: "ok" }),

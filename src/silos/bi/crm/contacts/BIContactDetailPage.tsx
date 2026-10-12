@@ -30,7 +30,9 @@ import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORT
 import { ContactStageHistory } from "@/components/crm/ContactStageHistory";
 import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_CONTACT_RECORD_TABS_v272
 import ContactJourney from "@/components/crm/ContactJourney"; // BF_PORTAL_BLOCK_v570
-import { ContactEmailFeed, ContactCallFeed } from "@/components/crm/ContactCommsFeeds";
+// BF_PORTAL_v789_BI_CONTACT_CARD - BI-Server feeds replace the BF email/call feeds.
+import { BIContactCommsFeed, BIContactDocuments, BIContactDuplicates, BIContactTimeline } from "./BIContactPanels";
+import { getCommsTimelineByPhone } from "@/api/sharedShell";
 import { ContactMarketingSource } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_AD_ATTRIBUTION_v1
 import type { TimelineItem } from "@/api/crm";
 import toast from "react-hot-toast";
@@ -86,7 +88,7 @@ function EngagementSection({ contactId }: { contactId: string | undefined }) {
   return (
     <section style={{ marginTop: 16, padding: 12, border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)" }}>
       <h3 style={{ margin: 0, marginBottom: 8, fontSize: 14 }}>Apollo engagement</h3>
-      {error && <div style={{ color: "#b91c1c", fontSize: 12 }}>{error}</div>}
+      {error && <div style={{ color: "var(--ui-text-danger)", fontSize: 12 }}>{error}</div>}
       {events === null && <div style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>Loading</div>}
       {events !== null && events.length === 0 && <div style={{ color: "var(--ui-text-muted)", fontSize: 12, fontStyle: "italic" }}>No engagement events yet.</div>}
       {events !== null && events.length > 0 && (
@@ -278,9 +280,7 @@ export default function BIContactDetailPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const r = await api<any>(
-          `/api/communications/timeline?phone=${encodeURIComponent(phone)}`,
-        );
+        const r = await getCommsTimelineByPhone<any>(phone);
         if (cancelled) return;
         const list: BfTimelineEvent[] = Array.isArray(r?.events)
           ? r.events
@@ -412,7 +412,7 @@ export default function BIContactDetailPage() {
 
   if (err)
     return (
-      <div style={{ padding: 24, color: "#b00020", background: "var(--ui-surface-strong)", borderRadius: 8 }}>
+      <div style={{ padding: 24, color: "var(--ui-text-danger)", background: "var(--ui-surface-strong)", borderRadius: 8 }}>
         {err}
       </div>
     );
@@ -447,6 +447,7 @@ export default function BIContactDetailPage() {
         )}
         {!editing && (
           <ActionBar
+            target="bi"
             scope={{ kind: "contact", id: contact.id }}
             contactEmail={contact.email ?? undefined}
             contactPhone={contact.phone_e164 ?? undefined}
@@ -458,9 +459,12 @@ export default function BIContactDetailPage() {
             deleteTestId="bi-contact-delete-button"
             onChanged={refresh}
             onAction={(eventType) => {
-              // BF_PORTAL_BLOCK_v846_BI_EMAIL_TIMELINE — mirror every BI card action
-              // into bi_contact_activity (shared popups otherwise log only to
-              // BF-Server's separate DB, which the BI timeline can't read).
+              // BF_PORTAL_BLOCK_v846_BI_EMAIL_TIMELINE - mirror BI card actions
+              // into bi_contact_activity.
+              // BF_PORTAL_v789_BI_ACTIVITY - with target="bi" the Note, Call, Meeting and Email popups
+              // already write to BI-Server, so only Task and SMS (still BF-Server flows) are mirrored;
+              // anything else would be logged twice.
+              if (eventType !== "task" && eventType !== "sms") return;
               void api(`/api/v1/bi/crm/outreach/contacts/${contact.id}/activity`, {
                 method: "POST",
                 body: JSON.stringify({ event_type: eventType, body: `${eventType} logged`, meta: { source: "bi_card" } }),
@@ -468,7 +472,7 @@ export default function BIContactDetailPage() {
             }}
           />
         )}
-        {actionError && <div style={{ marginTop: 8, color: "#b00020", fontSize: 12 }} role="status">{actionError}</div>}
+        {actionError && <div style={{ marginTop: 8, color: "var(--ui-text-danger)", fontSize: 12 }} role="status">{actionError}</div>}
         {editing ? (
           <div style={fieldsBlock} data-testid="bi-contact-edit-form">
             <FieldEdit label="Full name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
@@ -514,8 +518,9 @@ export default function BIContactDetailPage() {
                   Data is unchanged; <ActivityTimeline> is controlled via items. */}
               <ActivityTimeline items={timelineItems} />
 
-              <ContactEmailFeed contactId={id} />
-              <ContactCallFeed contactId={id} />
+              <BIContactCommsFeed contactId={id} refreshKey={refreshKey} />
+              <BIContactTimeline contactId={id} refreshKey={refreshKey} />
+              <BIContactDocuments contactId={id} refreshKey={refreshKey} />
 
               {contact.notes && (
                 <div style={{ ...panel, marginTop: 16 }}>
@@ -560,11 +565,11 @@ export default function BIContactDetailPage() {
           <div style={subtle}>No associated company.</div>
         )}
         <ContactMarketingSource contactId={id} />
+        <BIContactDuplicates contactId={id} onMerged={refresh} />
       </aside>
       <O365ComposeModal
         open={emailComposeOpen}
         initialTo={contact.email ?? ""}
-        logScope={{ kind: "contact", id: contact.id }}
         onClose={() => setEmailComposeOpen(false)}
         onSent={() => {
           // BF_PORTAL_BLOCK_v846_BI_EMAIL_TIMELINE
@@ -658,14 +663,14 @@ function TagEditor({ contact, onSaved }: { contact: { id: string; tags: string[]
               }
             }}
             placeholder="vip, warm lead, do not call"
-            style={{ width: "100%", marginTop: 6, padding: 8, border: "1px solid rgba(148, 163, 184, 0.55)", borderRadius: 4, background: "rgba(15, 23, 42, 0.6)", color: "var(--ui-text)", fontSize: 13 }}
+            style={{ width: "100%", marginTop: 6, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-input)", color: "var(--ui-text)", fontSize: 13 }}
             aria-label="Edit tags"
           />
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <button type="button" onClick={() => void save()} disabled={saving} style={{ ...actionBtn, background: "var(--ui-accent-blue)", color: "#fff", borderColor: "var(--ui-accent-blue)" }}>{saving ? "Saving…" : "Save"}</button>
             <button type="button" onClick={cancelEdit} disabled={saving} style={actionBtn}>Cancel</button>
           </div>
-          {error && <div style={{ marginTop: 8, color: "#f87171", fontSize: 12 }}>{error}</div>}
+          {error && <div style={{ marginTop: 8, color: "var(--ui-text-danger)", fontSize: 12 }}>{error}</div>}
         </>
       ) : contact.tags && contact.tags.length > 0 ? (
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
@@ -730,8 +735,9 @@ const fieldLabel: CSSProperties = {
   textTransform: "uppercase",
 };
 const roleBadge: CSSProperties = {
-  background: "var(--ui-border)",
-  color: "var(--ui-surface)",
+  background: "var(--ui-surface-muted)", // BF_PORTAL_v789_CONTRAST - was --ui-surface text on --ui-border
+  color: "var(--ui-text)",
+  border: "1px solid var(--ui-border)",
   padding: "2px 8px",
   borderRadius: 999,
   fontSize: 12,

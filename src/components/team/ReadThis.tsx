@@ -3,6 +3,8 @@
 // gets "Mark as read"; the sender sees who has read it and who has not (BF-Server v776).
 import { useEffect, useState } from "react";
 import { api } from "@/api";
+import { withO365Scopes } from "@/api/o365Interceptor"; // BF_PORTAL_v789_INCREMENTAL_CONSENT - Files.ReadWrite on use
+import { FILES_READWRITE_SCOPES } from "@/auth/o365Scopes";
 
 export type ReadReceipt = { user_id: string; read_at: string };
 export type ReadThisFields = { id: string; sender_id: string | null; read_this?: boolean; read_by?: ReadReceipt[] };
@@ -72,7 +74,7 @@ export function ShareFileModal({ open, onClose, onPick }: { open: boolean; onClo
     const path = tab === "library"
       ? "/api/o365/library" + (folder.id ? "?item=" + encodeURIComponent(folder.id) : "")
       : query.trim() ? "/api/o365/files/search?q=" + encodeURIComponent(query.trim()) : "/api/o365/files/recent";
-    api.get<{ configured?: boolean; url?: string; items?: DriveItem[]; files?: DriveItem[] }>(path)
+    withO365Scopes(FILES_READWRITE_SCOPES, () => api.get<{ configured?: boolean; url?: string; items?: DriveItem[]; files?: DriveItem[] }>(path))
       .then((r) => { if (!alive) return; setConfigured(tab !== "library" || r?.configured !== false); setLibUrl(r?.url ?? null); setItems((r?.items ?? r?.files ?? []) as DriveItem[]); })
       .catch((e: any) => { if (alive) { setItems([]); setError(e?.status === 412 ? "Connect Microsoft 365 in Settings first." : "Could not load files."); } })
       .finally(() => { if (alive) setBusy(false); });
@@ -82,14 +84,14 @@ export function ShareFileModal({ open, onClose, onPick }: { open: boolean; onClo
   if (!open) return null;
   const createLibrary = async () => {
     setBusy(true); setError(null);
-    try { await api.post("/api/o365/library/ensure", {}); setStack([{ id: null, name: "Staff Library" }]); setConfigured(true); setReload((n) => n + 1); }
+    try { await withO365Scopes(FILES_READWRITE_SCOPES, () => api.post("/api/o365/library/ensure", {}), { interactive: true }); setStack([{ id: null, name: "Staff Library" }]); setConfigured(true); setReload((n) => n + 1); }
     catch (e: any) { setError(e?.status === 412 ? "Connect Microsoft 365 in Settings first." : "Could not create the Staff Library."); }
     finally { setBusy(false); }
   };
   const pick = async (f: DriveItem) => {
     if (f.isFolder) { if (tab === "library") setStack((s) => [...s, { id: f.id, name: f.name }]); return; }
     if (tab === "library") { if (f.webUrl) onPick({ name: f.name, url: f.webUrl }); return; }
-    try { const r = await api.post<{ link?: string | null }>("/api/o365/files/" + encodeURIComponent(f.id) + "/link", {}); const url = r?.link ?? f.webUrl; if (url) onPick({ name: f.name, url }); }
+    try { const r = await withO365Scopes(FILES_READWRITE_SCOPES, () => api.post<{ link?: string | null }>("/api/o365/files/" + encodeURIComponent(f.id) + "/link", {}), { interactive: true }); const url = r?.link ?? f.webUrl; if (url) onPick({ name: f.name, url }); }
     catch { setError("Could not make a company link for that file."); }
   };
   const btn = (on: boolean) => ({ padding: "6px 12px", borderRadius: 6, border: "1px solid #0B1F3A", background: on ? "#0B1F3A" : "#fff", color: on ? "#fff" : "#0B1F3A", fontWeight: 600, cursor: "pointer" } as const);
