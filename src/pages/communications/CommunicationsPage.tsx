@@ -1527,6 +1527,11 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
   const mailboxForMessageRef = useRef(mailboxForMessage);
   mailboxForMessageRef.current = mailboxForMessage;
   const [selectedId, setSelectedId] = useState<string>("");
+  // BF_PORTAL_v791 - the list load reads the current selection through refs so a message the
+  // user opens while a list is still loading is not wiped when that list arrives.
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
+  const lastListViewRef = useRef<{ active: string; key: string } | null>(null);
   const [attachments, setAttachments] = useState<Array<{ id: string; name: string; contentType: string; size: number }>>([]); // BF_PORTAL_INBOX_ATTACHMENTS_v1
   const [attBusy, setAttBusy] = useState(false); // BF_PORTAL_INBOX_ATTACHMENTS_v1
   // BF_PORTAL_ONEDRIVE_ATTACHMENTS_v648 - in the app, "Save all" puts attachments in OneDrive
@@ -1597,8 +1602,26 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     let cancelled = false;
     setLoading(true);
     setErr(null);
-    setSelectedId("");
-    setSelected(null);
+    // BF_PORTAL_v791 - do not clear the selection when a load starts. The initial load runs before
+    // the mailbox list arrives and is then re-run for "All Mailboxes"; clearing here dropped the
+    // email the user had already opened. Reconcile once the new list is in instead.
+    const selectionAtStart = selectedIdRef.current;
+    const view = { active, key: JSON.stringify([active, sortDir, folder, query, browseFolderId]) };
+    const prevView = lastListViewRef.current;
+    lastListViewRef.current = view;
+    const autoAllMailboxes = prevView?.active === "" && active === ALL_MAILBOXES;
+    // The automatic switch from the default mailbox to "All Mailboxes" (or a mailbox-list refresh)
+    // is not a user navigation, so the open email stays open even if the merged list lacks it.
+    const userNavigated = prevView !== null && prevView.key !== view.key && !autoAllMailboxes;
+    const reconcileSelection = (list: Array<{ id: string }>) => {
+      const cur = selectedIdRef.current;
+      if (!cur) return;
+      if (cur !== selectionAtStart) return; // picked while this list was loading - keep it
+      if (!userNavigated) return; // same view refreshed - keep the opened message
+      if (list.some((m) => m.id === cur)) return; // still present - keep it
+      setSelectedId("");
+      setSelected(null);
+    };
     (async () => {
       try {
         if (active === ALL_MAILBOXES) {
@@ -1618,6 +1641,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
           const dir = sortDir === "asc" ? 1 : -1;
           merged.sort((a, b) => dir * ((new Date(a.receivedDateTime || 0).getTime()) - (new Date(b.receivedDateTime || 0).getTime())));
           setMessages(merged);
+          reconcileSelection(merged); // BF_PORTAL_v791
           setNeedsReconnect(false);
         } else {
           const params = { ...(active ? { mailbox: active } : {}), sort: sortDir, ...(browseFolderId ? { folderId: browseFolderId } : { folder }), ...(query ? { q: query } : {}) };
@@ -1625,7 +1649,9 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
             api<typeof messages>("/api/crm/inbox", { params })
           );
           if (cancelled) return;
-          setMessages(Array.isArray(r) ? r : []);
+          const list = Array.isArray(r) ? r : [];
+          setMessages(list);
+          reconcileSelection(list); // BF_PORTAL_v791
           setNeedsReconnect(false);
         }
       } catch (e: unknown) {
@@ -2848,7 +2874,7 @@ type TeamChannel = {
   dm_key: string | null;
   created_by: string | null;
   created_at: string;
-  member_ids: string[];
+  member_ids?: string[] | null; // BF_PORTAL_v791 - may be missing on some rows
   last_read_at: string | null;
   last_message: TeamMessage | null;
   unread_count: number;
@@ -3118,7 +3144,8 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
   const loadChannels = useCallback(async () => {
     try {
       const r = await api<{ channels?: TeamChannel[] }>("/api/team/channels");
-      const list: TeamChannel[] = Array.isArray(r?.channels) ? r.channels : [];
+      // BF_PORTAL_v791 - a channel row may arrive without member_ids; normalise to [] so the Team tab never crashes.
+      const list: TeamChannel[] = (Array.isArray(r?.channels) ? r.channels : []).map((c) => ({ ...c, member_ids: Array.isArray(c?.member_ids) ? c.member_ids : [] }));
       setChannels(list);
       onUnreadChangeRef.current?.(list.reduce((sum, c) => sum + (c.unread_count || 0), 0));
     } catch { /* ignore */ }
@@ -3382,12 +3409,12 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
 
   function channelLabel(c: TeamChannel): string {
     if (c.name) return c.name;
-    const others = c.member_ids.filter((id) => id !== myId).map((id) => userName(id));
+    const others = (c.member_ids ?? []).filter((id) => id !== myId).map((id) => userName(id));
     return others.length ? others.join(", ") : "Direct message";
   }
 
   const active = channels.find((c) => c.id === activeId) ?? null;
-  const memberNames = active ? active.member_ids.map((id) => userName(id)).filter(Boolean) : [];
+  const memberNames = active ? (active.member_ids ?? []).map((id) => userName(id)).filter(Boolean) : [];
   const view = searchQ.trim() && searchResults ? searchResults : messages;
 
   return (
@@ -3418,7 +3445,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ui-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
                 {c.kind === "dm" && (() => {
-                  const other = c.member_ids.find((id) => id !== myId);
+                  const other = (c.member_ids ?? []).find((id) => id !== myId);
                   const st = other ? (presence[other] ?? "offline") : "offline";
                   const sx = other ? statuses[other] : undefined; // BF_PORTAL_TEAM_NOTIFY_v644 - idle Away shows yellow
                   const shown = st !== "offline" && sx?.away ? "away" : st;
@@ -3427,7 +3454,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 })()}
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", opacity: c.archived_at ? 0.6 : 1 }}>{c.kind === "channel" ? (c.is_private ? "\u{1F512} " : "# ") : ""}{channelLabel(c)}{c.archived_at ? " (archived)" : ""}</span>
                 {c.kind === "dm" && (() => {
-                  const other = c.member_ids.find((id) => id !== myId);
+                  const other = (c.member_ids ?? []).find((id) => id !== myId);
                   const sx = other ? statuses[other] : undefined;
                   if (!sx || (!sx.dnd && !sx.status_text && !sx.status_emoji)) return null;
                   return <span data-testid="team-row-status" title={(sx.dnd ? "Do not disturb. " : "") + (sx.status_text ?? "")} style={{ fontWeight: 400, fontSize: 12, color: "var(--ui-text-muted)", overflow: "hidden", textOverflow: "ellipsis" }}>{sx.dnd ? "\u{1F319}" : ""}{sx.status_emoji ?? ""} {sx.status_text ?? ""}</span>;
@@ -3452,7 +3479,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{active.kind === "channel" ? (active.is_private ? "\u{1F512} " : "# ") : ""}{channelLabel(active)}{active.archived_at ? " (archived)" : ""}</span>
                   {active.topic && <span data-testid="team-topic" style={{ fontWeight: 400, fontSize: 12, color: "var(--ui-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{active.topic}</span>}
                 </span>
-                {active.kind === "dm" && (() => { const other = active.member_ids.find((id) => id !== myId); return other ? <button onClick={() => void startInternalCall(other, { contactName: userName(other) })} data-testid="team-dm-call" title={"Call " + userName(other)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 16, marginLeft: "auto" }}>{"\u{1F4DE}"}</button> : null; })()}{/* BF_PORTAL_TEAM_PHASE_C_v672 */}
+                {active.kind === "dm" && (() => { const other = (active.member_ids ?? []).find((id) => id !== myId); return other ? <button onClick={() => void startInternalCall(other, { contactName: userName(other) })} data-testid="team-dm-call" title={"Call " + userName(other)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 16, marginLeft: "auto" }}>{"\u{1F4DE}"}</button> : null; })()}{/* BF_PORTAL_TEAM_PHASE_C_v672 */}
                 {active.kind !== "dm" && <button onClick={() => setShowSettings(true)} data-testid="team-channel-details" title="Details, members, leave, archive" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", fontSize: 16, marginLeft: "auto" }}>{"\u2699\uFE0F"}</button>}
                 <button onClick={() => { setSearchOpen((v) => !v); setSearchQ(""); setSearchResults(null); }} title="Search" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ui-text-muted)", fontSize: 16 }}>{"\u{1F50D}"}</button>
               </div>
@@ -3541,7 +3568,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
               {(() => {
                 const lastMine = [...messages].reverse().find((m) => m.sender_id === myId && !m.deleted_at);
                 if (!lastMine || !active) return null;
-                const seenBy = active.member_ids.filter((uid) => uid !== myId && reads[uid] && new Date(reads[uid] as string).getTime() >= new Date(lastMine.created_at).getTime());
+                const seenBy = (active.member_ids ?? []).filter((uid) => uid !== myId && reads[uid] && new Date(reads[uid] as string).getTime() >= new Date(lastMine.created_at).getTime());
                 if (seenBy.length === 0) return null;
                 const label = active.kind === "dm" ? "Seen" : `Seen by ${seenBy.map((uid) => userName(uid)).join(", ")}`;
                 return <div style={{ fontSize: 11, color: "var(--ui-text-muted)", alignSelf: "flex-end", marginTop: 2 }}>{label}</div>;
@@ -3551,7 +3578,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
             <div style={{ borderTop: "1px solid var(--ui-border)", padding: 12, paddingRight: 88, paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "var(--ui-surface-strong)", display: "flex", flexDirection: "column", gap: 8 }}>
               {mentionQuery !== null && (() => {
                 const q = mentionQuery.toLowerCase();
-                const matches = users.filter((u) => u.id !== myId && (active?.member_ids.includes(u.id) ?? true) && u.name.toLowerCase().includes(q)).slice(0, 6);
+                const matches = users.filter((u) => u.id !== myId && (active?.member_ids?.includes(u.id) ?? true) && u.name.toLowerCase().includes(q)).slice(0, 6);
                 if (matches.length === 0) return null;
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 180, overflowY: "auto", border: "1px solid var(--ui-border)", borderRadius: 8, background: "var(--ui-surface-strong)" }}>

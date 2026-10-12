@@ -46,8 +46,8 @@ beforeEach(() => {
   });
 });
 
-// The inbox reloads (and clears the selection) once the mailbox list arrives, so wait for
-// that before opening an email; a click that lands earlier is undone by the reload.
+// The inbox reloads once the mailbox list arrives (BF_PORTAL_v791: an open email now survives it); wait for
+// that reload anyway so the test opens the email against the final list.
 async function mailboxesLoaded() {
   await waitFor(() => expect(h.apiFn).toHaveBeenCalledWith("/api/crm/shared-mailboxes"));
   await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
