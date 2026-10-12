@@ -6,14 +6,21 @@ import { CallPopup } from "./popups/CallPopup";
 import { SmsPopup } from "./popups/SmsPopup";
 import TaskModal from "@/components/tasks/TaskModal";
 import { MeetingPopup } from "./popups/MeetingPopup";
+import { EmailLogPopup } from "./popups/EmailLogPopup"; // BF_PORTAL_v789_BI_ACTIVITY
+import type { CrmTarget } from "@/api/biCrmActivity";
 
 type Action = "note" | "email" | "call" | "sms" | "task" | "meeting";
 
 // BF_PORTAL_UNIFIED_TASK_MODAL_v1 - CRM Task action uses the shared task modal with the current record locked.
 // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1 — optional Edit/Delete so BI can adopt this
 // shared bar without losing them; BF callers omit these props and are unchanged.
-export function ActionBar({ scope, contactEmail, contactPhone, contactName, googleQuery, onChanged, onAction, onEdit, onDelete, deleting, editTestId, deleteTestId }: {
+// BF_PORTAL_v789_BI_ACTIVITY - target "bi" (BI contacts and companies): Note, Call, Meeting and Email
+// log to BI-Server's activity endpoint instead of BF-Server's CRM. Email opens a log form rather than
+// the Office 365 composer, and on a contact "Log call" sits beside the dialer's Call button. Task and
+// SMS behave as they always have.
+export function ActionBar({ scope, contactEmail, contactPhone, contactName, googleQuery, onChanged, onAction, onEdit, onDelete, deleting, editTestId, deleteTestId, target = "bf" }: {
   scope: Scope;
+  target?: CrmTarget;
   onAction?: (eventType: string) => void; // BF_PORTAL_BLOCK_v846_BI_EMAIL_TIMELINE
   contactEmail?: string;
   contactPhone?: string;
@@ -81,6 +88,9 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, goog
             setOpen("call");
           }}
         />
+        {target === "bi" && scope.kind === "contact" && (
+          <ActionBtn label="Log call" onClick={() => setOpen("call")} testId="crm-log-call" />
+        )}
         {scope.kind === "contact" && (
           <ActionBtn label="SMS" onClick={() => setOpen("sms")} />
         )}
@@ -89,13 +99,16 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, goog
       </div>
 
       {open === "note" && (
-        <NotePopup scope={scope} onClose={close} onCreated={() => { onAction?.("note"); onChanged?.(); }} />
+        <NotePopup scope={scope} target={target} onClose={close} onCreated={() => { onAction?.("note"); onChanged?.(); }} />
       )}
-      {open === "email" && (
+      {open === "email" && target === "bi" && (
+        <EmailLogPopup scope={scope} defaultEmail={contactEmail} onClose={close} onLogged={() => { onAction?.("email"); onChanged?.(); }} />
+      )}
+      {open === "email" && target !== "bi" && (
         <O365ComposeModal logScope={scope} open initialTo={contactEmail ?? ""} recipientName={contactName ?? undefined} onClose={close} onSent={() => { onAction?.("email"); onChanged?.(); }} />
       )}
-      {open === "call" && scope.kind !== "contact" && (
-        <CallPopup scope={scope} defaultPhone={contactPhone} onClose={close} onLogged={() => { onAction?.("call"); onChanged?.(); }} />
+      {open === "call" && (scope.kind !== "contact" || target === "bi") && (
+        <CallPopup scope={scope} target={target} defaultPhone={contactPhone} onClose={close} onLogged={() => { onAction?.("call"); onChanged?.(); }} />
       )}
       {open === "sms" && scope.kind === "contact" && (
         <SmsPopup contactId={scope.id} defaultPhone={contactPhone} onClose={close} onSent={() => { onAction?.("sms"); onChanged?.(); }} />
@@ -109,14 +122,14 @@ export function ActionBar({ scope, contactEmail, contactPhone, contactName, goog
         />
       )}
       {open === "meeting" && (
-        <MeetingPopup scope={scope} defaultPhone={contactPhone} defaultEmail={contactEmail} defaultName={contactName} onClose={close} onCreated={() => { onAction?.("meeting"); onChanged?.(); }} />
+        <MeetingPopup scope={scope} target={target} defaultPhone={contactPhone} defaultEmail={contactEmail} defaultName={contactName} onClose={close} onCreated={() => { onAction?.("meeting"); onChanged?.(); }} />
       )}
     </>
   );
 }
 
 function ActionBtn({ label, onClick, testId, danger, disabled }: { label: string; onClick: () => void; testId?: string; danger?: boolean; disabled?: boolean }): JSX.Element {
-  return <button onClick={onClick} disabled={disabled} data-testid={testId} style={danger ? { ...btn, borderColor: "#fecaca", color: "#b91c1c" } : btn}>{label}</button>;
+  return <button onClick={onClick} disabled={disabled} data-testid={testId} style={danger ? { ...btn, borderColor: "var(--ui-text-danger)", color: "var(--ui-text-danger)" } : btn}>{label}</button>;
 }
 
 const row: CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 };

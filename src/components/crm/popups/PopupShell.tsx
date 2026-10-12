@@ -67,6 +67,6 @@ const closeBtn: CSSProperties = {
   cursor: "pointer", fontSize: 20, lineHeight: 1,
 };
 const primaryBtn: CSSProperties = {
-  background: "#0091ae", color: "#fff", border: "none",
+  background: "#00738a", color: "#fff", border: "none", // BF_PORTAL_v789_CONTRAST - 5.5:1 (was #0091ae, 3.7:1)
   padding: "8px 16px", borderRadius: 4, cursor: "pointer",
 };

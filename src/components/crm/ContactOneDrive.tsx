@@ -3,6 +3,8 @@
 // "Boreal CRM"; an organization edit link lets any staff member open it and see the files.
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { api } from "@/api";
+import { withO365Scopes } from "@/api/o365Interceptor"; // BF_PORTAL_v789_INCREMENTAL_CONSENT - Files.ReadWrite on use
+import { FILES_READWRITE_SCOPES } from "@/auth/o365Scopes";
 
 type DriveFile = { id: string; name: string; webUrl?: string | null; isFolder?: boolean };
 
@@ -31,7 +33,7 @@ export function ContactOneDrive({ contactId }: { contactId: string }) {
     setLoading(true);
     setErr(null);
     try {
-      const r = await api.get<unknown>(`/api/o365/contacts/${encodeURIComponent(contactId)}/folder/files`);
+      const r = await withO365Scopes(FILES_READWRITE_SCOPES, () => api.get<unknown>(`/api/o365/contacts/${encodeURIComponent(contactId)}/folder/files`));
       const body = ((r as { data?: unknown })?.data ?? r) as { hasFolder?: boolean; url?: string | null; files?: DriveFile[] };
       setHasFolder(!!body?.hasFolder);
       setUrl(body?.url ?? null);
@@ -49,7 +51,7 @@ export function ContactOneDrive({ contactId }: { contactId: string }) {
     setBusy(true);
     setErr(null);
     try {
-      const r = await api.post<unknown>(`/api/o365/contacts/${encodeURIComponent(contactId)}/folder`, {});
+      const r = await withO365Scopes(FILES_READWRITE_SCOPES, () => api.post<unknown>(`/api/o365/contacts/${encodeURIComponent(contactId)}/folder`, {}), { interactive: true });
       const body = ((r as { data?: unknown })?.data ?? r) as { url?: string };
       if (body?.url) setUrl(body.url);
       await load();

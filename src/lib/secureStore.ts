@@ -44,12 +44,62 @@ export async function secureRemove(key: string): Promise<void> {
   }
 }
 
-// Called once at boot, before the app reads any token: pulls the Keychain copy
-// into memory so the existing synchronous callers keep working unchanged.
-export async function hydrateSecureTokens(keys: string[]): Promise<void> {
+// BF_PORTAL_v789_NATIVE_SESSION_MEMORY - on native the session values (auth token, user, phone, Graph
+// token) live in an in-memory cache hydrated from the Keychain at startup, and every write goes through to
+// the Keychain. They are no longer copied into localStorage, which on iOS is a plain file in the app's
+// data container and its backups. On web nothing changes: localStorage is the store, as before.
+const memory = new Map<string, string>();
+
+export const NATIVE_SESSION_KEYS = ["auth_token", "auth_user", "auth_phone", "msgraph_access_token"] as const;
+
+// Called once at boot, before the app reads any token: pulls the Keychain copy into the in-memory cache
+// so the synchronous readers below keep working, and removes any plain copy an older build left behind.
+export async function hydrateSecureTokens(keys: readonly string[]): Promise<void> {
   if (!isNative()) return;
   for (const key of keys) {
     const v = await secureGet(key);
-    if (v) window.localStorage.setItem(key, v);
+    if (v) memory.set(key, v);
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      /* storage may be blocked */
+    }
   }
+}
+
+/** Synchronous read of a session value: the in-memory cache on native, localStorage on web. */
+export function readSessionItem(key: string): string | null {
+  if (isNative()) return memory.get(key) ?? null;
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/** Write a session value. On native it is cached in memory and written through to the Keychain. */
+export function writeSessionItem(key: string, value: string): void {
+  if (isNative()) {
+    memory.set(key, value);
+    // If the Keychain refuses, the value lives for this run only; it is never put in plain storage.
+    void secureSet(key, value).catch(() => undefined);
+    return;
+  }
+  window.localStorage.setItem(key, value);
+}
+
+/** Remove a session value everywhere it could be: memory, localStorage and the Keychain. */
+export function removeSessionItem(key: string): void {
+  memory.delete(key);
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    /* storage may be blocked */
+  }
+  if (isNative()) void secureRemove(key);
+}
+
+/** Test seam. */
+export function __resetSessionMemory(): void {
+  memory.clear();
 }

@@ -1,11 +1,22 @@
 // BF_PORTAL_DASH_TEAM_MESSAGES_v758
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+// BF_PORTAL_v789_SOURCE_GREP - rewritten as a behaviour test.
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { readFileSync } from "node:fs";
-const get = vi.fn();
-vi.mock("@/api", () => ({ api: { get: (...args: unknown[]) => get(...args), put: vi.fn() } }));
+const h = vi.hoisted(() => {
+  const apiFn = vi.fn() as any;
+  apiFn.get = vi.fn();
+  apiFn.post = vi.fn();
+  apiFn.put = vi.fn();
+  apiFn.patch = vi.fn();
+  apiFn.delete = vi.fn();
+  return { apiFn, teamSocketUrl: vi.fn() };
+});
+const get = h.apiFn.get as ReturnType<typeof vi.fn>;
+vi.mock("@/api", () => ({ api: h.apiFn, default: h.apiFn, apiGetEnvelope: vi.fn(), rawApiFetch: vi.fn() }));
 vi.mock("@/lib/authToken", () => ({ getAuthToken: () => "x." + btoa(JSON.stringify({ sub: "me" })) + ".y" }));
+vi.mock("@/lib/urlTicket", () => ({ teamSocketUrl: h.teamSocketUrl }));
+import TeamNotifier from "@/components/team/TeamNotifier";
 import TeamMessagesCard, { TEAM_MESSAGE_EVENT, unreadConversations, conversationTitle, previewText, teamLink } from "../TeamMessagesCard";
 import { withTeamCardOnce, defaultCards } from "../DashboardHome";
 
@@ -64,7 +75,47 @@ describe("the card on the Dashboard", () => {
     expect(withTeamCardOnce(saved, false).cards.map((c) => c.report)).toEqual(["dash_kpis", "dash_team", "dash_pipeline"]);
     expect(withTeamCardOnce(saved, true)).toEqual({ cards: saved, added: false });
   });
-  it("TeamNotifier re-broadcasts incoming messages", () => {
-    expect(readFileSync("src/components/team/TeamNotifier.tsx", "utf8")).toContain("new CustomEvent(TEAM_MESSAGE_EVENT");
+});
+
+class FakeSocket {
+  static last: FakeSocket | null = null;
+  onopen: (() => void) | null = null;
+  onmessage: ((ev: { data: string }) => void) | null = null;
+  onerror: (() => void) | null = null;
+  onclose: (() => void) | null = null;
+  constructor(public url: string) { FakeSocket.last = this; }
+  close() { /* test socket */ }
+}
+
+describe("TeamNotifier", () => {
+  beforeEach(() => {
+    FakeSocket.last = null;
+    vi.stubGlobal("WebSocket", FakeSocket);
+    h.apiFn.mockReset();
+    h.apiFn.mockResolvedValue({});
+    h.apiFn.put.mockReset();
+    h.apiFn.put.mockResolvedValue({});
+    h.teamSocketUrl.mockReset();
+    h.teamSocketUrl.mockResolvedValue("wss://team.example/ws?ticket=t1");
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("re-broadcasts incoming messages and read receipts to the page", async () => {
+    const heard: unknown[] = [];
+    const listener = (e: Event) => heard.push((e as CustomEvent).detail);
+    window.addEventListener(TEAM_MESSAGE_EVENT, listener);
+    try {
+      render(<TeamNotifier />);
+      await waitFor(() => expect(FakeSocket.last).not.toBeNull());
+      expect(FakeSocket.last!.url).toBe("wss://team.example/ws?ticket=t1");
+      act(() => {
+        FakeSocket.last!.onmessage?.({ data: JSON.stringify({ type: "message", channel_id: "c1", message: { id: "m1", sender_id: "me", body: "hi" } }) });
+        FakeSocket.last!.onmessage?.({ data: JSON.stringify({ type: "read", channel_id: "c2" }) });
+        FakeSocket.last!.onmessage?.({ data: JSON.stringify({ type: "status", status: { user_id: "x" } }) });
+      });
+      expect(heard).toEqual([{ channel_id: "c1" }, { channel_id: "c2" }]);
+    } finally {
+      window.removeEventListener(TEAM_MESSAGE_EVENT, listener);
+    }
   });
 });

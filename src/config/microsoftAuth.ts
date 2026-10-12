@@ -1,10 +1,10 @@
-import { withRequiredO365Scopes } from "@/auth/o365Scopes"; // BF_PORTAL_O365_SCOPES_v275
+import { signInO365Scopes } from "@/auth/o365Scopes"; // BF_PORTAL_O365_SCOPES_v275 + BF_PORTAL_v789_INCREMENTAL_CONSENT
 const rawClientId = import.meta.env.VITE_MSAL_CLIENT_ID ?? "";
 const rawRedirectUri = import.meta.env.VITE_MSAL_REDIRECT_URI ?? "";
 const rawTenantId = import.meta.env.VITE_MSAL_TENANT_ID ?? "";
 const scopeValue = String(
   import.meta.env.VITE_MSAL_SCOPES
-    ?? "User.Read,Mail.Send,Mail.ReadWrite,Calendars.ReadWrite,Tasks.ReadWrite,offline_access"
+    ?? "User.Read,Mail.Send,Calendars.ReadWrite,Tasks.ReadWrite,offline_access"
 );
 
 const tenantId = rawTenantId.trim() || "common";
@@ -23,5 +23,5 @@ export const microsoftAuthConfig = {
   tenantId,
   authority: `https://login.microsoftonline.com/${tenantId}`,
   redirectUri,
-  scopes: withRequiredO365Scopes(scopeValue), // BF_PORTAL_O365_SCOPES_v275
+  scopes: signInO365Scopes(scopeValue), // sign-in scopes; Mail.ReadWrite / Files.ReadWrite come later
 };

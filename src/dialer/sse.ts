@@ -6,7 +6,11 @@
 // close-before-open, a generation token so stale reconnect timers are ignored after
 // stop/restart, capped exponential backoff instead of a blind 3s loop, and reconnect
 // on network-wake instead of accumulating dead sockets.
+// BF_PORTAL_v789_URL_TICKET - the query string carries a short-lived ticket fetched for every connect and
+// reconnect, never the staff JWT.
 import { ringPush } from "./debugRing";
+import { getUrlTicket } from "@/lib/urlTicket";
+import { getAuthToken } from "@/lib/authToken";
 type Handler = (event: string, data: any) => void;
 
 let es: EventSource | null = null;
@@ -17,10 +21,7 @@ let backoffMs = 3000;
 const BACKOFF_MAX = 30000;
 let currentSilo: string | null = null;
 let wakeListenersInstalled = false;
-
-function tokenFromStorage(): string | null {
-  try { return localStorage.getItem(import.meta.env.VITE_JWT_STORAGE_KEY || "auth_token"); } catch { return null; }
-}
+let connecting = false;      // a ticket request is in flight
 function safeJson(s: string): any { try { return JSON.parse(s); } catch { return s; } }
 
 function clearReconnect(): void {
@@ -46,14 +47,27 @@ function installWakeListeners(): void {
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") wake(); });
 }
 
-function attach(token: string, silo: string): void {
+function scheduleReconnect(myGen: number): void {
+  // Only the current generation may schedule a reconnect; stop/restart invalidates this.
+  if (myGen !== generation) return;
+  if (reconnectTimer) return;
+  const delay = backoffMs;
+  backoffMs = Math.min(backoffMs * 2, BACKOFF_MAX);
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (myGen !== generation) return;       // a newer start/stop happened - abandon
+    if (currentSilo) startSse(currentSilo);
+  }, delay);
+}
+
+function attach(ticket: string, silo: string): void {
   // Guaranteed single socket: always tear down any prior one first.
   closeEs();
   generation += 1;
   const myGen = generation;
   const base = (import.meta.env.VITE_API_BASE_URL || "https://server.boreal.financial").replace(/\/$/, "");
-  const url = `${base}/api/realtime/stream?token=${encodeURIComponent(token)}&silo=${encodeURIComponent(silo)}`;
-  ringPush("sse.connect", { url: url.replace(token, "<token>") });
+  const url = `${base}/api/realtime/stream?token=${encodeURIComponent(ticket)}&silo=${encodeURIComponent(silo)}`;
+  ringPush("sse.connect", { url: url.replace(encodeURIComponent(ticket), "<ticket>") });
   es = new EventSource(url);
   es.onopen = () => { backoffMs = 3000; };
   es.addEventListener("hello", (ev: any) => ringPush("sse.hello", safeJson(ev.data)));
@@ -62,16 +76,7 @@ function attach(token: string, silo: string): void {
   es.onerror = () => {
     ringPush("sse.error.reconnect", { backoffMs });
     closeEs();
-    // Only the current generation may schedule a reconnect; stop/restart invalidates this.
-    if (myGen !== generation) return;
-    if (reconnectTimer) return;
-    const delay = backoffMs;
-    backoffMs = Math.min(backoffMs * 2, BACKOFF_MAX);
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null;
-      if (myGen !== generation) return;       // a newer start/stop happened — abandon
-      if (currentSilo) startSse(currentSilo);
-    }, delay);
+    scheduleReconnect(myGen);
   };
 }
 
@@ -80,14 +85,31 @@ export function startSse(silo: string): void {
   installWakeListeners();
   // Singleton: if a socket is already open or connecting, do nothing.
   if (es && es.readyState !== 2 /* CLOSED */) return;
-  const t = tokenFromStorage();
-  if (!t) return;
+  if (connecting) return;
+  if (!getAuthToken()) return;
   clearReconnect();
-  attach(t, silo);
+  const myGen = generation;
+  connecting = true;
+  void getUrlTicket().then(
+    (ticket) => {
+      // stopSse() (or a restart) while the ticket was in flight: drop it.
+      if (myGen !== generation) return;
+      connecting = false;
+      if (!currentSilo || !ticket) return;
+      attach(ticket, currentSilo);
+    },
+    () => {
+      if (myGen !== generation) return;
+      connecting = false;
+      ringPush("sse.ticket.failed", { backoffMs });
+      scheduleReconnect(myGen);
+    },
+  );
 }
 
 export function stopSse(): void {
-  generation += 1;            // invalidate any pending reconnect from the old generation
+  generation += 1;            // invalidate any pending reconnect or ticket request from the old generation
+  connecting = false;
   currentSilo = null;
   clearReconnect();
   closeEs();

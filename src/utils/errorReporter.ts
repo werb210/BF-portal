@@ -4,8 +4,14 @@
 // Production failures therefore left no trace anywhere reachable. BF-Server
 // already exposes POST /api/client/issues and api/maya.ts already posts to it.
 import { getAuthToken } from "@/lib/authToken";
+import { __apiBaseUrls } from "@/config/api";
 
-const ENDPOINT = "/api/client/issues";
+// BF_PORTAL_v789_ERROR_REPORT_URL - a relative "/api/client/issues" went to the portal's own host (the
+// static site), never to BF-Server, so no report ever arrived. Post to BF-Server's absolute base.
+const ISSUES_PATH = "/api/client/issues";
+export function errorReportEndpoint(): string {
+return `${__apiBaseUrls.bf.replace(/\/$/, "")}${ISSUES_PATH}`;
+}
 const MAX_PER_SESSION = 20;
 const DEDUPE_WINDOW_MS = 60_000;
 
@@ -56,7 +62,7 @@ context: context ?? null,
 // must never re-enter this function -- that is how an error reporter becomes
 // the outage.
 try {
-void fetch(ENDPOINT, {
+void fetch(errorReportEndpoint(), {
 method: "POST",
 keepalive: true,
 headers: {

@@ -137,10 +137,10 @@ export default function BFReferrerManagement() {
   }), [referrers]);
 
   return (
-    <div className="text-gray-900">
+    <div className="text-ui-text">
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-3xl font-semibold">Referrer Management</h2>
-        <button onClick={() => void load()} className="rounded border border-card px-3 py-1 text-sm text-gray-600 hover:text-gray-900">Refresh</button>
+        <button onClick={() => void load()} className="rounded border border-card px-3 py-1 text-sm text-ui-muted hover:text-ui-text">Refresh</button>
       </div>
 
       {error ? <div className="mb-4 rounded border border-amber-500/40 bg-amber-500/10 p-3 text-sm">{error}. Click Refresh to retry; the referrers list endpoint is live.</div> : null}
@@ -155,7 +155,7 @@ export default function BFReferrerManagement() {
 
       <div className="rounded-xl border border-card overflow-hidden bg-brand-surface">
         <table className="w-full text-sm">
-          <thead className="bg-gray-100 text-left text-gray-500">
+          <thead className="bg-ui-surface-muted text-left text-ui-muted">
             <tr>
               <th className="px-4 py-2">Name</th>
               <th className="px-4 py-2">Company</th>
@@ -169,14 +169,14 @@ export default function BFReferrerManagement() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className="p-4 text-gray-400" colSpan={8}>Loading…</td></tr>
+              <tr><td className="p-4 text-ui-muted" colSpan={8}>{"Loading\u2026"}</td></tr>
             ) : referrers.length === 0 ? (
-              <tr><td className="p-4 text-gray-400" colSpan={8}>No referrers yet.</td></tr>
+              <tr><td className="p-4 text-ui-muted" colSpan={8}>No referrers yet.</td></tr>
             ) : referrers.map((r) => (
               <tr
                 key={r.id}
                 onClick={() => void openDetail(r.id)}
-                className={`border-t border-white/5 cursor-pointer hover:bg-gray-100 ${selected === r.id ? "bg-gray-100" : ""}`}
+                className={`border-t border-white/5 cursor-pointer hover:bg-ui-surface-muted ${selected === r.id ? "bg-ui-surface-muted" : ""}`}
               >
                 <td className="px-4 py-2">
                   <div className="font-medium">
@@ -186,9 +186,9 @@ export default function BFReferrerManagement() {
                       || r.email
                       || "(unnamed)"}
                   </div>
-                  {r.email ? <div className="text-xs text-gray-500">{r.email}</div> : null}
+                  {r.email ? <div className="text-xs text-ui-muted">{r.email}</div> : null}
                   {!r.profile_completed_at && !r.full_name && !r.first_name && !r.last_name ? (
-                    <div className="text-[10px] text-amber-300">awaiting profile</div>
+                    <div className="text-[10px] text-ui-muted">awaiting profile</div>
                   ) : null}
                 </td>
                 <td className="px-4 py-2">{r.company_name || "—"}</td>
@@ -221,7 +221,7 @@ export default function BFReferrerManagement() {
 function Pill(props: { label: string; value: number | string }) {
   return (
     <div className="rounded-xl border border-card bg-brand-surface p-4">
-      <div className="text-xs uppercase tracking-widest text-gray-500">{props.label}</div>
+      <div className="text-xs uppercase tracking-widest text-ui-muted">{props.label}</div>
       <div className="mt-2 text-2xl font-semibold">{props.value}</div>
     </div>
   );
@@ -233,24 +233,24 @@ function DetailPanel(props: { detail: Detail | null; loading: boolean; accrued: 
       <div className="w-full max-w-2xl overflow-y-auto bg-brand-surface border-l border-card p-6">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
-            <div className="text-xs uppercase tracking-widest text-gray-500">Referrer</div>
+            <div className="text-xs uppercase tracking-widest text-ui-muted">Referrer</div>
             <h3 className="text-xl font-semibold">
               {props.detail?.referrer?.full_name
                 || (props.detail?.referrer as any)?.email
                 || (props.detail?.referrer as any)?.phone
                 || "—"}
             </h3>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-ui-muted">
               {props.detail?.referrer?.company_name || ""}
               {props.detail?.referrer?.phone_e164 ? <> · {props.detail.referrer.phone_e164}</> : null}
               {props.detail?.referrer?.email ? <> · {props.detail.referrer.email}</> : null}
             </div>
           </div>
-          <button onClick={props.onClose} className="text-gray-500 hover:text-gray-900">✕</button>
+          <button onClick={props.onClose} className="text-ui-muted hover:text-ui-text">{"\u2715"}</button>
         </div>
 
-        {props.loading ? <div className="text-gray-400 text-sm">Loading…</div> : null}
-        {!props.loading && !props.detail ? <div className="text-gray-400 text-sm">Detail endpoint not yet available.</div> : null}
+        {props.loading ? <div className="text-ui-muted text-sm">{"Loading\u2026"}</div> : null}
+        {!props.loading && !props.detail ? <div className="text-ui-muted text-sm">Detail endpoint not yet available.</div> : null}
 
         {props.detail ? (
           <div className="space-y-6">
@@ -258,7 +258,7 @@ function DetailPanel(props: { detail: Detail | null; loading: boolean; accrued: 
             <button
               onClick={props.onPay}
               disabled={props.paying || props.accrued <= 0}
-              className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ color: "#fff" }}
             >
               {props.paying ? "Paying..." : `Pay out ${fmtMoney(props.accrued)}`}
@@ -270,7 +270,7 @@ function DetailPanel(props: { detail: Detail | null; loading: boolean; accrued: 
                     <li key={r.id} className="py-2 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="font-medium">{r.full_name}</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-ui-muted">
                           {r.company_name || "—"}
                           {r.email ? <> · {r.email}</> : null}
                           {r.phone_e164 ? <> · {r.phone_e164}</> : null}
@@ -278,11 +278,11 @@ function DetailPanel(props: { detail: Detail | null; loading: boolean; accrued: 
                       </div>
                       <div className="text-right text-xs">
                         {r.application_created ? (
-                          <span className="rounded bg-emerald-500/15 text-emerald-200 border border-emerald-500/30 px-2 py-0.5">Matched {fmtDate(r.matched_at)}</span>
+                          <span className="rounded bg-emerald-500/15 text-ui-success border border-emerald-500/30 px-2 py-0.5">Matched {fmtDate(r.matched_at)}</span>
                         ) : (
-                          <span className="rounded bg-gray-100 text-gray-500 border border-white/15 px-2 py-0.5">{r.sms_sent_at ? "Invited" : "Sent"}</span>
+                          <span className="rounded bg-ui-surface-muted text-ui-muted border border-card px-2 py-0.5">{r.sms_sent_at ? "Invited" : "Sent"}</span>
                         )}
-                        {r.ref_code ? <div className="mt-1 font-mono text-gray-400">/{r.ref_code}</div> : null}
+                        {r.ref_code ? <div className="mt-1 font-mono text-ui-muted">/{r.ref_code}</div> : null}
                       </div>
                     </li>
                   ))}
@@ -297,11 +297,11 @@ function DetailPanel(props: { detail: Detail | null; loading: boolean; accrued: 
                     <li key={a.id} className="py-2 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="font-medium">{a.business_name || "—"}</div>
-                        <div className="text-xs text-gray-500">{a.application_code || a.id}</div>
+                        <div className="text-xs text-ui-muted">{a.application_code || a.id}</div>
                       </div>
-                      <div className="text-right text-xs text-gray-500">
+                      <div className="text-right text-xs text-ui-muted">
                         <div>{a.stage || a.status || "—"}</div>
-                        {a.annual_premium ? <div className="text-gray-500">{fmtMoney(a.annual_premium)} premium</div> : null}
+                        {a.annual_premium ? <div className="text-ui-muted">{fmtMoney(a.annual_premium)} premium</div> : null}
                       </div>
                     </li>
                   ))}
@@ -316,7 +316,7 @@ function DetailPanel(props: { detail: Detail | null; loading: boolean; accrued: 
                     <li key={c.id} className="py-2 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="font-medium">{c.business_name || "—"}</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-ui-muted">
                           {c.status === "paid" && c.paid_at ? `Paid ${fmtDate(c.paid_at)}` :
                            c.status === "payable" ? "Awaiting payout" :
                            c.accrued_at ? `Accrued ${fmtDate(c.accrued_at)}` : "Accrued"}
@@ -324,7 +324,7 @@ function DetailPanel(props: { detail: Detail | null; loading: boolean; accrued: 
                       </div>
                       <div className="text-right">
                         <div className="font-semibold">{fmtMoney(c.amount)}</div>
-                        <div className="text-[10px] uppercase tracking-wider text-gray-400">{c.status}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-ui-muted">{c.status}</div>
                       </div>
                     </li>
                   ))}
@@ -341,12 +341,12 @@ function DetailPanel(props: { detail: Detail | null; loading: boolean; accrued: 
 function Section(props: { title: string; children: any }) {
   return (
     <div>
-      <h4 className="text-sm font-semibold text-gray-700 mb-2">{props.title}</h4>
+      <h4 className="text-sm font-semibold text-ui-text mb-2">{props.title}</h4>
       {props.children}
     </div>
   );
 }
 
 function Empty(props: { children: any }) {
-  return <div className="text-sm text-gray-400">{props.children}</div>;
+  return <div className="text-sm text-ui-muted">{props.children}</div>;
 }

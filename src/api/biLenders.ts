@@ -1,11 +1,11 @@
 // BF_PORTAL_BLOCK_v124b_PORTAL_NETWORK_FIXES_v1 — biLenders paths now correctly include /bi/ segment
 // BF_PORTAL_BLOCK_v91_BI_LENDERS_PAGE_v1
 import { rawApiFetch } from "@/api";
+import { getAuthToken } from "@/lib/authToken";
 
 const BI_TOKEN_KEY = "bi_access_token";
-const BF_AUTH_TOKEN_KEY = (import.meta as any).env?.VITE_JWT_STORAGE_KEY || "auth_token";
 const getBiToken = () =>
-  localStorage.getItem(BI_TOKEN_KEY) || localStorage.getItem(BF_AUTH_TOKEN_KEY);
+  localStorage.getItem(BI_TOKEN_KEY) || getAuthToken(); // BF_PORTAL_v789_NATIVE_SESSION_MEMORY
 
 async function biFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getBiToken();

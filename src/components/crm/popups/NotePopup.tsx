@@ -2,9 +2,10 @@ import { useState } from "react";
 import { PopupShell, popupInputStyle } from "./PopupShell";
 import { type Scope } from "@/api/crm";
 import { postOrQueue } from "@/offline/outbox"; // BF_PORTAL_OFFLINE_OUTBOX_v251
+import { logBiActivity, type CrmTarget } from "@/api/biCrmActivity"; // BF_PORTAL_v789_BI_ACTIVITY
 
-export function NotePopup({ scope, onClose, onCreated }: {
-  scope: Scope; onClose: () => void; onCreated: () => void;
+export function NotePopup({ scope, onClose, onCreated, target = "bf" }: {
+  scope: Scope; onClose: () => void; onCreated: () => void; target?: CrmTarget;
 }): JSX.Element {
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
@@ -14,7 +15,8 @@ export function NotePopup({ scope, onClose, onCreated }: {
     if (!body.trim() || saving) return;
     setSaving(true); setErr(null);
     try {
-      await postOrQueue(`/api/crm/${scope.kind === "contact" ? "contacts" : "companies"}/${scope.id}/notes`, { body: body.trim() }, "Note");
+      if (target === "bi") await logBiActivity(scope, { event_type: "note", body: body.trim(), meta: {} });
+      else await postOrQueue(`/api/crm/${scope.kind === "contact" ? "contacts" : "companies"}/${scope.id}/notes`, { body: body.trim() }, "Note");
       onCreated();
       onClose();
     } catch (e) {
@@ -41,7 +43,7 @@ export function NotePopup({ scope, onClose, onCreated }: {
         rows={8}
         style={popupInputStyle}
       />
-      {err && <div style={{ color: "#b00020", marginTop: 8 }}>{err}</div>}
+      {err && <div role="alert" style={{ color: "var(--ui-text-danger)", marginTop: 8 }}>{err}</div>}
     </PopupShell>
   );
 }

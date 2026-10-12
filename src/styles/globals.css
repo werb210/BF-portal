@@ -20,6 +20,9 @@
   --ui-text: var(--text-primary);
   --ui-text-muted: #51617D;
   --ui-text-soft: #0B1F3A;
+  /* BF_PORTAL_v789_CONTRAST - status text that reads at 4.5:1 or better on every surface in this theme. */
+  --ui-text-danger: #b91c1c;
+  --ui-text-success: #15803d;
   /* BF_PORTAL_BLOCK_v_RESKIN_1_ACCENT_FOUNDATION_v1 — --ui-accent-blue was literally
      green (#2FA86A) despite its name; restored to brand blue. --accent is the
      silo-driven accent (see [data-silo] blocks at file end). --accent-neutral is the
@@ -53,6 +56,9 @@
     --ui-text: var(--text-primary);
     --ui-text-muted: #8B919C;
     --ui-text-soft: #C9CED6;
+    /* BF_PORTAL_v789_CONTRAST */
+    --ui-text-danger: #f87171;
+    --ui-text-success: #4ade80;
     --ui-shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.45);
     --ui-shadow-strong: 0 18px 40px rgba(0, 0, 0, 0.65);
   }
@@ -72,6 +78,9 @@
   --ui-border-soft: rgba(255, 255, 255, 0.07);
   --ui-text-muted: #8B919C;
   --ui-text-soft: #C9CED6;
+  /* BF_PORTAL_v789_CONTRAST */
+  --ui-text-danger: #f87171;
+  --ui-text-success: #4ade80;
   --ui-shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.45);
   --ui-shadow-strong: 0 18px 40px rgba(0, 0, 0, 0.65);
 }
@@ -86,8 +95,31 @@
   --ui-border-soft: #E4EAF2;
   --ui-text-muted: #51617D;
   --ui-text-soft: #0B1F3A;
+  /* BF_PORTAL_v789_CONTRAST - status text that reads at 4.5:1 or better on every surface in this theme. */
+  --ui-text-danger: #b91c1c;
+  --ui-text-success: #15803d;
   --ui-shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
   --ui-shadow-strong: 0 18px 40px rgba(15, 23, 42, 0.16);
+}
+
+/* BF_PORTAL_v789_CONTRAST - a few screens (the SLF deal drawer and board, the referrer portal) draw
+   fixed light surfaces whatever the theme. Inside .ui-surface-light the text tokens take their light
+   values, so --ui-text-muted stays at 4.5:1 or better on those surfaces in the dark theme too. */
+.ui-surface-light {
+  --text-primary: #0B1F3A;
+  --ui-bg: #ffffff;
+  --ui-surface: #F5F8FC;
+  --ui-text: #0B1F3A;
+  --ui-text-muted: #51617D;
+  --ui-text-soft: #0B1F3A;
+  --ui-text-danger: #b91c1c;
+  --ui-text-success: #15803d;
+  --ui-surface-strong: #ffffff;
+  --ui-surface-muted: #F5F8FC;
+  --ui-surface-input: #F5F8FC;
+  --ui-border: #E4EAF2;
+  --ui-border-soft: #E4EAF2;
+  color: var(--ui-text);
 }
 
 * {

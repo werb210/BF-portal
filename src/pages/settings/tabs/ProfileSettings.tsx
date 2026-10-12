@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { microsoftAuthConfig } from "@/config/microsoftAuth";
 import { initializeMsalClient, msalClient } from "@/auth/msal";
 import { useSettingsStore } from "@/state/settings.store";
+import { getAuthToken } from "@/lib/authToken";
 import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
 import { logger } from "@/utils/logger";
@@ -147,7 +148,7 @@ const ProfileSettings = () => {
         window.removeEventListener("bf-msal-tokens-saved", onTokensSaved as EventListener);
       }
     };
-  }, []);
+  }, [setMicrosoftConnection]); // BF_PORTAL_v789_HOOK_DEPS - a store action, stable across renders
 
   // MSAL v3 requires explicit initialization before any API call
   useEffect(() => {
@@ -303,7 +304,7 @@ const ProfileSettings = () => {
         await exchangeMicrosoftToken(tokenResponse.accessToken, response.account?.username);
         bfLogMsalPhase("exchange.completed", {
           account: response.account?.username ?? null,
-          authTokenPresent: typeof localStorage !== "undefined" ? Boolean(localStorage.getItem("auth_token")) : null
+          authTokenPresent: Boolean(getAuthToken())
         });
       } catch (error) {
         if (!isMounted) return;

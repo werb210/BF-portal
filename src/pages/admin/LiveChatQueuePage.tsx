@@ -18,13 +18,14 @@ export default function LiveChatQueuePage() {
   }, []);
 
   return (
-    <div className="p-6">
+    <div className="p-6 text-ui-text">
       <h1 className="text-2xl font-bold mb-6">Live Chat Queue</h1>
 
       {chats.map((chat, i) => (
-        <div key={chat.id ?? i} className="bg-white shadow rounded p-4 mb-4">
+        // BF_PORTAL_v789_CONTRAST - theme surface and text tokens (was bg-white with inherited light text in dark mode).
+        <div key={chat.id ?? i} className="bg-ui-surface text-ui-text border border-card shadow rounded p-4 mb-4">
           <div className="font-semibold">{chat.name}</div>
-          <div className="text-sm text-gray-500">{chat.email}</div>
+          <div className="text-sm text-ui-muted">{chat.email}</div>
           <div className="mt-2">{chat.lastMessage}</div>
         </div>
       ))}

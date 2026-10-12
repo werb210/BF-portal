@@ -1,7 +1,8 @@
 // BF_PORTAL_BLOCK_v664_BI_COMPANIES_BULK
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
+import { importBiCompaniesToBfLenders, listStaffUsers } from "@/api/sharedShell"; // BF_PORTAL_v789_SHARED_SHELL
 import { useAuth } from "@/hooks/useAuth";
 import { exportRowsToCsv } from "@/utils/csvExport";
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
@@ -58,7 +59,7 @@ export default function BICompaniesList() {
     if (!window.confirm(`Import ${selected.size} company(ies) into the BF Lenders list?`)) return;
     setBfBusy(true); setBfMsg(null);
     try {
-      const r: any = await api(`/api/portal/lenders/import-from-bi`, { method: "POST", body: { companyIds: Array.from(selected) } } as any);
+      const r: any = await importBiCompaniesToBfLenders(Array.from(selected));
       // Surface the real per-company skip reason (create_failed / duplicate /
       // missing_name / not_found) instead of a blanket "already exist".
       const skips: Array<{ name?: string; company_id?: string; reason?: string }> =
@@ -88,7 +89,8 @@ export default function BICompaniesList() {
   const [seenTags, setSeenTags] = useState<string[]>([]);
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
   const toggleCol = (k: string) => setHiddenCols((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
-  const ownerName = (id?: string | null) => { if (!id) return "—"; const o = owners.find((x) => x.id === id); return o ? `${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || id : id; };
+  // BF_PORTAL_v789_HOOK_DEPS - memoised so the rows memo below can list it.
+  const ownerName = useCallback((id?: string | null) => { if (!id) return "\u2014"; const o = owners.find((x) => x.id === id); return o ? `${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || id : id; }, [owners]);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,8 +118,7 @@ export default function BICompaniesList() {
     let cancelled = false;
     (async () => {
       try {
-        const r: any = await api(`/api/users`);
-        const list = Array.isArray(r?.users) ? r.users : Array.isArray(r) ? r : [];
+        const list = await listStaffUsers();
         if (!cancelled) setOwners(list);
       } catch { /* owners optional */ }
     })();
@@ -204,7 +205,7 @@ export default function BICompaniesList() {
       {!hiddenCols.has("owner") && <td style={tdStyle}>{ownerName(r.owner_id)}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows, isAdmin, selected, owners, hiddenCols]);
+  )), [rows, isAdmin, selected, ownerName, hiddenCols]);
 
   const colCount = isAdmin ? 8 : 7; // CRM owner parity (+Owner column)
 

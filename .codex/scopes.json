@@ -1,7 +1,26 @@
 {
   "$schema": "https://boreal.financial/schemas/codex-scopes-v1.json",
-  "default": "fullstack",
+  "$comment": "BF_PORTAL_v789_SCOPES - a PR's scope comes from its scope:<name> label (case-insensitive). No label means unscoped: nothing is denied. BF-only code is src/pages/** and src/components/**; BI and SLF PRs may touch only the shared CRM components listed in sharedCrmComponents. A scope's allow list re-permits paths its deny list covers.",
+  "default": "unscoped",
+  "sharedCrmComponents": [
+    "src/components/crm/ActionBar.tsx",
+    "src/components/crm/ActivityTimeline.tsx",
+    "src/components/crm/ColumnsMenu.tsx",
+    "src/components/crm/ContactAiSummary.tsx",
+    "src/components/crm/ContactApplicationDetails.tsx",
+    "src/components/crm/ContactCardScanField.tsx",
+    "src/components/crm/ContactJourney.tsx",
+    "src/components/crm/ContactRecordTabs.tsx",
+    "src/components/crm/ContactStageHistory.tsx",
+    "src/components/crm/CrmSegmentBar.tsx",
+    "src/components/crm/popups/**",
+    "src/components/crm/__tests__/**"
+  ],
   "scopes": {
+    "unscoped": {
+      "description": "No scope label. May touch anything.",
+      "deny": []
+    },
     "fullstack": {
       "description": "Maintainer / cross-silo work. May touch anything.",
       "deny": []
@@ -10,21 +29,31 @@
       "description": "Boreal Financial work. Cannot modify BI or SLF silo code.",
       "deny": [
         "src/silos/bi/**",
-        "src/silos/slf/**"
+        "src/silos/slf/**",
+        "src/pages/bi/**"
       ]
     },
     "BI": {
-      "description": "Boreal Insurance work. Cannot modify BF or SLF silo code.",
+      "description": "Boreal Insurance work. Cannot modify SLF silo code or BF-only pages and components.",
       "deny": [
-        "src/silos/bf/**",
-        "src/silos/slf/**"
+        "src/silos/slf/**",
+        "src/pages/**",
+        "src/components/**"
+      ],
+      "allow": [
+        "src/pages/bi/**",
+        "$sharedCrmComponents"
       ]
     },
     "SLF": {
-      "description": "Site Level Financial work. Cannot modify BF or BI silo code.",
+      "description": "Site Level Financial work. Cannot modify BI silo code or BF-only pages and components.",
       "deny": [
-        "src/silos/bf/**",
-        "src/silos/bi/**"
+        "src/silos/bi/**",
+        "src/pages/**",
+        "src/components/**"
+      ],
+      "allow": [
+        "$sharedCrmComponents"
       ]
     }
   }

@@ -6,6 +6,7 @@ import { API_ERROR } from "@/lib/errors";
 import { resolveApiBase, getActiveSilo, __apiBaseUrls } from "@/config/api";
 import { announceSavedCopy, cacheKeyFor, readOfflineCopy, saveOfflineCopy } from "@/offline/readCache"; // BF_PORTAL_OFFLINE_READ_CACHE_v252
 import { shouldLogoutOn401 } from "@/lib/apiAuth";
+import { assertSiloScoped } from "@/api/siloGuard"; // BF_PORTAL_v789_SILO_GUARD
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -232,6 +233,7 @@ export async function apiFetch<T = any>(path: string, options: RequestOptions = 
     throw parseError;
   }
   const parsed = parsePayload<T>(json);
+  assertSiloScoped(path, parsed, getActiveSilo()); // BF_PORTAL_v789_SILO_GUARD - before it is cached or shown
   if (offlineKey) saveOfflineCopy(offlineKey, parsed); // BF_PORTAL_OFFLINE_READ_CACHE_v252
   return parsed;
 }
@@ -364,7 +366,9 @@ export function apiForSilo(silo: "BF" | "BI" | "SLF"): ApiFn {
       if (!text || !text.trim()) return undefined as T;
       throw parseError;
     }
-    return parsePayload<T>(json);
+    const parsed = parsePayload<T>(json);
+    assertSiloScoped(path, parsed, silo); // BF_PORTAL_v789_SILO_GUARD - the silo this call asked for
+    return parsed;
   };
 
   const fn = ((path: string, options?: RequestOptions) => wrap(path, options)) as ApiFn;

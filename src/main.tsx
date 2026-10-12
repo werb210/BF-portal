@@ -1,5 +1,6 @@
 // BF_PORTAL_SECURE_TOKEN_STORAGE_v422 - restore Keychain tokens before render.
-import { hydrateSecureTokens } from "./lib/secureStore";
+import { hydrateSecureTokens, NATIVE_SESSION_KEYS } from "./lib/secureStore";
+import { getAuthToken } from "@/lib/authToken";
 import "./styles/globals.css";
 import { reportError } from "@/utils/errorReporter";
 import "@/lib/authSync";
@@ -67,7 +68,8 @@ async function assertBackend() {
 }
 
 async function bootstrap() {
-  await hydrateSecureTokens(["auth_token", "auth_user", "auth_phone", "msgraph_access_token"]).catch(() => undefined);
+  // BF_PORTAL_v789_NATIVE_SESSION_MEMORY - native: Keychain -> in-memory cache (never localStorage).
+  await hydrateSecureTokens(NATIVE_SESSION_KEYS).catch(() => undefined);
 
   if (!(await validateStartupToken())) return;
 
@@ -77,7 +79,7 @@ async function bootstrap() {
   await ensureMsalInitialized();
   bfRestoreActiveMsalAccount(); // BF_MAIN_ACTIVE_ACCOUNT_v28
   // BF_MAIN_SILENT_v30
-  const authJwt = typeof localStorage !== "undefined" ? localStorage.getItem("auth_token") : null;
+  const authJwt = getAuthToken();
   void bfAcquireSilentO365Tokens(authJwt);
   // BF_MAIN_REDIRECT_DIAG_v24
   const redirectResult = await msalClient.handleRedirectPromise().catch((err) => {
@@ -88,7 +90,7 @@ async function bootstrap() {
     hadResult: Boolean(redirectResult),
     account: redirectResult?.account?.username ?? null,
     idTokenClaims: redirectResult?.idTokenClaims ? "present" : "absent",
-    authTokenPresent: typeof localStorage !== "undefined" ? Boolean(localStorage.getItem("auth_token")) : null,
+    authTokenPresent: Boolean(getAuthToken()),
   });
   // BF_PORTAL_O365_REDIRECT_v55 — clear the once-per-session guard after
   // a successful redirect so subsequent silent failures can retry.

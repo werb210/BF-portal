@@ -11,7 +11,7 @@ export type PushSetup = { result: PushRegistrationResult; remove: () => Promise<
  * endpoint currently exists, so callers must not upload or persist tokens yet.
  */
 export async function registerPushNotifications(
-  onOpenUrl: (url: string) => void,
+  onOpenUrl: (url: string, actionId?: string) => void,
   onToken?: (token: string) => void,
 ): Promise<PushSetup> {
   if (!Capacitor.isNativePlatform()) return { result: { state: "unsupported" }, remove: async () => undefined };
@@ -34,9 +34,9 @@ export async function registerPushNotifications(
       ).then((handle) => handles.push(handle));
       void PushNotifications.addListener("pushNotificationReceived", (_notification: PushNotificationSchema) => undefined)
         .then((handle) => handles.push(handle));
-      void PushNotifications.addListener("pushNotificationActionPerformed", ({ notification }) => {
+      void PushNotifications.addListener("pushNotificationActionPerformed", ({ notification, actionId }) => {
         const url = notification.data?.url ?? notification.data?.deepLink;
-        if (typeof url === "string") onOpenUrl(url);
+        if (typeof url === "string") onOpenUrl(url, actionId); // BF_PORTAL_v789_PUSH_ROUTING
       }).then((handle) => handles.push(handle));
       void PushNotifications.register();
       window.setTimeout(() => finish({ state: "error", error: "Timed out waiting for native push registration." }), 15000);

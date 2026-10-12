@@ -1,5 +1,7 @@
 // BF_PORTAL_SECURE_TOKEN_STORAGE_v422
-import { secureSet, secureRemove, isNative } from "./secureStore";
+// BF_PORTAL_v789_NATIVE_SESSION_MEMORY - reads and writes go through the session store: localStorage on web,
+// an in-memory cache written through to the Keychain on native.
+import { readSessionItem, removeSessionItem, writeSessionItem } from "./secureStore";
 
 const STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY || "auth_token";
 
@@ -17,27 +19,18 @@ function emitStorageEvent(oldValue: string | null, newValue: string | null) {
 }
 
 export function getAuthToken(): string | null {
-  return localStorage.getItem(STORAGE_KEY);
+  return readSessionItem(STORAGE_KEY);
 }
 
 export function setAuthToken(token: string) {
-  const oldValue = localStorage.getItem(STORAGE_KEY);
-  localStorage.setItem(STORAGE_KEY, token);
-  // v422 - mirror to the Keychain on native. Fails closed: if the Keychain is
-  // unavailable we clear the plain copy rather than leave a token in UserDefaults.
-  if (isNative()) {
-    void secureSet(STORAGE_KEY, token).catch(() => {
-      localStorage.removeItem(STORAGE_KEY);
-      throw new Error("secure_storage_unavailable");
-    });
-  }
+  const oldValue = readSessionItem(STORAGE_KEY);
+  writeSessionItem(STORAGE_KEY, token);
   emitStorageEvent(oldValue, token);
 }
 
 export function clearAuthToken() {
-  const oldValue = localStorage.getItem(STORAGE_KEY);
-  localStorage.removeItem(STORAGE_KEY);
-  if (isNative()) void secureRemove(STORAGE_KEY);
+  const oldValue = readSessionItem(STORAGE_KEY);
+  removeSessionItem(STORAGE_KEY);
   // BF_PORTAL_BLOCK_v533 - nothing was signed in, so there is no sign-out to announce.
   if (oldValue !== null) emitStorageEvent(oldValue, null);
 }

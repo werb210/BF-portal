@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/api";
 import { getAuthToken } from "@/lib/authToken";
 import { API_BASE } from "@/config/api";
+import { teamSocketUrl } from "@/lib/urlTicket"; // BF_PORTAL_v789_URL_TICKET
 import { TEAM_MESSAGE_EVENT } from "@/pages/dashboard/TeamMessagesCard"; // BF_PORTAL_DASH_TEAM_MESSAGES_v758
 
 type Channel = { id: string; kind: string; name: string | null; muted?: boolean; member_ids?: string[] };
@@ -103,9 +104,13 @@ export default function TeamNotifier() {
 
     const token = getAuthToken();
     let ws: WebSocket | null = null; let closed = false; let retry = 0; let timer: ReturnType<typeof setTimeout> | null = null;
-    const connect = () => {
+    // BF_PORTAL_v789_URL_TICKET - a fresh short-lived ticket in the URL for every connect, not the JWT.
+    const connect = async () => {
       if (closed || !token) return;
-      try { ws = new WebSocket(API_BASE.replace(/^http/, "ws") + "/api/team/ws?token=" + encodeURIComponent(token)); } catch { schedule(); return; }
+      let url: string | null;
+      try { url = await teamSocketUrl(API_BASE); } catch { schedule(); return; }
+      if (closed || !url) return;
+      try { ws = new WebSocket(url); } catch { schedule(); return; }
       ws.onopen = () => { retry = 0; };
       ws.onmessage = (ev) => {
         try {
@@ -124,9 +129,9 @@ export default function TeamNotifier() {
     const schedule = () => {
       if (closed || timer) return;
       retry += 1;
-      timer = setTimeout(() => { timer = null; connect(); }, Math.min(30000, 1000 * 2 ** Math.min(retry, 5)));
+      timer = setTimeout(() => { timer = null; void connect(); }, Math.min(30000, 1000 * 2 ** Math.min(retry, 5)));
     };
-    connect();
+    void connect();
 
     // Idle -> Away after 10 minutes; any activity -> back.
     let lastActive = Date.now(); let away = false;

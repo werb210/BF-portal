@@ -23,9 +23,11 @@ export type CommRow = {
   created_at?: string | null;
   sentAt?: string | null;
   sent_at?: string | null;
-  attachments?: Array<{ name: string; contentType?: string | null; dataUrl: string }> | null;
+  attachments?: Array<{ name: string; contentType?: string | null; dataUrl: string; authPath?: string | null }> | null;
   type?: string | null;
   mediaUrl?: string | null;
+  /** BF_PORTAL_v789_AUTHED_MEDIA - API path of media that needs the staff session (no token in it). */
+  mediaPath?: string | null;
   mediaDurationSeconds?: number | null;
   delivery?: { tone: "success" | "error" | "muted"; text: string } | null; // BF_PORTAL_BLOCK_v500
 };
@@ -50,6 +52,9 @@ function pickAttachments(r: CommRow) {
     const secs = r.mediaDurationSeconds;
     const label = secs ? `Voicemail (${Math.round(secs)}s)` : "Voicemail";
     base.unshift({ name: label, contentType: "audio/mpeg", dataUrl: r.mediaUrl });
+  } else if (r.mediaPath) {
+    // BF_PORTAL_v789_AUTHED_MEDIA - inbound MMS image, fetched with the Authorization header on demand.
+    base.unshift({ name: "Image", contentType: "image/*", dataUrl: "", authPath: r.mediaPath });
   } else if (r.mediaUrl) {
     // BF_PORTAL_SMS_MEDIA_v1 — inbound MMS image (proxied through BF-Server).
     base.unshift({ name: "Image", contentType: "image/*", dataUrl: r.mediaUrl });

@@ -19,8 +19,11 @@ jobs:
         with:
           script: |
             const labels = (context.payload.pull_request?.labels ?? []).map((l) => l.name);
-            const scoped = labels.find((l) => l.startsWith("scope:")) ?? "scope:fullstack";
+            // BF_PORTAL_v789_SCOPES - no scope label means unscoped (passes); labels are case-insensitive.
+            const scoped = labels.find((l) => l.toLowerCase().startsWith("scope:")) ?? "";
             core.setOutput("label", scoped);
+      - name: Scope checker's own tests
+        run: node --test scripts/__tests__/enforce-silo-scope.test.mjs
       - name: Enforce silo scope
         run: |
           git fetch origin main

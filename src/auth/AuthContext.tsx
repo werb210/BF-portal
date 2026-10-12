@@ -183,7 +183,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
 
     if (token && !isValidUuidToken(token)) {
-      localStorage.removeItem("auth_token");
       authToken.clear();
       setTokenState(null);
       setUser(null);
@@ -197,7 +196,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(async (response) => {
         if (!isActive) return;
         if (response.status === 401) {
-          localStorage.removeItem("auth_token");
           authToken.clear();
           setTokenState(null);
           setUser(null);
@@ -238,7 +236,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isLoading, user]);
 
   const clearAuth = useCallback(() => {
-    localStorage.removeItem("auth_token");
     authToken.clear();
     setTokenState(null);
     setUser(null);

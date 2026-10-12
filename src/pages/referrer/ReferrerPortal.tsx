@@ -45,7 +45,10 @@ type Referral = {
 };
 
 const C = {
-  navy: "#1f2d5a", ink: "#0f1729", muted: "#6b7280", line: "#e5e7eb", bg: "#f4f6fb",
+  // BF_PORTAL_v789_CONTRAST - muted text is the theme token; the page root carries .ui-surface-light, so it
+  // resolves to the light value (#51617D, 4.5:1+ on these light surfaces) in every theme. #6b7280 and
+  // #9aa3b2 measured 4.4:1 and 2.5:1.
+  navy: "#1f2d5a", ink: "#0f1729", muted: "var(--ui-text-muted)", line: "#e5e7eb", bg: "#f4f6fb",
   green: "#16a34a", greenBg: "#dcfce7", blue: "#2563eb",
 };
 
@@ -162,7 +165,7 @@ const ReferrerPortal = () => {
   const columns: { key: string; label: string }[] = BF_STAGES.map((s) => ({ key: s, label: s }));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: C.bg, color: C.ink }}>
+    <div className="ui-surface-light" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: C.bg, color: C.ink }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 22px", borderBottom: `1px solid ${C.line}`, background: "#fff" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: "-.01em" }}>My Referrals</h1>
@@ -190,7 +193,7 @@ const ReferrerPortal = () => {
           return <div key={col.key} style={{ flex: "0 0 288px", minWidth: 288, display: "flex", flexDirection: "column", minHeight: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, color: "#374151", padding: "0 4px 12px" }}>{col.label} <span style={{ background: "#eef1f7", color: "#475569", fontSize: 12, fontWeight: 700, borderRadius: 999, padding: "1px 9px" }}>{list.length}</span></div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", flex: 1, minHeight: 0 }}>
-              {list.length === 0 ? <div style={{ border: `1.5px dashed ${C.line}`, borderRadius: 12, color: "#9aa3b2", fontSize: 13, textAlign: "center", padding: "26px 10px" }}>No referrals here</div> : list.map((r) => {
+              {list.length === 0 ? <div style={{ border: `1.5px dashed ${C.line}`, borderRadius: 12, color: C.muted, fontSize: 13, textAlign: "center", padding: "26px 10px" }}>No referrals here</div> : list.map((r) => {
                 const funded = col.key === "Funded";
                 return <div key={r.id} style={{ background: "#fff", border: `1px solid ${funded ? "#bbf7d0" : C.line}`, borderRadius: 12, padding: 14, boxShadow: "0 1px 2px rgba(16,24,40,.05)" }}>
                   <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.25 }}>{r.company_name || r.full_name}</div>
@@ -217,7 +220,7 @@ const ReferrerPortal = () => {
             <Check checked={refer.pgi} onChange={(c) => setRefer((s) => ({ ...s, pgi: c }))} label="Personal Guarantee Insurance" />
             <Check checked={refer.startup} onChange={(c) => setRefer((s) => ({ ...s, startup: c }))} label="Start-up funding" note="waitlist" />
             {refer.startup && <div style={{ fontSize: 12, color: C.muted, background: "#f7f9ff", border: `1px solid ${C.line}`, borderRadius: 8, padding: "9px 11px", margin: "2px 0 6px" }}>Start-up funding isn't open yet. We add this person to the start-up list and text them the moment it launches — no intro goes out now unless Funding or PGI is also picked.</div>}
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", margin: "16px 0 8px" }}>Intro message <span style={{ color: "#9aa3b2", fontWeight: 500 }}>— pick which text they receive</span></div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", margin: "16px 0 8px" }}>Intro message <span style={{ color: C.muted, fontWeight: 500 }}>{"\u2014 pick which text they receive"}</span></div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{(["A", "B"] as const).map((v) => {
               const sel = message === v;
               return <div key={v} onClick={() => setMessage(v)} style={{ border: `1.5px solid ${sel ? C.navy : C.line}`, background: sel ? "#f7f9ff" : "#fff", borderRadius: 12, padding: "12px 12px 12px 14px", cursor: "pointer" }}><div style={{ display: "flex", alignItems: "center", gap: 9, fontWeight: 700, fontSize: 13, color: "#1f2937" }}><span style={{ width: 16, height: 16, borderRadius: 999, border: `2px solid ${sel ? C.navy : "#9aa3b2"}`, position: "relative", flexShrink: 0 }}>{sel ? <span style={{ position: "absolute", inset: 3, borderRadius: 999, background: C.navy }} /> : null}</span>{MSG_PREVIEW[v].label}</div><div style={{ margin: "10px 0 0 25px", background: "#e9edf6", color: "#111827", fontSize: 13, lineHeight: 1.45, borderRadius: 14, borderTopLeftRadius: 4, padding: "10px 12px" }}>{MSG_PREVIEW[v].text(myName)}<div style={{ marginTop: 6, color: "#5b6472", fontSize: 12 }}>+ their personal application link</div></div></div>;
@@ -233,7 +236,7 @@ const ReferrerPortal = () => {
 };
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
-  return <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}><label style={{ fontSize: 12, fontWeight: 700, color: "#374151" }}>{label}</label>{children}{hint ? <span style={{ fontSize: 11, color: "#9aa3b2" }}>{hint}</span> : null}</div>;
+  return <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}><label style={{ fontSize: 12, fontWeight: 700, color: "#374151" }}>{label}</label>{children}{hint ? <span style={{ fontSize: 11, color: C.muted }}>{hint}</span> : null}</div>;
 }
 
 function Input({ value, onChange, type = "text", inputMode }: { value: string; onChange: (v: string) => void; type?: string; inputMode?: "email" | "tel" | "text" }) {
@@ -241,7 +244,7 @@ function Input({ value, onChange, type = "text", inputMode }: { value: string; o
 }
 
 function Check({ checked, onChange, label, note }: { checked: boolean; onChange: (c: boolean) => void; label: string; note?: string }) {
-  return <label style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14, marginBottom: 8, color: "#1f2937", cursor: "pointer" }}><input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ width: 17, height: 17, accentColor: "#16a34a" }} />{label}{note ? <span style={{ color: "#9aa3b2" }}>— {note}</span> : null}</label>;
+  return <label style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14, marginBottom: 8, color: "#1f2937", cursor: "pointer" }}><input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ width: 17, height: 17, accentColor: "#16a34a" }} />{label}{note ? <span style={{ color: C.muted }}>{"\u2014 "}{note}</span> : null}</label>;
 }
 
 export default ReferrerPortal;

@@ -7,14 +7,15 @@
 //
 // Edit is inline-replace (v208 pattern), not a modal. Delete is not
 // shipped yet — pairs with BI-Server v258 when the destructive flow is
-// ready. Activity timeline at the company scope is not part of this
-// block; bi_contact_activity is per-contact, and a future
-// bi_company_activity table can be added if the workflow asks for it.
+// ready. BF_PORTAL_v789_BI_COMPANY_ACTIVITY - company-scope activity now
+// exists on BI-Server v789 and is shown and written from this page.
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
 import { api } from "@/api";
+import { ActionBar } from "@/components/crm/ActionBar";
+import { BICompanyActivity } from "./BICompanyActivity";
 
 type BICompany = {
   id: string;
@@ -179,7 +180,7 @@ export default function BICompanyDetailPage() {
 
   if (err)
     return (
-      <div style={{ padding: 24, color: "#b00020", background: "var(--ui-surface-strong)", borderRadius: 8 }}>
+      <div style={{ padding: 24, color: "var(--ui-text-danger)", background: "var(--ui-surface-strong)", borderRadius: 8 }}>
         {err}
       </div>
     );
@@ -204,39 +205,23 @@ export default function BICompanyDetailPage() {
           <div style={subtle}>o/a {co.operating_name}</div>
         )}
 
+        {/* BF_PORTAL_v789_BI_COMPANY_ACTIVITY - the shared ActionBar on BI-Server: Note, Call, Meeting
+            and Email log to /api/v1/bi/crm/companies/:id/activity. Edit/Delete/Google stay here. */}
         {!editing && (
-          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              style={actionBtn}
-              data-testid="bi-company-edit-button"
-            >
-              Edit
-            </button>
-            {/* BF_PORTAL_BLOCK_v280_COMPANIES_DELETE_BUTTON_v1 */}
-            <button
-              type="button"
-              onClick={() => void deleteCompany()}
-              style={{ ...actionBtn, background: "#b00020", color: "white" }}
-              data-testid="bi-company-delete-button"
-            >
-              Delete
-            </button>
-            {/* BF_PORTAL_BLOCK_v751_CRM_GOOGLE_BUTTON */}
-            <button
-              type="button"
-              onClick={() => { const q = (co.legal_name || co.operating_name || "").trim(); if (q) window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank", "noopener,noreferrer"); }}
-              style={actionBtn}
-              data-testid="bi-company-google-button"
-            >
-              Google
-            </button>
-          </div>
+          <ActionBar
+            target="bi"
+            scope={{ kind: "company", id: co.id }}
+            googleQuery={co.legal_name || co.operating_name || ""}
+            onEdit={() => setEditing(true)}
+            onDelete={() => void deleteCompany()}
+            editTestId="bi-company-edit-button"
+            deleteTestId="bi-company-delete-button"
+            onChanged={refresh}
+          />
         )}
 
         {actionError && (
-          <div style={{ marginTop: 8, color: "#b00020", fontSize: 12 }} role="status">
+          <div style={{ marginTop: 8, color: "var(--ui-text-danger)", fontSize: 12 }} role="status">
             {actionError}
           </div>
         )}
@@ -338,7 +323,8 @@ export default function BICompanyDetailPage() {
       {/* MAIN — applications */}
       <main style={mainCol} data-testid="bi-company-main">
         <ContactAiSummary companyId={id} />
-        <div style={panel}>
+        <BICompanyActivity companyId={co.id} refreshKey={refreshKey} />
+        <div style={{ ...panel, marginTop: 16 }}>
           <div style={panelHeader}>
             <h3 style={{ margin: 0 }}>Applications</h3>
             <span style={badge}>{co.application_count}</span>
@@ -485,8 +471,9 @@ const panelHeader: CSSProperties = {
   background: "var(--ui-surface-muted)",
 };
 const badge: CSSProperties = {
-  background: "var(--ui-border)",
-  color: "var(--ui-surface)",
+  background: "var(--ui-surface-muted)", // BF_PORTAL_v789_CONTRAST - was --ui-surface text on --ui-border
+  color: "var(--ui-text)",
+  border: "1px solid var(--ui-border)",
   padding: "2px 8px",
   borderRadius: 999,
   fontSize: 12,
