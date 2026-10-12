@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { api } from "@/api";
 
-type Channel = { id: string; kind: string; name: string | null; topic?: string | null; is_private?: boolean; archived_at?: string | null; member_ids: string[] };
+type Channel = { id: string; kind: string; name: string | null; topic?: string | null; is_private?: boolean; archived_at?: string | null; member_ids?: string[] | null };
 type User = { id: string; name: string };
 
 export default function ChannelSettings({ channel, users, myId, onClose, onChanged, onLeft }: {
@@ -17,7 +17,8 @@ export default function ChannelSettings({ channel, users, myId, onClose, onChang
   const [error, setError] = useState<string | null>(null);
   const isChannel = channel.kind === "channel";
   const nameOf = (id: string) => users.find((u) => u.id === id)?.name ?? "Someone";
-  const others = users.filter((u) => !channel.member_ids.includes(u.id) && u.id !== myId);
+  const memberIds = Array.isArray(channel.member_ids) ? channel.member_ids : []; // BF_PORTAL_v791
+  const others = users.filter((u) => !memberIds.includes(u.id) && u.id !== myId);
 
   async function run(fn: () => Promise<unknown>, done?: () => void) {
     setBusy(true); setError(null);
@@ -44,8 +45,8 @@ export default function ChannelSettings({ channel, users, myId, onClose, onChang
           </label>
         )}
         <button disabled={busy} onClick={() => void save()} style={{ alignSelf: "flex-end", padding: "8px 16px", border: "none", background: "var(--ui-accent-blue)", color: "#fff", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>Save</button>
-        <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)", marginTop: 6 }}>Members ({channel.member_ids.length})</div>
-        <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{channel.member_ids.map(nameOf).join(", ")}</div>
+        <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)", marginTop: 6 }}>Members ({memberIds.length})</div>
+        <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{memberIds.map(nameOf).join(", ")}</div>
         {others.length > 0 && (
           <>
             <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Add people</div>
