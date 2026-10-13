@@ -45,11 +45,14 @@ const ICON: Record<Category, () => JSX.Element> = { delay: Icon.clock, workflow:
 const SIZE: Record<LayoutItem["type"], [number, number]> = { trigger: [TRIGGER_W, TRIGGER_H], step: [CARD_W, CARD_H], plus: [PLUS, PLUS], label: [LABEL_W, LABEL_H], end: [END_W, END_H] };
 const hidden: CSSProperties = { opacity: 0, width: 1, height: 1, minWidth: 0, minHeight: 0, border: "none", background: "transparent" };
 
-function toNodes(items: LayoutItem[], movingId: string | null | undefined, readOnly: boolean): Node<CardData>[] {
+// BF_PORTAL_v793_CANVAS_CLICKS - React Flow gives a node pointer-events:none when it is not
+// selectable or draggable, so the trigger card's Details button, every + and the End marker
+// could not be clicked. Every node takes clicks; dragging is still limited to step cards.
+export function toNodes(items: LayoutItem[], movingId: string | null | undefined, readOnly: boolean): Node<CardData>[] {
   return items.map((item) => {
     const [w, h] = SIZE[item.type];
     const data: CardData = item.type === "step" ? { kind: "step", nodeId: item.nodeId } : item.type === "plus" ? { kind: "plus", slot: item.slot } : item.type === "label" ? { kind: "label", label: item.label } : { kind: item.type };
-    return { id: item.id, type: item.type, position: { x: item.x - w / 2, y: item.y }, width: w, height: h, data, draggable: item.type === "step" && !readOnly && !movingId, selectable: false, connectable: false };
+    return { id: item.id, type: item.type, position: { x: item.x - w / 2, y: item.y }, width: w, height: h, data, draggable: item.type === "step" && !readOnly && !movingId, selectable: false, connectable: false, style: { pointerEvents: "all" as const } };
   });
 }
 
