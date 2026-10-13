@@ -361,7 +361,7 @@ export function summarize(node: WorkflowNode, ctx: SummaryContext = {}): string 
     const event = catalog?.events.find((e) => e.key === str(p.event))?.label ?? (str(p.event) || "an event");
     return "Delay until " + event + (Number(p.timeoutAmount) > 0 ? " (up to " + plural(Number(p.timeoutAmount), str(p.timeoutUnit) || "days") + ")" : "");
   }
-  if (node.kind === "branch") return "If/then branch: " + plural(node.branches.length, "branches") + " and None met";
+  if (node.kind === "branch") return "If/then branch: " + node.branches.length + (node.branches.length === 1 ? " branch" : " branches") + " and None met"; // BF_PORTAL_v796_BUILDER_WORDING
   if (node.kind === "value_branch") return node.field ? "Value branch on " + fieldLabel(node.field, catalog) : "Value branch: choose a property";
   if (node.kind === "goto") {
     if (!node.target) return "Go to: choose an action";
