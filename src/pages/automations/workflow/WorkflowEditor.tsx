@@ -328,18 +328,22 @@ export default function WorkflowEditor() {
           {tabBtn("actions", "Actions")}{tabBtn("settings", "Settings")}{tabBtn("performance", "Performance")}{tabBtn("history", "History")}
         </nav>
       </header>
-      {message && (
-        <div role={message.ok ? "status" : "alert"} data-testid="editor-message" style={{ padding: "8px 16px", fontSize: 13, background: "var(--ui-surface-strong)", color: message.ok ? "var(--ui-text)" : "var(--wf-danger)", borderBottom: "1px solid var(--ui-border)", display: "flex" }}>
-          <span style={{ flex: 1 }}>{message.text}</span>
-          <button type="button" style={linkBtn} onClick={() => setMessage(null)}>Dismiss</button>
-        </div>
-      )}
-      {movingId && tab === "actions" && (
-        <div role="status" style={{ padding: "8px 16px", fontSize: 13, background: "var(--ui-surface-strong)", color: "var(--ui-text)", borderBottom: "1px solid var(--ui-border)", display: "flex", gap: 8 }}>
-          <span style={{ flex: 1 }}>Moving step {numbers[movingId] ?? ""}: click the + where it should go.</span>
-          <button type="button" style={btn} onClick={() => setMovingId(null)}>Cancel move</button>
-        </div>
-      )}
+      {/* BF_PORTAL_v794_NOTICE_STRIP - one fixed-height strip for notices, always present, so a
+          "Saved." message or the move prompt never pushes the canvas down under the pointer. */}
+      <div data-testid="editor-notices" style={{ height: 36, flexShrink: 0, boxSizing: "border-box", padding: "0 16px", display: "flex", alignItems: "center", gap: 8, fontSize: 13, overflow: "hidden", whiteSpace: "nowrap", background: message || (movingId && tab === "actions") ? "var(--ui-surface-strong)" : "transparent", borderBottom: "1px solid " + (message || (movingId && tab === "actions") ? "var(--ui-border)" : "transparent") }}>
+        {message && (
+          <div role={message.ok ? "status" : "alert"} data-testid="editor-message" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1, color: message.ok ? "var(--ui-text)" : "var(--wf-danger)" }}>
+            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }} title={message.text}>{message.text}</span>
+            <button type="button" style={linkBtn} onClick={() => setMessage(null)}>Dismiss</button>
+          </div>
+        )}
+        {movingId && tab === "actions" && (
+          <div role="status" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1, color: "var(--ui-text)" }}>
+            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>Moving step {numbers[movingId] ?? ""}: click the + where it should go.</span>
+            <button type="button" style={btn} onClick={() => setMovingId(null)}>Cancel move</button>
+          </div>
+        )}
+      </div>
 
       <main style={{ position: "relative", flex: 1, minHeight: 0, overflow: tab === "settings" ? "auto" : "hidden", background: "var(--ui-bg, #fff)" }}>
         {tab === "actions" && canvas(editMode)}
