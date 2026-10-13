@@ -12,9 +12,11 @@ const DELAY_TYPES = new Set(["delay", "wait"]);
 const PATH_TYPES = new Set(["branch", "value_branch", "goto", "check"]);
 
 /** The server's step outcome as plain words. */
-export function outcomeWords(step: Pick<TestStep, "outcome" | "stepType">): string {
+export function outcomeWords(step: Pick<TestStep, "outcome" | "stepType"> & { detail?: string | null }): string {
   const o = step.outcome.toLowerCase();
   const type = step.stepType.toLowerCase();
+  // BF_PORTAL_v796_BUILDER_WORDING - the branch went down "None met".
+  if (PATH_TYPES.has(type) && /^no (path|value) matched/i.test(String(step.detail ?? ""))) return "No path matched";
   if (o === "dry_run") return DELAY_TYPES.has(type) ? "Would wait" : "Would run";
   if (o === "waiting" || o === "timeout") return "Would wait";
   if (o === "passed") return "Took path";

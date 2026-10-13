@@ -17,7 +17,7 @@ export type FormContext = {
   workflowId?: string | null;
 };
 
-const DEFAULT_TOKENS = ["{{first_name}}", "{{last_name}}", "{{company_name}}", "{{owner_name}}", "{{stage}}"];
+const DEFAULT_TOKENS = ["{{first_name}}", "{{last_name}}", "{{full_name}}", "{{company_name}}", "{{owner_name}}", "{{stage}}"];
 const str = (v: unknown) => (v === undefined || v === null ? "" : String(v));
 const area: React.CSSProperties = { ...input, width: "100%", boxSizing: "border-box", fontFamily: "inherit", minHeight: 70 };
 const full: React.CSSProperties = { ...input, width: "100%", boxSizing: "border-box" };
@@ -31,6 +31,8 @@ function UserSelect({ users, value, onChange, ariaLabel = "Person" }: { users: U
   return (
     <select aria-label={ariaLabel} value={value} onChange={(e) => onChange(e.target.value)} style={full}>
       <option value="">Choose a person</option>
+      {/* BF_PORTAL_v796_BUILDER_WORDING - keep a saved value that is not a staff member visible. */}
+      {value && !users.some((u) => u.id === value) && <option value={value}>Not a staff member: {value}</option>}
       {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
     </select>
   );
