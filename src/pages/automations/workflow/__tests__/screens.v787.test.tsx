@@ -308,7 +308,7 @@ describe("editor", () => {
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
     expect(screen.queryByRole("switch", { name: "Workflow on" })).toBeNull();
     expect(screen.getByTestId("read-only-badge")).toHaveTextContent("View only");
-    expect(screen.getByTestId("workflow-status")).toHaveTextContent("Off");
+    expect(screen.getByTestId("workflow-status")).toHaveTextContent("Draft");
     fireEvent.click(within(card("n1")).getByText("hot", { exact: false }));
     expect(screen.queryByTestId("side-panel")).toBeNull();
   });

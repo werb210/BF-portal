@@ -187,6 +187,27 @@ export function normalizeHistory(raw: unknown): Enrollment[] {
   }));
 }
 
+// BF_PORTAL_v792 - a test run (POST /:id/enroll with testMode). BF-Server v792 returns the step log
+// as `steps`; older servers return only {enrollmentId, outcome}, so the log is fetched separately.
+export type TestStep = { stepIndex: number; nodeId: string | null; stepType: string; outcome: string; detail: string };
+export type TestRun = { enrollmentId: string; outcome: string; steps: TestStep[] | null };
+
+export function normalizeTestSteps(raw: unknown): TestStep[] {
+  return asArray(raw, "steps", "items", "log").filter(isObj).map((x, i) => ({
+    stepIndex: Number.isFinite(Number(x.step_index ?? x.stepIndex)) ? Number(x.step_index ?? x.stepIndex) : i,
+    nodeId: x.node_id ?? x.nodeId ? s(x.node_id ?? x.nodeId) : null,
+    stepType: s(x.step_type ?? x.stepType),
+    outcome: s(x.outcome),
+    detail: s(x.detail),
+  }));
+}
+
+export function normalizeTestRun(raw: unknown): TestRun {
+  let r: Loose = isObj(raw) ? raw : {};
+  if (!r.enrollmentId && isObj(r.data)) r = r.data; // in case the ok envelope was not unwrapped
+  return { enrollmentId: s(r.enrollmentId ?? r.enrollment_id), outcome: s(r.outcome), steps: Array.isArray(r.steps) ? normalizeTestSteps(r.steps) : null };
+}
+
 export function normalizeDraft(raw: unknown): Draft {
   const w = normalizeWorkflow(raw);
   return { name: w.name, graph: w.graph, settings: w.settings, goal: w.goal };
@@ -201,6 +222,8 @@ export const workflowApi = {
   remove: (id: string) => api.delete("/api/automations/" + encodeURIComponent(id)),
   validate: async (id: string): Promise<Issue[]> => asArray<Issue>(await api.post("/api/automations/" + encodeURIComponent(id) + "/validate", {}), "issues").map((i) => ({ nodeId: i.nodeId ?? null, message: s(i.message) })),
   enroll: (id: string, contactId: string) => api.post("/api/automations/" + encodeURIComponent(id) + "/enroll", { contactId }),
+  testRun: async (id: string, contactId: string): Promise<TestRun> => normalizeTestRun(await api.post("/api/automations/" + encodeURIComponent(id) + "/enroll", { contactId, testMode: true })),
+  enrollmentLog: async (enrollmentId: string): Promise<TestStep[]> => normalizeTestSteps(await api.get("/api/automations/enrollments/" + encodeURIComponent(enrollmentId) + "/log")),
   performance: async (id: string): Promise<Performance> => normalizePerformance(await api.get("/api/automations/" + encodeURIComponent(id) + "/performance")),
   history: async (id: string): Promise<Enrollment[]> => normalizeHistory(await api.get("/api/automations/" + encodeURIComponent(id) + "/history")),
   library: async (): Promise<LibraryItem[]> => asArray(await api.get("/api/automations/library"), "items", "library").filter(isObj).map((x) => ({ key: s(x.key), name: s(x.name ?? x.key), description: s(x.description), category: x.category ? s(x.category) : undefined })),

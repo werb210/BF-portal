@@ -24,6 +24,8 @@ export type CanvasProps = {
   /** Problems with the triggers (server "trigger:<i>" issues and local checks). */
   triggerIssues?: string[];
   highlight?: Set<string> | null;
+  /** BF_PORTAL_v792 - steps the last test run visited (subtle outline). */
+  visited?: Set<string> | null;
   flashId?: string | null;
   movingId?: string | null;
   readOnly?: boolean;
@@ -151,10 +153,11 @@ function StepCard({ p, nodeId }: { p: CanvasProps; nodeId: string }) {
   const stat = p.counts ? p.counts[nodeId] ?? { entered: 0, failed: 0 } : null;
   const onPath = p.highlight?.has(nodeId);
   const isMoving = p.movingId === nodeId;
+  const visited = !!p.visited?.has(nodeId);
   const title = (number ? number + ". " : "") + (def?.title ?? "Step");
   return (
-    <div data-testid="step-card" data-node-id={nodeId} className={p.flashId === nodeId ? "wf-card-flash" : undefined}
-      style={{ width: CARD_W, height: CARD_H, boxSizing: "border-box", background: "var(--ui-surface-strong)", color: "var(--ui-text)", border: "2px solid " + (onPath ? "var(--wf-highlight)" : problems.length ? "var(--wf-danger)" : "var(--ui-border)"), borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column", opacity: isMoving ? 0.5 : 1, boxShadow: "var(--ui-shadow-soft)" }}>
+    <div data-testid="step-card" data-node-id={nodeId} data-test-visited={visited ? "true" : undefined} className={p.flashId === nodeId ? "wf-card-flash" : undefined}
+      style={{ ...(visited ? { outline: "2px dashed var(--wf-link)", outlineOffset: 3 } : {}), width: CARD_W, height: CARD_H, boxSizing: "border-box", background: "var(--ui-surface-strong)", color: "var(--ui-text)", border: "2px solid " + (onPath ? "var(--wf-highlight)" : problems.length ? "var(--wf-danger)" : "var(--ui-border)"), borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column", opacity: isMoving ? 0.5 : 1, boxShadow: "var(--ui-shadow-soft)" }}>
       <Handle type="target" position={Position.Top} style={hidden} isConnectable={false} />
       <div style={{ height: 6, background: CATEGORY_COLOR[category] }} />
       <div role="button" tabIndex={0} className="nodrag" onClick={() => p.onOpenNode(nodeId)} onKeyDown={(e) => { if (e.key === "Enter") p.onOpenNode(nodeId); }} style={{ padding: "8px 12px 4px", flex: 1, minHeight: 0, cursor: "pointer" }}>

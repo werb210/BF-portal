@@ -4,6 +4,9 @@
 // BF_PORTAL_v787_BUILDER_FIXES - Admin and Marketing edit; Staff open it read-only. New workflows
 // take the topbar silo. Server errors {error: {code}, issues} show as readable text, and trigger
 // issues ("trigger:<i>") are listed and mark the trigger card.
+// BF_PORTAL_v792 - build, test, then turn on: a Test button (anyone who can enroll) runs the
+// workflow for one contact in test mode, even while it is a draft; visited steps are outlined.
+// While off the status reads "Draft".
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AuthContext } from "@/auth/AuthContext";
@@ -16,6 +19,7 @@ import { GraphError, cloneAfter, deleteBranch, deleteStep, detachedCopy, exitsOf
 import { newId } from "./actions";
 import { InsertPanel, PanelShell, StepDetails, TriggerPanel } from "./SidePanel";
 import { HistoryPanel, PerformanceStats, SettingsTab } from "./Tabs";
+import { TestPanel, type TestResult } from "./TestPanel";
 import type { Catalog, Issue, ListRef, Silo, Slot, UserRef, Workflow, WorkflowNode, WorkflowRef } from "./types";
 import { emptyWorkflow } from "./types";
 import { Icon, NAVY, btn, linkBtn, muted, primary } from "./ui";
@@ -23,7 +27,7 @@ import WorkflowCanvas from "./WorkflowCanvas";
 import { errorIssues, errorText, toSilo, workflowApi, type Enrollment, type Performance } from "./workflowApi";
 
 type Tab = "actions" | "settings" | "performance" | "history";
-type Panel = null | { type: "insert"; slot: Slot } | { type: "edit"; nodeId: string } | { type: "trigger" } | { type: "issues" } | { type: "delete"; nodeId: string };
+type Panel = null | { type: "test" } | { type: "insert"; slot: Slot } | { type: "edit"; nodeId: string } | { type: "trigger" } | { type: "issues" } | { type: "delete"; nodeId: string };
 
 const EMPTY_CATALOG: Catalog = { triggers: [], actions: [], fields: [], operators: ["eq", "neq", "contains", "is_set", "is_not_set"], templates: { email: [], sms: [] }, stages: [], events: [], tokens: [] };
 
@@ -48,6 +52,8 @@ export function mergeIssues(a: Issue[], b: Issue[]): Issue[] {
 
 const isTriggerIssue = (nodeId: string | null) => !!nodeId && nodeId.startsWith("trigger:");
 const EDIT_ROLES = new Set(["Admin", "Marketing"]);
+// Manual enroll (and so test runs) is open to Admin, Marketing and Staff (BF-Server "enrollers").
+const ENROLL_ROLES = new Set(["Admin", "Marketing", "Staff"]);
 const NO_PERF: Performance = { enrolled: 0, active: 0, completed: 0, goalReached: 0, byNode: {} };
 const FORBIDDEN = "Only admins and marketing can change workflows.";
 
@@ -57,6 +63,14 @@ function useCanEdit(): boolean {
   if (!auth) return true; // no auth provider (embedded/tests): the server still enforces roles
   const role = resolveUserRole((auth.user as { role?: string | null } | null)?.role ?? auth.role ?? null);
   return !!role && EDIT_ROLES.has(role);
+}
+
+/** Admin, Marketing and Staff may enroll a contact by hand, which includes a test run. */
+function useCanEnroll(): boolean {
+  const auth = useContext(AuthContext);
+  if (!auth) return true;
+  const role = resolveUserRole((auth.user as { role?: string | null } | null)?.role ?? auth.role ?? null);
+  return !!role && ENROLL_ROLES.has(role);
 }
 
 /** The silo selected in the top bar (BF when none / admin). */
@@ -71,6 +85,7 @@ export default function WorkflowEditor() {
   const location = useLocation();
   const navigate = useNavigate();
   const canEdit = useCanEdit();
+  const canEnroll = useCanEnroll();
   const topbarSilo = useTopbarSilo(search.get("silo"));
   const isNew = routeId === "new";
   const [wf, setWf] = useState<Workflow | null>(isNew ? emptyWorkflow(topbarSilo) : null);
@@ -97,6 +112,7 @@ export default function WorkflowEditor() {
   const [perf, setPerf] = useState<Performance | null>(null);
   const [history, setHistory] = useState<Enrollment[] | null>(null);
   const [selectedEnrollment, setSelectedEnrollment] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
   const workflowId = isNew ? null : routeId;
 
   useEffect(() => {
@@ -146,6 +162,8 @@ export default function WorkflowEditor() {
     return new Set([...ids, ...(e.currentNodeId ? [e.currentNodeId] : [])]);
   }, [history, selectedEnrollment]);
 
+  const testVisited = panel?.type === "test" && testResult ? new Set(testResult.steps.map((s) => s.nodeId).filter((x): x is string => !!x)) : null;
+
   if (loadError) return <div style={{ padding: 24, color: "var(--wf-danger)" }}>{loadError}</div>;
   if (!wf) return <div style={{ padding: 24, color: "var(--ui-text)" }}>Loading workflow...</div>;
 
@@ -186,11 +204,25 @@ export default function WorkflowEditor() {
     let found = localIssues(saved);
     if (saved.id) { try { const s = await workflowApi.validate(saved.id); setServerIssues(s); found = mergeIssues(found, s); } catch { /* fall back to local checks */ } }
     if (found.length) {
-      setMessage({ ok: false, text: "This workflow can't be turned on yet: " + found.length + (found.length === 1 ? " issue needs" : " issues need") + " fixing. Open Review issues to see " + (found.length === 1 ? "it." : "them.") });
+      setMessage({ ok: false, text: "Fix these before turning it on: " + found.length + (found.length === 1 ? " issue" : " issues") + ". You can keep building and testing while it's a draft." });
       return;
     }
     await save({ ...saved, enabled: true });
   }
+
+  async function openTest() {
+    setMessage(null);
+    if (!wf!.graph.startNodeId && Object.keys(wf!.graph.nodes).length === 0) {
+      setMessage({ ok: true, text: "Add at least one step to test." });
+      return;
+    }
+    let current: Workflow | null = wf!;
+    if (dirty || !current.id) current = await save(current);
+    if (!current?.id) return;
+    setTab("actions"); setMovingId(null); setTestResult(null);
+    setPanel({ type: "test" });
+  }
+  const closePanel = () => { setPanel(null); setTestResult(null); };
 
   const onPlus = (slot: Slot) => {
     if (movingId) {
@@ -238,6 +270,7 @@ export default function WorkflowEditor() {
       triggerIssues={allTriggerProblems}
       counts={mode === "perf" ? perf?.byNode ?? {} : null}
       highlight={mode === "history" ? highlight : null}
+      visited={mode === "edit" || mode === "view" ? testVisited : null}
       flashId={flashId}
       movingId={mode === "edit" ? movingId : null}
       readOnly={mode !== "edit"}
@@ -279,15 +312,16 @@ export default function WorkflowEditor() {
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           {dirty && <span style={{ fontSize: 12, color: "#e2e8f0" }}>Unsaved changes</span>}
           {canEdit ? <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
-            <span>{wf.enabled ? "On" : "Off"}</span>
+            <span data-testid="workflow-status">{wf.enabled ? "On" : "Draft"}</span>
             <button type="button" role="switch" aria-checked={wf.enabled} aria-label="Workflow on" disabled={saving} onClick={() => void toggleEnabled()}
               style={{ width: 40, height: 22, borderRadius: 11, border: "none", background: wf.enabled ? "#14b8a6" : "#64748b", position: "relative", cursor: "pointer", padding: 0 }}>
               <span style={{ position: "absolute", top: 3, left: wf.enabled ? 21 : 3, width: 16, height: 16, borderRadius: 8, background: "#fff", transition: "left 0.15s" }} />
             </button>
-          </label> : <span data-testid="workflow-status" style={{ fontSize: 13 }}>{wf.enabled ? "On" : "Off"}</span>}
+          </label> : <span data-testid="workflow-status" style={{ fontSize: 13 }}>{wf.enabled ? "On" : "Draft"}</span>}
           <button type="button" onClick={() => setPanel({ type: "issues" })} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.5)", color: "#fff", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 13 }}>
             Review issues{issues.length ? " (" + issues.length + ")" : ""}
           </button>
+          {canEnroll && <button type="button" disabled={saving} onClick={() => void openTest()} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.5)", color: "#fff", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Test</button>}
           {canEdit && <button type="button" disabled={saving} onClick={() => void save()} style={{ background: "#fff", color: NAVY, border: "none", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>{saving ? "Saving..." : "Save"}</button>}
         </div>
         <nav role="tablist" aria-label="Workflow sections" style={{ flexBasis: "100%", display: "flex", gap: 4, marginBottom: -8 }}>
@@ -319,7 +353,7 @@ export default function WorkflowEditor() {
         {tab === "history" && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 360px", maxWidth: 560, borderRight: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", minHeight: 0, height: "100%" }}>
-              <HistoryPanel workflowId={workflowId} items={history} selected={selectedEnrollment} onSelect={setSelectedEnrollment} nodes={wf.graph.nodes} numbers={numbers} onEnrolled={loadHistory} />
+              <HistoryPanel canEnroll={canEnroll} workflowId={workflowId} items={history} selected={selectedEnrollment} onSelect={setSelectedEnrollment} nodes={wf.graph.nodes} numbers={numbers} onEnrolled={loadHistory} />
             </div>
             <div style={{ position: "relative", flex: "2 1 400px", height: "100%" }}>{canvas("history")}</div>
           </div>
@@ -354,6 +388,9 @@ export default function WorkflowEditor() {
               </ul>
             )}
           </PanelShell>
+        )}
+        {panel?.type === "test" && wf.id && (
+          <TestPanel workflowId={wf.id} nodes={wf.graph.nodes} numbers={numbers} result={testResult} onResult={setTestResult} onClose={closePanel} />
         )}
         {panel?.type === "delete" && deleting && (
           <PanelShell testId="delete-panel" title="Delete action" onClose={() => setPanel(null)}>

@@ -150,15 +150,31 @@ export function HistoryPanel({ workflowId, items, selected, onSelect, nodes, num
   );
 }
 
-function EnrollBox({ workflowId, onDone, onCancel }: { workflowId: string; onDone: () => void; onCancel: () => void }) {
+export type ContactHit = { id: string; name: string; email?: string | null };
+
+/** Contact search by name or email (manual enroll and the v792 Test panel). */
+export function ContactSearch({ onPick, disabled = false }: { onPick: (contact: ContactHit) => void; disabled?: boolean }) {
   const [q, setQ] = useState("");
-  const [results, setResults] = useState<Array<{ id: string; name: string; email?: string | null }>>([]);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [results, setResults] = useState<ContactHit[]>([]);
   useEffect(() => {
     if (q.trim().length < 2) { setResults([]); return; }
     const t = setTimeout(() => { workflowApi.searchContacts(q.trim()).then(setResults).catch(() => setResults([])); }, 250);
     return () => clearTimeout(t);
   }, [q]);
+  return (
+    <>
+      <input aria-label="Search contacts" placeholder="Search contacts by name or email" value={q} onChange={(e) => setQ(e.target.value)} style={{ ...input, width: "100%", boxSizing: "border-box" }} autoFocus />
+      {results.map((r) => (
+        <button key={r.id} type="button" disabled={disabled} onClick={() => onPick(r)} style={{ display: "block", width: "100%", textAlign: "left", padding: "6px 8px", border: "none", borderBottom: "1px solid var(--ui-border)", background: "transparent", color: "var(--ui-text)", cursor: "pointer", fontSize: 13 }}>
+          <strong>{r.name}</strong>{r.email ? <span style={muted}> - {r.email}</span> : null}
+        </button>
+      ))}
+    </>
+  );
+}
+
+function EnrollBox({ workflowId, onDone, onCancel }: { workflowId: string; onDone: () => void; onCancel: () => void }) {
+  const [msg, setMsg] = useState<string | null>(null);
   const enroll = async (contactId: string) => {
     setMsg(null);
     try { await workflowApi.enroll(workflowId, contactId); onDone(); }
@@ -166,12 +182,7 @@ function EnrollBox({ workflowId, onDone, onCancel }: { workflowId: string; onDon
   };
   return (
     <div data-testid="enroll-box" style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: 10, marginBottom: 12 }}>
-      <input aria-label="Search contacts" placeholder="Search contacts by name or email" value={q} onChange={(e) => setQ(e.target.value)} style={{ ...input, width: "100%", boxSizing: "border-box" }} autoFocus />
-      {results.map((r) => (
-        <button key={r.id} type="button" onClick={() => void enroll(r.id)} style={{ display: "block", width: "100%", textAlign: "left", padding: "6px 8px", border: "none", borderBottom: "1px solid var(--ui-border)", background: "transparent", color: "var(--ui-text)", cursor: "pointer", fontSize: 13 }}>
-          <strong>{r.name}</strong>{r.email ? <span style={muted}> - {r.email}</span> : null}
-        </button>
-      ))}
+      <ContactSearch onPick={(c) => void enroll(c.id)} />
       {msg && <div role="alert" style={{ color: "var(--wf-danger)", fontSize: 13, marginTop: 6 }}>{msg}</div>}
       <button type="button" style={{ ...btn, marginTop: 8 }} onClick={onCancel}>Cancel</button>
     </div>

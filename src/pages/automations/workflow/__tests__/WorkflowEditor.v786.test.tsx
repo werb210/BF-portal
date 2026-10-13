@@ -132,7 +132,7 @@ describe("WorkflowEditor", () => {
     fireEvent.click(item);
     await waitFor(() => expect(card("n3")).toHaveClass("wf-card-flash"));
     fireEvent.click(screen.getByRole("switch", { name: "Workflow on" }));
-    await screen.findByText(/can't be turned on yet: 1 issue needs fixing/);
+    await screen.findByText(/Fix these before turning it on: 1 issue\. You can keep building and testing while it's a draft\./);
     expect(calls.patch.some(([, b]) => b.enabled === true)).toBe(false);
   });
 
