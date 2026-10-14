@@ -10,6 +10,7 @@ import type { NotificationItem, NotificationType } from "@/types/notifications";
 type ServerRow = {
   id: string;
   type: string;
+  title?: string | null; // BF_PORTAL_v803_MENTIONS - e.g. "Todd mentioned you in #deals"
   body: string | null;
   context_url: string | null;
   is_read: boolean;
@@ -26,6 +27,7 @@ const KNOWN = new Set<NotificationType>([
 ]);
 
 const mapType = (type: string): NotificationType => {
+  if (type === "mention") return "new_message"; // BF_PORTAL_v803_MENTIONS - @mentions are messages for you
   if (KNOWN.has(type as NotificationType)) {
     return type as NotificationType;
   }
@@ -52,7 +54,7 @@ export function useServerNotifications(pollMs = 60_000) {
         const items: NotificationItem[] = rows.map((row) => ({
           id: String(row.id),
           type: mapType(String(row.type ?? "")),
-          title: "",
+          title: String(row.title ?? "").trim() || (row.type === "mention" ? "You were mentioned" : ""), // BF_PORTAL_v803_MENTIONS
           message: row.body ?? "",
           createdAt: parseCreatedAt(row.created_at),
           read: !!row.is_read,
