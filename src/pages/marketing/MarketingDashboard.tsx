@@ -2,7 +2,7 @@
 // not in the left nav. Two previous attempts filed it in sidebar groups.
 // BF_PORTAL_MARKETING_FUNNEL_LIVE_v1 — Analytics tab renders the live
 // application funnel from GET /api/marketing/funnel (respondOk envelope).
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { api } from "@/api";
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; // BF_PORTAL_BRANDED_EMAIL_COMPOSER_MOUNT_v1
 import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORTAL_LINK_CLICKS_PANEL_v9
@@ -17,11 +17,13 @@ import AutomationsBuilder from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUT
 import { AdsStoryPanel, VisitorsPanel, DropoffPanel, AudiencesNote } from "@/components/marketing/GoogleAdsAnalytics"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 import CustomerMatchPanel from "@/components/marketing/CustomerMatchPanel"; // BF_PORTAL_CUSTOMER_MATCH_LISTS_v711
 import GoogleHealthPanel from "@/pages/settings/tabs/GoogleHealthPanel"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
+import MobileAppsPanel from "./MobileAppsPanel"; // BF_PORTAL_v811_MOBILE_APPS
+import SiloContext from "@/context/SiloContext"; // BF_PORTAL_v811_MOBILE_APPS
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
 // data, two different places to look for it. BF now gets the tab too.
-type MarketingTab = "analytics" | "automations" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads";
+type MarketingTab = "analytics" | "automations" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads" | "apps"; // BF_PORTAL_v811_MOBILE_APPS - apps
 // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 // BF_PORTAL_ADS_SERVICES_v709 - "Ads" section: one sub-tab per ad service
 // (Google, Microsoft, LinkedIn); every Google report sits under Google.
@@ -42,6 +44,7 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "email", label: "Email" },
   { id: "links", label: "Links" }, // BF_PORTAL_BF_LINKS_TAB_v15
   { id: "ads", label: "Ads" }, // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707 + BF_PORTAL_ADS_SERVICES_v709
+  { id: "apps", label: "Mobile apps" }, // BF_PORTAL_v811_MOBILE_APPS - Boreal Financial silo only
 ];
 
 type FunnelStep = {
@@ -1452,14 +1455,20 @@ function AutomationsPanel() {
 
 const MarketingDashboard = () => {
   // BF_PORTAL_PARTNERS_TABS_v720 - ?tab=referrers (old Broker Files links land on Referrers > Brokers).
-  const [tab, setTab] = useState<MarketingTab>(() => (new URLSearchParams(window.location.search).get("tab") === "referrers" ? "referrers" : "analytics"));
+  const [tab, setTab] = useState<MarketingTab>(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    return t === "referrers" ? "referrers" : t === "apps" ? "apps" : "analytics"; // BF_PORTAL_v811_MOBILE_APPS - ?tab=apps
+  });
+  // BF_PORTAL_v811_MOBILE_APPS - the Mobile apps tab is Boreal Financial's client app, so it shows in the BF silo only.
+  const isBf = String(useContext(SiloContext)?.silo ?? "BF").toUpperCase() === "BF";
+  const tabs = MARKETING_TABS.filter((t) => t.id !== "apps" || isBf);
   const [adsTab, setAdsTab] = useState<AdsTab>("story");
   const [adsService, setAdsService] = useState<AdsService>("google"); // BF_PORTAL_ADS_SERVICES_v709
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        {MARKETING_TABS.map((entry) => (
+        {tabs.map((entry) => (
           <button
             key={entry.id}
             type="button"
@@ -1499,6 +1508,7 @@ const MarketingDashboard = () => {
           {adsService === "microsoft" && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Microsoft Ads - coming soon.</div>}
         </div>
       )}
+      {tab === "apps" && isBf && <MobileAppsPanel />}{/* BF_PORTAL_v811_MOBILE_APPS */}
       {tab === "email" && <BrandedEmailComposer />}
       {tab === "links" && <LinkClicksPanel />}{/* BF_PORTAL_BF_LINKS_TAB_v15 */}
       {tab === "sms" && <SmsComposerPanel />}
