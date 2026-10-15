@@ -17,6 +17,7 @@ import { ApiError } from "@/api/http";
 import toast from "react-hot-toast"; // BF_PORTAL_COMMS_SMS_ERROR_TOAST_v1
 import { smsSegments } from "@/lib/smsSegments"; // BF_PORTAL_BLOCK_v500
 import { smsDeliveryTag } from "@/lib/smsDeliveryStatus"; // BF_PORTAL_BLOCK_v500
+import SmsConsentTag from "@/components/communications/SmsConsentTag"; // BF_PORTAL_v809_SMS_UPDATES_CONSENT
 import SecondaryButton from "@/components/forms/SecondaryButton";
 import { apiBlob } from "@/utils/api"; // BF_PORTAL_VOICEMAIL_AUDIO_v1
 
@@ -774,6 +775,7 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>{selected.name}</div>
                 {selected.phone && <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{selected.phone}</div>}
+                <SmsConsentTag phone={selected.phone ?? selected.phone_e164 ?? selected.mobile ?? null} />
               </div>
               {(() => {
                 const callPhone = selected.phone ?? selected.phone_e164 ?? selected.mobile ?? null;
