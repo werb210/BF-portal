@@ -242,3 +242,42 @@ describe("LendersTab v186 polish", () => {
     });
   });
 });
+
+// BF_PORTAL_v813_TERM_SHEET_BUTTON - the row's Upload Term Sheet button opened nothing while the Files menu was
+// closed, because the file input only existed inside that menu.
+describe("LendersTab v813 Upload Term Sheet button", () => {
+  beforeEach(() => {
+    (uploadLenderTermSheet as any).mockReset();
+    (fetchLenderEnvelope as any).mockResolvedValue({ status: "ready", outstanding: [], computed_at: new Date().toISOString(), matches: [{ id: "p1", lenderName: "Alpha", productName: "Term", productCategory: "TERM_LOAN", matchPercent: 87, files: [] }] });
+  });
+
+  it("opens the file picker with the Files menu closed", async () => {
+    render(withClient(<LendersTab applicationId="app-btn" />));
+    await screen.findByText("Alpha");
+    expect(screen.queryByTestId("lender-files-menu-p1")).not.toBeInTheDocument();
+    const input = screen.getByTestId("upload-term-sheet-p1") as HTMLInputElement;
+    const click = vi.spyOn(input, "click");
+    fireEvent.click(screen.getByTestId("upload-term-sheet-button-p1"));
+    expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  it("choosing a file from the row button opens the term sheet dialog and uploads", async () => {
+    (uploadLenderTermSheet as any).mockResolvedValue({ ok: true });
+    render(withClient(<LendersTab applicationId="app-btn2" />));
+    await screen.findByText("Alpha");
+    const file = new File(["x"], "term.pdf", { type: "application/pdf" });
+    fireEvent.change(screen.getByTestId("upload-term-sheet-p1"), { target: { files: [file] } });
+    await screen.findByTestId("term-sheet-modal");
+    fireEvent.click(screen.getByTestId("term-sheet-submit"));
+    await waitFor(() => expect((uploadLenderTermSheet as any).mock.calls[0]?.slice(0, 3)).toEqual(["app-btn2", "p1", file]));
+  });
+
+  it("the Files menu item opens the same picker", async () => {
+    render(withClient(<LendersTab applicationId="app-btn3" />));
+    await screen.findByText("Alpha");
+    const click = vi.spyOn(screen.getByTestId("upload-term-sheet-p1") as HTMLInputElement, "click");
+    fireEvent.click(screen.getByTestId("lender-files-p1"));
+    fireEvent.click(screen.getByRole("button", { name: "⬆ Upload Term Sheet" }));
+    expect(click).toHaveBeenCalledTimes(1);
+  });
+});
