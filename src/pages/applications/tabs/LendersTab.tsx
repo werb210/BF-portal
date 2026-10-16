@@ -902,31 +902,40 @@ function describeSendFailure(err: unknown): string {
                               </a>
                             ))
                           )}
-                          <label style={{ ...styles.filesMenuItem, cursor: "pointer", color: "var(--ui-accent-fg)", marginTop: 6, borderTop: "1px solid var(--ui-border-soft)", paddingTop: 8 }}>
+                          {/* BF_PORTAL_v813_TERM_SHEET_BUTTON - opens the same file picker as the row's Upload Term Sheet button. */}
+                          <button
+                            type="button"
+                            disabled={isUploading || isStale}
+                            onClick={() => (document.querySelector(`[data-testid="upload-term-sheet-${m.id}"]`) as HTMLInputElement | null)?.click()}
+                            style={{ ...styles.filesMenuItem, cursor: "pointer", color: "var(--ui-accent-fg)", marginTop: 6, borderTop: "1px solid var(--ui-border-soft)", paddingTop: 8, background: "none", borderLeft: 0, borderRight: 0, borderBottom: 0, textAlign: "left", width: "100%", font: "inherit" }}
+                          >
                             {isUploading ? "Uploading…" : "⬆ Upload Term Sheet"}
-                            <input
-                              type="file"
-                              data-testid={`upload-term-sheet-${m.id}`}
-                              disabled={isUploading || isStale}
-                              style={{ display: "none" }}
-                              onChange={(e) => {
-                                const f = e.target.files?.[0];
-                                if (f) {
-                                  setTsFile(f);
-                                  setTermSheetFor({ matchId: m.id, lenderName: m.lenderName ?? "lender" });
-                                  setFilesOpenFor(null);
-                                }
-                                e.currentTarget.value = "";
-                              }}
-                            />
-                          </label>
+                          </button>
                         </div>
                       )}
                     </div>
                   </td>
                   <td style={styles.td}>
+                    {/* BF_PORTAL_v813_TERM_SHEET_BUTTON - the file input lived inside the Files menu, so it did not exist
+                        while the menu was closed and this button did nothing. It now always lives here. */}
+                    <input
+                      type="file"
+                      data-testid={`upload-term-sheet-${m.id}`}
+                      disabled={isUploading || isStale}
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) {
+                          setTsFile(f);
+                          setTermSheetFor({ matchId: m.id, lenderName: m.lenderName ?? "lender" });
+                          setFilesOpenFor(null);
+                        }
+                        e.currentTarget.value = "";
+                      }}
+                    />
                     <button
                       type="button"
+                      data-testid={`upload-term-sheet-button-${m.id}`}
                       onClick={() => {
                         const inp = document.querySelector(`[data-testid="upload-term-sheet-${m.id}"]`) as HTMLInputElement | null;
                         inp?.click();
