@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@capacitor/app", () => ({ App: { addListener: vi.fn() } }));
 vi.mock("@/native/widgetSnapshot", () => ({ publishWidgetSnapshot: vi.fn() }));
 vi.mock("@/native/widgetBridge", () => ({
-  mirrorSiloToWidget: vi.fn(), WidgetBridgePlugin: {}, WIDGET_GROUP: "group.com.boreal.portal", isNativeIOS: () => false,
+  mirrorSiloToWidget: vi.fn(), WidgetBridgePlugin: {}, WIDGET_GROUP: "group.com.borealfinancial.portal", isNativeIOS: () => false,
 }));
 vi.mock("@/context/SiloContext", () => ({ useSilo: vi.fn() }));
 

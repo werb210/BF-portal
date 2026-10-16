@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 enum WidgetStore {
-    static let group = "group.com.boreal.portal"
+    static let group = "group.com.borealfinancial.portal"
     static let siloKey = "widget_active_silo"
 
     static func string(_ key: String) -> String? {

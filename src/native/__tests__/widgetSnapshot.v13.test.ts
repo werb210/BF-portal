@@ -42,7 +42,7 @@ describe("widget snapshots", () => {
     for (const silo of ["BF", "BI", "SLF"] as const) {
       expect(h.api).toHaveBeenCalledWith("/api/widget/summary", { headers: { "X-Silo": silo } });
       expect(h.setItem).toHaveBeenCalledWith({
-        group: "group.com.boreal.portal",
+        group: "group.com.borealfinancial.portal",
         key: `widget_summary_${silo}`,
         value: expect.stringContaining(`"silo":"${silo}"`),
       });

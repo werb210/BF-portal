@@ -1,6 +1,6 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 
-export const WIDGET_GROUP = "group.com.boreal.portal";
+export const WIDGET_GROUP = "group.com.borealfinancial.portal";
 export const WIDGET_SILO_KEY = "widget_active_silo";
 
 export interface WidgetBridge {
