@@ -28,6 +28,7 @@ type JourneyEvent = {
   step: string | null;
   dwell_ms: number | null;
   occurred_at: string;
+  detail?: Record<string, string | number> | null; // BF_PORTAL_v814_JOURNEY_LABELS
 };
 
 type JourneySummary = {
@@ -221,11 +222,7 @@ export default function ContactJourney({ contactId, endpoint, site = "boreal.fin
             <span style={{ color: "var(--ui-text)" }}>
               {e.event_type === "pageview"
                 ? pageName(e) /* BF_PORTAL_JOURNEY_PAGE_NAMES_v1 */
-                : e.event_type === "wizard_step"
-                  ? `Wizard step ${e.step ?? "?"}`
-                  : e.event_type === "application_submitted"
-                    ? "Submitted application"
-                    : e.event_type}
+                : journeyLabel(e) /* BF_PORTAL_v814_JOURNEY_LABELS */}
             </span>
             {e.dwell_ms ? <span style={{ ...subtle, marginLeft: 8 }}>{duration(e.dwell_ms)}</span> : null}
             <span style={{ ...subtle, marginLeft: 8 }}>{new Date(e.occurred_at).toLocaleTimeString()}</span>
@@ -234,6 +231,37 @@ export default function ContactJourney({ contactId, endpoint, site = "boreal.fin
       </ol>
     </section>
   );
+}
+
+// BF_PORTAL_v814_JOURNEY_LABELS - plain words for every step in the path: which field was filled in, which button
+// was clicked, which form was started / sent / left. Field names arrive as the label the visitor saw; older entries
+// carry a code name, which is tidied up ("annualRevenue" -> "Annual revenue").
+export function humanName(raw: unknown): string {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  if (/\s/.test(s)) return s; // already the label the visitor saw
+  if (/^:?r[0-9a-z]{1,4}:?$/i.test(s) || s === "field") return ""; // auto-generated ids say nothing
+  const words = s.replace(/^[:_-]+|[:_-]+$/g, "").replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[-_.\[\]]+/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : "";
+}
+export function journeyLabel(e: Pick<JourneyEvent, "event_type" | "step" | "detail">): string {
+  const d = e.detail ?? {};
+  const field = humanName(d.field);
+  const form = humanName(d.form);
+  const label = String(d.label ?? "").trim();
+  switch (e.event_type) {
+    case "wizard_step": return `Wizard step ${e.step ?? "?"}`;
+    case "application_submitted": return "Submitted application";
+    case "session_start": return "Arrived on site";
+    case "field_complete": return field ? `Filled in: ${field}` : "Filled in a field";
+    case "field_abandon": return field ? `Stopped at: ${field}` : "Stopped part-way through a field";
+    case "click": return label ? `Clicked: ${label}` : "Clicked";
+    case "scroll": return d.depth !== undefined ? `Scrolled ${d.depth}%` : "Scrolled";
+    case "form_start": return form ? `Started form: ${form}` : "Started a form";
+    case "form_submit": return form ? `Sent form: ${form}` : "Sent a form";
+    case "form_abandon": return `Left form${form ? `: ${form}` : ""}${field ? ` (at ${field})` : ""}`;
+    default: return humanName(e.event_type) || e.event_type;
+  }
 }
 
 // BF_PORTAL_JOURNEY_PAGE_NAMES_v1 - show human page names in the journey path instead of raw URLs.
