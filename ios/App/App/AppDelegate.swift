@@ -258,7 +258,7 @@ enum SharedInboxDelivery {
     static var deliveredOnce = false
     static func deliver() {
         let fm = FileManager.default
-        guard let base = fm.containerURL(forSecurityApplicationGroupIdentifier: "group.com.boreal.portal") else { return }
+        guard let base = fm.containerURL(forSecurityApplicationGroupIdentifier: "group.com.borealfinancial.portal") else { return } // BF_PORTAL_v815_COMPANY_BUNDLE_ID - company team 76VAY7UJKJ, app com.borealfinancial.portal
         let inbox = base.appendingPathComponent("SharedInbox", isDirectory: true)
         guard let folders = try? fm.contentsOfDirectory(at: inbox, includingPropertiesForKeys: nil), !folders.isEmpty else { return }
         let outDir = fm.temporaryDirectory.appendingPathComponent("Shared", isDirectory: true)

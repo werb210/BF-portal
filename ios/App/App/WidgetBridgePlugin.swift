@@ -150,7 +150,7 @@ enum WidgetRefreshSession {
 // BF_PORTAL_WIDGET_SELF_REFRESH_v384
 enum WidgetBackgroundRefresh {
     static let taskId = "com.boreal.portal.widget-refresh"
-    static let group = "group.com.boreal.portal"
+    static let group = "group.com.borealfinancial.portal"
     static let silos = ["BF", "BI", "SLF"]
 
     static func register() {

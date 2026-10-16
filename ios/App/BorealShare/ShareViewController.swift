@@ -8,7 +8,7 @@ import UniformTypeIdentifiers
 
 @objc(ShareViewController)
 final class ShareViewController: UIViewController {
-    private let appGroup = "group.com.boreal.portal"
+    private let appGroup = "group.com.borealfinancial.portal"
     private let appName = "Boreal Portal"
     private let label = UILabel()
     private let button = UIButton(type: .system)

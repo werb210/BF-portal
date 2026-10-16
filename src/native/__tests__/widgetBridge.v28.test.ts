@@ -58,7 +58,7 @@ describe("native widget state bridge", () => {
   it("writes the active silo to the same App Group", async () => {
     await mirrorSiloToWidget("BI");
     expect(h.setItem).toHaveBeenCalledWith({
-      group: "group.com.boreal.portal",
+      group: "group.com.borealfinancial.portal",
       key: "widget_active_silo",
       value: "BI",
     });
