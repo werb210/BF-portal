@@ -10,6 +10,7 @@ class BorealBridgeViewController: CAPBridgeViewController {
         // BF_PORTAL_IPAD_WIRING_v238 - Quick Look, Pencil and card scan were never registered.
         bridge?.registerPluginInstance(IPadWorkstationPlugin())
         bridge?.registerPluginInstance(PortalLauncherPlugin()) // BF_PORTAL_BLOCK_v556
+        bridge?.registerPluginInstance(BorealVoicePlugin()) // BF_PORTAL_v817_IPAD_VOIP
     }
 }
 

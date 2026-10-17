@@ -1,11 +1,13 @@
 // BF_PORTAL_BLOCK_v600_DIALER_PROVIDER_v1
 import type { Device } from "@twilio/voice-sdk";
 import { ringPush } from "./debugRing";
+import { nativeVoiceAvailable } from "@/native/portalVoip";
 export type PreflightResult = | { ok: true } | { ok: false; reason: string; detail?: unknown };
 export async function preflight(device: Device | null): Promise<PreflightResult> {
   if (!device) return { ok: false, reason: "device_not_initialized" };
   const state = (device as any).state; ringPush("preflight.device.state", state);
-  if (state !== "registered") return { ok: false, reason: "device_not_registered", detail: { state } };
+  // BF_PORTAL_v817_IPAD_VOIP - in the iPad app the Device is outgoing-only (never registered; CallKit takes incoming calls).
+  if (state !== "registered" && !(state === "unregistered" && nativeVoiceAvailable())) return { ok: false, reason: "device_not_registered", detail: { state } };
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return { ok: false, reason: "mediadevices_unavailable" };
   try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach((t) => t.stop()); ringPush("preflight.mic.ok"); return { ok: true }; }
   catch (e: any) { ringPush("preflight.mic.denied", e?.message); return { ok: false, reason: "mic_permission_denied", detail: e?.message }; }

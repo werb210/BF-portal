@@ -15,6 +15,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         BorealPushCategories.register()
         // BF_PORTAL_WIDGET_SELF_REFRESH_v384 - must register before launch finishes.
         WidgetBackgroundRefresh.register()
+        // BF_PORTAL_v817_IPAD_VOIP - PushKit + CallKit before launch finishes, so a VoIP push
+        // that launched the closed app rings the iPad without waiting for the WebView.
+        PortalVoiceEngine.shared.start()
         // Override point for customization after application launch.
         return true
     }

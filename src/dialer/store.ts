@@ -1,7 +1,7 @@
 // BF_PORTAL_BLOCK_v600_DIALER_PROVIDER_v1
 import { create } from "zustand";
 import type { Call, Device } from "@twilio/voice-sdk";
-import type { DialerState, DialerCtx, Conference, Participant, TranscriptSegment } from "./types";
+import type { DialerState, DialerCtx, Conference, Participant, TranscriptSegment, NativeCall } from "./types";
 import { ringPush } from "./debugRing";
 
 type Actions = {
@@ -20,6 +20,8 @@ type Actions = {
   setMicPermission(p: DialerState["micPermission"]): void;
   setInputDevice(id: string | null): void;
   setOutputDevice(id: string | null): void;
+  setNativeVoice(on: boolean): void; // BF_PORTAL_v817_IPAD_VOIP
+  setNativeCall(call: NativeCall | null): void; // BF_PORTAL_v817_IPAD_VOIP
   reset(): void;
 };
 
@@ -39,6 +41,8 @@ const initial: DialerState = {
   outputDeviceId: null,
   micPermission: "unknown",
   callStartedAt: null,
+  nativeVoice: false, // BF_PORTAL_v817_IPAD_VOIP
+  nativeCall: null,
 };
 
 export const useDialer = create<DialerState & Actions>((set, get) => ({
@@ -86,6 +90,14 @@ export const useDialer = create<DialerState & Actions>((set, get) => ({
   setMicPermission: (micPermission) => set({ micPermission }),
   setInputDevice: (inputDeviceId) => set({ inputDeviceId }),
   setOutputDevice: (outputDeviceId) => set({ outputDeviceId }),
+  setNativeVoice: (nativeVoice) => {
+    ringPush("store.nativeVoice", nativeVoice);
+    set({ nativeVoice });
+  },
+  setNativeCall: (nativeCall) => {
+    ringPush("store.nativeCall", nativeCall);
+    set({ nativeCall });
+  },
   reset: () => set({ ...initial }),
 }));
 

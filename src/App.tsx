@@ -105,6 +105,7 @@ import PortalLauncherProvider from "@/native/PortalLauncherProvider"; // BF_PORT
 import DialerPanel from "@/dialer/components/DialerPanel";
 import FloatingDialerButton from "@/dialer/components/FloatingDialerButton";
 import IncomingCallToast from "@/dialer/components/IncomingCallToast";
+import NativeCallBanner from "@/dialer/components/NativeCallBanner"; // BF_PORTAL_v817_IPAD_VOIP
 import ShareToDealProvider from "@/native/ShareToDealProvider"; // BF_PORTAL_BLOCK_v594
 import TeamNotifier from "@/components/team/TeamNotifier"; // BF_PORTAL_TEAM_NOTIFY_v644
 
@@ -126,6 +127,7 @@ function AppShell() {
       <DialerPanel />
       <FloatingDialerButton />
       <IncomingCallToast />
+      <NativeCallBanner />{/* BF_PORTAL_v817_IPAD_VOIP */}
       {/* BF_PORTAL_BLOCK_BI_DIALER_CONSOLIDATION_PHASE2_v1 --
           <IncomingCallModal /> removed. IncomingCallOverlay below
           is the single inbound UI. */}
