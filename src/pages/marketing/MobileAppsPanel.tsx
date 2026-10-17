@@ -80,8 +80,9 @@ export function DailyBars({ daily, days }: { daily: MobileAppsReport["daily"]; d
   );
 }
 
-export default function MobileAppsPanel() {
-  const [days, setDays] = useState(30);
+// BF_PORTAL_v819_MOBILE_REPORT - the report fetch, the five stat tiles and the by-device table are shared by this tab
+// and the compact Dashboard / Reports card (MobileAppsSummary), so both read the same numbers the same way.
+export function useMobileAppsReport(days: number) {
   const [data, setData] = useState<MobileAppsReport | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
@@ -92,14 +93,67 @@ export default function MobileAppsPanel() {
       .catch(() => { if (live) setErr("Could not load the mobile app report."); });
     return () => { live = false; };
   }, [days]);
+  return { data, err };
+}
+
+const appOnly = (d: string) => d !== "web";
+const evCount = (data: MobileAppsReport, d: string, e: string) => data.events?.[d]?.[e]?.count ?? 0;
+
+export function MobileAppsTiles({ data }: { data: MobileAppsReport }) {
+  const devices = data.devices ?? [];
+  const sumActive = (k: "d1" | "d7" | "period", only?: (d: string) => boolean) =>
+    devices.filter((d) => !only || only(d)).reduce((n, d) => n + (data.active?.[d]?.[k] ?? 0), 0);
+  const pushUsers = (data.notificationsOn ?? []).reduce((n, r) => n + r.users, 0);
+  const quick = data.quickSignIn ?? { biometric: 0, passkey: 0 };
+  return (
+    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <Tile testId="apps-active-today" label="Active today (app)" value={sumActive("d1", appOnly)} sub={sumActive("d1", (d) => d === "web") + " on the web"} />
+      <Tile testId="apps-active-7" label="Active last 7 days (app)" value={sumActive("d7", appOnly)} sub={sumActive("d7", (d) => d === "web") + " on the web"} />
+      <Tile testId="apps-active-period" label={`Active last ${data.days} days (app)`} value={sumActive("period", appOnly)} sub={sumActive("period", (d) => d === "web") + " on the web"} />
+      <Tile testId="apps-notifications" label="Notifications turned on" value={pushUsers} sub={(data.notificationsOn ?? []).map((r) => (r.platform === "ios" ? "iOS " : r.platform === "android" ? "Android " : r.platform + " ") + r.users).join(" · ") || "none yet"} />
+      <Tile testId="apps-quick-signin" label="Quick sign-in set up" value={quick.biometric + quick.passkey} sub={`Face ID / fingerprint ${quick.biometric} · passkey ${quick.passkey}`} />
+    </div>
+  );
+}
+
+export function MobileAppsDeviceTable({ data }: { data: MobileAppsReport }) {
+  return (
+    <div style={card}>
+      <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>By device, last {data.days} days</h3>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }} data-testid="apps-device-table">
+          <thead><tr><th style={th}>Device</th><th style={{ ...th, textAlign: "right" }}>Active users</th>{EVENT_LABEL.map(([k, l]) => <th key={k} style={{ ...th, textAlign: "right" }}>{l}</th>)}</tr></thead>
+          <tbody>
+            {(data.devices ?? []).map((d) => (
+              <tr key={d}><td style={td}>{DEVICE_LABEL[d] ?? d}</td><td style={num}>{data.active?.[d]?.period ?? 0}</td>{EVENT_LABEL.map(([k]) => <td key={k} style={num}>{evCount(data, d, k)}</td>)}</tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// BF_PORTAL_v819_MOBILE_REPORT - compact card for the Dashboard / Reports library: the five tiles and the by-device
+// table, for the period the Dashboard has selected (7 / 30 / 90 days / 1 year).
+export function MobileAppsSummary({ days }: { days: number }) {
+  const { data, err } = useMobileAppsReport(days);
+  return (
+    <div className="space-y-3" data-testid="mobile-apps-summary" style={{ color: "var(--ui-text)", display: "grid", gap: 12 }}>
+      {err && <div role="alert" style={{ color: "#991b1b", fontWeight: 600 }}>{err}</div>}
+      {!data && !err && <div style={{ color: "var(--ui-text-muted)" }}>Loading...</div>}
+      {data && <><MobileAppsTiles data={data} /><MobileAppsDeviceTable data={data} /></>}
+    </div>
+  );
+}
+
+export default function MobileAppsPanel() {
+  const [days, setDays] = useState(30);
+  const { data, err } = useMobileAppsReport(days);
 
   const devices = data?.devices ?? [];
-  const sumActive = (k: "d1" | "d7" | "period", only?: (d: string) => boolean) =>
-    devices.filter((d) => !only || only(d)).reduce((n, d) => n + (data?.active[d]?.[k] ?? 0), 0);
-  const appOnly = (d: string) => d !== "web";
-  const ev = (d: string, e: string) => data?.events[d]?.[e]?.count ?? 0;
+  const ev = (d: string, e: string) => (data ? evCount(data, d, e) : 0);
   const appVsWeb = (e: string) => ({ app: devices.filter(appOnly).reduce((n, d) => n + ev(d, e), 0), web: ev("web", e) });
-  const pushUsers = (data?.notificationsOn ?? []).reduce((n, r) => n + r.users, 0);
 
   return (
     <div className="space-y-4" data-testid="mobile-apps-panel" style={{ color: "var(--ui-text)" }}>
@@ -117,29 +171,11 @@ export default function MobileAppsPanel() {
       {err && <div role="alert" style={{ color: "#991b1b", fontWeight: 600 }}>{err}</div>}
       {!data && !err && <div style={{ color: "var(--ui-text-muted)" }}>Loading...</div>}
       {data && <>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Tile testId="apps-active-today" label="Active today (app)" value={sumActive("d1", appOnly)} sub={sumActive("d1", (d) => d === "web") + " on the web"} />
-          <Tile testId="apps-active-7" label="Active last 7 days (app)" value={sumActive("d7", appOnly)} sub={sumActive("d7", (d) => d === "web") + " on the web"} />
-          <Tile testId="apps-active-period" label={`Active last ${data.days} days (app)`} value={sumActive("period", appOnly)} sub={sumActive("period", (d) => d === "web") + " on the web"} />
-          <Tile testId="apps-notifications" label="Notifications turned on" value={pushUsers} sub={(data.notificationsOn ?? []).map((r) => (r.platform === "ios" ? "iOS " : r.platform === "android" ? "Android " : r.platform + " ") + r.users).join(" · ") || "none yet"} />
-          <Tile testId="apps-quick-signin" label="Quick sign-in set up" value={data.quickSignIn.biometric + data.quickSignIn.passkey} sub={`Face ID / fingerprint ${data.quickSignIn.biometric} · passkey ${data.quickSignIn.passkey}`} />
-        </div>
+        <MobileAppsTiles data={data} />
 
         <div style={card}><DailyBars daily={data.daily} days={data.days} /></div>
 
-        <div style={card}>
-          <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>By device, last {data.days} days</h3>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }} data-testid="apps-device-table">
-              <thead><tr><th style={th}>Device</th><th style={{ ...th, textAlign: "right" }}>Active users</th>{EVENT_LABEL.map(([k, l]) => <th key={k} style={{ ...th, textAlign: "right" }}>{l}</th>)}</tr></thead>
-              <tbody>
-                {devices.map((d) => (
-                  <tr key={d}><td style={td}>{DEVICE_LABEL[d] ?? d}</td><td style={num}>{data.active[d]?.period ?? 0}</td>{EVENT_LABEL.map(([k]) => <td key={k} style={num}>{ev(d, k)}</td>)}</tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <MobileAppsDeviceTable data={data} />
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
           <div style={card} data-testid="apps-vs-web">

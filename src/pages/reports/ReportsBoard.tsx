@@ -7,6 +7,8 @@ import { AdsStoryPanel, DropoffPanel, VisitorsPanel } from "@/components/marketi
 import BIDashboard from "@/silos/bi/dashboard/BIDashboard";
 import BIInsuranceReports from "./BIInsuranceReports"; // BF_PORTAL_REPORTS15_18_v769
 import { ReportDataCard } from "./ReportDataCards";
+import { MobileAppsSummary } from "@/pages/marketing/MobileAppsPanel"; // BF_PORTAL_v819_MOBILE_REPORT
+import { MOBILE_APPS_KEY, withPortalReports } from "./reportLibrary"; // BF_PORTAL_v819_MOBILE_REPORT
 
 export type ReportDef = { key: string; title: string; silo: string; group: "money" | "marketing" | "operations"; size: "half" | "full"; description: string };
 export type Card = { id: string; report: string; size: "half" | "full"; days?: number };
@@ -43,6 +45,7 @@ export function CardBody({ report, days }: { report: string; days?: number }): R
   if (report === "ads_visitors") return <VisitorsPanel />;
   if (report === "bi_dashboard") return <BIDashboard />;
   if (report === "bi_insurance") return <BIInsuranceReports />; // BF_PORTAL_REPORTS15_18_v769
+  if (report === MOBILE_APPS_KEY) return <MobileAppsSummary days={days ?? 30} />; // BF_PORTAL_v819_MOBILE_REPORT
   return <ReportDataCard report={report} days={days} />;
 }
 
@@ -98,8 +101,8 @@ export default function ReportsBoard({ mode = "reports" }: { mode?: "reports" | 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 6 } }));
   const load = useCallback(async () => {
     try {
-      const [c, l] = await Promise.all([api.get<{ reports: ReportDef[] }>(`/api/reports/catalog?silo=${silo}`), api.get<Layout>(`/api/reports/layouts?silo=${silo}`)]);
-      setCatalog(Array.isArray(c?.reports) ? c.reports : []);
+      const [c, l] = await Promise.all([api.get<{ reports: ReportDef[]; role?: string }>(`/api/reports/catalog?silo=${silo}`), api.get<Layout>(`/api/reports/layouts?silo=${silo}`)]);
+      setCatalog(withPortalReports(c?.reports, c?.role)); // BF_PORTAL_v819_MOBILE_REPORT - de-duplicated; Mobile apps for Admin / Marketing
       const next = { tabs: l?.tabs ?? [], dashboard: l?.dashboard ?? null, teamTabs: l?.teamTabs ?? [], canPublishTeamTabs: Boolean(l?.canPublishTeamTabs) };
       if (mode === "reports" && !next.tabs.length && !next.teamTabs.length) next.tabs = [{ id: newId(), name: "My reports", cards: [] }];
       setLayout(next); setActive((value) => value || (mode === "dashboard" ? "dashboard" : next.tabs[0]?.id ?? next.teamTabs[0]?.id ?? ""));
