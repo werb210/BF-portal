@@ -6,6 +6,8 @@ import { dialerApi } from "./api";
 import { onSse, startSse, stopSse } from "./sse";
 import { ringPush } from "./debugRing";
 import { probeMicPermission, listAudioDevices } from "./sanityCheck";
+import { nativeVoiceAvailable } from "@/native/portalVoip";
+import { bindNativeCallEvents, fetchVoiceToken, refreshNativeToken, setupIncoming, startNativeTokenRefresh, teardownNativeIncoming } from "./nativeVoice"; // BF_PORTAL_v817_IPAD_VOIP
 import { useAuth } from "@/auth/AuthContext";
 import { useSilo } from "@/context/SiloContext";
 // BF_PORTAL_INTERNAL_CALLER_RESOLVE_v1 — resolve inbound PSTN numbers and
@@ -51,8 +53,13 @@ async function resolveAndSetIncoming(base: { conferenceFriendly: string; fromDis
 export default function DialerProvider() { const { authenticated, authStatus } = useAuth(); const silo = useSilo()?.silo ?? "BF";
 const setDevice=useDialer((s)=>s.setDevice), setStatus=useDialer((s)=>s.setStatus), setIncoming=useDialer((s)=>s.setIncoming), setConference=useDialer((s)=>s.setConference), patchParticipants=useDialer((s)=>s.patchParticipants), appendTranscript=useDialer((s)=>s.appendTranscript), setMicPermission=useDialer((s)=>s.setMicPermission); const initOnce=useRef(false); const incoming=useDialer((s)=>s.incoming);
 useEffect(()=>{ if (!authenticated || authStatus!=="authenticated") return; startSse(silo); const off=onSse((event,data)=>{ switch(event){ case "conference.update": if(data?.conference) setConference(data.conference, data.participants ?? []); else if(data?.participants) patchParticipants(data.participants); break; case "conference.incoming": void resolveAndSetIncoming({conferenceFriendly:data.conferenceFriendly, fromDisplay:data.fromDisplay}); break; case "conference.incoming.answered": setIncoming(null); break; case "transcript.live": appendTranscript({pid:data.pid,text:data.text,final:data.final,ts:data.ts}); break; }}); return ()=>{off(); stopSse();}; }, [authenticated,authStatus,silo,setConference,patchParticipants,setIncoming,appendTranscript]);
-useEffect(()=>{ if(initOnce.current) return; if(!authenticated || authStatus!=="authenticated") return; initOnce.current=true; (async()=>{ try { setStatus("preflight"); const tokRes:any=await dialerApi.voiceToken(); const tok=tokRes?.data?.token ?? tokRes?.token; if(!tok){setStatus("error","no_voice_token"); return;} const device = new Device(tok,{codecPreferences:["opus","pcmu"] as any, allowIncomingWhileBusy:false, logLevel:1});
- device.on("registered",()=>{ ringPush("device.registered"); setDevice(device); setStatus("ready");}); device.on("error",(e:any)=>{ringPush("device.error",{code:e?.code,msg:e?.message}); setStatus("error", e?.message ?? "device_error");}); device.on("unregistered",()=>{ringPush("device.unregistered"); setStatus("idle");}); device.on("tokenWillExpire", async()=>{ try{ const r:any=await dialerApi.voiceToken(); const fresh=r?.data?.token ?? r?.token; if(fresh) await device.updateToken(fresh);}catch{}});
+// BF_PORTAL_v817_IPAD_VOIP - iPad app: mirror native (CallKit) calls into the dialer UI; stop ringing this iPad on sign-out.
+useEffect(()=>{ if (!authenticated || authStatus!=="authenticated") return; return bindNativeCallEvents(); }, [authenticated,authStatus]);
+useEffect(()=>{ if (authenticated) return; /* BF_PORTAL_v817_IPAD_VOIP - only a real sign-out (the dialer booted this session), never the brief signed-out state of a cold launch */ if (!initOnce.current || (!useDialer.getState().nativeVoice && !nativeVoiceAvailable())) return; void teardownNativeIncoming(); try { useDialer.getState().device?.destroy(); } catch { /* noop */ } setDevice(null); initOnce.current=false; }, [authenticated,setDevice]);
+useEffect(()=>{ if(initOnce.current) return; if(!authenticated || authStatus!=="authenticated") return; initOnce.current=true; (async()=>{ try { setStatus("preflight");
+ // BF_PORTAL_v817_IPAD_VOIP - the iPad app asks for a token carrying its VoIP push credential; web unchanged.
+ const native = nativeVoiceAvailable(); const tok = await fetchVoiceToken(native); if(!tok){setStatus("error","no_voice_token"); return;} const device = new Device(tok,{codecPreferences:["opus","pcmu"] as any, allowIncomingWhileBusy:false, logLevel:1});
+ device.on("registered",()=>{ ringPush("device.registered"); setDevice(device); setStatus("ready");}); device.on("error",(e:any)=>{ringPush("device.error",{code:e?.code,msg:e?.message}); setStatus("error", e?.message ?? "device_error");}); device.on("unregistered",()=>{ringPush("device.unregistered"); if(!useDialer.getState().nativeVoice) setStatus("idle");}); device.on("tokenWillExpire", async()=>{ try{ const fresh=await fetchVoiceToken(native); if(fresh){ await device.updateToken(fresh); await refreshNativeToken(fresh);} }catch{}});
  device.on("incoming",(call)=>{
       // v193_no_autoaccept: previously called call.accept() unconditionally,
       // which made every PSTN-to-portal inbound auto-pick-up without staff
@@ -65,7 +72,7 @@ useEffect(()=>{ if(initOnce.current) return; if(!authenticated || authStatus!=="
       call.on("cancel",()=>{ useDialer.getState().setIncoming(null); });
       call.on("disconnect",()=>{ useDialer.getState().setCall(null); useDialer.getState().setStatus("ready"); useDialer.getState().setIncoming(null); });
     });
- await device.register(); setMicPermission(await probeMicPermission()); const {inputs,outputs}=await listAudioDevices(); if(inputs[0]?.deviceId) useDialer.getState().setInputDevice(inputs[0].deviceId); if(outputs[0]?.deviceId) useDialer.getState().setOutputDevice(outputs[0].deviceId);
+ /* BF_PORTAL_v817_IPAD_VOIP - native incoming (CallKit) = outgoing-only Device, never registered, so nothing rings twice. */ if (await setupIncoming(native, tok)) { setDevice(device); setStatus("ready"); } else { await device.register(); } if (native) startNativeTokenRefresh(()=>useDialer.getState().device ?? device); setMicPermission(await probeMicPermission()); const {inputs,outputs}=await listAudioDevices(); if(inputs[0]?.deviceId) useDialer.getState().setInputDevice(inputs[0].deviceId); if(outputs[0]?.deviceId) useDialer.getState().setOutputDevice(outputs[0].deviceId);
  } catch (e:any) { ringPush("device.bootstrap.fail", e?.message); setStatus("error", e?.message ?? "bootstrap_failed"); }})(); }, [authenticated,authStatus,setDevice,setStatus,setMicPermission]);
 // BF_PORTAL_BLOCK_v789_INCOMING_RINGTONE — incoming calls only showed a silent
 // visual toast, so a callee not watching the screen never knew (staff reported

@@ -73,4 +73,19 @@ export type DialerState = {
   outputDeviceId: string | null;
   micPermission: "granted" | "denied" | "prompt" | "unknown";
   callStartedAt: string | null;
+  // BF_PORTAL_v817_IPAD_VOIP - iPad app: incoming calls ring natively (PushKit + CallKit), the JS
+  // Device is outgoing-only. nativeCall mirrors the native call for the in-app banner.
+  nativeVoice: boolean;
+  nativeCall: NativeCall | null;
+};
+
+// BF_PORTAL_v817_IPAD_VOIP
+export type NativeCall = {
+  uuid?: string;
+  callSid?: string;
+  from?: string;
+  callerName?: string;
+  phase?: "ringing" | "connecting" | "connected";
+  muted?: boolean;
+  speaker?: boolean;
 };

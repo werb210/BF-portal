@@ -11,6 +11,9 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
+		<!-- BF_PORTAL_v817_IPAD_VOIP - incoming calls (PushKit/CallKit) while the app is closed -->
+		<string>voip</string>
+		<string>audio</string>
 	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
