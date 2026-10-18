@@ -20,6 +20,10 @@ const config: CapacitorConfig = {
       launchShowDuration: 0,
       backgroundColor: '#0B1F3A',
     },
+    // BF_PORTAL_v823_PUSH - an alert that arrives while the portal is open still shows as a banner.
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
   },
 };
 

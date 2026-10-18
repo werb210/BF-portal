@@ -25,8 +25,28 @@ export function buildShortcuts(navigate: (to: string) => void, openHelp: () => v
   ];
 }
 
+// BF_PORTAL_v823_KEYBOARD - Cmd+Shift+D/P/C/M/T and Cmd+/ from the iPad's hardware keyboard (native key commands,
+// sent as "boreal:shortcut" events). The browser keeps the "g d" style keys.
+export const NATIVE_GO_TO: Record<string, string> = {
+  "go-dashboard": "/portal",
+  "go-pipeline": "/pipeline",
+  "go-crm": "/crm/contacts",
+  "go-communications": "/communications",
+  "go-tasks": "/tasks",
+};
+
 export function useKeyboardShortcuts(openHelp: () => void): void {
   const navigate = useNavigate();
+  useEffect(() => {
+    const onNative = (event: Event) => {
+      const name = String((event as CustomEvent).detail ?? "");
+      if (name === "help") { openHelp(); return; }
+      const to = NATIVE_GO_TO[name];
+      if (to) navigate(to);
+    };
+    window.addEventListener("boreal:shortcut", onNative);
+    return () => window.removeEventListener("boreal:shortcut", onNative);
+  }, [navigate, openHelp]);
   useEffect(() => {
     const shortcuts = buildShortcuts(navigate, openHelp);
     let prefix = "";

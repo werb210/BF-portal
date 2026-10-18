@@ -7,8 +7,8 @@ export type PushRegistrationResult = { state: PushRegistrationState; token?: str
 export type PushSetup = { result: PushRegistrationResult; remove: () => Promise<void> };
 
 /**
- * The token callback is the device-registration adapter boundary. No server
- * endpoint currently exists, so callers must not upload or persist tokens yet.
+ * The token callback is the device-registration adapter boundary. BF_PORTAL_v823_PUSH - PushNotificationsProvider
+ * sends it to BF-Server's /api/staff/push-token (app "portal-ios").
  */
 export async function registerPushNotifications(
   onOpenUrl: (url: string, actionId?: string) => void,

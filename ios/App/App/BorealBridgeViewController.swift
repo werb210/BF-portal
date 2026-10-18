@@ -1,4 +1,5 @@
 import Capacitor
+import UIKit
 import LocalAuthentication
 
 class BorealBridgeViewController: CAPBridgeViewController {
@@ -11,6 +12,40 @@ class BorealBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(IPadWorkstationPlugin())
         bridge?.registerPluginInstance(PortalLauncherPlugin()) // BF_PORTAL_BLOCK_v556
         bridge?.registerPluginInstance(BorealVoicePlugin()) // BF_PORTAL_v817_IPAD_VOIP
+    }
+
+    // BF_PORTAL_v823_KEYBOARD - hardware-keyboard shortcuts the iPad lists when you hold Cmd. Each one is handed to
+    // the web app as a "boreal:shortcut" event (useCommandShortcuts / useKeyboardShortcuts act on it), so the iPad and
+    // the browser run the same code.
+    override var keyCommands: [UIKeyCommand]? {
+        let entries: [(input: String, modifiers: UIKeyModifierFlags, title: String, action: String)] = [
+            ("k", .command, "Ask Maya", "focus-maya"),
+            ("1", .command, "Application tab", "tab-1"),
+            ("2", .command, "Banking Analysis tab", "tab-2"),
+            ("3", .command, "Financials tab", "tab-3"),
+            ("4", .command, "Documents tab", "tab-4"),
+            ("d", [.command, .shift], "Go to Dashboard", "go-dashboard"),
+            ("p", [.command, .shift], "Go to Pipeline", "go-pipeline"),
+            ("c", [.command, .shift], "Go to CRM", "go-crm"),
+            ("m", [.command, .shift], "Go to Communications", "go-communications"),
+            ("t", [.command, .shift], "Go to Tasks", "go-tasks"),
+            ("/", .command, "Keyboard shortcuts", "help"),
+        ]
+        return entries.map { entry in
+            let command = UIKeyCommand(title: entry.title, action: #selector(borealShortcut(_:)), input: entry.input,
+                                       modifierFlags: entry.modifiers, propertyList: entry.action)
+            command.wantsPriorityOverSystemBehavior = true
+            return command
+        }
+    }
+
+    @objc private func borealShortcut(_ sender: UIKeyCommand) {
+        guard let action = sender.propertyList as? String,
+              action.range(of: "^[a-z0-9-]+$", options: .regularExpression) != nil else { return }
+        bridge?.webView?.evaluateJavaScript(
+            "window.dispatchEvent(new CustomEvent('boreal:shortcut', { detail: '\(action)' }))",
+            completionHandler: nil
+        )
     }
 }
 

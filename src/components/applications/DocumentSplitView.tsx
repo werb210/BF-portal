@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import PdfPages, { looksLikeImage, looksLikePdf } from "./PdfPages";
 import { fileDownloadName } from "@/lib/downloadName";
+import { canMarkUp, markUpPdf } from "@/native/markupDocument"; // BF_PORTAL_v823_PENCIL
 
 const MIN_PANE = 320;
 const DEFAULT_WIDTH = 560;
@@ -56,6 +57,8 @@ type Props = {
   review?: SplitViewReview | null;
   /** Current accepted name, including renames made while the preview is open. */
   downloadName?: string | null;
+  /** BF_PORTAL_v823_PENCIL - saves an Apple Pencil marked-up copy (iPad app, PDFs). Absent = no Mark up button. */
+  onSaveMarkup?: (file: File) => Promise<void>;
 };
 
 function readStoredWidth(): number {
@@ -68,7 +71,7 @@ function readStoredWidth(): number {
   }
 }
 
-export default function DocumentSplitView({ doc, onClose, review, downloadName }: Props) {
+export default function DocumentSplitView({ doc, onClose, review, downloadName, onSaveMarkup }: Props) {
   const [width, setWidth] = useState<number>(readStoredWidth);
   const [narrow, setNarrow] = useState(
     () => typeof window !== "undefined" && window.innerWidth < FULL_WIDTH_BELOW,
@@ -79,6 +82,8 @@ export default function DocumentSplitView({ doc, onClose, review, downloadName }
   const dragging = useRef(false);
   const [zoom, setZoom] = useState<number>(readStoredZoom);
   const [expanded, setExpanded] = useState<boolean>(readStoredFull);
+  // BF_PORTAL_v823_PENCIL
+  const [markup, setMarkup] = useState<"idle" | "working" | "saved" | "failed">("idle");
 
   useEffect(() => {
     try {
@@ -112,6 +117,7 @@ export default function DocumentSplitView({ doc, onClose, review, downloadName }
     setRejecting(false);
     setReason("");
     setPdfHead(undefined);
+    setMarkup("idle");
     let cancelled = false;
     if (doc?.blob)
       void doc.blob
@@ -165,6 +171,19 @@ export default function DocumentSplitView({ doc, onClose, review, downloadName }
   if (!doc) return null;
   const isPdf = !!doc.blob && looksLikePdf(doc.mimeType, doc.filename, pdfHead);
   const isImage = !isPdf && looksLikeImage(doc.mimeType, doc.filename);
+  const showMarkup = !!onSaveMarkup && canMarkUp({ isPdf, hasBlob: !!doc.blob });
+  const startMarkup = async () => {
+    if (!doc.blob || !onSaveMarkup) return;
+    setMarkup("working");
+    try {
+      const file = await markUpPdf(doc.blob, doc.filename);
+      if (!file) { setMarkup("idle"); return; }
+      await onSaveMarkup(file);
+      setMarkup("saved");
+    } catch {
+      setMarkup("failed");
+    }
+  };
   const status = String(doc.status ?? "pending").toLowerCase();
   const button = {
     minHeight: 44,
@@ -260,6 +279,11 @@ export default function DocumentSplitView({ doc, onClose, review, downloadName }
               <button type="button" data-testid="zoom-reset" aria-label="Reset zoom" onClick={() => setZoom(1)} style={{ ...tool, minWidth: 64, fontSize: 13 }}>{Math.round(zoom * 100)}%</button>
               <button type="button" data-testid="zoom-in" aria-label="Zoom in" disabled={zoom >= ZOOM_MAX} onClick={() => setZoom((current) => stepZoom(current, 1))} style={{ ...tool, opacity: zoom >= ZOOM_MAX ? 0.4 : 1 }}>+</button>
             </div>
+          ) : null}
+          {showMarkup ? (
+            <button type="button" data-testid="markup-document" disabled={markup === "working"} onClick={() => void startMarkup()} style={{ ...tool, fontSize: 13 }}>
+              {markup === "working" ? "Saving…" : markup === "saved" ? "Signed copy saved" : markup === "failed" ? "Try again" : "Mark up / Sign"}
+            </button>
           ) : null}
           {!narrow ? <button type="button" data-testid="full-screen" aria-pressed={expanded} onClick={() => setExpanded((current) => !current)} style={{ ...tool, fontSize: 13 }}>{expanded ? "Exit full screen" : "Full screen"}</button> : null}
           <a

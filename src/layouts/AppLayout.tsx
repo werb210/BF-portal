@@ -5,7 +5,7 @@
 // Lenders so they can track underwriting workload and the panel of
 // insurers they place with. Communications + Calendar removed; Pipeline
 // + Lenders added. BF and SLF nav definitions are unchanged.
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { useSilo } from "@/hooks/useSilo";
@@ -18,8 +18,6 @@ import { useInboundMessageWatcher } from "@/hooks/useInboundMessageWatcher";
 import { useNotificationsStore } from "@/state/notifications.store";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 // BF_PORTAL_BLOCK_v640_IPAD_WORKSTATION_v1
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import ShortcutHelp from "@/components/ShortcutHelp";
 // BF_PORTAL_BLOCK_v478_BUILD_STAMP_AND_UPDATE_PROMPT
 import UpdatePromptBanner from "@/components/UpdatePromptBanner";
 import { buildStampLabel } from "@/lib/buildInfo";
@@ -73,9 +71,8 @@ const SILO_BRAND: Record<string, { label: string; accent: string }> = {
 };
 
 export default function AppLayout({ children }: { children?: React.ReactNode }) {
-  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
-  const openShortcutHelp = useCallback(() => setShortcutHelpOpen(true), []);
-  useKeyboardShortcuts(openShortcutHelp);
+  // BF_PORTAL_v823_KEYBOARD - the shortcuts and their help panel are mounted once, in App.tsx (AppRoutes). Mounting
+  // them here too ran every shortcut twice and opened two help panels.
   const [mayaOpen, setMayaOpen] = useState(true);
   // BF_PORTAL_BLOCK_v637_INAPP_MSG_ALERTS_v1 — global new-message alerts.
   useInboundMessageWatcher();
@@ -156,7 +153,6 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   return (
     <div style={{ display: "flex", height: "100dvh", overflow: "hidden" }}>
       <NotificationToast />
-      <ShortcutHelp open={shortcutHelpOpen} onClose={() => setShortcutHelpOpen(false)} />
       {/* ── Sidebar ── */}
       <aside
         style={{

@@ -30,9 +30,32 @@ export function resolveCommandShortcut(event: KeyLike, pathname: string): Comman
   return { type: "navigate", to: `/applications/${match[1]}/${APPLICATION_TAB_SHORTCUTS[index]}` };
 }
 
+// BF_PORTAL_v823_KEYBOARD - the iPad's native key commands (BorealBridgeViewController) arrive as
+// "boreal:shortcut" events with these names.
+export const NATIVE_SHORTCUT_EVENT = "boreal:shortcut";
+
+export function resolveNativeShortcut(name: string, pathname: string): CommandAction | null {
+  if (name === "focus-maya") return { type: "focus-maya" };
+  const tab = /^tab-([1-4])$/.exec(name);
+  if (!tab) return null;
+  const match = /^\/applications\/([^/]+)/.exec(pathname);
+  if (!match) return null;
+  return { type: "navigate", to: `/applications/${match[1]}/${APPLICATION_TAB_SHORTCUTS[Number(tab[1]) - 1]}` };
+}
+
 export function useCommandShortcuts(): void {
   const navigate = useNavigate();
   const location = useLocation();
+  useEffect(() => {
+    const onNative = (event: Event) => {
+      const action = resolveNativeShortcut(String((event as CustomEvent).detail ?? ""), location.pathname);
+      if (!action) return;
+      if (action.type === "navigate") navigate(action.to);
+      else document.querySelector<HTMLTextAreaElement>("[data-maya-command]")?.focus();
+    };
+    window.addEventListener(NATIVE_SHORTCUT_EVENT, onNative);
+    return () => window.removeEventListener(NATIVE_SHORTCUT_EVENT, onNative);
+  }, [navigate, location.pathname]);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const action = resolveCommandShortcut(event, location.pathname);
