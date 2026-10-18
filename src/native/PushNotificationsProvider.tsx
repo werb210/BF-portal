@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { registerPushNotifications } from "@/native/pushNotifications";
 import { widgetRoute } from "@/native/WidgetSnapshotProvider";
 import { handlePushAction, safeDeepLink } from "@/native/pushActions";
+import { registerPortalPushToken, unregisterPortalPushToken } from "@/native/portalPushToken"; // BF_PORTAL_v823_PUSH
 
 // BF_PORTAL_v789_PUSH_ROUTING - BF-Server sends plain paths (/applications/:id, /tasks, ...). Only
 // bfportal: links were understood, so a tap on a normal notification opened nothing. Taps now go through
@@ -21,12 +22,15 @@ export default function PushNotificationsProvider() {
   const navigate = useNavigate();
   useEffect(() => {
     let remove: (() => Promise<void>) | undefined;
-    void registerPushNotifications((url, actionId) => handlePushTap(url, actionId, navigate)).then((setup) => {
+    // BF_PORTAL_v823_PUSH - this provider lives in the signed-in shell, so the token is sent for the signed-in person.
+    void registerPushNotifications(
+      (url, actionId) => handlePushTap(url, actionId, navigate),
+      (token) => { void registerPortalPushToken(token); },
+    ).then((setup) => {
       remove = setup.remove;
-      if (setup.result.state === "registered") console.info("[push] native registration ready; server adapter is not configured");
-      else if (setup.result.state === "error") console.warn("[push] registration failed", setup.result.error);
+      if (setup.result.state === "error") console.warn("[push] registration failed", setup.result.error);
     });
-    return () => { void remove?.(); };
+    return () => { void remove?.(); void unregisterPortalPushToken(); };
   }, [navigate]);
   return null;
 }

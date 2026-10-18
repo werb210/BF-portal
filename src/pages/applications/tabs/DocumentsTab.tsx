@@ -535,6 +535,16 @@ export default function DocumentsTab({ applicationId }: Props) {
       <DocumentSplitView
         doc={splitDoc}
         downloadName={splitDoc?.documentId ? (docs.find((document) => document.documentId === splitDoc.documentId)?.displayName ?? null) : null}
+        // BF_PORTAL_v823_PENCIL - the Pencil-marked copy is uploaded beside the original, in the same category.
+        onSaveMarkup={canManage && applicationId ? async (file: File) => {
+          const fd = new FormData();
+          fd.append("applicationId", applicationId);
+          fd.append("category", splitDoc?.category ?? uploadCat);
+          fd.append("file", file);
+          await api("/api/documents/upload", { method: "POST", body: fd });
+          setUploadNotice(`Saved ${file.name}`);
+          await reload();
+        } : undefined}
         onClose={() => setSplitDoc((previous) => {
           if (previous?.url) URL.revokeObjectURL(previous.url);
           return null;
