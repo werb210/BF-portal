@@ -4,6 +4,7 @@
 // a referrer previously had no way to correct). Also fixes the prefill: /me returns
 // { status, profile: {...} } and api() only unwraps a `data` envelope, so the old
 // code read me.first_name (always undefined) and the form never populated.
+import "@/components/partner/partnerPortal.css"; // BF_PORTAL_v828_PARTNER_PORTAL_THEME
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api";
@@ -97,14 +98,15 @@ export default function ReferrerProfilePage() {
     }
   }
 
-  const input = "w-full border rounded p-2 bg-white text-slate-900"; // BF_PORTAL_REFERRER_PROFILE_FIX_v2
-  const label = "block text-sm font-medium text-slate-700 mb-1"; // BF_PORTAL_REFERRER_PROFILE_LABELS_v1
+  // BF_PORTAL_v828_PARTNER_PORTAL_THEME - UI-guide dark surfaces (the .partner-portal tokens style the inputs).
+  const input = "w-full p-2"; // BF_PORTAL_REFERRER_PROFILE_FIX_v2
+  const label = "block text-sm font-medium mb-1"; // BF_PORTAL_REFERRER_PROFILE_LABELS_v1
 
   return (
-    <div className="flex justify-center p-4" style={{ colorScheme: "light" }}>
-      <div className="w-full max-w-md rounded border bg-white p-4 space-y-3">
-        <h1 className="text-xl font-semibold">Your info</h1>
-        <p className="text-sm text-slate-500">
+    <div className="partner-portal flex justify-center p-4">
+      <div className="pp-card w-full max-w-md space-y-3">
+        <h1 className="pp-title">Your info</h1>
+        <p className="pp-muted">
           Update your details. This is where we send referral updates and issue your referral fees.
         </p>
 
@@ -114,7 +116,7 @@ export default function ReferrerProfilePage() {
           <label className={label}>Full name *</label>
           <input className={input} placeholder="Full name" value={form.full_name} onChange={set("full_name")} />
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
           <div>
             <label className={label}>Email *</label>
             <input className={input} type="email" placeholder="Email" value={form.email} onChange={set("email")} />
@@ -132,7 +134,7 @@ export default function ReferrerProfilePage() {
           <label className={label}>Street address *</label>
           <input className={input} placeholder="Street address" value={form.street} onChange={set("street")} />
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
           <div>
             <label className={label}>City *</label>
             <input className={input} placeholder="City" value={form.city} onChange={set("city")} />
@@ -151,21 +153,21 @@ export default function ReferrerProfilePage() {
           <input className={input} type="email" placeholder="e-Transfer email" value={form.etransfer_email} onChange={set("etransfer_email")} />
         </div>
 
-        {err ? <p className="text-sm text-red-600">{err}</p> : null}
-        {saved ? <p className="text-sm text-green-700">Saved.</p> : null}
+        {err ? <p className="pp-error">{err}</p> : null}
+        {saved ? <p className="text-sm" style={{ color: "#5FD196" }}>Saved.</p> : null}
 
         <div className="grid grid-cols-2 gap-2 pt-1">
           <button
-            className="rounded p-2"
-            style={{ background: "#ffffff", color: "#1e2a5a", border: "1px solid #cbd5e1" }}
+            type="button"
+            className="pp-btn"
             onClick={() => navigate("/referrer")}
             disabled={saving}
           >
             Cancel
           </button>
           <button
-            className="rounded p-2 text-white disabled:opacity-60"
-            style={{ background: "#1e2a5a" }}
+            type="button"
+            className="pp-btn pp-btn--primary"
             onClick={save}
             disabled={!valid || saving}
           >

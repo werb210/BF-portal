@@ -50,7 +50,7 @@ export default function SbaIvesFields({ value, onChange }: { value: LenderSba; o
       </Field>
       {value.offersSba === true && (
         <>
-          <div style={{ fontSize: 13, color: "#334155", margin: "4px 0 12px" }}>
+          <div style={{ fontSize: 13, color: "var(--ui-text-muted)", margin: "4px 0 12px" }}>
             Your IVES details go on IRS Form 4506-C so you can pull the applicant's tax transcripts. You'll find them in your IVES enrollment with the IRS.
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -62,7 +62,7 @@ export default function SbaIvesFields({ value, onChange }: { value: LenderSba; o
             <Field label="State"><input aria-label="IVES state" value={value.ivesState} onChange={(e) => set("ivesState", e.target.value)} style={inputStyle} /></Field>
             <Field label="ZIP"><input aria-label="IVES ZIP" value={value.ivesZip} onChange={(e) => set("ivesZip", e.target.value)} style={inputStyle} /></Field>
           </div>
-          {missing.length > 0 && <div role="alert" style={{ color: "#991b1b", fontSize: 13, marginTop: 4 }}>Still needed: {missing.join(", ")}.</div>}
+          {missing.length > 0 && <div role="alert" style={{ color: "var(--ui-text-danger, #991b1b)", fontSize: 13, marginTop: 4 }}>Still needed: {missing.join(", ")}.</div>}
         </>
       )}
     </div>
