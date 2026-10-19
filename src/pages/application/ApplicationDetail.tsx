@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import LenderReferralPanel from "@/pages/lenderReferrals/LenderReferralPanel"; // BF_PORTAL_v827_REFERRAL_PIPELINE_CARD
 import { api } from "@/api";
 // BF_NO_OVERVIEW_v41 — Block 41-C — Overview tab removed from drawer.
 import ApplicationTab from "@/pages/applications/tabs/ApplicationTab";
@@ -125,6 +126,8 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
           ← Back to pipeline
         </button>
       </div>
+
+      <LenderReferralPanel applicationId={applicationId} />{/* BF_PORTAL_v827_REFERRAL_PIPELINE_CARD */}
 
       <nav
         style={{

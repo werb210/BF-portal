@@ -10,7 +10,9 @@ vi.mock("@/api", () => {
 });
 
 import LenderReferralsSection, { detailsFor, phoneDigits, rowProblems, type ReferralRow } from "@/pages/lender/LenderReferralsSection";
-import LenderReferralsPage, { decisionText, type StaffReferral } from "../LenderReferralsPage";
+import LenderReferralPanel from "../LenderReferralPanel";
+import LenderReferralIssues, { stillReading, withoutCard } from "../LenderReferralIssues";
+import { decisionText, type StaffReferral } from "../lenderReferralShared";
 
 const zip = (name: string, size = 10) => { const f = new File(["x"], name, { type: "application/zip" }); Object.defineProperty(f, "size", { value: size }); return f; };
 const row = (over: Partial<ReferralRow> = {}): ReferralRow => ({ key: "k", file: zip("northwind.zip"), businessName: "Northwind", clientName: "", clientPhone: "780-555-0100", amount: "", reason: "", ...over });
@@ -41,7 +43,9 @@ describe("lender portal: sending declined files", () => {
     expect(await screen.findByText("No files sent yet.")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Choose client zip files"), { target: { files: [zip("northwind.zip"), zip("contoso_ltd.zip")] } });
     expect(screen.getAllByTestId("referral-row")).toHaveLength(2);
-    expect((screen.getByLabelText("Business name for contoso_ltd.zip") as HTMLInputElement).value).toBe("contoso ltd");
+    expect((screen.getByLabelText("Business name for contoso_ltd.zip") as HTMLInputElement).value).toBe("");
+    fireEvent.change(screen.getByLabelText("Business name for northwind.zip"), { target: { value: "Northwind" } });
+    fireEvent.change(screen.getByLabelText("Business name for contoso_ltd.zip"), { target: { value: "Contoso Ltd" } });
     fireEvent.change(screen.getByLabelText("Client cell for northwind.zip"), { target: { value: "7805550100" } });
     fireEvent.change(screen.getByLabelText("Client cell for contoso_ltd.zip"), { target: { value: "4035550142" } });
     fireEvent.click(screen.getByRole("button", { name: "Send 2 files" }));
@@ -63,23 +67,31 @@ describe("lender portal: sending declined files", () => {
 
 const staffRow = (over: Partial<StaffReferral> = {}): StaffReferral => ({
   id: "r1", lender_name: "Prairie Bank", business_name: "Northwind Logistics", client_name: "Jane Smith", client_phone: "+17805550100",
-  requested_amount: "250000.00", decline_reason: "Outside our credit box", zip_name: "northwind.zip", zip_size: 100, file_names: ["statements.pdf"],
-  status: "pending", complete_package: null, decision_note: null, decided_at: null, application_id: null, client_texted_at: null,
-  created_at: "2026-10-19T16:00:00Z", progress: "Under review", has_zip: true, ...over,
+  requested_amount: "250000.00", decline_reason: "Outside our credit box", zip_name: "northwind.zip", file_names: ["statements.pdf"],
+  status: "pending", complete_package: null, decision_note: null, application_id: "app1", client_texted_at: null,
+  created_at: "2026-10-19T16:00:00Z", import_error: null, has_zip: false, ...over,
 });
 
-describe("staff: lender referrals queue", () => {
+// BF_PORTAL_v827_REFERRAL_PIPELINE_CARD - reviewed on the application (its pipeline card), not in Marketing.
+describe("staff: lender referral on the application", () => {
   it("describes each decision", () => {
-    expect(decisionText(staffRow())).toBe("Waiting for review");
+    expect(decisionText(staffRow())).toBe("Needs review - the client has not been contacted");
     expect(decisionText(staffRow({ status: "declined" }))).toBe("Declined - the client was not contacted");
     expect(decisionText(staffRow({ status: "accepted", complete_package: true, client_texted_at: "x" }))).toBe("Accepted (complete package, lender gets 50% of Boreal's fee) - client texted");
   });
 
-  it("accepting asks whether the package is complete before importing", async () => {
-    h.get.mockResolvedValue({ referrals: [staffRow()] });
+  it("shows nothing on an application that did not come from a lender", async () => {
+    h.get.mockResolvedValue({ referral: null });
+    const { container } = render(<MemoryRouter><LenderReferralPanel applicationId="app9" /></MemoryRouter>);
+    await waitFor(() => expect(h.get).toHaveBeenCalledWith("/api/lender-referrals/by-application/app9"));
+    expect(container.textContent).toBe("");
+  });
+
+  it("accepting asks whether the package is complete before texting the client", async () => {
+    h.get.mockResolvedValue({ referral: staffRow() });
     h.raw.mockResolvedValue({ ok: true, json: async () => ({ ok: true, texted: true }) });
-    render(<MemoryRouter><LenderReferralsPage /></MemoryRouter>);
-    expect(await screen.findByText("Northwind Logistics")).toBeTruthy();
+    render(<MemoryRouter><LenderReferralPanel applicationId="app1" /></MemoryRouter>);
+    expect(await screen.findByText("Lender referral from Prairie Bank")).toBeTruthy();
     expect(screen.getByText("Why the lender declined: Outside our credit box")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Accept" }));
     fireEvent.click(screen.getByRole("button", { name: "Accept and text the client" }));
@@ -95,11 +107,52 @@ describe("staff: lender referrals queue", () => {
   });
 
   it("declining asks for a reason and never contacts the client", async () => {
-    h.get.mockResolvedValue({ referrals: [staffRow()] });
+    h.get.mockResolvedValue({ referral: staffRow() });
     h.raw.mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
     vi.spyOn(window, "prompt").mockReturnValue("Too early");
-    render(<MemoryRouter><LenderReferralsPage /></MemoryRouter>);
+    render(<MemoryRouter><LenderReferralPanel applicationId="app1" /></MemoryRouter>);
     fireEvent.click(await screen.findByRole("button", { name: "Decline" }));
     await waitFor(() => expect(h.raw).toHaveBeenCalledWith("/api/lender-referrals/r1/decline", { method: "POST", body: JSON.stringify({ note: "Too early" }) }));
+  });
+});
+
+describe("staff: lender files without a card yet (above the pipeline)", () => {
+  it("lists only pending files with no application", () => {
+    expect(withoutCard([staffRow(), staffRow({ id: "r2", application_id: null }), staffRow({ id: "r3", application_id: null, status: "declined" })]).map((r) => r.id)).toEqual(["r2"]);
+  });
+
+  it("offers download, try again and decline for a file that could not be read", async () => {
+    h.get.mockResolvedValue({ referrals: [staffRow({ id: "r2", application_id: null, import_error: "OCR is down", has_zip: true })] });
+    h.raw.mockResolvedValue({ ok: true, json: async () => ({ ok: true, applicationId: "app2" }) });
+    render(<LenderReferralIssues />);
+    expect(await screen.findByText(/could not be read: OCR is down/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(h.raw).toHaveBeenCalledWith("/api/lender-referrals/r2/retry-import", { method: "POST", body: "{}" }));
+  });
+
+  it("offers the buttons for a file stuck without a card for over 10 minutes", () => {
+    const now = Date.parse("2026-10-19T17:00:00Z");
+    expect(stillReading({ import_error: null, created_at: "2026-10-19T16:55:00Z" }, now)).toBe(true);
+    expect(stillReading({ import_error: null, created_at: "2026-10-19T16:30:00Z" }, now)).toBe(false);
+    expect(stillReading({ import_error: "bad", created_at: "2026-10-19T16:59:00Z" }, now)).toBe(false);
+  });
+
+  it("shows nothing when every file has its card", async () => {
+    h.get.mockResolvedValue({ referrals: [staffRow()] });
+    const { container } = render(<LenderReferralIssues />);
+    await waitFor(() => expect(h.get).toHaveBeenCalled());
+    expect(container.textContent).toBe("");
+  });
+});
+
+describe("pipeline card badges for a lender referral", () => {
+  it("marks it as a lender referral that needs review, then waiting for the client", async () => {
+    const { brokerBadgeLabels } = await import("@/pages/pipeline/PipelinePage");
+    expect(brokerBadgeLabels({ broker_name: "Prairie Bank", lender_referral_status: "pending", pipeline_state: "draft", broker_split_status: null }))
+      .toEqual(["Lender referral: Prairie Bank", "Needs review"]);
+    expect(brokerBadgeLabels({ broker_name: "Prairie Bank", lender_referral_status: "accepted", pipeline_state: "draft", broker_split_status: "accepted" }))
+      .toEqual(["Lender referral: Prairie Bank", "Waiting for client"]);
+    expect(brokerBadgeLabels({ broker_name: "Avance", pipeline_state: "draft", broker_split_status: null }))
+      .toEqual(["From Avance", "Waiting for client", "No split yet"]);
   });
 });

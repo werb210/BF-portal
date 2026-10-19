@@ -1,3 +1,4 @@
+// BF_PORTAL_v827_REFERRAL_PIPELINE_CARD - the business name starts blank (it was filled from the zip's file name).
 // BF_PORTAL_v825_LENDER_REFERRALS - lenders send Boreal the files they declined, one zip per client, several at a
 // time, and follow each one. Boreal reviews every file first: the client hears nothing until Boreal accepts it.
 // A complete package earns the lender 50% of Boreal's fee if it funds. The lender sees status only.
@@ -68,10 +69,6 @@ export function detailsFor(rows: ReferralRow[]) {
   }));
 }
 
-function nameFromZip(fileName: string): string {
-  return fileName.replace(/[.]zip$/i, "").replace(/[_-]+/g, " ").trim();
-}
-
 const money = (v: unknown) => (v === null || v === undefined || v === "" ? "-" : "$" + Number(v).toLocaleString("en-CA", { maximumFractionDigits: 2 }));
 
 const card: React.CSSProperties = {
@@ -109,7 +106,7 @@ export default function LenderReferralsSection() {
   const choose = (list: FileList | null) => {
     if (!list) return;
     const added = Array.from(list).map((file, i) => ({
-      key: `${Date.now()}-${i}-${file.name}`, file, businessName: nameFromZip(file.name), clientName: "", clientPhone: "", amount: "", reason: "",
+      key: `${Date.now()}-${i}-${file.name}`, file, businessName: "", clientName: "", clientPhone: "", amount: "", reason: "",
     }));
     setRows((cur) => [...cur, ...added].slice(0, MAX_FILES));
     setResults([]);
