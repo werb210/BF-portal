@@ -26,6 +26,11 @@ type ApiFn = {
 const PUBLIC_AUTH_PATHS = [
   "/api/auth/otp/start",
   "/api/auth/otp/verify",
+  // BF_PORTAL_v825_PUBLIC_SIGNUP - the referrer / broker sign-up form is filled in by someone with no account yet.
+  // Without these the request never left the browser and the form showed "API_ERROR" (staff never saw it because
+  // a signed-in staff browser has a token).
+  "/api/referrer/signup",
+  "/api/referrer/signup/complete",
 ];
 
 function requiresAuth(path: string) {
