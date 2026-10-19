@@ -13,6 +13,7 @@ import logoWhite from "@/assets/logo-boreal-mountains-white.svg"; // BF_PORTAL_L
 import { formatDollar, unformatDollar } from "@/utils/format";
 import { Field, inputStyle } from "@/pages/lenders/components/lenderFieldShared";
 import SbaIvesFields, { EMPTY_SBA, sbaMissing, type LenderSba } from "@/pages/lenders/components/SbaIvesFields"; // BF_PORTAL_LENDER_SBA_IVES_v747
+import LenderReferralsSection from "./LenderReferralsSection"; // BF_PORTAL_v825_LENDER_REFERRALS
 import {
   ProductCoreFields,
   type ProductCoreForm,
@@ -490,6 +491,8 @@ export default function LenderPortalPage() {
           ))}
         </div>
       </section>
+
+      <LenderReferralsSection />{/* BF_PORTAL_v825_LENDER_REFERRALS */}
 
       {editingProfile && (
         <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>

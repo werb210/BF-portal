@@ -4,9 +4,10 @@
 import { useState } from "react";
 import BFReferrerManagement from "./BFReferrerManagement";
 import BrokerImportsPage from "@/pages/brokerImports/BrokerImportsPage";
+import LenderReferralsPage from "@/pages/lenderReferrals/LenderReferralsPage"; // BF_PORTAL_v825_LENDER_REFERRALS
 
-type Sub = "referrers" | "brokers";
-const SUBS: Array<[Sub, string]> = [["referrers", "Referrers"], ["brokers", "Brokers"]];
+type Sub = "referrers" | "brokers" | "lender-referrals";
+const SUBS: Array<[Sub, string]> = [["referrers", "Referrers"], ["brokers", "Brokers"], ["lender-referrals", "Lender referrals"]];
 
 export default function ReferrersAndBrokers({ initial = "referrers" }: { initial?: Sub }) {
   const [sub, setSub] = useState<Sub>(initial);
@@ -17,7 +18,7 @@ export default function ReferrersAndBrokers({ initial = "referrers" }: { initial
           <button key={id} type="button" role="tab" aria-selected={sub === id} className={`ui-button ${sub === id ? "ui-button--primary" : "ui-button--secondary"}`} onClick={() => setSub(id)}>{label}</button>
         ))}
       </div>
-      {sub === "referrers" ? <BFReferrerManagement /> : <BrokerImportsPage />}
+      {sub === "referrers" ? <BFReferrerManagement /> : sub === "brokers" ? <BrokerImportsPage /> : <LenderReferralsPage />}
     </div>
   );
 }
