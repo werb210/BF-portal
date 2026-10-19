@@ -37,7 +37,7 @@ describe("lender portal: sending declined files", () => {
   });
 
   it("sends several zips in one upload with the lender's token, then lists them", async () => {
-    h.api.mockResolvedValueOnce({ files: [] }).mockResolvedValue({ files: [{ id: "r1", business_name: "Northwind", client_name: null, requested_amount: null, zip_name: "northwind.zip", sent_at: "2026-10-19T16:00:00Z", progress: "Under review", share: "-", payout_amount: null, payout_paid_on: null }] });
+    h.api.mockResolvedValueOnce({ files: [] }).mockResolvedValue({ files: [{ id: "r1", business_name: "Northwind", client_name: null, requested_amount: null, zip_name: "northwind.zip", sent_at: "2026-10-19T16:00:00Z", progress: "Under review", status: "pending", stage: null, share: "-", payout_amount: null, payout_paid_on: null }] });
     h.raw.mockResolvedValue({ ok: true, status: 201, json: async () => ({ sent: 2, results: [{ file: "northwind.zip", ok: true }, { file: "contoso.zip", ok: true }] }) });
     render(<LenderReferralsSection />);
     expect(await screen.findByText("No files sent yet.")).toBeTruthy();
@@ -60,7 +60,7 @@ describe("lender portal: sending declined files", () => {
     expect(opts.body.getAll("files")).toHaveLength(2);
     expect(JSON.parse(String(opts.body.get("details"))).map((d: any) => d.client_phone)).toEqual(["7805550100", "4035550142"]);
     expect((await screen.findByRole("status")).textContent).toContain("Sent 2 files");
-    expect(await screen.findByText("Under review")).toBeTruthy();
+    expect(await screen.findByText("Received - Boreal is reviewing the file")).toBeTruthy(); // BF_PORTAL_v828_PARTNER_STAGE_TRACKER
     expect(screen.queryAllByTestId("referral-row")).toHaveLength(0);
   });
 });

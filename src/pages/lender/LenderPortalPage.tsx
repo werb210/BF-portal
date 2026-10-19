@@ -14,6 +14,8 @@ import { formatDollar, unformatDollar } from "@/utils/format";
 import { Field, inputStyle } from "@/pages/lenders/components/lenderFieldShared";
 import SbaIvesFields, { EMPTY_SBA, sbaMissing, type LenderSba } from "@/pages/lenders/components/SbaIvesFields"; // BF_PORTAL_LENDER_SBA_IVES_v747
 import LenderReferralsSection from "./LenderReferralsSection"; // BF_PORTAL_v825_LENDER_REFERRALS
+import FileDrop from "@/components/partner/FileDrop"; // BF_PORTAL_v828_PARTNER_PORTAL_THEME
+import "@/components/partner/partnerPortal.css"; // BF_PORTAL_v828_PARTNER_PORTAL_THEME
 import {
   ProductCoreFields,
   type ProductCoreForm,
@@ -350,6 +352,8 @@ export default function LenderPortalPage() {
   }
 
   return (
+    // BF_PORTAL_v828_PARTNER_PORTAL_THEME - dark UI-guide surfaces in every theme, blue primary actions, iPad layout.
+    <div className="partner-portal">
     <div className="page" style={{ maxWidth: 1180, margin: "0 auto", padding: 16 }}>
       {/* BF_PORTAL_LENDER_HEADER_v1 - staff-style portal header with the BF logo,
           Boreal Financial Group name, and a graceful Welcome line. */}
@@ -378,7 +382,7 @@ export default function LenderPortalPage() {
         </button>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(280px, 380px) 1fr", gap: 20, alignItems: "start" }}>
+      <div className="pp-two-col">
         <section style={sectionCard}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <h2 style={sectionTitle}>Company information</h2>
@@ -399,7 +403,7 @@ export default function LenderPortalPage() {
                   <div style={infoValue}>{profile[r.key] || "\u2014"}</div>
                 </div>
               ))}
-              {profileErr && <p style={{ fontSize: 13, color: "#ef4444" }}>{profileErr}</p>}
+              {profileErr && <p className="pp-error">{profileErr}</p>}
             </>
           )}
         </section>
@@ -416,13 +420,14 @@ export default function LenderPortalPage() {
             have different requirements for different levels of funding then create each level. Example:
             a LOC from $50,000 to $100,000 has required documents A; a LOC from $100,001 to $250,000 has
             required documents A, B, and C. If you need any further clarification please email{" "}
-            <a href="mailto:info@boreal.financial" style={{ color: "var(--ui-accent-blue, #2563eb)" }}>info@boreal.financial</a>.
+            <a href="mailto:info@boreal.financial" style={{ color: "var(--ui-accent-fg, #93B4F5)" }}>info@boreal.financial</a>.
           </p>
           {!productsLoaded && <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Loading...</div>}
           {productsLoaded && products.length === 0 && (
             <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>No products yet. Click "+ Create Product" to create one.</div>
           )}
           {products.length > 0 && (
+            <div className="pp-table-wrap">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
@@ -444,10 +449,7 @@ export default function LenderPortalPage() {
                     <td style={tdStyle}>{fmtAmount(p.amount_min)}</td>
                     <td style={tdStyle}>{fmtAmount(p.amount_max)}</td>
                     <td style={tdStyle}>
-                      <span style={{
-                        display: "inline-block", padding: "2px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-                        background: p.active ? "#dcfce7" : "#f3f4f6", color: p.active ? "#166534" : "#6b7280",
-                      }}>
+                      <span className={p.active ? "pp-pill pp-pill--success" : "pp-pill pp-pill--muted"}>
                         {p.active ? "Active" : "Inactive"}
                       </span>
                     </td>
@@ -458,8 +460,9 @@ export default function LenderPortalPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
-          {productErr && !editing && <p style={{ fontSize: 13, color: "#ef4444", marginTop: 10 }}>{productErr}</p>}
+          {productErr && !editing && <p className="pp-error" style={{ marginTop: 10 }}>{productErr}</p>}
         </section>
       </div>
 
@@ -473,19 +476,20 @@ export default function LenderPortalPage() {
           Upload product PDFs and marketing material. Boreal uses these to train Maya, our AI
           assistant, so it can represent your products accurately.
         </p>
-        <input
-          ref={fileInput}
-          type="file"
+        <FileDrop
+          inputRef={fileInput}
+          label="Upload a product sheet"
+          title={uploading ? "Uploading..." : "Tap to choose a file, or drop it here"}
+          hint="PDF, Word, text or Markdown"
           accept=".pdf,.doc,.docx,.txt,.md"
           disabled={uploading}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(f); }}
+          onFiles={(list) => { const f = list[0]; if (f) void uploadFile(f); }}
         />
-        {uploading && <p style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Uploading...</p>}
-        {uploadErr && <p style={{ fontSize: 13, color: "#ef4444" }}>{uploadErr}</p>}
+        {uploadErr && <p className="pp-error">{uploadErr}</p>}
         <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
           {uploads.map((u) => (
             <div key={u.id} style={{ fontSize: 13, color: "var(--ui-text)", display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <span>{u.filename}</span>
+              <span style={{ overflowWrap: "anywhere" }}>{u.filename}</span>
               <span style={{ color: "var(--ui-text-muted)" }}>{new Date(u.created_at).toLocaleDateString()}</span>
             </div>
           ))}
@@ -496,15 +500,15 @@ export default function LenderPortalPage() {
 
       {editingProfile && (
         <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.5)" }} onClick={() => setEditingProfile(false)} />
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)" }} onClick={() => setEditingProfile(false)} />
           <div style={{
             position: "relative", background: "var(--ui-surface-strong)", borderRadius: 16, width: "min(560px, 95vw)",
-            maxHeight: "90vh", overflowY: "auto", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+            maxHeight: "90vh", overflowY: "auto", padding: 32, border: "1px solid var(--ui-border)", boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
           }}>
-            <button onClick={() => setEditingProfile(false)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "var(--ui-text-muted)", cursor: "pointer" }}>x</button>
+            <button aria-label="Close" onClick={() => setEditingProfile(false)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "var(--ui-text-muted)", cursor: "pointer" }}>x</button>
             <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "var(--ui-text)" }}>Edit Company Information</h2>
             {profileSaveErr && (
-              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 16, color: "#dc2626", fontSize: 13 }}>
+              <div className="pp-banner pp-banner--error" role="alert" style={{ marginBottom: 16 }}>
                 {profileSaveErr}
               </div>
             )}
@@ -527,7 +531,7 @@ export default function LenderPortalPage() {
                 style={{ ...inputStyle, opacity: 0.6, cursor: "not-allowed" }}
               />
             </Field>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
               {EDIT_FIELDS.map((f) => (
                 <Field key={f.key} label={f.label}>
                   <input
@@ -540,7 +544,7 @@ export default function LenderPortalPage() {
               ))}
             </div>
             {/* LENDER_COMPANY_PARITY_v1 - submission method + email, same as staff form */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
               <Field label="Submission method">
                 <select
                   value={profileDraft.submission_method ?? ""}
@@ -585,15 +589,15 @@ export default function LenderPortalPage() {
 
       {editing && (
         <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.5)" }} onClick={() => setEditing(null)} />
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)" }} onClick={() => setEditing(null)} />
           <div style={{
             position: "relative", background: "var(--ui-surface-strong)", borderRadius: 16, width: "min(680px, 95vw)",
-            maxHeight: "90vh", overflowY: "auto", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+            maxHeight: "90vh", overflowY: "auto", padding: 32, border: "1px solid var(--ui-border)", boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
           }}>
-            <button onClick={() => setEditing(null)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "var(--ui-text-muted)", cursor: "pointer" }}>x</button>
+            <button aria-label="Close" onClick={() => setEditing(null)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "var(--ui-text-muted)", cursor: "pointer" }}>x</button>
             <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "var(--ui-text)" }}>{editing.id ? "Edit Product" : "Create New Product"}</h2>
             {productErr && (
-              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 16, color: "#dc2626", fontSize: 13 }}>
+              <div className="pp-banner pp-banner--error" role="alert" style={{ marginBottom: 16 }}>
                 {productErr}
               </div>
             )}
@@ -611,7 +615,7 @@ export default function LenderPortalPage() {
                 </div>
                 <div style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: 12, background: "var(--ui-surface)" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: "var(--ui-text-muted)", marginBottom: 6 }}>CORE UNDERWRITING PACK</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 6 }}>
                     {DOC_CORE.map((d) => {
                       const on = checkedDocs.has(d.key);
                       const stage = docStages.get(d.key) ?? d.defaultStage;
@@ -633,7 +637,7 @@ export default function LenderPortalPage() {
                             <button
                               type="button"
                               className="ui-button"
-                              style={{ fontSize: 11, padding: "2px 8px" }}
+                              style={{ fontSize: 12, padding: "2px 10px", minHeight: 30 }}
                               onClick={() => setDocStages((prev) => { const next = new Map(prev); next.set(d.key, (stage === 1 ? 2 : 1) as 1 | 2); return next; })}
                             >
                               Stage {stage}
@@ -659,6 +663,7 @@ export default function LenderPortalPage() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

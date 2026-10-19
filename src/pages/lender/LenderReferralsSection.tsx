@@ -1,9 +1,12 @@
+// BF_PORTAL_v828_PARTNER_PORTAL_THEME - UI-guide styling, a styled upload box and a stage tracker per file.
 // BF_PORTAL_v827_REFERRAL_PIPELINE_CARD - the business name starts blank (it was filled from the zip's file name).
 // BF_PORTAL_v825_LENDER_REFERRALS - lenders send Boreal the files they declined, one zip per client, several at a
 // time, and follow each one. Boreal reviews every file first: the client hears nothing until Boreal accepts it.
 // A complete package earns the lender 50% of Boreal's fee if it funds. The lender sees status only.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, rawApiFetch } from "@/api";
+import FileDrop from "@/components/partner/FileDrop";
+import StageTracker, { type TrackerInput } from "@/components/partner/StageTracker";
 
 export type ReferredFile = {
   id: string;
@@ -13,6 +16,9 @@ export type ReferredFile = {
   zip_name: string;
   sent_at: string;
   progress: string;
+  /** BF_PORTAL_v828_PARTNER_STAGE_TRACKER - the referral status and the application's stage, for the tracker. */
+  status?: string | null;
+  stage?: string | null;
   share: string;
   payout_amount: string | number | null;
   payout_paid_on: string | null;
@@ -69,19 +75,21 @@ export function detailsFor(rows: ReferralRow[]) {
   }));
 }
 
+/** BF_PORTAL_v828_PARTNER_STAGE_TRACKER - where a referred file sits on the stage tracker. */
+export function referralTracker(f: Pick<ReferredFile, "status" | "stage">): TrackerInput {
+  if (f.status === "pending" || f.status === "accepting") return { hold: "under_review" };
+  if (f.status === "declined") return { hold: "not_accepted" };
+  return { stage: f.stage ?? null, hold: "waiting_client" };
+}
+
 const money = (v: unknown) => (v === null || v === undefined || v === "" ? "-" : "$" + Number(v).toLocaleString("en-CA", { maximumFractionDigits: 2 }));
 
-const card: React.CSSProperties = {
-  background: "var(--ui-surface-strong, #fff)", border: "1px solid var(--ui-border, #e5e7eb)", borderRadius: 16, padding: 24,
-};
 const title: React.CSSProperties = { margin: 0, fontSize: 18, fontWeight: 700, color: "var(--ui-text)" };
 const muted: React.CSSProperties = { fontSize: 13, color: "var(--ui-text-muted)", lineHeight: 1.5 };
 const input: React.CSSProperties = {
-  padding: "8px 10px", border: "1px solid var(--ui-border, #cbd5e1)", borderRadius: 8, fontSize: 14, minWidth: 0,
-  background: "var(--ui-surface, #fff)", color: "var(--ui-text)",
+  padding: "0 12px", minHeight: 40, border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14, minWidth: 0,
+  background: "var(--ui-surface-input)", color: "var(--ui-text)",
 };
-const th: React.CSSProperties = { textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--ui-text-muted)", padding: "8px 6px", borderBottom: "1px solid var(--ui-border, #e5e7eb)" };
-const td: React.CSSProperties = { fontSize: 14, color: "var(--ui-text)", padding: "10px 6px", borderBottom: "1px solid var(--ui-border, #f1f5f9)", verticalAlign: "top" };
 
 export default function LenderReferralsSection() {
   const [files, setFiles] = useState<ReferredFile[] | null>(null);
@@ -103,7 +111,7 @@ export default function LenderReferralsSection() {
   }, []);
   useEffect(() => { void load(); }, [load]);
 
-  const choose = (list: FileList | null) => {
+  const choose = (list: File[] | FileList | null) => {
     if (!list) return;
     const added = Array.from(list).map((file, i) => ({
       key: `${Date.now()}-${i}-${file.name}`, file, businessName: "", clientName: "", clientPhone: "", amount: "", reason: "",
@@ -152,7 +160,7 @@ export default function LenderReferralsSection() {
   };
 
   return (
-    <section style={{ ...card, marginTop: 20 }} data-testid="lender-referrals">
+    <section className="pp-card" style={{ marginTop: 20 }} data-testid="lender-referrals">
       <h2 style={{ ...title, marginBottom: 10 }}>Send us files you declined</h2>
       <p style={{ ...muted, margin: "0 0 6px" }}>
         Send us a deal you could not do and we will look for another lender. One zip per client with their application and
@@ -163,18 +171,19 @@ export default function LenderReferralsSection() {
         package and it funds, you receive 50% of Boreal's fee.
       </p>
 
-      <input ref={picker} type="file" accept=".zip" multiple aria-label="Choose client zip files" disabled={busy}
-        onChange={(e) => choose(e.target.files)} />
+      <FileDrop inputRef={picker} label="Choose client zip files" title="Tap to choose client zips, or drop them here"
+        hint={`One .zip per client, up to ${MAX_FILES} at a time, 50 MB each`} accept=".zip" multiple disabled={busy}
+        onFiles={(list) => choose(list)} />
 
       {rows.length > 0 && (
         <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
           {rows.map((r, i) => (
-            <div key={r.key} data-testid="referral-row" style={{ border: "1px solid var(--ui-border, #e5e7eb)", borderRadius: 12, padding: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+            <div key={r.key} data-testid="referral-row" className="pp-card pp-card--inset">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <strong style={{ fontSize: 14, color: "var(--ui-text)", overflowWrap: "anywhere" }}>{i + 1}. {r.file.name}</strong>
-                <button type="button" className="ui-button" onClick={() => remove(r.key)} aria-label={`Remove ${r.file.name}`}>Remove</button>
+                <button type="button" className="pp-btn pp-btn--small" onClick={() => remove(r.key)} aria-label={`Remove ${r.file.name}`}>Remove</button>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8 }}>
                 <input style={input} aria-label={`Business name for ${r.file.name}`} placeholder="Business name *" value={r.businessName} onChange={(e) => update(r.key, { businessName: e.target.value })} />
                 <input style={input} aria-label={`Client name for ${r.file.name}`} placeholder="Client name" value={r.clientName} onChange={(e) => update(r.key, { clientName: e.target.value })} />
                 <input style={input} aria-label={`Client cell for ${r.file.name}`} placeholder="Client cell *" inputMode="tel" value={r.clientPhone} onChange={(e) => update(r.key, { clientPhone: e.target.value })} />
@@ -188,12 +197,12 @@ export default function LenderReferralsSection() {
             <span>I confirm each client above agreed to be referred to Boreal Financial.</span>
           </label>
           {showProblems && problems.length > 0 && (
-            <ul role="alert" style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: "#b91c1c" }}>
+            <ul role="alert" className="pp-error" style={{ margin: 0, paddingLeft: 18 }}>
               {problems.map((p) => <li key={p}>{p}</li>)}
             </ul>
           )}
           <div>
-            <button type="button" className="ui-button ui-button--primary" disabled={busy} onClick={() => void send()}>
+            <button type="button" className="pp-btn pp-btn--primary" disabled={busy} onClick={() => void send()}>
               {busy ? "Sending..." : `Send ${rows.length} file${rows.length === 1 ? "" : "s"}`}
             </button>
           </div>
@@ -202,34 +211,36 @@ export default function LenderReferralsSection() {
 
       {msg && <p role="status" style={{ fontSize: 14, color: "var(--ui-text)", marginTop: 12 }}>{msg}</p>}
       {results.length > 0 && (
-        <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 13, color: "#b91c1c" }}>
+        <ul className="pp-error" style={{ margin: "6px 0 0", paddingLeft: 18 }}>
           {results.map((r) => <li key={r.file}>{r.file}: {r.message ?? "Could not be sent."}</li>)}
         </ul>
       )}
 
       <h3 style={{ ...title, fontSize: 16, margin: "22px 0 8px" }}>Your referred files</h3>
+      <p style={{ ...muted, margin: "0 0 10px" }}>Follow each file from when we receive it to when it funds.</p>
       {files === null ? (
         <p style={muted}>Loading...</p>
       ) : files.length === 0 ? (
         <p style={muted}>No files sent yet.</p>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr><th style={th}>Business</th><th style={th}>Sent</th><th style={th}>Status</th><th style={th}>Your share</th><th style={th}>Paid</th></tr>
-            </thead>
-            <tbody>
-              {files.map((f) => (
-                <tr key={f.id}>
-                  <td style={td}>{f.business_name}{f.client_name ? <div style={{ ...muted, fontSize: 12 }}>{f.client_name}</div> : null}</td>
-                  <td style={td}>{new Date(f.sent_at).toLocaleDateString("en-CA")}</td>
-                  <td style={td}>{f.progress}</td>
-                  <td style={td}>{f.share}</td>
-                  <td style={td}>{f.payout_amount !== null && f.payout_amount !== undefined ? `${money(f.payout_amount)}${f.payout_paid_on ? ` on ${f.payout_paid_on}` : ""}` : "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {files.map((f) => (
+            <article key={f.id} className="pp-card pp-card--inset" data-testid="referred-file">
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div className="pp-subtitle" style={{ overflowWrap: "anywhere" }}>{f.business_name}</div>
+                  <div className="pp-muted">{f.client_name ? `${f.client_name} · ` : ""}sent {new Date(f.sent_at).toLocaleDateString("en-CA")}</div>
+                </div>
+                <div style={{ textAlign: "right", fontSize: 13 }}>
+                  <div><span className="pp-muted">Your share: </span>{f.share}</div>
+                  {f.payout_amount !== null && f.payout_amount !== undefined
+                    ? <div><span className="pp-muted">Payout: </span>{money(f.payout_amount)}{f.payout_paid_on ? ` paid ${f.payout_paid_on}` : ""}</div>
+                    : null}
+                </div>
+              </div>
+              <StageTracker {...referralTracker(f)} label={`Stage for ${f.business_name}`} />
+            </article>
+          ))}
         </div>
       )}
     </section>

@@ -1,0 +1,133 @@
+/* BF_PORTAL_v828_PARTNER_PORTAL_THEME - the lender, broker and referrer portals on the UI guide
+   (bf-portal-ui-spec.md): dark surfaces in every theme, BF blue #1E3A8A for primary actions and the active
+   step only, primary / secondary buttons, styled file drop, layouts that fit an iPad (768pt). Everything
+   inside .partner-portal takes these tokens, so the shared form pieces (Field, inputStyle, ui-button) follow. */
+.partner-portal {
+  --surface-app: #0A0E14;
+  --surface-card: #12151A;
+  --surface-input: #161A20;
+  --surface-elevated: #1B2027;
+  --pp-border: rgba(255, 255, 255, 0.12);
+  --pp-text: rgba(255, 255, 255, 0.92);
+  --pp-muted: rgba(255, 255, 255, 0.62);
+  --pp-accent: #1E3A8A;
+  --pp-accent-fg: #93B4F5;
+  --pp-success: #2FA86A;
+  --pp-warning: #D9A23B;
+  --pp-danger: #C0392B;
+  --pp-danger-fg: #F08A7E;
+  --pp-info: #3B82A6;
+
+  --text-primary: var(--pp-text);
+  --ui-bg: var(--surface-app);
+  --ui-surface: var(--surface-card);
+  --ui-surface-strong: var(--surface-card);
+  --ui-surface-input: var(--surface-input);
+  --ui-surface-muted: var(--surface-elevated);
+  --ui-border: var(--pp-border);
+  --ui-border-soft: rgba(255, 255, 255, 0.07);
+  --ui-text: var(--pp-text);
+  --ui-text-muted: var(--pp-muted);
+  --ui-text-soft: var(--pp-text);
+  --ui-text-danger: var(--pp-danger-fg);
+  --ui-text-success: #5FD196;
+  --accent: var(--pp-accent);
+  --ui-accent-blue: var(--pp-accent);
+  --ui-accent-fg: var(--pp-accent-fg);
+  --ui-shadow-soft: none;
+  color-scheme: dark;
+  min-height: 100vh;
+  background: var(--surface-app);
+  color: var(--pp-text);
+  font-family: "Public Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.partner-portal .partner-portal { min-height: 0; }
+.partner-portal a { color: var(--pp-accent-fg); }
+.partner-portal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.partner-portal select,
+.partner-portal textarea {
+  background: var(--surface-input);
+  color: var(--pp-text);
+  border: 1px solid var(--pp-border);
+  border-radius: 8px;
+}
+.partner-portal input::placeholder,
+.partner-portal textarea::placeholder { color: rgba(255, 255, 255, 0.45); }
+.partner-portal input:focus-visible,
+.partner-portal select:focus-visible,
+.partner-portal textarea:focus-visible,
+.partner-portal button:focus-visible { outline: 2px solid var(--pp-accent-fg); outline-offset: 2px; }
+.partner-portal input[type="checkbox"],
+.partner-portal input[type="radio"] { accent-color: var(--pp-accent); width: 18px; height: 18px; }
+
+.pp-page { max-width: 1180px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 20px; }
+.pp-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; min-height: 68px; }
+.pp-card { background: var(--surface-card); border: 1px solid var(--pp-border); border-radius: 12px; padding: 20px; min-width: 0; }
+.pp-card--inset { background: var(--surface-elevated); padding: 14px; }
+.pp-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--pp-text); }
+.pp-subtitle { margin: 0; font-size: 15px; font-weight: 600; color: var(--pp-text); }
+.pp-muted { font-size: 13px; color: var(--pp-muted); line-height: 1.5; }
+.pp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.pp-two-col { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .pp-two-col { grid-template-columns: 1fr; } }
+.pp-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pp-error { font-size: 13px; color: var(--pp-danger-fg); }
+.pp-banner { border-radius: 8px; padding: 10px 14px; font-size: 13px; border: 1px solid var(--pp-border); background: var(--surface-elevated); color: var(--pp-text); }
+.pp-banner--error { border-color: rgba(192, 57, 43, 0.6); color: var(--pp-danger-fg); }
+.pp-banner--success { border-color: rgba(47, 168, 106, 0.6); }
+
+.partner-portal .ui-button,
+.pp-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; padding: 0 16px; border-radius: 8px; font-size: 14px; font-weight: 600; line-height: 1.2;
+  cursor: pointer; box-shadow: none; white-space: nowrap;
+  background: transparent; color: var(--pp-text); border: 1px solid var(--pp-border);
+}
+.partner-portal .ui-button--primary,
+.pp-btn--primary { background: var(--pp-accent); border-color: var(--pp-accent); color: #fff; }
+.partner-portal .ui-button--destructive,
+.pp-btn--destructive { background: var(--pp-danger); border-color: var(--pp-danger); color: #fff; }
+.partner-portal .ui-button:hover,
+.pp-btn:hover { filter: brightness(1.15); }
+.partner-portal .ui-button:disabled,
+.pp-btn:disabled { opacity: 0.55; cursor: not-allowed; filter: none; }
+.pp-btn--small { min-height: 32px; padding: 0 10px; font-size: 13px; }
+
+.pp-table-wrap { overflow-x: auto; }
+.pp-table { width: 100%; border-collapse: collapse; }
+.pp-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--pp-muted); padding: 8px 10px; border-bottom: 1px solid var(--pp-border); }
+.pp-table td { font-size: 14px; color: var(--pp-text); padding: 10px; border-bottom: 1px solid var(--pp-border); vertical-align: middle; }
+
+.pp-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--pp-border); color: var(--pp-text); }
+.pp-pill--success { border-color: rgba(47, 168, 106, 0.6); color: #5FD196; }
+.pp-pill--muted { color: var(--pp-muted); }
+
+/* Styled file drop (replaces the native "Choose File" button). The real input sits on top, invisible, so
+   tapping anywhere opens the picker on iPad and dropping works on a desktop. */
+.pp-drop {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  min-height: 120px; padding: 18px; border: 1.5px dashed rgba(255, 255, 255, 0.28); border-radius: 12px;
+  background: var(--surface-input); text-align: center; cursor: pointer;
+}
+.pp-drop:hover, .pp-drop--over { border-color: var(--pp-accent-fg); background: var(--surface-elevated); }
+.pp-drop--disabled { opacity: 0.55; cursor: not-allowed; }
+.pp-drop input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.pp-drop__title { font-size: 15px; font-weight: 600; color: var(--pp-text); }
+.pp-drop__hint { font-size: 13px; color: var(--pp-muted); }
+
+/* Stage follow-along. */
+.pp-tracker { display: flex; flex-direction: column; gap: 8px; }
+.pp-tracker__steps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; list-style: none; margin: 0; padding: 0; }
+.pp-tracker__step { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pp-tracker__bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); }
+.pp-tracker__step--done .pp-tracker__bar { background: var(--pp-success); }
+.pp-tracker__step--current .pp-tracker__bar { background: var(--pp-accent-fg); }
+.pp-tracker__label { font-size: 12px; color: var(--pp-muted); line-height: 1.25; overflow-wrap: anywhere; }
+.pp-tracker__step--current .pp-tracker__label { color: var(--pp-text); font-weight: 600; }
+.pp-tracker__step--done .pp-tracker__label { color: var(--pp-text); }
+.pp-tracker--closed .pp-tracker__bar { background: rgba(255, 255, 255, 0.1); }
+.pp-tracker__status { font-size: 13px; color: var(--pp-text); }
+.pp-tracker__status--closed { color: var(--pp-muted); }
+.pp-tracker--compact .pp-tracker__label { display: none; }
+.pp-tracker--compact .pp-tracker__bar { height: 4px; }
+@media (max-width: 600px) { .pp-tracker__label { display: none; } }

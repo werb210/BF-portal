@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import ReferrerPortal from "@/pages/referrer/ReferrerPortal";
 import ReferrerProfilePage from "@/pages/referrer/ReferrerProfilePage";
+import "@/components/partner/partnerPortal.css";
 import logoUrl from "@/assets/logo-boreal-mountains-white.svg";
 
 // BF_PORTAL_REFERRER_BRAND_HEADER_v1 - the referrer portal had no branding at
@@ -50,15 +51,16 @@ const ReferrerPortalLayout = () => {
   // partners tap "Log in" from there. (They cannot OTP-log-in until their
   // agreement is signed, so signup is the correct default landing.)
   if (!hasToken()) return <Navigate to="/referrer/signup" replace />;
+  // BF_PORTAL_v828_PARTNER_PORTAL_THEME - the whole referrer portal on the UI guide's dark surfaces.
   return (
-    <>
+    <div className="partner-portal">
       <ReferrerBrandHeader />
       <Routes>
         <Route path="/" element={<ReferrerPortal />} />
         <Route path="/profile" element={<ReferrerProfilePage />} />
         <Route path="*" element={<Navigate to="/referrer" replace />} />
       </Routes>
-    </>
+    </div>
   );
 };
 
