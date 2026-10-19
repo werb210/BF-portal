@@ -1,4 +1,5 @@
 import { isDraftLikeApplication } from "./draftLike"; // BF_PORTAL_WIDGET_LIVE_COUNTS_v365
+import LenderReferralIssues from "@/pages/lenderReferrals/LenderReferralIssues"; // BF_PORTAL_v827_REFERRAL_PIPELINE_CARD
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { useNavigate } from "react-router-dom";
@@ -61,6 +62,7 @@ type Card = {
   partner_name?: string | null;
   broker_name?: string | null; // BF_PORTAL_BROKER_PIPELINE_v724
   broker_split_status?: string | null;
+  lender_referral_status?: string | null; // BF_PORTAL_v827_REFERRAL_PIPELINE_CARD
   partner_contact_id?: string | null;
   productCategory?: string | null;
   product_category?: string | null;
@@ -246,6 +248,7 @@ export default function PipelinePage() {
         </div>
         <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{cards.length} applications</span>
       </div>
+      <LenderReferralIssues />{/* BF_PORTAL_v827_REFERRAL_PIPELINE_CARD - lender files still importing or that could not be read */}
       <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 16, alignItems: "flex-start" }}>
         {STAGES.map((stage) => {
           const col = cards.filter((c) => effectiveStage(c) === stage);
@@ -594,8 +597,15 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
 }
 
 // BF_PORTAL_BROKER_PIPELINE_v724
-export function brokerBadgeLabels(card: { broker_name?: string | null; broker_split_status?: string | null; pipeline_state?: string | null }): string[] {
+export function brokerBadgeLabels(card: { broker_name?: string | null; broker_split_status?: string | null; pipeline_state?: string | null; lender_referral_status?: string | null }): string[] {
   if (!card.broker_name) return [];
+  // BF_PORTAL_v827_REFERRAL_PIPELINE_CARD - a file a lender declined and sent us: review it on the card first.
+  if (card.lender_referral_status) {
+    const out = ["Lender referral: " + card.broker_name];
+    if (card.lender_referral_status === "pending") out.push("Needs review");
+    else if (String(card.pipeline_state ?? "").toLowerCase() === "draft") out.push("Waiting for client");
+    return out;
+  }
   const out = ["From " + card.broker_name];
   if (String(card.pipeline_state ?? "").toLowerCase() === "draft") out.push("Waiting for client");
   const split = card.broker_split_status;
@@ -603,11 +613,11 @@ export function brokerBadgeLabels(card: { broker_name?: string | null; broker_sp
   return out;
 }
 
-function BrokerBadges({ card }: { card: { broker_name?: string | null; broker_split_status?: string | null; pipeline_state?: string | null } }) {
+function BrokerBadges({ card }: { card: { broker_name?: string | null; broker_split_status?: string | null; pipeline_state?: string | null; lender_referral_status?: string | null } }) {
   return (
     <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }} data-testid="broker-badges">
       {brokerBadgeLabels(card).map((label) => (
-        <span key={label} style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 999, border: "1px solid var(--ui-border)", background: label === "Split agreed" ? "#dcfce7" : label.startsWith("From ") ? "#e0e7ff" : "#fef3c7", color: "#1f2937" }}>{label}</span>
+        <span key={label} style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 999, border: "1px solid var(--ui-border)", background: label === "Split agreed" ? "#dcfce7" : label.startsWith("From ") || label.startsWith("Lender referral") ? "#e0e7ff" : label === "Needs review" ? "#fed7aa" : "#fef3c7", color: "#1f2937" }}>{label}</span>
       ))}
     </div>
   );

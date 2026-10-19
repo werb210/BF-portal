@@ -1520,7 +1520,7 @@ const MarketingDashboard = () => {
           <SequencePerfPanel />
         </div>
       )}
-      {tab === "referrers" && <ReferrersAndBrokers initial={(() => { const s = new URLSearchParams(window.location.search).get("sub"); return s === "brokers" || s === "lender-referrals" ? s : "referrers"; })()} />}{/* BF_PORTAL_PARTNERS_TABS_v720 */}
+      {tab === "referrers" && <ReferrersAndBrokers initial={(() => { const s = new URLSearchParams(window.location.search).get("sub"); return s === "brokers" ? s : "referrers"; })()} />}{/* BF_PORTAL_PARTNERS_TABS_v720 */}
       {/* BF_PORTAL_TEMPLATE_PERF_EMAIL_ONLY_v1 - Template performance reports
           email sends, opens, clicks, and replies, so keep it on the Email tab. */}
       {tab === "email" && <TemplateAnalyticsPanel />}

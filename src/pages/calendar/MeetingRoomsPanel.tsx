@@ -3,10 +3,16 @@
 // (staff included) joins by calling (866) 631-8939, pressing 3 and entering the code.
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
+import { joinMeetingRoom } from "@/dialer/actions"; // BF_PORTAL_v827_JOIN_IN_DIALER
 import PeoplePicker, { type Person } from "@/components/meetings/PeoplePicker"; // BF_PORTAL_MEETING_PARTICIPANTS_v737
 
 export type Meeting = { id: string; code: string; title: string; starts_at: string; duration_min: number; joinUrl: string; oneTap: string; invite: string; open: boolean };
 const NAVY = "#0B1F3A", MUTED = "#51617D";
+
+/** The room slug at the end of its meeting link (.../api/meetings/join/<slug>). */
+export function meetingSlug(joinUrl: string): string {
+  return String(joinUrl ?? "").replace(/[/]+$/, "").split("/").pop() ?? "";
+}
 
 // BF_PORTAL_MEETING_NOTIFY_v741 - say exactly what went out: the Outlook event, texts, emails, and anything that failed.
 export type MeetingDelivery = { calendar: "created" | "updated" | "cancelled" | "skipped" | "failed"; calendarError: string | null; emailed: number; texted: number; errors: string[] };
@@ -88,6 +94,8 @@ export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "
             </div>
             <button type="button" className="ui-button ui-button--secondary" onClick={() => void copy(m.invite)}>Copy invite</button>
             <a className="ui-button ui-button--secondary" href={m.joinUrl} target="_blank" rel="noreferrer">Meeting page</a>
+            {/* BF_PORTAL_v827_JOIN_IN_DIALER - join from the portal's own dialler (computer / iPad), no cell phone needed */}
+            <button type="button" className="ui-button ui-button--primary" onClick={() => void joinMeetingRoom(meetingSlug(m.joinUrl), m.title)}>Join in dialer</button>
             <a className="ui-button ui-button--secondary" href={"tel:" + m.oneTap}>Join by phone</a>
             <button type="button" className="ui-button ui-button--secondary" onClick={() => void cancel(m)}>Cancel</button>
           </div>
