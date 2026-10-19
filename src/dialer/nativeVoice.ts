@@ -192,3 +192,59 @@ export async function nativeToggleSpeaker(): Promise<void> {
     if (now) useDialer.getState().setNativeCall({ ...now, speaker: !!r?.speaker });
   } catch { /* unchanged */ }
 }
+
+// BF_PORTAL_v824_NATIVE_OUTGOING
+// The portal app on a Mac (the iPad app, "Designed for iPad") gets no microphone inside its web page, so the
+// Twilio JS Device cannot place a call there ("Phone not ready: mediadevices_unavailable"). In that case the call
+// is handed to the app's own Twilio engine (PortalVoiceEngine.startOutgoing) with the same parameters the JS
+// Device would send, and shows in the "On a call with" banner (mute / speaker / hang up). The iPad, iPhone and
+// web browsers keep calling from the web page exactly as before.
+export function webMicAvailable(): boolean {
+  return typeof navigator !== "undefined" && typeof navigator.mediaDevices?.getUserMedia === "function";
+}
+
+export function shouldCallNatively(opts: { native: boolean; webMic: boolean }): boolean {
+  return opts.native && !opts.webMic;
+}
+
+export function callsNatively(): boolean {
+  return shouldCallNatively({ native: nativeVoiceAvailable(), webMic: webMicAvailable() });
+}
+
+/** Only non-empty text values, as the native engine sends them to Twilio. */
+export function nativeCallParams(params: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (value === null || value === undefined) continue;
+    const text = String(value).trim();
+    if (text) out[key] = text;
+  }
+  return out;
+}
+
+/** Starts the call natively. Null when it started, otherwise the reason it could not. */
+export async function startNativeOutgoing(params: Record<string, unknown>, who: { label: string; callerName?: string | null }): Promise<string | null> {
+  const clean = nativeCallParams(params);
+  if (Object.keys(clean).length === 0) return "call_setup_failed";
+  let token: string | null = null;
+  try { token = await fetchVoiceToken(true); } catch { /* the engine falls back to its last token */ }
+  try {
+    const r = await BorealVoice.connect({ ...(token ? { accessToken: token } : {}), params: clean });
+    if (!r?.started) {
+      ringPush("native.outgoing.fail", r?.error);
+      return r?.error || "call_setup_failed";
+    }
+  } catch (e: any) {
+    ringPush("native.outgoing.fail", e?.message);
+    return "call_setup_failed";
+  }
+  ringPush("native.outgoing.started", clean);
+  const callerName = String(who.callerName ?? "").trim();
+  useDialer.getState().setNativeCall({ from: who.label, ...(callerName ? { callerName } : {}), phase: "connecting", muted: false, speaker: false });
+  return null;
+}
+
+export async function nativeSendDigits(digits: string): Promise<void> {
+  if (!digits) return;
+  try { await BorealVoice.sendDigits({ digits }); } catch { /* older build */ }
+}

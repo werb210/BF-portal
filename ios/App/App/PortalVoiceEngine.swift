@@ -100,6 +100,24 @@ enum PortalMicrophone {
             }
         }
     }
+
+    // BF_PORTAL_v824_NATIVE_OUTGOING - ask if needed, then answer on the main queue: allowed or not.
+    static func request(_ completion: @escaping (Bool) -> Void) {
+        let done: (Bool) -> Void = { granted in DispatchQueue.main.async { completion(granted) } }
+        if #available(iOS 17.0, *) {
+            switch AVAudioApplication.shared.recordPermission {
+            case .granted: done(true)
+            case .denied: done(false)
+            default: AVAudioApplication.requestRecordPermission { done($0) }
+            }
+        } else {
+            switch AVAudioSession.sharedInstance().recordPermission {
+            case .granted: done(true)
+            case .denied: done(false)
+            default: AVAudioSession.sharedInstance().requestRecordPermission { done($0) }
+            }
+        }
+    }
 }
 
 final class PortalVoiceEngine: NSObject {
@@ -135,6 +153,8 @@ final class PortalVoiceEngine: NSObject {
     private var isConnected = false
     private var isMuted = false
     private var isSpeaker = false
+    // BF_PORTAL_v824_NATIVE_OUTGOING - outgoing calls placed natively without CallKit (see startOutgoing).
+    private var directCalls = Set<UUID>()
 
     // The PushKit delivery being handled right now.
     private var pushCompletion: (() -> Void)?
@@ -293,8 +313,73 @@ final class PortalVoiceEngine: NSObject {
         activeUUID ?? pendingInvites.keys.first
     }
 
+    // BF_PORTAL_v824_NATIVE_OUTGOING
+    // An outgoing call placed here instead of by the web page. The portal app on a Mac ("Designed for iPad") gets
+    // no microphone inside its web page, so the Twilio JS Device cannot call from there; the web app hands the
+    // call to this engine (same Twilio account, same TwiML parameters as the JS Device) when the page has no
+    // microphone. No CallKit: the call is started from the app's own screen, which shows it with mute / speaker /
+    // hang up (NativeCallBanner), so this engine opens the audio session itself and closes it when the call ends.
+    func startOutgoing(accessToken token: String?, params: [String: String], completion: @escaping (Bool, String?) -> Void) {
+        if activeCall != nil || !pendingInvites.isEmpty {
+            completion(false, "busy")
+            return
+        }
+        let given = (token?.isEmpty == false) ? token : nil
+        guard let useToken = given ?? accessToken ?? PortalVoiceKeychain.loadUsable() else {
+            completion(false, "no_voice_token")
+            return
+        }
+        PortalMicrophone.request { [weak self] granted in
+            guard let self = self else { return }
+            guard granted else {
+                completion(false, "mic_permission_denied")
+                return
+            }
+            if self.activeCall != nil || !self.pendingInvites.isEmpty {
+                completion(false, "busy")
+                return
+            }
+            let session = AVAudioSession.sharedInstance()
+            do {
+                try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth])
+                try session.setActive(true)
+            } catch {
+                NSLog("[BorealVoice] outgoing audio session failed: %@", error.localizedDescription)
+                completion(false, "audio_session_failed")
+                return
+            }
+            let uuid = UUID()
+            self.directCalls.insert(uuid)
+            self.activeUUID = uuid
+            self.isConnected = false
+            self.isMuted = false
+            self.isSpeaker = false
+            var info: [String: Any] = ["uuid": uuid.uuidString, "direction": "outbound"]
+            if let to = params["To"], !to.isEmpty { info["from"] = to }
+            self.callInfo[uuid] = info
+            self.audioDevice.isEnabled = true
+            let options = ConnectOptions(accessToken: useToken) { builder in
+                builder.params = params
+                builder.uuid = uuid
+            }
+            self.activeCall = TwilioVoiceSDK.connect(options: options, delegate: self)
+            completion(true, nil)
+        }
+    }
+
+    func sendDigits(_ digits: String) {
+        guard !digits.isEmpty else { return }
+        activeCall?.sendDigits(digits)
+    }
+
     func hangUp() {
         guard let uuid = currentUUID else { return }
+        // BF_PORTAL_v824_NATIVE_OUTGOING - CallKit does not know a direct call: disconnect it here.
+        if directCalls.contains(uuid) {
+            endedLocally.insert(uuid)
+            if let call = activeCall { call.disconnect() } else { finishCall(uuid: uuid, reason: "ended") }
+            return
+        }
         let transaction = CXTransaction(action: CXEndCallAction(call: uuid))
         callController.request(transaction) { [weak self] error in
             guard error != nil else { return }
@@ -307,6 +392,10 @@ final class PortalVoiceEngine: NSObject {
 
     func setMuted(_ muted: Bool) {
         guard let uuid = activeUUID else { return }
+        if directCalls.contains(uuid) { // BF_PORTAL_v824_NATIVE_OUTGOING
+            applyMuted(muted)
+            return
+        }
         // Through CallKit so its in-call screen stays in step.
         let transaction = CXTransaction(action: CXSetMutedCallAction(call: uuid, muted: muted))
         callController.request(transaction) { [weak self] error in
@@ -421,6 +510,11 @@ final class PortalVoiceEngine: NSObject {
         callInfo[uuid] = nil
         pendingInvites[uuid] = nil
         endedLocally.remove(uuid)
+        // BF_PORTAL_v824_NATIVE_OUTGOING - this engine opened the audio session for a direct call: close it.
+        if directCalls.remove(uuid) != nil {
+            audioDevice.isEnabled = false
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
         if activeUUID == uuid {
             activeCall = nil
             activeUUID = nil
@@ -595,7 +689,8 @@ extension PortalVoiceEngine: CallDelegate {
 
     func callDidFailToConnect(call: Call, error: Error) {
         guard let uuid = activeUUID ?? call.uuid else { return }
-        if !endedLocally.contains(uuid) {
+        NSLog("[BorealVoice] call failed to connect: %@", error.localizedDescription)
+        if !endedLocally.contains(uuid) && !directCalls.contains(uuid) {
             provider.reportCall(with: uuid, endedAt: Date(), reason: .failed)
         }
         finishCall(uuid: uuid, reason: "failed")
@@ -604,7 +699,7 @@ extension PortalVoiceEngine: CallDelegate {
     func callDidDisconnect(call: Call, error: Error?) {
         guard let uuid = activeUUID ?? call.uuid else { return }
         // A local hang-up already ended the CallKit call through CXEndCallAction.
-        if !endedLocally.contains(uuid) {
+        if !endedLocally.contains(uuid) && !directCalls.contains(uuid) {
             provider.reportCall(with: uuid, endedAt: Date(), reason: error == nil ? .remoteEnded : .failed)
         }
         finishCall(uuid: uuid, reason: error == nil ? "ended" : "failed")

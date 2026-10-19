@@ -43,6 +43,9 @@ export interface BorealVoicePlugin {
   speaker(options: { on: boolean }): Promise<{ speaker: boolean }>;
   hangup(): Promise<void>;
   getState(): Promise<NativeVoiceState>;
+  // BF_PORTAL_v824_NATIVE_OUTGOING - an outgoing call placed by the app itself (the web page has no microphone).
+  connect(options: { accessToken?: string; params: Record<string, string> }): Promise<{ started: boolean; error?: string }>;
+  sendDigits(options: { digits: string }): Promise<void>;
   addListener(event: NativeVoiceEvent, cb: (data: any) => void): Promise<{ remove: () => Promise<void> }>;
 }
 

@@ -16,7 +16,9 @@ public class BorealVoicePlugin: CAPPlugin, CAPBridgedPlugin, PortalVoiceListener
         CAPPluginMethod(name: "mute", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "speaker", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "hangup", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "getState", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "getState", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "connect", returnType: CAPPluginReturnPromise), // BF_PORTAL_v824_NATIVE_OUTGOING
+        CAPPluginMethod(name: "sendDigits", returnType: CAPPluginReturnPromise)
     ]
 
     override public func load() {
@@ -67,6 +69,35 @@ public class BorealVoicePlugin: CAPPlugin, CAPBridgedPlugin, PortalVoiceListener
     @objc func hangup(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             PortalVoiceEngine.shared.hangUp()
+            call.resolve()
+        }
+    }
+
+    // BF_PORTAL_v824_NATIVE_OUTGOING - an outgoing call when the web page has no microphone (the app on a Mac).
+    // {accessToken?, params: {To?, conferenceFriendly?, meetingSlug?}} -> {started, error?}
+    @objc func connect(_ call: CAPPluginCall) {
+        var params: [String: String] = [:]
+        for (key, value) in call.getObject("params") ?? [:] {
+            if let text = value as? String, !text.isEmpty { params[key] = text }
+        }
+        guard !params.isEmpty else {
+            call.reject("params are required")
+            return
+        }
+        let token = call.getString("accessToken")
+        DispatchQueue.main.async {
+            PortalVoiceEngine.shared.startOutgoing(accessToken: token, params: params) { started, error in
+                var result: [String: Any] = ["started": started]
+                if let error = error { result["error"] = error }
+                call.resolve(result)
+            }
+        }
+    }
+
+    @objc func sendDigits(_ call: CAPPluginCall) {
+        let digits = call.getString("digits") ?? ""
+        DispatchQueue.main.async {
+            PortalVoiceEngine.shared.sendDigits(digits)
             call.resolve()
         }
     }
