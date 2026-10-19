@@ -114,6 +114,9 @@ jobs:
             -resolvePackageDependencies \
             -project ios/App/App.xcodeproj \
             -scheme App
+      # BF_PORTAL_v826_SIM_ARM64 - newer TwilioVoice releases ship no Intel (x86_64) simulator slice, so a
+      # "generic" simulator build failed to link ("Undefined symbols for architecture x86_64: TVOCall ...").
+      # GitHub's Mac runners are Apple silicon: build the simulator app for arm64 only.
       - name: Build complete iPad app for Simulator
         run: |
           xcodebuild \
@@ -124,6 +127,7 @@ jobs:
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            EXCLUDED_ARCHS=x86_64 \
             clean build
       - name: Build BorealWidget target for Simulator
         run: |
@@ -134,4 +138,5 @@ jobs:
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            EXCLUDED_ARCHS=x86_64 \
             build
