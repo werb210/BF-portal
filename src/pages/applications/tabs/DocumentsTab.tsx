@@ -793,9 +793,21 @@ function StatusPill({ status }: { status: DocStatus }) {
   return <span style={{ ...styles.pillBase, ...tone }}>{label}</span>;
 }
 
+// BF_PORTAL_v837_NO_OCR_LABEL - "skipped" (signed SBA forms, signed applications, Other) showed as "OCR queued" forever.
+export function ocrLabel(ocr: string | null | undefined): string | null {
+  if (!ocr) return null;
+  const s = String(ocr).toLowerCase();
+  if (s === "skipped") return "No OCR needed";
+  if (s === "completed") return "OCR ✓";
+  if (s === "failed") return "OCR failed";
+  if (s === "processing") return "OCR processing…";
+  return "OCR queued";
+}
+
 function OcrBadge({ ocr }: { ocr: OcrStatus | undefined }) {
   if (!ocr) return null;
   const s = String(ocr).toLowerCase();
+  if (s === "skipped") return <span style={{ ...styles.ocrBase, ...styles.ocrMuted }}>No OCR needed</span>; // BF_PORTAL_v837_NO_OCR_LABEL
   const tone =
     s === "completed" ? styles.ocrGreen :
     s === "failed"    ? styles.ocrRed   :
@@ -926,6 +938,7 @@ const styles: Record<string, CSSProperties> = {
   ocrGreen: { background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0" },
   ocrRed:   { background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5" },
   ocrBlue:  { background: "rgba(47, 168, 106, 0.12)", color: "var(--ui-accent-blue)", border: "1px solid #bfdbfe" },
+  ocrMuted: { background: "transparent", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)" }, // BF_PORTAL_v837_NO_OCR_LABEL
 };
 
 // BF_PORTAL_BLOCK_v192_REOCR_BUTTON_v1

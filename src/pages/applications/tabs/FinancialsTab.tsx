@@ -255,6 +255,10 @@ function OcrStatusPill({ ocrStatus, hasFields }: { ocrStatus: string | null; has
   if (s === "processing") {
     return <span style={{ ...styles.ocrBase, ...styles.ocrBlue }}>OCR processing…</span>;
   }
+  // BF_PORTAL_v837_NO_OCR_LABEL - a document that is never OCR'd is not "queued".
+  if (s === "skipped") {
+    return <span style={{ ...styles.ocrBase, color: "var(--ui-text-muted)", border: "1px solid var(--ui-border)" }}>No OCR needed</span>;
+  }
   return <span style={{ ...styles.ocrBase, ...styles.ocrBlue }}>OCR queued</span>;
 }
 
