@@ -175,7 +175,33 @@ const EDIT_FIELDS: { key: keyof Profile; label: string; type?: string }[] = [
 
 const fmtAmount = (v: number | null | undefined) => (v == null ? "\u2014" : `$${Number(v).toLocaleString()}`);
 
+// BF_PORTAL_v835_LENDER_TABS - the lender portal was one long page; it is now four tabs. The open tab is kept for the
+// browser tab's session, so a reload (or coming back from an edit) lands where the lender was.
+export const LENDER_TABS = [
+  { key: "company", label: "Company info" },
+  { key: "products", label: "Products" },
+  { key: "marketing", label: "Product sheets & marketing" },
+  { key: "unplaced", label: "Applications you cannot place" },
+] as const;
+export type LenderTab = (typeof LENDER_TABS)[number]["key"];
+const LENDER_TAB_KEY = "lender_portal_tab";
+
+export function initialLenderTab(): LenderTab {
+  try {
+    const saved = sessionStorage.getItem(LENDER_TAB_KEY);
+    if (LENDER_TABS.some((t) => t.key === saved)) return saved as LenderTab;
+  } catch {
+    // storage unavailable (private mode): start on the first tab
+  }
+  return "company";
+}
+
 export default function LenderPortalPage() {
+  const [tab, setTabState] = useState<LenderTab>(initialLenderTab); // BF_PORTAL_v835_LENDER_TABS
+  const setTab = (next: LenderTab) => {
+    setTabState(next);
+    try { sessionStorage.setItem(LENDER_TAB_KEY, next); } catch { /* not remembered; still switches */ }
+  };
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile>({});
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -382,7 +408,26 @@ export default function LenderPortalPage() {
         </button>
       </header>
 
-      <div className="pp-two-col">
+      {/* BF_PORTAL_v835_LENDER_TABS */}
+      <div className="pp-tabs" role="tablist" aria-label="Lender portal">
+        {LENDER_TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            id={`lender-tab-${t.key}`}
+            aria-selected={tab === t.key}
+            aria-controls={`lender-panel-${t.key}`}
+            className={tab === t.key ? "pp-tab pp-tab--active" : "pp-tab"}
+            onClick={() => setTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel" id={`lender-panel-${tab}`} aria-labelledby={`lender-tab-${tab}`}>
+      {tab === "company" && (
         <section style={sectionCard}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <h2 style={sectionTitle}>Company information</h2>
@@ -407,7 +452,9 @@ export default function LenderPortalPage() {
             </>
           )}
         </section>
+      )}
 
+      {tab === "products" && (
         <section style={sectionCard}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <h2 style={sectionTitle}>Your products</h2>
@@ -464,9 +511,10 @@ export default function LenderPortalPage() {
           )}
           {productErr && !editing && <p className="pp-error" style={{ marginTop: 10 }}>{productErr}</p>}
         </section>
-      </div>
+      )}
 
-      <section style={{ ...sectionCard, marginTop: 20 }}>
+      {tab === "marketing" && (
+      <section style={sectionCard}>
         <h2 style={{ ...sectionTitle, marginBottom: 10 }}>Product sheets &amp; marketing</h2>
         {/* BF_PORTAL_LENDER_BLURBS_v1 */}
         <p style={{ fontSize: 13, color: "var(--ui-text-muted)", margin: "0 0 8px", lineHeight: 1.5 }}>
@@ -495,8 +543,10 @@ export default function LenderPortalPage() {
           ))}
         </div>
       </section>
+      )}
 
-      <LenderReferralsSection />{/* BF_PORTAL_v825_LENDER_REFERRALS */}
+      {tab === "unplaced" && <LenderReferralsSection />}{/* BF_PORTAL_v825_LENDER_REFERRALS */}
+      </div>
 
       {editingProfile && (
         <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>

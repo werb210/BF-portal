@@ -70,6 +70,12 @@
 .pp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
 .pp-two-col { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 20px; align-items: start; }
 @media (max-width: 900px) { .pp-two-col { grid-template-columns: 1fr; } }
+/* BF_PORTAL_v835_LENDER_TABS - portal tabs: white on the brand blue when open, readable muted white otherwise. */
+.pp-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 16px; padding: 4px; border: 1px solid var(--pp-border); border-radius: 12px; background: var(--surface-card); }
+.partner-portal .pp-tab { min-height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: rgba(255, 255, 255, 0.78); font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.partner-portal .pp-tab:hover { color: #fff; background: var(--surface-elevated); }
+.partner-portal .pp-tab--active, .partner-portal .pp-tab--active:hover { background: var(--pp-accent); border-color: var(--pp-accent); color: #fff; }
+@media (max-width: 600px) { .pp-tabs { flex-wrap: nowrap; overflow-x: auto; } }
 .pp-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .pp-error { font-size: 13px; color: var(--pp-danger-fg); }
 .pp-banner { border-radius: 8px; padding: 10px 14px; font-size: 13px; border: 1px solid var(--pp-border); background: var(--surface-elevated); color: var(--pp-text); }
