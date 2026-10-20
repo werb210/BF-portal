@@ -160,8 +160,9 @@ export default function LenderReferralsSection() {
   };
 
   return (
-    <section className="pp-card" style={{ marginTop: 20 }} data-testid="lender-referrals">
-      <h2 style={{ ...title, marginBottom: 10 }}>Send us files you declined</h2>
+    <section className="pp-card" data-testid="lender-referrals">
+      {/* BF_PORTAL_v835_LENDER_TABS - was "Send us files you declined" */}
+      <h2 style={{ ...title, marginBottom: 10 }}>Applications you cannot place</h2>
       <p style={{ ...muted, margin: "0 0 6px" }}>
         Send us a deal you could not do and we will look for another lender. One zip per client with their application and
         documents. You can send up to {MAX_FILES} at a time.
