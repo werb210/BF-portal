@@ -4,7 +4,7 @@ import { dialerApi } from "./api";
 import { launchNativeBorealDialer } from "@/native/dialerLauncher";
 import { preflight } from "./sanityCheck";
 import { ringPush } from "./debugRing";
-import { callsNatively, startNativeOutgoing } from "./nativeVoice"; // BF_PORTAL_v824_NATIVE_OUTGOING
+import { callsNatively, startNativeOutgoing, nativeHangup, nativeSendDigits } from "./nativeVoice"; // BF_PORTAL_v824_NATIVE_OUTGOING
 
 // BF_PORTAL_v824_NATIVE_OUTGOING - the portal app on a Mac has no microphone in its web page, so the call is placed
 // by the app itself (nativeVoice.ts startNativeOutgoing) with the same parameters, after the same server setup.
@@ -21,10 +21,11 @@ async function placeNativeCall(setup: (() => Promise<any>) | null, params: (body
       body = r?.data ?? r;
       if (!body?.ok) { st.setStatus("error", "call_setup_failed"); return; }
     }
-    const failed = await startNativeOutgoing(params(body), who);
+    // BF_PORTAL_v844_MAC_DIALER_PANEL - the dialer panel stays open and shows the call, as it always did (v824 closed
+    // it and showed only the top banner). The app still carries the audio; the panel's buttons drive it.
+    const failed = await startNativeOutgoing(params(body), { ...who, fromPanel: true });
     if (failed) { st.setStatus("error", failed); return; }
-    st.setStatus("ready");
-    st.close();
+    st.setStatus("ringing");
   } catch (e: any) {
     ringPush("native.call.fail", e?.message);
     st.setStatus("error", e?.message ?? "call_setup_failed");
@@ -48,7 +49,7 @@ export async function startInternalCall(staffIdentity:string, opts?:{contactName
 // BF_PORTAL_JOIN_ROOM_v750 - join a Boreal meeting room from the calendar: the server (BF-Server v759) puts this
 // call straight into the room's conference, so there is no dialling the 866 and no access code.
 export async function joinMeetingRoom(slug: string, title?: string) { const st=useDialer.getState(); if (callsNatively()) { st.open({contactName: title ? "Room: " + title : "Meeting room", source: "calendar"}); await placeNativeCall(null, () => ({ meetingSlug: slug }), { label: "Meeting room", callerName: title ? "Room: " + title : "Meeting room" }); return; } /* BF_PORTAL_v824_NATIVE_OUTGOING */ const pre=await preflight(st.device); if(!pre.ok){st.open({contactName: title ? "Room: " + title : "Meeting room", source: "calendar"}); st.setStatus("error",pre.reason); return;} st.clearTranscript(); st.setStatus("dialing"); st.open({contactName: title ? "Room: " + title : "Meeting room", source: "calendar"}); try{ const call=await st.device!.connect({params:{meetingSlug: slug}}); st.setCall(call); call.on("accept",()=>st.setStatus("connected")); call.on("disconnect",()=>{st.setCall(null); st.setStatus("ready");}); call.on("error",(e:any)=>st.setStatus("error",e?.message??"call_error")); } catch(e:any){ st.setStatus("error",e?.message??"call_setup_failed"); } }
-export async function hangup(){ const st=useDialer.getState(); if(st.call){ try{st.call.disconnect();}catch{}} st.setCall(null); st.setStatus("ready"); }
+export async function hangup(){ const st=useDialer.getState(); if(st.nativeCall?.fromPanel){ await nativeHangup(); st.setStatus("ready"); return; } /* BF_PORTAL_v844_MAC_DIALER_PANEL */ if(st.call){ try{st.call.disconnect();}catch{}} st.setCall(null); st.setStatus("ready"); }
 export async function answerIncoming(){
   // v193_answer_pending: prefer the live `pendingCall` object stashed by
   // DialerProvider.incoming (browser-SDK direct invite). Only fall back to
@@ -83,4 +84,11 @@ export function declineIncoming(){
     try { pending.reject(); } catch { /* best-effort */ }
   }
   st.setIncoming(null);
+}
+
+// BF_PORTAL_v844_MAC_DIALER_PANEL - keypad tones on a call the app placed (the panel's keypad on a Mac).
+export function sendPanelDigits(digits: string): boolean {
+  if (!useDialer.getState().nativeCall?.fromPanel) return false;
+  void nativeSendDigits(digits);
+  return true;
 }

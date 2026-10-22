@@ -16,7 +16,8 @@
 import React, { useMemo, useState } from "react";
 import { useDialer } from "../store";
 import { dialerApi } from "../api";
-import { startOutboundPstn, hangup, answerIncoming, declineIncoming } from "../actions";
+import { startOutboundPstn, hangup, answerIncoming, declineIncoming, sendPanelDigits } from "../actions";
+import { callsNatively } from "../nativeVoice"; // BF_PORTAL_v844_MAC_DIALER_PANEL
 import { CallTimer } from "./CallTimer";
 import { ParticipantRow } from "./ParticipantRow";
 import { AddParticipantBar } from "./AddParticipantBar";
@@ -301,6 +302,7 @@ export default function DialerPanel() {
 
   // DTMF: during live call, send through the SDK; in idle, build a number.
   const dtmf = (d: string) => {
+    if (sendPanelDigits(d)) return; // BF_PORTAL_v844_MAC_DIALER_PANEL - a call the app placed
     if (st.call) {
       try { (st.call as { sendDigits?: (digits: string) => void }).sendDigits?.(d); } catch { /* best-effort */ }
     } else {
@@ -480,7 +482,7 @@ export default function DialerPanel() {
       {/* IDLE — dialpad to place a new call */}
       {!liveAny && !incoming && (
         <>
-          {(st.status === "error" || (!st.device && st.status !== "preflight")) && (
+          {(st.status === "error" || (!st.device && st.status !== "preflight" && !callsNatively())) && ( /* BF_PORTAL_v844_MAC_DIALER_PANEL - the Mac app calls through the app, so no web phone engine is not a problem */
             <div style={{ margin: "12px 20px 0", padding: "10px 12px", borderRadius: 10, background: T.amberSoft, border: `1px solid ${T.amber}`, color: T.text, fontSize: 12, lineHeight: 1.4 }}>
               <strong>Phone not ready.</strong>{" "}
               {st.error === "no_voice_token" ? "Could not get a voice token from the server."

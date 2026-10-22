@@ -141,10 +141,13 @@ export function bindNativeCallEvents(): () => void {
     BorealVoice.addListener("callConnected", (d: any) => {
       ringPush("native.callConnected", d);
       st().setNativeCall({ ...(st().nativeCall ?? {}), ...d, phase: "connected" });
+      if (st().nativeCall?.fromPanel) st().setStatus("connected"); // BF_PORTAL_v844_MAC_DIALER_PANEL - the panel shows the live call
     }),
     BorealVoice.addListener("callEnded", (d: any) => {
       ringPush("native.callEnded", d);
+      const wasPanel = !!st().nativeCall?.fromPanel; // BF_PORTAL_v844_MAC_DIALER_PANEL
       st().setNativeCall(null);
+      if (wasPanel) st().setStatus("ready");
     }),
     BorealVoice.addListener("callMuted", (d: any) => {
       const cur = st().nativeCall;
@@ -223,7 +226,7 @@ export function nativeCallParams(params: Record<string, unknown>): Record<string
 }
 
 /** Starts the call natively. Null when it started, otherwise the reason it could not. */
-export async function startNativeOutgoing(params: Record<string, unknown>, who: { label: string; callerName?: string | null }): Promise<string | null> {
+export async function startNativeOutgoing(params: Record<string, unknown>, who: { label: string; callerName?: string | null; fromPanel?: boolean }): Promise<string | null> {
   const clean = nativeCallParams(params);
   if (Object.keys(clean).length === 0) return "call_setup_failed";
   let token: string | null = null;
@@ -240,7 +243,7 @@ export async function startNativeOutgoing(params: Record<string, unknown>, who: 
   }
   ringPush("native.outgoing.started", clean);
   const callerName = String(who.callerName ?? "").trim();
-  useDialer.getState().setNativeCall({ from: who.label, ...(callerName ? { callerName } : {}), phase: "connecting", muted: false, speaker: false });
+  useDialer.getState().setNativeCall({ from: who.label, ...(callerName ? { callerName } : {}), phase: "connecting", muted: false, speaker: false, ...(who.fromPanel ? { fromPanel: true } : {}) });
   return null;
 }
 
