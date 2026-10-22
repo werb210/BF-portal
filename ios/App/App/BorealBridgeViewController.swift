@@ -1,6 +1,7 @@
 import Capacitor
 import UIKit
 import LocalAuthentication
+import UniformTypeIdentifiers
 
 class BorealBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
@@ -12,6 +13,7 @@ class BorealBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(IPadWorkstationPlugin())
         bridge?.registerPluginInstance(PortalLauncherPlugin()) // BF_PORTAL_BLOCK_v556
         bridge?.registerPluginInstance(BorealVoicePlugin()) // BF_PORTAL_v817_IPAD_VOIP
+        bridge?.registerPluginInstance(NativeFilePickerPlugin()) // BF_PORTAL_v842_MAC_FILE_PICKER
     }
 
     // BF_PORTAL_v823_KEYBOARD - hardware-keyboard shortcuts the iPad lists when you hold Cmd. Each one is handed to
@@ -82,5 +84,96 @@ public class BiometricUnlockPlugin: CAPPlugin, CAPBridgedPlugin {
         context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, _ in
             DispatchQueue.main.async { call.resolve(["ok": success]) }
         }
+    }
+}
+
+// BF_PORTAL_v842_MAC_FILE_PICKER
+// On a Mac the iPad app's web file picker (WebKit's WKFileUploadPanel) crashed the app when files came from OneDrive:
+// "index 0 beyond bounds for empty array" inside -[WKFileUploadPanel documentPicker:didPickDocumentsAtURLs:], before
+// any of our code ran (Oct 22). This picker asks the system for copies (asCopy: true), so cloud files are downloaded
+// first, and hands the web app paths it can read. The web app uses it only on a Mac (status().onMac); the iPad keeps
+// WebKit's picker with its camera and photo options. Lives in this file because it is already in the App target.
+@objc(NativeFilePickerPlugin)
+public class NativeFilePickerPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDelegate {
+    public let identifier = "NativeFilePickerPlugin"
+    public let jsName = "NativeFilePicker"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "pick", returnType: CAPPluginReturnPromise)
+    ]
+    private var pending: CAPPluginCall?
+
+    @objc func status(_ call: CAPPluginCall) {
+        call.resolve(["onMac": ProcessInfo.processInfo.isiOSAppOnMac])
+    }
+
+    @objc func pick(_ call: CAPPluginCall) {
+        let multiple = call.getBool("multiple") ?? false
+        let accept = call.getString("accept") ?? ""
+        DispatchQueue.main.async {
+            guard let presenter = self.bridge?.viewController else {
+                call.reject("The file picker is not available right now.")
+                return
+            }
+            // A picker left open from an earlier tap is answered as cancelled, so its promise never hangs.
+            self.pending?.resolve(["files": [] as [Any]])
+            self.pending = call
+            let picker = UIDocumentPickerViewController(forOpeningContentTypes: NativeFilePickerPlugin.types(for: accept), asCopy: true)
+            picker.allowsMultipleSelection = multiple
+            picker.delegate = self
+            presenter.present(picker, animated: true)
+        }
+    }
+
+    /// The <input accept="..."> list ("application/pdf,.docx,image/*") as content types; anything when empty.
+    static func types(for accept: String) -> [UTType] {
+        var out: [UTType] = []
+        for raw in accept.split(separator: ",") {
+            let token = raw.trimmingCharacters(in: .whitespaces).lowercased()
+            if token.isEmpty { continue }
+            if token.hasPrefix(".") {
+                if let type = UTType(filenameExtension: String(token.dropFirst())) { out.append(type) }
+            } else if token == "image/*" {
+                out.append(.image)
+            } else if token == "video/*" {
+                out.append(.movie)
+            } else if token == "audio/*" {
+                out.append(.audio)
+            } else if let type = UTType(mimeType: token) {
+                out.append(type)
+            }
+        }
+        return out.isEmpty ? [.item] : out
+    }
+
+    public func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let call = pending else { return }
+        pending = nil
+        let fm = FileManager.default
+        let folder = fm.temporaryDirectory.appendingPathComponent("picked-\(UUID().uuidString)", isDirectory: true)
+        var files: [[String: Any]] = []
+        do {
+            try fm.createDirectory(at: folder, withIntermediateDirectories: true)
+            for url in urls {
+                let name = url.lastPathComponent
+                let dest = folder.appendingPathComponent(name)
+                // asCopy: the picker already copied the file into our sandbox; move it somewhere stable.
+                if (try? fm.moveItem(at: url, to: dest)) == nil {
+                    try fm.copyItem(at: url, to: dest)
+                }
+                let mime = UTType(filenameExtension: dest.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+                let size = (try? dest.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                guard let web = bridge?.portablePath(fromLocalURL: dest)?.absoluteString else { continue }
+                files.append(["name": name, "mimeType": mime, "size": size, "webPath": web])
+            }
+            call.resolve(["files": files])
+        } catch {
+            call.reject("Could not read the chosen file: \(error.localizedDescription)")
+        }
+    }
+
+    public func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        pending?.resolve(["files": [] as [Any]])
+        pending = nil
     }
 }
