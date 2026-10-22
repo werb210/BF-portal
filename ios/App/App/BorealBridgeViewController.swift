@@ -14,6 +14,8 @@ class BorealBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(PortalLauncherPlugin()) // BF_PORTAL_BLOCK_v556
         bridge?.registerPluginInstance(BorealVoicePlugin()) // BF_PORTAL_v817_IPAD_VOIP
         bridge?.registerPluginInstance(NativeFilePickerPlugin()) // BF_PORTAL_v842_MAC_FILE_PICKER
+        // BF_PORTAL_v843_MAC_UPLOADS - Safari's Develop menu can inspect the app, so an upload problem can be seen.
+        if #available(iOS 16.4, *) { bridge?.webView?.isInspectable = true }
     }
 
     // BF_PORTAL_v823_KEYBOARD - hardware-keyboard shortcuts the iPad lists when you hold Cmd. Each one is handed to
@@ -146,29 +148,36 @@ public class NativeFilePickerPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPick
         return out.isEmpty ? [.item] : out
     }
 
+    // BF_PORTAL_v843_MAC_UPLOADS - the file contents go back in the answer itself (base64), so the web app does not
+    // have to fetch them from a capacitor:// address (v842 did, and on the Mac nothing arrived). Read off the main
+    // thread; any file that cannot be read is named in "failed" so the web app can say so.
     public func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         guard let call = pending else { return }
         pending = nil
-        let fm = FileManager.default
-        let folder = fm.temporaryDirectory.appendingPathComponent("picked-\(UUID().uuidString)", isDirectory: true)
-        var files: [[String: Any]] = []
-        do {
-            try fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        DispatchQueue.global(qos: .userInitiated).async {
+            var files: [[String: Any]] = []
+            var failed: [[String: Any]] = []
             for url in urls {
                 let name = url.lastPathComponent
-                let dest = folder.appendingPathComponent(name)
-                // asCopy: the picker already copied the file into our sandbox; move it somewhere stable.
-                if (try? fm.moveItem(at: url, to: dest)) == nil {
-                    try fm.copyItem(at: url, to: dest)
+                let scoped = url.startAccessingSecurityScopedResource()
+                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                var coordError: NSError?
+                var data: Data?
+                var readError: Error?
+                NSFileCoordinator().coordinate(readingItemAt: url, options: [.withoutChanges], error: &coordError) { readable in
+                    do { data = try Data(contentsOf: readable) } catch { readError = error }
                 }
-                let mime = UTType(filenameExtension: dest.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
-                let size = (try? dest.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-                guard let web = bridge?.portablePath(fromLocalURL: dest)?.absoluteString else { continue }
-                files.append(["name": name, "mimeType": mime, "size": size, "webPath": web])
+                if let data = data {
+                    let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+                    files.append(["name": name, "mimeType": mime, "size": data.count, "data": data.base64EncodedString()])
+                } else {
+                    let problem: Error? = readError ?? (coordError as Error?)
+                    let reason = problem?.localizedDescription ?? "the file could not be read"
+                    failed.append(["name": name, "reason": reason])
+                }
+                try? FileManager.default.removeItem(at: url) // asCopy: our own copy
             }
-            call.resolve(["files": files])
-        } catch {
-            call.reject("Could not read the chosen file: \(error.localizedDescription)")
+            call.resolve(["files": files, "failed": failed])
         }
     }
 

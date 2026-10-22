@@ -62,6 +62,36 @@ describe("Mac file picker", () => {
     expect(await installNativeFileInputs({ plugin: plugin(true), isNativeIos: () => false })).toBe(false); // browser
   });
 
+  // BF_PORTAL_v843_MAC_UPLOADS
+  it("uses the file contents the app sends, without fetching", async () => {
+    const fetchSpy = vi.fn();
+    const files = await pickedToFiles([{ name: "a.pdf", mimeType: "application/pdf", size: 3, data: btoa("pdf") }], fetchSpy as unknown as typeof fetch);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(files.map((f) => [f.name, f.type, f.size])).toEqual([["a.pdf", "application/pdf", 3]]);
+    const text = await new Promise<string>((resolve) => { const r = new FileReader(); r.onload = () => resolve(String(r.result)); r.readAsText(files[0]!); });
+    expect(text).toBe("pdf");
+  });
+
+  it("says which files could not be read instead of doing nothing", async () => {
+    const notify = vi.fn();
+    const input = document.createElement("input");
+    input.type = "file";
+    const p: NativeFilePickerPlugin = { status: vi.fn(async () => ({ onMac: true })), pick: vi.fn(async () => ({ files: [], failed: [{ name: "big.pdf", reason: "offline" }] })) };
+    expect(await chooseWithNativePicker(input, { plugin: p, notify })).toBe(false);
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("big.pdf (offline)"));
+  });
+
+  it("an error while attaching is shown, not swallowed", async () => {
+    const notify = vi.fn();
+    const p: NativeFilePickerPlugin = { status: vi.fn(async () => ({ onMac: true })), pick: vi.fn(async () => { throw new Error("picker broke"); }) };
+    const input = document.createElement("input");
+    input.type = "file";
+    document.body.appendChild(input);
+    detach = attachNativeFileInputs({ plugin: p, notify });
+    input.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining("picker broke")));
+  });
+
   it("an older app build without the plugin keeps WebKit's picker", async () => {
     const old: NativeFilePickerPlugin = { status: vi.fn(async () => { throw new Error("not implemented"); }), pick: vi.fn() };
     expect(await installNativeFileInputs({ plugin: old, isNativeIos: () => true })).toBe(false);
