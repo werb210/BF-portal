@@ -21,6 +21,7 @@ import TemplatesSettings from "./tabs/TemplatesSettings"; // v694
 import SnippetsSettings from "./tabs/SnippetsSettings"; // BF_PORTAL_SNIPPETS_TAB_v46
 import CollateralSettings from "./tabs/CollateralSettings"; // v694
 import LibraryPage from "@/pages/library/LibraryPage"; // BF_PORTAL_LIBRARY_IN_SETTINGS_v764
+import FraudProtectionCard from "@/fraud/FraudProtectionCard"; // BF_PORTAL_v846_FRAUD
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -37,6 +38,8 @@ const SettingsPage = () => {
       { id: "users", label: "User Management", visible: isAdmin && !isBI, content: <UserManagement /> },
       { id: "phone", label: "Phone lines", visible: isAdmin && !isBI, content: <PhoneLines /> }, // BF_PORTAL_PHONE_LINES_v689
       { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin && !isBI, content: isAdmin ? (<><KnowledgeManager /><div style={{ height: 28 }} /><MayaTuning /></>) : null },
+      // BF_PORTAL_v846_FRAUD - Admins: Keystone watchlist opt-in, pre-screen default, services, staff alerts.
+      { id: "fraud", label: "Fraud protection", visible: isAdmin && !isBI, content: isAdmin ? <FraudProtectionCard /> : null },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: !isBI, content: <RuntimeSettings /> },
       { id: "templates", label: "Templates", visible: !isBI, content: <TemplatesSettings /> }, // v694
