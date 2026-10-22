@@ -12,6 +12,7 @@ import RequestItemsTab from "@/pages/applications/tabs/RequestItemsTab"; // BF_P
 import NotesTab from "@/pages/applications/tabs/NotesTab";
 import LendersTab from "@/pages/applications/tabs/LendersTab";
 import SbaSigningTab from "@/pages/applications/tabs/SbaSigningTab"; // BF_PORTAL_SBA_SIGNING_TAB_v146
+import FraudTab from "@/fraud/FraudTab"; // BF_PORTAL_v846_FRAUD
 
 const TABS = [
   { key: "application", label: "Application" },
@@ -22,6 +23,7 @@ const TABS = [
   { key: "request-items", label: "Request Items" }, // BF_PORTAL_BLOCK_v821_REQUEST_ITEMS_TAB
   { key: "notes", label: "Notes" },
   { key: "lenders", label: "Lenders" },
+  { key: "fraud", label: "Fraud check" }, // BF_PORTAL_v846_FRAUD - next to Lenders: review before the file goes out
   // BF_PORTAL_SBA_SIGNING_TAB_v146 - expose signing status and resend.
   { key: "sba-signing", label: "SBA Signing" },
 ] as const;
@@ -73,6 +75,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     notes: <NotesTab applicationId={applicationId} />,
     lenders: <LendersTab applicationId={applicationId} />,
     "sba-signing": <SbaSigningTab applicationId={applicationId} />,
+    fraud: <FraudTab applicationId={applicationId} />, // BF_PORTAL_v846_FRAUD
   }[activeTab];
 
   return (
