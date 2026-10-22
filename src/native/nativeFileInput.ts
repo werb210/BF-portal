@@ -7,10 +7,12 @@
 // plugin keep the old behaviour.
 import { Capacitor, registerPlugin } from "@capacitor/core";
 
-export type PickedFile = { name: string; mimeType: string; size: number; webPath: string };
+// BF_PORTAL_v843_MAC_UPLOADS - the app now sends the file contents (base64 "data"); webPath is the older v842 answer.
+export type PickedFile = { name: string; mimeType: string; size: number; data?: string; webPath?: string };
+export type PickFailure = { name: string; reason: string };
 export interface NativeFilePickerPlugin {
   status(): Promise<{ onMac: boolean }>;
-  pick(options: { multiple: boolean; accept: string }): Promise<{ files: PickedFile[] }>;
+  pick(options: { multiple: boolean; accept: string }): Promise<{ files: PickedFile[]; failed?: PickFailure[] }>;
 }
 export const NativeFilePicker = registerPlugin<NativeFilePickerPlugin>("NativeFilePicker");
 
@@ -19,12 +21,27 @@ export type NativeFileInputDeps = {
   fetchImpl?: typeof fetch;
   doc?: Document;
   onError?: (err: unknown) => void;
+  /** BF_PORTAL_v843_MAC_UPLOADS - tells the person when something could not be read (window.alert by default). */
+  notify?: (message: string) => void;
 };
+
+const defaultNotify = (message: string) => { try { window.alert(message); } catch { /* no alert available */ } };
+
+function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
+  const bin = atob(b64);
+  const out = new Uint8Array(new ArrayBuffer(bin.length));
+  for (let i = 0; i < bin.length; i += 1) out[i] = bin.charCodeAt(i);
+  return out;
+}
 
 /** Reads the picked files (served by the app at their webPath) into File objects. */
 export async function pickedToFiles(picked: PickedFile[], fetchImpl: typeof fetch = fetch): Promise<File[]> {
   const out: File[] = [];
   for (const p of picked) {
+    if (p?.data) { // BF_PORTAL_v843_MAC_UPLOADS
+      out.push(new File([base64ToBytes(p.data)], p.name || "file", { type: p.mimeType || "application/octet-stream" }));
+      continue;
+    }
     if (!p?.webPath) continue;
     const res = await fetchImpl(p.webPath);
     if (!res.ok) throw new Error(`Could not read ${p.name} (${res.status})`);
@@ -58,18 +75,29 @@ export function setInputFiles(input: HTMLInputElement, files: File[]): void {
 
 export async function chooseWithNativePicker(input: HTMLInputElement, deps: NativeFileInputDeps = {}): Promise<boolean> {
   const plugin = deps.plugin ?? NativeFilePicker;
-  const { files } = await plugin.pick({ multiple: input.multiple, accept: input.accept || "" });
-  if (!files?.length) return false; // cancelled
+  const notify = deps.notify ?? defaultNotify;
+  const { files, failed } = await plugin.pick({ multiple: input.multiple, accept: input.accept || "" });
+  if (failed?.length) notify(`Could not open ${failed.map((f) => `${f.name} (${f.reason})`).join(", ")}. If it is in OneDrive or iCloud, check you are online and try again.`);
+  if (!files?.length) return false; // cancelled, or nothing could be read
   const list = await pickedToFiles(files, deps.fetchImpl);
   if (!list.length) return false;
   setInputFiles(input, list);
+  if (!input.files || input.files.length === 0) {
+    notify("The files were read but could not be attached. Please try again, or drag the files onto the page.");
+    return false;
+  }
   return true;
 }
 
 /** Sends every file-input click in the document to the native picker. Returns a function that removes it. */
 export function attachNativeFileInputs(deps: NativeFileInputDeps = {}): () => void {
   const doc = deps.doc ?? document;
-  const onError = deps.onError ?? ((err: unknown) => console.error("[native file picker] failed", err));
+  const notify = deps.notify ?? defaultNotify;
+  // BF_PORTAL_v843_MAC_UPLOADS - never fail silently: v842 logged to the console only, so "nothing happened".
+  const onError = deps.onError ?? ((err: unknown) => {
+    console.error("[native file picker] failed", err);
+    notify(`The file could not be attached: ${err instanceof Error ? err.message : String(err)}`);
+  });
   const handler = (event: Event) => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement) || target.type !== "file" || target.disabled) return;
@@ -89,6 +117,7 @@ export async function installNativeFileInputs(deps: NativeFileInputDeps & { isNa
     const status = await plugin.status();
     if (!status?.onMac) return false;
     attachNativeFileInputs(deps);
+    try { document.documentElement.dataset.nativeFilePicker = "on"; } catch { /* BF_PORTAL_v843_MAC_UPLOADS - visible in Safari's inspector */ }
     return true;
   } catch {
     return false; // an app build from before this change: keep WebKit's picker
