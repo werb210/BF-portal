@@ -12,6 +12,7 @@ export default function NativeCallBanner() {
   const call = useDialer((s) => s.nativeCall);
   const [keypad, setKeypad] = React.useState(false);
   if (!call) return null;
+  if (call.fromPanel) return null; // BF_PORTAL_v844_MAC_DIALER_PANEL - the dialer panel shows calls placed from it
   const who = nativeCallerLabel(call);
   const ringing = call.phase === "ringing";
   return (

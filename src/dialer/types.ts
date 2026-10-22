@@ -88,4 +88,6 @@ export type NativeCall = {
   phase?: "ringing" | "connecting" | "connected";
   muted?: boolean;
   speaker?: boolean;
+  // BF_PORTAL_v844_MAC_DIALER_PANEL - placed from the dialer panel (portal app on a Mac): the panel shows it, not the banner.
+  fromPanel?: boolean;
 };

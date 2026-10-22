@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   pluginAvailable: true,
   connect: vi.fn(async (_o: any) => ({ started: true } as { started: boolean; error?: string })),
   sendDigits: vi.fn(async (_o: any) => {}),
+  hangup: vi.fn(async () => {}),
   startCall: vi.fn(async (_b: any) => ({ data: { ok: true, conferenceFriendly: "conf-1" } } as any)),
   voiceTokenFor: vi.fn(async () => ({ data: { token: "tok-portal" } })),
 }));
@@ -23,7 +24,7 @@ vi.mock("@capacitor/core", () => ({
   registerPlugin: () => ({
     connect: h.connect,
     sendDigits: h.sendDigits,
-    hangup: vi.fn(async () => {}),
+    hangup: h.hangup,
     mute: vi.fn(async ({ muted }: { muted: boolean }) => ({ muted })),
     speaker: vi.fn(async ({ on }: { on: boolean }) => ({ speaker: on })),
     getState: vi.fn(async () => ({})),
@@ -37,7 +38,7 @@ vi.mock("@/native/dialerLauncher", () => ({ launchNativeBorealDialer: vi.fn(asyn
 vi.mock("@/dialer/debugRing", () => ({ ringPush: vi.fn() }));
 
 import { callsNatively, nativeCallParams, shouldCallNatively } from "../nativeVoice";
-import { joinMeetingRoom, startOutboundPstn } from "../actions";
+import { hangup, joinMeetingRoom, sendPanelDigits, startOutboundPstn } from "../actions";
 import { useDialer } from "../store";
 import NativeCallBanner from "../components/NativeCallBanner";
 
@@ -87,8 +88,10 @@ describe("calls from the portal app on a Mac", () => {
     expect(h.startCall).toHaveBeenCalledWith(expect.objectContaining({ to: "+14035550100", contactId: "c1", silo: "BF" }));
     expect(h.connect).toHaveBeenCalledWith({ accessToken: "tok-portal", params: { conferenceFriendly: "conf-1", To: "+14035550100" } });
     const st = useDialer.getState();
-    expect(st.nativeCall).toEqual(expect.objectContaining({ from: "+14035550100", callerName: "Jane Client", phase: "connecting" }));
-    expect(st.isOpen).toBe(false);
+    expect(st.nativeCall).toEqual(expect.objectContaining({ from: "+14035550100", callerName: "Jane Client", phase: "connecting", fromPanel: true }));
+    // BF_PORTAL_v844_MAC_DIALER_PANEL - the dialer panel stays open and shows the call (v824 closed it).
+    expect(st.isOpen).toBe(true);
+    expect(st.status).toBe("ringing");
     expect(st.error).toBeNull();
   });
 
@@ -121,5 +124,29 @@ describe("calls from the portal app on a Mac", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keypad" }));
     fireEvent.click(screen.getByRole("button", { name: "Key 5" }));
     expect(h.sendDigits).toHaveBeenCalledWith({ digits: "5" });
+  });
+
+  // BF_PORTAL_v844_MAC_DIALER_PANEL
+  it("a call placed from the panel shows in the panel, not the top banner", async () => {
+    act(() => { useDialer.getState().setNativeCall({ from: "+14035550100", phase: "connected", fromPanel: true }); });
+    render(<NativeCallBanner />);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("the panel's hang up and keypad drive the app's call", async () => {
+    await startOutboundPstn("4035550100");
+    expect(sendPanelDigits("7")).toBe(true);
+    expect(h.sendDigits).toHaveBeenCalledWith({ digits: "7" });
+    h.hangup.mockClear();
+    await hangup();
+    expect(h.hangup).toHaveBeenCalledTimes(1);
+    expect(useDialer.getState().status).toBe("ready");
+  });
+
+  it("incoming calls on the iPad keep the banner", () => {
+    act(() => { useDialer.getState().setNativeCall({ from: "+14035550100", phase: "connected" }); });
+    render(<NativeCallBanner />);
+    expect(screen.getByRole("status")).toBeTruthy();
+    expect(sendPanelDigits("1")).toBe(false);
   });
 });
