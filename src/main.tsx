@@ -25,10 +25,13 @@ import "./styles/light-inputs.css";
 import "./styles/bi-theme.css"; // BF_PORTAL_BLOCK_v_BI_THEME_AWARE_v1
 import { initTheme } from "@/theme/theme";
 import { installDocumentPreview } from "./native/documentPreviewDelegate";
+import { installNativeFileInputs } from "./native/nativeFileInput"; // BF_PORTAL_v842_MAC_FILE_PICKER
 
 initTheme();
 // v115-doc-preview: use native Quick Look for document links on iPad.
 installDocumentPreview();
+// BF_PORTAL_v842_MAC_FILE_PICKER - on a Mac, file inputs use the app's own picker (WebKit's crashed on OneDrive files).
+void installNativeFileInputs();
 
 (window as any).__SILO__ = getActiveSilo();
 
