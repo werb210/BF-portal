@@ -1,5 +1,6 @@
 import { useEffect, useState, useContext, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
 import { crmApi, type ContactRow, type Scope } from "@/api/crm";
 import { api } from "@/api";
 import { ContactOneDrive } from "@/components/crm/ContactOneDrive"; // BF_PORTAL_CONTACT_ONEDRIVE_v1
@@ -19,6 +20,7 @@ import { NotifyContactButton } from "@/components/crm/NotifyContactButton"; // B
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const crmBase = useCrmBase(); // BF_PORTAL_v850_KS_CRM
   // BF_PORTAL_BLOCK_v_APOLLO_BI_ONLY_HOTFIX1 — Apollo enrichment is BI-only. Read
   // silo without the throwing useSilo() so a missing provider (e.g. in unit tests
   // or non-silo mounts) yields non-BI rather than crashing the page.
@@ -64,7 +66,7 @@ export default function ContactDetailPage() {
       <div style={layout}>
       <aside style={rail}>
         <Link
-          to="/crm/contacts"
+          to={`${crmBase}/contacts`}
           style={{ color: "var(--ui-accent-fg)", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}
         >← Back to contacts</Link>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}><h2 style={{ marginTop: 0, marginBottom: 0 }}>{contact.name}</h2><span style={roleBadge}>{formatRole(contact.role)}</span></div>
@@ -81,7 +83,7 @@ export default function ContactDetailPage() {
               if (!window.confirm("Delete this contact? This cannot be undone.")) return;
               try {
                 await api.delete(`/api/crm/contacts/${id}`);
-                navigate("/crm/contacts");
+                navigate(`${crmBase}/contacts`);
               } catch (error: any) {
                 setErr(error?.message ?? "Could not delete contact.");
               }
@@ -139,7 +141,7 @@ export default function ContactDetailPage() {
       <aside style={rail}>
         <h3 style={{ marginTop: 0 }}>Company</h3>
         {contact.company_id && contact.company_name ? (
-          <Link to={`/crm/companies/${contact.company_id}`} style={{ color: "#0091ae" }}>
+          <Link to={`${crmBase}/companies/${contact.company_id}`} style={{ color: "#0091ae" }}>
             {contact.company_name}
           </Link>
         ) : (

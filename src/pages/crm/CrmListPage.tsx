@@ -8,8 +8,8 @@ type View = "contacts" | "companies";
 
 // BF_PORTAL_CRM_COUNT_BADGES_v1 - show live silo-scoped totals on the CRM tabs
 // (e.g. "Contacts (1627)"). Refetches whenever the selected silo changes.
-export default function CrmListPage(): JSX.Element {
-  const [view, setView] = useState<View>("contacts");
+export default function CrmListPage({ initialView = "contacts" }: { initialView?: View } = {}): JSX.Element { // BF_PORTAL_v850_KS_CRM
+  const [view, setView] = useState<View>(initialView);
   const { silo } = useSilo();
   const [counts, setCounts] = useState<{ contacts: number | null; companies: number | null }>({ contacts: null, companies: null });
   useEffect(() => {

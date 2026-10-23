@@ -60,7 +60,49 @@ export function getApiBase(): string {
   return BF_SERVER_URL;
 }
 
-export function getActiveSilo(): string {
+// BF_PORTAL_v850_KS_CRM - the Keystone CRM (/silo/ks/crm/*) reuses the BF CRM screens with silo KS. While one of its pages
+// is open, the CRM and communications calls (the paths below) carry X-Silo: KS; everything else - users, settings,
+// templates, BI-Server and SLF paths - keeps the BF/BI/SLF silo chosen in the topbar. Other pages are unchanged.
+export const KS_CRM_PAGE_PREFIX = "/silo/ks/crm";
+const KS_SCOPED_API_PREFIXES = [
+  "/api/crm",
+  "/api/ks",
+  "/api/communications",
+  "/api/tasks",
+  "/api/meetings",
+  "/api/voice",
+  "/api/telephony",
+  "/api/calls",
+  "/api/o365/mail",
+  "/api/companies",
+  "/api/contacts",
+  "/api/recipients",
+];
+
+export function isKsCrmPage(pathname?: string | null): boolean {
+  let p = pathname;
+  if (p == null) {
+    try {
+      p = typeof window === "undefined" ? "" : window.location.pathname;
+    } catch {
+      p = "";
+    }
+  }
+  return p === KS_CRM_PAGE_PREFIX || String(p).startsWith(KS_CRM_PAGE_PREFIX + "/");
+}
+
+export function isKsScopedApiPath(path: string): boolean {
+  const p = (path.startsWith("/") ? path : `/${path}`).split("?")[0] ?? "";
+  return KS_SCOPED_API_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + "/"));
+}
+
+/** "KS" while a Keystone CRM page is open, otherwise null. */
+export function ksCrmSilo(): "KS" | null {
+  return isKsCrmPage() ? "KS" : null;
+}
+
+export function getActiveSilo(path?: string): string {
+  if (path !== undefined && isKsScopedApiPath(path) && isKsCrmPage()) return "KS"; // BF_PORTAL_v850_KS_CRM
   return getActiveBusinessUnit() ?? "BF";
 }
 

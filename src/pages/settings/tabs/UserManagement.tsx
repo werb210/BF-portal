@@ -433,6 +433,7 @@ const UserManagement = () => {
                   { v: "BF", label: "BF — Boreal Financial" },
                   { v: "BI", label: "BI — Boreal Insurance" },
                   { v: "SLF", label: "SLF — Site Level Financial" },
+                  { v: "KS", label: "KS — Keystone (CRM only)" }, // BF_PORTAL_v850_KS_CRM
                 ].map(({ v, label }) => (
                   <label key={v} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "var(--ui-text)" }}>
                     <input

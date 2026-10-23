@@ -1,6 +1,12 @@
-// BF_PORTAL_v849_KS_SILO - the Keystone operations silo (Admin only). Every screen talks to KS-Ops through
-// ./ksApi; nothing here calls BF-Server or sends X-Silo.
+// BF_PORTAL_v849_KS_SILO - the Keystone operations silo (Admin only). Every operations screen talks to KS-Ops through
+// ./ksApi; none of them calls BF-Server or sends X-Silo.
+// BF_PORTAL_v850_KS_CRM - /silo/ks/crm/* is the Keystone CRM: the BF CRM screens on BF-Server with X-Silo: KS (no KS-Ops
+// sign-in needed). Admins and KS-enabled staff; the operations screens stay Admin only.
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import AccessRestricted from "@/components/auth/AccessRestricted";
+import { canUseKeystone, canUseKeystoneCrm } from "./ksAccess";
+import KsCrm from "./crm/KsCrm";
 import { useQuery } from "@tanstack/react-query";
 import { ensureKsToken, isKsAccessDenied, ksOpsBaseUrl, KsOpsError } from "./ksApi";
 import { Button, card, errorText } from "./ksUi";
@@ -53,7 +59,7 @@ export function KsSignInGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function KSSilo() {
+function KsOperations() {
   return (
     <div data-testid="ks-silo" style={{ color: "var(--ui-text)", maxWidth: 1200 }}>
       <KsSignInGate>
@@ -69,5 +75,20 @@ export default function KSSilo() {
         </Routes>
       </KsSignInGate>
     </div>
+  );
+}
+
+export default function KSSilo() {
+  const { user } = useAuth();
+  const ops = canUseKeystone(user);
+  const crm = canUseKeystoneCrm(user);
+  return (
+    <Routes>
+      <Route path="crm/*" element={crm ? <KsCrm /> : <AccessRestricted />} />
+      <Route
+        path="*"
+        element={ops ? <KsOperations /> : crm ? <Navigate to="/silo/ks/crm/contacts" replace /> : <AccessRestricted />}
+      />
+    </Routes>
   );
 }

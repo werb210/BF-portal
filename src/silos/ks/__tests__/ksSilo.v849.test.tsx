@@ -209,6 +209,7 @@ describe("Keystone silo visibility", () => {
     );
     expect(screen.getByRole("link", { name: "Licensees" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Support" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sales pipeline" })).toBeInTheDocument(); // BF_PORTAL_v850_KS_CRM
     expect(screen.queryByRole("link", { name: "Pipeline" })).not.toBeInTheDocument();
     unmount();
     authUser.mockReturnValue({ role: "Staff", capabilities: [] });

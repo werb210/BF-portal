@@ -88,8 +88,8 @@ function buildUrl(path: string, explicitSilo?: "BF" | "BI" | "SLF"): string {
 }
 
 
-function getSiloHeaders(): Record<string, string> {
-  const silo = getActiveSilo();
+function getSiloHeaders(path?: string): Record<string, string> {
+  const silo = getActiveSilo(path); // BF_PORTAL_v850_KS_CRM
   return silo ? { "X-Silo": silo } : {};
 }
 
@@ -118,7 +118,7 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
   }
 
   const headers: Record<string, string> = {
-    ...getSiloHeaders(),
+    ...getSiloHeaders(path),
     ...(options.headers as Record<string, string> | undefined),
   };
 
@@ -150,9 +150,10 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
 }
 
 export async function apiFetch<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
+  const requestedSilo = getActiveSilo(path);
   // BF_PORTAL_OFFLINE_READ_CACHE_v252 - saved copies for a few read-only GETs.
   const offlineKey = String(options.method ?? "GET").toUpperCase() === "GET" && !options.params
-    ? cacheKeyFor(path, getActiveSilo())
+    ? cacheKeyFor(path, requestedSilo)
     : null;
   let res: Response;
   try {
@@ -238,7 +239,7 @@ export async function apiFetch<T = any>(path: string, options: RequestOptions = 
     throw parseError;
   }
   const parsed = parsePayload<T>(json);
-  assertSiloScoped(path, parsed, getActiveSilo()); // BF_PORTAL_v789_SILO_GUARD - before it is cached or shown
+  assertSiloScoped(path, parsed, requestedSilo); // BF_PORTAL_v789_SILO_GUARD - before it is cached or shown
   if (offlineKey) saveOfflineCopy(offlineKey, parsed); // BF_PORTAL_OFFLINE_READ_CACHE_v252
   return parsed;
 }
@@ -248,9 +249,16 @@ export async function apiFetch<T = any>(path: string, options: RequestOptions = 
 // wants the real total row count) therefore silently got nothing and had to guess from
 // rows.length. This returns the whole envelope untouched.
 export async function apiGetEnvelope<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
+  const requestedSilo = getActiveSilo(path);
   const res = await rawApiFetch(path, { ...options, method: "GET" });
   if (!res.ok) throw new Error(API_ERROR);
-  return (await res.json()) as T;
+  const envelope = await res.json();
+  // BF_PORTAL_v850_KS_CRM - the reused paged lists keep meta.total and must still reject non-KS rows.
+  if (requestedSilo === "KS") {
+    assertSiloScoped(path, envelope, requestedSilo);
+    assertSiloScoped(path, parsePayload(envelope), requestedSilo);
+  }
+  return envelope as T;
 }
 
 export async function apiFetchWithRetry<T = any>(path: string, options: RequestOptions = {}, retries = 1) {

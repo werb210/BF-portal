@@ -278,12 +278,14 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
-        {/* BF_PORTAL_v849_KS_SILO - Keystone operations silo: Admin only, talks only to KS-Ops. */}
+        {/* BF_PORTAL_v849_KS_SILO - Keystone operations silo: Admin only, talks only to KS-Ops.
+            BF_PORTAL_v850_KS_CRM - plus the Keystone CRM (/silo/ks/crm/*, BF-Server with X-Silo KS) for Admins and for staff whose
+            silo access includes KS; KSSilo keeps the operations screens Admin only. */}
         <Route
           path="/silo/ks/*"
           element={
             <ProtectedRoute>
-              <RequireRole roles={["Admin"]}>
+              <RequireRole roles={["Admin", "Staff", "Marketing"]}>
                 <KSSilo />
               </RequireRole>
             </ProtectedRoute>

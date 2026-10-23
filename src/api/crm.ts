@@ -26,7 +26,7 @@ export type Contact = {
   name: string;
   phone: string;
   email: string;
-  silo: "BF" | "BI" | "SLF";
+  silo: "BF" | "BI" | "SLF" | "KS"; // BF_PORTAL_v850_KS_CRM
   owner: string;
   tags: string[];
   source?: string;
@@ -40,7 +40,7 @@ export type Contact = {
 export type Company = {
   id: string;
   name: string;
-  silo: "BF" | "BI" | "SLF";
+  silo: "BF" | "BI" | "SLF" | "KS"; // BF_PORTAL_v850_KS_CRM
   industry: string;
   website?: string;
   owner: string;

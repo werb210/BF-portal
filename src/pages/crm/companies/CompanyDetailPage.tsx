@@ -1,5 +1,6 @@
 import { useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
 import { api } from "@/api";
 import { crmApi, type CompanyRow, type ContactRow, type Scope } from "@/api/crm";
 import { ActionBar } from "@/components/crm/ActionBar";
@@ -13,6 +14,7 @@ import { EntityEditModal } from "@/components/EntityEditModal";
 export default function CompanyDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const crmBase = useCrmBase(); // BF_PORTAL_v850_KS_CRM
   const auth = useContext(AuthContext);
   const scope: Scope = { kind: "company", id };
   const [company, setCompany] = useState<CompanyRow | null>(null);
@@ -74,7 +76,7 @@ export default function CompanyDetailPage() {
   return (
     <div className="crm-detail-layout">
       <aside style={rail}>
-        <Link to="/crm/contacts" style={{ color: "var(--ui-accent-fg)", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}>← Back to contacts</Link>
+        <Link to={`${crmBase}/contacts`} style={{ color: "var(--ui-accent-fg)", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}>← Back to contacts</Link>
         <h2 style={{ marginTop: 0 }}>{company.name}</h2>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <button type="button" onClick={() => setEditOpen(true)} style={actionBtn}>Edit</button>
@@ -85,7 +87,7 @@ export default function CompanyDetailPage() {
                 if (!window.confirm("Delete this company? This cannot be undone.")) return;
                 try {
                   await api.delete(`/api/crm/companies/${id}`);
-                  navigate("/crm/companies");
+                  navigate(`${crmBase}/companies`);
                 } catch (error: any) {
                   setErr(error?.message ?? "Could not delete company.");
                 }
@@ -151,13 +153,14 @@ export default function CompanyDetailPage() {
 }
 
 function PeopleSection({ title, contacts }: { title: string; contacts: ContactRow[] }) {
+  const crmBase = useCrmBase(); // BF_PORTAL_v850_KS_CRM
   return (
     <section style={{ marginBottom: 12 }}>
       <div style={fieldLabel}>{title}</div>
       {contacts.length === 0 && <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>—</div>}
       {contacts.map((c) => (
         <div key={c.id} style={{ marginTop: 6, borderBottom: "1px solid var(--ui-border-soft)", paddingBottom: 6 }}>
-          <Link to={`/crm/contacts/${c.id}`} style={{ color: "#0091ae", fontWeight: 600 }}>{c.name}</Link>
+          <Link to={`${crmBase}/contacts/${c.id}`} style={{ color: "#0091ae", fontWeight: 600 }}>{c.name}</Link>
           {c.email ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{c.email}</div> : null}
           {c.phone ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{c.phone}</div> : null}
           {typeof c.ownership_percent === "number" ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Ownership: {c.ownership_percent}%</div> : null}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
+import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
 import { api } from "@/api";
 import { crmApi, type CompanyRow } from "@/api/crm";
 import { canDelete } from "@/auth/canDelete";
@@ -15,6 +16,7 @@ type SortCol = "name" | "industry" | "owner_name" | "created_at";
 
 export default function CompaniesPage() {
   const { silo } = useSilo();
+  const crmBase = useCrmBase(); // BF_PORTAL_v850_KS_CRM
   const { user } = useAuth();
   const showDelete = canDelete(user?.role as any);
   const isAdmin = user?.role === "Admin";
@@ -153,7 +155,7 @@ export default function CompaniesPage() {
         </td>
       )}
       <td style={tdStyle}>
-        <Link to={`/crm/companies/${r.id}`} style={linkStyle}>{r.name}</Link>
+        <Link to={`${crmBase}/companies/${r.id}`} style={linkStyle}>{r.name}</Link>
       </td>
       {!hiddenCols.has("industry") && <td style={tdStyle}>{r.industry ?? "—"}</td>}
       {!hiddenCols.has("financing") && (
@@ -166,7 +168,7 @@ export default function CompaniesPage() {
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{r.owner_name ?? "—"}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [isAdmin, rows, selected, hiddenCols]);
+  )), [isAdmin, rows, selected, hiddenCols, crmBase]);
 
   return (
     <div style={page}>

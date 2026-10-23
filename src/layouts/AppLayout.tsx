@@ -7,7 +7,7 @@
 // + Lenders added. BF and SLF nav definitions are unchanged.
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { canUseKeystone, isKeystonePath, KS_ACCENT, KS_NAV } from "@/silos/ks/ksAccess"; // BF_PORTAL_v849_KS_SILO
+import { canSeeKeystone, isKeystonePath, KS_ACCENT, ksNavFor } from "@/silos/ks/ksAccess"; // BF_PORTAL_v849_KS_SILO + BF_PORTAL_v850_KS_CRM
 import { useAuth } from "@/auth/AuthContext";
 import { useSilo } from "@/hooks/useSilo";
 import Topbar from "@/components/layout/Topbar";
@@ -90,7 +90,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const activeSilo = (silo ?? "BF").toUpperCase() as "BF" | "BI" | "SLF";
   // BF_PORTAL_v849_KS_SILO - on /silo/ks/* an Admin sees the Keystone nav; the BF/BI/SLF silo itself is unchanged.
   const location = useLocation();
-  const onKeystone = isKeystonePath(location.pathname) && canUseKeystone(user);
+  const onKeystone = isKeystonePath(location.pathname) && canSeeKeystone(user); // BF_PORTAL_v850_KS_CRM
   const brand = onKeystone ? { label: "Keystone", accent: KS_ACCENT } : (SILO_BRAND[activeSilo] ?? SILO_BRAND.BF!);
   const roleUpper = role.toUpperCase();
   const isAdmin = roleUpper === "ADMIN";
@@ -111,7 +111,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
     return false;
   };
 
-  const navItems = onKeystone ? KS_NAV : (SILO_NAV[activeSilo] ?? BF_NAV).filter((item) => { // BF_PORTAL_v849_KS_SILO
+  const navItems = onKeystone ? ksNavFor(user) : (SILO_NAV[activeSilo] ?? BF_NAV).filter((item) => { // BF_PORTAL_v849_KS_SILO + BF_PORTAL_v850_KS_CRM
     if (activeSilo === "BI" && capabilities.length > 0) {
       if (item.label === "Dashboard") return capabilities.length > 0;
       if (item.label === "CRM") return hasCap("crm:read");

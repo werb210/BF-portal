@@ -25,7 +25,7 @@ const livePost: Poster = (path, body) => api.post(path, body);
 const replayPost: Poster = (path, body) => apiForSilo("BF").post(path, body);
 export async function postOrQueue(path: string, body: Record<string, unknown>, label: string, deps: { post?: Poster; online?: boolean; eligible?: boolean; s?: Store | null } = {}): Promise<any> {
   const online = deps.online ?? (typeof navigator === "undefined" ? true : navigator.onLine !== false);
-  const eligible = deps.eligible ?? (isQueueablePath(path) && getActiveSilo() === "BF" && resolveApiBase(path) === __apiBaseUrls.bf);
+  const eligible = deps.eligible ?? (isQueueablePath(path) && getActiveSilo(path) === "BF" && resolveApiBase(path) === __apiBaseUrls.bf); // BF_PORTAL_v850_KS_CRM
   const post = deps.post ?? livePost;
   if (eligible && !online) { enqueue(path, body, label, deps.s ?? store()); return { queued: true }; }
   try { return await post(path, body); } catch (error) { if (eligible && isNetworkFailure(error, online)) { enqueue(path, body, label, deps.s ?? store()); return { queued: true }; } throw error; }
