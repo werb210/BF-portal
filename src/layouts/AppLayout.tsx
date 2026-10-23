@@ -6,7 +6,8 @@
 // insurers they place with. Communications + Calendar removed; Pipeline
 // + Lenders added. BF and SLF nav definitions are unchanged.
 import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { canUseKeystone, isKeystonePath, KS_ACCENT, KS_NAV } from "@/silos/ks/ksAccess"; // BF_PORTAL_v849_KS_SILO
 import { useAuth } from "@/auth/AuthContext";
 import { useSilo } from "@/hooks/useSilo";
 import Topbar from "@/components/layout/Topbar";
@@ -87,7 +88,10 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const hasCap = (cap: string) => capabilities.includes(cap);
 
   const activeSilo = (silo ?? "BF").toUpperCase() as "BF" | "BI" | "SLF";
-  const brand = SILO_BRAND[activeSilo] ?? SILO_BRAND.BF!;
+  // BF_PORTAL_v849_KS_SILO - on /silo/ks/* an Admin sees the Keystone nav; the BF/BI/SLF silo itself is unchanged.
+  const location = useLocation();
+  const onKeystone = isKeystonePath(location.pathname) && canUseKeystone(user);
+  const brand = onKeystone ? { label: "Keystone", accent: KS_ACCENT } : (SILO_BRAND[activeSilo] ?? SILO_BRAND.BF!);
   const roleUpper = role.toUpperCase();
   const isAdmin = roleUpper === "ADMIN";
   const isMarketing = roleUpper === "MARKETING";
@@ -107,7 +111,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
     return false;
   };
 
-  const navItems = (SILO_NAV[activeSilo] ?? BF_NAV).filter((item) => {
+  const navItems = onKeystone ? KS_NAV : (SILO_NAV[activeSilo] ?? BF_NAV).filter((item) => { // BF_PORTAL_v849_KS_SILO
     if (activeSilo === "BI" && capabilities.length > 0) {
       if (item.label === "Dashboard") return capabilities.length > 0;
       if (item.label === "CRM") return hasCap("crm:read");

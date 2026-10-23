@@ -4,7 +4,8 @@
 // dropdown so the active silo is visible at a glance.
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { canUseKeystone, isKeystonePath, KS_ACCENT, KS_HOME } from "@/silos/ks/ksAccess"; // BF_PORTAL_v849_KS_SILO
 import {
   DEFAULT_BUSINESS_UNIT,
   normalizeBusinessUnit,
@@ -39,6 +40,10 @@ const BusinessUnitSelector = () => {
   const { silo, setSilo } = useSilo();
   const { user } = useAuth();
   const navigate = useNavigate();
+  // BF_PORTAL_v849_KS_SILO - Keystone is a route-level silo for Admins; the BF/BI/SLF silo stays as it was.
+  const location = useLocation();
+  const onKeystone = isKeystonePath(location.pathname);
+  const showKeystone = canUseKeystone(user);
 
   const role = (user as { role?: string } | null)?.role?.toLowerCase();
   const userSilos = (user as { silos?: string[] } | null)?.silos ?? [];
@@ -82,7 +87,7 @@ const BusinessUnitSelector = () => {
       }}
     >
       {visibleUnits.map((unit) => {
-        const isActive = unit === selectedValue;
+        const isActive = !onKeystone && unit === selectedValue; // BF_PORTAL_v849_KS_SILO
         const accent = unitAccents[unit];
         const label = unitLabels[unit];
         return (
@@ -93,7 +98,7 @@ const BusinessUnitSelector = () => {
               // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
               const next = normalizeBusinessUnit(unit);
               (setSilo as (v: BusinessUnit) => void)(next);
-              if (next !== selectedValue) navigate(SILO_HOME[next] ?? "/portal");
+              if (next !== selectedValue || onKeystone) navigate(SILO_HOME[next] ?? "/portal"); // BF_PORTAL_v849_KS_SILO
             }}
             aria-pressed={isActive}
             title={label.full}
@@ -133,6 +138,34 @@ const BusinessUnitSelector = () => {
           </button>
         );
       })}
+      {/* BF_PORTAL_v849_KS_SILO - Keystone operations (KS-Ops), Admin only */}
+      {showKeystone ? (
+        <button
+          type="button"
+          onClick={() => {
+            if (!onKeystone) navigate(KS_HOME);
+          }}
+          aria-pressed={onKeystone}
+          title="Keystone operations"
+          style={{
+            minHeight: 36,
+            minWidth: 80,
+            padding: "6px 14px",
+            fontSize: 12,
+            fontWeight: onKeystone ? 700 : 500,
+            lineHeight: "20px",
+            color: onKeystone ? KS_ACCENT : "var(--ui-text-muted)",
+            background: onKeystone ? "#ffffff" : "transparent",
+            border: onKeystone ? `2px solid ${KS_ACCENT}` : "1px solid var(--ui-border)",
+            boxSizing: "border-box",
+            borderRadius: 6,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Keystone
+        </button>
+      ) : null}
     </div>
   );
 };

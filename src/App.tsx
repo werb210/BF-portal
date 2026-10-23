@@ -78,6 +78,7 @@ const ReferrerSignupPage = lazyWithRetry(() => import("@/pages/referrer/Referrer
 const BrokerPortalRoutes = lazyWithRetry(() => import("@/pages/broker/BrokerPortal")); // BF_PORTAL_BROKER_PORTAL_v717
 // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1
 const BISilo = lazyWithRetry(() => import("@/silos/bi/BISilo"));
+const KSSilo = lazyWithRetry(() => import("@/silos/ks/KSSilo")); // BF_PORTAL_v849_KS_SILO
 const LenderPortalPage = lazyWithRetry(() => import("@/pages/lender/LenderPortalPage"));
 const LenderLoginPage = lazyWithRetry(() => import("@/pages/lender/LenderLoginPage"));
 import { useAuth } from "@/auth/AuthContext";
@@ -273,6 +274,17 @@ const AppRoutes = () => {
             <ProtectedRoute>
               <RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}>
                 <BISilo />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
+        {/* BF_PORTAL_v849_KS_SILO - Keystone operations silo: Admin only, talks only to KS-Ops. */}
+        <Route
+          path="/silo/ks/*"
+          element={
+            <ProtectedRoute>
+              <RequireRole roles={["Admin"]}>
+                <KSSilo />
               </RequireRole>
             </ProtectedRoute>
           }
