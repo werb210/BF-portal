@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { postOrQueue } from "@/offline/outbox"; // BF_PORTAL_OFFLINE_OUTBOX_v251
 import { Link } from "react-router-dom";
+import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
 import { api } from "@/api";
 // BF_PORTAL_TASKS_M4_v1 - type-specific action surfaces: the runner reuses
 // the REAL portal surfaces (Twilio dialer, O365 Graph composer, Twilio SMS
@@ -31,6 +32,7 @@ const box: React.CSSProperties = {
 };
 
 export default function TaskRunner({ tasks, onExit }: { tasks: RunTask[]; onExit: () => void }) {
+  const crmBase = useCrmBase(); // BF_PORTAL_v850_KS_CRM
   const [idx, setIdx] = useState(0);
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [resched, setResched] = useState("");
@@ -140,7 +142,7 @@ export default function TaskRunner({ tasks, onExit }: { tasks: RunTask[]; onExit
                 <div className="flex gap-4 mt-1" style={{ color: "var(--ui-text-muted)" }}>
                   {t.contact_phone && <a href="#" onClick={(e) => { e.preventDefault(); void placeCall(t.contact_phone!, t.contact_id ?? undefined); }} className="underline">{t.contact_phone}</a>}
                   {t.contact_email && <a href={`mailto:${t.contact_email}`} className="underline">{t.contact_email}</a>}
-                  {t.contact_id && <Link to={`/crm/contacts/${t.contact_id}`} className="underline">Open contact -&gt;</Link>}
+                  {t.contact_id && <Link to={`${crmBase}/contacts/${t.contact_id}`} className="underline">Open contact -&gt;</Link>}
                 </div>
               </div>
             )}

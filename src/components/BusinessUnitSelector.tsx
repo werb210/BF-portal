@@ -5,7 +5,7 @@
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useNavigate } from "react-router-dom";
-import { canUseKeystone, isKeystonePath, KS_ACCENT, KS_HOME } from "@/silos/ks/ksAccess"; // BF_PORTAL_v849_KS_SILO
+import { canSeeKeystone, isKeystonePath, KS_ACCENT, ksHomeFor } from "@/silos/ks/ksAccess"; // BF_PORTAL_v849_KS_SILO + BF_PORTAL_v850_KS_CRM
 import {
   DEFAULT_BUSINESS_UNIT,
   normalizeBusinessUnit,
@@ -43,7 +43,7 @@ const BusinessUnitSelector = () => {
   // BF_PORTAL_v849_KS_SILO - Keystone is a route-level silo for Admins; the BF/BI/SLF silo stays as it was.
   const location = useLocation();
   const onKeystone = isKeystonePath(location.pathname);
-  const showKeystone = canUseKeystone(user);
+  const showKeystone = canSeeKeystone(user); // BF_PORTAL_v850_KS_CRM
 
   const role = (user as { role?: string } | null)?.role?.toLowerCase();
   const userSilos = (user as { silos?: string[] } | null)?.silos ?? [];
@@ -57,7 +57,7 @@ const BusinessUnitSelector = () => {
         : [DEFAULT_BUSINESS_UNIT];
 
   // Single-silo: static label, no toggle.
-  if (visibleUnits.length === 1) {
+  if (visibleUnits.length === 1 && !showKeystone) { // BF_PORTAL_v850_KS_CRM
     const onlyUnit = visibleUnits[0] as BusinessUnit;
     return (
       <span
@@ -143,7 +143,7 @@ const BusinessUnitSelector = () => {
         <button
           type="button"
           onClick={() => {
-            if (!onKeystone) navigate(KS_HOME);
+            if (!onKeystone) navigate(ksHomeFor(user)); // BF_PORTAL_v850_KS_CRM
           }}
           aria-pressed={onKeystone}
           title="Keystone operations"

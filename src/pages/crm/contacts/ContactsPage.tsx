@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
 import { Link } from "react-router-dom";
+import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
 import { api } from "@/api";
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import { contactDisplayName } from "@/utils/contactName";
@@ -18,6 +19,7 @@ type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created
 
 export default function ContactsPage() {
   const { silo } = useSilo();
+  const crmBase = useCrmBase(); // BF_PORTAL_v850_KS_CRM
   const { user } = useAuth();
   const showDelete = canDelete(user?.role as any);
   const isAdmin = user?.role === "Admin";
@@ -201,7 +203,7 @@ export default function ContactsPage() {
         </td>
       )}
       <td style={tdStyle}>
-        <Link to={`/crm/contacts/${r.id}`} style={linkStyle}>{contactDisplayName(r.name, { company: r.company_name, email: r.email })}</Link>
+        <Link to={`${crmBase}/contacts/${r.id}`} style={linkStyle}>{contactDisplayName(r.name, { company: r.company_name, email: r.email })}</Link>
       </td>
       {!hiddenCols.has("company_name") && <td style={tdStyle}>{r.company_name ?? "—"}</td>}
       {!hiddenCols.has("tags") && (
@@ -229,7 +231,7 @@ export default function ContactsPage() {
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{r.owner_name ?? "—"}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [isAdmin, rows, selected, hiddenCols]);
+  )), [isAdmin, rows, selected, hiddenCols, crmBase]);
 
   return (
     <div style={page}>
