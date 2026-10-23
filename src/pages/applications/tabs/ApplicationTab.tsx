@@ -27,6 +27,7 @@ import { formatMoneyOrRange } from "@/utils/moneyRange"; // BF_PORTAL_BLOCK_v864
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v817_REMIND_CLIENT
 import ProductQuestionsPanel from "@/pages/applications/tabs/ProductQuestionsPanel"; // BF_PORTAL_PRODUCT_QUESTIONS_v292
 import { placeCall } from "@/native/dialerLauncher";
+import { APPLICANT_NAME_MISSING_NOTE, applicantNameMissing, applicantNameMissingMessage } from "./applicantName"; // BF_PORTAL_v851_APPLICANT_NAME
 
 type AnyRecord = Record<string, any>;
 import { maskSin } from "@/lib/sensitive";
@@ -110,6 +111,7 @@ function signingReasonLabel(reason?: string): string {
     case "docs_not_accepted": return "Documents not all accepted";
     case "tasks_incomplete": return "Client tasks not all complete";
     case "signing_unavailable": return "Signing service unavailable";
+    case "applicant_name_missing": return "Add the applicant's name first"; // BF_PORTAL_v851_APPLICANT_NAME
     case "signed": return "Already signed";
     case "started": return "Signing in progress";
     case "ready": return "Ready to send";
@@ -172,6 +174,7 @@ export default function ApplicationTab({ application }: Props) {
   const [v_signBusy, v_setSignBusy] = useState(false);
   const [v_signNote, v_setSignNote] = useState<string | null>(null);
   const [v_resetBusy, v_setResetBusy] = useState(false); // BF_PORTAL_RESET_SIGNING_v1
+  const [v851_nameError, v851_setNameError] = useState<string | null>(null); // BF_PORTAL_v851_APPLICANT_NAME
   useEffect(() => {
     if (!v784_appId) return;
     let active = true;
@@ -251,15 +254,20 @@ export default function ApplicationTab({ application }: Props) {
     if (again && typeof window !== "undefined" && !window.confirm("Every owner signs the application and SBA forms again. The new signed copies replace the old ones. Continue?")) return;
     v_setSignBusy(true);
     v_setSignNote(null);
+    v851_setNameError(null); // BF_PORTAL_v851_APPLICANT_NAME
     try {
       const r = await api.post<{ data?: { ok?: boolean; reason?: string } } & { ok?: boolean; reason?: string }>(
         `/api/applications/${encodeURIComponent(v784_appId)}/resend-signing`, again ? { again: true } : {},
       );
       const d = ((r as any)?.data ?? r) as { ok?: boolean; reason?: string };
       if (d?.ok) v_setSignNote("Signing sent ✓ - the client signs in their portal"); // BF_PORTAL_SBA_ONE_BUTTON_v771
+      else if (applicantNameMissingMessage(d)) v851_setNameError(applicantNameMissingMessage(d)); // BF_PORTAL_v851_APPLICANT_NAME
       else v_setSignNote(`Not sent — ${signingReasonLabel(d?.reason)}`);
-    } catch {
-      v_setSignNote("Could not send for signing");
+    } catch (e: unknown) {
+      // BF_PORTAL_v851_APPLICANT_NAME - BF-Server refuses (422 applicant_name_missing) rather than send to "Unknown": say so.
+      const nameMsg = applicantNameMissingMessage(e);
+      if (nameMsg) v851_setNameError(nameMsg);
+      else v_setSignNote("Could not send for signing");
     } finally {
       v_setSignBusy(false);
     }
@@ -322,6 +330,9 @@ export default function ApplicationTab({ application }: Props) {
 
   // Call Client button (v424 -- hand off to the Boreal Dialer on native builds)
   const applicantName = joinName(applicant) || businessName;
+  // BF_PORTAL_v851_APPLICANT_NAME - empty or "Unknown (application started)" -> signing is refused by the server.
+  const v851_nameMissing = applicantNameMissing(applicant, fdApplicant);
+  const v851_showNameNote = (v851_nameMissing || Boolean(v851_nameError)) && (application as any)?.signing?.status !== "signed";
   // BF_PORTAL_APPLICANT_CRM_LINK_v1 - the applicant name links to their CRM record.
   // BF_PORTAL_PARTNER_CRM_LINK_v1 - application_contacts already stores one row
   // per role ('applicant' / 'partner'), written at submit. Read those so BOTH
@@ -480,6 +491,20 @@ export default function ApplicationTab({ application }: Props) {
       {v_sign && v_sign.reason !== "signed" && v_sign.reason !== "started" && v_sign.reason !== "ready" && (
         <div style={{ background: "#fef3c7", border: "1px solid #f59e0b", color: "#92400e", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 13, fontWeight: 600 }} role="status">
           {"⚠ Signing not sent — "}{signingReasonLabel(v_sign.reason)}{"."}{v_sign.reason === "collateral_incomplete" ? " Complete the Collateral & Facility card on the Lenders tab, then Send for signing." : ""}
+        </div>
+      )}
+      {v851_showNameNote && (
+        <div
+          data-testid="applicant-name-missing"
+          role="alert"
+          style={{ background: "#fef2f2", border: "1px solid #f87171", color: "#991b1b", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 14, fontWeight: 700, lineHeight: 1.4 }}
+        >
+          <div>{APPLICANT_NAME_MISSING_NOTE}</div>
+          {v851_nameError && (
+            <div data-testid="applicant-name-missing-server" style={{ marginTop: 4, fontWeight: 600, color: "#7f1d1d" }}>
+              {`Send for signing was refused: ${v851_nameError}.`}
+            </div>
+          )}
         </div>
       )}
       {v_signNote && (
