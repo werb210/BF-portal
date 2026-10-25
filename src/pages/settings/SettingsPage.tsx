@@ -23,6 +23,7 @@ import CollateralSettings from "./tabs/CollateralSettings"; // v694
 import LibraryPage from "@/pages/library/LibraryPage"; // BF_PORTAL_LIBRARY_IN_SETTINGS_v764
 import RetentionSettings from "./tabs/RetentionSettings"; // BF_PORTAL_v855_RETENTION
 import FraudProtectionCard from "@/fraud/FraudProtectionCard"; // BF_PORTAL_v846_FRAUD
+import QuickBooksCard from "@/features/quickbooks/QuickBooksCard"; // BF_PORTAL_v852_CALC_QBO
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -41,6 +42,8 @@ const SettingsPage = () => {
       { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin && !isBI, content: isAdmin ? (<><KnowledgeManager /><div style={{ height: 28 }} /><MayaTuning /></>) : null },
       // BF_PORTAL_v846_FRAUD - Admins: Keystone watchlist opt-in, pre-screen default, services, staff alerts.
       { id: "fraud", label: "Fraud protection", visible: isAdmin && !isBI, content: isAdmin ? <FraudProtectionCard /> : null },
+      // BF_PORTAL_v852_CALC_QBO - connect QuickBooks Online; media fee agreements become invoices, paid at funding.
+      { id: "quickbooks", label: "QuickBooks", visible: isAdmin && !isBI, content: isAdmin ? <QuickBooksCard /> : null },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: !isBI, content: <RuntimeSettings /> },
       { id: "templates", label: "Templates", visible: !isBI, content: <TemplatesSettings /> }, // v694
