@@ -21,6 +21,7 @@ import TemplatesSettings from "./tabs/TemplatesSettings"; // v694
 import SnippetsSettings from "./tabs/SnippetsSettings"; // BF_PORTAL_SNIPPETS_TAB_v46
 import CollateralSettings from "./tabs/CollateralSettings"; // v694
 import LibraryPage from "@/pages/library/LibraryPage"; // BF_PORTAL_LIBRARY_IN_SETTINGS_v764
+import RetentionSettings from "./tabs/RetentionSettings"; // BF_PORTAL_v855_RETENTION
 import FraudProtectionCard from "@/fraud/FraudProtectionCard"; // BF_PORTAL_v846_FRAUD
 
 const SettingsPage = () => {
@@ -49,6 +50,8 @@ const SettingsPage = () => {
       { id: "collateral", label: "Collateral", visible: !isBI, content: <CollateralSettings /> }, // v694
       // BF_PORTAL_LIBRARY_IN_SETTINGS_v764 - the Staff Library (lender forms, Read This) lives here, not in the sidebar.
       { id: "library", label: "Library", visible: true, content: <LibraryPage /> },
+      // BF_PORTAL_v855_RETENTION - 7-year record retention: legal holds and the eligible-for-deletion report.
+      { id: "retention", label: "Retention & legal holds", visible: isAdmin, content: isAdmin ? <RetentionSettings /> : null },
       // BF_PORTAL_PARTNERS_TABS_v720 - Broker Files moved to Marketing > Referrers > Brokers.
     ],
     [isAdmin, isStaff, isBI]
