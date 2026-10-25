@@ -105,12 +105,97 @@ export async function livePipelineCount(silo: WidgetSilo): Promise<number | null
   }
 }
 
+// BF_PORTAL_v854_KS_WIDGETS - Keystone (KS) on the staff widget. BF-Server works out every Keystone figure in the one
+// /api/widget/summary call (X-Silo: KS) and decides access itself: staff outside the Keystone CRM get an empty summary
+// with the reason, which the widget shows instead of numbers. A reply that is not a Keystone summary (a server from
+// before this change answers with the caller's own silo) is never written, so BF numbers cannot appear as Keystone.
+export const KS_WIDGET_KEY = "widget_summary_KS";
+const KS_REASON_FALLBACK = "Keystone isn't turned on for your account.";
+
+export type KeystoneWidgetSummary = {
+  schemaVersion: 2;
+  silo: "KS";
+  available: boolean;
+  unavailableReason: string | null;
+  pipelineCount: number;
+  tasksDueToday: number;
+  tasksOverdue: number;
+  unreadMessages: number;
+  commissionEarned: 0;
+  payingLicensees: number;
+  demosNeedFollowUp: number;
+  openSupportTickets: number | null;
+  currency: "CAD";
+  documentsRequired: 0;
+  additionalStepsRequired: 0;
+  offersOutstanding: 0;
+  nextTask: WidgetTask | null;
+  nextMeeting: { id: string; title: string; start: string } | null;
+  asOf: string;
+};
+
+const shortText = (value: unknown, max: number): string | null =>
+  typeof value === "string" && value.trim() ? value.trim().slice(0, max) : null;
+
+const isoOrNull = (value: unknown): string | null =>
+  typeof value === "string" && !Number.isNaN(Date.parse(value)) ? value : null;
+
+/** The server's Keystone summary in the widget's stored shape, or null when the reply is not a Keystone summary. */
+export function keystoneSnapshot(raw: unknown): KeystoneWidgetSummary | null {
+  if (!raw || typeof raw !== "object") return null;
+  const s = raw as Record<string, unknown>;
+  if (s.kind !== "keystone" || s.silo !== "KS") return null;
+  const available = s.available !== false;
+  const task = s.nextTask && typeof s.nextTask === "object" ? (s.nextTask as Record<string, unknown>) : null;
+  const meeting = s.nextMeeting && typeof s.nextMeeting === "object" ? (s.nextMeeting as Record<string, unknown>) : null;
+  const meetingStart = meeting ? isoOrNull(meeting.start) : null;
+  const tickets = s.openSupportTickets;
+  return {
+    schemaVersion: 2,
+    silo: "KS",
+    available,
+    unavailableReason: available ? null : shortText(s.reason, 200) ?? KS_REASON_FALLBACK,
+    pipelineCount: available ? safeNumber(s.pipelineCount) : 0,
+    tasksDueToday: available ? safeNumber(s.tasksDueToday) : 0,
+    tasksOverdue: available ? safeNumber(s.tasksOverdue) : 0,
+    unreadMessages: available ? safeNumber(s.unreadMessages) : 0,
+    commissionEarned: 0,
+    payingLicensees: available ? safeNumber(s.payingLicensees) : 0,
+    demosNeedFollowUp: available ? safeNumber(s.demosNeedFollowUp) : 0,
+    openSupportTickets: available && tickets !== null && tickets !== undefined ? safeNumber(tickets) : null,
+    currency: "CAD",
+    documentsRequired: 0,
+    additionalStepsRequired: 0,
+    offersOutstanding: 0,
+    nextTask: available && task ? {
+      id: String(task.id ?? ""),
+      title: shortText(task.title, 200) ?? "Task",
+      type: shortText(task.type, 20) ?? "TODO",
+      dueAt: isoOrNull(task.dueAt),
+      contactName: shortText(task.contactName, 200),
+    } : null,
+    nextMeeting: available && meeting && meetingStart ? {
+      id: String(meeting.id ?? ""),
+      title: shortText(meeting.title, 200) ?? "Keystone booking",
+      start: meetingStart,
+    } : null,
+    asOf: isoOrNull(s.asOf) ?? new Date().toISOString(),
+  };
+}
+
+/** Writes the Keystone snapshot; rejects (writing nothing) when there is no Keystone summary to write. */
+export async function publishKeystoneSnapshot(): Promise<void> {
+  const snapshot = keystoneSnapshot(await api<unknown>("/api/widget/summary", { headers: { "X-Silo": "KS" } }));
+  if (!snapshot) throw new Error("not_a_keystone_summary");
+  await WidgetBridgePlugin.setItem({ group: WIDGET_GROUP, key: KS_WIDGET_KEY, value: JSON.stringify(snapshot) });
+}
+
 /** Publish every summary the signed-in user can access. */
 export async function publishWidgetSnapshot(): Promise<boolean> {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") return false;
 
-  const results = await Promise.allSettled(
-    WIDGET_SILOS.map(async (silo) => {
+  const results = await Promise.allSettled([ // BF_PORTAL_v854_KS_WIDGETS - plus Keystone
+    ...WIDGET_SILOS.map(async (silo) => {
       const summary = await api<Record<string, unknown>>("/api/widget/summary", {
         headers: { "X-Silo": silo },
       });
@@ -149,7 +234,8 @@ export async function publishWidgetSnapshot(): Promise<boolean> {
         value: JSON.stringify(expanded),
       });
     }),
-  );
+    publishKeystoneSnapshot(), // BF_PORTAL_v854_KS_WIDGETS
+  ]);
 
   const wroteSnapshot = results.some((result) => result.status === "fulfilled");
   if (wroteSnapshot) {

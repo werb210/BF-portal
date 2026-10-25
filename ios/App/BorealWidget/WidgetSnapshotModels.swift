@@ -15,11 +15,18 @@ struct WidgetSummary: Codable, Equatable {
     let nextTask: WidgetTask?
     let nextMeeting: WidgetMeeting?
     let asOf: Date?
+    // BF_PORTAL_v854_KS_WIDGETS - Keystone only (0 / true / nil for BF, BI and SLF, and for older snapshots).
+    var payingLicensees: Int = 0
+    var demosNeedFollowUp: Int = 0
+    var openSupportTickets: Int = 0
+    var available: Bool = true
+    var unavailableReason: String? = nil
 
     private enum CodingKeys: String, CodingKey {
         case schemaVersion, silo, pipelineCount, tasksDueToday, tasksOverdue, unreadMessages
         case commissionEarned, currency, documentsRequired, additionalStepsRequired
         case offersOutstanding, nextTask, nextMeeting, asOf
+        case payingLicensees, demosNeedFollowUp, openSupportTickets, available, unavailableReason // BF_PORTAL_v854_KS_WIDGETS
     }
 
     init(schemaVersion: Int = 1, silo: String, pipelineCount: Int, tasksDueToday: Int,
@@ -55,6 +62,11 @@ struct WidgetSummary: Codable, Equatable {
         documentsRequired = (try? values.decodeIfPresent(Int.self, forKey: .documentsRequired)) ?? 0
         additionalStepsRequired = (try? values.decodeIfPresent(Int.self, forKey: .additionalStepsRequired)) ?? 0
         offersOutstanding = (try? values.decodeIfPresent(Int.self, forKey: .offersOutstanding)) ?? 0
+        payingLicensees = (try? values.decodeIfPresent(Int.self, forKey: .payingLicensees)) ?? 0 // BF_PORTAL_v854_KS_WIDGETS
+        demosNeedFollowUp = (try? values.decodeIfPresent(Int.self, forKey: .demosNeedFollowUp)) ?? 0
+        openSupportTickets = (try? values.decodeIfPresent(Int.self, forKey: .openSupportTickets)) ?? 0
+        available = (try? values.decodeIfPresent(Bool.self, forKey: .available)) ?? true
+        unavailableReason = try? values.decodeIfPresent(String.self, forKey: .unavailableReason)
         nextTask = try? values.decodeIfPresent(WidgetTask.self, forKey: .nextTask)
         nextMeeting = try? values.decodeIfPresent(WidgetMeeting.self, forKey: .nextMeeting)
         let asOfValue = try? values.decodeIfPresent(String.self, forKey: .asOf)

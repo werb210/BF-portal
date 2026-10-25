@@ -151,7 +151,7 @@ enum WidgetRefreshSession {
 enum WidgetBackgroundRefresh {
     static let taskId = "com.boreal.portal.widget-refresh"
     static let group = "group.com.borealfinancial.portal"
-    static let silos = ["BF", "BI", "SLF"]
+    static let silos = ["BF", "BI", "SLF", "KS"] // BF_PORTAL_v854_KS_WIDGETS
 
     static func register() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: taskId, using: nil) { task in
@@ -222,6 +222,15 @@ enum WidgetBackgroundRefresh {
             if let value = fresh[field] as? NSNumber { out[field] = value }
         }
         if silo == "BF", let value = fresh["commissionEarned"] as? NSNumber { out["commissionEarned"] = value }
+        // BF_PORTAL_v854_KS_WIDGETS - every Keystone figure comes from this one call, so all of them refresh; a reply that is not
+        // a Keystone summary (an older server answers with the caller's own silo) is not written.
+        if silo == "KS" {
+            guard fresh["kind"] as? String == "keystone" else { return nil }
+            for field in ["pipelineCount", "tasksOverdue", "payingLicensees", "demosNeedFollowUp", "openSupportTickets", "available", "nextTask", "nextMeeting"] {
+                out[field] = fresh[field] ?? NSNull()
+            }
+            out["unavailableReason"] = fresh["reason"] ?? NSNull()
+        }
         if let asOf = fresh["asOf"] as? String { out["asOf"] = asOf }
         return out
     }
