@@ -11,7 +11,8 @@
 // the widget should render "as of HH:mm" and never imply live data.
 import { useEffect } from "react";
 import { App } from "@capacitor/app";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { isKeystonePath } from "@/silos/ks/ksAccess"; // BF_PORTAL_v854_KS_WIDGETS
 import { useSilo } from "@/context/SiloContext";
 import { publishWidgetSnapshot } from "@/native/widgetSnapshot";
 import { mirrorSiloToWidget, WidgetBridgePlugin, WIDGET_GROUP, isNativeIOS, syncWidgetSession } from "@/native/widgetBridge";
@@ -23,11 +24,27 @@ const POLL_MS = 10 * 60 * 1000;
 // Widget deep links arrive as bfportal://<host>. Anything not listed is ignored
 // rather than navigated to, so a stale widget can never push the app somewhere
 // that no longer exists.
+// BF_PORTAL_v854_KS_WIDGETS - Keystone is a route-level silo (/silo/ks/*), never the BF/BI/SLF silo in the topbar, so a Keystone
+// link opens the Keystone page and carries no silo (the topbar choice is left alone). The pages check access.
+function keystoneWidgetPath(host: string, params: URLSearchParams): string {
+  switch (host) {
+    case "tasks": {
+      const view = params.get("view");
+      return `/silo/ks/crm/tasks${view && ["due_today", "overdue", "upcoming", "completed"].includes(view) ? `?view=${view}` : ""}`;
+    }
+    case "crm": case "messages": return "/silo/ks/crm/contacts"; // Keystone conversations live on the contact
+    case "calendar": return "/calendar";
+    case "support": return "/silo/ks/tickets";
+    default: return "/silo/ks/crm/pipeline"; // pipeline, commission (paying licensees), dashboard
+  }
+}
+
 export function widgetRoute(url: string): { silo?: "BF" | "BI" | "SLF"; path: string } | null {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "bfportal:") return null;
     const rawSilo = parsed.searchParams.get("silo")?.toUpperCase();
+    if (rawSilo === "KS") return { path: keystoneWidgetPath(parsed.hostname, parsed.searchParams) }; // BF_PORTAL_v854_KS_WIDGETS
     const silo = rawSilo === "BF" || rawSilo === "BI" || rawSilo === "SLF" ? rawSilo : undefined;
     switch (parsed.hostname) {
       case "applications": case "pipeline": return { silo, path: "/pipeline" };
@@ -48,6 +65,10 @@ export function widgetRoute(url: string): { silo?: "BF" | "BI" | "SLF"; path: st
 export default function WidgetSnapshotProvider() {
   const { silo, setSilo } = useSilo();
   const navigate = useNavigate();
+  // BF_PORTAL_v854_KS_WIDGETS - "Follow the portal" follows Keystone too: on a /silo/ks page the widget shows KS. The value is
+  // upper case (BF / BI / SLF / KS), the form the widget reads.
+  const onKeystone = isKeystonePath(useLocation().pathname);
+  const widgetSilo = onKeystone ? "KS" : String(silo).toUpperCase();
   useEffect(() => {
     if (!isNativeIOS()) return;
 
@@ -95,10 +116,10 @@ export default function WidgetSnapshotProvider() {
   useEffect(() => {
     if (!isNativeIOS()) return;
     void (async () => {
-      await mirrorSiloToWidget(silo);
+      await mirrorSiloToWidget(widgetSilo); // BF_PORTAL_v854_KS_WIDGETS
       await publishWidgetSnapshot();
     })();
-  }, [silo]);
+  }, [widgetSilo]);
 
   return null;
 }

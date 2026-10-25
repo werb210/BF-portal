@@ -26,7 +26,9 @@ struct SummaryWidgetView: View {
     let entry: SummaryEntry
     private var isAccessory: Bool { family == .accessoryInline || family == .accessoryCircular || family == .accessoryRectangular }
     var body: some View {
-        if entry.needsData && isAccessory {
+        if !entry.needsData && !entry.summary.available { // BF_PORTAL_v854_KS_WIDGETS
+            KeystoneUnavailable(entry: entry, compact: isAccessory)
+        } else if entry.needsData && isAccessory {
             Text("Open Boreal").widgetURL(URL(string: "bfportal://dashboard")!) // BF_PORTAL_BLOCK_v592_WIDGET_SIZES
         } else if entry.needsData {
             VStack(spacing: 4) { Text("Boreal").font(.headline); Text("Open the portal once to update").font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center) }
@@ -41,6 +43,23 @@ struct SummaryWidgetView: View {
             case .accessoryRectangular: RectangularSummary(entry: entry).widgetURL(deepLink("pipeline", entry.silo))
             default: LargeSummary(entry: entry)
             }
+        }
+    }
+}
+
+/// BF_PORTAL_v854_KS_WIDGETS - Keystone picked by someone whose account has no Keystone access: the reason, and no numbers.
+struct KeystoneUnavailable: View {
+    let entry: SummaryEntry
+    let compact: Bool
+    var body: some View {
+        if compact {
+            Text("Keystone not enabled").widgetURL(URL(string: "bfportal://dashboard")!)
+        } else {
+            VStack(spacing: 4) {
+                Text(entry.silo.title).font(.headline).foregroundStyle(entry.silo.accent)
+                Text(entry.summary.unavailableReason ?? "Keystone isn't turned on for your account.")
+                    .font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center).lineLimit(4)
+            }.widgetURL(URL(string: "bfportal://dashboard")!)
         }
     }
 }
@@ -79,14 +98,14 @@ struct SmallSummary: View {
     let entry: SummaryEntry
     private var metric: WidgetMetric { entry.configuration.metrics[0] }
     private var status: String {
-        switch metric { case .pipeline: return "\(entry.summary.documentsRequired + entry.summary.additionalStepsRequired + entry.summary.offersOutstanding) need attention"; case .tasksDueToday: return "\(entry.summary.tasksOverdue) overdue"; case .unreadMessages: return entry.summary.unreadMessages > 0 ? "New inbound" : "Inbox clear"; case .commissionEarned: return "This month" }
+        switch metric { case .pipeline: return entry.silo == .ks ? "\(attentionTotal(entry)) need attention" : "\(entry.summary.documentsRequired + entry.summary.additionalStepsRequired + entry.summary.offersOutstanding) need attention"; case .tasksDueToday: return "\(entry.summary.tasksOverdue) overdue"; case .unreadMessages: return entry.summary.unreadMessages > 0 ? "New inbound" : "Inbox clear"; case .commissionEarned: return entry.silo == .ks ? "Paying now" : "This month" }
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             SmallHeader(entry: entry); Spacer(minLength: 0)
-            Image(systemName: metric.symbol).foregroundStyle(entry.silo.accent)
+            Image(systemName: metric.tileSymbol(for: entry.silo)).foregroundStyle(entry.silo.accent)
             Text(metric.display(from: entry.summary)).font(.system(size: 38, weight: .bold)).minimumScaleFactor(0.55).lineLimit(1)
-            Text(metric.title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            Text(metric.tileTitle(for: entry.silo)).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             Spacer(minLength: 0); Text(status).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
         }
     }
@@ -97,9 +116,9 @@ struct MetricCard: View {
     var body: some View {
         Link(destination: metric.destination(silo: entry.silo)) {
             VStack(alignment: .leading, spacing: compact ? 1 : 3) {
-                Image(systemName: metric.symbol).font(.caption).foregroundStyle(entry.silo.accent)
+                Image(systemName: metric.tileSymbol(for: entry.silo)).font(.caption).foregroundStyle(entry.silo.accent)
                 Text(metric.display(from: entry.summary)).font(compact ? .headline.bold() : .title2.bold()).minimumScaleFactor(0.55).lineLimit(1)
-                Text(metric.title).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                Text(metric.tileTitle(for: entry.silo)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
             }.frame(maxWidth: .infinity, alignment: .leading).padding(compact ? 6 : 8).background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
         }.buttonStyle(.plain)
     }
@@ -107,7 +126,13 @@ struct MetricCard: View {
 
 struct Attention { let count: Int; let label: String; let url: URL }
 private func attention(_ entry: SummaryEntry) -> [Attention] {
-    [Attention(count: entry.summary.tasksOverdue, label: "Overdue Tasks", url: deepLink("tasks", entry.silo, "&view=overdue")),
+    // BF_PORTAL_v854_KS_WIDGETS - Keystone: overdue tasks, finished demos nobody is following up, open support tickets.
+    if entry.silo == .ks {
+        return [Attention(count: entry.summary.tasksOverdue, label: "Overdue Tasks", url: deepLink("tasks", entry.silo, "&view=overdue")),
+                Attention(count: entry.summary.demosNeedFollowUp, label: "Demos to Follow Up", url: deepLink("pipeline", entry.silo)),
+                Attention(count: entry.summary.openSupportTickets, label: "Open Support Tickets", url: deepLink("support", entry.silo))].filter { $0.count > 0 }
+    }
+    return [Attention(count: entry.summary.tasksOverdue, label: "Overdue Tasks", url: deepLink("tasks", entry.silo, "&view=overdue")),
      Attention(count: entry.summary.documentsRequired, label: "Documents Required", url: deepLink("pipeline", entry.silo)),
      Attention(count: entry.summary.additionalStepsRequired, label: "Additional Steps Required", url: deepLink("pipeline", entry.silo)),
      Attention(count: entry.summary.offersOutstanding, label: "Offer Follow-up", url: deepLink("pipeline", entry.silo))].filter { $0.count > 0 }
@@ -189,7 +214,8 @@ private enum NextItem {
 
 // BF_PORTAL_BLOCK_v592_WIDGET_SIZES
 private func attentionTotal(_ entry: SummaryEntry) -> Int {
-    entry.summary.tasksOverdue + entry.summary.documentsRequired + entry.summary.additionalStepsRequired + entry.summary.offersOutstanding
+    if entry.silo == .ks { return attention(entry).reduce(0) { $0 + $1.count } } // BF_PORTAL_v854_KS_WIDGETS
+    return entry.summary.tasksOverdue + entry.summary.documentsRequired + entry.summary.additionalStepsRequired + entry.summary.offersOutstanding
 }
 
 /// Lock screen, one line: "BF · 3 need attention".
@@ -218,7 +244,7 @@ struct RectangularSummary: View {
     var body: some View {
         let items = attention(entry)
         VStack(alignment: .leading, spacing: 1) {
-            Text("Boreal \(entry.silo.rawValue)").font(.headline).lineLimit(1)
+            Text(entry.silo == .ks ? "Keystone" : "Boreal \(entry.silo.rawValue)").font(.headline).lineLimit(1) // BF_PORTAL_v854_KS_WIDGETS
             if let first = items.first { Text("\(first.count) \(first.label)").lineLimit(1) }
             else { Text("No urgent items").lineLimit(1) }
             if let task = entry.summary.nextTask { Text("Next: \(task.title)").lineLimit(1) }
