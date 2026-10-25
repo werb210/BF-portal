@@ -13,6 +13,7 @@ import PgiCommsTab from "./tabs/PgiCommsTab";
 import CarriersTab from "./tabs/CarriersTab"; // BF_PORTAL_BLOCK_v560
 import NotesTab from "./tabs/NotesTab"; // BF_PORTAL_v789_BI_APP_NOTES
 import { biSourceLabel } from "./biSource"; // BF_PORTAL_BI_SOURCE_LABEL_v392
+import CalculatorButton, { amountFrom } from "@/features/loanCalculator/CalculatorButton"; // BF_PORTAL_v852_CALC_QBO
 
 type TabKey = "application" | "documents" | "requirements" | "history" | "pgi" | "notes" | "carriers";
 
@@ -137,6 +138,9 @@ export default function BIApplicationDetail() {
         </button>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <h2 className="text-2xl font-semibold">{app.business_name || "Untitled"}</h2>
+          {/* BF_PORTAL_v852_CALC_QBO - loan calculator; Save to file adds the scenario as a BI note */}
+          <CalculatorButton tone="dark" requestedAmount={amountFrom(app.loan_amount)} title={app.business_name || undefined}
+            onSaveNote={async (text) => { await api(`/api/v1/bi/applications/${encodeURIComponent(app.id)}/notes`, { method: "POST", body: { body: text } }); }} />
           {app.is_demo === true && (
             <span className="rounded border border-amber-500/30 bg-amber-500/20 px-2 py-0.5 text-xs tracking-wider text-amber-200">TEST</span>
           )}

@@ -13,6 +13,9 @@ import NotesTab from "@/pages/applications/tabs/NotesTab";
 import LendersTab from "@/pages/applications/tabs/LendersTab";
 import SbaSigningTab from "@/pages/applications/tabs/SbaSigningTab"; // BF_PORTAL_SBA_SIGNING_TAB_v146
 import FraudTab from "@/fraud/FraudTab"; // BF_PORTAL_v846_FRAUD
+import CalculatorButton, { amountFrom } from "@/features/loanCalculator/CalculatorButton"; // BF_PORTAL_v852_CALC_QBO
+import QuickBooksInvoiceBadge from "@/features/quickbooks/QuickBooksInvoiceBadge"; // BF_PORTAL_v852_CALC_QBO
+import { createApplicationNote } from "@/api/applicationNotes"; // BF_PORTAL_v852_CALC_QBO
 
 const TABS = [
   { key: "application", label: "Application" },
@@ -78,6 +81,12 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     fraud: <FraudTab applicationId={applicationId} />, // BF_PORTAL_v846_FRAUD
   }[activeTab];
 
+  // BF_PORTAL_v852_CALC_QBO - the calculator starts from the requested amount; the PDF is titled with the business name.
+  const fp = (application?.financialProfile ?? application?.kyc ?? {}) as Record<string, any>;
+  const calcAmount = amountFrom(application?.overview?.requestedAmount, application?.fundingRequest?.amount, fp.fundingAmount, application?.requestedAmount, application?.requested_amount);
+  const calcTitle = String(application?.businessDetails?.legalName ?? application?.business?.legalName ?? application?.businessDetails?.name ?? application?.business?.name ?? "").trim() || undefined;
+  const saveCalcNote = async (text: string) => { await createApplicationNote(applicationId, text); };
+
   return (
     <div
       style={{
@@ -110,6 +119,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
           borderBottom: "1px solid var(--ui-border)",
           background: "var(--ui-surface-strong)",
           flexShrink: 0,
+          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", // BF_PORTAL_v852_CALC_QBO
         }}
       >
         <button
@@ -128,6 +138,10 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
         >
           ← Back to pipeline
         </button>
+        {/* BF_PORTAL_v852_CALC_QBO - fee invoice (media deals) and the loan calculator */}
+        <span style={{ flex: 1 }} />
+        {applicationId ? <QuickBooksInvoiceBadge applicationId={applicationId} /> : null}
+        <CalculatorButton requestedAmount={calcAmount} title={calcTitle} onSaveNote={applicationId ? saveCalcNote : undefined} />
       </div>
 
       <ApplicationOriginPanel applicationId={applicationId} />{/* BF_PORTAL_v828_APPLICATION_ORIGIN - lender, broker or referrer */}
