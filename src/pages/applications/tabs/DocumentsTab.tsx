@@ -25,6 +25,8 @@ import { canWrite } from "@/auth/can";
 // BF_PORTAL_SPLIT_VIEW_v205
 import DocumentSplitView, { type SplitViewDoc } from "@/components/applications/DocumentSplitView";
 import AcceptNameDialog from "@/components/applications/AcceptNameDialog"; // BF_PORTAL_ACCEPT_NAME_v266
+import RetentionLock from "@/retention/RetentionLock"; // BF_PORTAL_v855_RETENTION
+import { fetchApplicationRetention, refusedDeleteMessage, type RetentionStatus } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 
 interface Props { applicationId?: string }
 
@@ -135,6 +137,8 @@ export default function DocumentsTab({ applicationId }: Props) {
   const isAdmin = ((user as { role?: string | null } | null)?.role ?? "") === "Admin";
 
   const [docs, setDocs]       = useState<DocumentRow[]>([]);
+  // BF_PORTAL_v855_RETENTION - per-document retention lock (delete buttons show the lock and the date).
+  const [retention, setRetention] = useState<Record<string, RetentionStatus>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const [working, setWorking] = useState<Record<string, "accept" | "reject" | undefined>>({});
@@ -268,6 +272,7 @@ export default function DocumentsTab({ applicationId }: Props) {
       } catch {
         setDupGroups([]);
       }
+      setRetention((await fetchApplicationRetention(applicationId)).documents); // BF_PORTAL_v855_RETENTION
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load documents");
@@ -370,7 +375,7 @@ export default function DocumentsTab({ applicationId }: Props) {
       await api.delete(`/api/documents/${applicationId}/documents/${docId}`); // BF_PORTAL_DOC_DELETE_PATH_v1 — server route is /api/documents/:appId/documents/:docId
       await reload();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Delete failed");
+      setActionError(refusedDeleteMessage(e) ?? (e instanceof Error ? e.message : "Delete failed")); // BF_PORTAL_v855_RETENTION
     }
   }
 
@@ -385,14 +390,17 @@ export default function DocumentsTab({ applicationId }: Props) {
     setRemovingCopies(true);
     setActionError(null);
     const failed: string[] = [];
+    let kept = 0;
     for (const id of copyIds) {
       try {
         await api.delete(`/api/documents/${applicationId}/documents/${id}`);
-      } catch {
+      } catch (e) {
+        if (refusedDeleteMessage(e)) kept += 1; // BF_PORTAL_v855_RETENTION - kept on file, not a failure to retry
         failed.push(id);
       }
     }
-    if (failed.length > 0) setActionError(`${copyIds.length - failed.length} of ${copyIds.length} duplicate copies removed. Try again for the rest.`);
+    if (kept > 0) setActionError(`${copyIds.length - failed.length} of ${copyIds.length} duplicate copies removed. ${kept} ${kept === 1 ? "is" : "are"} kept on file under the 7-year retention rule and cannot be deleted yet.`);
+    else if (failed.length > 0) setActionError(`${copyIds.length - failed.length} of ${copyIds.length} duplicate copies removed. Try again for the rest.`);
     setRemovingCopies(false);
     await reload();
   }
@@ -519,6 +527,7 @@ export default function DocumentsTab({ applicationId }: Props) {
                   onRejectSubmit={() => handleReject(doc.documentId)}
                   isAdmin={isAdmin}
                   onDelete={() => handleDelete(doc.documentId)}
+                  retention={retention[doc.documentId] ?? null}
                   scan={scan[doc.documentId]}
                   scanOpen={!!scanOpen[doc.documentId]}
                   onScan={() => void handleScan(doc.documentId)}
@@ -601,6 +610,7 @@ function DocRow(props: {
   onRejectSubmit: () => void;
   isAdmin: boolean;
   onDelete: () => void;
+  retention?: RetentionStatus | null; // BF_PORTAL_v855_RETENTION
   scan: FraudScanState | undefined;
   scanOpen: boolean;
   onScan: () => void;
@@ -734,7 +744,8 @@ function DocRow(props: {
             {moveTargets(doc.category).map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
-        {props.isAdmin && (
+        {props.isAdmin && props.retention?.locked && <RetentionLock status={props.retention} />}
+        {props.isAdmin && !props.retention?.locked && (
           <button
             type="button"
             onClick={props.onDelete}

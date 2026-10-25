@@ -16,6 +16,8 @@ import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL
 import { ContactDocuments } from "@/components/crm/ContactDocuments"; // BF_PORTAL_CONTACT_DOCUMENTS_v1
 import { ContactDuplicates } from "@/components/crm/ContactDuplicates"; // BF_PORTAL_CONTACT_MERGE_v1
 import { NotifyContactButton } from "@/components/crm/NotifyContactButton"; // BF_PORTAL_NOTIFY_CONTACT_v627
+import RetentionLock from "@/retention/RetentionLock"; // BF_PORTAL_v855_RETENTION
+import { refusedDeleteMessage, useRetention } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
@@ -29,6 +31,7 @@ export default function ContactDetailPage() {
   const scope: Scope = { kind: "contact", id };
   const [contact, setContact] = useState<ContactRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const retention = useRetention("contact", id, refreshKey); // BF_PORTAL_v855_RETENTION
   const [err, setErr] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]); // BF_PORTAL_BLOCK_v756_CONTACT_OWNER_EDIT
@@ -77,6 +80,7 @@ export default function ContactDetailPage() {
         {/* BF_PORTAL_v786_CRM_FIXES - action row wraps so buttons never overflow the card */}
         <div data-testid="contact-action-row" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
           <button type="button" onClick={() => setEditOpen(true)} style={actionBtn}>Edit</button>
+          {retention?.locked ? <RetentionLock status={retention} /> : (
           <button
             type="button"
             onClick={async () => {
@@ -85,13 +89,14 @@ export default function ContactDetailPage() {
                 await api.delete(`/api/crm/contacts/${id}`);
                 navigate(`${crmBase}/contacts`);
               } catch (error: any) {
-                setErr(error?.message ?? "Could not delete contact.");
+                setErr(refusedDeleteMessage(error) ?? error?.message ?? "Could not delete contact.");
               }
             }}
             style={{ ...actionBtn, borderColor: "#fecaca", color: "#b91c1c" }}
           >
             Delete
           </button>
+          )}
           <NotifyContactButton contactId={id} contactName={contact.name} buttonStyle={actionBtn} onSent={() => setRefreshKey(k => k + 1)} />
         </div>
         <ActionBar

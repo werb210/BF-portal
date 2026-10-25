@@ -13,6 +13,7 @@ import { useCrmStore } from "@/state/crm.store";
 import CreateContactModal from "./CreateContactModal";
 import ImportContactsModal from "./ImportContactsModal";
 import { exportRowsToCsv } from "@/utils/csvExport";
+import { refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
 
@@ -145,7 +146,8 @@ export default function ContactsPage() {
       // application. Say so plainly instead of showing a bare error code.
       const e = err as { status?: number; details?: unknown; message?: string };
       const blocked = e?.status === 409 || /409|fk_protected/i.test(String(e?.message ?? "") + JSON.stringify(e?.details ?? ""));
-      window.alert(blocked
+      const kept = refusedDeleteMessage(err); // BF_PORTAL_v855_RETENTION - a legal hold blocks the batch
+      window.alert(kept ? kept : blocked
         ? "This contact is on an application, so it can't be deleted. To fix a wrong phone number or name, open the contact and edit it instead."
         : `Mass delete failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally { setBusyMass(null); }
