@@ -12,6 +12,8 @@ import CompanyDetailPage from "@/pages/crm/companies/CompanyDetailPage";
 import TasksPage from "@/pages/tasks/TasksPage";
 import { KS_ACCENT } from "../ksAccess";
 import KsPipeline from "./KsPipeline";
+import KsSupport from "../support/KsSupport"; // BF_PORTAL_v853_KS_PHONE_SUPPORT
+import StartDemoButton from "../StartDemoButton"; // BF_PORTAL_v853_KS_PHONE_SUPPORT
 
 export const KS_CRM_BASE = "/silo/ks/crm";
 
@@ -41,6 +43,7 @@ export default function KsCrm() {
         <div style={banner}>
           <span style={badge}>Keystone</span>
           <span>Keystone CRM - these contacts, companies and tasks are kept apart from Boreal Financial.</span>
+          <span style={{ marginLeft: "auto" }}><StartDemoButton compact /></span>{/* BF_PORTAL_v853_KS_PHONE_SUPPORT */}
         </div>
         <Routes>
           <Route index element={<Navigate to="contacts" replace />} />
@@ -50,6 +53,7 @@ export default function KsCrm() {
           <Route path="companies/:id" element={<CompanyDetailPage />} />
           <Route path="pipeline" element={<KsPipeline />} />
           <Route path="tasks" element={<TasksPage />} />
+          <Route path="support/*" element={<KsSupport />} />{/* BF_PORTAL_v853_KS_PHONE_SUPPORT */}
           <Route path="*" element={<Navigate to="contacts" replace />} />
         </Routes>
       </div>

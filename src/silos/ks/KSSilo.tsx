@@ -16,6 +16,7 @@ import KsLicenseeDetail from "./KsLicenseeDetail";
 import KsTickets from "./KsTickets";
 import KsTicketDetail from "./KsTicketDetail";
 import KsRequests from "./KsRequests";
+import StartDemoButton from "./StartDemoButton"; // BF_PORTAL_v853_KS_PHONE_SUPPORT
 
 export function KsSignInGate({ children }: { children: React.ReactNode }) {
   const signIn = useQuery({
@@ -62,6 +63,7 @@ export function KsSignInGate({ children }: { children: React.ReactNode }) {
 function KsOperations() {
   return (
     <div data-testid="ks-silo" style={{ color: "var(--ui-text)", maxWidth: 1200 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}><StartDemoButton compact /></div>{/* BF_PORTAL_v853_KS_PHONE_SUPPORT */}
       <KsSignInGate>
         <Routes>
           <Route index element={<Navigate to="dashboard" replace />} />
