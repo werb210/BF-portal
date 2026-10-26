@@ -12,7 +12,11 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
+import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
+import { useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmDuplicatesBanner } from "@/components/crm/unified/CrmDuplicates"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmAiSummary } from "@/components/crm/unified/CrmAiSummary"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmCompanyDetails, CrmCompanyPeople, CrmCompanyTagEditor } from "@/components/crm/unified/CrmCompany"; // BF_PORTAL_v856_CRM_UNIFY
 import { api } from "@/api";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { BICompanyActivity } from "./BICompanyActivity";
@@ -64,6 +68,7 @@ export default function BICompanyDetailPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { catalogue: tagCatalogue } = useTagCatalogue(BI_CRM_BACKEND); // BF_PORTAL_v856_CRM_UNIFY
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -306,23 +311,18 @@ export default function BICompanyDetailPage() {
             </div>
           </div>
         ) : (
-          <div style={fieldsBlock}>
-            <Field label="Industry" value={co.industry} />
-            <Field label="Business number" value={co.business_number} />
-            <Field label="Address" value={co.address_line1} />
-            <Field label="Location" value={location || null} />
-            <Field label="Postal code" value={co.postal_code} />
-            <Field
-              label="Created"
-              value={new Date(co.created_at).toLocaleString()}
-            />
+          <div>
+            {/* BF_PORTAL_v856_CRM_UNIFY - every company detail (record, else the latest application), editable; tags. */}
+            <CrmCompanyTagEditor backend={BI_CRM_BACKEND} companyId={co.id} catalogue={tagCatalogue} refreshKey={refreshKey} />
+            <CrmCompanyDetails backend={BI_CRM_BACKEND} companyId={co.id} refreshKey={refreshKey} onSaved={refresh} />
           </div>
         )}
       </aside>
 
       {/* MAIN — applications */}
       <main style={mainCol} data-testid="bi-company-main">
-        <ContactAiSummary companyId={id} />
+        <CrmDuplicatesBanner backend={BI_CRM_BACKEND} entity="company" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY */}
+        <CrmAiSummary backend={BI_CRM_BACKEND} entity="company" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY - same spot as on a contact */}
         <BICompanyActivity companyId={co.id} refreshKey={refreshKey} />
         <div style={{ ...panel, marginTop: 16 }}>
           <div style={panelHeader}>
@@ -367,46 +367,10 @@ export default function BICompanyDetailPage() {
         </div>
       </main>
 
-      {/* RIGHT RAIL — contacts roster */}
+      {/* BF_PORTAL_v856_CRM_UNIFY - RIGHT RAIL: everyone linked to the company, grouped by role (same as every CRM). */}
       <aside style={rail} data-testid="bi-company-rail-right">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <h3 style={{ margin: 0 }}>Contacts</h3>
-          <span style={badge}>{co.contact_count}</span>
-        </div>
-        {data.contacts.length === 0 ? (
-          <div style={{ ...subtle, marginTop: 12 }}>No contacts at this company.</div>
-        ) : (
-          <div style={{ marginTop: 12 }}>
-            {data.contacts.map((c) => (
-              <div
-                key={c.id}
-                style={contactRow}
-                data-testid="bi-company-contact-row"
-              >
-                <Link
-                  to={`/silo/bi/crm/contacts/${c.id}`}
-                  style={{ color: "var(--ui-accent-blue)", fontWeight: 600 }}
-                >
-                  {c.full_name || "(no name)"}
-                </Link>
-                {c.title && (
-                  <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{c.title}</div>
-                )}
-                {c.email && (
-                  <div style={{ fontSize: 12, color: "var(--ui-text)" }}>{c.email}</div>
-                )}
-                {c.phone_e164 && (
-                  <div style={{ fontSize: 12, color: "var(--ui-text)" }}>{c.phone_e164}</div>
-                )}
-                {c.outreach_status && (
-                  <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2 }}>
-                    {c.outreach_status.replace(/_/g, " ")}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <CrmCompanyPeople backend={BI_CRM_BACKEND} companyId={co.id} refreshKey={refreshKey} />
+        <div style={{ ...subtle, marginTop: 8 }}>{co.contact_count} contact(s) at this company</div>
       </aside>
     </div>
   );

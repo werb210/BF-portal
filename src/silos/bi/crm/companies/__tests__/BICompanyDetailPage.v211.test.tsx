@@ -1,11 +1,18 @@
 // BF_PORTAL_BLOCK_v211_BI_COMPANY_DETAIL_v1
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 const apiMock = vi.fn();
+// BF_PORTAL_v856_CRM_UNIFY - the shared company panels (People, details, tags, AI summary) read BI-Server through
+// api.get(); everything else on the page still calls api() directly.
+const getMock = vi.fn(async (_path: string): Promise<unknown> => ({}));
 vi.mock("@/api", () => ({
-  api: (...args: unknown[]) => apiMock(...args),
+  api: Object.assign((...args: unknown[]) => apiMock(...args), {
+    get: (path: string) => getMock(path),
+    post: async () => ({}),
+    patch: async () => ({}),
+  }),
 }));
 
 import BICompanyDetailPage from "@/silos/bi/crm/companies/BICompanyDetailPage";
@@ -60,6 +67,20 @@ function detailFixture(over: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+// BF_PORTAL_v856_CRM_UNIFY - People: everyone linked to the company, grouped by role.
+const peopleFixture = {
+  groups: {
+    primary: [{ key: "contact:c1", contactId: "c1", name: "Jane Doe", email: "jane@example.com", phone: "+14165551234", role: "primary_applicant", roleLabel: "Primary applicant", detail: "CFO", source: "application", group: "primary" }],
+    partners: [],
+    guarantors: [{ key: "email:g@x.co", contactId: null, name: "Gail Guarantor", email: "g@x.co", phone: null, role: "guarantor", roleLabel: "Guarantor", detail: null, source: "application", group: "guarantors" }],
+    advisors: [],
+    other: [{ key: "contact:c2", contactId: "c2", name: "Bob Lee", email: null, phone: null, role: "other", roleLabel: "Other", detail: null, source: "company", group: "other" }],
+  },
+  people: [],
+  roles: {},
+};
+const emptyPeople = { groups: { primary: [], partners: [], guarantors: [], advisors: [], other: [] }, people: [], roles: {} };
+
 function renderAtId(id: string) {
   return render(
     <MemoryRouter initialEntries={[`/silo/bi/crm/companies/${id}`]}>
@@ -72,7 +93,11 @@ function renderAtId(id: string) {
 }
 
 describe("BF_PORTAL_BLOCK_v211 — BICompanyDetailPage", () => {
-  beforeEach(() => apiMock.mockReset());
+  beforeEach(() => {
+    apiMock.mockReset();
+    getMock.mockReset();
+    getMock.mockImplementation(async (path: string) => (path.endsWith("/people") ? peopleFixture : {}));
+  });
 
   it("renders the company legal name and o/a operating name", async () => {
     apiMock.mockResolvedValue(detailFixture());
@@ -88,16 +113,17 @@ describe("BF_PORTAL_BLOCK_v211 — BICompanyDetailPage", () => {
     expect(screen.queryByText(/^o\/a/)).toBeNull();
   });
 
-  it("renders the linked contacts roster with badge count", async () => {
+  it("renders People grouped by role (applicant, guarantor from the application, other contacts)", async () => {
     apiMock.mockResolvedValue(detailFixture());
     renderAtId("co-1");
     await waitFor(() => {
-      expect(screen.getAllByTestId("bi-company-contact-row")).toHaveLength(2);
+      expect(screen.getAllByTestId("crm-company-person")).toHaveLength(3);
     });
     expect(screen.getByText("Jane Doe")).toBeInTheDocument();
+    expect(screen.getByText("Gail Guarantor")).toBeInTheDocument();
     expect(screen.getByText("Bob Lee")).toBeInTheDocument();
-    // contact_count badge
-    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(getMock).toHaveBeenCalledWith("/api/v1/bi/crm/unified/companies/co-1/people");
+    expect(screen.getByText("2 contact(s) at this company")).toBeInTheDocument();
   });
 
   it("contact row links to /silo/bi/crm/contacts/:id", async () => {
@@ -124,12 +150,14 @@ describe("BF_PORTAL_BLOCK_v211 — BICompanyDetailPage", () => {
     expect(link.getAttribute("href")).toBe("/silo/bi/pipeline/a1");
   });
 
-  it("shows empty-state when contacts is []", async () => {
+  it("shows empty groups when nobody is linked", async () => {
+    getMock.mockImplementation(async (path: string) => (path.endsWith("/people") ? emptyPeople : {}));
     apiMock.mockResolvedValue(detailFixture({ contacts: [] }));
     renderAtId("co-1");
     await waitFor(() => {
-      expect(screen.getByText(/no contacts at this company/i)).toBeInTheDocument();
+      expect(screen.getByText("Partners")).toBeInTheDocument();
     });
+    expect(screen.queryAllByTestId("crm-company-person")).toHaveLength(0);
   });
 
   it("shows empty-state when applications is []", async () => {
@@ -151,11 +179,23 @@ describe("BF_PORTAL_BLOCK_v211 — BICompanyDetailPage", () => {
     expect(back.getAttribute("href")).toBe("/silo/bi/crm?tab=companies");
   });
 
-  it("formats Location field as 'City, Province'", async () => {
+  it("shows the company details panel (record values, and application values marked)", async () => {
+    getMock.mockImplementation(async (path: string) => {
+      if (path.endsWith("/details")) {
+        return { tags: [], fields: [
+          { key: "city", label: "City", value: "Calgary", source: "company", editable: true, type: "text" },
+          { key: "province", label: "Province / State", value: "AB", source: "company", editable: true, type: "text" },
+          { key: "website", label: "Website", value: "acme.ca", source: "application", editable: true, type: "url" },
+        ] };
+      }
+      return path.endsWith("/people") ? peopleFixture : {};
+    });
     apiMock.mockResolvedValue(detailFixture());
     renderAtId("co-1");
-    await waitFor(() => screen.getByText("Acme Inc"));
-    expect(screen.getByText("Calgary, AB")).toBeInTheDocument();
+    const panel = await screen.findByTestId("crm-company-details");
+    expect(within(panel).getByText("Calgary")).toBeInTheDocument();
+    expect(within(panel).getByText("AB")).toBeInTheDocument();
+    expect(within(panel).getByText(/from the application/)).toBeInTheDocument();
   });
 
   it("surfaces API error", async () => {
@@ -168,7 +208,11 @@ describe("BF_PORTAL_BLOCK_v211 — BICompanyDetailPage", () => {
 });
 
 describe("BF_PORTAL_BLOCK_v211 — Inline Edit", () => {
-  beforeEach(() => apiMock.mockReset());
+  beforeEach(() => {
+    apiMock.mockReset();
+    getMock.mockReset();
+    getMock.mockImplementation(async (path: string) => (path.endsWith("/people") ? peopleFixture : {}));
+  });
 
   it("Edit button toggles the form open, Cancel restores view", async () => {
     apiMock.mockResolvedValue(detailFixture());

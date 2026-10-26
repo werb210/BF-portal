@@ -95,6 +95,8 @@ export function ActivityTimeline({ scope, refreshKey, items: itemsProp }: {
         <article key={`${item.kind}-${item.id}`} style={card}>
           <header style={cardHeader}>
             <span style={kindBadge(item.kind)}>{item.kind}</span>
+            {/* BF_PORTAL_v856_CRM_UNIFY - on a company, whose record each item came from */}
+            {(item as { contact_name?: string | null }).contact_name ? <span style={{ ...ts, flex: 1, marginLeft: 8 }}>{(item as { contact_name?: string | null }).contact_name}</span> : null}
             <time style={ts}>{new Date(item.ts).toLocaleString()}</time>
           </header>
           {item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{item.title}</div>}

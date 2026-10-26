@@ -31,7 +31,7 @@ export function BICompanyActivity({ companyId, refreshKey }: { companyId: string
       <h3 style={{ margin: 0, marginBottom: 8, fontSize: 15, color: "var(--ui-text)" }}>Activity</h3>
       {loading && <div style={muted}>Loading...</div>}
       {error && <div role="alert" style={{ ...muted, color: "var(--ui-text-danger)" }}>{error}</div>}
-      {!loading && !error && sorted.length === 0 && <div style={muted}>No activity logged for this company yet.</div>}
+      {!loading && !error && sorted.length === 0 && <div style={muted}>No activity logged for this company or its people yet.</div>}
       {sorted.map((r) => {
         const subject = typeof r.meta?.subject === "string" ? r.meta.subject : typeof r.meta?.title === "string" ? r.meta.title : null;
         return (
@@ -45,6 +45,8 @@ export function BICompanyActivity({ companyId, refreshKey }: { companyId: string
             {subject && <div style={{ color: "var(--ui-text)", fontSize: 13, marginTop: 2 }}>{subject}</div>}
             {r.body && <div style={{ ...muted, whiteSpace: "pre-wrap", marginTop: 2 }}>{r.body}</div>}
             {r.actor_name && <div style={{ ...muted, marginTop: 2 }}>{r.actor_name}</div>}
+            {/* BF_PORTAL_v856_CRM_UNIFY - the company's people's activity is included; say whose record it is on */}
+            {(r as { contact_name?: string | null }).contact_name && <div style={{ ...muted, marginTop: 2 }}>On {(r as { contact_name?: string | null }).contact_name}</div>}
           </article>
         );
       })}

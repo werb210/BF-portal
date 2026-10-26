@@ -5,8 +5,11 @@ import { api } from "@/api";
 import { crmApi, type CompanyRow, type ContactRow, type Scope } from "@/api/crm";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
-import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
-import { CompanyBusinessFields } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_CRM_COMPANY_BUSINESS_v1
+import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
+import { useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmDuplicatesBanner } from "@/components/crm/unified/CrmDuplicates"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmAiSummary } from "@/components/crm/unified/CrmAiSummary"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmCompanyDetails, CrmCompanyPeople, CrmCompanyTagEditor } from "@/components/crm/unified/CrmCompany"; // BF_PORTAL_v856_CRM_UNIFY
 import { AuthContext } from "@/auth/AuthContext";
 import { canDelete } from "@/auth/canDelete";
 import { EntityEditModal } from "@/components/EntityEditModal";
@@ -26,6 +29,8 @@ export default function CompanyDetailPage() {
   const [err, setErr] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const canDeleteCompany = canDelete(auth?.user?.role);
+  const crmBackend = useBfCrmBackend(); // BF_PORTAL_v856_CRM_UNIFY
+  const { catalogue: tagCatalogue } = useTagCatalogue(crmBackend); // BF_PORTAL_v856_CRM_UNIFY
 
   useEffect(() => {
     let cancelled = false;
@@ -104,28 +109,19 @@ export default function CompanyDetailPage() {
         {company.industry && <div style={subtle}>{company.industry}</div>}
         {company.domain && <a href={`https://${company.domain}`} target="_blank" rel="noreferrer" style={{ color: "#0091ae" }}>{company.domain}</a>}
         <ActionBar scope={scope} googleQuery={company.name ?? undefined} onChanged={() => setRefreshKey(k => k + 1)} />
-        <div style={fieldsBlock}>
-          <Field label="Industry" value={company.industry ?? null} />
-          <Field label="Domain" value={company.domain ?? null} />
-          <Field label="City" value={company.city ?? null} />
-          <Field label="Region" value={company.region ?? null} />
-          <Field label="Owner" value={company.owner_name ?? null} />
-          <Field label="Created" value={company.created_at ? new Date(company.created_at).toLocaleString() : null} />
-        </div>
-        <CompanyBusinessFields applicationIds={applicationIds} />
+        {/* BF_PORTAL_v856_CRM_UNIFY - every company detail (record, else the latest application), editable; tags. */}
+        <CrmCompanyTagEditor backend={crmBackend} companyId={id} catalogue={tagCatalogue} refreshKey={refreshKey} />
+        <CrmCompanyDetails backend={crmBackend} companyId={id} refreshKey={refreshKey} onSaved={() => setRefreshKey((k) => k + 1)} />
       </aside>
 
       <main>
+        <CrmDuplicatesBanner backend={crmBackend} entity="company" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY */}
+        <CrmAiSummary backend={crmBackend} entity="company" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY - same spot as on a contact */}
         <ActivityTimeline scope={scope} refreshKey={refreshKey} />
-        <ContactAiSummary companyId={id} />
       </main>
 
       <aside style={rail}>
-        <h3 style={{ marginTop: 0 }}>People</h3>
-        <PeopleSection title="Primary Applicant" contacts={grouped.primary} />
-        <PeopleSection title="Partners" contacts={grouped.partners} />
-        <PeopleSection title="Guarantors" contacts={grouped.guarantors} />
-        <PeopleSection title="Other" contacts={grouped.other} />
+        <CrmCompanyPeople backend={crmBackend} companyId={id} refreshKey={refreshKey} />{/* BF_PORTAL_v856_CRM_UNIFY */}
       </aside>
       {/* BF_COMPANY_EDIT_v24 */}
       <EntityEditModal
