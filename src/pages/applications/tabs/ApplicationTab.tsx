@@ -175,6 +175,8 @@ export default function ApplicationTab({ application }: Props) {
   const [v_signBusy, v_setSignBusy] = useState(false);
   const [v_signNote, v_setSignNote] = useState<string | null>(null);
   const [v_resetBusy, v_setResetBusy] = useState(false); // BF_PORTAL_RESET_SIGNING_v1
+  const [v860_markBusy, v860_setMarkBusy] = useState(false); // BF_PORTAL_v860_MARK_SIGNED
+  const [v860_marked, v860_setMarked] = useState(false); // BF_PORTAL_v860_MARK_SIGNED
   const [v851_nameError, v851_setNameError] = useState<string | null>(null); // BF_PORTAL_v851_APPLICANT_NAME
   const [v857_notify, v857_setNotify] = useState<SigningNotify | null>(null); // BF_PORTAL_v857_SIGNING_NOTIFY
   useEffect(() => {
@@ -249,6 +251,23 @@ export default function ApplicationTab({ application }: Props) {
       v_setSignNote(e instanceof Error ? e.message : "Reset failed.");
     } finally {
       v_setResetBusy(false);
+    }
+  }
+  // BF_PORTAL_v860_MARK_SIGNED - when every signer has signed in SignNow but the signed event never
+  // reached the server, an Admin files the application as signed, which sends the lender package.
+  async function v860_markSigned() {
+    if (v860_markBusy || !v784_appId) return;
+    if (!window.confirm("Mark this application as signed? Only do this when every signer has finished signing. It files the signed application and sends the lender package to the lenders you picked.")) return;
+    v860_setMarkBusy(true);
+    try {
+      const r = await api(`/api/admin/applications/${encodeURIComponent(v784_appId)}/mark-signed`, { method: "POST" });
+      const d = ((r as any)?.data ?? r) as { ok?: boolean; finalized?: boolean };
+      v860_setMarked(true);
+      v_setSignNote(d?.finalized === false ? "Already marked as signed. The lender package was sent earlier." : "Marked as signed. The lender package is on its way to the lenders you picked.");
+    } catch (e: unknown) {
+      v_setSignNote(`Could not mark as signed: ${e instanceof Error ? e.message : "try again"}`);
+    } finally {
+      v860_setMarkBusy(false);
     }
   }
   async function v_resendSigning(again = false) {
@@ -492,6 +511,18 @@ export default function ApplicationTab({ application }: Props) {
               {v_resetBusy ? "Resetting..." : "Reset signing"}
             </button>
           )} {/* BF_PORTAL_RESET_SIGNING_v1 */}
+          {String((application as any)?.signing?.status ?? "") === "started" && !v860_marked && (
+            <button
+              type="button"
+              onClick={() => void v860_markSigned()}
+              disabled={v860_markBusy}
+              title="Everyone has signed but the portal still says Signing started: file it as signed and send the lender package"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid #0B1F3A", background: "#ffffff", color: "#0B1F3A", fontWeight: 600, cursor: v860_markBusy ? "wait" : "pointer", fontSize: 14, whiteSpace: "nowrap" }}
+              data-testid="mark-signed"
+            >
+              {v860_markBusy ? "Marking..." : "Mark as signed"}
+            </button>
+          )} {/* BF_PORTAL_v860_MARK_SIGNED */}
           <SigningBadge status={(application as any)?.signing?.status} />
           <span style={styles.statusPill}>{fmt(application.stage, "—")}</span>
         </div>
