@@ -55,6 +55,7 @@ describe("wiring in both silos", () => {
     h.apiFn.post.mockResolvedValue({});
   });
   const gets = () => h.apiFn.get.mock.calls.map((c: unknown[]) => String(c[0]));
+  const posts = () => h.apiFn.post.mock.calls.map((c: unknown[]) => String(c[0])); // BF_PORTAL_v856_CRM_UNIFY
 
   it("BF: analytics has stage history, AI summary and journey; timeline has all activity", async () => {
     h.apiFn.mockResolvedValue({});
@@ -71,7 +72,8 @@ describe("wiring in both silos", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Analytics" }));
     const analytics = screen.getByTestId("contact-panel-analytics");
     fireEvent.click(within(analytics).getAllByRole("button").find((b) => /summar/i.test(b.textContent ?? ""))!);
-    await waitFor(() => expect(gets()).toContain("/api/crm/contacts/c1/ai-summary"));
+    await waitFor(() => expect(posts()).toContain("/api/crm/unified/ai-summary/contact/c1")); // BF_PORTAL_v856_CRM_UNIFY
+    expect(gets()).toContain("/api/crm/unified/ai-summary/contact/c1");
     fireEvent.click(screen.getByRole("tab", { name: "Timeline" }));
     expect(within(screen.getByTestId("contact-panel-timeline")).getByRole("button", { name: "All activities" })).toBeInTheDocument();
   });
@@ -98,7 +100,8 @@ describe("wiring in both silos", () => {
     const analytics = screen.getByTestId("contact-panel-analytics");
     expect(within(analytics).getByText(/boreal\.insure/i)).toBeInTheDocument(); // v570 journey site
     fireEvent.click(within(analytics).getAllByRole("button").find((b) => /summar/i.test(b.textContent ?? ""))!);
-    await waitFor(() => expect(gets()).toContain("/api/v1/bi/crm/contacts/c1/ai-summary"));
+    await waitFor(() => expect(posts()).toContain("/api/v1/bi/crm/unified/ai-summary/contact/c1")); // BF_PORTAL_v856_CRM_UNIFY
+    expect(gets()).toContain("/api/v1/bi/crm/unified/ai-summary/contact/c1");
 
     fireEvent.click(screen.getByRole("tab", { name: "Timeline" }));
     const timeline = screen.getByTestId("contact-panel-timeline");

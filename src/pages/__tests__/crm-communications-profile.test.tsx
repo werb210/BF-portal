@@ -132,11 +132,12 @@ describe("CRM owner dropdown", () => {
       </MemoryRouter>,
     );
 
-    const tagFilter = await screen.findByTestId("tag-filter");
-    expect(within(tagFilter).getByRole("option", { name: "All contacts" })).toBeInTheDocument();
-    expect(within(tagFilter).getByRole("option", { name: "Active only" })).toBeInTheDocument();
+    // BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips replaced the "Active only" dropdown.
+    const viewBy = await screen.findByTestId("crm-view-by");
+    expect(within(viewBy).getByRole("button", { name: "All" })).toBeInTheDocument();
+    expect(within(viewBy).getByRole("button", { name: "Untagged" })).toBeInTheDocument();
 
-    fireEvent.change(tagFilter, { target: { value: "active" } });
+    fireEvent.click(within(viewBy).getByRole("button", { name: "Active" }));
 
     await waitFor(() => {
       expect(apiMock.get).toHaveBeenCalledWith("/api/crm/contacts", {

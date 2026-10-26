@@ -8,14 +8,18 @@
 import { useSearchParams } from "react-router-dom";
 import BIContactsList from "./contacts/BIContactsList";
 import BICompaniesList from "./companies/BICompaniesList";
+import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmDuplicatesPage } from "@/components/crm/unified/CrmDuplicates"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmCleanupPage } from "@/components/crm/unified/CrmCleanupPage"; // BF_PORTAL_v856_CRM_UNIFY
 
-type TabKey = "contacts" | "companies";
+type TabKey = "contacts" | "companies" | "duplicates" | "cleanup"; // BF_PORTAL_v856_CRM_UNIFY
 
 export default function BICRM() {
   // BF_PORTAL_BLOCK_v854_BI_CRM_TAB_URL — keep the active tab in the URL so a
   // company/contact card "Back" link can return to the tab the user came from.
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab: TabKey = searchParams.get("tab") === "companies" ? "companies" : "contacts";
+  const rawTab = searchParams.get("tab"); // BF_PORTAL_v856_CRM_UNIFY
+  const tab: TabKey = rawTab === "companies" || rawTab === "duplicates" || rawTab === "cleanup" ? rawTab : "contacts";
   const setTab = (k: TabKey) => setSearchParams((p) => { p.set("tab", k); return p; }, { replace: true });
 
   const tabBtn = (k: TabKey, label: string) => (
@@ -42,11 +46,15 @@ export default function BICRM() {
         <div className="flex gap-2" role="tablist" aria-label="BI CRM tabs">
           {tabBtn("contacts", "Contacts")}
           {tabBtn("companies", "Companies")}
+          {tabBtn("duplicates", "Find duplicates")}
+          {tabBtn("cleanup", "Clean up data")}
         </div>
       </div>
 
       {tab === "contacts" && <BIContactsList />}
       {tab === "companies" && <BICompaniesList />}
+      {tab === "duplicates" && <CrmDuplicatesPage backend={BI_CRM_BACKEND} />}
+      {tab === "cleanup" && <CrmCleanupPage backend={BI_CRM_BACKEND} />}
     </div>
   );
 }

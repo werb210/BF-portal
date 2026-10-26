@@ -68,9 +68,9 @@ describe("v664 BI CRM bulk + admin delete", () => {
     fireEvent.click(rowCheckbox("bi-contact-row", 1));
     expect(screen.getByText("2 selected")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByDisplayValue("Tag as\u2026"), { target: { value: "lender" } });
-    await waitFor(() => expect(postsTo("/api/v1/bi/crm/contacts/bulk-tag")).toHaveLength(1));
-    expect(postsTo("/api/v1/bi/crm/contacts/bulk-tag")[0]![1].body).toEqual({ ids: ["c1", "c2"], tag: "lender" });
+    // BF_PORTAL_v856_CRM_UNIFY - the shared bulk "Tag as..." control.
+    fireEvent.change(screen.getByTestId("crm-bulk-tag-as"), { target: { value: "lender" } });
+    await waitFor(() => expect(h.apiFn.post).toHaveBeenCalledWith("/api/v1/bi/crm/unified/tags/apply", { entity: "contact", ids: ["c1", "c2"], add: ["lender"], remove: [] }));
 
     await waitFor(() => expect(screen.queryByText("2 selected")).not.toBeInTheDocument());
     fireEvent.click(rowCheckbox("bi-contact-row", 0));
@@ -92,10 +92,9 @@ describe("v664 BI CRM bulk + admin delete", () => {
     fireEvent.click(rowCheckbox("bi-company-row", 1));
     expect(screen.getByText("1 selected")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText("Tag name"), { target: { value: "carrier" } });
-    fireEvent.click(screen.getByRole("button", { name: "Apply tag" }));
-    await waitFor(() => expect(postsTo("/api/v1/bi/crm/companies/bulk-tag")).toHaveLength(1));
-    expect(postsTo("/api/v1/bi/crm/companies/bulk-tag")[0]![1].body).toEqual({ ids: ["co2"], tag: "carrier" });
+    // BF_PORTAL_v856_CRM_UNIFY - bulk "Remove tag" (it used to be impossible to undo Tag Active).
+    fireEvent.change(screen.getByTestId("crm-bulk-remove-tag"), { target: { value: "active" } });
+    await waitFor(() => expect(h.apiFn.post).toHaveBeenCalledWith("/api/v1/bi/crm/unified/tags/apply", { entity: "company", ids: ["co2"], add: [], remove: ["active"] }));
 
     await waitFor(() => expect(screen.queryByText("1 selected")).not.toBeInTheDocument());
     fireEvent.click(rowCheckbox("bi-company-row", 0));

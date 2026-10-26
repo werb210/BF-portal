@@ -6,6 +6,8 @@ import { importBiCompaniesToBfLenders, listStaffUsers } from "@/api/sharedShell"
 import { useAuth } from "@/hooks/useAuth";
 import { exportRowsToCsv } from "@/utils/csvExport";
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
+import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 
 type SortCol = "name" | "industry" | "owner_name" | "created_at";
 
@@ -88,6 +90,7 @@ export default function BICompaniesList() {
   const [tagFilter, setTagFilter] = useState("");
   const [seenTags, setSeenTags] = useState<string[]>([]);
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const { catalogue: tagCatalogue, reload: reloadTags } = useTagCatalogue(BI_CRM_BACKEND); // BF_PORTAL_v856_CRM_UNIFY
   const toggleCol = (k: string) => setHiddenCols((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   // BF_PORTAL_v789_HOOK_DEPS - memoised so the rows memo below can list it.
   const ownerName = useCallback((id?: string | null) => { if (!id) return "\u2014"; const o = owners.find((x) => x.id === id); return o ? `${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || id : id; }, [owners]);
@@ -193,11 +196,7 @@ export default function BICompaniesList() {
       {!hiddenCols.has("industry") && <td style={tdStyle}>{r.industry ?? "—"}</td>}
       {!hiddenCols.has("tags") && (
       <td style={tdStyle}>{/* BF_PORTAL_BLOCK_v816_COMPANY_IMPORT_UI */}
-        {r.tags && r.tags.length ? (
-          <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
-            {r.tags.map((t) => (<span key={t} style={biTagChip}>{t}</span>))}
-          </span>
-        ) : "—"}
+        <CrmTagChips tags={r.tags} catalogue={tagCatalogue} />{/* BF_PORTAL_v856_CRM_UNIFY */}
       </td>
       )}
       {!hiddenCols.has("contacts") && <td style={tdStyle}>{r.contact_count ?? 0}</td>}
@@ -205,7 +204,7 @@ export default function BICompaniesList() {
       {!hiddenCols.has("owner") && <td style={tdStyle}>{ownerName(r.owner_id)}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows, isAdmin, selected, ownerName, hiddenCols]);
+  )), [rows, isAdmin, selected, ownerName, hiddenCols, tagCatalogue]); // BF_PORTAL_v856_CRM_UNIFY
 
   const colCount = isAdmin ? 8 : 7; // CRM owner parity (+Owner column)
 
@@ -226,16 +225,9 @@ export default function BICompaniesList() {
         <button type="button" onClick={() => setCreateOpen((v) => !v)} style={{ background: createOpen ? "#fff" : "var(--accent)", color: createOpen ? "var(--accent)" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: createOpen ? "1px solid var(--accent)" : 0, cursor: "pointer" }} data-testid="bi-companies-create-toggle">{createOpen ? "Cancel" : "+ Create Company"}</button>
       </div>
 
-      {/* CRM_COMPANY_VIEWBY — single-tag filter chips (client-derived, monotonic). */}
-      {seenTags.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 0 10px" }}>
-          <span style={{ fontSize: 12, color: "var(--ui-text-muted)", alignSelf: "center", marginRight: 2 }}>View by:</span>
-          <button type="button" onClick={() => { setTagFilter(""); setCrmPage(1); }} style={chipBtn(tagFilter === "")}>All</button>
-          {seenTags.map((t) => (
-            <button key={t} type="button" onClick={() => { setTagFilter(t === tagFilter ? "" : t); setCrmPage(1); }} style={chipBtn(tagFilter === t)}>{t}</button>
-          ))}
-        </div>
-      )}
+      {/* BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips (several tags = any of them; "__none__" = untagged). */}
+      <CrmTagViewBy backend={BI_CRM_BACKEND} entity="company" value={tagFilter ? tagFilter.split(",") : []}
+        onChange={(next) => { setTagFilter(next.join(",")); setCrmPage(1); }} catalogue={tagCatalogue} onCatalogueChanged={reloadTags} />
       {importMsg && <div style={{ fontSize: 12, color: "#34d399", padding: "0 0 8px" }} role="status">{importMsg}</div>}
       {bfMsg && <div style={{ fontSize: 12, color: "#60a5fa", padding: "0 0 8px" }} role="status">{bfMsg}</div>}
       {createOpen && (
@@ -251,9 +243,9 @@ export default function BICompaniesList() {
         <div style={massBar}>
           <span style={{ fontWeight: 600, fontSize: 13 }}>{selected.size} selected</span>
           <button disabled={busyMass !== null} onClick={massDelete} style={delBtn}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
-          <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={tagBox} />
-          <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={tagBtn}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
-          <button disabled={busyMass !== null} onClick={() => void massTagActive()} style={tagBtn} data-testid="bi-companies-tag-active">Tag Active</button>
+          {/* BF_PORTAL_v856_CRM_UNIFY - Tag as... and Remove tag (Active included). */}
+          <CrmBulkTagActions backend={BI_CRM_BACKEND} entity="company" ids={Array.from(selected)} catalogue={tagCatalogue}
+            onDone={() => { setSelected(new Set()); setRefreshKey((k) => k + 1); reloadTags(); }} />
           <select disabled={busyMass !== null} value="" onChange={(e) => { const v = e.target.value; if (v) void massAssign(v); }} style={tagBox} data-testid="bi-companies-assign"><option value="">Assign owner…</option>{owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}</select>
           <button disabled={bfBusy} onClick={() => void importToBf()} style={{ padding: "6px 12px", borderRadius: 6, background: "var(--ui-accent-blue)", color: "#fff", border: 0, cursor: bfBusy ? "default" : "pointer", fontSize: 13, fontWeight: 600, opacity: bfBusy ? 0.6 : 1 }} data-testid="bi-companies-import-to-bf">{bfBusy ? "Importing…" : "Import to BF"}</button>
           <button onClick={() => setSelected(new Set())} style={clearBtn}>Clear</button>

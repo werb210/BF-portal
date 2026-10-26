@@ -94,22 +94,37 @@ describe("BI contact card feeds (items 79, 90)", () => {
   });
 
   it("merges a duplicate only after the user confirms", async () => {
-    duplicates = [{ id: "c9", full_name: "Jane D.", email: "jane@example.com", match_reason: "same_email" }];
+    // BF_PORTAL_v856_CRM_UNIFY - the shared duplicates banner and side-by-side merge.
+    h.apiFn.get.mockImplementation(async (path: string) => {
+      if (path === "/api/v1/bi/crm/unified/duplicates/contact/c1") {
+        return { count: 1, candidates: [{ id: "c9", name: "Jane D.", email: "jane@example.com", phone: null, company_name: null, created_at: null, reasons: ["Same email"] }] };
+      }
+      if (path.startsWith("/api/v1/bi/crm/unified/merge/contact/preview")) {
+        return {
+          records: [{ id: "c1", title: "Jane Doe", tags: [], created_at: null, application_count: 0 }, { id: "c9", title: "Jane D.", tags: [], created_at: null, application_count: 0 }],
+          fields: [{ key: "full_name", label: "Name", values: [{ id: "c1", value: "Jane Doe", display: "Jane Doe" }, { id: "c9", value: "Jane D.", display: "Jane D." }] }],
+        };
+      }
+      return {};
+    });
     const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
     renderPage();
-    const panel = await screen.findByTestId("bi-contact-duplicates");
-    const button = await within(panel).findByRole("button", { name: "Merge into this contact" });
+    const banner = await screen.findByTestId("crm-duplicates-banner");
+    expect(banner).toHaveTextContent("There is 1 possible duplicate. Would you like to merge them?");
+    fireEvent.click(within(banner).getByRole("button", { name: "Review and merge" }));
+    const dialog = await screen.findByRole("dialog", { name: "Merge duplicates" });
+    const merge = within(dialog).getByRole("button", { name: "Merge" });
+    await waitFor(() => expect(merge).not.toBeDisabled());
 
-    fireEvent.click(button);
+    fireEvent.click(merge);
     expect(confirm).toHaveBeenCalledTimes(1);
-    expect(h.apiFn.mock.calls.some((c: any[]) => String(c[0]).endsWith("/merge"))).toBe(false);
+    expect(h.apiFn.post.mock.calls.some((c: any[]) => String(c[0]).includes("/merge/"))).toBe(false);
 
-    fireEvent.click(button);
+    fireEvent.click(merge);
     await waitFor(() => {
-      const merge = h.apiFn.mock.calls.find((c: any[]) => c[0] === "/api/v1/bi/crm/contacts/c1/merge");
-      expect(merge?.[1]).toEqual({ method: "POST", body: { duplicate_id: "c9" } });
+      const call = h.apiFn.post.mock.calls.find((c: any[]) => c[0] === "/api/v1/bi/crm/unified/merge/contact");
+      expect(call?.[1]).toEqual({ survivorId: "c1", loserIds: ["c9"], fields: { full_name: "Jane Doe" } });
     });
-    expect(await within(panel).findByRole("status")).toHaveTextContent("Merged Jane D. into this contact.");
     confirm.mockRestore();
   });
 });

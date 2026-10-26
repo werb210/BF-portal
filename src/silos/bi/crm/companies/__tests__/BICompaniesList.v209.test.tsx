@@ -230,7 +230,7 @@ describe("BF_PORTAL_BLOCK_v816 — companies import UI", () => {
     const inRow = within(row);
     expect(inRow.getByText("financing:equipment")).toBeInTheDocument();
     expect(inRow.getByText("country:CA")).toBeInTheDocument();
-    expect(inRow.getByText("lender")).toBeInTheDocument();
+    expect(inRow.getByText("Lender")).toBeInTheDocument(); // BF_PORTAL_v856_CRM_UNIFY - core tag label
   });
 
   it("uploads selected company import files and refreshes with import counts", async () => {

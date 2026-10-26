@@ -8,6 +8,8 @@ import { exportRowsToCsv } from "@/utils/csvExport";
 import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import ContactCardScanField from "@/components/crm/ContactCardScanField"; // v114-card-scan-mount
+import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
 
@@ -79,6 +81,7 @@ export default function BIContactsList() {
   }
   const [hasNext, setHasNext] = useState(false); // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const { catalogue: tagCatalogue, reload: reloadTags } = useTagCatalogue(BI_CRM_BACKEND, refreshKey); // BF_PORTAL_v856_CRM_UNIFY
   const toggleCol = (k: string) => setHiddenCols((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   useEffect(() => { // BF_PORTAL_BLOCK_v749_VIEWBY — distinct tags for the View-by filter
@@ -188,12 +191,12 @@ export default function BIContactsList() {
       )}
       <td style={tdStyle}><Link to={`/silo/bi/crm/contacts/${r.id}`} style={linkStyle}>{r.full_name || "(no name)"}</Link></td>
       {!hiddenCols.has("company_name") && <td style={tdStyle}>{r.company_name ?? "—"}</td>}
-      {!hiddenCols.has("tags") && <td style={tdStyle}>{r.tags && r.tags.length ? (<span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>{r.tags.map((t) => (<span key={t} style={tagChip}>{t}</span>))}</span>) : "—"}</td>}{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
+      {!hiddenCols.has("tags") && <td style={tdStyle}><CrmTagChips tags={r.tags} catalogue={tagCatalogue} /></td>}{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
       {!hiddenCols.has("lead_status") && <td style={tdStyle}>{r.outreach_status ? r.outreach_status.replace(/_/g, " ") : "—"}</td>}
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{ownerName(r.outreach_owner_id)}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows, isAdmin, selected, ownerName, hiddenCols]);
+  )), [rows, isAdmin, selected, ownerName, hiddenCols, tagCatalogue]); // BF_PORTAL_v856_CRM_UNIFY
 
   const colCount = isAdmin ? 7 : 6; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 (+Tags col)
 
@@ -222,30 +225,17 @@ export default function BIContactsList() {
       </div>
 
       {importMsg && <div style={{ fontSize: 12, color: "#34d399", padding: "0 0 8px" }} role="status">{importMsg}</div>}
-      {/* BF_PORTAL_BLOCK_v749_VIEWBY — View-by tag filter (multi-select) */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 0 10px" }}>
-        <span style={{ fontSize: 12, color: "var(--ui-text-muted)", alignSelf: "center", marginRight: 2 }}>View by:</span>
-        <button type="button" onClick={() => { setTagFilter(new Set()); setCrmPage(1); }} style={chipBtn(tagFilter.size === 0)}>All</button>
-        <button type="button" onClick={() => toggleTag("__none__")} style={chipBtn(tagFilter.has("__none__"))}>Untagged</button>
-        {tagOptions.map((t) => (
-          <button key={t} type="button" onClick={() => toggleTag(t)} style={chipBtn(tagFilter.has(t))}>{t}</button>
-        ))}
-      </div>
+      {/* BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips (same in every CRM); "__none__" = untagged. */}
+      <CrmTagViewBy backend={BI_CRM_BACKEND} entity="contact" value={Array.from(tagFilter)}
+        onChange={(next) => { setTagFilter(new Set(next)); setCrmPage(1); }} catalogue={tagCatalogue} onCatalogueChanged={reloadTags} />
 
       {isAdmin && selected.size > 0 && (
         <div style={massBar}>
           <span style={{ fontWeight: 600, fontSize: 13 }}>{selected.size} selected</span>
           <button disabled={busyMass !== null} onClick={massDelete} style={delBtn}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
-          {/* BF_PORTAL_BLOCK_v745_TAG_PRESET_PULLDOWN — preset "Tag as" pulldown; applies on select */}
-          <select value="" disabled={busyMass !== null} onChange={(e) => { const v = e.target.value; if (v) void massTag(v); }} style={tagBox}>
-            <option value="">{busyMass === "tag" ? "Tagging…" : "Tag as…"}</option>
-            <option value="lender">Lender</option>
-            <option value="broker">Broker</option>
-            <option value="lawyer">Lawyer</option>
-            <option value="bookkeeper">Account/Book Keeper</option>
-            <option value="referrer">Referrer</option>
-            <option value="active">Active</option>
-          </select>
+          {/* BF_PORTAL_v856_CRM_UNIFY - Tag as... and Remove tag (Active included), same as every CRM. */}
+          <CrmBulkTagActions backend={BI_CRM_BACKEND} entity="contact" ids={Array.from(selected)} catalogue={tagCatalogue}
+            onDone={() => { setSelected(new Set()); setRefreshKey((k) => k + 1); }} />
           <select value="" disabled={busyMass !== null} onChange={(e) => { const v = e.target.value; if (v) void massAssign(v); }} style={tagBox}>
             <option value="">{busyMass === "assign" ? "Assigning…" : "Assign owner…"}</option>
             {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}

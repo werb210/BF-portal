@@ -12,6 +12,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCrmStore } from "@/state/crm.store";
 import CreateContactModal from "./CreateContactModal";
 import ImportContactsModal from "./ImportContactsModal";
+import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import { exportRowsToCsv } from "@/utils/csvExport";
 import { refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 
@@ -58,6 +60,8 @@ export default function ContactsPage() {
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | "active" | "assign" | null>(null);
   const [assignOwnerId, setAssignOwnerId] = useState("");
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const crmBackend = useBfCrmBackend(); // BF_PORTAL_v856_CRM_UNIFY
+  const { catalogue: tagCatalogue, reload: reloadTags } = useTagCatalogue(crmBackend, refreshKey); // BF_PORTAL_v856_CRM_UNIFY
   const toggleCol = (k: string) => setHiddenCols((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   useEffect(() => {
@@ -210,13 +214,7 @@ export default function ContactsPage() {
       {!hiddenCols.has("company_name") && <td style={tdStyle}>{r.company_name ?? "—"}</td>}
       {!hiddenCols.has("tags") && (
       <td style={tdStyle}>{/* BF_PORTAL_BLOCK_v811_TAGS_COLUMN */}
-        {r.tags && r.tags.length ? (
-          <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
-            {r.tags.map((t) => (
-              <span key={t} style={t.toLowerCase() === "active" ? activeChip : tagChip}>{t}</span>
-            ))}
-          </span>
-        ) : "—"}
+        <CrmTagChips tags={r.tags} catalogue={tagCatalogue} />{/* BF_PORTAL_v856_CRM_UNIFY */}
       </td>
       )}
       {!hiddenCols.has("lead_status") && (
@@ -233,7 +231,7 @@ export default function ContactsPage() {
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{r.owner_name ?? "—"}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [isAdmin, rows, selected, hiddenCols, crmBase]);
+  )), [isAdmin, rows, selected, hiddenCols, crmBase, tagCatalogue]); // BF_PORTAL_v856_CRM_UNIFY
 
   return (
     <div style={page}>
@@ -262,16 +260,6 @@ export default function ContactsPage() {
             <option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>
           ))}
         </select>
-        <select
-          data-testid="tag-filter"
-          value={tagFilter}
-          onChange={(e) => setTagFilter(e.target.value)}
-          style={ownerSelect}
-          title="Filter by tag"
-        >
-          <option value="">All contacts</option>
-          <option value="active">Active only</option>
-        </select>
         <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-contacts.csv", rows as any)}>Export</button>
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={toolbarBtn} />
         <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>
@@ -284,13 +272,16 @@ export default function ContactsPage() {
         }} />
         <button onClick={() => setCreateOpen(true)} style={{ background: "var(--accent)", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
       </div>
+      {/* BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips; several tags = any of them. */}
+      <CrmTagViewBy backend={crmBackend} entity="contact" value={tagFilter ? tagFilter.split(",") : []}
+        onChange={(next) => setTagFilter(next.join(","))} catalogue={tagCatalogue} onCatalogueChanged={reloadTags} />
       {isAdmin && selected.size > 0 && (
         <div style={{ display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" }}>
           <span style={{ fontWeight: 600, fontSize: 13 }}>{selected.size} selected</span>
           <button disabled={busyMass !== null} onClick={massDelete} style={{ padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
-          <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={{ padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13 }} />
-          <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={{ padding: "6px 12px", borderRadius: 6, background: "var(--ui-accent-blue)", color: "#fff", border: 0, cursor: tagInput.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
-          <button disabled={busyMass !== null} onClick={() => void tagActive()} title='Tag selected contacts as "active"' style={{ padding: "6px 12px", borderRadius: 6, background: "#16a34a", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "active" ? "Tagging…" : "Tag Active"}</button>
+          {/* BF_PORTAL_v856_CRM_UNIFY - Tag as... and Remove tag (Active included), same as every CRM. */}
+          <CrmBulkTagActions backend={crmBackend} entity="contact" ids={Array.from(selected)} catalogue={tagCatalogue}
+            onDone={() => { setSelected(new Set()); setRefreshKey((k) => k + 1); }} />
           <select value={assignOwnerId} onChange={(e) => setAssignOwnerId(e.target.value)} style={{ padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13, background: "var(--ui-surface-strong)" }}>
             <option value="">Assign owner…</option>
             {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}

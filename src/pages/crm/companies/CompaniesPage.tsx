@@ -8,6 +8,8 @@ import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
 import CreateCompanyModal from "./CreateCompanyModal";
 import CompaniesImportModal from "./CompaniesImportModal";
+import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import { exportRowsToCsv } from "@/utils/csvExport";
 import { refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
@@ -41,6 +43,8 @@ export default function CompaniesPage() {
   const [tagFilter, setTagFilter] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const crmBackend = useBfCrmBackend(); // BF_PORTAL_v856_CRM_UNIFY
+  const { catalogue: tagCatalogue, reload: reloadTags } = useTagCatalogue(crmBackend, refreshKey); // BF_PORTAL_v856_CRM_UNIFY
   const toggleCol = (k: string) => setHiddenCols((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   void showDelete;
@@ -159,17 +163,13 @@ export default function CompaniesPage() {
         <Link to={`${crmBase}/companies/${r.id}`} style={linkStyle}>{r.name}</Link>
       </td>
       {!hiddenCols.has("industry") && <td style={tdStyle}>{r.industry ?? "—"}</td>}
-      {!hiddenCols.has("financing") && (
-      <td style={tdStyle}>
-        {(r.types_of_financing ?? []).map(t => (
-          <span key={t} style={tag}>{t}</span>
-        ))}
-      </td>
-      )}
+      {!hiddenCols.has("tags") && (
+      <td style={tdStyle}><CrmTagChips tags={(r as { tags?: string[] | null }).tags} catalogue={tagCatalogue} /></td>
+      )}{/* BF_PORTAL_v856_CRM_UNIFY - Tags replace Types of financing */}
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{r.owner_name ?? "—"}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [isAdmin, rows, selected, hiddenCols, crmBase]);
+  )), [isAdmin, rows, selected, hiddenCols, crmBase, tagCatalogue]); // BF_PORTAL_v856_CRM_UNIFY
 
   return (
     <div style={page}>
@@ -184,25 +184,24 @@ export default function CompaniesPage() {
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
-        <select data-testid="bf-companies-tag-filter" value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} style={toolbarBtn} aria-label="Filter by tag" title="Filter by tag">
-          <option value="">All companies</option>
-          <option value="active">Active only</option>
-        </select>
         <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-companies.csv", rows as any)}>Export</button>
-        <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "financing", label: "Types of financing" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={toolbarBtn} />
+        <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={toolbarBtn} />
         <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>
         <button
           onClick={() => setCreateOpen(true)}
           style={{ background: "var(--accent)", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}
         >+ Create Company</button>
       </div>
+      {/* BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips. */}
+      <CrmTagViewBy backend={crmBackend} entity="company" value={tagFilter ? tagFilter.split(",") : []}
+        onChange={(next) => setTagFilter(next.join(","))} catalogue={tagCatalogue} onCatalogueChanged={reloadTags} />
       {isAdmin && selected.size > 0 && (
         <div style={{ display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" }}>
           <span style={{ fontWeight: 600, fontSize: 13 }}>{selected.size} selected</span>
           <button disabled={busyMass !== null} onClick={massDelete} style={{ padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "delete" ? "Deleting…" : "Delete"}</button>
-          <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Tag name" style={{ padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13 }} />
-          <button disabled={busyMass !== null || !tagInput.trim()} onClick={massTag} style={{ padding: "6px 12px", borderRadius: 6, background: "var(--ui-accent-blue)", color: "#fff", border: 0, cursor: tagInput.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "tag" ? "Tagging…" : "Apply tag"}</button>
-          <button disabled={busyMass !== null} onClick={() => void massTagActive()} title='Tag selected companies as "active"' style={{ padding: "6px 12px", borderRadius: 6, background: "#16a34a", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 }}>{busyMass === "active" ? "Tagging…" : "Tag Active"}</button>
+          {/* BF_PORTAL_v856_CRM_UNIFY - Tag as... and Remove tag (Active included). */}
+          <CrmBulkTagActions backend={crmBackend} entity="company" ids={Array.from(selected)} catalogue={tagCatalogue}
+            onDone={() => { setSelected(new Set()); setRefreshKey((k) => k + 1); }} />
           <select value={assignOwnerId} onChange={(e) => setAssignOwnerId(e.target.value)} style={{ padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13, background: "var(--ui-surface-strong)" }}><option value="">Assign owner…</option>{owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}</select>
           <button disabled={busyMass !== null || !assignOwnerId} onClick={() => void massAssign()} style={{ padding: "6px 12px", borderRadius: 6, background: "var(--accent)", color: "#fff", border: 0, cursor: assignOwnerId ? "pointer" : "not-allowed", fontSize: 13 }}>{busyMass === "assign" ? "Assigning…" : "Assign"}</button>
           <button onClick={() => setSelected(new Set())} style={{ padding: "6px 12px", borderRadius: 6, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", cursor: "pointer", fontSize: 13 }}>Clear</button>
@@ -227,7 +226,7 @@ export default function CompaniesPage() {
             )}
             <Th onClick={() => onSort("name")}>Company name{sortIndicator("name")}</Th>
             {!hiddenCols.has("industry") && <Th onClick={() => onSort("industry")}>Industry{sortIndicator("industry")}</Th>}
-            {!hiddenCols.has("financing") && <Th>Types of financing</Th>}
+            {!hiddenCols.has("tags") && <Th>Tags</Th>}{/* BF_PORTAL_v856_CRM_UNIFY */}
             {!hiddenCols.has("owner_name") && <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>}
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
           </tr>

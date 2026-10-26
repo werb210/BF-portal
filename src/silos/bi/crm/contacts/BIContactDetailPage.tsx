@@ -26,12 +26,16 @@ import { api } from "@/api";
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { ActionBar } from "@/components/crm/ActionBar"; // BF_PORTAL_BLOCK_v334_BI_ACTIONBAR_v1
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
-import { ContactAiSummary } from "@/components/crm/ContactAiSummary"; // BF_PORTAL_CONTACT_AI_SUMMARY_v1
+import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmTagEditor, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmDuplicatesBanner } from "@/components/crm/unified/CrmDuplicates"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmAiSummary } from "@/components/crm/unified/CrmAiSummary"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmContactApplications } from "@/components/crm/unified/CrmContactPanel"; // BF_PORTAL_v856_CRM_UNIFY
 import { ContactStageHistory } from "@/components/crm/ContactStageHistory";
 import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_CONTACT_RECORD_TABS_v272
 import ContactJourney from "@/components/crm/ContactJourney"; // BF_PORTAL_BLOCK_v570
 // BF_PORTAL_v789_BI_CONTACT_CARD - BI-Server feeds replace the BF email/call feeds.
-import { BIContactCommsFeed, BIContactDocuments, BIContactDuplicates, BIContactTimeline } from "./BIContactPanels";
+import { BIContactCommsFeed, BIContactDocuments, BIContactTimeline } from "./BIContactPanels";
 import { getCommsTimelineByPhone } from "@/api/sharedShell";
 import { ContactMarketingSource } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_AD_ATTRIBUTION_v1
 import type { TimelineItem } from "@/api/crm";
@@ -208,6 +212,7 @@ export default function BIContactDetailPage() {
 
   // BF_PORTAL_BLOCK_v208_BI_CONTACT_DETAIL_ACTIONS_v1
   const [refreshKey, setRefreshKey] = useState(0);
+  const { catalogue: tagCatalogue } = useTagCatalogue(BI_CRM_BACKEND); // BF_PORTAL_v856_CRM_UNIFY
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -498,16 +503,18 @@ export default function BIContactDetailPage() {
             <Field label="Created" value={new Date(contact.created_at).toLocaleString()} />
           </div>
         )}
-        <TagEditor contact={contact} onSaved={refresh} />
+        <CrmTagEditor backend={BI_CRM_BACKEND} entity="contact" id={contact.id} tags={contact.tags} catalogue={tagCatalogue} onSaved={refresh} />{/* BF_PORTAL_v856_CRM_UNIFY */}
+        <CrmContactApplications backend={BI_CRM_BACKEND} contactId={contact.id} />{/* BF_PORTAL_v856_CRM_UNIFY - same panel as BF */}
       </aside>
 
       <main style={mainCol} data-testid="bi-contact-main">
+        <CrmDuplicatesBanner backend={BI_CRM_BACKEND} entity="contact" id={id} onMerged={refresh} />{/* BF_PORTAL_v856_CRM_UNIFY */}
         {/* BF_PORTAL_CONTACT_RECORD_TABS_v272 - BI analytics come from BI-Server (v271). */}
         <ContactRecordTabs
           analytics={
             <>
+              <CrmAiSummary backend={BI_CRM_BACKEND} entity="contact" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY - above Stage history */}
               <ContactStageHistory contactId={id} endpoint={`/api/v1/bi/crm/contacts/${id}/stage-events`} showEmpty />
-              <ContactAiSummary contactId={id} endpoint={`/api/v1/bi/crm/contacts/${id}/ai-summary`} />
               <ContactJourney contactId={id} endpoint={`/api/v1/bi/crm/contacts/${id}/journey`} site="boreal.insure" />{/* BF_PORTAL_BLOCK_v570 */}
             </>
           }
@@ -565,7 +572,7 @@ export default function BIContactDetailPage() {
           <div style={subtle}>No associated company.</div>
         )}
         <ContactMarketingSource contactId={id} />
-        <BIContactDuplicates contactId={id} onMerged={refresh} />
+        {/* BF_PORTAL_v856_CRM_UNIFY - possible duplicates show as the banner at the top of the record. */}
       </aside>
       <O365ComposeModal
         open={emailComposeOpen}
