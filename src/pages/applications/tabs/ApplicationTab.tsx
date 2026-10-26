@@ -28,6 +28,7 @@ import { api } from "@/api"; // BF_PORTAL_BLOCK_v817_REMIND_CLIENT
 import ProductQuestionsPanel from "@/pages/applications/tabs/ProductQuestionsPanel"; // BF_PORTAL_PRODUCT_QUESTIONS_v292
 import { placeCall } from "@/native/dialerLauncher";
 import { APPLICANT_NAME_MISSING_NOTE, applicantNameMissing, applicantNameMissingMessage } from "./applicantName"; // BF_PORTAL_v851_APPLICANT_NAME
+import { SigningNotifyCard, readSigningNotify, type SigningNotify } from "./signingNotify"; // BF_PORTAL_v857_SIGNING_NOTIFY
 
 type AnyRecord = Record<string, any>;
 import { maskSin } from "@/lib/sensitive";
@@ -175,6 +176,7 @@ export default function ApplicationTab({ application }: Props) {
   const [v_signNote, v_setSignNote] = useState<string | null>(null);
   const [v_resetBusy, v_setResetBusy] = useState(false); // BF_PORTAL_RESET_SIGNING_v1
   const [v851_nameError, v851_setNameError] = useState<string | null>(null); // BF_PORTAL_v851_APPLICANT_NAME
+  const [v857_notify, v857_setNotify] = useState<SigningNotify | null>(null); // BF_PORTAL_v857_SIGNING_NOTIFY
   useEffect(() => {
     if (!v784_appId) return;
     let active = true;
@@ -199,6 +201,7 @@ export default function ApplicationTab({ application }: Props) {
         if (!active) return;
         const d = ((r as any)?.data ?? r) as { reason?: string; canSend?: boolean; isSba?: boolean };
         v_setSign({ reason: String(d?.reason ?? "unknown"), canSend: Boolean(d?.canSend), isSba: Boolean(d?.isSba) });
+        v857_setNotify((prev) => prev ?? readSigningNotify((d as { signing?: { notify?: unknown } })?.signing?.notify)); // BF_PORTAL_v857_SIGNING_NOTIFY
       })
       .catch(() => { /* non-fatal */ });
     return () => { active = false; };
@@ -255,12 +258,18 @@ export default function ApplicationTab({ application }: Props) {
     v_setSignBusy(true);
     v_setSignNote(null);
     v851_setNameError(null); // BF_PORTAL_v851_APPLICANT_NAME
+    v857_setNotify(null); // BF_PORTAL_v857_SIGNING_NOTIFY
     try {
       const r = await api.post<{ data?: { ok?: boolean; reason?: string } } & { ok?: boolean; reason?: string }>(
         `/api/applications/${encodeURIComponent(v784_appId)}/resend-signing`, again ? { again: true } : {},
       );
       const d = ((r as any)?.data ?? r) as { ok?: boolean; reason?: string };
-      if (d?.ok) v_setSignNote("Signing sent ✓ - the client signs in their portal"); // BF_PORTAL_SBA_ONE_BUTTON_v771
+      // BF_PORTAL_v857_SIGNING_NOTIFY - the server reports every signer: email / text sent (to where, when) or why not.
+      const v857 = readSigningNotify({ ...((d as { notify?: object })?.notify ?? {}), signers: (d as { signers?: unknown })?.signers, replaced: (d as { replaced?: boolean })?.replaced === true });
+      if (d?.ok && v857 && v857.signers.length > 0) v857_setNotify(v857);
+      else if (d?.ok && (d as { sessionStatus?: string })?.sessionStatus === "signed") v_setSignNote("Already signed - nothing to send");
+      else if (d?.ok && v_sign?.isSba) v_setSignNote("SBA signing started - each owner's status is on the SBA Signing tab"); // BF_PORTAL_SBA_ONE_BUTTON_v771
+      else if (d?.ok) v_setSignNote("Not sent - the signing document is ready but the server did not report any email or text");
       else if (applicantNameMissingMessage(d)) v851_setNameError(applicantNameMissingMessage(d)); // BF_PORTAL_v851_APPLICANT_NAME
       else v_setSignNote(`Not sent — ${signingReasonLabel(d?.reason)}`);
     } catch (e: unknown) {
@@ -512,6 +521,7 @@ export default function ApplicationTab({ application }: Props) {
           {v_signNote}
         </div>
       )}
+      {v857_notify && <SigningNotifyCard notify={v857_notify} />}{/* BF_PORTAL_v857_SIGNING_NOTIFY */}
       <div style={{ background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ui-text)", marginBottom: 8 }}>
           Client Tasks
@@ -626,7 +636,7 @@ export default function ApplicationTab({ application }: Props) {
       <SectionGroup title="Applicant">
         <Field label="Name" value={
           applicantContactId
-            ? <Link to={`/crm/contacts/${applicantContactId}`} style={styles.link}>{fmt(joinName(applicant) || "—")}</Link>
+            ? <Link to={`/crm/contacts/${applicantContactId}`} style={styles.link} title="Open the CRM contact">{fmt(joinName(applicant) || "—")}</Link>
             : fmt(joinName(applicant) || "—")
         } />
         <Field label="Title" value={fmt(applicant.title || fdApplicant.title)} />
@@ -646,7 +656,7 @@ export default function ApplicationTab({ application }: Props) {
         <SectionGroup title="Partner">
           <Field label="Name" value={
             partnerContactId
-              ? <Link to={`/crm/contacts/${partnerContactId}`} style={styles.link}>{fmt(joinName(partner) || "—")}</Link>
+              ? <Link to={`/crm/contacts/${partnerContactId}`} style={styles.link} title="Open the CRM contact">{fmt(joinName(partner) || "—")}</Link>
               : fmt(joinName(partner) || "—")
           } />
           <Field label="Title" value={fmt(partner.title)} />
@@ -768,7 +778,7 @@ function CompactField({ label, value }: { label: string; value: ReactNode }) {
 }
 
 function Email({ value }: { value: string }) {
-  return <a href={`mailto:${value}`} style={styles.link}>{value}</a>;
+  return <a href={`mailto:${value}`} style={styles.link} title={`Email ${value}`}>{value}</a>;
 }
 
 function Anchor({ href }: { href: string }) {
@@ -865,7 +875,8 @@ const styles: Record<string, CSSProperties> = {
     textOverflow: "ellipsis",
   },
   fieldValueHighlight: { fontSize: 18, color: "var(--ui-text)", fontWeight: 700 },
-  link: { color: "var(--ui-accent-fg)", textDecoration: "none" },
+  // BF_PORTAL_v857_SIGNING_NOTIFY - was var(--ui-accent-fg): 50% navy + 50% white in the BF silo, so these links read as greyed out.
+  link: { color: "var(--ui-text)", textDecoration: "underline", textDecorationColor: "var(--ui-text-muted)", textUnderlineOffset: 3 },
   ownerList: { display: "flex", flexDirection: "column", gap: 12, gridColumn: "1 / -1" },
   ownerCard: { background: "var(--ui-surface-muted)", borderRadius: 8, padding: "12px 14px", border: "1px solid var(--ui-border)" },
   ownerHeader: { fontSize: 14, fontWeight: 700, marginBottom: 8, color: "var(--ui-text)" },
