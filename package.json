@@ -38,7 +38,7 @@
     "@xyflow/react": "^12.12.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "dompurify": "^3.4.12",
+    "dompurify": "^3.4.17",
     "pdfjs-dist": "6.3.289",
     "react": "^18.3.1",
     "react-big-calendar": "^1.19.4",
@@ -47,12 +47,17 @@
     "react-router-dom": "7.18.4",
     "recharts": "^3.7.0",
     "workbox-window": "^7.4.0",
-    "zod": "^3.25.76",
+    "zod": "^4.6.7",
     "zustand": "^4.5.5"
   },
   "overrides": {
-    "esbuild": "0.27.7",
-    "vite": "$vite"
+    "esbuild": "^0.28.1",
+    "vite": "$vite",
+    "follow-redirects": "^1.16.1",
+    "xcode": {
+      "uuid": "^11.1.1"
+    },
+    "postcss-selector-parser": "^7.1.6"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.2",
@@ -73,21 +78,21 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "jsdom": "^24.0.0",
+    "jsdom": "^26.1.0",
     "madge": "^8.0.0",
     "minimatch": "^9.0.3",
     "msw": "^2.12.13",
     "npm-check-updates": "^19.3.2",
     "playwright": "^1.58.2",
     "postcss": "^8.4.47",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "start-server-and-test": "^2.0.10",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
     "vite": "^7.3.6",
     "vite-plugin-pwa": "^1.2.0",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^4.1.4",
+    "vitest": "^4.1.12",
     "workbox-cacheable-response": "^7.3.0",
     "workbox-core": "^7.3.0",
     "workbox-expiration": "^7.3.0",
@@ -102,5 +107,6 @@
     "@rollup/rollup-darwin-arm64": "4.62.4",
     "@rollup/rollup-darwin-x64": "4.62.4",
     "@rollup/rollup-linux-x64-gnu": "4.62.4"
-  }
+  },
+  "x-v859": "BF_PORTAL_v859_DEP_SECURITY"
 }
