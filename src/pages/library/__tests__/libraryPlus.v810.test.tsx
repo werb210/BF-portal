@@ -58,6 +58,34 @@ const page = async () => {
 const rowOf = (name: string) => screen.getAllByTestId("library-row").find((r) => r.textContent?.includes(name))!;
 const openMenu = (name: string) => fireEvent.click(within(rowOf(name)).getByTestId("library-more"));
 
+// BF_PORTAL_v864_LIBRARY_MENU - the "..." menu floats on document.body, not inside the scrolling table.
+describe("v864 library menu is not clipped", () => {
+  it("renders outside the table with fixed positioning, shows every item and keeps the row", async () => {
+    await page();
+    openMenu("Agreement.pdf");
+    const menu = await screen.findByTestId("library-menu");
+    expect(menu.parentElement).toBe(document.body);
+    expect(menu.closest("table")).toBeNull();
+    expect(menu.style.position).toBe("fixed");
+    expect(within(menu).getAllByRole("menuitem").map((b) => b.textContent)).toEqual(expect.arrayContaining(["Preview", "Rename", "Version history", "Copy company link", "Delete"]));
+    expect(rowOf("Agreement.pdf")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("library-menu")).toBeNull());
+  });
+  it("places the menu below the button, flips above near the bottom, and stays on screen", async () => {
+    const { placeMenu } = await import("../FloatingMenu");
+    const vp = { width: 1200, height: 800 };
+    expect(placeMenu({ top: 100, bottom: 120, left: 1100, right: 1130 }, { width: 220, height: 300 }, vp)).toEqual({ top: 124, left: 910, maxHeight: 784 });
+    const flipped = placeMenu({ top: 700, bottom: 720, left: 1100, right: 1130 }, { width: 220, height: 300 }, vp);
+    expect(flipped.top).toBe(396);
+    const clamped = placeMenu({ top: 100, bottom: 120, left: 0, right: 30 }, { width: 220, height: 300 }, vp);
+    expect(clamped.left).toBe(8);
+    const tall = placeMenu({ top: 400, bottom: 420, left: 500, right: 530 }, { width: 220, height: 2000 }, vp);
+    expect(tall.top).toBeGreaterThanOrEqual(8);
+    expect(tall.maxHeight).toBe(784);
+  });
+});
+
 describe("v810 browsing", () => {
   it("shows thumbnails, sizes, who changed it, and item counts", async () => {
     await page();

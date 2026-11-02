@@ -149,8 +149,26 @@ export async function rawApiFetch(path: string, options: RequestOptions = {}) {
   });
 }
 
+// BF_PORTAL_v864_KS_WIDGET_FIX - a call that names its silo (X-Silo in its own headers, e.g. the widget asking for the
+// Keystone or Insurance summary while the topbar is on Financial) is checked against THAT silo. The silo guard used the
+// topbar silo, so the Keystone widget summary ({ silo: "KS" }) was thrown away as a silo mismatch and the Keystone
+// widget never got data ("Open the portal once to update").
+export function explicitSiloHeader(headers: RequestOptions["headers"]): string | null {
+  if (!headers) return null;
+  let value: string | null | undefined;
+  if (typeof Headers !== "undefined" && headers instanceof Headers) value = headers.get("X-Silo");
+  else if (Array.isArray(headers)) value = headers.find(([k]) => k.toLowerCase() === "x-silo")?.[1];
+  else {
+    const rec = headers as Record<string, string>;
+    const key = Object.keys(rec).find((k) => k.toLowerCase() === "x-silo");
+    value = key ? rec[key] : null;
+  }
+  const v = String(value ?? "").trim().toUpperCase();
+  return v === "BF" || v === "BI" || v === "SLF" || v === "KS" ? v : null;
+}
+
 export async function apiFetch<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
-  const requestedSilo = getActiveSilo(path);
+  const requestedSilo = explicitSiloHeader(options.headers) ?? getActiveSilo(path);
   // BF_PORTAL_OFFLINE_READ_CACHE_v252 - saved copies for a few read-only GETs.
   const offlineKey = String(options.method ?? "GET").toUpperCase() === "GET" && !options.params
     ? cacheKeyFor(path, requestedSilo)
@@ -249,7 +267,7 @@ export async function apiFetch<T = any>(path: string, options: RequestOptions = 
 // wants the real total row count) therefore silently got nothing and had to guess from
 // rows.length. This returns the whole envelope untouched.
 export async function apiGetEnvelope<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
-  const requestedSilo = getActiveSilo(path);
+  const requestedSilo = explicitSiloHeader(options.headers) ?? getActiveSilo(path); // BF_PORTAL_v864_KS_WIDGET_FIX
   const res = await rawApiFetch(path, { ...options, method: "GET" });
   if (!res.ok) throw new Error(API_ERROR);
   const envelope = await res.json();

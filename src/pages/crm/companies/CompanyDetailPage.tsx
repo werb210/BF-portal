@@ -5,6 +5,8 @@ import { api } from "@/api";
 import { crmApi, type CompanyRow, type ContactRow, type Scope } from "@/api/crm";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
+import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
+import ActiveContractsTab from "@/features/activeContracts/ActiveContractsTab"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
 import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmDuplicatesBanner } from "@/components/crm/unified/CrmDuplicates"; // BF_PORTAL_v856_CRM_UNIFY
@@ -117,7 +119,10 @@ export default function CompanyDetailPage() {
       <main>
         <CrmDuplicatesBanner backend={crmBackend} entity="company" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY */}
         <CrmAiSummary backend={crmBackend} entity="company" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY - same spot as on a contact */}
-        <ActivityTimeline scope={scope} refreshKey={refreshKey} />
+        {/* BF_PORTAL_v864_ACTIVE_CONTRACTS - Timeline | Active Contracts (BF CRM only; the Keystone CRM keeps the plain timeline). */}
+        {crmBase === "/crm" ? (
+          <ContactRecordTabs timeline={<ActivityTimeline scope={scope} refreshKey={refreshKey} />} contracts={<ActiveContractsTab companyId={id} />} />
+        ) : <ActivityTimeline scope={scope} refreshKey={refreshKey} />}
       </main>
 
       <aside style={rail}>

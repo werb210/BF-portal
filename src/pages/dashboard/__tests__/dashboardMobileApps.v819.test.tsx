@@ -63,7 +63,7 @@ describe("v819 Mobile apps report in the Dashboard library", () => {
     expect(dedupeReports(SERVER_CATALOG).map((r) => r.key)).toEqual(["ads_story", "ads_dropoff"]);
     const fromServer = withPortalReports([...SERVER_CATALOG, MOBILE_APPS_REPORT], "Admin");
     expect(fromServer.filter((r) => r.key === MOBILE_APPS_KEY)).toHaveLength(1);
-    expect(fromServer).toHaveLength(3);
+    expect(fromServer).toHaveLength(4); // BF_PORTAL_v864_ACTIVE_CONTRACTS - plus the Active Contracts portfolio card
   });
 
   it("lists Mobile apps once and each report once in + Add report for an Admin", async () => {

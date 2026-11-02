@@ -3,7 +3,8 @@ import { describe, it, expect } from "vitest";
 import fs from "fs";
 
 const TAB = fs.readFileSync("src/pages/settings/tabs/SnippetsSettings.tsx", "utf8");
-const PAGE = fs.readFileSync("src/pages/settings/SettingsPage.tsx", "utf8");
+// BF_PORTAL_v864_CONTENT_TAB - Snippets is a section of Settings > Content now.
+const PAGE = fs.readFileSync("src/pages/settings/tabs/ContentSettings.tsx", "utf8");
 
 describe("a snippet can be created", () => {
   it("has name, text and shortcut", () => {
@@ -49,7 +50,7 @@ describe("personalisation is picked, not memorised", () => {
 });
 
 describe("it is wired into settings", () => {
-  it("appears as its own tab", () => {
+  it("appears as its own section", () => {
     expect(PAGE).toContain('id: "snippets"');
     expect(PAGE).toContain("<SnippetsSettings />");
   });

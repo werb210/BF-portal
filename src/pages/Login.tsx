@@ -39,6 +39,9 @@ export default function Login() {
       console.warn("[passkey] login failed", e?.name, e?.message);
       if (e?.name === "NotAllowedError" || e?.name === "AbortError") {
         setError("No passkey found on this device. Sign in with your phone number, then add a passkey from your Profile settings.");
+      } else if (e?.name === "PasskeyNativeError" && e?.message) {
+        // BF_PORTAL_v864_NATIVE_PASSKEYS - the app's own reason (e.g. the domain is not linked to the app yet).
+        setError(`Passkey sign-in failed (${e.message}). Use your phone number instead.`);
       } else {
         setError("Passkey sign-in failed. Use your phone number instead.");
       }

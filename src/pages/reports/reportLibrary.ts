@@ -15,7 +15,13 @@ export const MOBILE_APPS_REPORT: LibraryEntry = {
   size: "full",
   description: "Client app use: active users, app vs web, devices, notifications and quick sign-in.",
 };
-const PORTAL_REPORTS: LibraryEntry[] = [MOBILE_APPS_REPORT];
+// BF_PORTAL_v864_ACTIVE_CONTRACTS - Admin portfolio reporting for Active Contracts (money group: Admin only).
+export const ACTIVE_CONTRACTS_KEY = "active_contracts_portfolio";
+export const ACTIVE_CONTRACTS_REPORT: LibraryEntry = {
+  key: ACTIVE_CONTRACTS_KEY, title: "Active contracts portfolio", silo: "BF", group: "money", size: "full",
+  description: "Active contracts, outstanding, renewals due, conversion, repeat volume, revenue by lender / product, expected vs received.",
+};
+const PORTAL_REPORTS: LibraryEntry[] = [MOBILE_APPS_REPORT, ACTIVE_CONTRACTS_REPORT];
 
 // BF_PORTAL_v819_MOBILE_REPORT - mirrors BF-Server canSee(): Admin sees all, Marketing all but money, others operations.
 export function canSeeReportGroup(role: unknown, group: ReportGroup): boolean {

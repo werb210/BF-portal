@@ -296,7 +296,7 @@ export default function WorkflowEditor() {
   return (
     <div data-testid="workflow-editor" style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "var(--ui-bg, #fff)", zIndex: 50 }}>
       <header style={{ background: NAVY, color: "#fff", padding: "8px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => { if (dirty && !window.confirm("Leave without saving your changes?")) return; if (window.history.length > 1) navigate(-1); else navigate("/admin/automations"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.5)", color: "#fff", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 13 }}>Back</button>
+        <button type="button" onClick={() => { if (dirty && !window.confirm("Leave without saving your changes?")) return; if (window.history.length > 1) navigate(-1); else navigate("/settings/content?section=automations"); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.5)", color: "#fff", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 13 }}>Back</button>
         {editingName && canEdit ? (
           <input aria-label="Workflow name" autoFocus value={wf.name} onChange={(e) => change({ ...wf, name: e.target.value })} onBlur={() => setEditingName(false)} onKeyDown={(e) => { if (e.key === "Enter") setEditingName(false); }}
             style={{ fontSize: 16, fontWeight: 700, padding: "4px 8px", borderRadius: 6, border: "1px solid #94a3b8", background: "#fff", color: NAVY, minWidth: 220 }} />

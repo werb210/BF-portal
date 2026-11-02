@@ -202,10 +202,12 @@ enum WidgetBackgroundRefresh {
             guard http.statusCode == 200,
                   let fresh = (try? JSONSerialization.jsonObject(with: result.0)) as? [String: Any] else { continue }
             let key = "widget_summary_\(silo)"
-            guard let json = defaults.string(forKey: key),
-                  let storedData = json.data(using: .utf8),
-                  let stored = (try? JSONSerialization.jsonObject(with: storedData)) as? [String: Any],
-                  let merged = merge(stored: stored, fresh: fresh, silo: silo),
+            // BF_PORTAL_v864_KS_WIDGET_FIX - every Keystone figure comes from this call, so a Keystone summary can be
+            // created here even when the app never wrote one; BF / BI / SLF still need the app's first snapshot.
+            let storedJSON = defaults.string(forKey: key)?.data(using: .utf8)
+                .flatMap { (try? JSONSerialization.jsonObject(with: $0)) as? [String: Any] }
+            let stored: [String: Any] = storedJSON ?? (silo == "KS" ? ["schemaVersion": 2, "silo": "KS", "currency": "CAD"] : [:])
+            guard let merged = merge(stored: stored, fresh: fresh, silo: silo),
                   let out = try? JSONSerialization.data(withJSONObject: merged),
                   let text = String(data: out, encoding: .utf8) else { continue }
             defaults.set(text, forKey: key)

@@ -190,7 +190,9 @@ export type TimelineItem = {
   kind: "note" | "task" | "call" | "email" | "meeting" | "voicemail" | "sms" | "system"
     | "message" | "call_logged" | "email_activity"
     // BF_PORTAL_v786_CRM_FIXES - BF-Server v786 kinds.
-    | "recording" | "automation";
+    | "recording" | "automation"
+    // BF_PORTAL_v864_ACTIVE_CONTRACTS - contract activity; extra is the contract id.
+    | "contract";
   id: string;
   ts: string;
   title: string | null;

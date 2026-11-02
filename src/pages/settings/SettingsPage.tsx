@@ -17,10 +17,7 @@ import RuntimeSettings from "./tabs/RuntimeSettings";
 import UserManagement from "./tabs/UserManagement";
 import PhoneLines from "./tabs/PhoneLines"; // BF_PORTAL_PHONE_LINES_v689
 import SettingsOverview from "./tabs/SettingsOverview";
-import TemplatesSettings from "./tabs/TemplatesSettings"; // v694
-import SnippetsSettings from "./tabs/SnippetsSettings"; // BF_PORTAL_SNIPPETS_TAB_v46
-import CollateralSettings from "./tabs/CollateralSettings"; // v694
-import LibraryPage from "@/pages/library/LibraryPage"; // BF_PORTAL_LIBRARY_IN_SETTINGS_v764
+import ContentSettings, { isContentSection } from "./tabs/ContentSettings"; // BF_PORTAL_v864_CONTENT_TAB
 import RetentionSettings from "./tabs/RetentionSettings"; // BF_PORTAL_v855_RETENTION
 import FraudProtectionCard from "@/fraud/FraudProtectionCard"; // BF_PORTAL_v846_FRAUD
 import QuickBooksCard from "@/features/quickbooks/QuickBooksCard"; // BF_PORTAL_v852_CALC_QBO
@@ -35,6 +32,7 @@ const SettingsPage = () => {
   const isAdmin = user?.role === "Admin";
   const isStaff = user?.role === "Staff"; // BF_PORTAL_BLOCK_v526
   const isBI = String(silo ?? "").toUpperCase() === "BI";
+  const isMarketing = user?.role === "Marketing"; // BF_PORTAL_v864_CONTENT_TAB
 
   const tabs = useMemo(
     () => [
@@ -47,24 +45,24 @@ const SettingsPage = () => {
       { id: "quickbooks", label: "QuickBooks", visible: isAdmin && !isBI, content: isAdmin ? <QuickBooksCard /> : null },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: !isBI, content: <RuntimeSettings /> },
-      { id: "templates", label: "Templates", visible: !isBI, content: <TemplatesSettings /> }, // v694
-      // BF_PORTAL_SNIPPETS_TAB_v46 - visible in BI too: #pnw is as useful on a
-      // PGI conversation as a lending one, and the server scopes by silo.
-      { id: "snippets", label: "Snippets", visible: true, content: <SnippetsSettings /> },
-      { id: "collateral", label: "Collateral", visible: !isBI, content: <CollateralSettings /> }, // v694
+      // BF_PORTAL_v864_CONTENT_TAB - Templates, Snippets, Collateral, the Library and the automations are sections of
+      // one Content tab (see tabs/ContentSettings.tsx). Snippets and the Library still show in BI.
+      { id: "content", label: "Content", visible: true, content: <ContentSettings isBI={isBI} canAutomate={isAdmin || isMarketing} /> },
       { id: "deal-tools", label: "Deal tools", visible: (isAdmin || isStaff) && !isBI, content: <DealToolsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v865_BROKER_TOOLS
-      // BF_PORTAL_LIBRARY_IN_SETTINGS_v764 - the Staff Library (lender forms, Read This) lives here, not in the sidebar.
-      { id: "library", label: "Library", visible: true, content: <LibraryPage /> },
       // BF_PORTAL_v855_RETENTION - 7-year record retention: legal holds and the eligible-for-deletion report.
       { id: "retention", label: "Retention & legal holds", visible: isAdmin, content: isAdmin ? <RetentionSettings /> : null },
       // BF_PORTAL_PARTNERS_TABS_v720 - Broker Files moved to Marketing > Referrers > Brokers.
     ],
-    [isAdmin, isStaff, isBI]
+    [isAdmin, isStaff, isBI, isMarketing]
   );
 
   const safeTabs = Array.isArray(tabs) ? tabs : [];
   const availableTabs = safeTabs.filter((tab) => tab.visible);
-  const activeTabId = tabParam ?? searchParams.get("tab");
+  const requestedTabId = tabParam ?? searchParams.get("tab");
+  // BF_PORTAL_v864_CONTENT_TAB - the old tabs (/settings/templates, /settings/snippets, /settings/collateral,
+  // /settings/library) forward to their section of Content, so links and bookmarks keep working.
+  const legacySection = isContentSection(requestedTabId) ? requestedTabId : null;
+  const activeTabId = legacySection ? "content" : requestedTabId;
   const fallbackTabId = availableTabs.some((tab) => tab.id === "profile") ? "profile" : availableTabs[0]?.id ?? "profile";
   const resolvedTabId = availableTabs.some((tab) => tab.id === activeTabId) ? activeTabId : fallbackTabId;
   const activeTab = availableTabs.find((tab) => tab.id === resolvedTabId) ?? availableTabs[0];
@@ -72,6 +70,10 @@ const SettingsPage = () => {
   const showOverview = false;
 
   useEffect(() => {
+    if (legacySection) {
+      navigate(`/settings/content?section=${legacySection}`, { replace: true });
+      return;
+    }
     if (!tabParam) {
       navigate(`/settings/${resolvedTabId}`, { replace: true });
       return;
@@ -79,10 +81,10 @@ const SettingsPage = () => {
     if (tabParam && resolvedTabId !== tabParam) {
       navigate(`/settings/${resolvedTabId}`, { replace: true });
     }
-  }, [activeTabId, navigate, resolvedTabId, tabParam]);
+  }, [activeTabId, navigate, resolvedTabId, tabParam, legacySection]);
 
   return (
-    <RequireRole roles={["Admin", "Staff"]}>
+    <RequireRole roles={["Admin", "Staff", "Marketing"]}>
       <ErrorBoundary>
         <SettingsSectionLayout>
           {showOverview ? (

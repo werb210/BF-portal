@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { BrowserAuthError } from "@azure/msal-browser";
 import api from "@/api";
 import Button from "@/components/ui/Button";
@@ -15,8 +15,10 @@ import { logger } from "@/utils/logger";
 import { bfLogMsalPhase, pickLoginStrategy } from "@/auth/msalLoginStrategy";
 import { registerPasskey, passkeysSupported } from "@/auth/passkey"; // BF_PORTAL_WEBAUTHN_v1
 import OutOfOfficePanel from "@/components/o365/OutOfOfficePanel"; // BF_PORTAL_O365_UI_v1
-import OneDriveFilePicker from "@/components/o365/OneDriveFilePicker"; // BF_PORTAL_O365_UI_v1
 import ContactsSyncButton from "@/components/o365/ContactsSyncButton"; // BF_PORTAL_CONTACTS_PULL_TRIGGER_v1
+import SignatureBuilder from "@/components/signature/SignatureBuilder"; // BF_PORTAL_v864_SIGNATURE_BUILDER
+import { SILO_BRANDS, type SignatureFields } from "@/components/signature/signatureHtml"; // BF_PORTAL_v864_SIGNATURE_BUILDER
+import SiloContext from "@/context/SiloContext"; // BF_PORTAL_v864_SIGNATURE_BUILDER
 import { registerExistingPushPermission } from "@/hooks/usePushRegistration";
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
@@ -570,7 +572,8 @@ const ProfileSettings = () => {
                 setPasskeyStatus("Passkey added. You can now sign in with it.");
               } catch (e: any) {
                 if (e?.name !== "NotAllowedError" && e?.name !== "AbortError") {
-                  setPasskeyStatus("Could not add a passkey. Please try again.");
+                  // BF_PORTAL_v864_NATIVE_PASSKEYS - show the app's reason (e.g. the domain is not linked yet).
+                  setPasskeyStatus(e?.name === "PasskeyNativeError" && e?.message ? `Could not add a passkey: ${e.message}` : "Could not add a passkey. Please try again.");
                 }
               }
             }}
@@ -579,7 +582,12 @@ const ProfileSettings = () => {
             Set up a passkey
           </button>
         ) : (
-          <span style={{ fontSize: 13, color: "#516f90" }}>This browser doesn&apos;t support passkeys.</span>
+          <span style={{ fontSize: 13, color: "#516f90" }}>
+            {/* BF_PORTAL_v864_NATIVE_PASSKEYS - the old Electron Mac app has no passkey support; the native Mac app does. */}
+            {typeof navigator !== "undefined" && /Electron/i.test(navigator.userAgent)
+              ? "This version of the Mac app can't use passkeys. Install the new Boreal Staff Portal for Mac, or use the iPad app or a browser."
+              : "This browser doesn't support passkeys."}
+          </span>
         )}
         {passkeyStatus && <p style={{ marginTop: 10, fontSize: 13, color: "#516f90" }}>{passkeyStatus}</p>}
       </section>
@@ -632,7 +640,8 @@ const ProfileSettings = () => {
       </section>
 
       <OutOfOfficePanel />
-      <OneDriveFilePicker />
+      {/* BF_PORTAL_v864_NO_ONEDRIVE_SECTION - the "OneDrive files" search left My Profile; the Staff Library
+          (Settings > Content > Library) replaces it. OneDrive folders on CRM records are unchanged. */}
       <ContactsSyncButton />
 
       <div className="settings-actions">
@@ -659,9 +668,37 @@ const ProfileSettings = () => {
 };
 
 
+// BF_PORTAL_v864_SIGNATURE_BUILDER - the company's brand for signatures: the logo saved in branding settings
+// (else the business's default logo), its colour and website, for the business (silo) in use.
+function useSignatureBrand(): Partial<SignatureFields> {
+  const silo = useContext(SiloContext)?.silo; // no provider (tests, sign-in) -> Boreal Financial
+  const key = String(silo ?? "BF").toUpperCase();
+  const base = SILO_BRANDS[key] ?? SILO_BRANDS.BF ?? { company: "", color: "#1E3A8A", website: "", logoUrl: "" };
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  useEffect(() => {
+    let cancelled = false;
+    api.get<{ branding?: { logoUrl?: string }; logoUrl?: string }>("/api/settings/branding")
+      .then((r) => { if (!cancelled) setLogoUrl(String(r?.branding?.logoUrl ?? r?.logoUrl ?? "").trim()); })
+      .catch((e) => { logger.warn("[signature] branding read failed", { message: getErrorMessage(e, "") }); });
+    return () => { cancelled = true; };
+  }, []);
+  return useMemo(() => ({
+    company: base.company,
+    color: base.color,
+    website: base.website,
+    logoUrl: /^https:\/\//i.test(logoUrl) ? logoUrl : base.logoUrl,
+  }), [base, logoUrl]);
+}
+
 // BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — minimal email-signature editor.
+// BF_PORTAL_v864_SIGNATURE_BUILDER - now a builder (brand logo + colour, your details, live preview) that writes
+// email-safe table HTML; pasting your own HTML is the advanced option.
 function EmailSignaturePanel() {
   const [html, setHtml] = useState<string>("");
+  const [draft, setDraft] = useState<string>("");
+  const [bookingUrl, setBookingUrl] = useState<string>("");
+  const profile = useSettingsStore((st) => st.profile);
+  const brand = useSignatureBrand();
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -669,16 +706,27 @@ function EmailSignaturePanel() {
   useEffect(() => {
     let cancelled = false;
     api.get<{ signatureHtml?: string }>("/api/o365/me/signature")
-      .then((r) => { if (!cancelled) { setHtml(r?.signatureHtml ?? ""); setLoaded(true); } })
+      .then((r) => { if (!cancelled) { setHtml(r?.signatureHtml ?? ""); setDraft(r?.signatureHtml ?? ""); setLoaded(true); } })
       .catch(() => { if (!cancelled) setLoaded(true); });
+    api.get<{ bookingUrl?: string | null; booking_url?: string | null }>("/api/o365/me/booking-url")
+      .then((r) => { if (!cancelled) setBookingUrl(String(r?.bookingUrl ?? r?.booking_url ?? "")); })
+      .catch((e) => { logger.warn("[signature] booking link read failed", { message: getErrorMessage(e, "") }); });
     return () => { cancelled = true; };
   }, []);
+
+  const defaults = useMemo<Partial<SignatureFields>>(() => ({
+    ...brand,
+    name: [profile.firstName, profile.lastName].filter(Boolean).join(" "),
+    email: profile.email ?? "",
+    phone: profile.phone ?? "",
+    bookingUrl,
+  }), [brand, profile.firstName, profile.lastName, profile.email, profile.phone, bookingUrl]);
 
   async function save() {
     setSaving(true);
     setStatus(null);
     try {
-      await api.put("/api/o365/me/signature", { signatureHtml: html });
+      await api.put("/api/o365/me/signature", { signatureHtml: draft });
       setStatus("Saved.");
     } catch (e) {
       setStatus(getErrorMessage(e, "Save failed."));
@@ -691,18 +739,14 @@ function EmailSignaturePanel() {
     <div className="settings-grid" style={{ marginTop: 16 }}>
       <div style={{ width: "100%" }}>
         <h3 style={{ margin: "0 0 8px 0" }}>Email signature</h3>
-        <p style={{ margin: "0 0 8px 0", fontSize: 13, color: "#6b7280" }}>
-          Paste HTML or plain text. Appended to outbound emails sent via Boreal.
+        <p style={{ margin: "0 0 8px 0", fontSize: 13, color: "#475569" }}>
+          Added to the emails you send from Boreal. Build it from your details and the company logo and colour, or paste your own HTML.
         </p>
-        <textarea
-          value={html}
-          onChange={(e) => setHtml(e.target.value)}
-          rows={8}
-          disabled={!loaded}
-          aria-label="Email signature HTML"
-          placeholder={loaded ? "<p>Best,<br>Your Name<br>Boreal Financial</p>" : "Loading…"}
-          style={{ width: "100%", padding: 8, fontFamily: "monospace", fontSize: 12, borderRadius: 6, border: "1px solid var(--ui-border)" }}
-        />
+        {loaded ? (
+          <SignatureBuilder html={html} defaults={defaults} onChange={setDraft} label="Email signature" testIdPrefix="my-sig" />
+        ) : (
+          <p style={{ fontSize: 13, color: "#475569" }}>Loading…</p>
+        )}
         <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
           <Button type="button" onClick={() => void save()} disabled={!loaded || saving}>
             {saving ? "Saving…" : "Save signature"}
@@ -721,6 +765,8 @@ function SharedMailboxSignaturePanel() {
   const [shared, setShared] = useState<Array<{ address: string; display_name: string }>>([]);
   const [address, setAddress] = useState<string>("");
   const [html, setHtml] = useState<string>("");
+  const [draft, setDraft] = useState<string>(""); // BF_PORTAL_v864_SIGNATURE_BUILDER
+  const brand = useSignatureBrand();
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -746,16 +792,24 @@ function SharedMailboxSignaturePanel() {
     let cancelled = false;
     setStatus(null);
     api.get<{ signature_html?: string }>(`/api/crm/shared-mailboxes/${encodeURIComponent(address)}/signature`)
-      .then((r) => { if (!cancelled) setHtml(r?.signature_html ?? ""); })
-      .catch(() => { if (!cancelled) setHtml(""); });
+      .then((r) => { if (!cancelled) { setHtml(r?.signature_html ?? ""); setDraft(r?.signature_html ?? ""); } })
+      .catch(() => { if (!cancelled) { setHtml(""); setDraft(""); } });
     return () => { cancelled = true; };
   }, [address]);
+
+  // BF_PORTAL_v864_SIGNATURE_BUILDER - a shared mailbox signs as the mailbox: its name and address, the brand.
+  const mailbox = shared.find((m) => m.address === address);
+  const sharedDefaults = useMemo<Partial<SignatureFields>>(() => ({
+    ...brand,
+    name: mailbox?.display_name ?? "",
+    email: address,
+  }), [brand, mailbox?.display_name, address]);
 
   async function save() {
     if (!address) return;
     setSaving(true); setStatus(null);
     try {
-      await api.put(`/api/crm/shared-mailboxes/${encodeURIComponent(address)}/signature`, { signature_html: html });
+      await api.put(`/api/crm/shared-mailboxes/${encodeURIComponent(address)}/signature`, { signature_html: draft });
       setStatus("Saved.");
     } catch (e) {
       setStatus(getErrorMessage(e, "Save failed."));
@@ -784,15 +838,9 @@ function SharedMailboxSignaturePanel() {
             <option key={m.address} value={m.address}>{m.display_name} ({m.address})</option>
           ))}
         </select>
-        <textarea
-          value={html}
-          onChange={(e) => setHtml(e.target.value)}
-          rows={8}
-          disabled={!loaded || !address}
-          aria-label="Shared mailbox signature HTML"
-          placeholder="<p>Boreal Financial<br>submissions@boreal.financial</p>"
-          style={{ width: "100%", padding: 8, fontFamily: "monospace", fontSize: 12, borderRadius: 6, border: "1px solid var(--ui-border)" }}
-        />
+        {address ? (
+          <SignatureBuilder key={address} html={html} defaults={sharedDefaults} disabled={!loaded} onChange={setDraft} label="Shared mailbox signature" testIdPrefix="shared-sig" />
+        ) : null}
         <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
           <Button type="button" onClick={() => void save()} disabled={!loaded || !address || saving}>
             {saving ? "Saving…" : "Save signature"}

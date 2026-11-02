@@ -18,6 +18,7 @@ import ModalFooterWithDelete from "@/components/ModalFooterWithDelete";
 import SbaIvesFields, { EMPTY_SBA, sbaMissing, type LenderSba } from "./components/SbaIvesFields"; // BF_PORTAL_LENDER_SBA_IVES_v747
 import { phoneInputHandler, formatDollar, formatRate, unformatDollar } from "@/utils/format";
 import { CATEGORY_ORDER, CATEGORY_LABELS, CREDIT_SCORE_BANDS, bfBandFromMin, bfMinFromBand, ProductCoreFields } from "./productFormShared"; // PRODUCT_CORE_FIELDS_SHARED_v1
+import RenewalRulesEditor from "@/features/activeContracts/RenewalRulesEditor"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -929,6 +930,9 @@ function CreateProductModal({
               </div>
             )}
           </div>
+
+          {/* BF_PORTAL_v864_ACTIVE_CONTRACTS - renewal rules per lender product (saved separately; new products get them after the first save). */}
+          {product?.id ? <RenewalRulesEditor productId={String(product.id)} category={String(form.category ?? "")} /> : null}
 
           {/* Active toggle */}
           <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>

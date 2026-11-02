@@ -32,6 +32,7 @@ const BF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",         roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
   { label: "CRM",            path: "/crm/contacts",    roles: ["Admin", "Staff"] },
+  { label: "Active Contracts", path: "/crm/active-contracts", roles: ["Admin", "Staff"] }, // BF_PORTAL_v864_ACTIVE_CONTRACTS
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
@@ -106,7 +107,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const canSee = (item: NavItem) => {
     const label = item.label.toLowerCase();
     if (isAdmin) return true;
-    if (isMarketing) return label !== "lenders";
+    if (isMarketing) return label !== "lenders" && label !== "active contracts"; // BF_PORTAL_v864_ACTIVE_CONTRACTS - CRM is Admin / Staff
     if (isStaff) return label !== "marketing";
     return false;
   };

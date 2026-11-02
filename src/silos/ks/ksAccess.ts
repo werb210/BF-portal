@@ -51,6 +51,8 @@ export const KS_NAV = [
   { label: "Licensees", path: "/silo/ks/licensees", roles: ["Admin"] },
   { label: "Support", path: "/silo/ks/tickets", roles: ["Admin"] },
   { label: "Requests", path: "/silo/ks/requests", roles: ["Admin"] },
+  // BF_PORTAL_v865_KS_MARKETING - email marketing to prospective licensees (KS-Ops)
+  { label: "Marketing", path: "/silo/ks/marketing", roles: ["Admin"] },
   // BF_PORTAL_v850_KS_CRM - the Keystone CRM
   { label: "Contacts", path: "/silo/ks/crm/contacts", roles: ["Admin", "Staff", "Marketing"] },
   { label: "Companies", path: "/silo/ks/crm/companies", roles: ["Admin", "Staff", "Marketing"] },
