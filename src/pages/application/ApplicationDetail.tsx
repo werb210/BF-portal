@@ -89,6 +89,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     quotes: <QuotesTab applicationId={applicationId} />, // BF_PORTAL_v872_QUOTES
     "id-verification": <IdVerificationTab applicationId={applicationId} />, // BF_PORTAL_v872_KYC
     funding: <BrokerToolsTab tab="funding" applicationId={applicationId} />, // BF_PORTAL_v865_BROKER_TOOLS
+    "deal-desk": <BrokerToolsTab tab="deal-desk" applicationId={applicationId} />, // BF_PORTAL_v867_BROKER_TOOLS_2
   }[activeTab];
 
   // BF_PORTAL_v852_CALC_QBO - the calculator starts from the requested amount; the PDF is titled with the business name.
