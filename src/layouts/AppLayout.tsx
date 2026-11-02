@@ -35,6 +35,7 @@ const NAV_AREA: Record<string, Area> = {
   pipeline: "applications",
   crm: "contacts",
   "active contracts": "applications",
+  revenue: "applications", // BF_PORTAL_v878_NAV_REVENUE
   communications: "communications",
   marketing: "marketing",
   outreach: "marketing",
@@ -49,7 +50,8 @@ const BF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",         roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
   { label: "CRM",            path: "/crm/contacts",    roles: ["Admin", "Staff"] },
-  { label: "Active Contracts", path: "/crm/active-contracts", roles: ["Admin", "Staff"] }, // BF_PORTAL_v864_ACTIVE_CONTRACTS
+  // BF_PORTAL_v878_NAV_REVENUE - Active Contracts is a tab inside CRM now; Revenue gathers forecast, commission and contracts.
+  { label: "Revenue",        path: "/revenue",         roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
