@@ -98,7 +98,7 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
                   <Chip tone={STATUS_TONE[c.status]}>{STATUS_LABEL[c.status]}</Chip>
                   {c.overdue && <Chip tone="red">Overdue</Chip>}
                   {c.client_submitted_at && c.status === "received" && <Chip tone="blue">Sent by client</Chip>}
-                  <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{c.source === "offer" ? "From the offer" : c.source === "template" ? "From a template" : "Added by staff"}</span>
+                  <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{c.source === "offer" ? "From the offer" : c.source === "template" ? "From a template" : c.source === "lender_api" ? "From the lender (API)" : "Added by staff"}</span>
                 </div>
                 {c.description && <p style={muted}>{c.description}</p>}
                 {c.waived_reason && <p style={muted}>Waived: {c.waived_reason}</p>}

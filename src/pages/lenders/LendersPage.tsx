@@ -15,6 +15,8 @@ import {
 import { getErrorMessage } from "@/utils/errors";
 import { api } from "@/api";
 import ModalFooterWithDelete from "@/components/ModalFooterWithDelete";
+import LenderConnectionTab from "./components/LenderConnectionTab"; // BF_PORTAL_v873_LENDER_API
+import { useAuth } from "@/hooks/useAuth"; // BF_PORTAL_v873_LENDER_API
 import SbaIvesFields, { EMPTY_SBA, sbaMissing, type LenderSba } from "./components/SbaIvesFields"; // BF_PORTAL_LENDER_SBA_IVES_v747
 import { phoneInputHandler, formatDollar, formatRate, unformatDollar } from "@/utils/format";
 import { CATEGORY_ORDER, CATEGORY_LABELS, CREDIT_SCORE_BANDS, bfBandFromMin, bfMinFromBand, ProductCoreFields } from "./productFormShared"; // PRODUCT_CORE_FIELDS_SHARED_v1
@@ -137,6 +139,10 @@ function CreateLenderModal({
   lender?: Lender | null;
 }) {
   const queryClient = useQueryClient();
+  // BF_PORTAL_v873_LENDER_API - Details | Connection (the lender's broker API); the Connection tab is Admin only.
+  const [modalTab, setModalTab] = useState<"details" | "connection">("details");
+  const { user: authUser } = useAuth();
+  const showConnection = Boolean(lender?.id) && authUser?.role === "Admin";
   const [form, setForm] = useState({
     name: lender?.name ?? "",
     hasBrokerAgreement: ((lender as any)?.hasBrokerAgreement ?? (lender as any)?.has_broker_agreement ?? false) as boolean,
@@ -281,6 +287,17 @@ function CreateLenderModal({
       }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, color: "var(--ui-text-muted)", cursor: "pointer" }}>×</button>
         <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 700, color: "var(--ui-text)" }}>{lender ? "Edit Lender" : "Create New Lender"}</h2>
+        {showConnection && (
+          <div role="tablist" style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--ui-border)", margin: "-12px 0 18px" }}>
+            {(["details", "connection"] as const).map((t) => (
+              <button key={t} type="button" role="tab" aria-selected={modalTab === t} data-testid={`lender-modal-tab-${t}`} onClick={() => setModalTab(t)}
+                style={{ background: "none", border: 0, borderBottom: `2px solid ${modalTab === t ? "var(--ui-accent-blue)" : "transparent"}`, padding: "8px 14px", fontSize: 14, fontWeight: 600, cursor: "pointer", color: modalTab === t ? "var(--ui-text)" : "var(--ui-text-muted)", fontFamily: "inherit" }}>
+                {t === "details" ? "Details" : "Connection"}
+              </button>
+            ))}
+          </div>
+        )}
+        {showConnection && modalTab === "connection" ? <LenderConnectionTab lenderId={String(lender!.id)} lenderName={String(lender!.name ?? form.name ?? "this lender")} /> : (<>
 
         {serverError && (
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 16, color: "#dc2626", fontSize: 13 }}>
@@ -416,6 +433,7 @@ function CreateLenderModal({
           deleting={saving}
           saveLabel={lender ? "Save Changes" : "Create Lender"}
         />
+        </>)}
       </div>
     </div>
   );
