@@ -2,7 +2,7 @@
 // key goes (BF-Server /api/phone-menu, ported from KS-Portal #35). Boreal's menu has a second level (Boreal Financial:
 // client engagement / credit) and spoken-only options, so the editor shows both. Until a menu is saved, the live menu
 // is shown exactly as callers hear it today.
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api } from "@/api";
 import { DAY_LABELS, Field, Notice, Section, Toggle, button, cell, danger, errText, input, muted, quiet } from "./ui";
 
@@ -15,6 +15,7 @@ type Target =
   | { type: "voicemail"; userId: string | null; message: string }
   | { type: "ai" }
   | { type: "meeting" }
+  | { type: "queue"; queueId: string } // BF_PORTAL_v871_CALL_QUEUES
   | { type: "submenu"; menu: SubMenu };
 type Option = { id: string; digit: string | null; label: string; keywords: string[]; target: Target };
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
@@ -27,16 +28,21 @@ type Menu = {
 };
 type User = { id: string; name: string };
 type Audio = { id: string; file_name: string | null };
-type Loaded = { menu: Menu; is_default: boolean; users: User[]; audio: Audio[]; stale_user_ids: string[]; time_zone: string; zone_label: string; open_now: boolean; spoken_greeting: string };
+type QueueRef = { id: string; name: string };
+type Loaded = { menu: Menu; is_default: boolean; users: User[]; audio: Audio[]; queues?: QueueRef[]; stale_user_ids: string[]; time_zone: string; zone_label: string; open_now: boolean; spoken_greeting: string };
 
 const TARGET_LABEL: Record<Target["type"], string> = {
   user: "Ring one person", group: "Ring a group", voicemail: "Voicemail", ai: "AI receptionist (caller says what they need)",
   meeting: "Meeting dial-in (access code)", submenu: "A second menu",
+  queue: "Call queue (callers wait for the next free person)", // BF_PORTAL_v871_CALL_QUEUES
 };
+/** BF_PORTAL_v871_CALL_QUEUES - the active call queues (Settings > Call queues) an option can send callers to. */
+const QueuesContext = createContext<QueueRef[]>([]);
 const firstName = (u: User | undefined) => String(u?.name ?? "").split(" ")[0] ?? "";
 const newId = (taken: string[]) => { let n = taken.length + 1; while (taken.includes(`opt${n}`)) n += 1; return `opt${n}`; };
 
-function blankTarget(type: Target["type"], users: User[]): Target {
+function blankTarget(type: Target["type"], users: User[], queues: QueueRef[] = []): Target {
+  if (type === "queue") return { type, queueId: queues[0]?.id ?? "" };
   if (type === "user") return { type, userId: users[0]?.id ?? "", name: firstName(users[0]) };
   if (type === "group") return { type, userIds: users.map((u) => u.id), strategy: "simultaneous", everyoneAvailable: false, exceptUserIds: [] };
   if (type === "voicemail") return { type, userId: null, message: "" };
@@ -56,11 +62,20 @@ function PeopleToggles({ id, users, chosen, onChange }: { id: string; users: Use
 }
 
 function TargetEditor({ id, value, users, audio, onChange, allow, allIds }: { id: string; value: Target; users: User[]; audio: Audio[]; onChange: (t: Target) => void; allow: Target["type"][]; allIds: string[] }) {
+  const queues = useContext(QueuesContext);
+  // "Call queue" is offered once a queue exists (or when this option already points at one).
+  const types = allow.filter((t) => t !== "queue" || queues.length > 0 || value.type === "queue");
   return (
     <div style={{ display: "grid", gap: 6 }}>
-      <select id={id} aria-label="Where it goes" value={value.type} onChange={(e) => onChange(blankTarget(e.target.value as Target["type"], users))} style={input}>
-        {allow.map((t) => <option key={t} value={t}>{TARGET_LABEL[t]}</option>)}
+      <select id={id} aria-label="Where it goes" value={value.type} onChange={(e) => onChange(blankTarget(e.target.value as Target["type"], users, queues))} style={input}>
+        {types.map((t) => <option key={t} value={t}>{TARGET_LABEL[t]}</option>)}
       </select>
+      {value.type === "queue" && (
+        <select aria-label="Queue" value={value.queueId} onChange={(e) => onChange({ type: "queue", queueId: e.target.value })} style={input}>
+          {!queues.some((q) => q.id === value.queueId) && <option value={value.queueId}>Choose a queue</option>}
+          {queues.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
+        </select>
+      )}
       {value.type === "user" && (
         <>
           <select aria-label="Person" value={value.userId} onChange={(e) => onChange({ ...value, userId: e.target.value, name: firstName(users.find((u) => u.id === e.target.value)) })} style={input}>
@@ -130,7 +145,7 @@ function NoChoiceEditor({ id, value, options, onChange }: { id: string; value: N
 function OptionsTable({ id, options, users, audio, nested, allIds, onChange }: { id: string; options: Option[]; users: User[]; audio: Audio[]; nested?: boolean; allIds: string[]; onChange: (o: Option[]) => void }) {
   const setOption = (i: number, patch: Partial<Option>) => onChange(options.map((o, j) => (j === i ? { ...o, ...patch } : o)));
   const nextDigit = DIGITS.find((d) => !options.some((o) => o.digit === d));
-  const allow: Target["type"][] = nested ? ["user", "group", "voicemail", "ai", "meeting"] : ["user", "group", "voicemail", "ai", "meeting", "submenu"];
+  const allow: Target["type"][] = nested ? ["user", "group", "voicemail", "ai", "meeting", "queue"] : ["user", "group", "voicemail", "ai", "meeting", "queue", "submenu"];
   return (
     <>
       <div style={{ overflowX: "auto" }}>
@@ -228,6 +243,7 @@ export default function PhoneMenuSettings() {
   };
 
   return (
+    <QueuesContext.Provider value={data.queues ?? []}>
     <div data-testid="phone-menu-settings">
       <Section id="pm-greeting" title="Greeting" intro={<>What callers to the 866 main line hear first. {data.is_default ? "This is the menu callers hear today. Change it and save to use your version." : ""} Office status now: <strong>{data.open_now ? "open" : "closed"}</strong> ({data.zone_label}).</>}>
         <PromptEditor id="pm-greeting-text" label="Greeting" value={menu.greeting} audio={data.audio} onChange={(greeting) => set({ greeting })} />
@@ -246,7 +262,7 @@ export default function PhoneMenuSettings() {
           <input id="pm-ring" type="number" min={10} max={60} value={menu.noAnswer.ringSeconds} onChange={(e) => set({ noAnswer: { ...menu.noAnswer, ringSeconds: Number(e.target.value) } })} style={{ ...input, width: 100 }} />
         </Field>
         <Field id="pm-noanswer-target" label="Then">
-          <TargetEditor id="pm-noanswer-target" value={menu.noAnswer.target} users={users} audio={data.audio} allIds={allIds} allow={["voicemail", "user", "group"]} onChange={(target) => set({ noAnswer: { ...menu.noAnswer, target } })} />
+          <TargetEditor id="pm-noanswer-target" value={menu.noAnswer.target} users={users} audio={data.audio} allIds={allIds} allow={["voicemail", "user", "group", "queue"]} onChange={(target) => set({ noAnswer: { ...menu.noAnswer, target } })} />
         </Field>
       </Section>
 
@@ -297,5 +313,6 @@ export default function PhoneMenuSettings() {
         {!data.is_default && <button type="button" style={quiet} onClick={() => void reset()}>Back to Boreal's default menu</button>}
       </div>
     </div>
+    </QueuesContext.Provider>
   );
 }

@@ -34,6 +34,8 @@ import RetentionSettings from "./tabs/RetentionSettings"; // BF_PORTAL_v855_RETE
 import FraudProtectionCard from "@/fraud/FraudProtectionCard"; // BF_PORTAL_v846_FRAUD
 import QuickBooksCard from "@/features/quickbooks/QuickBooksCard"; // BF_PORTAL_v852_CALC_QBO
 import DealToolsSettings from "@/brokerTools/DealToolsSettings"; // BF_PORTAL_v865_BROKER_TOOLS
+import CallScriptsSettings from "@/callScripts/CallScriptsSettings"; // BF_PORTAL_v871_CALL_SCRIPTS
+import CallQueuesSettings from "@/callQueues/CallQueuesSettings"; // BF_PORTAL_v871_CALL_QUEUES
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -75,6 +77,10 @@ const SettingsPage = () => {
       // BF_PORTAL_v869_SETTINGS_PACK - ported from KS-Portal #35. The phone menu is the one 866 menu (every silo); lead
       // rotation and privacy requests follow the topbar silo; booking pages and the client survey are BF.
       { id: "phone-menu", label: "Phone menu", visible: isAdmin, content: isAdmin ? <PhoneMenuSettings /> : null },
+      // BF_PORTAL_v871_CALLING_TOOLS - call scripts follow the topbar silo; call queues are on the one 866 line (every
+      // silo): Admins set them up and watch the live panel, staff switch their own queue availability.
+      { id: "call-scripts", label: "Call scripts", visible: isAdmin, content: isAdmin ? <CallScriptsSettings /> : null },
+      { id: "call-queues", label: "Call queues", visible: isAdmin || isStaff, content: <CallQueuesSettings /> },
       { id: "booking", label: "Booking pages", visible: isAdmin && !isBI, content: isAdmin ? <BookingSettings /> : null },
       { id: "lead-rotation", label: "Lead rotation", visible: isAdmin, content: isAdmin ? <LeadRotationSettings /> : null },
       { id: "blocked-numbers", label: "Blocked numbers", visible: isAdmin, content: isAdmin ? <BlockedNumbersSettings /> : null },
