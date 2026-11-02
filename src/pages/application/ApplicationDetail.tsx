@@ -82,6 +82,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     "sba-signing": <SbaSigningTab applicationId={applicationId} />,
     fraud: <FraudTab applicationId={applicationId} />, // BF_PORTAL_v846_FRAUD
     funding: <BrokerToolsTab tab="funding" applicationId={applicationId} />, // BF_PORTAL_v865_BROKER_TOOLS
+    "deal-desk": <BrokerToolsTab tab="deal-desk" applicationId={applicationId} />, // BF_PORTAL_v867_BROKER_TOOLS_2
   }[activeTab];
 
   // BF_PORTAL_v852_CALC_QBO - the calculator starts from the requested amount; the PDF is titled with the business name.
