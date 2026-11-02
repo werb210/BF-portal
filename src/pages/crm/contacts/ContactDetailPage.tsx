@@ -1,4 +1,5 @@
 import { useEffect, useState, useContext, type CSSProperties } from "react";
+import CustomFieldsPanel from "@/crmFields/CustomFieldsPanel"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
 import { crmApi, type ContactRow, type Scope } from "@/api/crm";
@@ -139,6 +140,7 @@ export default function ContactDetailPage() {
           {contact.source && <Field label="Source" value={contact.source} />}
         </div>
         <CrmTagEditor backend={crmBackend} entity="contact" id={id} tags={contact.tags} catalogue={tagCatalogue} onSaved={() => setRefreshKey((k) => k + 1)} />{/* BF_PORTAL_v856_CRM_UNIFY */}
+        <CustomFieldsPanel object="contact" recordId={id} />{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       </aside>
 
       <main style={{ minWidth: 0 }}>

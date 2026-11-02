@@ -22,7 +22,11 @@ import MayaTuning from "@/features/ai/MayaTuning";
 import SettingsSectionLayout from "./components/SettingsSectionLayout";
 import ProfileSettings from "./tabs/ProfileSettings";
 import RuntimeSettings from "./tabs/RuntimeSettings";
-import UserManagement from "./tabs/UserManagement";
+import UsersAndRoles from "@/roles/UsersAndRoles"; // BF_PORTAL_v870_CRM_DATA_MODEL - people and roles
+import { can, usePermissions } from "@/roles/permissionStore"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import PropertiesSettings from "@/crmFields/PropertiesSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import TeamsSettings from "@/teams/TeamsSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import PipelinesSettings from "@/pipelines/PipelinesSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import PhoneLines from "./tabs/PhoneLines"; // BF_PORTAL_PHONE_LINES_v689
 import SettingsOverview from "./tabs/SettingsOverview";
 import ContentSettings, { isContentSection } from "./tabs/ContentSettings"; // BF_PORTAL_v864_CONTENT_TAB
@@ -37,14 +41,23 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { silo } = useSilo();
-  const isAdmin = user?.role === "Admin";
+  // BF_PORTAL_v870_CRM_DATA_MODEL - an Admin on a custom role (built from Admin) sees only the admin sections the role
+  // allows. Everyone on a built-in role sees exactly the tabs they saw before.
+  const perms = usePermissions();
+  const isAdminRole = user?.role === "Admin";
+  const isAdmin = isAdminRole && can("settings", "view", perms);
+  const canUsers = isAdminRole && can("users", "view", perms);
   const isStaff = user?.role === "Staff"; // BF_PORTAL_BLOCK_v526
   const isBI = String(silo ?? "").toUpperCase() === "BI";
   const isMarketing = user?.role === "Marketing"; // BF_PORTAL_v864_CONTENT_TAB
 
   const tabs = useMemo(
     () => [
-      { id: "users", label: "User Management", visible: isAdmin && !isBI, content: <UserManagement /> },
+      { id: "users", label: "Users & roles", visible: canUsers && !isBI, content: <UsersAndRoles /> }, // BF_PORTAL_v870_CRM_DATA_MODEL
+      // BF_PORTAL_v870_CRM_DATA_MODEL - custom fields (Properties), teams and record visibility, extra pipelines. Admins.
+      { id: "properties", label: "Properties", visible: isAdmin && !isBI, content: <PropertiesSettings /> },
+      { id: "teams", label: "Teams", visible: canUsers && !isBI, content: <TeamsSettings /> },
+      { id: "pipelines", label: "Pipelines", visible: isAdmin && !isBI, content: <PipelinesSettings /> },
       { id: "phone", label: "Phone lines", visible: isAdmin && !isBI, content: <PhoneLines /> }, // BF_PORTAL_PHONE_LINES_v689
       { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin && !isBI, content: isAdmin ? (<><KnowledgeManager /><div style={{ height: 28 }} /><MayaTuning /></>) : null },
       // BF_PORTAL_v846_FRAUD - Admins: Keystone watchlist opt-in, pre-screen default, services, staff alerts.
@@ -71,7 +84,7 @@ const SettingsPage = () => {
       { id: "survey", label: "Client survey", visible: isAdmin && !isBI, content: isAdmin ? <SurveySettings /> : null },
       // BF_PORTAL_PARTNERS_TABS_v720 - Broker Files moved to Marketing > Referrers > Brokers.
     ],
-    [isAdmin, isStaff, isBI, isMarketing]
+    [isAdmin, isStaff, isBI, isMarketing, canUsers]
   );
 
   const safeTabs = Array.isArray(tabs) ? tabs : [];

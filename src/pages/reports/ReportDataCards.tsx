@@ -2,6 +2,7 @@
 // from /api/reports/data/:key.
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { api } from "@/api";
+import { useReportTeam, withTeam } from "@/teams/TeamFilter"; // BF_PORTAL_v870_CRM_DATA_MODEL - the Reports page's Team filter
 
 const th: CSSProperties = { textAlign: "left", padding: "4px 8px", color: "var(--ui-text-muted)", fontWeight: 600, fontSize: 12 };
 const td: CSSProperties = { padding: "4px 8px", borderTop: "1px solid var(--ui-border)", color: "var(--ui-text)", fontSize: 13 };
@@ -62,9 +63,10 @@ export function GoalsCard({ d }: { d: any }) {
 export function PipelineSnapshotCard({ d: initial }: { d: any }) {
   const [d, setD] = useState<any>(initial);
   const [busy, setBusy] = useState(false);
+  const team = useReportTeam();
   const pick = async (date: string) => {
     setBusy(true);
-    try { setD(await api.get(`/api/reports/data/pipeline_snapshot?date=${encodeURIComponent(date)}`)); } finally { setBusy(false); }
+    try { setD(await api.get(withTeam(`/api/reports/data/pipeline_snapshot?date=${encodeURIComponent(date)}`, team))); } finally { setBusy(false); }
   };
   return <><div style={{ display: "flex", gap: 8, alignItems: "center", margin: "0 0 8px", fontSize: 13 }}>
       <label htmlFor="snapshot-date">Compare</label>
@@ -84,12 +86,13 @@ export function CustomReportCard({ d: initial }: { d: any }) {
   const [cfg, setCfg] = useState<{ entity: string; groupBy: string; measure: string; days: number }>(saved ?? { entity: initial.entity ?? "applications", groupBy: initial.groupBy ?? "stage", measure: initial.measure ?? "count", days: 90 });
   const [d, setD] = useState<any>(initial);
   const menu: Record<string, { groups: string[]; measures: string[] }> = d.menu ?? initial.menu ?? {};
+  const team = useReportTeam();
   useEffect(() => {
     let off = false;
     try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(cfg)); } catch { /* private mode */ }
-    api.get(`/api/reports/data/custom_report?entity=${cfg.entity}&groupBy=${cfg.groupBy}&measure=${cfg.measure}&days=${cfg.days}`).then((r) => { if (!off) setD(r); }).catch(() => undefined);
+    api.get(withTeam(`/api/reports/data/custom_report?entity=${cfg.entity}&groupBy=${cfg.groupBy}&measure=${cfg.measure}&days=${cfg.days}`, team)).then((r) => { if (!off) setD(r); }).catch(() => undefined);
     return () => { off = true; };
-  }, [cfg.entity, cfg.groupBy, cfg.measure, cfg.days]);
+  }, [cfg.entity, cfg.groupBy, cfg.measure, cfg.days, team]);
   const setEntity = (entity: string) => { const m = menu[entity]; setCfg({ ...cfg, entity, groupBy: m?.groups[0] ?? "month", measure: m?.measures[0] ?? "count" }); };
   const rows: Array<{ label: string; value: number }> = d.rows ?? [];
   const max = Math.max(1, ...rows.map((r) => r.value));
@@ -161,12 +164,13 @@ export function renderReport(report: string, d: any): ReactNode {
 export function ReportDataCard({ report, days }: { report: string; days?: number }) {
   const [d, setD] = useState<any>(null);
   const [err, setErr] = useState(false);
+  const team = useReportTeam();
   useEffect(() => {
     let off = false;
     setD(null); setErr(false);
-    api.get(`/api/reports/data/${encodeURIComponent(report)}${days ? `?days=${days}` : ""}`).then((r) => { if (!off) setD(r); }).catch(() => { if (!off) setErr(true); });
+    api.get(withTeam(`/api/reports/data/${encodeURIComponent(report)}${days ? `?days=${days}` : ""}`, team)).then((r) => { if (!off) setD(r); }).catch(() => { if (!off) setErr(true); });
     return () => { off = true; };
-  }, [report, days]);
+  }, [report, days, team]);
   if (err) return <p style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>Could not load this report.</p>;
   if (!d) return <p style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>Loading...</p>;
   return <>{renderReport(report, d)}</>;

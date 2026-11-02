@@ -31,6 +31,8 @@ import { APPLICANT_NAME_MISSING_NOTE, applicantNameMissing, applicantNameMissing
 import { SigningNotifyCard, readSigningNotify, type SigningNotify } from "./signingNotify"; // BF_PORTAL_v857_SIGNING_NOTIFY
 
 type AnyRecord = Record<string, any>;
+import CustomFieldsPanel from "@/crmFields/CustomFieldsPanel"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import PipelineMover from "@/pipelines/PipelineMover"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { maskSin } from "@/lib/sensitive";
 type Props = { application: AnyRecord | null };
 
@@ -434,6 +436,8 @@ export default function ApplicationTab({ application }: Props) {
     <div style={styles.page}>
       {legInfo && <LegBanner kind={legInfo.kind} parentId={legInfo.parentId} />}
       {application.id ? <ProductQuestionsPanel applicationId={String(application.id)} /> : null}
+      {application.id ? <PipelineMover applicationId={String(application.id)} /> : null}{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
+      {application.id ? <CustomFieldsPanel object="application" recordId={String(application.id)} /> : null}{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       <div style={styles.headerRow}>
         <div style={{ minWidth: 0 }}>
           <h2 style={styles.title}>{businessName}</h2>

@@ -6,9 +6,11 @@ import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
 import { api } from "@/api";
-import { useSettingsStore, type AdminUser, type AdminUserRole } from "@/state/settings.store";
+import { useSettingsStore, type AdminUser } from "@/state/settings.store";
 import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
+import { useRoleChoices } from "@/roles/useRoleChoices"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import { assignRole, bodyForChoice, choiceForUser } from "@/roles/rolesApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
 
 const UserManagement = () => {
   const {
@@ -24,16 +26,17 @@ const UserManagement = () => {
     lastName: string;
     email: string;
     phone: string;
-    role: AdminUser["role"];
+    role: string; // BF_PORTAL_v870_CRM_DATA_MODEL - "builtin:Staff" or "custom:<id>"
     silos: string[];
   };
+  const { options: roleOptions, roles: customRoles } = useRoleChoices(); // BF_PORTAL_v870_CRM_DATA_MODEL
 
   const [userForm, setUserForm] = useState<UserFormState>({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
-    role: "Staff",
+    role: "builtin:Staff",
     silos: ["BF"],
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -126,7 +129,7 @@ const UserManagement = () => {
         lastName: userForm.lastName,
         email: userForm.email,
         phone: userForm.phone,
-        role: userForm.role,
+        ...bodyForChoice(userForm.role, customRoles), // BF_PORTAL_v870_CRM_DATA_MODEL - role, or role + custom_role_id
         silos: userForm.silos,
       });
       console.info("[UserManagement] outgoing user payload", payload);
@@ -141,7 +144,7 @@ const UserManagement = () => {
         await api.post(`/api/users`, payload);
       }
       await fetchUsers();
-      setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff", silos: ["BF"] });
+      setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "builtin:Staff", silos: ["BF"] });
       setEditingUser(null);
       setIsModalOpen(false);
     } catch (error: any) {
@@ -168,8 +171,8 @@ const UserManagement = () => {
     }
   };
 
-  const onUpdateRole = async (id: string, role: AdminUser["role"]) => {
-    if (!role) return;
+  const onUpdateRole = async (id: string, choice: string) => {
+    if (!choice) return;
     if (!id) {
       setFormError("Missing user id. Please refresh and try again.");
       return;
@@ -177,7 +180,9 @@ const UserManagement = () => {
     setFormError(null);
     setUserPending(id, true);
     try {
-      await updateUserRole(id, role);
+      // BF_PORTAL_v870_CRM_DATA_MODEL - a custom role goes through PATCH /api/users/:id { custom_role_id }.
+      if (choice.startsWith("custom:")) await assignRole(id, choice, customRoles);
+      else await updateUserRole(id, choice.slice("builtin:".length) as AdminUser["role"]);
       await fetchUsers();
     } catch (error) {
       setFormError(getErrorMessage(error, "Unable to update user role."));
@@ -248,7 +253,7 @@ const UserManagement = () => {
           onClick={() => {
             setEditingUser(null);
             setFormErrors({});
-            setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff", silos: ["BF"] });
+            setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "builtin:Staff", silos: ["BF"] });
             setIsModalOpen(true);
           }}
         >
@@ -267,10 +272,7 @@ const UserManagement = () => {
               user.name ||
               (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
             const statusLabel = user.disabled ? "Disabled" : "Active";
-            const roleValue: AdminUserRole =
-              user.role === "Admin" || user.role === "Marketing" || user.role === "Staff"
-                ? user.role
-                : "Staff";
+            const roleValue = choiceForUser(user); // BF_PORTAL_v870_CRM_DATA_MODEL
             const isPending = userId ? pendingUserIds.has(userId) : false;
             return (
               <tr key={rowKey}>
@@ -282,12 +284,8 @@ const UserManagement = () => {
                   <Select
                     label="Role"
                     value={roleValue}
-                    onChange={(e) => onUpdateRole(userId, e.target.value as AdminUser["role"])}
-                    options={[
-                      { value: "Admin", label: "Admin" },
-                      { value: "Marketing", label: "Marketing" },
-                      { value: "Staff", label: "Staff" }
-                    ]}
+                    onChange={(e) => onUpdateRole(userId, e.target.value)}
+                    options={roleOptions}
                     hideLabel
                     disabled={isLoadingUsers || isPending || !userId}
                   />
@@ -348,10 +346,7 @@ const UserManagement = () => {
               user.name ||
               (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
             const statusLabel = user.disabled ? "Disabled" : "Active";
-            const roleValue: AdminUserRole =
-              user.role === "Admin" || user.role === "Marketing" || user.role === "Staff"
-                ? user.role
-                : "Staff";
+            const roleValue = choiceForUser(user); // BF_PORTAL_v870_CRM_DATA_MODEL
             const isPending = userId ? pendingUserIds.has(userId) : false;
             return (
             <div key={cardKey} className="user-card">
@@ -366,12 +361,8 @@ const UserManagement = () => {
                 <Select
                   label="Role"
                   value={roleValue}
-                  onChange={(e) => onUpdateRole(userId, e.target.value as AdminUser["role"])}
-                  options={[
-                    { value: "Admin", label: "Admin" },
-                    { value: "Marketing", label: "Marketing" },
-                    { value: "Staff", label: "Staff" }
-                  ]}
+                  onChange={(e) => onUpdateRole(userId, e.target.value)}
+                  options={roleOptions}
                   disabled={isLoadingUsers || isPending || !userId}
                 />
                 <div className="user-card__actions">
@@ -438,8 +429,8 @@ const UserManagement = () => {
                   <label key={v} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "var(--ui-text)" }}>
                     <input
                       type="checkbox"
-                      disabled={userForm.role === "Admin"}
-                      checked={userForm.role === "Admin" ? true : userForm.silos.includes(v)}
+                      disabled={userForm.role === "builtin:Admin"}
+                      checked={userForm.role === "builtin:Admin" ? true : userForm.silos.includes(v)}
                       onChange={(e) => {
                         setUserForm((prev) => {
                           const set = new Set(prev.silos);
@@ -453,7 +444,7 @@ const UserManagement = () => {
                   </label>
                 ))}
               </div>
-              {userForm.role === "Admin" && (
+              {userForm.role === "builtin:Admin" && (
                 <p style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 4 }}>
                   Admin users have access to all silos.
                 </p>
@@ -462,12 +453,8 @@ const UserManagement = () => {
             <Select
               label="Role"
               value={userForm.role}
-              onChange={(e) => setUserForm({ ...userForm, role: e.target.value as AdminUser["role"] })}
-              options={[
-                { value: "Admin", label: "Admin" },
-                { value: "Marketing", label: "Marketing" },
-                { value: "Staff", label: "Staff" }
-              ]}
+              onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+              options={roleOptions}
             />
             <ModalFooterWithDelete
               onCancel={() => setIsModalOpen(false)}

@@ -17,7 +17,7 @@ export type BrandingSettingsState = {
   logoWidth: number;
 };
 
-export type AdminUserRole = "Admin" | "Marketing" | "Staff";
+export type AdminUserRole = "Admin" | "Marketing" | "Staff" | "Ops"; // BF_PORTAL_v870_CRM_DATA_MODEL - Ops too
 
 export type AdminUser = {
   id: string;
@@ -32,6 +32,9 @@ export type AdminUser = {
   silo?: string;
   silos?: string[];
   disabled?: boolean;
+  /** BF_PORTAL_v870_CRM_DATA_MODEL - the person's custom role on top of `role` (its base), if any. */
+  custom_role_id?: string | null;
+  custom_role_name?: string | null;
 };
 
 export function normalizeAdminUser(raw: any): AdminUser {
