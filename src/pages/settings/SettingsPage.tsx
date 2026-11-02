@@ -36,6 +36,8 @@ import QuickBooksCard from "@/features/quickbooks/QuickBooksCard"; // BF_PORTAL_
 import DealToolsSettings from "@/brokerTools/DealToolsSettings"; // BF_PORTAL_v865_BROKER_TOOLS
 import CallScriptsSettings from "@/callScripts/CallScriptsSettings"; // BF_PORTAL_v871_CALL_SCRIPTS
 import CallQueuesSettings from "@/callQueues/CallQueuesSettings"; // BF_PORTAL_v871_CALL_QUEUES
+import PaymentsSettings from "@/payments/PaymentsSettings"; // BF_PORTAL_v872_PAYMENTS
+import IdVerificationSettings from "@/kyc/IdVerificationSettings"; // BF_PORTAL_v872_KYC
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -66,6 +68,9 @@ const SettingsPage = () => {
       { id: "fraud", label: "Fraud protection", visible: isAdmin && !isBI, content: isAdmin ? <FraudProtectionCard /> : null },
       // BF_PORTAL_v852_CALC_QBO - connect QuickBooks Online; media fee agreements become invoices, paid at funding.
       { id: "quickbooks", label: "QuickBooks", visible: isAdmin && !isBI, content: isAdmin ? <QuickBooksCard /> : null },
+      // BF_PORTAL_v872_DEAL_TOOLS - Stripe payment links for broker fees (Boreal's own account) and ID verification (Admins).
+      { id: "payments", label: "Payments", visible: isAdmin && !isBI, content: isAdmin ? <PaymentsSettings /> : null },
+      { id: "id-verification", label: "ID verification", visible: isAdmin && !isBI, content: isAdmin ? <IdVerificationSettings /> : null },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: !isBI, content: <RuntimeSettings /> },
       // BF_PORTAL_v864_CONTENT_TAB - Templates, Snippets, Collateral, the Library and the automations are sections of

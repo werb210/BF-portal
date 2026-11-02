@@ -17,6 +17,9 @@ import BrokerToolsTab, { BROKER_TOOL_TABS } from "@/brokerTools/BrokerToolsTab";
 import CalculatorButton, { amountFrom } from "@/features/loanCalculator/CalculatorButton"; // BF_PORTAL_v852_CALC_QBO
 import QuickBooksInvoiceBadge from "@/features/quickbooks/QuickBooksInvoiceBadge"; // BF_PORTAL_v852_CALC_QBO
 import { createApplicationNote } from "@/api/applicationNotes"; // BF_PORTAL_v852_CALC_QBO
+import QuotesTab from "@/quotes/QuotesTab"; // BF_PORTAL_v872_QUOTES
+import IdVerificationTab from "@/kyc/IdVerificationTab"; // BF_PORTAL_v872_KYC
+import FileForecastPanel from "@/forecast/FileForecastPanel"; // BF_PORTAL_v872_FORECAST
 
 const TABS = [
   { key: "application", label: "Application" },
@@ -28,6 +31,8 @@ const TABS = [
   { key: "notes", label: "Notes" },
   { key: "lenders", label: "Lenders" },
   { key: "fraud", label: "Fraud check" }, // BF_PORTAL_v846_FRAUD - next to Lenders: review before the file goes out
+  { key: "quotes", label: "Quotes" }, // BF_PORTAL_v872_QUOTES - the lender offers as one quote for the client
+  { key: "id-verification", label: "ID verification" }, // BF_PORTAL_v872_KYC
   ...BROKER_TOOL_TABS, // BF_PORTAL_v865_BROKER_TOOLS - Funding (conditions)
   // BF_PORTAL_SBA_SIGNING_TAB_v146 - expose signing status and resend.
   { key: "sba-signing", label: "SBA Signing" },
@@ -81,6 +86,8 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     lenders: <LendersTab applicationId={applicationId} />,
     "sba-signing": <SbaSigningTab applicationId={applicationId} />,
     fraud: <FraudTab applicationId={applicationId} />, // BF_PORTAL_v846_FRAUD
+    quotes: <QuotesTab applicationId={applicationId} />, // BF_PORTAL_v872_QUOTES
+    "id-verification": <IdVerificationTab applicationId={applicationId} />, // BF_PORTAL_v872_KYC
     funding: <BrokerToolsTab tab="funding" applicationId={applicationId} />, // BF_PORTAL_v865_BROKER_TOOLS
   }[activeTab];
 
@@ -148,6 +155,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
       </div>
 
       <ApplicationOriginPanel applicationId={applicationId} />{/* BF_PORTAL_v828_APPLICATION_ORIGIN - lender, broker or referrer */}
+      {applicationId ? <FileForecastPanel applicationId={applicationId} /> : null}{/* BF_PORTAL_v872_FORECAST - expected close date and category */}
 
       <nav
         style={{

@@ -3,6 +3,8 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { api } from "@/api";
 import { useReportTeam, withTeam } from "@/teams/TeamFilter"; // BF_PORTAL_v870_CRM_DATA_MODEL - the Reports page's Team filter
+import ForecastCard from "@/forecast/ForecastCard"; // BF_PORTAL_v872_FORECAST
+import { FeePaymentsTable } from "@/payments/PaymentsSettings"; // BF_PORTAL_v872_PAYMENTS
 
 const th: CSSProperties = { textAlign: "left", padding: "4px 8px", color: "var(--ui-text-muted)", fontWeight: 600, fontSize: 12 };
 const td: CSSProperties = { padding: "4px 8px", borderTop: "1px solid var(--ui-border)", color: "var(--ui-text)", fontSize: 13 };
@@ -120,6 +122,8 @@ export function CustomReportCard({ d: initial }: { d: any }) {
 export function renderReport(report: string, d: any): ReactNode {
   // BF_PORTAL_REPORTS15_18_v769 - cards for BF-Server v786 reports.
   if (report === "pipeline_snapshot") return <PipelineSnapshotCard d={d} />;
+  if (report === "forecast") return <ForecastCard initial={d} />; // BF_PORTAL_v872_FORECAST - weighted commission per rep and team
+  if (report === "fee_payments") return <FeePaymentsTable r={d} />; // BF_PORTAL_v872_PAYMENTS - broker fees by payment link
   if (report === "issues_report") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Last {d.days} days. {d.note}</p><T headers={["Month", "Opened", "Resolved", "Median days to resolve"]} rows={(d.byMonth ?? []).map((r: any) => [r.label, r.opened, r.resolved, r.median_days === null ? "-" : r.median_days + " d"])} /><div style={{ height: 10 }} /><T headers={["Open now", "Open", "In progress", "Oldest (days)"]} rows={(d.open ?? []).map((r: any) => [r.label, r.open, r.in_progress, r.oldest_days])} /></>;
   if (report === "custom_report") return <CustomReportCard d={d} />;
   // BF_PORTAL_REPORTS11_14_v768 - cards for BF-Server v785 reports.
