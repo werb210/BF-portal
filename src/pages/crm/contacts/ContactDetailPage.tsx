@@ -25,6 +25,7 @@ import { CrmDuplicatesBanner } from "@/components/crm/unified/CrmDuplicates"; //
 import { CrmAiSummary, CrmKsLicenseeCard } from "@/components/crm/unified/CrmAiSummary"; // BF_PORTAL_v856_CRM_UNIFY
 import { NotifyContactButton } from "@/components/crm/NotifyContactButton"; // BF_PORTAL_NOTIFY_CONTACT_v627
 import RetentionLock from "@/retention/RetentionLock"; // BF_PORTAL_v855_RETENTION
+import { ContactLeadScore } from "@/components/marketing/LeadScore"; // BF_PORTAL_v874_MARKETING_TOOLS
 import { refusedDeleteMessage, useRetention } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 
 export default function ContactDetailPage() {
@@ -93,7 +94,7 @@ export default function ContactDetailPage() {
           to={`${crmBase}/contacts`}
           style={{ color: "var(--ui-accent-fg)", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}
         >← Back to contacts</Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><h2 style={{ marginTop: 0, marginBottom: 0 }}>{contact.name}</h2><span style={roleBadge} title={contactRoleBadge(contact as any).tip} data-testid="contact-role-badge">{contactRoleBadge(contact as any).label}</span></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><h2 style={{ marginTop: 0, marginBottom: 0 }}>{contact.name}</h2><span style={roleBadge} title={contactRoleBadge(contact as any).tip} data-testid="contact-role-badge">{contactRoleBadge(contact as any).label}</span>{id && <ContactLeadScore contactId={id} />}</div>
         {contact.job_title && <div style={subtle}>{contact.job_title}</div>}
         {contact.email && (
           <a href={`mailto:${contact.email}`} style={{ color: "#0091ae" }}>{contact.email}</a>

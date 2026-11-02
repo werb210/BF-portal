@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
+import { LeadScoreBadge, useLeadScores } from "@/components/marketing/LeadScore"; // BF_PORTAL_v874_MARKETING_TOOLS
 import { Link } from "react-router-dom";
 import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
 import { api } from "@/api";
@@ -211,6 +212,9 @@ export default function ContactsPage() {
     } finally { setBusyMass(null); }
   }
 
+  // BF_PORTAL_v874_MARKETING_TOOLS - lead scores next to each name (the silo's rules; only contacts you may see).
+  const scoreIds = useMemo(() => rows.map((r) => r.id), [rows]);
+  const leadScores = useLeadScores(scoreIds);
   const tableRows = useMemo(() => rows.map(r => (
     <tr key={r.id} style={trStyle}>
       {isAdmin && (
@@ -220,6 +224,7 @@ export default function ContactsPage() {
       )}
       <td style={tdStyle}>
         <Link to={`${crmBase}/contacts/${r.id}`} style={linkStyle}>{contactDisplayName(r.name, { company: r.company_name, email: r.email })}</Link>
+        {leadScores[r.id] && <> <LeadScoreBadge score={leadScores[r.id]!} /></>}
       </td>
       {!hiddenCols.has("company_name") && <td style={tdStyle}>{r.company_name ?? "—"}</td>}
       {!hiddenCols.has("tags") && (
@@ -242,7 +247,7 @@ export default function ContactsPage() {
       {cf.shown.map((f) => <td key={f.name} style={tdStyle}>{displayValue(f, (r as { custom_fields?: Record<string, unknown> }).custom_fields?.[f.name]) || "—"}</td>)}{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [isAdmin, rows, selected, hiddenCols, crmBase, tagCatalogue, cf.shown]); // BF_PORTAL_v856_CRM_UNIFY
+  )), [isAdmin, rows, selected, hiddenCols, crmBase, tagCatalogue, cf.shown, leadScores]); // BF_PORTAL_v856_CRM_UNIFY BF_PORTAL_v874_MARKETING_TOOLS
 
   return (
     <div style={page}>

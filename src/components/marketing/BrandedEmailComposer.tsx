@@ -6,6 +6,8 @@ import { api, rawApiFetch } from "@/api";
 import { describeSchedule, localInputMax, localInputMin, toIsoInstant } from "./sendLater";
 // BF_PORTAL_SCHEDULED_SENDS_v23
 import { formatSendAt, pendingSends, sendJobCancelPath, sendJobsPath, type ScheduledSend } from "./scheduledSends";
+import CampaignSendOptions, { DEFAULT_SEND_OPTIONS, sendOptionsPayload, type SendOptions } from "./CampaignSendOptions"; // BF_PORTAL_v874_MARKETING_TOOLS
+import { serverMessage } from "./marketingTools"; // BF_PORTAL_v874_MARKETING_TOOLS
 
 // BF_PORTAL_EMAIL_PREVIEW_WIDTH_v1 - render at the email's desktop width and
 // scale the canvas, rather than triggering its mobile breakpoint in the pane.
@@ -267,6 +269,10 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
 
   // BF_PORTAL_SEND_LATER_v21 - empty means send now, preserving the old behaviour.
   const [sendAtLocal, setSendAtLocal] = useState("");
+  // BF_PORTAL_v874_MARKETING_TOOLS - A/B subject test / best time. BF-Server's campaign sends only (BF, BI and SLF
+  // through /api/marketing); the BI-Server composer (apiBase /api/v1/bi/marketing) has no such options.
+  const [sendOptions, setSendOptions] = useState<SendOptions>(DEFAULT_SEND_OPTIONS);
+  const hasSendOptions = apiBase === "/api/marketing";
   // BF_PORTAL_SCHEDULED_SENDS_v23 - staff can now inspect and cancel queued sends.
   const [scheduled, setScheduled] = useState<ScheduledSend[]>([]);
   const [scheduledBusy, setScheduledBusy] = useState(false);
@@ -317,6 +323,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
         // BF_PORTAL_SEND_LATER_v21 - a test send is always immediate.
         const iso = toIsoInstant(sendAtLocal);
         if (iso) payload.sendAt = iso;
+        if (hasSendOptions) Object.assign(payload, sendOptionsPayload(sendOptions)); // BF_PORTAL_v874_MARKETING_TOOLS
       }
       const res = await api.post<{ data?: Record<string, unknown> } & Record<string, unknown>>(`${apiBase}/email/send-template`, payload);
       const r = (res?.data ?? res) as { test?: boolean; ok?: boolean; sent?: number; failed?: number; configured?: boolean; error?: string; queued?: boolean; jobId?: string; total?: number; scheduled?: boolean };
@@ -337,7 +344,8 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
     } catch (e) {
       const status = typeof e === "object" && e !== null && "status" in e ? String(e.status) : "";
       const error = e instanceof Error ? e.message : String(e);
-      setMsg(`Send failed${status ? ` (${status})` : ""}: ${error}`);
+      // BF_PORTAL_v874_MARKETING_TOOLS - the server's plain-words reason (e.g. two identical subject lines) first.
+      setMsg(serverMessage(e, `Send failed${status ? ` (${status})` : ""}: ${error}`));
     }
     finally { setBusy(false); }
   };
@@ -472,6 +480,8 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
       </div>
 
       <p className="mt-2" style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Merge fields: {"{{first_name}}"}, {"{{name}}"}, {"{{company}}"}, {"{{email}}"}. Logo, colours and footer are fixed.</p>
+
+      {hasSendOptions && <CampaignSendOptions value={sendOptions} onChange={setSendOptions} subjectA={subject} inputStyle={inputStyle} labelStyle={labelStyle} />}{/* BF_PORTAL_v874_MARKETING_TOOLS */}
 
       <div className="flex flex-wrap gap-2 items-end mt-2">
         <button type="button" disabled={saving} onClick={() => void save()} className="ui-button ui-button--secondary">{saving ? "Saving..." : "Save draft"}</button>

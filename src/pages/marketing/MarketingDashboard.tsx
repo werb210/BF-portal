@@ -19,11 +19,15 @@ import CustomerMatchPanel from "@/components/marketing/CustomerMatchPanel"; // B
 import GoogleHealthPanel from "@/pages/settings/tabs/GoogleHealthPanel"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 import MobileAppsPanel from "./MobileAppsPanel"; // BF_PORTAL_v811_MOBILE_APPS
 import SiloContext from "@/context/SiloContext"; // BF_PORTAL_v811_MOBILE_APPS
+// BF_PORTAL_v874_MARKETING_TOOLS - the campaign and funded-deal report, the website kit and lead scoring (per silo).
+import CampaignReportPanel from "@/components/marketing/CampaignReportPanel";
+import WebsiteKitPanel from "@/components/marketing/WebsiteKitPanel";
+import LeadScoringPanel from "@/components/marketing/LeadScoringPanel";
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
 // data, two different places to look for it. BF now gets the tab too.
-type MarketingTab = "analytics" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads" | "apps"; // BF_PORTAL_v811_MOBILE_APPS - apps
+type MarketingTab = "analytics" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads" | "apps" | "report" | "kit" | "scoring"; // BF_PORTAL_v811_MOBILE_APPS - apps // BF_PORTAL_v874_MARKETING_TOOLS - report, kit, scoring
 // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 // BF_PORTAL_ADS_SERVICES_v709 - "Ads" section: one sub-tab per ad service
 // (Google, Microsoft, LinkedIn); every Google report sits under Google.
@@ -44,7 +48,12 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "links", label: "Links" }, // BF_PORTAL_BF_LINKS_TAB_v15
   { id: "ads", label: "Ads" }, // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707 + BF_PORTAL_ADS_SERVICES_v709
   { id: "apps", label: "Mobile apps" }, // BF_PORTAL_v811_MOBILE_APPS - Boreal Financial silo only
+  // BF_PORTAL_v874_MARKETING_TOOLS - per silo (BF, BI, SLF); not in the Keystone operations silo.
+  { id: "report", label: "Campaign report" },
+  { id: "scoring", label: "Lead scoring" },
+  { id: "kit", label: "Website kit" },
 ];
+const SILO_TOOL_TABS: ReadonlySet<MarketingTab> = new Set<MarketingTab>(["report", "scoring", "kit"]);
 
 type FunnelStep = {
   key: string;
@@ -1408,11 +1417,14 @@ const MarketingDashboard = () => {
   // BF_PORTAL_PARTNERS_TABS_v720 - ?tab=referrers (old Broker Files links land on Referrers > Brokers).
   const [tab, setTab] = useState<MarketingTab>(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "report" || t === "kit" || t === "scoring") return t; // BF_PORTAL_v874_MARKETING_TOOLS - ?tab=report|kit|scoring
     return t === "referrers" ? "referrers" : t === "apps" ? "apps" : "analytics"; // BF_PORTAL_v811_MOBILE_APPS - ?tab=apps
   });
   // BF_PORTAL_v811_MOBILE_APPS - the Mobile apps tab is Boreal Financial's client app, so it shows in the BF silo only.
-  const isBf = String(useContext(SiloContext)?.silo ?? "BF").toUpperCase() === "BF";
-  const tabs = MARKETING_TABS.filter((t) => t.id !== "apps" || isBf);
+  const siloName = String(useContext(SiloContext)?.silo ?? "BF").toUpperCase();
+  const isBf = siloName === "BF";
+  const marketingSilo = siloName === "BF" || siloName === "BI" || siloName === "SLF"; // BF_PORTAL_v874_MARKETING_TOOLS
+  const tabs = MARKETING_TABS.filter((t) => (t.id !== "apps" || isBf) && (!SILO_TOOL_TABS.has(t.id) || marketingSilo));
   const [adsTab, setAdsTab] = useState<AdsTab>("story");
   const [adsService, setAdsService] = useState<AdsService>("google"); // BF_PORTAL_ADS_SERVICES_v709
 
@@ -1461,6 +1473,10 @@ const MarketingDashboard = () => {
         </div>
       )}
       {tab === "apps" && isBf && <MobileAppsPanel />}{/* BF_PORTAL_v811_MOBILE_APPS */}
+      {/* BF_PORTAL_v874_MARKETING_TOOLS */}
+      {tab === "report" && marketingSilo && <CampaignReportPanel />}
+      {tab === "scoring" && marketingSilo && <LeadScoringPanel />}
+      {tab === "kit" && marketingSilo && <WebsiteKitPanel />}
       {tab === "email" && <BrandedEmailComposer />}
       {tab === "links" && <LinkClicksPanel />}{/* BF_PORTAL_BF_LINKS_TAB_v15 */}
       {tab === "sms" && <SmsComposerPanel />}
