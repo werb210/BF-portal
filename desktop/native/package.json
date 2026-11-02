@@ -1,0 +1,18 @@
+{
+  "name": "staff-portal-desktop-native",
+  "version": "2.0.0",
+  "private": true,
+  "description": "BF_PORTAL_v876_NATIVE_DESKTOP - native staff-portal app for macOS (WKWebView) and Windows (WebView2), built with Tauri 2",
+  "type": "module",
+  "scripts": {
+    "brand": "node brand.mjs",
+    "icons": "tauri icon",
+    "dev": "tauri dev --config src-tauri/tauri.brand.conf.json",
+    "build": "tauri build --config src-tauri/tauri.brand.conf.json",
+    "build:mac": "tauri build --config src-tauri/tauri.brand.conf.json --target universal-apple-darwin",
+    "build:win": "tauri build --config src-tauri/tauri.brand.conf.json"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.2"
+  }
+}

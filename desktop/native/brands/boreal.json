@@ -1,0 +1,12 @@
+{
+  "$comment": "BF_PORTAL_v876_NATIVE_DESKTOP - the Boreal staff-portal desktop app (Mac and Windows). Raise version for each release.",
+  "key": "boreal",
+  "app_name": "Boreal Staff Portal",
+  "bundle_id": "com.boreal.portal.desktop",
+  "portal_url": "https://staff.boreal.financial",
+  "ops_url": "",
+  "passkey_domains": [],
+  "icon": "../../../public/icons/icon-512x512.png",
+  "release_repo": "werb210/BF-portal",
+  "version": "2.0.0"
+}
