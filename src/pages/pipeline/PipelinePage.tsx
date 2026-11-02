@@ -5,6 +5,7 @@ import { api } from "@/api";
 import { useNavigate } from "react-router-dom";
 import RequestStepsModal from "./RequestStepsModal"; // BF_PORTAL_BLOCK_v793_REQUEST_STEPS
 import { fetchRetention, lockMessage, refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
+import { patchStatusWithFundingGate } from "@/brokerTools/fundingGate"; // BF_PORTAL_v865_BROKER_TOOLS
 
 // BF_PORTAL_FRAUD_HOLD_v34 - Fraud and Hold are parking columns. Neither
 // deletes anything; both take the file out of the reported numbers (Fraud from
@@ -13,7 +14,7 @@ import { fetchRetention, lockMessage, refusedDeleteMessage } from "@/retention/r
 const STAGES = [
   "Received", "In Review", "Documents Required",
   "Additional Steps Required", "Off to Lender",
-  "Offer", "Accepted", "Rejected",
+  "Offer", "Accepted", "Funded", "Rejected", // BF_PORTAL_v865_BROKER_TOOLS - Funded after Accepted
   "Fraud", "Hold",
 ] as const;
 
@@ -33,6 +34,7 @@ const COLORS: Record<Stage, string> = {
   "Off to Lender":             "var(--ui-accent-blue)",
   "Offer":                     "#16a34a",
   "Accepted":                  "#15803d",
+  "Funded":                    "#166534",
   "Rejected":                  "#6b7280",
   "Fraud":                     "#b91c1c",
   "Hold":                      "#7c3aed",
@@ -197,10 +199,12 @@ export default function PipelinePage() {
     }
     setActing(cardId);
     try {
-      await api.patch(`/api/portal/applications/${cardId}/status`, {
+      // BF_PORTAL_v865_BROKER_TOOLS - Funded is refused while funding conditions are open (Admins may override).
+      const moved = await patchStatusWithFundingGate(cardId, {
         status: toStage, reason,
         ...(fundedAmount !== undefined ? { fundedAmount, fundedCurrency } : {}),
       });
+      if (!moved) return;
       setCards((prev) =>
         prev.map((c) => c.id === cardId
           ? {

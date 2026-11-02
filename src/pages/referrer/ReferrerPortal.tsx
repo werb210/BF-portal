@@ -26,6 +26,7 @@ const STAGE_MAP: Record<string, (typeof BF_STAGES)[number]> = {
   "Off to Lender": "Off to Lender",
   "Offer": "Offer",
   "Accepted": "Funded",
+  "Funded": "Funded", // BF_PORTAL_v865_BROKER_TOOLS - the stage after Accepted
   "Rejected": "Rejected",
 };
 

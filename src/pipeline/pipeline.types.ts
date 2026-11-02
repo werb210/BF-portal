@@ -32,6 +32,7 @@ export const PIPELINE_STAGE_LABELS: Record<string, string> = {
   OFFTOLENDER: "Off to Lender",
   OFFER: "Offer",
   ACCEPTED: "Accepted",
+  FUNDED: "Funded", // BF_PORTAL_v865_BROKER_TOOLS
   REJECTED: "Rejected"
 };
 

@@ -24,6 +24,7 @@ import LibraryPage from "@/pages/library/LibraryPage"; // BF_PORTAL_LIBRARY_IN_S
 import RetentionSettings from "./tabs/RetentionSettings"; // BF_PORTAL_v855_RETENTION
 import FraudProtectionCard from "@/fraud/FraudProtectionCard"; // BF_PORTAL_v846_FRAUD
 import QuickBooksCard from "@/features/quickbooks/QuickBooksCard"; // BF_PORTAL_v852_CALC_QBO
+import DealToolsSettings from "@/brokerTools/DealToolsSettings"; // BF_PORTAL_v865_BROKER_TOOLS
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -51,6 +52,7 @@ const SettingsPage = () => {
       // PGI conversation as a lending one, and the server scopes by silo.
       { id: "snippets", label: "Snippets", visible: true, content: <SnippetsSettings /> },
       { id: "collateral", label: "Collateral", visible: !isBI, content: <CollateralSettings /> }, // v694
+      { id: "deal-tools", label: "Deal tools", visible: (isAdmin || isStaff) && !isBI, content: <DealToolsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v865_BROKER_TOOLS
       // BF_PORTAL_LIBRARY_IN_SETTINGS_v764 - the Staff Library (lender forms, Read This) lives here, not in the sidebar.
       { id: "library", label: "Library", visible: true, content: <LibraryPage /> },
       // BF_PORTAL_v855_RETENTION - 7-year record retention: legal holds and the eligible-for-deletion report.

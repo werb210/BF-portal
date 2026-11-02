@@ -13,6 +13,7 @@ import NotesTab from "@/pages/applications/tabs/NotesTab";
 import LendersTab from "@/pages/applications/tabs/LendersTab";
 import SbaSigningTab from "@/pages/applications/tabs/SbaSigningTab"; // BF_PORTAL_SBA_SIGNING_TAB_v146
 import FraudTab from "@/fraud/FraudTab"; // BF_PORTAL_v846_FRAUD
+import BrokerToolsTab, { BROKER_TOOL_TABS } from "@/brokerTools/BrokerToolsTab"; // BF_PORTAL_v865_BROKER_TOOLS
 import CalculatorButton, { amountFrom } from "@/features/loanCalculator/CalculatorButton"; // BF_PORTAL_v852_CALC_QBO
 import QuickBooksInvoiceBadge from "@/features/quickbooks/QuickBooksInvoiceBadge"; // BF_PORTAL_v852_CALC_QBO
 import { createApplicationNote } from "@/api/applicationNotes"; // BF_PORTAL_v852_CALC_QBO
@@ -27,6 +28,7 @@ const TABS = [
   { key: "notes", label: "Notes" },
   { key: "lenders", label: "Lenders" },
   { key: "fraud", label: "Fraud check" }, // BF_PORTAL_v846_FRAUD - next to Lenders: review before the file goes out
+  ...BROKER_TOOL_TABS, // BF_PORTAL_v865_BROKER_TOOLS - Funding (conditions)
   // BF_PORTAL_SBA_SIGNING_TAB_v146 - expose signing status and resend.
   { key: "sba-signing", label: "SBA Signing" },
 ] as const;
@@ -79,6 +81,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     lenders: <LendersTab applicationId={applicationId} />,
     "sba-signing": <SbaSigningTab applicationId={applicationId} />,
     fraud: <FraudTab applicationId={applicationId} />, // BF_PORTAL_v846_FRAUD
+    funding: <BrokerToolsTab tab="funding" applicationId={applicationId} />, // BF_PORTAL_v865_BROKER_TOOLS
   }[activeTab];
 
   // BF_PORTAL_v852_CALC_QBO - the calculator starts from the requested amount; the PDF is titled with the business name.
