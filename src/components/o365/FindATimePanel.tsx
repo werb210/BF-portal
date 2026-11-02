@@ -1,7 +1,7 @@
 // BF_PORTAL_O365_UI_v1 - find-a-time free/busy grid (GET /api/calendar/schedule).
 // BF_PORTAL_FINDTIME_AUTOCOMPLETE_v1 - type a teammate's name or email to add them
 // (suggestions from /api/tasks/staff) instead of typing full addresses by hand.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/api";
 
 // BF_PORTAL_FINDTIME_GRID_v1 - Graph returns a per-entry `error` when a mailbox
@@ -98,7 +98,11 @@ export default function FindATimePanel() {
   const [note, setNote] = useState<string | null>(null);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => dateInputValue(new Date()));
-  const selectedDayLabel = useMemo(() => displayDay(selectedDate), [selectedDate]);
+  // BF_PORTAL_v864_FINDTIME_AUTO - the grid label shows the day the rows were fetched for, not the
+  // day the picker moved to, so a stale grid can never be read as the new day's free/busy.
+  const [rowsDate, setRowsDate] = useState<string | null>(null);
+  const selectedDayLabel = useMemo(() => displayDay(rowsDate ?? selectedDate), [rowsDate, selectedDate]);
+  const requestSeq = useRef(0);
 
   useEffect(() => {
     let alive = true;
@@ -125,9 +129,11 @@ export default function FindATimePanel() {
     });
   };
 
-  const run = async () => {
-    const list = Array.from(selected);
+  // BF_PORTAL_v864_FINDTIME_AUTO - run() takes the list and day explicitly and ignores any answer
+  // that arrives after a newer check started (clicking Next twice quickly must show the last day).
+  const run = async (list: string[] = Array.from(selected), day: string = selectedDate) => {
     if (!list.length) { setNote("Select at least one teammate."); return; }
+    const seq = ++requestSeq.current;
     setLoading(true);
     setNote(null);
     try {
@@ -139,23 +145,48 @@ export default function FindATimePanel() {
       type SchedulePayload = { schedules?: ScheduleEntry[]; connected?: boolean; error?: string };
       // BF_PORTAL_FINDTIME_GRID_v1 - the server defaults to a UTC day, which in
       // western timezones starts the evening before. Send the viewer's own day.
-      const win = localDayWindow(selectedDate);
+      const win = localDayWindow(day);
       const r = await api.get<SchedulePayload & { data?: SchedulePayload }>(
         `/api/calendar/schedule?emails=${encodeURIComponent(list.join(","))}`
           + `&start=${encodeURIComponent(win.start)}&end=${encodeURIComponent(win.end)}`
       );
+      if (seq !== requestSeq.current) return;
       const data: SchedulePayload = (r && typeof r === "object" && r.data ? r.data : r) ?? {};
       const schedules = Array.isArray(data.schedules) ? data.schedules : [];
       setRows(schedules);
+      setRowsDate(day);
       if (data.connected === false) setNote("Connect Microsoft 365 in Settings to check availability.");
       else if (data.error) setNote(`Availability check failed - ${data.error}`);
       else if (schedules.length === 0) setNote("No availability returned for those addresses.");
     } catch {
+      if (seq !== requestSeq.current) return;
+      setRows([]);
+      setRowsDate(null);
       setNote("Could not fetch availability.");
     } finally {
-      setLoading(false);
+      if (seq === requestSeq.current) setLoading(false);
     }
   };
+
+  // BF_PORTAL_v864_FINDTIME_AUTO - re-check automatically whenever the day changes (Prev / Next /
+  // Today / the date picker) or a teammate is ticked or unticked. A short debounce folds quick clicks
+  // into one request. With nobody ticked the grid clears instead of showing the old answer.
+  const selectedKey = useMemo(() => Array.from(selected).sort().join(","), [selected]);
+  useEffect(() => {
+    if (!selectedKey) {
+      requestSeq.current += 1;
+      setRows([]);
+      setRowsDate(null);
+      setNote(null);
+      setLoading(false);
+      return;
+    }
+    if (!parseDateInput(selectedDate)) return;
+    const handle = setTimeout(() => { void run(selectedKey.split(","), selectedDate); }, 250);
+    return () => clearTimeout(handle);
+    // run is re-created each render; the inputs it needs are passed explicitly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKey, selectedDate]);
 
   return (
     <div style={{ marginTop: 16, padding: 16, border: "1px solid var(--ui-border, #eaf0f6)", borderRadius: 8 }}>
@@ -190,7 +221,7 @@ export default function FindATimePanel() {
           Today
         </button>
         <button type="button" onClick={() => void run()} disabled={loading || selected.size === 0} style={{ padding: "6px 14px", background: selected.size === 0 ? "var(--ui-surface-muted)" : "var(--ui-accent-blue)", color: selected.size === 0 ? "var(--ui-text-muted)" : "#fff", border: "none", borderRadius: 4, cursor: selected.size === 0 ? "default" : "pointer" }}>
-          {loading ? "Checking..." : "Check"}
+          {loading ? "Checking..." : "Refresh"}
         </button>
         {selected.size > 0 && (
           <button type="button" onClick={() => { setSelected(new Set()); setRows([]); setNote(null); }} style={{ padding: "6px 10px", background: "transparent", color: "var(--ui-text-muted)", border: "1px solid var(--ui-border, #cbd6e2)", borderRadius: 4, cursor: "pointer", fontSize: 12 }}>

@@ -31,6 +31,7 @@ import CollateralFacilitySection from "@/pages/applications/tabs/CollateralFacil
 import ProductCategoryPicker from "@/pages/applications/tabs/ProductCategoryPicker"; // BF_PORTAL_PRODUCT_CATEGORY_PICKER_v287
 import BrokerDealPanel from "@/components/applications/BrokerDealPanel"; // BF_PORTAL_BLOCK_v522_BROKER_IMPORT
 import FeeAgreementPanel from "@/components/applications/FeeAgreementPanel"; // BF_PORTAL_FEE_AGREEMENT_v709
+import LenderApiPanel from "./LenderApiPanel"; // BF_PORTAL_v873_LENDER_API
 // BF_PORTAL_PRODUCT_QUESTIONS_v292 - BF-Server v289 refuses to send while product questions are unanswered.
 type ProductQuestionsSummary = { blocking?: boolean; message?: string | null } | null | undefined;
 // BF_PORTAL_RESIGN_REQUEST_v295 - BF-Server v293 flags when the client signed before a switch to Line of Credit.
@@ -1004,6 +1005,9 @@ function describeSendFailure(err: unknown): string {
           </tbody>
         </table>
       )}
+
+      {/* BF_PORTAL_v873_LENDER_API - lenders connected by API: Submit by API, synced status, offers, conditions. */}
+      {id ? <div style={{ marginTop: 16 }}><LenderApiPanel applicationId={String(id)} /></div> : null}
 
       {/* BF_PORTAL_BLOCK_v741_COLLATERAL_GATE — show only once Accord is checked, under the lenders. */}
       {/* BF_PORTAL_COLLATERAL_LOC_ONLY_v1 — Accord Collateral & Facility is an LOC requirement only. */}

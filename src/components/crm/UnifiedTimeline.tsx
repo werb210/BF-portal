@@ -9,6 +9,7 @@ import { api } from "@/api";
 // BF_PORTAL_v789_AUTHED_MEDIA - recordings load with the Authorization header when played (blob: URL),
 // instead of an <audio> src carrying ?token=<staff JWT>.
 import { AuthedAudio } from "@/components/media/AuthedMedia";
+import ContractTimelineLink from "@/features/activeContracts/ContractTimelineLink"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
 
 type EmailRow = {
   id: string;
@@ -40,14 +41,14 @@ type CallRow = {
 // portal/client messages, talk-to-a-human and ad attribution were sent by the server
 // and discarded here.
 type Kind = "note" | "task" | "call" | "email" | "meeting" | "voicemail" | "sms"
-  | "message" | "call_logged" | "email_activity" | "system" | "automation";
+  | "message" | "call_logged" | "email_activity" | "system" | "automation" | "contract"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
 // BF_PORTAL_v786_CRM_FIXES - 'automation' (workflow step) items.
 // BF_PORTAL_v787_BUILDER_FIXES - no 'recording' items: the call card already plays each recording
 // through the media proxy, and the timeline copy (a raw Twilio URL) duplicated it and could not play.
 // The server sends automation steps as kind 'system' titled "Automation: ..."; they render as automation.
-type ItemKind = "note" | "task" | "meeting" | "voicemail" | "sms" | "message" | "call_logged" | "email_activity" | "system" | "automation";
-export const ITEM_KINDS: ReadonlySet<string> = new Set<ItemKind>(["note", "task", "meeting", "voicemail", "sms", "message", "call_logged", "email_activity", "system", "automation"]);
-const KIND_LABEL: Partial<Record<Kind, string>> = { call_logged: "call (logged)", email_activity: "email", message: "message", system: "system", automation: "automation" };
+type ItemKind = "note" | "task" | "meeting" | "voicemail" | "sms" | "message" | "call_logged" | "email_activity" | "system" | "automation" | "contract";
+export const ITEM_KINDS: ReadonlySet<string> = new Set<ItemKind>(["note", "task", "meeting", "voicemail", "sms", "message", "call_logged", "email_activity", "system", "automation", "contract"]);
+const KIND_LABEL: Partial<Record<Kind, string>> = { call_logged: "call (logged)", email_activity: "email", message: "message", system: "system", automation: "automation", contract: "contract" };
 
 /** An automation step: kind 'automation', or the server's kind 'system' titled "Automation: ...". */
 export function isAutomationItem(t: Pick<TimelineItem, "kind" | "title">): boolean {
@@ -131,6 +132,7 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
         <Tab id="task" label="Tasks" current={filter} onClick={setFilter} />
         <Tab id="meeting" label="Meetings" current={filter} onClick={setFilter} />
         <Tab id="message" label="Messages" current={filter} onClick={setFilter} />
+        <Tab id="contract" label="Contracts" current={filter} onClick={setFilter} />{/* BF_PORTAL_v864_ACTIVE_CONTRACTS */}
       </div>
 
       {loading && <div style={empty}>Loading...</div>}
@@ -158,7 +160,7 @@ export function UnifiedTimeline({ contactId, scope, refreshKey }: {
               <>
                 {entry.item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{entry.item.title}</div>}
                 {entry.item.body && <div style={{ color: "var(--ui-text-muted)", marginTop: 4, whiteSpace: "pre-wrap" }}>{entry.item.body}</div>}
-                {entry.item.extra && <div style={extra}>{entry.item.extra}</div>}
+                {entry.item.extra && (entry.kind === "contract" ? <ContractTimelineLink contractId={entry.item.extra} /> : <div style={extra}>{entry.item.extra}</div>)}
               </>
             )}
 
@@ -315,6 +317,7 @@ function kindBadge(kind: Kind): CSSProperties {
     email_activity: { bg: "#e8f5e9", fg: "#1b5e20" },
     system: { bg: "#f3f4f6", fg: "#374151" },
     automation: { bg: "#e0f2f1", fg: "#004d40" },
+    contract: { bg: "#dcfce7", fg: "#14532d" }, // BF_PORTAL_v864_ACTIVE_CONTRACTS
   };
   const c = palette[kind];
   return {

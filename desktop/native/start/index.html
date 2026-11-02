@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in</title>
+  <link rel="stylesheet" href="start.css" />
+</head>
+<body>
+  <!-- BF_PORTAL_v876_NATIVE_DESKTOP - the desktop app's first screen when it is not built for one company: the iPad app's
+       "Work email or mobile number" step. The app then opens that company's staff portal. -->
+  <main class="wrap">
+    <h1>Sign in</h1>
+    <p class="sub">Staff Portal</p>
+
+    <form id="find" class="card" autocomplete="on">
+      <label for="identifier">Work email or mobile number</label>
+      <input id="identifier" name="username" type="text" inputmode="email" autocapitalize="none" autocorrect="off"
+             autocomplete="username" placeholder="you@company.com or (555) 000-0000" autofocus />
+      <p id="error" class="error" role="alert" hidden></p>
+      <button id="go" type="submit" disabled>Continue</button>
+      <p class="hint">We'll find your company, then you sign in with a text code or a passkey.</p>
+    </form>
+
+    <section id="pick" class="card" hidden>
+      <p>You work with more than one company. Which one do you want to sign in to?</p>
+      <ul id="companies"></ul>
+      <button id="back" type="button" class="link">Use a different email or number</button>
+    </section>
+  </main>
+  <script src="start.js"></script>
+</body>
+</html>

@@ -2,9 +2,12 @@ import { useContext, useEffect, useMemo, useState, type CSSProperties } from "re
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
 import { api } from "@/api";
+import CustomFieldsPanel from "@/crmFields/CustomFieldsPanel"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { crmApi, type CompanyRow, type ContactRow, type Scope } from "@/api/crm";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
+import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
+import ActiveContractsTab from "@/features/activeContracts/ActiveContractsTab"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
 import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmDuplicatesBanner } from "@/components/crm/unified/CrmDuplicates"; // BF_PORTAL_v856_CRM_UNIFY
@@ -112,12 +115,16 @@ export default function CompanyDetailPage() {
         {/* BF_PORTAL_v856_CRM_UNIFY - every company detail (record, else the latest application), editable; tags. */}
         <CrmCompanyTagEditor backend={crmBackend} companyId={id} catalogue={tagCatalogue} refreshKey={refreshKey} />
         <CrmCompanyDetails backend={crmBackend} companyId={id} refreshKey={refreshKey} onSaved={() => setRefreshKey((k) => k + 1)} />
+        <CustomFieldsPanel object="company" recordId={id} />{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       </aside>
 
       <main>
         <CrmDuplicatesBanner backend={crmBackend} entity="company" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY */}
         <CrmAiSummary backend={crmBackend} entity="company" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY - same spot as on a contact */}
-        <ActivityTimeline scope={scope} refreshKey={refreshKey} />
+        {/* BF_PORTAL_v864_ACTIVE_CONTRACTS - Timeline | Active Contracts (BF CRM only; the Keystone CRM keeps the plain timeline). */}
+        {crmBase === "/crm" ? (
+          <ContactRecordTabs timeline={<ActivityTimeline scope={scope} refreshKey={refreshKey} />} contracts={<ActiveContractsTab companyId={id} />} />
+        ) : <ActivityTimeline scope={scope} refreshKey={refreshKey} />}
       </main>
 
       <aside style={rail}>

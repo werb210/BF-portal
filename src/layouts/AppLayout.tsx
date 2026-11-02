@@ -5,6 +5,9 @@
 // Lenders so they can track underwriting workload and the panel of
 // insurers they place with. Communications + Calendar removed; Pipeline
 // + Lenders added. BF and SLF nav definitions are unchanged.
+import FollowUpPrompt from "@/settingsPack/FollowUpPrompt"; // BF_PORTAL_v869_SETTINGS_PACK_TASK_DEFAULTS
+import StrongSignInGate from "@/settingsPack/StrongSignInGate"; // BF_PORTAL_v869_SETTINGS_PACK_SECURITY
+import { can, usePermissions, usePermissionsBootstrap, type Area } from "@/roles/permissionStore"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { canSeeKeystone, isKeystonePath, KS_ACCENT, ksNavFor } from "@/silos/ks/ksAccess"; // BF_PORTAL_v849_KS_SILO + BF_PORTAL_v850_KS_CRM
@@ -26,12 +29,29 @@ import { buildStampLabel } from "@/lib/buildInfo";
 
 const TOPBAR_HEIGHT = 68;
 
+// BF_PORTAL_v870_CRM_DATA_MODEL - the permission area behind each nav section (by label, as the role filter below is).
+// Only people on a custom role can ever lose a section: built-in roles see exactly the nav they saw before.
+const NAV_AREA: Record<string, Area> = {
+  pipeline: "applications",
+  crm: "contacts",
+  "active contracts": "applications",
+  revenue: "applications", // BF_PORTAL_v878_NAV_REVENUE
+  communications: "communications",
+  marketing: "marketing",
+  outreach: "marketing",
+  lenders: "lenders",
+  lender: "lenders",
+  reports: "reports",
+};
+
 type NavItem = { label: string; path: string; roles: string[]; capability?: string };
 
 const BF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",         roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
   { label: "CRM",            path: "/crm/contacts",    roles: ["Admin", "Staff"] },
+  // BF_PORTAL_v878_NAV_REVENUE - Active Contracts is a tab inside CRM now; Revenue gathers forecast, commission and contracts.
+  { label: "Revenue",        path: "/revenue",         roles: ["Admin", "Staff"] },
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
@@ -82,6 +102,8 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user } = useAuth();
   usePushRegistration(Boolean(user));
+  usePermissionsBootstrap(Boolean(user)); // BF_PORTAL_v870_CRM_DATA_MODEL
+  const perms = usePermissions(); // BF_PORTAL_v870_CRM_DATA_MODEL
   const { silo } = useSilo();
   const role = (user as { role?: string } | null)?.role ?? "";
   const capabilities = (((user as { capabilities?: string[] } | null)?.capabilities) ?? []) as string[];
@@ -106,12 +128,15 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const canSee = (item: NavItem) => {
     const label = item.label.toLowerCase();
     if (isAdmin) return true;
-    if (isMarketing) return label !== "lenders";
+    if (isMarketing) return label !== "lenders" && label !== "active contracts"; // BF_PORTAL_v864_ACTIVE_CONTRACTS - CRM is Admin / Staff
     if (isStaff) return label !== "marketing";
     return false;
   };
 
   const navItems = onKeystone ? ksNavFor(user) : (SILO_NAV[activeSilo] ?? BF_NAV).filter((item) => { // BF_PORTAL_v849_KS_SILO + BF_PORTAL_v850_KS_CRM
+    // BF_PORTAL_v870_CRM_DATA_MODEL - a section the person's custom role cannot view is not shown (the server refuses it).
+    const area = NAV_AREA[item.label.toLowerCase()];
+    if (area && !can(area, "view", perms)) return false;
     if (activeSilo === "BI" && capabilities.length > 0) {
       if (item.label === "Dashboard") return capabilities.length > 0;
       if (item.label === "CRM") return hasCap("crm:read");
@@ -224,6 +249,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         <div style={{ position: "sticky", top: 0, zIndex: 30, flexShrink: 0 }}><Topbar onToggleSidebar={() => setMobileNavOpen((prev) => !prev)} /></div>
         <main style={{ height: `calc(100dvh - ${TOPBAR_HEIGHT}px)`, overflowY: "auto", padding: 24, background: "var(--bg-primary)" }}>
           <UpdatePromptBanner />{/* BF_PORTAL_BLOCK_v478 - was built but never rendered */}
+          <FollowUpPrompt /><StrongSignInGate />{/* BF_PORTAL_v869_SETTINGS_PACK - follow-up prompt, strong sign-in */}
           {children ?? <Outlet />}
         </main>
       </div>

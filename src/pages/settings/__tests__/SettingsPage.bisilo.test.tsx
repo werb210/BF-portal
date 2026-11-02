@@ -73,14 +73,14 @@ describe("BF_PORTAL_BI_SILO_NAV_v56 — Settings tabs by silo", () => {
   it("BI Admin sees only My Profile", () => {
     renderSettings("BI", "Admin");
     expect(screen.getByRole("tab", { name: "My Profile" })).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "User Management" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Users & roles" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "AI Knowledge" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Runtime Verification" })).not.toBeInTheDocument();
   });
 
   it("BF Admin sees all four tabs (unchanged)", () => {
     renderSettings("BF", "Admin");
-    expect(screen.getByRole("tab", { name: "User Management" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Users & roles" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "AI Knowledge" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "My Profile" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Runtime Verification" })).toBeInTheDocument();

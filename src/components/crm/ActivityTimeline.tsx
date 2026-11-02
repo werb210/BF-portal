@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { crmApi, type Scope, type TimelineItem } from "@/api/crm";
+import ContractTimelineLink from "@/features/activeContracts/ContractTimelineLink"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
 
 type FilterTab = "all" | "note" | "email" | "call" | "task" | "meeting";
 
@@ -101,7 +102,7 @@ export function ActivityTimeline({ scope, refreshKey, items: itemsProp }: {
           </header>
           {item.title && <div style={{ fontWeight: 500, color: "var(--ui-text)" }}>{item.title}</div>}
           {item.body && <TimelineField text={item.body} />}
-          {item.extra && <TimelineField text={item.extra} muted />}
+          {item.extra && (item.kind === "contract" ? <ContractTimelineLink contractId={item.extra} /> : <TimelineField text={item.extra} muted />)}
         </article>
       ))}
     </div>
@@ -147,6 +148,7 @@ function kindBadge(kind: TimelineItem["kind"]): CSSProperties {
     email_activity: { bg: "#e8f5e9", fg: "#1b5e20" },
     recording: { bg: "#e3f2fd", fg: "#0d47a1" }, // BF_PORTAL_v786_CRM_FIXES
     automation: { bg: "#e0f2f1", fg: "#004d40" },
+    contract: { bg: "#dcfce7", fg: "#14532d" }, // BF_PORTAL_v864_ACTIVE_CONTRACTS
   };
   const c = palette[kind];
   return {

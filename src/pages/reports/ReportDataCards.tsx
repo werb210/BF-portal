@@ -2,6 +2,9 @@
 // from /api/reports/data/:key.
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { api } from "@/api";
+import { useReportTeam, withTeam } from "@/teams/TeamFilter"; // BF_PORTAL_v870_CRM_DATA_MODEL - the Reports page's Team filter
+import ForecastCard from "@/forecast/ForecastCard"; // BF_PORTAL_v872_FORECAST
+import { FeePaymentsTable } from "@/payments/PaymentsSettings"; // BF_PORTAL_v872_PAYMENTS
 
 const th: CSSProperties = { textAlign: "left", padding: "4px 8px", color: "var(--ui-text-muted)", fontWeight: 600, fontSize: 12 };
 const td: CSSProperties = { padding: "4px 8px", borderTop: "1px solid var(--ui-border)", color: "var(--ui-text)", fontSize: 13 };
@@ -62,9 +65,10 @@ export function GoalsCard({ d }: { d: any }) {
 export function PipelineSnapshotCard({ d: initial }: { d: any }) {
   const [d, setD] = useState<any>(initial);
   const [busy, setBusy] = useState(false);
+  const team = useReportTeam();
   const pick = async (date: string) => {
     setBusy(true);
-    try { setD(await api.get(`/api/reports/data/pipeline_snapshot?date=${encodeURIComponent(date)}`)); } finally { setBusy(false); }
+    try { setD(await api.get(withTeam(`/api/reports/data/pipeline_snapshot?date=${encodeURIComponent(date)}`, team))); } finally { setBusy(false); }
   };
   return <><div style={{ display: "flex", gap: 8, alignItems: "center", margin: "0 0 8px", fontSize: 13 }}>
       <label htmlFor="snapshot-date">Compare</label>
@@ -84,12 +88,13 @@ export function CustomReportCard({ d: initial }: { d: any }) {
   const [cfg, setCfg] = useState<{ entity: string; groupBy: string; measure: string; days: number }>(saved ?? { entity: initial.entity ?? "applications", groupBy: initial.groupBy ?? "stage", measure: initial.measure ?? "count", days: 90 });
   const [d, setD] = useState<any>(initial);
   const menu: Record<string, { groups: string[]; measures: string[] }> = d.menu ?? initial.menu ?? {};
+  const team = useReportTeam();
   useEffect(() => {
     let off = false;
     try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(cfg)); } catch { /* private mode */ }
-    api.get(`/api/reports/data/custom_report?entity=${cfg.entity}&groupBy=${cfg.groupBy}&measure=${cfg.measure}&days=${cfg.days}`).then((r) => { if (!off) setD(r); }).catch(() => undefined);
+    api.get(withTeam(`/api/reports/data/custom_report?entity=${cfg.entity}&groupBy=${cfg.groupBy}&measure=${cfg.measure}&days=${cfg.days}`, team)).then((r) => { if (!off) setD(r); }).catch(() => undefined);
     return () => { off = true; };
-  }, [cfg.entity, cfg.groupBy, cfg.measure, cfg.days]);
+  }, [cfg.entity, cfg.groupBy, cfg.measure, cfg.days, team]);
   const setEntity = (entity: string) => { const m = menu[entity]; setCfg({ ...cfg, entity, groupBy: m?.groups[0] ?? "month", measure: m?.measures[0] ?? "count" }); };
   const rows: Array<{ label: string; value: number }> = d.rows ?? [];
   const max = Math.max(1, ...rows.map((r) => r.value));
@@ -117,6 +122,8 @@ export function CustomReportCard({ d: initial }: { d: any }) {
 export function renderReport(report: string, d: any): ReactNode {
   // BF_PORTAL_REPORTS15_18_v769 - cards for BF-Server v786 reports.
   if (report === "pipeline_snapshot") return <PipelineSnapshotCard d={d} />;
+  if (report === "forecast") return <ForecastCard initial={d} />; // BF_PORTAL_v872_FORECAST - weighted commission per rep and team
+  if (report === "fee_payments") return <FeePaymentsTable r={d} />; // BF_PORTAL_v872_PAYMENTS - broker fees by payment link
   if (report === "issues_report") return <><p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--ui-text-muted)" }}>Last {d.days} days. {d.note}</p><T headers={["Month", "Opened", "Resolved", "Median days to resolve"]} rows={(d.byMonth ?? []).map((r: any) => [r.label, r.opened, r.resolved, r.median_days === null ? "-" : r.median_days + " d"])} /><div style={{ height: 10 }} /><T headers={["Open now", "Open", "In progress", "Oldest (days)"]} rows={(d.open ?? []).map((r: any) => [r.label, r.open, r.in_progress, r.oldest_days])} /></>;
   if (report === "custom_report") return <CustomReportCard d={d} />;
   // BF_PORTAL_REPORTS11_14_v768 - cards for BF-Server v785 reports.
@@ -161,12 +168,13 @@ export function renderReport(report: string, d: any): ReactNode {
 export function ReportDataCard({ report, days }: { report: string; days?: number }) {
   const [d, setD] = useState<any>(null);
   const [err, setErr] = useState(false);
+  const team = useReportTeam();
   useEffect(() => {
     let off = false;
     setD(null); setErr(false);
-    api.get(`/api/reports/data/${encodeURIComponent(report)}${days ? `?days=${days}` : ""}`).then((r) => { if (!off) setD(r); }).catch(() => { if (!off) setErr(true); });
+    api.get(withTeam(`/api/reports/data/${encodeURIComponent(report)}${days ? `?days=${days}` : ""}`, team)).then((r) => { if (!off) setD(r); }).catch(() => { if (!off) setErr(true); });
     return () => { off = true; };
-  }, [report, days]);
+  }, [report, days, team]);
   if (err) return <p style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>Could not load this report.</p>;
   if (!d) return <p style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>Loading...</p>;
   return <>{renderReport(report, d)}</>;

@@ -4,6 +4,11 @@
 	<!-- BF_PORTAL_v817_IPAD_VOIP - VoIP pushes. Archive/export for App Store switches this to production. -->
 	<key>aps-environment</key>
 	<string>development</string>
+	<!-- BF_PORTAL_v864_NATIVE_PASSKEYS - passkeys for the staff relying party (staff.boreal.financial serves the
+	     apple-app-site-association file naming 76VAY7UJKJ.com.borealfinancial.portal). Needs the Associated Domains
+	     capability on the App ID in the Apple Developer account. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array><string>webcredentials:staff.boreal.financial</string></array>
 	<key>com.apple.security.application-groups</key>
 	<array><string>group.com.borealfinancial.portal</string></array>
 </dict></plist>

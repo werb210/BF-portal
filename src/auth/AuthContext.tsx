@@ -5,6 +5,7 @@ import { AUTH_STORAGE_KEY, authToken } from "@/lib/authToken";
 import { decodeJwt } from "@/auth/jwt";
 import { normalizeRole, type Role } from "@/auth/roles";
 import { setAuthTelemetryContext } from "@/utils/uiTelemetry";
+import { revokeRefreshOnSignOut, startSessionRefresh } from "@/auth/sessionRefresh"; // BF_PORTAL_v868_SLIDING_REFRESH
 
 export type AuthStatus = "authenticated" | "unauthenticated" | "pending";
 export type RolesStatus = "ready" | "loading";
@@ -235,7 +236,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, [isLoading, user]);
 
+  // BF_PORTAL_v868_SLIDING_REFRESH - renew the session while the portal is open (up to 30 days).
+  useEffect(() => startSessionRefresh(), []);
+
   const clearAuth = useCallback(() => {
+    revokeRefreshOnSignOut();
     authToken.clear();
     setTokenState(null);
     setUser(null);

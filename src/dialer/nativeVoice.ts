@@ -225,10 +225,17 @@ export function nativeCallParams(params: Record<string, unknown>): Record<string
   return out;
 }
 
+// BF_PORTAL_v877_NO_NUMBER_CALL - a call needs something to reach: a number, the conference the server set up, or a
+// meeting room. One went out with none of them on Sunday and the server hung up on it without a word.
+export function hasCallTarget(params: Record<string, unknown>): boolean {
+  const clean = nativeCallParams(params);
+  return Boolean(clean.To || clean.conferenceFriendly || clean.meetingSlug);
+}
+
 /** Starts the call natively. Null when it started, otherwise the reason it could not. */
 export async function startNativeOutgoing(params: Record<string, unknown>, who: { label: string; callerName?: string | null; fromPanel?: boolean }): Promise<string | null> {
   const clean = nativeCallParams(params);
-  if (Object.keys(clean).length === 0) return "call_setup_failed";
+  if (!hasCallTarget(clean)) return "no_number";
   let token: string | null = null;
   try { token = await fetchVoiceToken(true); } catch { /* the engine falls back to its last token */ }
   try {

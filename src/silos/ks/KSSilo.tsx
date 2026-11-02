@@ -17,6 +17,7 @@ import KsTickets from "./KsTickets";
 import KsTicketDetail from "./KsTicketDetail";
 import KsRequests from "./KsRequests";
 import StartDemoButton from "./StartDemoButton"; // BF_PORTAL_v853_KS_PHONE_SUPPORT
+import KsMarketing from "./marketing/KsMarketing"; // BF_PORTAL_v865_KS_MARKETING
 
 export function KsSignInGate({ children }: { children: React.ReactNode }) {
   const signIn = useQuery({
@@ -73,6 +74,7 @@ function KsOperations() {
           <Route path="tickets" element={<KsTickets />} />
           <Route path="tickets/:id" element={<KsTicketDetail />} />
           <Route path="requests" element={<KsRequests />} />
+          <Route path="marketing/*" element={<KsMarketing />} />{/* BF_PORTAL_v865_KS_MARKETING */}
           <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Routes>
       </KsSignInGate>

@@ -1,0 +1,341 @@
+# BF_PORTAL_v876_NATIVE_DESKTOP - builds the native Boreal Staff Portal apps (desktop/native, Tauri 2): a signed and
+# notarized Mac .dmg (one universal app for Apple-chip and Intel Macs) and a Windows installer (.exe and .msi,
+# code-signed when a certificate is set), then publishes them to GitHub Releases, where the apps' updater finds them.
+# Actions > "Desktop apps (native)" > Run workflow. Replaces the Electron build in desktop.yml (kept for now).
+#
+# Secrets (missing ones never fail the run: the step is skipped with a notice and the build stays usable - ad-hoc
+# signed Mac app, unsigned Windows installer, no auto-update):
+#   APPLE_DEVELOPER_ID_CERT_P12 (base64 .p12) + APPLE_DEVELOPER_ID_CERT_PASSWORD   sign the Mac app and .dmg
+#   APPLE_API_KEY_ID + APPLE_API_ISSUER_ID + APPLE_API_KEY_P8                        notarize (App Store Connect key)
+#     or APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD                                      notarize (Apple ID)
+#   APPLE_TEAM_ID (secret or variable)                                              Team ID, 10 characters
+#   MACOS_PROVISIONING_PROFILE (base64 Developer ID profile with Associated Domains) passkeys + code AutoFill
+#   TAURI_SIGNING_PRIVATE_KEY + TAURI_SIGNING_PRIVATE_KEY_PASSWORD, variable TAURI_UPDATER_PUBKEY   auto-update
+#   WINDOWS_CERTIFICATE_PFX (base64 .pfx) + WINDOWS_CERTIFICATE_PASSWORD            sign the Windows installer
+name: Desktop apps (native)
+
+# BF_PORTAL_v876_NATIVE_DESKTOP - a pull request that changes the app builds it on both runners to prove it compiles
+# (no signing secrets are used, nothing is published).
+on:
+  pull_request:
+    paths:
+      - "desktop/native/**"
+      - ".github/workflows/desktop-native.yml"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to GitHub Releases (the apps update from there)
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-native-${{ github.event_name == 'pull_request' && github.ref || 'release' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: desktop/native
+    env:
+      DESKTOP_RELEASE_REPO: ${{ github.repository }}
+      APPLE_TEAM_ID: ${{ github.event_name != 'pull_request' && secrets.APPLE_TEAM_ID || vars.APPLE_TEAM_ID || '' }}
+      CERT_P12: ${{ github.event_name != 'pull_request' && secrets.APPLE_DEVELOPER_ID_CERT_P12 || '' }}
+      CERT_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.APPLE_DEVELOPER_ID_CERT_PASSWORD || '' }}
+      ASC_KEY_ID: ${{ github.event_name != 'pull_request' && secrets.APPLE_API_KEY_ID || '' }}
+      ASC_ISSUER_ID: ${{ github.event_name != 'pull_request' && secrets.APPLE_API_ISSUER_ID || '' }}
+      ASC_KEY_P8: ${{ github.event_name != 'pull_request' && secrets.APPLE_API_KEY_P8 || '' }}
+      NOTARY_APPLE_ID: ${{ github.event_name != 'pull_request' && secrets.APPLE_ID || '' }}
+      NOTARY_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
+      PROVISIONING_PROFILE: ${{ github.event_name != 'pull_request' && secrets.MACOS_PROVISIONING_PROFILE || '' }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ github.event_name != 'pull_request' && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
+      TAURI_UPDATER_PUBKEY: ${{ github.event_name != 'pull_request' && vars.TAURI_UPDATER_PUBKEY || '' }}
+    outputs:
+      key: ${{ steps.brand.outputs.key }}
+      version: ${{ steps.brand.outputs.version }}
+      tag: ${{ steps.brand.outputs.tag }}
+      manifest: ${{ steps.brand.outputs.manifest }}
+      channel: ${{ steps.brand.outputs.channel }}
+      updater: ${{ steps.brand.outputs.updater }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/native/src-tauri
+      - run: npm install --no-audit --no-fund
+
+      - name: Signing certificate (Developer ID Application)
+        id: cert
+        run: |
+          if [ -z "$CERT_P12" ] || [ -z "$CERT_PASSWORD" ]; then
+            echo "::notice title=Mac signing::No APPLE_DEVELOPER_ID_CERT_P12 / _PASSWORD - the app is ad-hoc signed and not notarized (first launch needs right-click > Open)."
+            echo "DESKTOP_ADHOC_SIGN=1" >> "$GITHUB_ENV"
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          KEYCHAIN="$RUNNER_TEMP/desktop-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/developer-id.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/developer-id.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/developer-id.p12"
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | grep -o '"Developer ID Application:[^"]*"' | head -1 | tr -d '"')
+          if [ -z "$IDENTITY" ]; then
+            echo "::error title=Mac signing::APPLE_DEVELOPER_ID_CERT_P12 holds no 'Developer ID Application' certificate."
+            exit 1
+          fi
+          echo "APPLE_SIGNING_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+          echo "Signing as $IDENTITY"
+
+      - name: Notarization credentials
+        id: notary
+        run: |
+          if [ "${{ steps.cert.outputs.signed }}" != "true" ]; then echo "mode=none" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8" ]; then
+            printf '%s' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+            {
+              echo "APPLE_API_KEY=$ASC_KEY_ID"
+              echo "APPLE_API_ISSUER=$ASC_ISSUER_ID"
+              echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+            } >> "$GITHUB_ENV"
+            echo "mode=api-key" >> "$GITHUB_OUTPUT"
+          elif [ -n "$NOTARY_APPLE_ID" ] && [ -n "$NOTARY_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            {
+              echo "APPLE_ID=$NOTARY_APPLE_ID"
+              echo "APPLE_PASSWORD=$NOTARY_PASSWORD"
+            } >> "$GITHUB_ENV"
+            echo "mode=apple-id" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Mac notarization::No App Store Connect key (APPLE_API_KEY_ID/_ISSUER_ID/_KEY_P8) or APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD + APPLE_TEAM_ID - signed but not notarized."
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Provisioning profile (passkeys and code AutoFill)
+        run: |
+          if [ "${{ steps.cert.outputs.signed }}" = "true" ] && [ -n "$PROVISIONING_PROFILE" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            echo "$PROVISIONING_PROFILE" | base64 --decode > src-tauri/embedded.provisionprofile
+            echo "DESKTOP_PROVISIONED=1" >> "$GITHUB_ENV"
+          else
+            echo "::notice title=Passkeys::No MACOS_PROVISIONING_PROFILE (or no signing certificate / APPLE_TEAM_ID) - built without Associated Domains, so Mac passkeys and the Messages code AutoFill stay off."
+          fi
+
+      - name: Updater
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ] || [ -z "$TAURI_UPDATER_PUBKEY" ]; then
+            echo "::notice title=Auto-update::No TAURI_SIGNING_PRIVATE_KEY secret or TAURI_UPDATER_PUBKEY variable - built without auto-update."
+            echo "TAURI_UPDATER_PUBKEY=" >> "$GITHUB_ENV"
+          fi
+
+      - name: Brand
+        id: brand
+        run: |
+          node brand.mjs
+
+      - name: Icons
+        run: |
+          npx tauri icon "${{ steps.brand.outputs.icon }}" -o src-tauri/icons
+          git checkout -- src-tauri/icons/badge-dot.png
+
+      - name: Build (universal app for Apple-chip and Intel Macs)
+        run: npm run build:mac -- --bundles app,dmg
+
+      - name: Check the signature
+        run: |
+          set -e
+          APP=$(ls -d src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app | head -1)
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -d --entitlements :- "$APP" || true
+          if [ "${{ steps.notary.outputs.mode }}" != "none" ]; then
+            spctl --assess --type execute --verbose=4 "$APP"
+            xcrun stapler validate "$APP"
+          fi
+
+      - name: Sign and notarize the .dmg
+        if: steps.notary.outputs.mode != 'none'
+        run: |
+          set -e
+          DMG=$(ls src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg | head -1)
+          codesign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp "$DMG"
+          if [ "${{ steps.notary.outputs.mode }}" = "api-key" ]; then
+            xcrun notarytool submit "$DMG" --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" --wait
+          else
+            xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+          fi
+          xcrun stapler staple "$DMG"
+          spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG"
+
+      - name: Name the release files
+        run: |
+          set -e
+          OUT="$RUNNER_TEMP/release"; mkdir -p "$OUT"
+          BASE="${{ steps.brand.outputs.key }}-${{ steps.brand.outputs.version }}"
+          B=src-tauri/target/universal-apple-darwin/release/bundle
+          cp "$(ls $B/dmg/*.dmg | head -1)" "$OUT/$BASE-mac.dmg"
+          TGZ=$(ls $B/macos/*.app.tar.gz 2>/dev/null | head -1 || true)
+          if [ -n "$TGZ" ]; then
+            cp "$TGZ" "$OUT/$BASE-mac.app.tar.gz"
+            cp "$TGZ.sig" "$OUT/$BASE-mac.app.tar.gz.sig"
+          fi
+          ls -la "$OUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 30 }}
+          name: desktop-mac
+          path: ${{ runner.temp }}/release/*
+          if-no-files-found: error
+
+      - name: Remove the signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/desktop-signing.keychain-db" 2>/dev/null || true
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: desktop/native
+        shell: bash
+    env:
+      DESKTOP_RELEASE_REPO: ${{ github.repository }}
+      WIN_PFX: ${{ github.event_name != 'pull_request' && secrets.WINDOWS_CERTIFICATE_PFX || '' }}
+      WIN_PFX_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.WINDOWS_CERTIFICATE_PASSWORD || '' }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ github.event_name != 'pull_request' && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
+      TAURI_UPDATER_PUBKEY: ${{ github.event_name != 'pull_request' && vars.TAURI_UPDATER_PUBKEY || '' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/native/src-tauri
+      - run: npm install --no-audit --no-fund
+
+      - name: Code-signing certificate
+        id: cert
+        shell: pwsh
+        run: |
+          if (-not $env:WIN_PFX -or -not $env:WIN_PFX_PASSWORD) {
+            Write-Output "::notice title=Windows signing::No WINDOWS_CERTIFICATE_PFX / _PASSWORD - the installer is not signed (SmartScreen shows More info > Run anyway once)."
+            "signed=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            exit 0
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP "codesign.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WIN_PFX))
+          $pw = ConvertTo-SecureString $env:WIN_PFX_PASSWORD -AsPlainText -Force
+          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $pw
+          Remove-Item $pfx
+          "WINDOWS_CERT_THUMBPRINT=$($cert.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "signed=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Updater
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ] || [ -z "$TAURI_UPDATER_PUBKEY" ]; then
+            echo "TAURI_UPDATER_PUBKEY=" >> "$GITHUB_ENV"
+          fi
+
+      - name: Brand
+        id: brand
+        run: |
+          node brand.mjs
+
+      - name: Icons
+        run: |
+          npx tauri icon "${{ steps.brand.outputs.icon }}" -o src-tauri/icons
+          git checkout -- src-tauri/icons/badge-dot.png
+
+      - name: Build
+        run: npm run build:win
+
+      - name: Check the signature
+        if: steps.cert.outputs.signed == 'true'
+        shell: pwsh
+        run: |
+          Get-ChildItem src-tauri/target/release/bundle -Recurse -Include *.exe,*.msi | ForEach-Object {
+            $sig = Get-AuthenticodeSignature $_.FullName
+            Write-Output "$($_.Name): $($sig.Status)"
+            if ($sig.Status -ne "Valid") { throw "$($_.Name) is not validly signed" }
+          }
+
+      - name: Name the release files
+        run: |
+          set -e
+          OUT="$RUNNER_TEMP/release"; mkdir -p "$OUT"
+          BASE="${{ steps.brand.outputs.key }}-${{ steps.brand.outputs.version }}"
+          B=src-tauri/target/release/bundle
+          EXE=$(ls $B/nsis/*-setup.exe | head -1)
+          MSI=$(ls $B/msi/*.msi | head -1)
+          cp "$EXE" "$OUT/$BASE-windows-x64-setup.exe"
+          cp "$MSI" "$OUT/$BASE-windows-x64.msi"
+          [ -f "$EXE.sig" ] && cp "$EXE.sig" "$OUT/$BASE-windows-x64-setup.exe.sig"
+          [ -f "$MSI.sig" ] && cp "$MSI.sig" "$OUT/$BASE-windows-x64.msi.sig"
+          ls -la "$OUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 30 }}
+          name: desktop-windows
+          path: ${{ runner.temp }}/release/*
+          if-no-files-found: error
+
+  publish:
+    needs: [mac, windows]
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ needs.mac.outputs.tag }}
+      VERSION: ${{ needs.mac.outputs.version }}
+      KEY: ${{ needs.mac.outputs.key }}
+      MANIFEST: ${{ needs.mac.outputs.manifest }}
+      CHANNEL: ${{ needs.mac.outputs.channel }}
+      UPDATER: ${{ needs.mac.outputs.updater }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/release
+          merge-multiple: true
+      - name: Publish the release
+        run: |
+          set -e
+          DIR="$RUNNER_TEMP/release"
+          ls -la "$DIR"
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --title "Desktop app $KEY $VERSION" --latest=false \
+              --notes "Native desktop app ($KEY) version $VERSION: Mac (.dmg, Apple-chip and Intel) and Windows (.exe or .msi)."
+          fi
+          gh release upload "$TAG" "$DIR"/* --clobber
+      - name: Publish the update manifest
+        if: env.UPDATER == 'true'
+        run: |
+          set -e
+          node desktop/native/updater-manifest.mjs "$RUNNER_TEMP/release" "$GITHUB_REPOSITORY" "$TAG" "$VERSION" "$RUNNER_TEMP/$MANIFEST"
+          if ! gh release view "$CHANNEL" > /dev/null 2>&1; then
+            gh release create "$CHANNEL" --title "Desktop app updates" --latest=false --prerelease \
+              --notes "Update manifests the native desktop apps check. Do not delete."
+          fi
+          gh release upload "$CHANNEL" "$RUNNER_TEMP/$MANIFEST" --clobber

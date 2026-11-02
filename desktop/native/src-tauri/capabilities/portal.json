@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "portal",
+  "description": "The staff portal page: incoming-call pop-up, unread badge, notifications, links to the browser.",
+  "windows": [
+    "main"
+  ],
+  "remote": {
+    "urls": [
+      "https://staff.boreal.financial/*"
+    ]
+  },
+  "permissions": [
+    "allow-incoming-call",
+    "allow-set-badge",
+    "allow-notify",
+    "allow-open-external"
+  ]
+}

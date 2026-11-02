@@ -1,0 +1,23 @@
+{
+  "webcredentials": {
+    "apps": [
+      "76VAY7UJKJ.com.borealfinancial.portal",
+      "76VAY7UJKJ.com.boreal.portal.desktop"
+    ]
+  },
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "76VAY7UJKJ.com.boreal.portal.desktop"
+        ],
+        "components": [
+          {
+            "/": "/desktop-app/*",
+            "comment": "Opens the desktop app"
+          }
+        ]
+      }
+    ]
+  }
+}

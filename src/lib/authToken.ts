@@ -28,9 +28,26 @@ export function setAuthToken(token: string) {
   emitStorageEvent(oldValue, token);
 }
 
+// BF_PORTAL_v868_SLIDING_REFRESH - the refresh token every staff sign-in now returns. The portal trades it in
+// (src/auth/sessionRefresh.ts) for a new access token and a new refresh token while staff keep using it, up to 30 days.
+export const REFRESH_STORAGE_KEY = "auth_refresh_token";
+
+export function getRefreshToken(): string | null {
+  return readSessionItem(REFRESH_STORAGE_KEY);
+}
+
+export function setRefreshToken(token: string) {
+  writeSessionItem(REFRESH_STORAGE_KEY, token);
+}
+
+export function clearRefreshToken() {
+  if (readSessionItem(REFRESH_STORAGE_KEY) !== null) removeSessionItem(REFRESH_STORAGE_KEY);
+}
+
 export function clearAuthToken() {
   const oldValue = readSessionItem(STORAGE_KEY);
   removeSessionItem(STORAGE_KEY);
+  clearRefreshToken(); // BF_PORTAL_v868_SLIDING_REFRESH - signed out means the refresh token goes too
   // BF_PORTAL_BLOCK_v533 - nothing was signed in, so there is no sign-out to announce.
   if (oldValue !== null) emitStorageEvent(oldValue, null);
 }

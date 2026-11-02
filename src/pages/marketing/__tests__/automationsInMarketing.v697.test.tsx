@@ -1,17 +1,31 @@
-// BF_PORTAL_AUTOMATIONS_IN_MARKETING_v697
-// The automation builder and its starter automations were only reachable at /admin/automations,
-// which the live menu never links to. They now sit on Marketing > Automations.
-import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+// BF_PORTAL_AUTOMATIONS_IN_MARKETING_v697, BF_PORTAL_v864_CONTENT_TAB
+// The automation builder and the built-in system rules moved from Marketing > Automations to Settings > Content >
+// Automations. Old Marketing links (?tab=automations) forward there.
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-describe("Marketing > Automations shows the builder", () => {
-  const src = readFileSync("src/pages/marketing/MarketingDashboard.tsx", "utf8");
-  it("mounts the builder above the built-in rules", () => {
-    expect(src).toContain('import AutomationsBuilder from "@/pages/admin/AutomationsPage"');
-    expect(src).toContain('{tab === "automations" && (<><AutomationsBuilder /><AutomationsPanel /></>)}');
+vi.mock("@/api", () => ({ api: Object.assign(vi.fn(async () => ({})), { get: vi.fn(async () => ({ items: [] })), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() }) }));
+
+import MarketingDashboard from "@/pages/marketing/MarketingDashboard";
+
+describe("Marketing > Automations moved to Settings > Content", () => {
+  it("Marketing no longer has an Automations tab", () => {
+    window.history.replaceState(null, "", "/marketing");
+    render(<MemoryRouter><MarketingDashboard /></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: "Automations" })).toBeNull();
   });
-  it("no longer says a builder is coming", () => {
-    expect(src).not.toContain("a builder to create your own is coming");
-    expect(src).toContain("Built-in system rules");
+  it("?tab=automations forwards to Settings > Content > Automations", async () => {
+    window.history.replaceState(null, "", "/marketing?tab=automations");
+    render(
+      <MemoryRouter initialEntries={["/marketing?tab=automations"]}>
+        <Routes>
+          <Route path="/marketing" element={<MarketingDashboard />} />
+          <Route path="/settings/content" element={<div data-testid="content-page" />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByTestId("content-page")).toBeInTheDocument();
+    window.history.replaceState(null, "", "/");
   });
 });

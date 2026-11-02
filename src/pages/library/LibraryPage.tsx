@@ -11,6 +11,7 @@ import { FILES_READWRITE_SCOPES } from "@/auth/o365Scopes";
 import * as L from "./libraryApi";
 import type { Item } from "./libraryApi";
 import { btn, primary, small, humanDate, MoveDialog, PreviewPanel, RequestDialog, SendDialog, ShareDialog, SyncHelp, VersionsDialog } from "./LibraryPanels";
+import { FloatingMenu, type AnchorRect } from "./FloatingMenu"; // BF_PORTAL_v864_LIBRARY_MENU
 
 // BF_PORTAL_LIBRARY_BIG_UPLOAD_v772 - up to 200 MB, sent to OneDrive in pieces through BF-Server v790.
 const MAX_BYTES = 200 * 1024 * 1024;
@@ -100,6 +101,9 @@ export default function LibraryPage() {
   const [layout, setLayout] = useState<"list" | "grid">("list");
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  // BF_PORTAL_v864_LIBRARY_MENU - where the open "..." button is, so the menu can float above the table.
+  const [menuAnchor, setMenuAnchor] = useState<AnchorRect | null>(null);
+  const closeMenu = useCallback(() => setMenuFor(null), []);
   const [dragging, setDragging] = useState(false);
   const [dropOn, setDropOn] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<Item | null>(null);
@@ -272,8 +276,8 @@ export default function LibraryPage() {
   const openItem = (it: Item) => { if (it.isFolder) { setQ(""); setResults(null); setStack((s) => [...s, { id: it.id, name: it.name }]); } else setPreviewing(it); };
 
   const menu = (it: Item) => (
-    <div role="menu" onClick={(e) => e.stopPropagation()} data-testid="library-menu"
-      style={{ position: "absolute", right: 0, top: "100%", zIndex: 30, minWidth: 210, background: "var(--ui-surface-strong, #fff)", border: "1px solid var(--ui-border)", borderRadius: 10, boxShadow: "0 10px 30px rgba(0,0,0,0.18)", padding: 4, textAlign: "left" }}>
+    <FloatingMenu anchor={menuAnchor ?? { top: 0, bottom: 0, left: 0, right: 0 }} onClose={closeMenu} testId="library-menu"
+      style={{ minWidth: 210, background: "var(--ui-surface-strong, #fff)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 10, boxShadow: "0 10px 30px rgba(0,0,0,0.18)", padding: 4, textAlign: "left" }}>
       {([
         !it.isFolder && ["Preview", () => setPreviewing(it)],
         it.isFolder && ["Open", () => openItem(it)],
@@ -291,7 +295,7 @@ export default function LibraryPage() {
         <button key={t} type="button" role="menuitem" onClick={() => { setMenuFor(null); fn(); }}
           style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", background: "none", border: 0, borderRadius: 6, color: t === "Delete" ? "#991b1b" : "var(--ui-text)", cursor: "pointer", fontSize: 14 }}>{t}</button>
       ))}
-    </div>
+    </FloatingMenu>
   );
   const star = (it: Item) => (
     <button type="button" aria-label={(starred.has(it.id) ? "Remove star from " : "Star ") + it.name} aria-pressed={starred.has(it.id)} onClick={(e) => { e.stopPropagation(); void toggleStar(it); }}
@@ -300,7 +304,12 @@ export default function LibraryPage() {
   const more = (it: Item) => (
     <span style={{ position: "relative", display: "inline-block" }}>
       <button type="button" aria-label={"More actions for " + it.name} aria-haspopup="menu" aria-expanded={menuFor === it.id} data-testid="library-more"
-        onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === it.id ? null : it.id); }} style={{ ...small, padding: "4px 9px" }}>{"⋯"}</button>
+        onClick={(e) => {
+          e.stopPropagation();
+          const r = e.currentTarget.getBoundingClientRect();
+          setMenuAnchor({ top: r.top, bottom: r.bottom, left: r.left, right: r.right });
+          setMenuFor(menuFor === it.id ? null : it.id);
+        }} style={{ ...small, padding: "4px 9px" }}>{"⋯"}</button>
       {menuFor === it.id && menu(it)}
     </span>
   );

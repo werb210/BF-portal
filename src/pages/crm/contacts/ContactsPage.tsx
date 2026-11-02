@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
+import { LeadScoreBadge, useLeadScores } from "@/components/marketing/LeadScore"; // BF_PORTAL_v874_MARKETING_TOOLS
 import { Link } from "react-router-dom";
 import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
 import { api } from "@/api";
@@ -7,6 +8,7 @@ import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import { contactDisplayName } from "@/utils/contactName";
 import { crmApi, type ContactRow } from "@/api/crm";
 import { canDelete } from "@/auth/canDelete";
+import { useCan } from "@/roles/permissionStore"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
 import { useCrmStore } from "@/state/crm.store";
@@ -16,15 +18,19 @@ import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import { exportRowsToCsv } from "@/utils/csvExport";
 import { refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
+import CustomFieldFilters from "@/crmFields/CustomFieldFilters"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import { useCustomFieldColumns } from "@/crmFields/useCustomFieldColumns"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import { displayValue, filterParams, rowsWithCustomFields, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
 
-type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
+type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at" | `cf_${string}`;
 
 
 export default function ContactsPage() {
   const { silo } = useSilo();
   const crmBase = useCrmBase(); // BF_PORTAL_v850_KS_CRM
   const { user } = useAuth();
-  const showDelete = canDelete(user?.role as any);
+  const roleCan = { create: useCan("contacts", "create"), del: useCan("contacts", "delete"), exp: useCan("contacts", "export") }; // BF_PORTAL_v870_CRM_DATA_MODEL
+  const showDelete = canDelete(user?.role as any) && roleCan.del;
   const isAdmin = user?.role === "Admin";
   // BF_PORTAL_CRM_FILTER_PERSIST_v1 - remember the list view (tag/owner/search/sort/page) so
   // opening a contact and hitting Back restores it instead of resetting to the default view.
@@ -60,6 +66,10 @@ export default function ContactsPage() {
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | "active" | "assign" | null>(null);
   const [assignOwnerId, setAssignOwnerId] = useState("");
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  // BF_PORTAL_v870_CRM_DATA_MODEL - custom field columns (chosen in Columns) and filters.
+  const [cfFilters, setCfFilters] = useState<CustomFilter[]>(Array.isArray(savedFilters.cfFilters) ? (savedFilters.cfFilters as CustomFilter[]) : []);
+  const cf = useCustomFieldColumns("contact");
+  const cfParamKey = JSON.stringify(cfFilters);
   const crmBackend = useBfCrmBackend(); // BF_PORTAL_v856_CRM_UNIFY
   const { catalogue: tagCatalogue, reload: reloadTags } = useTagCatalogue(crmBackend, refreshKey); // BF_PORTAL_v856_CRM_UNIFY
   const toggleCol = (k: string) => setHiddenCols((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
@@ -96,6 +106,7 @@ export default function ContactsPage() {
           tag: tagFilter || undefined, // BF_PORTAL_BLOCK_v806_TAG_FILTER
           page: crmPage, // BF_PORTAL_BF_CONTACTS_PAGER_v1
           pageSize: CONTACTS_PAGE_SIZE,
+          ...filterParams(cfFilters), // BF_PORTAL_v870_CRM_DATA_MODEL
         });
         if (!cancelled) { setRows(r.rows); setTotal(r.total); }
       } catch (e: any) {
@@ -105,20 +116,20 @@ export default function ContactsPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [silo, q, sort.col, sort.dir, ownerId, tagFilter, refreshKey, crmPage]);
+  }, [silo, q, sort.col, sort.dir, ownerId, tagFilter, refreshKey, crmPage, cfParamKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // BF_PORTAL_BF_CONTACTS_PAGER_v1 - any change to the filters/sort re-queries from
   // the top; staying on page 7 of a now-2-page result would render an empty table.
   // BF_PORTAL_CRM_FILTER_PERSIST_v1 - save the view on change, and don't clobber the
   // restored page on the initial mount (only reset to page 1 when filters actually change).
   useEffect(() => {
-    try { sessionStorage.setItem("crm.contacts.filters", JSON.stringify({ q, ownerId, tagFilter, sort, crmPage })); } catch { /* ignore */ }
-  }, [q, ownerId, tagFilter, sort, crmPage]);
+    try { sessionStorage.setItem("crm.contacts.filters", JSON.stringify({ q, ownerId, tagFilter, sort, crmPage, cfFilters })); } catch { /* ignore */ }
+  }, [q, ownerId, tagFilter, sort, crmPage, cfFilters]);
   const filtersMountRef = useRef(false);
   useEffect(() => {
     if (!filtersMountRef.current) { filtersMountRef.current = true; return; }
     setCrmPage(1);
-  }, [silo, q, sort.col, sort.dir, ownerId, tagFilter]);
+  }, [silo, q, sort.col, sort.dir, ownerId, tagFilter, cfParamKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // BF_PORTAL_CRM_TOTALS_v1 - exact, from the server's total.
   const hasNext = crmPage * CONTACTS_PAGE_SIZE < total;
@@ -201,6 +212,9 @@ export default function ContactsPage() {
     } finally { setBusyMass(null); }
   }
 
+  // BF_PORTAL_v874_MARKETING_TOOLS - lead scores next to each name (the silo's rules; only contacts you may see).
+  const scoreIds = useMemo(() => rows.map((r) => r.id), [rows]);
+  const leadScores = useLeadScores(scoreIds);
   const tableRows = useMemo(() => rows.map(r => (
     <tr key={r.id} style={trStyle}>
       {isAdmin && (
@@ -210,6 +224,7 @@ export default function ContactsPage() {
       )}
       <td style={tdStyle}>
         <Link to={`${crmBase}/contacts/${r.id}`} style={linkStyle}>{contactDisplayName(r.name, { company: r.company_name, email: r.email })}</Link>
+        {leadScores[r.id] && <> <LeadScoreBadge score={leadScores[r.id]!} /></>}
       </td>
       {!hiddenCols.has("company_name") && <td style={tdStyle}>{r.company_name ?? "—"}</td>}
       {!hiddenCols.has("tags") && (
@@ -229,9 +244,10 @@ export default function ContactsPage() {
       )}</td>
       )}
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{r.owner_name ?? "—"}</td>}
+      {cf.shown.map((f) => <td key={f.name} style={tdStyle}>{displayValue(f, (r as { custom_fields?: Record<string, unknown> }).custom_fields?.[f.name]) || "—"}</td>)}{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [isAdmin, rows, selected, hiddenCols, crmBase, tagCatalogue]); // BF_PORTAL_v856_CRM_UNIFY
+  )), [isAdmin, rows, selected, hiddenCols, crmBase, tagCatalogue, cf.shown, leadScores]); // BF_PORTAL_v856_CRM_UNIFY BF_PORTAL_v874_MARKETING_TOOLS
 
   return (
     <div style={page}>
@@ -260,9 +276,9 @@ export default function ContactsPage() {
             <option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>
           ))}
         </select>
-        <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-contacts.csv", rows as any)}>Export</button>
-        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={toolbarBtn} />
-        <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>
+        {roleCan.exp && <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-contacts.csv", rowsWithCustomFields(rows as any, cf.fields))}>Export</button>}
+        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }, ...cf.columnOptions]} hidden={cf.hiddenWith(hiddenCols)} onToggle={(k) => (cf.isCfKey(k) ? cf.toggle(k) : toggleCol(k))} style={toolbarBtn} />
+        {roleCan.create && <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>}
         <CrmSegmentBar current={{ q, ownerId, tagFilter, sort }} onApply={(f) => {
           if (typeof f.q === "string") setQ(f.q);
           if (typeof f.ownerId === "string") setOwnerId(f.ownerId);
@@ -275,6 +291,7 @@ export default function ContactsPage() {
       {/* BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips; several tags = any of them. */}
       <CrmTagViewBy backend={crmBackend} entity="contact" value={tagFilter ? tagFilter.split(",") : []}
         onChange={(next) => setTagFilter(next.join(","))} catalogue={tagCatalogue} onCatalogueChanged={reloadTags} />
+      <CustomFieldFilters fields={cf.fields} value={cfFilters} onChange={setCfFilters} />{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       {isAdmin && selected.size > 0 && (
         <div style={{ display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" }}>
           <span style={{ fontWeight: 600, fontSize: 13 }}>{selected.size} selected</span>
@@ -312,14 +329,15 @@ export default function ContactsPage() {
             {!hiddenCols.has("tags") && <Th>Tags</Th>}{/* BF_PORTAL_BLOCK_v811_TAGS_COLUMN */}
             {!hiddenCols.has("lead_status") && <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>}
             {!hiddenCols.has("owner_name") && <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>}
+            {cf.shown.map((f) => <Th key={f.name} onClick={() => onSort(`cf_${f.name}`)}>{f.label}{sortIndicator(`cf_${f.name}`)}</Th>)}
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
           </tr>
         </thead>
         <tbody>
-          {loading && <tr><td colSpan={isAdmin ? 7 : 6} style={emptyCell}>Loading…</td></tr>}
-          {err && <tr><td colSpan={isAdmin ? 7 : 6} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
+          {loading && <tr><td colSpan={(isAdmin ? 7 : 6) + cf.shown.length} style={emptyCell}>Loading…</td></tr>}
+          {err && <tr><td colSpan={(isAdmin ? 7 : 6) + cf.shown.length} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
           {!loading && !err && rows.length === 0 && (
-            <tr><td colSpan={isAdmin ? 7 : 6} style={emptyCell}>No contacts in this silo.</td></tr>
+            <tr><td colSpan={(isAdmin ? 7 : 6) + cf.shown.length} style={emptyCell}>No contacts in this silo.</td></tr>
           )}
           {!loading && !err && tableRows}
         </tbody>

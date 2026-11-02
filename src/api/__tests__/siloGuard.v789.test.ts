@@ -52,6 +52,16 @@ describe("silo guard in the api client", () => {
     expect(isCrossSiloPath("/api/usersx")).toBe(false);
   });
 
+  // BF_PORTAL_v864_KS_WIDGET_FIX - the widget asks for the Keystone summary by name while the topbar is on Financial.
+  it("a call that names its silo in X-Silo is checked against that silo", async () => {
+    respond({ kind: "keystone", silo: "KS", available: true, pipelineCount: 3 });
+    await expect(api("/api/widget/summary", { headers: { "X-Silo": "KS" } })).resolves.toMatchObject({ silo: "KS", pipelineCount: 3 });
+    respond({ kind: "keystone", silo: "KS" });
+    await expect(api("/api/widget/summary", { headers: { "x-silo": "BI" } })).rejects.toBeInstanceOf(SiloMismatchError);
+    respond({ kind: "keystone", silo: "KS" });
+    await expect(api("/api/widget/summary")).rejects.toBeInstanceOf(SiloMismatchError); // no header: the topbar silo
+  });
+
   it("apiForSilo checks against the silo it asked for", async () => {
     respond({ data: [{ id: "c1", silo: "BI" }] });
     await expect(apiForSilo("BI").get("/api/crm/contacts")).resolves.toHaveLength(1);

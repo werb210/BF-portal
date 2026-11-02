@@ -55,3 +55,44 @@ installers. Download them from that run's Artifacts ("Boreal-Staff-Portal-Mac"):
 arm64 .dmg for Apple-chip Macs, the x64 one for Intel. The app is not signed yet, so
 the first launch needs right-click > Open > Open. It cannot update itself until it is
 signed with Boreal's Apple Developer ID; install new versions by hand until then.
+
+## Native apps (BF_PORTAL_v876_NATIVE_DESKTOP) - replacing this Electron shell
+
+`desktop/native/` is the native app: Tauri 2, so the Mac app is a real WKWebView app and the Windows app uses
+WebView2. Bundle id `com.boreal.portal.desktop`, Apple team `76VAY7UJKJ`. Being signed with Boreal's Developer ID and
+carrying Associated Domains is what makes Mac passkeys (Touch ID / iCloud Keychain) and the Messages one-time-code
+AutoFill work; Windows Hello passkeys work in WebView2.
+
+Everything this Electron app does is kept: tray / menu-bar icon so the dialler stays connected and calls ring, start
+at login (hidden), one instance, incoming-call pop-up and unread badge (`window.borealDesktop.incomingCall` /
+`setBadge`), native notifications, microphone / clipboard / notifications for the portal only (the Mac is asked for
+the microphone up front), Microsoft sign-in pop-ups in the app and every other link in the browser, the old offline
+cache cleared on launch, downloads saved to the Downloads folder, and automatic updates every 6 hours (now on the Mac
+too). Calls are placed from the web page (Twilio in WKWebView / WebView2), as in this Electron app: the iPad app's
+native Mac calling (v824) and native file picker (v842-v844) only apply to the iPad app running on a Mac. File
+uploads use the system's own picker (NSOpenPanel on the Mac, the Windows file dialog), which downloads OneDrive /
+iCloud files before handing them over. Sign-in renews with the refresh token the portal already keeps
+(`src/auth/sessionRefresh.ts`, POST /api/auth/refresh).
+
+Build: GitHub Actions > **Desktop apps (native)** > Run workflow. The .dmg (one app for Apple-chip and Intel Macs)
+and the Windows .exe / .msi are published to Releases (`desktop-boreal-v<version>`); the apps update from
+`desktop-latest/latest-boreal.json`. Raise `version` in `desktop/native/brands/boreal.json` for each new release.
+Pull requests that change `desktop/native/` build both apps unsigned to prove they compile (nothing is published).
+Staff install the new app once (it is a different app from this Electron one); then remove the old one. Keep this
+Electron app, `desktop.yml` and the Library's Windows installer until the native app has replaced them.
+
+Settings (repository secrets unless noted):
+
+1. `APPLE_DEVELOPER_ID_CERT_P12` - the "Developer ID Application" certificate exported from Keychain Access as .p12,
+   base64 (`base64 -i cert.p12 | pbcopy`), and `APPLE_DEVELOPER_ID_CERT_PASSWORD`.
+2. Notarization: `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`, `APPLE_API_KEY_P8` (App Store Connect > Users and Access >
+   Integrations > Keys; paste the .p8 text) - or `APPLE_ID` and `APPLE_APP_SPECIFIC_PASSWORD`.
+3. `APPLE_TEAM_ID` - repository variable: `76VAY7UJKJ`.
+4. `MACOS_PROVISIONING_PROFILE` - for passkeys: register the App ID `com.boreal.portal.desktop` with the Associated
+   Domains capability, create a "Developer ID" provisioning profile for it, base64. The portal already serves
+   `/.well-known/apple-app-site-association` naming `76VAY7UJKJ.com.boreal.portal.desktop`.
+5. Auto-update: run `npx tauri signer generate -w desktop.key` once; secret `TAURI_SIGNING_PRIVATE_KEY` (file contents)
+   and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, repository variable `TAURI_UPDATER_PUBKEY` (the .pub contents).
+6. Optional Windows signing: `WINDOWS_CERTIFICATE_PFX` (base64 .pfx) and `WINDOWS_CERTIFICATE_PASSWORD`.
+
+Anything missing is skipped with a notice; the build still works (ad-hoc signed, not notarized, no updates).

@@ -1,0 +1,8 @@
+# BF_PORTAL_v876_NATIVE_DESKTOP - build output and per-build files (brand.mjs, CI secrets)
+node_modules/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/tauri.brand.conf.json
+src-tauri/embedded.provisionprofile
+src-tauri/icons/*
+!src-tauri/icons/badge-dot.png

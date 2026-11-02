@@ -1,4 +1,7 @@
 import { useEffect, useState, useContext, type CSSProperties } from "react";
+import CustomFieldsPanel from "@/crmFields/CustomFieldsPanel"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import CallScriptsPanel from "@/callScripts/CallScriptDock"; // BF_PORTAL_v871_CALL_SCRIPTS
+import PaymentLinksPanel from "@/payments/PaymentLinksPanel"; // BF_PORTAL_v872_PAYMENTS
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
 import { crmApi, type ContactRow, type Scope } from "@/api/crm";
@@ -13,6 +16,7 @@ import { ContactApplicantFields, ContactAdvisors, ContactPartners, ContactMarket
 import { EntityEditModal } from "@/components/EntityEditModal";
 import ContactJourney from "@/components/crm/ContactJourney"; // BF_PORTAL_VISITOR_JOURNEY_v1
 import ContactRecordTabs from "@/components/crm/ContactRecordTabs"; // BF_PORTAL_CONTACT_RECORD_TABS_v272
+import ActiveContractsTab from "@/features/activeContracts/ActiveContractsTab"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
 import { ContactDocuments } from "@/components/crm/ContactDocuments"; // BF_PORTAL_CONTACT_DOCUMENTS_v1
 import { crmUnified, useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmContactApplications, contactRoleBadge } from "@/components/crm/unified/CrmContactPanel"; // BF_PORTAL_v856_CRM_UNIFY
@@ -21,6 +25,7 @@ import { CrmDuplicatesBanner } from "@/components/crm/unified/CrmDuplicates"; //
 import { CrmAiSummary, CrmKsLicenseeCard } from "@/components/crm/unified/CrmAiSummary"; // BF_PORTAL_v856_CRM_UNIFY
 import { NotifyContactButton } from "@/components/crm/NotifyContactButton"; // BF_PORTAL_NOTIFY_CONTACT_v627
 import RetentionLock from "@/retention/RetentionLock"; // BF_PORTAL_v855_RETENTION
+import { ContactLeadScore } from "@/components/marketing/LeadScore"; // BF_PORTAL_v874_MARKETING_TOOLS
 import { refusedDeleteMessage, useRetention } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 
 export default function ContactDetailPage() {
@@ -89,7 +94,7 @@ export default function ContactDetailPage() {
           to={`${crmBase}/contacts`}
           style={{ color: "var(--ui-accent-fg)", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12 }}
         >← Back to contacts</Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><h2 style={{ marginTop: 0, marginBottom: 0 }}>{contact.name}</h2><span style={roleBadge} title={contactRoleBadge(contact as any).tip} data-testid="contact-role-badge">{contactRoleBadge(contact as any).label}</span></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><h2 style={{ marginTop: 0, marginBottom: 0 }}>{contact.name}</h2><span style={roleBadge} title={contactRoleBadge(contact as any).tip} data-testid="contact-role-badge">{contactRoleBadge(contact as any).label}</span>{id && <ContactLeadScore contactId={id} />}</div>
         {contact.job_title && <div style={subtle}>{contact.job_title}</div>}
         {contact.email && (
           <a href={`mailto:${contact.email}`} style={{ color: "#0091ae" }}>{contact.email}</a>
@@ -138,6 +143,9 @@ export default function ContactDetailPage() {
           {contact.source && <Field label="Source" value={contact.source} />}
         </div>
         <CrmTagEditor backend={crmBackend} entity="contact" id={id} tags={contact.tags} catalogue={tagCatalogue} onSaved={() => setRefreshKey((k) => k + 1)} />{/* BF_PORTAL_v856_CRM_UNIFY */}
+        <CustomFieldsPanel object="contact" recordId={id} />{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
+        <PaymentLinksPanel contactId={id} />{/* BF_PORTAL_v872_PAYMENTS */}
+        <CallScriptsPanel contactId={id} />{/* BF_PORTAL_v871_CALL_SCRIPTS */}
       </aside>
 
       <main style={{ minWidth: 0 }}>
@@ -164,6 +172,7 @@ export default function ContactDetailPage() {
               <ContactDocuments contactId={id} refreshKey={refreshKey} /> {/* BF_PORTAL_CONTACT_DOCUMENTS_v1 */}
             </>
           }
+          contracts={crmBase === "/crm" ? <ActiveContractsTab contactId={id} /> : undefined} // BF_PORTAL_v864_ACTIVE_CONTRACTS - BF CRM only
         />
       </main>
 

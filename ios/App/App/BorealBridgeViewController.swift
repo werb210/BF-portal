@@ -2,6 +2,7 @@ import Capacitor
 import UIKit
 import LocalAuthentication
 import UniformTypeIdentifiers
+import AuthenticationServices // BF_PORTAL_v864_NATIVE_PASSKEYS
 
 class BorealBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
@@ -14,6 +15,7 @@ class BorealBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(PortalLauncherPlugin()) // BF_PORTAL_BLOCK_v556
         bridge?.registerPluginInstance(BorealVoicePlugin()) // BF_PORTAL_v817_IPAD_VOIP
         bridge?.registerPluginInstance(NativeFilePickerPlugin()) // BF_PORTAL_v842_MAC_FILE_PICKER
+        bridge?.registerPluginInstance(NativePasskeyPlugin()) // BF_PORTAL_v864_NATIVE_PASSKEYS
         // BF_PORTAL_v843_MAC_UPLOADS - Safari's Develop menu can inspect the app, so an upload problem can be seen.
         if #available(iOS 16.4, *) { bridge?.webView?.isInspectable = true }
     }
@@ -184,5 +186,146 @@ public class NativeFilePickerPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPick
     public func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
         pending?.resolve(["files": [] as [Any]])
         pending = nil
+    }
+}
+
+// BF_PORTAL_v864_NATIVE_PASSKEYS
+// The web app runs from capacitor://localhost, which is not https://staff.boreal.financial, so WebKit's WebAuthn in
+// the app's web view either is missing (window.PublicKeyCredential undefined) or refuses the staff relying party.
+// That is why the iPad app - and the same app on a Mac ("Designed for iPad") - only offered the texted code. Passkeys
+// go through Apple's native API instead (ASAuthorizationPlatformPublicKeyCredentialProvider), which works on iPadOS
+// 16+ and on Apple silicon Macs, for an app whose Associated Domains entitlement lists webcredentials:<RP ID> and whose
+// RP domain serves /.well-known/apple-app-site-association naming this app. The answers are returned in the same JSON
+// shape as @simplewebauthn/browser, so BF-Server verifies them unchanged (origin https://<RP ID>).
+// Lives in this file because it is already in the App target, so no Xcode project edit is needed.
+@objc(NativePasskeyPlugin)
+public class NativePasskeyPlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    public let identifier = "NativePasskeyPlugin"
+    public let jsName = "NativePasskey"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "register", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "authenticate", returnType: CAPPluginReturnPromise)
+    ]
+    private var pending: CAPPluginCall?
+    private var controller: ASAuthorizationController?
+
+    @objc func status(_ call: CAPPluginCall) {
+        if #available(iOS 16.0, *) {
+            call.resolve(["available": true, "onMac": ProcessInfo.processInfo.isiOSAppOnMac])
+        } else {
+            call.resolve(["available": false, "onMac": false])
+        }
+    }
+
+    static func b64urlDecode(_ s: String) -> Data? {
+        var b = s.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        while b.count % 4 != 0 { b += "=" }
+        return Data(base64Encoded: b)
+    }
+
+    static func b64url(_ d: Data) -> String {
+        return d.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+    }
+
+    private func credentialIds(_ call: CAPPluginCall, _ key: String) -> [Data] {
+        let list = call.getArray(key, JSObject.self) ?? []
+        return list.compactMap { ($0["id"] as? String).flatMap(NativePasskeyPlugin.b64urlDecode) }
+    }
+
+    @objc func register(_ call: CAPPluginCall) {
+        guard #available(iOS 16.0, *) else { call.reject("Passkeys need iPadOS 16 or later.", "unsupported"); return }
+        guard let rpId = call.getString("rpId"), !rpId.isEmpty,
+              let challenge = call.getString("challenge").flatMap(NativePasskeyPlugin.b64urlDecode),
+              let userId = call.getString("userId").flatMap(NativePasskeyPlugin.b64urlDecode),
+              let userName = call.getString("userName") else {
+            call.reject("The passkey options were incomplete.", "invalid_options")
+            return
+        }
+        let provider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: rpId)
+        let request = provider.createCredentialRegistrationRequest(challenge: challenge, name: userName, userID: userId)
+        if #available(iOS 17.4, *) {
+            request.excludedCredentials = credentialIds(call, "excludeCredentials").map { ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialID: $0) }
+        }
+        run(request, call)
+    }
+
+    @objc func authenticate(_ call: CAPPluginCall) {
+        guard #available(iOS 16.0, *) else { call.reject("Passkeys need iPadOS 16 or later.", "unsupported"); return }
+        guard let rpId = call.getString("rpId"), !rpId.isEmpty,
+              let challenge = call.getString("challenge").flatMap(NativePasskeyPlugin.b64urlDecode) else {
+            call.reject("The passkey options were incomplete.", "invalid_options")
+            return
+        }
+        let provider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: rpId)
+        let request = provider.createCredentialAssertionRequest(challenge: challenge)
+        request.allowedCredentials = credentialIds(call, "allowCredentials").map { ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialID: $0) }
+        run(request, call)
+    }
+
+    private func run(_ request: ASAuthorizationRequest, _ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            // A request left open from an earlier tap is answered as cancelled, so its promise never hangs.
+            self.pending?.reject("Cancelled.", "cancelled")
+            self.pending = call
+            let controller = ASAuthorizationController(authorizationRequests: [request])
+            controller.delegate = self
+            controller.presentationContextProvider = self
+            self.controller = controller
+            controller.performRequests()
+        }
+    }
+
+    public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        return bridge?.viewController?.view.window ?? ASPresentationAnchor()
+    }
+
+    public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        guard let call = pending else { return }
+        pending = nil
+        self.controller = nil
+        if #available(iOS 16.0, *) {
+            if let reg = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration {
+                let id = NativePasskeyPlugin.b64url(reg.credentialID)
+                call.resolve([
+                    "id": id, "rawId": id, "type": "public-key", "authenticatorAttachment": "platform",
+                    "clientExtensionResults": [String: Any](),
+                    "response": [
+                        "clientDataJSON": NativePasskeyPlugin.b64url(reg.rawClientDataJSON),
+                        "attestationObject": NativePasskeyPlugin.b64url(reg.rawAttestationObject ?? Data()),
+                        "transports": ["internal", "hybrid"]
+                    ]
+                ])
+                return
+            }
+            if let assertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion {
+                let id = NativePasskeyPlugin.b64url(assertion.credentialID)
+                call.resolve([
+                    "id": id, "rawId": id, "type": "public-key", "authenticatorAttachment": "platform",
+                    "clientExtensionResults": [String: Any](),
+                    "response": [
+                        "clientDataJSON": NativePasskeyPlugin.b64url(assertion.rawClientDataJSON),
+                        "authenticatorData": NativePasskeyPlugin.b64url(assertion.rawAuthenticatorData),
+                        "signature": NativePasskeyPlugin.b64url(assertion.signature),
+                        "userHandle": NativePasskeyPlugin.b64url(assertion.userID)
+                    ]
+                ])
+                return
+            }
+        }
+        call.reject("Unexpected passkey answer.", "unexpected")
+    }
+
+    public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        guard let call = pending else { return }
+        pending = nil
+        self.controller = nil
+        let code = (error as? ASAuthorizationError)?.code
+        if code == .canceled {
+            call.reject("Passkey cancelled.", "cancelled")
+        } else {
+            // Most often: the Associated Domains entitlement or apple-app-site-association is not in place yet.
+            call.reject(error.localizedDescription, "failed")
+        }
     }
 }

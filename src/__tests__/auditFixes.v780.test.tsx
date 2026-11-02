@@ -31,7 +31,6 @@ vi.mock("@azure/msal-browser", () => ({
   },
 }));
 vi.mock("@/components/o365/OutOfOfficePanel", () => ({ default: () => null }));
-vi.mock("@/components/o365/OneDriveFilePicker", () => ({ default: () => null }));
 vi.mock("@/components/o365/ContactsSyncButton", () => ({ default: () => null }));
 
 import ProfileSettings from "@/pages/settings/tabs/ProfileSettings";
@@ -52,6 +51,15 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("v780 audit fixes", () => {
+  // BF_PORTAL_v864_NO_ONEDRIVE_SECTION - the Library replaced My Profile's OneDrive file search.
+  it("My Profile has no OneDrive files section and never searches OneDrive", async () => {
+    render(<ProfileSettings />);
+    await screen.findByRole("button", { name: "Disconnect" });
+    expect(screen.queryByText("OneDrive files")).toBeNull();
+    expect(screen.queryByPlaceholderText(/Search your OneDrive/)).toBeNull();
+    expect(h.urls.some((u) => u.includes("/api/o365/files/"))).toBe(false);
+  });
+
   it("Microsoft Disconnect forgets the connection on the server", async () => {
     render(<ProfileSettings />);
     const disconnect = await screen.findByRole("button", { name: "Disconnect" });

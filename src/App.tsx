@@ -46,9 +46,9 @@ const BIReferrersPage = lazyWithRetry(() => import("@/pages/bi/BIReferrersPage")
 // The orphan component is still exported in case test files reference it.
 const Leads = lazyWithRetry(() => import("@/pages/Leads"));
 const IssueInboxPage = lazyWithRetry(() => import("@/pages/IssueInboxPage"));
+const RevenuePage = lazyWithRetry(() => import("@/pages/revenue/RevenuePage")); // BF_PORTAL_v878_NAV_REVENUE
 const ReportsBoard = lazyWithRetry(() => import("@/pages/reports/ReportsBoard")); // BF_PORTAL_REPORTS_SECTION_v714 (replaces the hidden ReportsPage)
 import DesktopBridge from "@/desktop/DesktopBridge"; // BF_PORTAL_DESKTOP_ALERTS_v724
-const AutomationsPage = lazyWithRetry(() => import("@/pages/admin/AutomationsPage")); // BF_PORTAL_AUTOMATIONS_UI_v1
 const WorkflowEditor = lazyWithRetry(() => import("@/pages/automations/workflow/WorkflowEditor")); // BF_PORTAL_v786_WORKFLOW_BUILDER
 // BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1
 // Five removed admin pages all call /api/admin/* endpoints that do not exist
@@ -109,6 +109,7 @@ import IncomingCallToast from "@/dialer/components/IncomingCallToast";
 import NativeCallBanner from "@/dialer/components/NativeCallBanner"; // BF_PORTAL_v817_IPAD_VOIP
 import ShareToDealProvider from "@/native/ShareToDealProvider"; // BF_PORTAL_BLOCK_v594
 import TeamNotifier from "@/components/team/TeamNotifier"; // BF_PORTAL_TEAM_NOTIFY_v644
+import { CallScriptDock } from "@/callScripts/CallScriptDock"; // BF_PORTAL_v871_CALL_SCRIPTS
 
 // VoiceBootstrap removed in v225. The in-portal Twilio Voice SDK dialer
 // was ripped in v224; the no-op bootstrap stub had no remaining purpose.
@@ -126,6 +127,7 @@ function AppShell() {
       <ShareToDealProvider />{/* BF_PORTAL_BLOCK_v594 */}
       <TeamNotifier />{/* BF_PORTAL_TEAM_NOTIFY_v644 */}
       <DialerPanel />
+      <CallScriptDock />{/* BF_PORTAL_v871_CALL_SCRIPTS - the script beside a live call */}
       <FloatingDialerButton />
       <IncomingCallToast />
       <NativeCallBanner />{/* BF_PORTAL_v817_IPAD_VOIP */}
@@ -229,7 +231,8 @@ const AppRoutes = () => {
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
         <Route path="/broker-imports" element={<Navigate to="/marketing?tab=referrers&sub=brokers" replace />} /> {/* BF_PORTAL_PARTNERS_TABS_v720 - Broker Files lives in Marketing > Referrers > Brokers */}
         <Route path="/settings/broker-files" element={<Navigate to="/marketing?tab=referrers&sub=brokers" replace />} />
-        <Route path="/library" element={<Navigate to="/settings/library" replace />} /> {/* BF_PORTAL_LIBRARY_IN_SETTINGS_v764 - the Library is a Settings tab now */}
+        <Route path="/library" element={<Navigate to="/settings/content?section=library" replace />} /> {/* BF_PORTAL_LIBRARY_IN_SETTINGS_v764, BF_PORTAL_v864_CONTENT_TAB - Settings > Content > Library */}
+        <Route path="/revenue" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><RevenuePage /></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_v878_NAV_REVENUE */}
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}><div style={{ padding: 16 }}><h1 style={{ fontSize: 20, margin: "0 0 12px", color: "var(--ui-text)" }}>Reports</h1><ReportsBoard /></div></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_REPORTS_SECTION_v714 */}
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
         <Route
@@ -295,7 +298,7 @@ const AppRoutes = () => {
         <Route path="/leads" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><Leads /></RequireRole></ProtectedRoute>} />
         <Route path="/issues" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><IssueInboxPage /></RequireRole></ProtectedRoute>} />
         {/* BF_PORTAL_DEAD_PAGES_v781 - /chat, /ai-chat and /ai-comms removed: in no menu, and they called server addresses that do not exist. */}
-        <Route path="/admin/automations" element={<ProtectedRoute><RequireRole roles={["Admin"]}><AutomationsPage /></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_AUTOMATIONS_UI_v1 */}
+        <Route path="/admin/automations" element={<Navigate to="/settings/content?section=automations" replace />} /> {/* BF_PORTAL_AUTOMATIONS_UI_v1, BF_PORTAL_v864_CONTENT_TAB - Settings > Content > Automations */}
         {/* BF_PORTAL_BLOCK_v45_ADMIN_DEAD_ROUTE_REMOVAL_v1 -- five routes
             removed here (/admin/ai-knowledge, /admin/issue-reports,
             /admin/website-leads, /admin/live-chat, /admin/conversions)

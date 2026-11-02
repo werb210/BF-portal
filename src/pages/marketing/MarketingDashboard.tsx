@@ -3,6 +3,7 @@
 // BF_PORTAL_MARKETING_FUNNEL_LIVE_v1 — Analytics tab renders the live
 // application funnel from GET /api/marketing/funnel (respondOk envelope).
 import { useCallback, useContext, useEffect, useState } from "react";
+import { Navigate } from "react-router-dom"; // BF_PORTAL_v864_CONTENT_TAB
 import { api } from "@/api";
 import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; // BF_PORTAL_BRANDED_EMAIL_COMPOSER_MOUNT_v1
 import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORTAL_LINK_CLICKS_PANEL_v9
@@ -13,17 +14,20 @@ import DiagnosticsPanel from "@/pages/diagnostics/DiagnosticsPage";
 import NegativesPanel from "@/pages/diagnostics/NegativesPanel";
 import ClicksPanel from "@/pages/diagnostics/ClicksPanel"; // BF_PORTAL_BLOCK_v615_AD_CLICKS
 import AdsConversionStatus from "@/components/marketing/AdsConversionStatus"; // BF_PORTAL_ADS_CONVERSION_STATUS_v401
-import AutomationsBuilder from "@/pages/admin/AutomationsPage"; // BF_PORTAL_AUTOMATIONS_IN_MARKETING_v697
 import { AdsStoryPanel, VisitorsPanel, DropoffPanel, AudiencesNote } from "@/components/marketing/GoogleAdsAnalytics"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 import CustomerMatchPanel from "@/components/marketing/CustomerMatchPanel"; // BF_PORTAL_CUSTOMER_MATCH_LISTS_v711
 import GoogleHealthPanel from "@/pages/settings/tabs/GoogleHealthPanel"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 import MobileAppsPanel from "./MobileAppsPanel"; // BF_PORTAL_v811_MOBILE_APPS
 import SiloContext from "@/context/SiloContext"; // BF_PORTAL_v811_MOBILE_APPS
+// BF_PORTAL_v874_MARKETING_TOOLS - the campaign and funded-deal report, the website kit and lead scoring (per silo).
+import CampaignReportPanel from "@/components/marketing/CampaignReportPanel";
+import WebsiteKitPanel from "@/components/marketing/WebsiteKitPanel";
+import LeadScoringPanel from "@/components/marketing/LeadScoringPanel";
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
 // data, two different places to look for it. BF now gets the tab too.
-type MarketingTab = "analytics" | "automations" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads" | "apps"; // BF_PORTAL_v811_MOBILE_APPS - apps
+type MarketingTab = "analytics" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads" | "apps" | "report" | "kit" | "scoring"; // BF_PORTAL_v811_MOBILE_APPS - apps // BF_PORTAL_v874_MARKETING_TOOLS - report, kit, scoring
 // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 // BF_PORTAL_ADS_SERVICES_v709 - "Ads" section: one sub-tab per ad service
 // (Google, Microsoft, LinkedIn); every Google report sits under Google.
@@ -37,7 +41,6 @@ const ADS_TABS: Array<[AdsTab, string]> = [
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "analytics", label: "Analytics" },
-  { id: "automations", label: "Automations" },
   { id: "referrers", label: "Referrers" },
   { id: "sequences", label: "Sequences" },
   { id: "sms", label: "SMS" },
@@ -45,7 +48,12 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "links", label: "Links" }, // BF_PORTAL_BF_LINKS_TAB_v15
   { id: "ads", label: "Ads" }, // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707 + BF_PORTAL_ADS_SERVICES_v709
   { id: "apps", label: "Mobile apps" }, // BF_PORTAL_v811_MOBILE_APPS - Boreal Financial silo only
+  // BF_PORTAL_v874_MARKETING_TOOLS - per silo (BF, BI, SLF); not in the Keystone operations silo.
+  { id: "report", label: "Campaign report" },
+  { id: "scoring", label: "Lead scoring" },
+  { id: "kit", label: "Website kit" },
 ];
+const SILO_TOOL_TABS: ReadonlySet<MarketingTab> = new Set<MarketingTab>(["report", "scoring", "kit"]);
 
 type FunnelStep = {
   key: string;
@@ -1403,68 +1411,24 @@ function TemplateAnalyticsPanel() {
   );
 }
 
-// BF_PORTAL_AUTOMATIONS_v1 - read-only list of active background automations from GET /api/marketing/automations.
-type AutomationRow = { id: string; name: string; type: string; cadence: string; trigger: string; action: string; status: string };
-function AutomationsPanel() {
-  const [rows, setRows] = useState<AutomationRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    let cancelled = false;
-    api.get<{ data?: { items?: AutomationRow[] }; items?: AutomationRow[] }>("/api/marketing/automations")
-      .then((r) => { if (!cancelled) setRows(r?.data?.items ?? r?.items ?? []); })
-      .catch(() => { if (!cancelled) setRows([]); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
-  const scheduled = rows.filter((r) => r.type === "scheduled");
-  const events = rows.filter((r) => r.type === "event");
-  const card = (r: AutomationRow) => (
-    <div key={r.id} style={{ border: "1px solid var(--ui-border)", borderRadius: 10, padding: "12px 14px", background: "var(--ui-surface-strong)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <div style={{ fontWeight: 600, color: "var(--ui-text)" }}>{r.name}</div>
-        <span style={{ fontSize: 11, color: "#16a34a", border: "1px solid #16a34a55", borderRadius: 999, padding: "1px 8px" }}>{r.status}</span>
-      </div>
-      <div style={{ fontSize: 13, color: "var(--ui-text)", marginTop: 6 }}><strong>When:</strong> {r.trigger}</div>
-      <div style={{ fontSize: 13, color: "var(--ui-text)", marginTop: 2 }}><strong>Then:</strong> {r.action}</div>
-      <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 6 }}>{r.cadence}</div>
-    </div>
-  );
-  return (
-    <section className="drawer-section">
-      <div className="drawer-section__title mb-2">Built-in system rules</div>
-      <p style={{ color: "var(--ui-text-muted)", fontSize: "0.85rem", marginBottom: 12 }}>These run automatically and cannot be edited. Your own automations are above.</p>
-      {loading ? (
-        <p style={{ color: "var(--ui-text-muted)", fontSize: "0.85rem" }}>Loading&hellip;</p>
-      ) : rows.length === 0 ? (
-        <p style={{ color: "var(--ui-text-muted)", fontSize: "0.85rem" }}>No automations reported.</p>
-      ) : (
-        <div className="space-y-4">
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ui-text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>Scheduled &amp; polling</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>{scheduled.map(card)}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ui-text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>Event-driven</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>{events.map(card)}</div>
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
-
 const MarketingDashboard = () => {
+  // BF_PORTAL_v864_CONTENT_TAB - automations moved to Settings > Content; old ?tab=automations links go there.
+  const [toContent] = useState(() => new URLSearchParams(window.location.search).get("tab") === "automations");
   // BF_PORTAL_PARTNERS_TABS_v720 - ?tab=referrers (old Broker Files links land on Referrers > Brokers).
   const [tab, setTab] = useState<MarketingTab>(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "report" || t === "kit" || t === "scoring") return t; // BF_PORTAL_v874_MARKETING_TOOLS - ?tab=report|kit|scoring
     return t === "referrers" ? "referrers" : t === "apps" ? "apps" : "analytics"; // BF_PORTAL_v811_MOBILE_APPS - ?tab=apps
   });
   // BF_PORTAL_v811_MOBILE_APPS - the Mobile apps tab is Boreal Financial's client app, so it shows in the BF silo only.
-  const isBf = String(useContext(SiloContext)?.silo ?? "BF").toUpperCase() === "BF";
-  const tabs = MARKETING_TABS.filter((t) => t.id !== "apps" || isBf);
+  const siloName = String(useContext(SiloContext)?.silo ?? "BF").toUpperCase();
+  const isBf = siloName === "BF";
+  const marketingSilo = siloName === "BF" || siloName === "BI" || siloName === "SLF"; // BF_PORTAL_v874_MARKETING_TOOLS
+  const tabs = MARKETING_TABS.filter((t) => (t.id !== "apps" || isBf) && (!SILO_TOOL_TABS.has(t.id) || marketingSilo));
   const [adsTab, setAdsTab] = useState<AdsTab>("story");
   const [adsService, setAdsService] = useState<AdsService>("google"); // BF_PORTAL_ADS_SERVICES_v709
 
+  if (toContent) return <Navigate to="/settings/content?section=automations" replace />;
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -1509,11 +1473,14 @@ const MarketingDashboard = () => {
         </div>
       )}
       {tab === "apps" && isBf && <MobileAppsPanel />}{/* BF_PORTAL_v811_MOBILE_APPS */}
+      {/* BF_PORTAL_v874_MARKETING_TOOLS */}
+      {tab === "report" && marketingSilo && <CampaignReportPanel />}
+      {tab === "scoring" && marketingSilo && <LeadScoringPanel />}
+      {tab === "kit" && marketingSilo && <WebsiteKitPanel />}
       {tab === "email" && <BrandedEmailComposer />}
       {tab === "links" && <LinkClicksPanel />}{/* BF_PORTAL_BF_LINKS_TAB_v15 */}
       {tab === "sms" && <SmsComposerPanel />}
       {tab === "sequences" && <SequencesPanel />}
-      {tab === "automations" && (<><AutomationsBuilder /><AutomationsPanel /></>)}
       {tab === "analytics" && (
         <div className="space-y-4">
           <AnalyticsFunnel />

@@ -2,6 +2,7 @@
 // (GET /api/o365/mail/mailbox-settings, PATCH /api/o365/mail/out-of-office).
 import { useEffect, useState } from "react";
 import { api } from "@/api";
+import { localDateIn, viewerZoneName } from "@/lib/permanentTime";
 
 type OofStatus = "disabled" | "alwaysEnabled" | "scheduled";
 type MailboxSettings = {
@@ -12,6 +13,8 @@ type MailboxSettings = {
     scheduledStartDateTime?: { dateTime?: string };
     scheduledEndDateTime?: { dateTime?: string };
   };
+  // BF_PORTAL_v864_OOO_UNTIL - Boreal's own out-of-office window (BF-Server v864).
+  borealOutOfOffice?: { from?: string | null; until?: string | null; active?: boolean };
 };
 
 export default function OutOfOfficePanel() {
@@ -21,6 +24,9 @@ export default function OutOfOfficePanel() {
   const [externalMsg, setExternalMsg] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
+  // BF_PORTAL_v864_OOO_UNTIL - "Active until": on now, off automatically at the end of this day (your time zone).
+  const [activeUntil, setActiveUntil] = useState("");
+  const [savedUntil, setSavedUntil] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -33,7 +39,17 @@ export default function OutOfOfficePanel() {
         if (!alive) return;
         const a = r.automaticRepliesSetting ?? {};
         const s = a.status;
-        setStatus(s === "alwaysEnabled" || s === "scheduled" ? s : "disabled");
+        // BF_PORTAL_v864_OOO_UNTIL - an "Active until" save is stored as Outlook "scheduled"; show it as On + the day.
+        const boreal = r.borealOutOfOffice;
+        const untilIso = boreal?.until ?? null;
+        const startedAlready = !boreal?.from || new Date(boreal.from).getTime() <= Date.now();
+        if (s === "scheduled" && untilIso && startedAlready && new Date(untilIso).getTime() > Date.now()) {
+          setStatus("alwaysEnabled");
+          setActiveUntil(localDateIn(new Date(new Date(untilIso).getTime() - 1)));
+          setSavedUntil(untilIso);
+        } else {
+          setStatus(s === "alwaysEnabled" || s === "scheduled" ? s : "disabled");
+        }
         setInternalMsg(a.internalReplyMessage ?? "");
         setExternalMsg(a.externalReplyMessage ?? "");
         setStart(a.scheduledStartDateTime?.dateTime?.slice(0, 16) ?? "");
@@ -58,10 +74,17 @@ export default function OutOfOfficePanel() {
         body.start = new Date(start).toISOString();
         body.end = new Date(end).toISOString();
       }
-      await api.patch("/api/o365/mail/out-of-office", body);
-      setNote("Saved.");
-    } catch {
-      setNote("Could not save. Make sure Microsoft 365 is connected in this Settings page.");
+      if (status === "alwaysEnabled" && activeUntil) {
+        body.activeUntil = activeUntil;
+        body.timeZone = viewerZoneName();
+      }
+      const res = await api.patch<{ until?: string | null }>("/api/o365/mail/out-of-office", body);
+      const until = res && typeof res === "object" ? (res as { until?: string | null }).until ?? null : null;
+      setSavedUntil(status === "alwaysEnabled" && activeUntil ? until : null);
+      setNote(status === "alwaysEnabled" && activeUntil ? `Saved. Out of office is on and turns off at the end of ${activeUntil}.` : "Saved.");
+    } catch (err) {
+      const msg = (err as { message?: string })?.message ?? "";
+      setNote(/already ended|valid date/i.test(msg) ? msg : "Could not save. Make sure Microsoft 365 is connected in this Settings page.");
     } finally {
       setSaving(false);
     }
@@ -88,6 +111,34 @@ export default function OutOfOfficePanel() {
               <option value="scheduled">Scheduled</option>
             </select>
           </label>
+          {status === "alwaysEnabled" && (
+            <label style={{ fontSize: 13, color: "#516f90" }}>
+              Active until
+              <input
+                type="date"
+                aria-label="Active until"
+                value={activeUntil}
+                min={localDateIn(new Date())}
+                onChange={(e) => setActiveUntil(e.target.value)}
+                style={{ display: "block", marginTop: 4, padding: "6px 8px", borderRadius: 4, border: "1px solid #cbd6e2" }}
+              />
+              <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#516f90" }}>
+                {activeUntil
+                  ? `On now. Turns off automatically at the end of ${activeUntil} (${viewerZoneName()}). Calls do not ring you until then.`
+                  : "Leave empty to stay on until you switch it off."}
+              </span>
+              {activeUntil && (
+                <button type="button" onClick={() => { setActiveUntil(""); setSavedUntil(null); }} style={{ marginTop: 4, padding: "2px 8px", fontSize: 12, background: "transparent", color: "#33475b", border: "1px solid #cbd6e2", borderRadius: 4, cursor: "pointer" }}>
+                  Clear date
+                </button>
+              )}
+              {savedUntil && (
+                <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#33475b" }} data-testid="ooo-saved-until">
+                  Saved: ends {new Date(savedUntil).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                </span>
+              )}
+            </label>
+          )}
           {status === "scheduled" && (
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <label style={{ fontSize: 13, color: "#516f90" }}>

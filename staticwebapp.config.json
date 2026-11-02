@@ -9,6 +9,10 @@
       "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }
     },
     {
+      "route": "/.well-known/apple-app-site-association",
+      "headers": { "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" }
+    },
+    {
       "route": "/assets/*",
       "headers": { "Cache-Control": "public, max-age=31536000, immutable" }
     }
@@ -16,7 +20,8 @@
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [
-      "/api/*"
+      "/api/*",
+      "/.well-known/*"
     ]
   },
   "globalHeaders": {

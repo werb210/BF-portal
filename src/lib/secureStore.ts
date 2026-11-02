@@ -50,7 +50,8 @@ export async function secureRemove(key: string): Promise<void> {
 // data container and its backups. On web nothing changes: localStorage is the store, as before.
 const memory = new Map<string, string>();
 
-export const NATIVE_SESSION_KEYS = ["auth_token", "auth_user", "auth_phone", "msgraph_access_token"] as const;
+// BF_PORTAL_v868_SLIDING_REFRESH - auth_refresh_token is kept in the Keychain on the iPad too.
+export const NATIVE_SESSION_KEYS = ["auth_token", "auth_user", "auth_phone", "msgraph_access_token", "auth_refresh_token"] as const;
 
 // Called once at boot, before the app reads any token: pulls the Keychain copy into the in-memory cache
 // so the synchronous readers below keep working, and removes any plain copy an older build left behind.

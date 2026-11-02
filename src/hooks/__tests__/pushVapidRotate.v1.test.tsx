@@ -21,7 +21,6 @@ vi.mock("@azure/msal-browser", () => ({
   },
 }));
 vi.mock("@/components/o365/OutOfOfficePanel", () => ({ default: () => null }));
-vi.mock("@/components/o365/OneDriveFilePicker", () => ({ default: () => null }));
 vi.mock("@/components/o365/ContactsSyncButton", () => ({ default: () => null }));
 
 import { decodeVapidPublicKey, registerExistingPushPermission } from "../usePushRegistration";

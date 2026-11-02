@@ -3,6 +3,14 @@
 // Verification all live in BF; BI inherits the user table from BF and
 // has no per-silo admin surface, so showing those tabs in BI just
 // confuses staff. BF and SLF Settings are unchanged.
+// BF_PORTAL_v869_SETTINGS_PACK - phone menu, booking pages, lead rotation, blocked numbers, never log, security,
+// privacy requests and the client survey.
+import PhoneMenuSettings from "@/settingsPack/PhoneMenuSettings";
+import BookingSettings from "@/settingsPack/BookingSettings";
+import PrivacySettings from "@/settingsPack/PrivacySettings";
+import SecuritySettings from "@/settingsPack/SecuritySettings";
+import SurveySettings from "@/settingsPack/SurveySettings";
+import { BlockedNumbersSettings, LeadRotationSettings, NeverLogSettings } from "@/settingsPack/ListSettings";
 import { useEffect, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import RequireRole from "@/components/auth/RequireRole";
@@ -14,17 +22,26 @@ import MayaTuning from "@/features/ai/MayaTuning";
 import SettingsSectionLayout from "./components/SettingsSectionLayout";
 import ProfileSettings from "./tabs/ProfileSettings";
 import RuntimeSettings from "./tabs/RuntimeSettings";
-import UserManagement from "./tabs/UserManagement";
+import UsersAndRoles from "@/roles/UsersAndRoles"; // BF_PORTAL_v870_CRM_DATA_MODEL - people and roles
+import { can, usePermissions } from "@/roles/permissionStore"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import PropertiesSettings from "@/crmFields/PropertiesSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import TeamsSettings from "@/teams/TeamsSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import PipelinesSettings from "@/pipelines/PipelinesSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import PhoneLines from "./tabs/PhoneLines"; // BF_PORTAL_PHONE_LINES_v689
 import SettingsOverview from "./tabs/SettingsOverview";
-import TemplatesSettings from "./tabs/TemplatesSettings"; // v694
-import SnippetsSettings from "./tabs/SnippetsSettings"; // BF_PORTAL_SNIPPETS_TAB_v46
-import CollateralSettings from "./tabs/CollateralSettings"; // v694
-import LibraryPage from "@/pages/library/LibraryPage"; // BF_PORTAL_LIBRARY_IN_SETTINGS_v764
+import ContentSettings, { isContentSection } from "./tabs/ContentSettings"; // BF_PORTAL_v864_CONTENT_TAB
 import RetentionSettings from "./tabs/RetentionSettings"; // BF_PORTAL_v855_RETENTION
 import FraudProtectionCard from "@/fraud/FraudProtectionCard"; // BF_PORTAL_v846_FRAUD
 import QuickBooksCard from "@/features/quickbooks/QuickBooksCard"; // BF_PORTAL_v852_CALC_QBO
 import DealToolsSettings from "@/brokerTools/DealToolsSettings"; // BF_PORTAL_v865_BROKER_TOOLS
+import CallScriptsSettings from "@/callScripts/CallScriptsSettings"; // BF_PORTAL_v871_CALL_SCRIPTS
+import CallQueuesSettings from "@/callQueues/CallQueuesSettings"; // BF_PORTAL_v871_CALL_QUEUES
+import PaymentsSettings from "@/payments/PaymentsSettings"; // BF_PORTAL_v872_PAYMENTS
+import IdVerificationSettings from "@/kyc/IdVerificationSettings"; // BF_PORTAL_v872_KYC
+// BF_PORTAL_v875_INTEGRATIONS - outgoing webhooks and API keys (per silo), Microsoft sign-in (all of Boreal).
+import WebhooksSettings from "@/integrations/WebhooksSettings";
+import ApiKeysSettings from "@/integrations/ApiKeysSettings";
+import MicrosoftSignInSettings from "@/integrations/MicrosoftSignInSettings";
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -32,39 +49,71 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { silo } = useSilo();
-  const isAdmin = user?.role === "Admin";
+  // BF_PORTAL_v870_CRM_DATA_MODEL - an Admin on a custom role (built from Admin) sees only the admin sections the role
+  // allows. Everyone on a built-in role sees exactly the tabs they saw before.
+  const perms = usePermissions();
+  const isAdminRole = user?.role === "Admin";
+  const isAdmin = isAdminRole && can("settings", "view", perms);
+  const canUsers = isAdminRole && can("users", "view", perms);
   const isStaff = user?.role === "Staff"; // BF_PORTAL_BLOCK_v526
   const isBI = String(silo ?? "").toUpperCase() === "BI";
+  const isMarketing = user?.role === "Marketing"; // BF_PORTAL_v864_CONTENT_TAB
 
   const tabs = useMemo(
     () => [
-      { id: "users", label: "User Management", visible: isAdmin && !isBI, content: <UserManagement /> },
+      { id: "users", label: "Users & roles", visible: canUsers && !isBI, content: <UsersAndRoles /> }, // BF_PORTAL_v870_CRM_DATA_MODEL
+      // BF_PORTAL_v870_CRM_DATA_MODEL - custom fields (Properties), teams and record visibility, extra pipelines. Admins.
+      { id: "properties", label: "Properties", visible: isAdmin && !isBI, content: <PropertiesSettings /> },
+      { id: "teams", label: "Teams", visible: canUsers && !isBI, content: <TeamsSettings /> },
+      { id: "pipelines", label: "Pipelines", visible: isAdmin && !isBI, content: <PipelinesSettings /> },
       { id: "phone", label: "Phone lines", visible: isAdmin && !isBI, content: <PhoneLines /> }, // BF_PORTAL_PHONE_LINES_v689
       { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin && !isBI, content: isAdmin ? (<><KnowledgeManager /><div style={{ height: 28 }} /><MayaTuning /></>) : null },
       // BF_PORTAL_v846_FRAUD - Admins: Keystone watchlist opt-in, pre-screen default, services, staff alerts.
       { id: "fraud", label: "Fraud protection", visible: isAdmin && !isBI, content: isAdmin ? <FraudProtectionCard /> : null },
       // BF_PORTAL_v852_CALC_QBO - connect QuickBooks Online; media fee agreements become invoices, paid at funding.
       { id: "quickbooks", label: "QuickBooks", visible: isAdmin && !isBI, content: isAdmin ? <QuickBooksCard /> : null },
+      // BF_PORTAL_v872_DEAL_TOOLS - Stripe payment links for broker fees (Boreal's own account) and ID verification (Admins).
+      { id: "payments", label: "Payments", visible: isAdmin && !isBI, content: isAdmin ? <PaymentsSettings /> : null },
+      { id: "id-verification", label: "ID verification", visible: isAdmin && !isBI, content: isAdmin ? <IdVerificationSettings /> : null },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: !isBI, content: <RuntimeSettings /> },
-      { id: "templates", label: "Templates", visible: !isBI, content: <TemplatesSettings /> }, // v694
-      // BF_PORTAL_SNIPPETS_TAB_v46 - visible in BI too: #pnw is as useful on a
-      // PGI conversation as a lending one, and the server scopes by silo.
-      { id: "snippets", label: "Snippets", visible: true, content: <SnippetsSettings /> },
-      { id: "collateral", label: "Collateral", visible: !isBI, content: <CollateralSettings /> }, // v694
+      // BF_PORTAL_v864_CONTENT_TAB - Templates, Snippets, Collateral, the Library and the automations are sections of
+      // one Content tab (see tabs/ContentSettings.tsx). Snippets and the Library still show in BI.
+      { id: "content", label: "Content", visible: true, content: <ContentSettings isBI={isBI} canAutomate={isAdmin || isMarketing} /> },
       { id: "deal-tools", label: "Deal tools", visible: (isAdmin || isStaff) && !isBI, content: <DealToolsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v865_BROKER_TOOLS
-      // BF_PORTAL_LIBRARY_IN_SETTINGS_v764 - the Staff Library (lender forms, Read This) lives here, not in the sidebar.
-      { id: "library", label: "Library", visible: true, content: <LibraryPage /> },
       // BF_PORTAL_v855_RETENTION - 7-year record retention: legal holds and the eligible-for-deletion report.
       { id: "retention", label: "Retention & legal holds", visible: isAdmin, content: isAdmin ? <RetentionSettings /> : null },
+      // BF_PORTAL_v869_SETTINGS_PACK - ported from KS-Portal #35. The phone menu is the one 866 menu (every silo); lead
+      // rotation and privacy requests follow the topbar silo; booking pages and the client survey are BF.
+      { id: "phone-menu", label: "Phone menu", visible: isAdmin, content: isAdmin ? <PhoneMenuSettings /> : null },
+      // BF_PORTAL_v871_CALLING_TOOLS - call scripts follow the topbar silo; call queues are on the one 866 line (every
+      // silo): Admins set them up and watch the live panel, staff switch their own queue availability.
+      { id: "call-scripts", label: "Call scripts", visible: isAdmin, content: isAdmin ? <CallScriptsSettings /> : null },
+      { id: "call-queues", label: "Call queues", visible: isAdmin || isStaff, content: <CallQueuesSettings /> },
+      { id: "booking", label: "Booking pages", visible: isAdmin && !isBI, content: isAdmin ? <BookingSettings /> : null },
+      { id: "lead-rotation", label: "Lead rotation", visible: isAdmin, content: isAdmin ? <LeadRotationSettings /> : null },
+      { id: "blocked-numbers", label: "Blocked numbers", visible: isAdmin, content: isAdmin ? <BlockedNumbersSettings /> : null },
+      { id: "never-log", label: "Never log", visible: isAdmin, content: isAdmin ? <NeverLogSettings /> : null },
+      { id: "security", label: "Security", visible: isAdmin, content: isAdmin ? <SecuritySettings /> : null },
+      // BF_PORTAL_v875_INTEGRATIONS - Admins. Webhooks and API keys follow the topbar silo; Microsoft sign-in is one
+      // switch for every silo.
+      { id: "microsoft-sign-in", label: "Microsoft sign-in", visible: isAdmin, content: isAdmin ? <MicrosoftSignInSettings /> : null },
+      { id: "webhooks", label: "Webhooks", visible: isAdmin, content: isAdmin ? <WebhooksSettings /> : null },
+      { id: "api-keys", label: "API keys", visible: isAdmin, content: isAdmin ? <ApiKeysSettings /> : null },
+      { id: "privacy", label: "Privacy requests", visible: isAdmin, content: isAdmin ? <PrivacySettings /> : null },
+      { id: "survey", label: "Client survey", visible: isAdmin && !isBI, content: isAdmin ? <SurveySettings /> : null },
       // BF_PORTAL_PARTNERS_TABS_v720 - Broker Files moved to Marketing > Referrers > Brokers.
     ],
-    [isAdmin, isStaff, isBI]
+    [isAdmin, isStaff, isBI, isMarketing, canUsers]
   );
 
   const safeTabs = Array.isArray(tabs) ? tabs : [];
   const availableTabs = safeTabs.filter((tab) => tab.visible);
-  const activeTabId = tabParam ?? searchParams.get("tab");
+  const requestedTabId = tabParam ?? searchParams.get("tab");
+  // BF_PORTAL_v864_CONTENT_TAB - the old tabs (/settings/templates, /settings/snippets, /settings/collateral,
+  // /settings/library) forward to their section of Content, so links and bookmarks keep working.
+  const legacySection = isContentSection(requestedTabId) ? requestedTabId : null;
+  const activeTabId = legacySection ? "content" : requestedTabId;
   const fallbackTabId = availableTabs.some((tab) => tab.id === "profile") ? "profile" : availableTabs[0]?.id ?? "profile";
   const resolvedTabId = availableTabs.some((tab) => tab.id === activeTabId) ? activeTabId : fallbackTabId;
   const activeTab = availableTabs.find((tab) => tab.id === resolvedTabId) ?? availableTabs[0];
@@ -72,6 +121,10 @@ const SettingsPage = () => {
   const showOverview = false;
 
   useEffect(() => {
+    if (legacySection) {
+      navigate(`/settings/content?section=${legacySection}`, { replace: true });
+      return;
+    }
     if (!tabParam) {
       navigate(`/settings/${resolvedTabId}`, { replace: true });
       return;
@@ -79,10 +132,10 @@ const SettingsPage = () => {
     if (tabParam && resolvedTabId !== tabParam) {
       navigate(`/settings/${resolvedTabId}`, { replace: true });
     }
-  }, [activeTabId, navigate, resolvedTabId, tabParam]);
+  }, [activeTabId, navigate, resolvedTabId, tabParam, legacySection]);
 
   return (
-    <RequireRole roles={["Admin", "Staff"]}>
+    <RequireRole roles={["Admin", "Staff", "Marketing"]}>
       <ErrorBoundary>
         <SettingsSectionLayout>
           {showOverview ? (

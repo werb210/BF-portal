@@ -6,6 +6,9 @@ import { useNavigate } from "react-router-dom";
 import RequestStepsModal from "./RequestStepsModal"; // BF_PORTAL_BLOCK_v793_REQUEST_STEPS
 import { fetchRetention, lockMessage, refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 import { patchStatusWithFundingGate } from "@/brokerTools/fundingGate"; // BF_PORTAL_v865_BROKER_TOOLS
+import TeamFilter from "@/teams/TeamFilter"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import CustomFieldFilters from "@/crmFields/CustomFieldFilters"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import { filterParams, useCustomFields, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
 
 // BF_PORTAL_FRAUD_HOLD_v34 - Fraud and Hold are parking columns. Neither
 // deletes anything; both take the file out of the reported numbers (Fraud from
@@ -141,17 +144,23 @@ export default function PipelinePage() {
   const [dragging, setDragging] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
   const navigate = useNavigate();
+  // BF_PORTAL_v870_CRM_DATA_MODEL - Team filter (growth+) and custom field filters; the server narrows the cards.
+  const [teamId, setTeamId] = useState("");
+  const [cfFilters, setCfFilters] = useState<CustomFilter[]>([]);
+  const { fields: appFields } = useCustomFields("application");
+  const cfKey = JSON.stringify(cfFilters);
 
   const load = useCallback(() => {
+    const params: Record<string, string | number> = { ...filterParams(cfFilters), ...(teamId ? { team_id: teamId } : {}), ...(showDrafts ? { include_drafts: 1 } : {}) };
     api<{ items: Card[] }>("/api/portal/applications", {
-      params: showDrafts ? { include_drafts: 1 } : undefined,
+      params: Object.keys(params).length ? params : undefined,
     })
       .then(({ items }) => setCards(
         Array.isArray(items) ? items.filter((card) => !isDraftLikeApplication(card)) : [] // v699: junk drafts (no name / invalid) never count, even with show-drafts on
       ))
       .catch(() => setCards([]))
       .finally(() => setLoading(false));
-  }, [showDrafts]);
+  }, [showDrafts, teamId, cfKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load(); }, [load]);
 
@@ -253,9 +262,11 @@ export default function PipelinePage() {
             <input type="checkbox" checked={showDrafts} onChange={(event) => setShowDrafts(event.target.checked)} />
             Show drafts
           </label>
+          <TeamFilter value={teamId} onChange={setTeamId} />
         </div>
         <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{cards.length} applications</span>
       </div>
+      <CustomFieldFilters fields={appFields} value={cfFilters} onChange={setCfFilters} />{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       <LenderReferralIssues />{/* BF_PORTAL_v827_REFERRAL_PIPELINE_CARD - lender files still importing or that could not be read */}
       <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 16, alignItems: "flex-start" }}>
         {STAGES.map((stage) => {

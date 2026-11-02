@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { requestFollowUp } from "@/settingsPack/FollowUpPrompt"; // BF_PORTAL_v869_SETTINGS_PACK_TASK_DEFAULTS
 import { PopupShell, popupInputStyle } from "./PopupShell";
 import { crmApi, type Scope } from "@/api/crm";
 // BF_PORTAL_MEETING_DATETIME_PICKER_v1 - same picker as TaskModal.
@@ -64,6 +65,7 @@ export function MeetingPopup({ scope, onClose, onCreated, defaultPhone, defaultE
       ...(contactId ? { contactId } : {}),
     });
     const told = describeMeetingDelivery(r.delivery);
+    if (contactId) requestFollowUp("meeting", contactId); // BF_PORTAL_v869_SETTINGS_PACK_TASK_DEFAULTS
     setRoomResult({ ok: told.ok, text: "Conference room booked. Access code " + r.meeting.code + ". Callers dial (866) 631-8939, press 3 and enter the code. " + told.text + (r.refused ? " " + r.refused + " not added - a room holds 10 people." : "") });
     onCreated();
   }

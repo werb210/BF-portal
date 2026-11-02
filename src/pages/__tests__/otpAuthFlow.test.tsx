@@ -1,3 +1,10 @@
+import { vi } from "vitest";
+// BF_PORTAL_v875_SSO - the sign-in page also asks whether to show "Sign in with Microsoft"; not here, so the only
+// request these tests see is the text-code one.
+vi.mock("@/auth/sso", async () => ({
+  ...(await vi.importActual<typeof import("@/auth/sso")>("@/auth/sso")),
+  fetchSsoConfig: async () => ({ microsoft: false }),
+}));
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import Login from "@/pages/Login";
