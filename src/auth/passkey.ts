@@ -1,6 +1,7 @@
 // BF_PORTAL_WEBAUTHN_v1 — passkey helpers.
 import { startRegistration, startAuthentication, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { setAuthToken } from "@/lib/authToken";
+import { captureRefreshToken } from "@/auth/sessionRefresh"; // BF_PORTAL_v868_SLIDING_REFRESH
 import { api } from "@/api";
 import { Capacitor, registerPlugin } from "@capacitor/core";
 
@@ -65,6 +66,7 @@ export async function loginWithPasskey(): Promise<void> {
   const token = data?.data?.token ?? data?.token ?? null;
   if (!token) throw new Error("No token returned from server");
   setAuthToken(token);
+  captureRefreshToken(data);
 }
 
 export async function registerPasskey(): Promise<void> {

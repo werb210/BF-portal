@@ -1,6 +1,7 @@
 import { normalizePhone } from "@/utils/normalizePhone";
 import { setAuthToken } from "@/lib/authToken";
 import { readSessionItem, writeSessionItem } from "@/lib/secureStore"; // BF_PORTAL_v789_NATIVE_SESSION_MEMORY
+import { captureRefreshToken } from "@/auth/sessionRefresh"; // BF_PORTAL_v868_SLIDING_REFRESH
 
 const SERVER_ERROR_MESSAGES: Record<string, string> = {
   no_account: "Your account hasn't been set up yet. Contact your administrator.",
@@ -55,6 +56,7 @@ export async function verifyOtp(code: string) {
     }
 
     setAuthToken(token);
+    captureRefreshToken(data);
 
     if (data.user) {
       writeSessionItem("auth_user", JSON.stringify(data.user));
