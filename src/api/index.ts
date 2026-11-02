@@ -7,6 +7,7 @@ import { resolveApiBase, getActiveSilo, __apiBaseUrls } from "@/config/api";
 import { announceSavedCopy, cacheKeyFor, readOfflineCopy, saveOfflineCopy } from "@/offline/readCache"; // BF_PORTAL_OFFLINE_READ_CACHE_v252
 import { shouldLogoutOn401 } from "@/lib/apiAuth";
 import { assertSiloScoped } from "@/api/siloGuard"; // BF_PORTAL_v789_SILO_GUARD
+import { reportStrongSignInRequired } from "@/settingsPack/strongSignIn"; // BF_PORTAL_v869_SETTINGS_PACK_SECURITY
 
 export type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -212,6 +213,7 @@ export async function apiFetch<T = any>(path: string, options: RequestOptions = 
     } catch {
       // Ignore non-JSON error responses and preserve fallback message.
     }
+    try { reportStrongSignInRequired(res.status, details); } catch { /* BF_PORTAL_v869_SETTINGS_PACK_SECURITY */ }
     throw new ApiError({
       status: res.status,
       message,
@@ -377,6 +379,7 @@ export function apiForSilo(silo: "BF" | "BI" | "SLF"): ApiFn {
       } catch {
         // ignore
       }
+      try { reportStrongSignInRequired(res.status, details); } catch { /* BF_PORTAL_v869_SETTINGS_PACK_SECURITY */ }
       throw new ApiError({
         status: res.status,
         message,

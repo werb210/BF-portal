@@ -5,6 +5,8 @@
 // Lenders so they can track underwriting workload and the panel of
 // insurers they place with. Communications + Calendar removed; Pipeline
 // + Lenders added. BF and SLF nav definitions are unchanged.
+import FollowUpPrompt from "@/settingsPack/FollowUpPrompt"; // BF_PORTAL_v869_SETTINGS_PACK_TASK_DEFAULTS
+import StrongSignInGate from "@/settingsPack/StrongSignInGate"; // BF_PORTAL_v869_SETTINGS_PACK_SECURITY
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { canSeeKeystone, isKeystonePath, KS_ACCENT, ksNavFor } from "@/silos/ks/ksAccess"; // BF_PORTAL_v849_KS_SILO + BF_PORTAL_v850_KS_CRM
@@ -225,6 +227,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         <div style={{ position: "sticky", top: 0, zIndex: 30, flexShrink: 0 }}><Topbar onToggleSidebar={() => setMobileNavOpen((prev) => !prev)} /></div>
         <main style={{ height: `calc(100dvh - ${TOPBAR_HEIGHT}px)`, overflowY: "auto", padding: 24, background: "var(--bg-primary)" }}>
           <UpdatePromptBanner />{/* BF_PORTAL_BLOCK_v478 - was built but never rendered */}
+          <FollowUpPrompt /><StrongSignInGate />{/* BF_PORTAL_v869_SETTINGS_PACK - follow-up prompt, strong sign-in */}
           {children ?? <Outlet />}
         </main>
       </div>

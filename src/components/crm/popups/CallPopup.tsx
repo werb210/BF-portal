@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { requestFollowUp } from "@/settingsPack/FollowUpPrompt"; // BF_PORTAL_v869_SETTINGS_PACK_TASK_DEFAULTS
 import { PopupShell, popupInputStyle } from "./PopupShell";
 import { crmApi, type Scope } from "@/api/crm";
 import { logBiActivity, type CrmTarget } from "@/api/biCrmActivity"; // BF_PORTAL_v789_BI_ACTIVITY
@@ -43,6 +44,7 @@ export function CallPopup({ scope, defaultPhone, onClose, onLogged, target = "bf
       if (direction === "outbound") payload.to_number = phone;
       else payload.from_number = phone;
       await crmApi.calls.create(scope, payload);
+      if (scope.kind === "contact") requestFollowUp("call", scope.id); // BF_PORTAL_v869_SETTINGS_PACK_TASK_DEFAULTS
       onLogged();
       onClose();
     } catch (e) {

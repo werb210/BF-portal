@@ -3,6 +3,14 @@
 // Verification all live in BF; BI inherits the user table from BF and
 // has no per-silo admin surface, so showing those tabs in BI just
 // confuses staff. BF and SLF Settings are unchanged.
+// BF_PORTAL_v869_SETTINGS_PACK - phone menu, booking pages, lead rotation, blocked numbers, never log, security,
+// privacy requests and the client survey.
+import PhoneMenuSettings from "@/settingsPack/PhoneMenuSettings";
+import BookingSettings from "@/settingsPack/BookingSettings";
+import PrivacySettings from "@/settingsPack/PrivacySettings";
+import SecuritySettings from "@/settingsPack/SecuritySettings";
+import SurveySettings from "@/settingsPack/SurveySettings";
+import { BlockedNumbersSettings, LeadRotationSettings, NeverLogSettings } from "@/settingsPack/ListSettings";
 import { useEffect, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import RequireRole from "@/components/auth/RequireRole";
@@ -51,6 +59,16 @@ const SettingsPage = () => {
       { id: "deal-tools", label: "Deal tools", visible: (isAdmin || isStaff) && !isBI, content: <DealToolsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v865_BROKER_TOOLS
       // BF_PORTAL_v855_RETENTION - 7-year record retention: legal holds and the eligible-for-deletion report.
       { id: "retention", label: "Retention & legal holds", visible: isAdmin, content: isAdmin ? <RetentionSettings /> : null },
+      // BF_PORTAL_v869_SETTINGS_PACK - ported from KS-Portal #35. The phone menu is the one 866 menu (every silo); lead
+      // rotation and privacy requests follow the topbar silo; booking pages and the client survey are BF.
+      { id: "phone-menu", label: "Phone menu", visible: isAdmin, content: isAdmin ? <PhoneMenuSettings /> : null },
+      { id: "booking", label: "Booking pages", visible: isAdmin && !isBI, content: isAdmin ? <BookingSettings /> : null },
+      { id: "lead-rotation", label: "Lead rotation", visible: isAdmin, content: isAdmin ? <LeadRotationSettings /> : null },
+      { id: "blocked-numbers", label: "Blocked numbers", visible: isAdmin, content: isAdmin ? <BlockedNumbersSettings /> : null },
+      { id: "never-log", label: "Never log", visible: isAdmin, content: isAdmin ? <NeverLogSettings /> : null },
+      { id: "security", label: "Security", visible: isAdmin, content: isAdmin ? <SecuritySettings /> : null },
+      { id: "privacy", label: "Privacy requests", visible: isAdmin, content: isAdmin ? <PrivacySettings /> : null },
+      { id: "survey", label: "Client survey", visible: isAdmin && !isBI, content: isAdmin ? <SurveySettings /> : null },
       // BF_PORTAL_PARTNERS_TABS_v720 - Broker Files moved to Marketing > Referrers > Brokers.
     ],
     [isAdmin, isStaff, isBI, isMarketing]

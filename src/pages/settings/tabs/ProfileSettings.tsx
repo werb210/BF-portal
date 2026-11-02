@@ -14,6 +14,7 @@ import UserDetailsFields from "../components/UserDetailsFields";
 import { logger } from "@/utils/logger";
 import { bfLogMsalPhase, pickLoginStrategy } from "@/auth/msalLoginStrategy";
 import { registerPasskey, passkeysSupported } from "@/auth/passkey"; // BF_PORTAL_WEBAUTHN_v1
+import MyProfileExtras from "@/settingsPack/MyProfileExtras"; // BF_PORTAL_v869_SETTINGS_PACK
 import OutOfOfficePanel from "@/components/o365/OutOfOfficePanel"; // BF_PORTAL_O365_UI_v1
 import ContactsSyncButton from "@/components/o365/ContactsSyncButton"; // BF_PORTAL_CONTACTS_PULL_TRIGGER_v1
 import SignatureBuilder from "@/components/signature/SignatureBuilder"; // BF_PORTAL_v864_SIGNATURE_BUILDER
@@ -466,6 +467,7 @@ const ProfileSettings = () => {
       {/* BF_PORTAL_BLOCK_v694_COMMS — per-user booking URL.
           GET/PUT /api/o365/me/booking-url (server v693). */}
       <BookingUrlPanel />
+      <MyProfileExtras />{/* BF_PORTAL_v869_SETTINGS_PACK - my booking page, follow-up defaults, lead rotation away, my devices */}
 
       <div className="avatar-upload">
         <div>
