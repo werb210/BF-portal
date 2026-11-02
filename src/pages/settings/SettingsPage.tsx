@@ -38,6 +38,10 @@ import CallScriptsSettings from "@/callScripts/CallScriptsSettings"; // BF_PORTA
 import CallQueuesSettings from "@/callQueues/CallQueuesSettings"; // BF_PORTAL_v871_CALL_QUEUES
 import PaymentsSettings from "@/payments/PaymentsSettings"; // BF_PORTAL_v872_PAYMENTS
 import IdVerificationSettings from "@/kyc/IdVerificationSettings"; // BF_PORTAL_v872_KYC
+// BF_PORTAL_v875_INTEGRATIONS - outgoing webhooks and API keys (per silo), Microsoft sign-in (all of Boreal).
+import WebhooksSettings from "@/integrations/WebhooksSettings";
+import ApiKeysSettings from "@/integrations/ApiKeysSettings";
+import MicrosoftSignInSettings from "@/integrations/MicrosoftSignInSettings";
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -91,6 +95,11 @@ const SettingsPage = () => {
       { id: "blocked-numbers", label: "Blocked numbers", visible: isAdmin, content: isAdmin ? <BlockedNumbersSettings /> : null },
       { id: "never-log", label: "Never log", visible: isAdmin, content: isAdmin ? <NeverLogSettings /> : null },
       { id: "security", label: "Security", visible: isAdmin, content: isAdmin ? <SecuritySettings /> : null },
+      // BF_PORTAL_v875_INTEGRATIONS - Admins. Webhooks and API keys follow the topbar silo; Microsoft sign-in is one
+      // switch for every silo.
+      { id: "microsoft-sign-in", label: "Microsoft sign-in", visible: isAdmin, content: isAdmin ? <MicrosoftSignInSettings /> : null },
+      { id: "webhooks", label: "Webhooks", visible: isAdmin, content: isAdmin ? <WebhooksSettings /> : null },
+      { id: "api-keys", label: "API keys", visible: isAdmin, content: isAdmin ? <ApiKeysSettings /> : null },
       { id: "privacy", label: "Privacy requests", visible: isAdmin, content: isAdmin ? <PrivacySettings /> : null },
       { id: "survey", label: "Client survey", visible: isAdmin && !isBI, content: isAdmin ? <SurveySettings /> : null },
       // BF_PORTAL_PARTNERS_TABS_v720 - Broker Files moved to Marketing > Referrers > Brokers.

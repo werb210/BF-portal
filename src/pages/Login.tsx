@@ -6,6 +6,7 @@ import { API_BASE } from "@/config/api";
 import { writeSessionItem } from "@/lib/secureStore";
 import logoUrl from "@/assets/logo-boreal-mountains-white.svg";
 import { loginWithPasskey, passkeysSupported } from "@/auth/passkey"; // BF_PORTAL_WEBAUTHN_v1
+import SsoButtons from "@/auth/SsoButtons"; // BF_PORTAL_v875_SSO
 
 type StartError = string | null;
 
@@ -198,6 +199,7 @@ export default function Login() {
             {passkeyBusy ? "Waiting for passkey…" : "Sign in with a passkey"}
           </button>
         ) : null}
+        <SsoButtons />
       </div>
     </div>
   );

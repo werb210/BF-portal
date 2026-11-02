@@ -1,6 +1,13 @@
 // v663 - dialer timer falls back to callStartedAt; login auto-submit fires once per phone.
 // BF_PORTAL_v789_SOURCE_GREP - rewritten as a behaviour test.
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+// BF_PORTAL_v875_SSO - the sign-in page also asks whether to show "Sign in with Microsoft"; not here, so the only
+// request these tests see is the text-code one.
+vi.mock("@/auth/sso", async () => ({
+  ...(await vi.importActual<typeof import("@/auth/sso")>("@/auth/sso")),
+  fetchSsoConfig: async () => ({ microsoft: false }),
+}));
+
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
