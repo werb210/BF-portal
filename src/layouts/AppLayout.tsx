@@ -51,13 +51,13 @@ const BF_NAV: NavItem[] = [
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
   { label: "CRM",            path: "/crm/contacts",    roles: ["Admin", "Staff"] },
   // BF_PORTAL_v878_NAV_REVENUE - Active Contracts is a tab inside CRM now; Revenue gathers forecast, commission and contracts.
-  { label: "Revenue",        path: "/revenue",         roles: ["Admin", "Staff"] },
+  { label: "Revenue",        path: "/revenue",         roles: ["Admin"] }, // BF_PORTAL_v885_SETTINGS_ROLES - Admins only
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
   { label: "Lenders",        path: "/lenders",         roles: ["Admin", "Staff"] },
   { label: "Reports",        path: "/reports",         roles: ["Admin", "Staff", "Ops", "Marketing"] }, // BF_PORTAL_REPORTS_SECTION_v714
-  { label: "Settings",       path: "/settings",        roles: ["Admin", "Staff", "Ops"] },
+  { label: "Settings",       path: "/settings",        roles: ["Admin", "Staff", "Ops", "Marketing"] },
 ];
 
 // BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 — repointed BI nav.
@@ -128,7 +128,9 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const canSee = (item: NavItem) => {
     const label = item.label.toLowerCase();
     if (isAdmin) return true;
-    if (isMarketing) return label !== "lenders" && label !== "active contracts"; // BF_PORTAL_v864_ACTIVE_CONTRACTS - CRM is Admin / Staff
+    // BF_PORTAL_v885_SETTINGS_ROLES - Revenue is Admin-only. Marketing sees exactly what Staff sees, plus Marketing.
+    if (label === "revenue") return false;
+    if (isMarketing) return true;
     if (isStaff) return label !== "marketing";
     return false;
   };

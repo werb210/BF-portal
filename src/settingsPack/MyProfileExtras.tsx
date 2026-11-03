@@ -1,24 +1,12 @@
-// BF_PORTAL_v869_SETTINGS_PACK - My Profile additions for everyone: my booking link, follow-up task defaults, away from
-// lead rotation, and my signed-in devices.
+// BF_PORTAL_v869_SETTINGS_PACK - My Profile additions for everyone: follow-up task defaults, away from
+// lead rotation, and my signed-in devices. BF_PORTAL_v885_SETTINGS_ROLES - the "My booking link" box is gone: the Booking
+// URL above (the website page) is the only booking link.
 import { useEffect, useState } from "react";
 import { api } from "@/api";
-import { LinkRow } from "./BookingSettings";
 import { MySessions } from "./SecuritySettings";
 import { Field, Notice, Section, Toggle, button, errText, input, muted } from "./ui";
 
 type Defaults = { prompt_after_call: boolean; prompt_after_email: boolean; prompt_after_meeting: boolean; due_in_days: number; due_time: string; task_type: string; reminder_minutes: number | null };
-
-export function MyBookingLink() {
-  const [links, setLinks] = useState<{ mine: { url: string } | null; team: string | null } | null>(null);
-  useEffect(() => { void api.get<{ mine: { url: string } | null; team: string | null }>("/api/booking-settings/my-link").then(setLinks).catch(() => setLinks({ mine: null, team: null })); }, []);
-  if (!links || (!links.mine && !links.team)) return null;
-  return (
-    <Section id="my-booking" title="My booking link" intro="Clients pick a time on your calendar from this page. Add it to your email signature.">
-      {links.mine && <LinkRow label="My page" url={links.mine.url} />}
-      {links.team && <LinkRow label="Team page" url={links.team} />}
-    </Section>
-  );
-}
 
 export function FollowUpDefaults() {
   const [d, setD] = useState<Defaults | null>(null);
@@ -72,7 +60,6 @@ export function MyLeadRotation() {
 export default function MyProfileExtras() {
   return (
     <div data-testid="my-profile-extras">
-      <MyBookingLink />
       <FollowUpDefaults />
       <MyLeadRotation />
       <MySessions />

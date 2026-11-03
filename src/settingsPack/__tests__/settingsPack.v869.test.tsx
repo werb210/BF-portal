@@ -7,7 +7,6 @@ vi.mock("@/api", () => ({ api: { get: h.get, put: h.put, post: h.post, delete: h
 vi.mock("@/auth/passkey", () => ({ passkeysSupported: () => true, registerPasskey: vi.fn(), loginWithPasskey: vi.fn() }));
 
 import PhoneMenuSettings from "../PhoneMenuSettings";
-import BookingSettings from "../BookingSettings";
 import SecuritySettings from "../SecuritySettings";
 import PrivacySettings from "../PrivacySettings";
 import { BlockedNumbersSettings, LeadRotationSettings, NeverLogSettings } from "../ListSettings";
@@ -65,19 +64,6 @@ describe("Phone menu", () => {
     expect(saved.options[3].id).not.toMatch(/^(BF|sales|meeting|caden|engagement|underwriting)$/);
     expect(saved.options[0].target.menu.whenNoChoice).toEqual({ retry: true, optionId: "engagement" });
     expect(await screen.findByText(/Callers now hear/)).toBeTruthy();
-  });
-});
-
-describe("Booking pages", () => {
-  it("lists the team and personal links and adds a meeting type", async () => {
-    h.get.mockResolvedValue({ settings: { team_page: true, hours: { 1: [["09:00", "17:00"]] }, reminders: { email_24h: true, email_1h: true, sms_24h: true, sms_1h: true }, confirmation_note: "" },
-      meeting_types: [], links: { team: "https://client.acme.test/book/team", staff: [{ user_id: A, name: "Jane", url: "https://client.acme.test/book/jane" }] }, time_zone: "America/Edmonton", zone_label: "Alberta time" });
-    render(<BookingSettings />);
-    expect(await screen.findByText("https://client.acme.test/book/team")).toBeTruthy();
-    expect(screen.getByText("https://client.acme.test/book/jane")).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Intro call" } });
-    fireEvent.click(screen.getByText("Add meeting type"));
-    await waitFor(() => expect(h.post).toHaveBeenCalledWith("/api/booking-settings/meeting-types", expect.objectContaining({ name: "Intro call", duration_min: 30 })));
   });
 });
 

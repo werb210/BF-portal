@@ -6,7 +6,6 @@
 // BF_PORTAL_v869_SETTINGS_PACK - phone menu, booking pages, lead rotation, blocked numbers, never log, security,
 // privacy requests and the client survey.
 import PhoneMenuSettings from "@/settingsPack/PhoneMenuSettings";
-import BookingSettings from "@/settingsPack/BookingSettings";
 import PrivacySettings from "@/settingsPack/PrivacySettings";
 import SecuritySettings from "@/settingsPack/SecuritySettings";
 import SurveySettings from "@/settingsPack/SurveySettings";
@@ -28,7 +27,6 @@ import PropertiesSettings from "@/crmFields/PropertiesSettings"; // BF_PORTAL_v8
 import TeamsSettings from "@/teams/TeamsSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import PipelinesSettings from "@/pipelines/PipelinesSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import PhoneLines from "./tabs/PhoneLines"; // BF_PORTAL_PHONE_LINES_v689
-import SettingsOverview from "./tabs/SettingsOverview";
 import ContentSettings, { isContentSection } from "./tabs/ContentSettings"; // BF_PORTAL_v864_CONTENT_TAB
 import RetentionSettings from "./tabs/RetentionSettings"; // BF_PORTAL_v855_RETENTION
 import FraudProtectionCard from "@/fraud/FraudProtectionCard"; // BF_PORTAL_v846_FRAUD
@@ -58,6 +56,9 @@ const SettingsPage = () => {
   const isStaff = user?.role === "Staff"; // BF_PORTAL_BLOCK_v526
   const isBI = String(silo ?? "").toUpperCase() === "BI";
   const isMarketing = user?.role === "Marketing"; // BF_PORTAL_v864_CONTENT_TAB
+  // BF_PORTAL_v885_SETTINGS_ROLES - Admins see every setting (brokerage set-up). Staff and Marketing see only My Profile
+  // and AI Knowledge (Marketing's extra is the Marketing tab in the sidebar, not more settings).
+  const isTeamMember = (isStaff || isMarketing) && !isBI;
 
   const tabs = useMemo(
     () => [
@@ -67,7 +68,7 @@ const SettingsPage = () => {
       { id: "teams", label: "Teams", visible: canUsers && !isBI, content: <TeamsSettings /> },
       { id: "pipelines", label: "Pipelines", visible: isAdmin && !isBI, content: <PipelinesSettings /> },
       { id: "phone", label: "Phone lines", visible: isAdmin && !isBI, content: <PhoneLines /> }, // BF_PORTAL_PHONE_LINES_v689
-      { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin && !isBI, content: isAdmin ? (<><KnowledgeManager /><div style={{ height: 28 }} /><MayaTuning /></>) : null },
+      { id: "ai-knowledge", label: "AI Knowledge", visible: (isAdmin || isTeamMember) && !isBI, content: isAdmin ? (<><KnowledgeManager /><div style={{ height: 28 }} /><MayaTuning /></>) : <KnowledgeManager /> },
       // BF_PORTAL_v846_FRAUD - Admins: Keystone watchlist opt-in, pre-screen default, services, staff alerts.
       { id: "fraud", label: "Fraud protection", visible: isAdmin && !isBI, content: isAdmin ? <FraudProtectionCard /> : null },
       // BF_PORTAL_v852_CALC_QBO - connect QuickBooks Online; media fee agreements become invoices, paid at funding.
@@ -76,11 +77,11 @@ const SettingsPage = () => {
       { id: "payments", label: "Payments", visible: isAdmin && !isBI, content: isAdmin ? <PaymentsSettings /> : null },
       { id: "id-verification", label: "ID verification", visible: isAdmin && !isBI, content: isAdmin ? <IdVerificationSettings /> : null },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
-      { id: "runtime", label: "Runtime Verification", visible: !isBI, content: <RuntimeSettings /> },
+      { id: "runtime", label: "Runtime Verification", visible: isAdmin && !isBI, content: <RuntimeSettings /> },
       // BF_PORTAL_v864_CONTENT_TAB - Templates, Snippets, Collateral, the Library and the automations are sections of
       // one Content tab (see tabs/ContentSettings.tsx). Snippets and the Library still show in BI.
-      { id: "content", label: "Content", visible: true, content: <ContentSettings isBI={isBI} canAutomate={isAdmin || isMarketing} /> },
-      { id: "deal-tools", label: "Deal tools", visible: (isAdmin || isStaff) && !isBI, content: <DealToolsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v865_BROKER_TOOLS
+      { id: "content", label: "Content", visible: isAdmin, content: <ContentSettings isBI={isBI} canAutomate={isAdmin || isMarketing} /> },
+      { id: "deal-tools", label: "Deal tools", visible: isAdmin && !isBI, content: <DealToolsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v865_BROKER_TOOLS
       // BF_PORTAL_v855_RETENTION - 7-year record retention: legal holds and the eligible-for-deletion report.
       { id: "retention", label: "Retention & legal holds", visible: isAdmin, content: isAdmin ? <RetentionSettings /> : null },
       // BF_PORTAL_v869_SETTINGS_PACK - ported from KS-Portal #35. The phone menu is the one 866 menu (every silo); lead
@@ -89,8 +90,8 @@ const SettingsPage = () => {
       // BF_PORTAL_v871_CALLING_TOOLS - call scripts follow the topbar silo; call queues are on the one 866 line (every
       // silo): Admins set them up and watch the live panel, staff switch their own queue availability.
       { id: "call-scripts", label: "Call scripts", visible: isAdmin, content: isAdmin ? <CallScriptsSettings /> : null },
-      { id: "call-queues", label: "Call queues", visible: isAdmin || isStaff, content: <CallQueuesSettings /> },
-      { id: "booking", label: "Booking pages", visible: isAdmin && !isBI, content: isAdmin ? <BookingSettings /> : null },
+      { id: "call-queues", label: "Call queues", visible: isAdmin, content: <CallQueuesSettings /> },
+      // BF_PORTAL_v885_SETTINGS_ROLES - Booking pages removed: the Booking URL on My Profile is the one booking link.
       { id: "lead-rotation", label: "Lead rotation", visible: isAdmin, content: isAdmin ? <LeadRotationSettings /> : null },
       { id: "blocked-numbers", label: "Blocked numbers", visible: isAdmin, content: isAdmin ? <BlockedNumbersSettings /> : null },
       { id: "never-log", label: "Never log", visible: isAdmin, content: isAdmin ? <NeverLogSettings /> : null },
@@ -104,66 +105,83 @@ const SettingsPage = () => {
       { id: "survey", label: "Client survey", visible: isAdmin && !isBI, content: isAdmin ? <SurveySettings /> : null },
       // BF_PORTAL_PARTNERS_TABS_v720 - Broker Files moved to Marketing > Referrers > Brokers.
     ],
-    [isAdmin, isStaff, isBI, isMarketing, canUsers]
+    [isAdmin, isTeamMember, isBI, isMarketing, canUsers]
   );
 
-  const safeTabs = Array.isArray(tabs) ? tabs : [];
-  const availableTabs = safeTabs.filter((tab) => tab.visible);
+  // BF_PORTAL_v885_SETTINGS_ROLES - the ~30 tabs are grouped (Option A of the settings redesign): a list on the left,
+  // and each group opens as one page with its sections stacked. Old addresses (/settings/phone-menu, /settings/fraud ...)
+  // still work: they open their group and scroll to that section.
+  const visibleSections = tabs.filter((tab) => tab.visible);
+  const groups = SETTINGS_GROUPS.map((g) => ({ ...g, sections: g.sectionIds.map((id) => visibleSections.find((t) => t.id === id)).filter((t): t is (typeof visibleSections)[number] => Boolean(t)) }))
+    .filter((g) => g.sections.length > 0)
+    // Staff and Marketing get AI Knowledge as its own item (Admins find it inside Content and AI).
+    .concat(!isAdmin && visibleSections.some((t) => t.id === "ai-knowledge") ? [{ id: "ai-knowledge", label: "AI Knowledge", heading: "YOU", sectionIds: ["ai-knowledge"], sections: visibleSections.filter((t) => t.id === "ai-knowledge") }] : []);
   const requestedTabId = tabParam ?? searchParams.get("tab");
   // BF_PORTAL_v864_CONTENT_TAB - the old tabs (/settings/templates, /settings/snippets, /settings/collateral,
   // /settings/library) forward to their section of Content, so links and bookmarks keep working.
   const legacySection = isContentSection(requestedTabId) ? requestedTabId : null;
-  const activeTabId = legacySection ? "content" : requestedTabId;
-  const fallbackTabId = availableTabs.some((tab) => tab.id === "profile") ? "profile" : availableTabs[0]?.id ?? "profile";
-  const resolvedTabId = availableTabs.some((tab) => tab.id === activeTabId) ? activeTabId : fallbackTabId;
-  const activeTab = availableTabs.find((tab) => tab.id === resolvedTabId) ?? availableTabs[0];
-  // v694: land directly on the tabbed view (default My Profile) instead of the card chooser.
-  const showOverview = false;
+  const activeId = legacySection ? "content" : requestedTabId;
+  const groupOf = (id: string | null | undefined) => groups.find((g) => g.id === id) ?? groups.find((g) => g.sections.some((t) => t.id === id));
+  const fallbackGroup = groups.find((g) => g.id === "profile") ?? groups[0];
+  const activeGroup = groupOf(activeId) ?? fallbackGroup;
+  const resolvedTabId = activeGroup && (activeGroup.id === activeId || activeGroup.sections.some((t) => t.id === activeId)) ? String(activeId) : activeGroup?.id ?? "profile";
+  const focusSection = activeGroup && activeGroup.id !== resolvedTabId ? resolvedTabId : null;
 
   useEffect(() => {
     if (legacySection) {
       navigate(`/settings/content?section=${legacySection}`, { replace: true });
       return;
     }
-    if (!tabParam) {
-      navigate(`/settings/${resolvedTabId}`, { replace: true });
-      return;
-    }
-    if (tabParam && resolvedTabId !== tabParam) {
-      navigate(`/settings/${resolvedTabId}`, { replace: true });
-    }
-  }, [activeTabId, navigate, resolvedTabId, tabParam, legacySection]);
+    if (tabParam !== resolvedTabId) navigate(`/settings/${resolvedTabId}`, { replace: true });
+  }, [navigate, resolvedTabId, tabParam, legacySection]);
 
+  useEffect(() => {
+    if (!focusSection) return;
+    const el = typeof document !== "undefined" ? document.getElementById(`settings-section-${focusSection}`) : null;
+    if (el && typeof el.scrollIntoView === "function") el.scrollIntoView({ block: "start" });
+  }, [focusSection]);
+
+  let lastHeading = "";
   return (
     <RequireRole roles={["Admin", "Staff", "Marketing"]}>
       <ErrorBoundary>
         <SettingsSectionLayout>
-          {showOverview ? (
-            <SettingsOverview />
-          ) : availableTabs.length === 0 ? (
+          {groups.length === 0 ? (
             <div className="settings-panel" role="status">
               <h2>Settings</h2>
               <p>No settings sections are available for your account.</p>
             </div>
           ) : (
-            <div className="settings-layout">
-              <div className="settings-tabs" role="tablist" aria-label="Settings tabs" style={{ display: "flex", flexDirection: "row", gap: 4, borderBottom: "1px solid var(--ui-border)", marginBottom: 24, flexWrap: "wrap" }}>
-                {availableTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={tab.id === resolvedTabId}
-                    className={`settings-tab ${tab.id === resolvedTabId ? "is-active" : ""}`}
-                    style={{ padding: "8px 16px", borderRadius: "6px 6px 0 0", whiteSpace: "nowrap" }}
-                    onClick={() => navigate(`/settings/${tab.id}`)}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+            <div className="settings-grouped">
+              <style>{GROUPED_CSS}</style>
+              <div className="settings-groups" role="tablist" aria-label="Settings tabs" aria-orientation="vertical">
+                {groups.map((g) => {
+                  const heading = g.heading !== lastHeading && isAdmin ? g.heading : "";
+                  lastHeading = g.heading;
+                  return (
+                    <div key={g.id} style={{ display: "contents" }}>
+                      {heading && <div className="settings-group-heading">{heading}</div>}
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={g.id === activeGroup?.id}
+                        className={`settings-group ${g.id === activeGroup?.id ? "is-active" : ""}`}
+                        onClick={() => navigate(`/settings/${g.id}`)}
+                      >
+                        {g.label}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="settings-content" role="tabpanel">
-                <ErrorBoundary>{activeTab?.content}</ErrorBoundary>
+              <div className="settings-content" role="tabpanel" aria-label={activeGroup?.label}>
+                {activeGroup && activeGroup.sections.length > 1 && <h2 className="settings-group-title">{activeGroup.label}</h2>}
+                {activeGroup?.sections.map((t) => (
+                  <section key={t.id} id={`settings-section-${t.id}`} className="settings-group-section" aria-label={t.label}>
+                    {activeGroup.sections.length > 1 && <h3 className="settings-section-title">{t.label}</h3>}
+                    <ErrorBoundary>{t.content}</ErrorBoundary>
+                  </section>
+                ))}
               </div>
             </div>
           )}
@@ -172,6 +190,41 @@ const SettingsPage = () => {
     </RequireRole>
   );
 };
+
+// BF_PORTAL_v885_SETTINGS_ROLES - the groups and which sections each holds, in order.
+export const SETTINGS_GROUPS: Array<{ id: string; label: string; heading: string; sectionIds: string[] }> = [
+  { id: "profile", label: "My Profile", heading: "YOU", sectionIds: ["profile"] },
+  { id: "team", label: "Team and roles", heading: "BROKERAGE SET-UP", sectionIds: ["users", "teams"] },
+  { id: "crm", label: "CRM set-up", heading: "BROKERAGE SET-UP", sectionIds: ["properties", "pipelines"] },
+  { id: "phone", label: "Phone", heading: "BROKERAGE SET-UP", sectionIds: ["phone", "phone-menu", "call-queues", "call-scripts", "lead-rotation", "blocked-numbers", "never-log"] },
+  { id: "money", label: "Money", heading: "BROKERAGE SET-UP", sectionIds: ["quickbooks", "payments"] },
+  { id: "risk", label: "Risk and ID checks", heading: "BROKERAGE SET-UP", sectionIds: ["fraud", "id-verification"] },
+  { id: "content-ai", label: "Content and AI", heading: "BROKERAGE SET-UP", sectionIds: ["content", "ai-knowledge"] },
+  { id: "sign-in", label: "Sign-in and security", heading: "BROKERAGE SET-UP", sectionIds: ["security", "microsoft-sign-in"] },
+  { id: "records", label: "Privacy and records", heading: "BROKERAGE SET-UP", sectionIds: ["retention", "privacy", "survey"] },
+  { id: "integrations", label: "Integrations", heading: "BROKERAGE SET-UP", sectionIds: ["webhooks", "api-keys"] },
+  { id: "deal-tools", label: "Deal tools", heading: "BROKERAGE SET-UP", sectionIds: ["deal-tools"] },
+  { id: "system", label: "System check", heading: "BROKERAGE SET-UP", sectionIds: ["runtime"] },
+];
+
+const GROUPED_CSS = `
+.settings-grouped { display: flex; gap: 24px; align-items: flex-start; }
+.settings-groups { width: 230px; flex: 0 0 230px; display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--ui-border); border-radius: 12px; padding: 10px; position: sticky; top: 12px; }
+.settings-group-heading { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--ui-text-muted); padding: 10px 10px 4px; }
+.settings-group { text-align: left; font-size: 15px; padding: 9px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--ui-text); cursor: pointer; }
+.settings-group:hover { background: var(--ui-surface-muted); }
+.settings-group.is-active { background: var(--ui-surface-strong); color: var(--ui-text); font-weight: 600; box-shadow: inset 3px 0 0 #2FA86A; }
+.settings-content { flex: 1; min-width: 0; }
+.settings-group-title { margin: 0 0 8px; font-size: 22px; }
+.settings-group-section { padding: 16px 0 24px; border-bottom: 1px solid var(--ui-border); scroll-margin-top: 12px; }
+.settings-group-section:last-child { border-bottom: 0; }
+.settings-section-title { margin: 0 0 12px; font-size: 18px; }
+@media (max-width: 820px) {
+  .settings-grouped { flex-direction: column; }
+  .settings-groups { width: 100%; flex: none; position: static; flex-direction: row; flex-wrap: wrap; }
+  .settings-group-heading { width: 100%; }
+}
+`;
 
 export default SettingsPage;
 
