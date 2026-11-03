@@ -38,7 +38,8 @@ export function CrmTagChip({ tag, catalogue, onRemove }: { tag: string; catalogu
   const kind = tagKindOf(tag, catalogue);
   const slug = normalizeTag(tag);
   // Shared and silo tags show their label; older free-text tags show as they were written.
-  const text = kind === "other" ? humanizeCode(tag) : tagLabel(tag, catalogue);
+  // v884: a free-text tag stays as typed unless it is a code (application_started -> Application started).
+  const text = kind === "other" ? (/_/.test(tag) ? humanizeCode(tag) : tag) : tagLabel(tag, catalogue);
   const style = kind === "system" ? STYLE.system : slug === "active" ? STYLE.active : STYLE.staff;
   return (
     <span style={style} data-testid="crm-tag-chip" data-kind={kind} title={kind === "system" ? "Set automatically" : "Staff tag"}>
