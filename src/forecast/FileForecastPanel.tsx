@@ -3,8 +3,9 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import toast from "react-hot-toast";
 import { CATEGORY_LABEL, forecastApi, type Category, type FileForecast } from "@/forecast/forecastApi";
+import { humanizeCode } from "@/utils/labels";
 
-const input: CSSProperties = { padding: "4px 6px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface)", color: "var(--ui-text)", fontSize: 12 };
+const input: CSSProperties = { padding: "4px 6px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface)", color: "var(--ui-text)", fontSize: 13 };
 
 export default function FileForecastPanel({ applicationId }: { applicationId: string }) {
   const [f, setF] = useState<FileForecast | null>(null);
@@ -18,7 +19,7 @@ export default function FileForecastPanel({ applicationId }: { applicationId: st
     catch { try { toast.error("Could not save the forecast."); } catch { /* no toaster */ } }
   };
   return (
-    <div data-testid="file-forecast" style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", padding: "8px 20px", borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", fontSize: 12, color: "var(--ui-text)" }}>
+    <div data-testid="file-forecast" style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", padding: "8px 20px", borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", fontSize: 13, color: "var(--ui-text)" }}>
       <strong>Forecast</strong>
       <label>Expected close{" "}
         <input aria-label="Expected close date" type="date" style={input} value={f.expected_close_date ?? ""} onChange={(e) => void save({ expected_close_date: e.target.value || null })} />
@@ -29,7 +30,7 @@ export default function FileForecastPanel({ applicationId }: { applicationId: st
           <option value="commit">Commit</option><option value="best_case">Best case</option><option value="pipeline">Pipeline</option><option value="omit">Leave out</option>
         </select>
       </label>
-      <span style={{ color: "var(--ui-text-muted)" }}>{f.stage}: {f.probability}% chance it funds</span>
+      <span style={{ color: "var(--ui-text)" }}>{humanizeCode(f.stage)}: {f.probability}% chance it funds</span>
     </div>
   );
 }

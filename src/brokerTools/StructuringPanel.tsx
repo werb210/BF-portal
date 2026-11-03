@@ -6,6 +6,7 @@ import { api } from "@/api";
 import { Chip, ErrorLine, card, h3, input, label, money, muted, primaryButton, row, secondaryButton, table, td, th } from "./ui";
 import { useRun } from "./useRun";
 import { PROVINCES, TAX_MODE_LABEL, optionGrid, rateText, type PaymentOption } from "./structuring";
+import { groupDigits, ungroupDigits } from "@/utils/labels";
 
 type Form = { amount: string; province: string; terms: string; tier: string; residual_pct: string; down_payment: string; tax_mode: string; advance: boolean };
 
@@ -45,7 +46,7 @@ export function OptionsGrid({ options, chosen, onChoose }: { options: PaymentOpt
 export function StructureInputs({ form, setForm, busy }: { form: Form; setForm: (f: Form) => void; busy: boolean }) {
   return (
     <div style={row}>
-      <label style={label}>Equipment cost<input inputMode="decimal" style={{ ...input, width: 130 }} value={form.amount} disabled={busy} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></label>
+      <label style={label}>Equipment cost ($)<input inputMode="decimal" aria-label="Equipment cost" style={{ ...input, width: 140 }} value={groupDigits(form.amount)} disabled={busy} onChange={(e) => setForm({ ...form, amount: ungroupDigits(e.target.value) })} /></label>
       <label style={label}>Province
         <select style={input} value={form.province} disabled={busy} onChange={(e) => setForm({ ...form, province: e.target.value })}>
           <option value="">No tax</option>{PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -58,7 +59,7 @@ export function StructureInputs({ form, setForm, busy }: { form: Form; setForm: 
         </select>
       </label>
       <label style={label}>Residual %<input inputMode="decimal" style={{ ...input, width: 80 }} value={form.residual_pct} disabled={busy} onChange={(e) => setForm({ ...form, residual_pct: e.target.value })} /></label>
-      <label style={label}>Down payment<input inputMode="decimal" style={{ ...input, width: 110 }} value={form.down_payment} disabled={busy} onChange={(e) => setForm({ ...form, down_payment: e.target.value })} /></label>
+      <label style={label}>Down payment ($)<input inputMode="decimal" aria-label="Down payment" style={{ ...input, width: 120 }} value={groupDigits(form.down_payment)} disabled={busy} onChange={(e) => setForm({ ...form, down_payment: ungroupDigits(e.target.value) })} /></label>
       <label style={label}>Sales tax
         <select style={input} value={form.tax_mode} disabled={busy} onChange={(e) => setForm({ ...form, tax_mode: e.target.value })}>
           {Object.entries(TAX_MODE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}

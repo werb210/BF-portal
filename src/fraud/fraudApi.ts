@@ -26,6 +26,8 @@ export type FraudScore = {
   reasons: Array<{ check: string; label: string; severity: "red" | "amber"; text: string }>;
   covered: Array<{ check: string; label: string; status: FraudStatus }>;
   not_covered: Array<{ check: string; label: string; status: FraudStatus; why: string }>;
+  // BF-Server v885 (optional so the portal works before and after that deploy).
+  checks_run?: number; checks_total?: number; summary?: string;
 };
 
 export type FraudOverview = {
@@ -34,7 +36,7 @@ export type FraudOverview = {
   documents: FraudDocument[];
   score: FraudScore | null;
   include_prescreen_in_package: boolean;
-  queue: { queued: boolean; done_at: string | null; last_error: string | null };
+  queue: { queued: boolean; done_at: string | null; last_error: string | null; message?: string | null; results_from?: string | null };
 };
 
 export type NetworkNode = { id: string; type: "application" | "phone" | "email" | "address" | "bank_account" | "device" | "ip" | "director"; label: string; fraud?: boolean; current?: boolean };

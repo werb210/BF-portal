@@ -2,6 +2,7 @@
 // (names in ALL CAPS or all lower case, phone formats, emails with capitals or spaces, stray spaces, and
 // "Unknown (application started)" where the real name is known). Staff tick what to fix, then Fix selected / Fix all.
 // Every applied batch can be undone.
+import { formatDateTimeShort } from "@/utils/labels";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { crmUnified, errorText, type CleanupBatch, type CleanupChange, type CrmBackend, type CrmEntity } from "./crmUnifiedApi";
@@ -138,7 +139,7 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
       {batches.length === 0 && <div style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>None yet.</div>}
       {batches.map((b) => (
         <div key={b.id} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13, padding: "4px 0" }}>
-          <span>{new Date(b.created_at).toLocaleString()}</span>
+          <span>{formatDateTimeShort(b.created_at)}</span>
           <span>{b.change_count} change(s)</span>
           {b.created_by_name ? <span style={{ color: "var(--ui-text-muted)" }}>by {b.created_by_name}</span> : null}
           {b.undone_at

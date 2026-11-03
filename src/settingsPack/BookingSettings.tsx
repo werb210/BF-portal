@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { DAY_LABELS, Field, Notice, Section, Toggle, button, cell, copyText, danger, errText, input, muted, quiet } from "./ui";
+import { zoneWords } from "@/utils/labels";
 
 type MeetingType = { id: string; slug: string; name: string; description: string | null; duration_min: number; kind: "phone" | "video"; buffer_min: number; min_notice_min: number; max_days_ahead: number; active: boolean; sort: number };
 type Settings = { team_page: boolean; hours: Record<string, Array<[string, string]>>; reminders: { email_24h: boolean; email_1h: boolean; sms_24h: boolean; sms_1h: boolean }; confirmation_note: string };
@@ -89,7 +90,7 @@ export default function BookingSettings() {
         <button type="button" style={button} disabled={!draft.name.trim()} onClick={() => void addType()}>Add meeting type</button>
       </Section>
 
-      <Section id="bk-settings" title="Hours and reminders" intro={`Times clients can book, in ${data.time_zone} (${data.zone_label}). Each person's calendar is checked too.`}>
+      <Section id="bk-settings" title="Hours and reminders" intro={`Times clients can book, in ${zoneWords(data.time_zone, data.zone_label)}. Each person's calendar is checked too.`}>
         {DAY_LABELS.map((label, d) => {
           const r = settings.hours[d]?.[0];
           return (

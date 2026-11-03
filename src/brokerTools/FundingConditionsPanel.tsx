@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, rawApiFetch } from "@/api";
 import { Chip, ErrorLine, card, dangerButton, errorText, h3, input, label, muted, primaryButton, row, secondaryButton, type Tone } from "./ui";
 import { OWNER_LABEL, STATUS_LABEL } from "./fundingGate";
+import { quotesApi } from "@/quotes/quotesApi";
 
 export type Condition = {
   id: string; title: string; description: string | null; owner: "staff" | "client" | "lender";
@@ -30,6 +31,9 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [titleErr, setTitleErr] = useState<string | null>(null);
+  // v884: null = not known yet (the button stays usable); false = no lender offer on the file, so the button is off with a reason.
+  const [hasOffer, setHasOffer] = useState<boolean | null>(null);
   const [form, setForm] = useState({ title: "", owner: "staff", assigned_user_id: "", due_date: "", requires_document: false });
 
   const load = useCallback(async () => {
@@ -44,6 +48,13 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
+    let live = true;
+    void quotesApi.list(applicationId)
+      .then((r) => { if (live) setHasOffer(Array.isArray(r?.offers) ? r.offers.length > 0 : null); })
+      .catch(() => { if (live) setHasOffer(null); });
+    return () => { live = false; };
+  }, [applicationId]);
+  useEffect(() => {
     void api.get<{ people: Person[] }>("/api/broker-tools/people").then((r) => setPeople(Array.isArray(r?.people) ? r.people : [])).catch(() => setPeople([]));
   }, []);
 
@@ -52,11 +63,39 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
     try { await fn(); if (ok) setMsg(ok); await load(); } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
 
-  const add = () => run(async () => {
-    if (!form.title.trim()) throw new Error("Give the condition a title.");
+  // v884: the server answers these with the fresh list and how many were added; show that list straight away.
+  type AddedPayload = { conditions?: Condition[]; added?: number };
+  const bulk = (path: "from-offer" | "from-templates") => {
+    setBusy(true); setErr(null); setMsg(null);
+    void (async () => {
+      try {
+        const r = await api.post<AddedPayload>(`${base(applicationId)}/${path}`);
+        if (Array.isArray(r?.conditions)) setList(r.conditions); else await load();
+        const n = typeof r?.added === "number" ? r.added : null;
+        if (path === "from-templates") {
+          setMsg(n === 0 ? "No template conditions were added. Either none are set up for this lender or product (Settings > Deal tools), or they are already on this file."
+            : n === null ? "Template conditions added." : `${n} template condition${n === 1 ? "" : "s"} added.`);
+        } else {
+          setMsg(n === 0 ? "No conditions were added. The lender's offer has no conditions listed in its notes, or they are already on this file."
+            : n === null ? "Conditions added from the lender's offer." : `${n} condition${n === 1 ? "" : "s"} added from the lender's offer.`);
+        }
+        if (n === null && !Array.isArray(r?.conditions)) await load();
+      } catch (e) {
+        const status = (e as { status?: number })?.status;
+        if (path === "from-offer" && status === 404) { setHasOffer(false); setErr("There is no lender offer on this file yet."); }
+        else setErr(errorText(e));
+      } finally { setBusy(false); }
+    })();
+  };
+
+  const add = () => {
+    if (!form.title.trim()) { setTitleErr("Type the condition before you add it."); return; }
+    setTitleErr(null);
+    return run(async () => {
     await api.post(base(applicationId), { ...form, assigned_user_id: form.assigned_user_id || null, due_date: form.due_date || null });
     setForm({ title: "", owner: "staff", assigned_user_id: "", due_date: "", requires_document: false });
   });
+  };
   const patch = (c: Condition, body: Record<string, unknown>) => run(() => api.patch(`${base(applicationId)}/${c.id}`, body));
   const waive = (c: Condition) => {
     const reason = window.prompt(`Waive "${c.title}"?\n\nReason (required, kept with the file):`, "");
@@ -81,9 +120,10 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
         <h3 style={h3}>Funding conditions</h3>
         <p style={muted}>{list ? summaryText(list) : "Loading..."}</p>
         <div style={{ ...row, marginTop: 12 }}>
-          <button type="button" style={secondaryButton} disabled={busy} onClick={() => void run(() => api.post(`${base(applicationId)}/from-offer`), "Conditions added from the lender's offer.")}>Add from the lender's offer</button>
-          <button type="button" style={secondaryButton} disabled={busy} onClick={() => void run(() => api.post(`${base(applicationId)}/from-templates`), "Template conditions added.")}>Add from templates</button>
+          <button type="button" style={secondaryButton} disabled={busy || hasOffer === false} aria-describedby={hasOffer === false ? "conditions-no-offer" : undefined} onClick={() => bulk("from-offer")}>Add from the lender's offer</button>
+          <button type="button" style={secondaryButton} disabled={busy} onClick={() => bulk("from-templates")}>Add from templates</button>
         </div>
+        {hasOffer === false && <p id="conditions-no-offer" data-testid="conditions-no-offer" style={muted}>"Add from the lender's offer" works once a lender has sent an offer on this file (Lenders tab).</p>}
         <ErrorLine text={err} />
         {msg && <p role="status" style={{ ...muted, color: "var(--ui-text)" }}>{msg}</p>}
       </section>
@@ -139,7 +179,10 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
         <h3 style={h3}>Add a condition</h3>
         <div style={row}>
           <label style={{ ...label, flex: "2 1 240px" }}>Condition
-            <input style={input} value={form.title} placeholder="e.g. Signed insurance certificate" onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <input style={{ ...input, ...(titleErr ? { borderColor: "var(--ui-text-danger)" } : {}) }} value={form.title} placeholder="e.g. Signed insurance certificate"
+              aria-invalid={titleErr ? true : undefined} aria-describedby={titleErr ? "condition-title-error" : undefined}
+              onChange={(e) => { setForm({ ...form, title: e.target.value }); if (titleErr && e.target.value.trim()) setTitleErr(null); }} />
+            {titleErr && <span id="condition-title-error" role="alert" style={{ fontSize: 13, fontWeight: 500, color: "var(--ui-text-danger)" }}>{titleErr}</span>}
           </label>
           <label style={label}>Owner
             <select style={input} value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })}>

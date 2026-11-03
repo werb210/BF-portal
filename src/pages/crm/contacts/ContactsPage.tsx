@@ -1,3 +1,4 @@
+import { formatDateTimeShort } from "@/utils/labels";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
 import { LeadScoreBadge, useLeadScores } from "@/components/marketing/LeadScore"; // BF_PORTAL_v874_MARKETING_TOOLS
@@ -25,7 +26,9 @@ import { displayValue, filterParams, rowsWithCustomFields, type CustomFilter } f
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at" | `cf_${string}`;
 
 
-export default function ContactsPage() {
+// v884: onUnfilteredTotal lets the CRM tab show the same number as the pager. The server's /api/crm/counts also counts
+// archived (merged) contacts, which the list hides, so the two disagreed (2,501 vs 2,467).
+export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?: (n: number) => void } = {}) {
   const { silo } = useSilo();
   const crmBase = useCrmBase(); // BF_PORTAL_v850_KS_CRM
   const { user } = useAuth();
@@ -108,7 +111,10 @@ export default function ContactsPage() {
           pageSize: CONTACTS_PAGE_SIZE,
           ...filterParams(cfFilters), // BF_PORTAL_v870_CRM_DATA_MODEL
         });
-        if (!cancelled) { setRows(r.rows); setTotal(r.total); }
+        if (!cancelled) {
+          setRows(r.rows); setTotal(r.total);
+          if (!q.trim() && !ownerId && !tagFilter && cfFilters.length === 0 && typeof r.total === "number") onUnfilteredTotal?.(r.total);
+        }
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "Could not load contacts.");
       } finally {
@@ -245,7 +251,7 @@ export default function ContactsPage() {
       )}
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{r.owner_name ?? "—"}</td>}
       {cf.shown.map((f) => <td key={f.name} style={tdStyle}>{displayValue(f, (r as { custom_fields?: Record<string, unknown> }).custom_fields?.[f.name]) || "—"}</td>)}{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
-      <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
+      <td style={tdStyle}>{formatDateTimeShort(r.created_at)}</td>
     </tr>
   )), [isAdmin, rows, selected, hiddenCols, crmBase, tagCatalogue, cf.shown, leadScores]); // BF_PORTAL_v856_CRM_UNIFY BF_PORTAL_v874_MARKETING_TOOLS
 

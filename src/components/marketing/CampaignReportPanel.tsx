@@ -11,8 +11,10 @@ export type CampaignRow = {
   opened: number | null; clicked: number | null; unsubscribed: number | null; open_rate: number | null; click_rate: number | null;
   ab?: Ab | null; send_time?: string | null; fallback_emails?: number;
   applications?: number; funded?: number; funded_amount?: number;
+  /** BF-Server v885: false for email campaigns sent before per-campaign tracking started (their "-" means unknown). */
+  tracked?: boolean;
 };
-type Report = { days: number; attribution_days: number; funded_included: boolean; totals?: { sent: number; applications: number; funded: number; funded_amount: number }; campaigns: CampaignRow[] };
+type Report = { days: number; attribution_days: number; funded_included: boolean; tracking_note?: string | null; totals?: { sent: number; applications: number; funded: number; funded_amount: number }; campaigns: CampaignRow[] };
 
 const cell = { padding: "6px 8px", borderTop: "1px solid var(--ui-border)", textAlign: "left" as const, color: "var(--ui-text)", fontSize: 13 };
 const pct = (v: number | null) => (v === null ? "" : ` (${v}%)`);
@@ -81,6 +83,7 @@ export default function CampaignReportPanel() {
                       {new Date(c.sent_at).toLocaleDateString()}{c.status !== "done" ? ` · ${c.status}` : ""}{c.send_time === "best" ? " · each person's best time" : ""}
                     </div>
                     {abSummary(c.ab) && <div style={{ fontSize: 12, color: "var(--ui-text)" }}>{abSummary(c.ab)}</div>}
+                    {c.tracked === false && <div data-testid={`campaign-${c.id}-untracked`} style={{ fontSize: 12, color: "var(--ui-text)" }}>Sent before opens and clicks were tracked per campaign, so those columns show "-".</div>}
                   </td>
                   <td style={cell}>{c.channel === "email" ? "Email" : "Text"}</td>
                   <td style={cell}>{n(c.sent)}</td>
@@ -98,6 +101,7 @@ export default function CampaignReportPanel() {
               ))}
             </tbody>
           </table>
+          {report.tracking_note ? <p data-testid="campaign-tracking-note" style={{ color: "var(--ui-text)", fontSize: 13, marginTop: 8 }}>{report.tracking_note}</p> : null}
           <p style={{ color: "var(--ui-text-muted)", fontSize: 12, marginTop: 8 }}>
             {funded
               ? `Applications and funded deals: started by people a campaign reached, within ${report.attribution_days} days of the send. Someone reached by two campaigns counts for both.`

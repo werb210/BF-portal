@@ -58,7 +58,7 @@ export default function CreditBureauPanel({ applicationId, isAdmin = false }: { 
       <div style={{ ...row, marginTop: 12 }}>
         <label style={label}>First name<input style={input} value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} /></label>
         <label style={label}>Last name<input style={input} value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} /></label>
-        <label style={label}>Email<input style={input} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
+        <label style={{ ...label, flex: "1 1 320px" }}>Email<input type="email" style={{ ...input, width: "100%", minWidth: 280 }} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
         <button type="button" style={secondaryButton} disabled={busy} onClick={() => void run(() => api.post(`${base}/consents`, form), "Consent requested. The client sees it in the client app.")}>Ask for consent</button>
       </div>
       {data.pulls.length > 0 && (

@@ -6,6 +6,7 @@
 //   ManageTags        Admins add or remove this silo's own extra tags (the shared list is fixed)
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { humanizeCode } from "@/utils/labels";
 import {
   CORE_TAGS, crmUnified, errorText, normalizeTag, staffTagOptions, tagKindOf, tagLabel,
   type CrmBackend, type CrmEntity, type TagCatalogue,
@@ -37,7 +38,7 @@ export function CrmTagChip({ tag, catalogue, onRemove }: { tag: string; catalogu
   const kind = tagKindOf(tag, catalogue);
   const slug = normalizeTag(tag);
   // Shared and silo tags show their label; older free-text tags show as they were written.
-  const text = kind === "other" ? tag : tagLabel(tag, catalogue);
+  const text = kind === "other" ? humanizeCode(tag) : tagLabel(tag, catalogue);
   const style = kind === "system" ? STYLE.system : slug === "active" ? STYLE.active : STYLE.staff;
   return (
     <span style={style} data-testid="crm-tag-chip" data-kind={kind} title={kind === "system" ? "Set automatically" : "Staff tag"}>
@@ -105,7 +106,7 @@ export function CrmTagViewBy({ backend, entity, value, onChange, catalogue, onCa
       {system.length > 0 && <span style={{ fontSize: 11, color: "var(--ui-text-muted)", margin: "0 2px 0 8px" }}>Automatic:</span>}
       {system.map((t) => (
         <button key={t} type="button" onClick={() => toggle(t)} style={viewChip(selected.has(t), true)} aria-pressed={selected.has(t)} title="Set automatically">
-          {t} ({count(t)})
+          {tagLabel(t, catalogue)} ({count(t)})
         </button>
       ))}
       {isAdmin && (

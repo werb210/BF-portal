@@ -268,7 +268,8 @@ export default function PipelinePage() {
       </div>
       <CustomFieldFilters fields={appFields} value={cfFilters} onChange={setCfFilters} />{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       <LenderReferralIssues />{/* BF_PORTAL_v827_REFERRAL_PIPELINE_CARD - lender files still importing or that could not be read */}
-      <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 16, alignItems: "flex-start" }}>
+      {/* v884: the stage columns wrap onto a new row instead of the right-most one being cut off at the screen edge. */}
+      <div data-testid="pipeline-board" style={{ display: "flex", flexWrap: "wrap", gap: 14, paddingBottom: 16, alignItems: "flex-start" }}>
         {STAGES.map((stage) => {
           const col = cards.filter((c) => effectiveStage(c) === stage);
           const isTarget = dragOver === stage && dragging !== null;
@@ -431,23 +432,23 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
       <div onClick={onOpen} style={{ cursor: "pointer", marginBottom: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{name}</div>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)", overflowWrap: "anywhere" }}>{name}</div>
             {card.contact_name && (
               card.contact_id ? (
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); navigate(`/crm/contacts/${card.contact_id}`); }}
                   title="Open CRM contact"
-                  style={{ display: "block", maxWidth: "100%", textAlign: "left", background: "transparent", border: 0, padding: 0, cursor: "pointer", fontSize: 11, color: "var(--ui-accent-blue)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: "underline" }}>
+                  style={{ display: "block", maxWidth: "100%", textAlign: "left", background: "transparent", border: 0, padding: 0, cursor: "pointer", fontSize: 11, color: "var(--ui-accent-blue)", marginTop: 1, overflowWrap: "anywhere", textDecoration: "underline" }}>
                   {card.contact_name}
                 </button>
               ) : (
-                <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.contact_name}</div>
+                <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, overflowWrap: "anywhere" }}>{card.contact_name}</div>
               )
             )}
             {/* BF_PORTAL_BLOCK_v_PIPELINE_CARD_PHONE_v1 - show the OTP phone (esp. drafts with no contact name) */}
             {card.phone && (
-              <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.phone}</div>
+              <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, overflowWrap: "anywhere" }}>{card.phone}</div>
             )}
             {/* v_PARTNER_NAME_LINK: partner name -> their CRM contact, mirrors the applicant link */}
             {/* BF_PORTAL_BROKER_PIPELINE_v724 - broker files: who sent it, client status, split status */}
@@ -458,11 +459,11 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
                   type="button"
                   onClick={(e) => { e.stopPropagation(); navigate(`/crm/contacts/${card.partner_contact_id}`); }}
                   title="Open partner CRM contact"
-                  style={{ display: "block", maxWidth: "100%", textAlign: "left", background: "transparent", border: 0, padding: 0, cursor: "pointer", fontSize: 11, color: "var(--ui-accent-blue)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: "underline" }}>
+                  style={{ display: "block", maxWidth: "100%", textAlign: "left", background: "transparent", border: 0, padding: 0, cursor: "pointer", fontSize: 11, color: "var(--ui-accent-blue)", marginTop: 1, overflowWrap: "anywhere", textDecoration: "underline" }}>
                   {card.partner_name}
                 </button>
               ) : (
-                <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{card.partner_name}</div>
+                <div style={{ fontSize: 11, color: "var(--ui-text-soft)", marginTop: 1, overflowWrap: "anywhere" }}>{card.partner_name}</div>
               )
             )}
           </div>

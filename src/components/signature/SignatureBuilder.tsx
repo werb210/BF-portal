@@ -126,7 +126,9 @@ export default function SignatureBuilder({ html, defaults, disabled, onChange, l
             />
           )}
         </div>
-        <div style={{ flex: "1 1 320px", minWidth: 0 }}>
+        {/* v884: the preview takes the full row when it needs it (a pasted signature is often 500-600px wide), so it is
+            never cut off at the edge of a narrow column. */}
+        <div style={{ flex: "1 1 560px", minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ui-text-muted, #475569)", marginBottom: 6 }}>Preview</div>
           {/* Always on white with dark text, the way most recipients see it, whatever the portal theme. */}
           <div data-testid={`${testIdPrefix}-preview`} style={{ background: "#FFFFFF", color: "#111827", border: "1px solid #E5E7EB", borderRadius: 8, padding: 16, overflowX: "auto" }}

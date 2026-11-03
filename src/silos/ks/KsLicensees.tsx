@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { KS_BILLING_INTERVALS, KS_LICENSEE_STATUSES, KS_PLANS, KS_SUPPORT_LEVELS, ksApi, KsOpsError } from "./ksApi";
 import { Badge, Button, ErrorBox, Field, input, label, linkStyle, Loading, money, PageTitle, Section, Table, td } from "./ksUi";
 import { OpsKeyNotice } from "./KsOpsKeyNotice";
+import { isInternalCode } from "@/utils/labels";
 
 const EMPTY_FORM: Record<string, string> = {
   company_name: "",
@@ -171,7 +172,7 @@ export default function KsLicensees() {
           {rows.map((l) => (
             <tr key={l.id}>
               <td style={td}><Link to={`/silo/ks/licensees/${l.id}`} style={linkStyle}>{l.company_name}</Link></td>
-              <td style={td}>{l.company_code}</td>
+              <td style={td}>{isInternalCode(l.company_code) ? "-" : l.company_code}</td>
               <td style={td}>{label(l.plan)} ({l.billing_interval})</td>
               <td style={td}>{l.seats}</td>
               <td style={td}><Badge value={l.status} /></td>

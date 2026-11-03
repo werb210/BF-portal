@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Notice, Section, cell, copyText, errText, muted, quiet } from "@/settingsPack/ui";
 import { money, paymentsApi, type PaymentSettings, type PaymentsReport } from "./paymentsApi";
+import { TechnicalDetails, settingNamesIn, withoutSettingNames } from "@/components/SetupNotice";
 
 /** The fee payments numbers (Reports > Fee payments draws the same table from /api/reports/data/fee_payments). */
 export function FeePaymentsTable({ r }: { r: PaymentsReport | null | undefined }) {
@@ -49,7 +50,10 @@ export default function PaymentsSettings() {
     <div data-testid="payments-settings">
       <Section id="stripe" title="Stripe" intro="Clients pay broker fees by card or by Canadian pre-authorized debit through Boreal's own Stripe account. The money goes straight to Boreal's Stripe balance.">
         <Notice error={err} ok={ok} />
-        {view?.problem && <p style={muted} data-testid="stripe-problem">{view.problem} Add them in the server's settings (Azure), then reload this page.</p>}
+        {view?.problem && <div style={muted} data-testid="stripe-problem">
+          <p style={{ margin: 0 }}>{withoutSettingNames(view.problem) || "Online payments are not set up yet."} The person who manages the server adds the Stripe keys there, then you reload this page.</p>
+          <TechnicalDetails names={settingNamesIn(view.problem)} />
+        </div>}
         {view?.configured && <>
           <table style={{ borderCollapse: "collapse", marginBottom: 10 }}>
             <tbody>

@@ -1,3 +1,4 @@
+import { formatDateTimeShort, humanizeCode } from "@/utils/labels";
 import { useEffect, useState, useContext, type CSSProperties } from "react";
 import CustomFieldsPanel from "@/crmFields/CustomFieldsPanel"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import CallScriptsPanel from "@/callScripts/CallScriptDock"; // BF_PORTAL_v871_CALL_SCRIPTS
@@ -139,8 +140,8 @@ export default function ContactDetailPage() {
           <Field label="Status"  value={contact.lead_status ?? null} />
           <Field label="Stage"   value={contact.lifecycle_stage ?? null} />
           <Field label="Owner"   value={contact.owner_name ?? null} />
-          <Field label="Created" value={contact.created_at ? new Date(contact.created_at).toLocaleString() : null} />
-          {contact.source && <Field label="Source" value={contact.source} />}
+          <Field label="Created" value={contact.created_at ? formatDateTimeShort(contact.created_at) : null} />
+          {contact.source && <Field label="Source" value={humanizeCode(contact.source)} />}
         </div>
         <CrmTagEditor backend={crmBackend} entity="contact" id={id} tags={contact.tags} catalogue={tagCatalogue} onSaved={() => setRefreshKey((k) => k + 1)} />{/* BF_PORTAL_v856_CRM_UNIFY */}
         <CustomFieldsPanel object="contact" recordId={id} />{/* BF_PORTAL_v870_CRM_DATA_MODEL */}

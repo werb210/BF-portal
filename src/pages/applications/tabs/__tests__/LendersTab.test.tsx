@@ -75,8 +75,8 @@ describe("LendersTab", () => {
     // BF_PORTAL_V55_FIX_FOLLOWUP_v55a — likelihood is rendered in its own column.
     expect(screen.getByText("87%")).toBeInTheDocument();
     expect(screen.getByText("64%")).toBeInTheDocument();
-    expect(screen.getByText("TERM_LOAN")).toBeInTheDocument();
-    expect(screen.getByText("LINE_OF_CREDIT")).toBeInTheDocument();
+    expect(screen.getByText("Term loan")).toBeInTheDocument();
+    expect(screen.getByText("Line of credit")).toBeInTheDocument();
     // BF_PORTAL_BLOCK_v186a_LENDERS_TAB_POLISH_TEST_FIXUP_v1
     // v186 moved Upload Term Sheet inside a closed dropdown — assert the
     // files-count buttons (one per match) instead.

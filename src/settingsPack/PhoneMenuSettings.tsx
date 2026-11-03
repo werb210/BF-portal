@@ -5,6 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api } from "@/api";
 import { DAY_LABELS, Field, Notice, Section, Toggle, button, cell, danger, errText, input, muted, quiet } from "./ui";
+import { zoneWords } from "@/utils/labels";
 
 type Prompt = { mode: "tts" | "audio"; text: string; audioId: string | null };
 type NoChoice = { retry: boolean; optionId: string | null };
@@ -142,6 +143,21 @@ function NoChoiceEditor({ id, value, options, onChange }: { id: string; value: N
   );
 }
 
+// v884: the words wrap in a small text box instead of being cut off, and the commas typed stay put while typing
+// (the list is tidied when the box loses focus).
+function WordsField({ value, onChange }: { value: string[]; onChange: (words: string[]) => void }) {
+  const joined = value.join(", ");
+  const [draft, setDraft] = useState(joined);
+  useEffect(() => { setDraft((d) => (d.split(",").map((k) => k.trim()).filter(Boolean).join(", ") === joined ? d : joined)); }, [joined]);
+  const commit = (text: string) => onChange(text.split(",").map((k) => k.trim()).filter(Boolean));
+  return (
+    <textarea aria-label="Words callers can say" rows={2} value={draft} placeholder="credit, approval"
+      onChange={(e) => { setDraft(e.target.value); commit(e.target.value); }}
+      onBlur={() => setDraft(joined)}
+      style={{ ...input, width: "100%", minWidth: 200, resize: "vertical", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: "inherit" }} />
+  );
+}
+
 function OptionsTable({ id, options, users, audio, nested, allIds, onChange }: { id: string; options: Option[]; users: User[]; audio: Audio[]; nested?: boolean; allIds: string[]; onChange: (o: Option[]) => void }) {
   const setOption = (i: number, patch: Partial<Option>) => onChange(options.map((o, j) => (j === i ? { ...o, ...patch } : o)));
   const nextDigit = DIGITS.find((d) => !options.some((o) => o.digit === d));
@@ -160,9 +176,9 @@ function OptionsTable({ id, options, users, audio, nested, allIds, onChange }: {
                     {DIGITS.map((d) => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </td>
-                <td style={cell}><input aria-label="Label" value={o.label} maxLength={80} onChange={(e) => setOption(i, { label: e.target.value })} style={input} /></td>
+                <td style={{ ...cell, minWidth: 200 }}><textarea aria-label="Label" rows={2} value={o.label} maxLength={80} onChange={(e) => setOption(i, { label: e.target.value.replace(/\n/g, " ") })} style={{ ...input, width: "100%", minWidth: 180, resize: "vertical", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: "inherit" }} /></td>
                 <td style={cell}><TargetEditor id={`${id}-${i}`} value={o.target} users={users} audio={audio} allow={allow} allIds={allIds} onChange={(target) => setOption(i, { target })} /></td>
-                <td style={cell}><input aria-label="Words callers can say" value={o.keywords.join(", ")} onChange={(e) => setOption(i, { keywords: e.target.value.split(",").map((k) => k.trim()).filter(Boolean) })} style={input} placeholder="credit, approval" /></td>
+                <td style={{ ...cell, minWidth: 220 }}><WordsField value={o.keywords} onChange={(keywords) => setOption(i, { keywords })} /></td>
                 <td style={cell}><button type="button" style={danger} onClick={() => onChange(options.filter((_, j) => j !== i))}>Remove</button></td>
               </tr>
             ))}
@@ -245,7 +261,7 @@ export default function PhoneMenuSettings() {
   return (
     <QueuesContext.Provider value={data.queues ?? []}>
     <div data-testid="phone-menu-settings">
-      <Section id="pm-greeting" title="Greeting" intro={<>What callers to the 866 main line hear first. {data.is_default ? "This is the menu callers hear today. Change it and save to use your version." : ""} Office status now: <strong>{data.open_now ? "open" : "closed"}</strong> ({data.zone_label}).</>}>
+      <Section id="pm-greeting" title="Greeting" intro={<>What callers to the 866 main line hear first. {data.is_default ? "This is the menu callers hear today. Change it and save to use your version." : ""} Office status now: <strong>{data.open_now ? "open" : "closed"}</strong> ({zoneWords(data.time_zone, data.zone_label)}).</>}>
         <PromptEditor id="pm-greeting-text" label="Greeting" value={menu.greeting} audio={data.audio} onChange={(greeting) => set({ greeting })} />
         <Toggle id="pm-announce" label="After the greeting, read the options (For sales, press 1...)" checked={menu.announceOptions} onChange={(announceOptions) => set({ announceOptions })} />
         <p style={muted}>Callers can also say what they want. A caller can key the meeting option followed by a meeting access code and # to join a meeting in one step.</p>
@@ -266,7 +282,7 @@ export default function PhoneMenuSettings() {
         </Field>
       </Section>
 
-      <Section id="pm-hours" title="Business hours and holidays" intro={`In ${data.zone_label} (UTC-6 all year). Outside these hours, and on holidays, callers hear the after-hours greeting.`}>
+      <Section id="pm-hours" title="Business hours and holidays" intro={`In ${zoneWords(data.time_zone, data.zone_label)}. Outside these hours, and on holidays, callers hear the after-hours greeting.`}>
         <Toggle id="pm-hours-on" label="Use business hours (off: always open, except holidays)" checked={menu.hours.enabled} onChange={(enabled) => set({ hours: { ...menu.hours, enabled } })} />
         {menu.hours.enabled && DAY_KEYS.map((d, i) => {
           const range = menu.hours.weekly[d][0];

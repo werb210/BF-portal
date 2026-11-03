@@ -2,6 +2,7 @@
 // servers: BF-Server /api/crm/unified/* for BF, SLF and KS (the api client sends the silo: X-Silo from the topbar, or
 // KS on /silo/ks/crm pages) and BI-Server /api/v1/bi/crm/unified/* for BI. A backend says which, and where records
 // link to in the portal.
+import { humanizeCode } from "@/utils/labels";
 import { useMemo } from "react";
 import { api } from "@/api";
 import { useCrmBase } from "@/pages/crm/crmBase";
@@ -75,7 +76,8 @@ export function tagKindOf(tag: string, catalogue?: TagCatalogue | null): TagKind
 
 export function tagLabel(tag: string, catalogue?: TagCatalogue | null): string {
   const t = normalizeTag(tag);
-  return CORE_TAGS.find((c) => c.slug === t)?.label ?? catalogue?.custom.find((c) => c.slug === t)?.label ?? t;
+  // v884: automatic tags (application_started, contact_form...) read as words, not codes.
+  return CORE_TAGS.find((c) => c.slug === t)?.label ?? catalogue?.custom.find((c) => c.slug === t)?.label ?? humanizeCode(t);
 }
 
 /** Staff tags offered in "Tag as..." / "Remove tag": the shared list, the silo's own, then older ones in use. */

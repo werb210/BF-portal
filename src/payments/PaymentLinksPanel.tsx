@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Notice, Section, Toggle, button, cell, copyText, errText, input, muted, quiet, danger, when } from "@/settingsPack/ui";
 import { QBO_TEXT, STATUS, money, paymentsApi, type PaymentLink } from "./paymentsApi";
+import { withoutSettingNames } from "@/components/SetupNotice";
 
 type Props = { applicationId?: string; contactId?: string };
 
@@ -79,7 +80,7 @@ export default function PaymentLinksPanel({ applicationId, contactId }: Props) {
 
   return (
     <Section id="payment-links" title="Payments" intro="Ask the client to pay a fee online by card or pre-authorized debit. The money goes to Boreal's Stripe account.">
-      {problem && <p style={muted}>{problem} An Admin can see what is needed in Settings &gt; Payments.</p>}
+      {problem && <p style={muted} data-testid="payments-problem">{withoutSettingNames(problem) || "Online payments are not set up yet."} Ask an Admin to set this up in Settings &gt; Payments.</p>}
       <Notice error={err} ok={ok} />
       {links && links.length > 0 && (
         <table style={{ width: "100%", borderCollapse: "collapse", margin: "8px 0" }}>

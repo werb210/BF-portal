@@ -1,3 +1,4 @@
+import { formatDateTimeShort } from "@/utils/labels";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
@@ -178,7 +179,7 @@ export default function CompaniesPage() {
       )}{/* BF_PORTAL_v856_CRM_UNIFY - Tags replace Types of financing */}
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{r.owner_name ?? "—"}</td>}
       {cf.shown.map((f) => <td key={f.name} style={tdStyle}>{displayValue(f, (r as { custom_fields?: Record<string, unknown> }).custom_fields?.[f.name]) || "—"}</td>)}{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
-      <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
+      <td style={tdStyle}>{formatDateTimeShort(r.created_at)}</td>
     </tr>
   )), [isAdmin, rows, selected, hiddenCols, crmBase, tagCatalogue, cf.shown]); // BF_PORTAL_v856_CRM_UNIFY
 

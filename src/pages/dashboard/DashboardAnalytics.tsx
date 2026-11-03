@@ -14,6 +14,8 @@ type Analytics = {
   fundingByProduct?: Row[];
   documentUploadIssues?: Row[];
   topLendersByApprovalRate?: Row[];
+  /** BF-Server v885: one sentence on what the application funnel counts (absent before that deploy). */
+  applicationFunnelDefinition?: string;
 };
 
 type AnalyticsResponse = Analytics & {
@@ -27,7 +29,7 @@ type AnalyticsResponse = Analytics & {
 };
 
 const ranges: RangeDays[] = [7, 30, 90, 365];
-const fallback: Required<Analytics> = {
+const fallback: Required<Omit<Analytics, "applicationFunnelDefinition">> = {
   revenueFunnel: { visits: 0, applications: 0, submitted: 0, funded: 0 },
   applicationFunnel: {},
   acquisitionChannels: [],
@@ -74,6 +76,8 @@ export function normalizeAnalyticsResponse(raw: unknown): Analytics {
     fundingByProduct: rows(response.fundingByProduct ?? response.funding),
     documentUploadIssues: rows(response.documentUploadIssues ?? response.documents),
     topLendersByApprovalRate: rows(response.topLendersByApprovalRate ?? response.lenders),
+    ...(typeof response.applicationFunnelDefinition === "string" && response.applicationFunnelDefinition.trim()
+      ? { applicationFunnelDefinition: response.applicationFunnelDefinition.trim() } : {}),
   };
 }
 

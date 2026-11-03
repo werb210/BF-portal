@@ -29,16 +29,20 @@ export default function CrmListPage({ initialView = "contacts" }: { initialView?
       .catch(() => { if (alive) setCounts({ contacts: null, companies: null }); });
     return () => { alive = false; };
   }, [silo]);
+  // v884: the contacts list's own total (no filters) wins over /api/crm/counts, which includes archived contacts.
+  const [listTotal, setListTotal] = useState<number | null>(null);
+  useEffect(() => { setListTotal(null); }, [silo]);
+  const contactsCount = listTotal ?? counts.contacts;
   const label = (base: string, n: number | null): string => (n == null ? base : `${base} (${n.toLocaleString()})`);
   return (
     <div style={page}>
       <div style={toggleRow}>
-        <button onClick={() => setView("contacts")} style={btn(view === "contacts")}>{label("Contacts", counts.contacts)}</button>
+        <button onClick={() => setView("contacts")} style={btn(view === "contacts")}>{label("Contacts", contactsCount)}</button>
         <button onClick={() => setView("companies")} style={btn(view === "companies")}>{label("Companies", counts.companies)}</button>
         <button onClick={() => setView("duplicates")} style={btn(view === "duplicates")}>Find duplicates</button>
         <button onClick={() => setView("cleanup")} style={btn(view === "cleanup")}>Clean up data</button>
       </div>
-      {view === "contacts" ? <ContactsPage /> : view === "companies" ? <CompaniesPage />
+      {view === "contacts" ? <ContactsPage onUnfilteredTotal={setListTotal} /> : view === "companies" ? <CompaniesPage />
         : view === "duplicates" ? <CrmDuplicatesPage backend={crmBackend} /> : <CrmCleanupPage backend={crmBackend} />}
     </div>
   );

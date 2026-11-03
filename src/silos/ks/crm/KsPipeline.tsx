@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties, type Dra
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { KS_ACCENT } from "../ksAccess";
+import { humanizeCodesInText } from "@/utils/labels";
 
 export type KsStageKey = "lead" | "demo_started" | "demo_finished" | "signed_up" | "paying" | "lost";
 
@@ -220,7 +221,7 @@ function PipelineCard({
       {card.contact_phone ? <div style={muted}>{card.contact_phone}</div> : null}
       {demo ? <div style={line}>{demo}</div> : null}
       {plan ? <div style={line}>{plan}</div> : null}
-      {card.last_event_summary ? <div style={muted}>{card.last_event_summary}</div> : null}
+      {card.last_event_summary ? <div style={muted}>{humanizeCodesInText(card.last_event_summary)}</div> : null}
       <label style={{ ...muted, display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
         Stage
         <select
@@ -280,7 +281,8 @@ const select: CSSProperties = {
 };
 const searchInput: CSSProperties = {
   minHeight: 36,
-  minWidth: 240,
+  minWidth: 320, // v884: the whole placeholder shows
+  maxWidth: "100%",
   padding: "6px 10px",
   borderRadius: 8,
   border: "1px solid var(--ui-border)",

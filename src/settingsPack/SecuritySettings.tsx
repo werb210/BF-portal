@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { registerPasskey, passkeysSupported } from "@/auth/passkey";
 import { Notice, Section, Toggle, cell, danger, errText, input, muted, quiet, when } from "./ui";
+import { stripIpPort } from "@/utils/labels";
 
 type Session = { id: string; device: string; method: string; strong: boolean; ip: string | null; signed_in_at: string; last_active_at: string; current: boolean };
 type User = { id: string; name: string };
@@ -21,7 +22,7 @@ function SessionTable({ sessions, onSignOut }: { sessions: Session[]; onSignOut:
             <tr key={s.id} data-testid="session-row">
               <td style={cell}>{s.device}{s.current ? " (this device)" : ""}</td>
               <td style={cell}>{METHOD[s.method] ?? s.method}{s.method === "otp" && s.strong ? " + passkey" : ""}</td>
-              <td style={cell}>{when(s.signed_in_at)}</td><td style={cell}>{when(s.last_active_at)}</td><td style={cell}>{s.ip ?? ""}</td>
+              <td style={cell}>{when(s.signed_in_at)}</td><td style={cell}>{when(s.last_active_at)}</td><td style={cell}>{stripIpPort(s.ip)}</td>
               <td style={cell}>{!s.current && <button type="button" style={quiet} onClick={() => onSignOut(s)}>Sign out</button>}</td>
             </tr>
           ))}
