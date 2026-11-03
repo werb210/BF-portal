@@ -75,7 +75,7 @@ function OptionEditor({ o, i, onChange, onRemove, currency }: { o: QuoteOption; 
   );
 }
 
-function Editor({ quote, provinces, onSaved }: { quote: Quote; provinces: Province[]; onSaved: (q: Quote) => void }) {
+function Editor({ quote, provinces, onSaved, onDirty }: { quote: Quote; provinces: Province[]; onSaved: (q: Quote) => void; onDirty?: (unsaved: { dirty: boolean; options: number }) => void }) {
   const [title, setTitle] = useState(quote.title);
   const [province, setProvince] = useState(quote.tax_province ?? "");
   const [message, setMessage] = useState(quote.message ?? "");
@@ -83,6 +83,10 @@ function Editor({ quote, provinces, onSaved }: { quote: Quote; provinces: Provin
   const [options, setOptions] = useState<QuoteOption[]>(quote.options);
   const [busy, setBusy] = useState(false);
   useEffect(() => { setOptions(quote.options); }, [quote]);
+  // v884: tell the list what is on screen but not saved yet, so its option count and the Edit button never lose work.
+  const dirty = title !== quote.title || (message || "") !== (quote.message ?? "") || (expires || "") !== (quote.expires_on ?? "")
+    || (province || "") !== (quote.tax_province ?? "") || JSON.stringify(options) !== JSON.stringify(quote.options);
+  useEffect(() => { onDirty?.({ dirty, options: options.length }); }, [dirty, options.length, onDirty]);
   const save = async (): Promise<Quote | null> => {
     setBusy(true);
     try {
@@ -120,13 +124,15 @@ function Editor({ quote, provinces, onSaved }: { quote: Quote; provinces: Provin
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {options.length < 6 ? <button type="button" style={secondaryButton} onClick={() => setOptions([...options, blankOption()])}>Add an option</button> : null}
         <button type="button" style={secondaryButton} disabled={busy} onClick={() => void save()}>Save draft</button>
-        <button type="button" style={primaryButton} disabled={busy || options.length === 0} onClick={() => void send()}>Send to client</button>
+        <button type="button" style={primaryButton} disabled={busy || options.length === 0} aria-describedby={options.length === 0 ? "quote-send-reason" : undefined} onClick={() => void send()}>Send to client</button>
       </div>
+      {options.length === 0 ? <p id="quote-send-reason" data-testid="quote-send-reason" style={muted}>Add at least one option before sending this quote to the client.</p> : null}
+      {dirty ? <p data-testid="quote-unsaved" style={muted}>You have changes that are not saved yet.</p> : null}
     </section>
   );
 }
 
-function QuoteSummary({ q, onChanged, onEdit }: { q: Quote; onChanged: () => void; onEdit: (q: Quote) => void }) {
+function QuoteSummary({ q, onChanged, onEdit, unsavedOptions }: { q: Quote; onChanged: () => void; onEdit: (q: Quote) => void; unsavedOptions?: number | null }) {
   const [events, setEvents] = useState<QuoteEvent[] | null>(null);
   const accepted = q.options.find((o) => o.id === q.accepted_option_id);
   const act = async (fn: () => Promise<unknown>, ok: string) => {
@@ -141,7 +147,9 @@ function QuoteSummary({ q, onChanged, onEdit }: { q: Quote; onChanged: () => voi
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <strong>{q.quote_number}</strong><QuoteChip status={q.status} />
         <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>
-          {q.options.length} option(s){q.expires_on ? ` · valid until ${q.expires_on}` : ""}{q.sent_at ? ` · sent ${when(q.sent_at)}` : ""}
+          {unsavedOptions !== null && unsavedOptions !== undefined && unsavedOptions !== q.options.length
+            ? `${unsavedOptions} option(s) (not saved yet)`
+            : `${q.options.length} option(s)`}{q.expires_on ? ` · valid until ${q.expires_on}` : ""}{q.sent_at ? ` · sent ${when(q.sent_at)}` : ""}
           {q.view_count ? ` · viewed ${q.view_count} time(s), last ${when(q.last_viewed_at)}` : q.sent_at ? " · not opened yet" : ""}
         </span>
       </div>
@@ -170,6 +178,20 @@ export default function QuotesTab({ applicationId }: { applicationId: string }) 
   const [picked, setPicked] = useState<string[]>([]);
   const [editing, setEditing] = useState<Quote | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [unsaved, setUnsaved] = useState<{ dirty: boolean; options: number }>({ dirty: false, options: 0 });
+  const onDirty = useCallback((u: { dirty: boolean; options: number }) => setUnsaved((prev) => (prev.dirty === u.dirty && prev.options === u.options ? prev : u)), []);
+  // v884: Edit on the quote that is already open keeps what is typed; opening another quote warns first if there are unsaved changes.
+  const startEditing = (q: Quote) => {
+    if (editing && editing.id === q.id) return;
+    if (editing && unsaved.dirty) {
+      let ok = true;
+      try { ok = window.confirm("You have changes to this quote that are not saved. Open the other quote and lose them?"); } catch { ok = true; }
+      if (!ok) return;
+    }
+    setUnsaved({ dirty: false, options: q.options.length });
+    setEditing(q);
+  };
+  const isEditing = !!editing && editing.status === "draft";
 
   const load = useCallback(async () => {
     try { const r = await quotesApi.list(applicationId); setQuotes(r.quotes); setOffers(r.offers); setProvinces(r.provinces ?? []); setErr(null); }
@@ -178,13 +200,13 @@ export default function QuotesTab({ applicationId }: { applicationId: string }) 
   useEffect(() => { void load(); }, [load]);
 
   const create = async () => {
-    try { const r = await quotesApi.create(applicationId, picked); setEditing(r.quote); setPicked([]); await load(); }
+    try { const r = await quotesApi.create(applicationId, picked); setUnsaved({ dirty: false, options: r.quote.options.length }); setEditing(r.quote); setPicked([]); await load(); }
     catch (e) { say(() => toast.error(errText(e, "Could not start a quote."))); }
   };
 
   return (
     <div style={{ padding: 20 }} data-testid="quotes-tab">
-      <section style={card}>
+      {isEditing ? null : <section style={card} data-testid="quote-new">
         <h3 style={{ margin: "0 0 8px", fontSize: 16 }}>New quote</h3>
         <p style={muted}>Pick the lender offers to compare. Each becomes an option you can adjust (fees, payment, notes) before sending.</p>
         {offers.length === 0 ? <p style={muted}>No lender offers on this file yet. You can still start a blank quote and type the options in.</p> : (
@@ -198,14 +220,22 @@ export default function QuotesTab({ applicationId }: { applicationId: string }) 
           </ul>
         )}
         <button type="button" style={primaryButton} onClick={() => void create()}>{picked.length ? `Start a quote from ${picked.length} offer(s)` : "Start a blank quote"}</button>
-      </section>
-      {editing && editing.status === "draft" ? <Editor quote={editing} provinces={provinces} onSaved={(q) => { setEditing(q.status === "draft" ? q : null); void load(); }} /> : null}
+      </section>}
+      {isEditing && editing ? <>
+        <Editor key={editing.id} quote={editing} provinces={provinces} onDirty={onDirty} onSaved={(q) => { setEditing(q.status === "draft" ? q : null); void load(); }} />
+        <div style={{ marginBottom: 16 }}>
+          <button type="button" style={secondaryButton} onClick={() => {
+            if (unsaved.dirty) { let ok = true; try { ok = window.confirm("Close this quote without saving your changes?"); } catch { ok = true; } if (!ok) return; }
+            setEditing(null); setUnsaved({ dirty: false, options: 0 });
+          }}>Close the editor</button>
+        </div>
+      </> : null}
       <section style={card}>
         <h3 style={{ margin: "0 0 8px", fontSize: 16 }}>Quotes on this file</h3>
         {err ? <p role="alert" style={{ ...muted, color: "#b91c1c" }}>{err}</p> : null}
         {!quotes ? <p style={muted}>Loading…</p> : quotes.length === 0 ? <p style={muted}>No quotes yet.</p> : (
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-            {quotes.map((q) => <QuoteSummary key={q.id} q={q} onChanged={() => void load()} onEdit={setEditing} />)}
+            {quotes.map((q) => <QuoteSummary key={q.id} q={q} onChanged={() => void load()} onEdit={startEditing} unsavedOptions={isEditing && editing?.id === q.id ? unsaved.options : null} />)}
           </ul>
         )}
       </section>

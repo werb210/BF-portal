@@ -319,5 +319,5 @@ const banner: CSSProperties = { display: "flex", alignItems: "center", gap: 10, 
 const th: CSSProperties = { textAlign: "left", padding: 8, borderBottom: "1px solid var(--ui-border)", verticalAlign: "top", minWidth: 180 };
 const td: CSSProperties = { padding: 8, borderBottom: "1px solid var(--ui-border-soft)", verticalAlign: "top" };
 const card: CSSProperties = { border: "1px solid var(--ui-border-soft)", borderRadius: 8, padding: 12, marginBottom: 10, background: "var(--ui-surface-strong)" };
-const muted: CSSProperties = { marginLeft: 10, color: "var(--ui-text-muted)" };
+const muted: CSSProperties = { marginLeft: 10, color: "var(--ui-text-soft)" };
 const keepBadge: CSSProperties = { marginLeft: 8, fontSize: 11, padding: "1px 6px", borderRadius: 999, background: "#dcfce7", color: "#14532d", border: "1px solid #86efac" };

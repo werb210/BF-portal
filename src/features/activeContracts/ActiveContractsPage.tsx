@@ -11,6 +11,7 @@ import ContractDetail from "./ContractDetail";
 import { ReviewRow } from "./DocumentsPanel";
 import { KpiTiles } from "./Summary";
 import { Btn, card, ErrorLine, Field, h3, input, muted } from "./ui";
+import { TechnicalDetails } from "@/components/SetupNotice";
 
 export default function ActiveContractsPage() {
   const auth = useContext(AuthContext);
@@ -98,7 +99,8 @@ function SettingsCard() {
         <Field label="Email body"><textarea style={{ ...input, minHeight: 90 }} value={s.email_body ?? ""} onChange={(e) => setS({ ...s, email_body: e.target.value })} /></Field>
         <Field label="Text message"><input style={input} value={s.sms_body ?? ""} onChange={(e) => setS({ ...s, sms_body: e.target.value })} placeholder="Must include: Reply STOP to opt out." /></Field>
         <Field label="'No contact' queue: months"><input style={{ ...input, width: 90 }} type="number" value={s.no_contact_months} onChange={(e) => setS({ ...s, no_contact_months: Number(e.target.value) || 6 })} /></Field>
-        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}><input type="checkbox" checked={s.client_portal} onChange={(e) => setS({ ...s, client_portal: e.target.checked })} /> Client portal view (also needs ACTIVE_CONTRACTS_CLIENT_ENABLED=on on the server; no client screen yet)</label>
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}><input type="checkbox" checked={s.client_portal} onChange={(e) => setS({ ...s, client_portal: e.target.checked })} /> Client portal view (also has to be switched on in the server's settings; no client screen yet)</label>
+        <TechnicalDetails names={["ACTIVE_CONTRACTS_CLIENT_ENABLED"]} />
       </div>
       <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}><Btn primary onClick={() => void save()}>Save settings</Btn>{msg ? <span style={muted}>{msg}</span> : null}</div>
       <ErrorLine text={err} />

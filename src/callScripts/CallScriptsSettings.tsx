@@ -151,7 +151,10 @@ export default function CallScriptsSettings() {
           )}
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" style={button} onClick={() => edit(null)}>New script</button>
-            <button type="button" style={quiet} onClick={() => void starters()}>Add starter intake scripts</button>
+            {/* v884: once the starter scripts are here (archived ones count), the button goes so they are never added twice. */}
+            {meta && meta.scripts.some((x) => /^intake\s*-/i.test(x.name))
+              ? <span data-testid="starters-added" style={{ ...muted, alignSelf: "center" }}>The starter intake scripts are already added.</span>
+              : <button type="button" style={quiet} onClick={() => void starters()}>Add starter intake scripts</button>}
           </div>
         </>}
       </Section>

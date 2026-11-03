@@ -34,5 +34,12 @@ describe("v539 credit summary screen", () => {
     const overview = screen.getByTestId("cs2-section-overview"); fireEvent.click(overview.querySelector("button")!); fireEvent.change(screen.getByLabelText("Overview text"), { target: { value: "Founded in 1998." } }); fireEvent.click(screen.getByText("Save"));
     await waitFor(() => expect(calls.some((call) => call.path.endsWith("/sections/overview"))).toBe(true)); fireEvent.click(screen.getByTestId("cs2-submit")); expect(await screen.findByText(/Submitted by Andrew Polturak/)).toBeInTheDocument();
   });
+  it("signs off with the server's signed_by name, never a placeholder (v884)", async () => {
+    summary = { status: "draft", submitted_by_name: null, submitted_at: null, signed_by: "Todd Werboweski", doc: { ...DOC, sections: [{ key: "overview", title: "Overview", text: "**Special Situation**\nA dealer payout issue." }] } };
+    render(<CreditSummaryV2 applicationId="a1" />);
+    expect(await screen.findByTestId("cs2-signer")).toHaveTextContent("Todd Werboweski");
+    expect(screen.queryByText(/the staff member who submits/)).toBeNull();
+    expect(screen.getByTestId("cs2-section-overview").textContent).not.toContain("**");
+  });
   it("keeps both screen versions reachable", () => { const tab = fs.readFileSync("src/pages/applications/tabs/CreditSummaryTab.tsx", "utf8"); expect(tab).toContain("CreditSummaryV2"); expect(tab).toContain("CreditSummaryEditor"); });
 });

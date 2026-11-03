@@ -4,6 +4,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import toast from "react-hot-toast";
 import { kycApi, type KycSettingsView } from "@/kyc/kycApi";
+import { TechnicalDetails } from "@/components/SetupNotice";
 
 const card: CSSProperties = { padding: 16, border: "1px solid var(--ui-border)", borderRadius: 12, background: "var(--ui-surface-strong)", color: "var(--ui-text)", marginBottom: 16 };
 const muted: CSSProperties = { fontSize: 13, color: "var(--ui-text-muted)", margin: "4px 0 0" };
@@ -63,7 +64,10 @@ export default function IdVerificationSettings() {
         <section style={card}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16 }}>ID-check service connection</h3>
           <p style={muted}>Status: <strong style={{ color: onfido.configured ? "#15803d" : "#b45309" }}>{onfido.configured ? "Set up" : "Not set up"}</strong></p>
-          <p style={muted}>Server settings it needs: {onfido.settings.join(", ")}.</p>
+          <div style={muted}>
+            <p style={{ margin: 0 }}>{onfido.configured ? "The ID-check service keys are in the server's settings." : "The person who manages the server adds the ID-check service keys there. Until then, ID checks use manual review."}</p>
+            <TechnicalDetails names={[]}><p style={{ margin: "4px 0 0" }}>Server settings: <span style={{ fontFamily: "ui-monospace, Menlo, monospace", overflowWrap: "anywhere" }}>{onfido.settings.join(", ")}</span></p></TechnicalDetails>
+          </div>
           <p style={muted}>Webhook address to enter in the service's dashboard (event: workflow run completed):</p>
           <p><span style={code} data-testid="kyc-webhook-url">{view.webhook_url}</span></p>
         </section>

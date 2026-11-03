@@ -1,6 +1,9 @@
 // BF_PORTAL_BLOCK_v539_CREDIT_SUMMARY_V2 - the new credit summary (server v535-v538).
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { rawApiFetch } from "@/api";
+import { renderInlineMarkdown } from "@/utils/inlineMarkdown";
+import { AuthContext } from "@/auth/AuthContext";
+import { humanizeCode } from "@/utils/labels";
 import { OVERVIEW_ROWS, ROW_LABELS, bulletsToText, cell, money, risksToText, textToBullets, textToRisks, type Section, type SummaryRow } from "./creditSummaryV2Helpers";
 
 // BF_PORTAL_CREDIT_SUMMARY_READABLE_v746 - the cards set a white background but no text colour, so text and
@@ -39,15 +42,18 @@ function SectionEditor({ sec, disabled, onSave }: { sec: Section; disabled: bool
       <textarea aria-label={`${sec.title} text`} value={value} onChange={(event) => setValue(event.target.value)} rows={Math.max(4, value.split("\n").length + 1)} style={{ width: "100%", fontFamily: "inherit" }} />
       <button type="button" style={btn} onClick={() => void save()}>Save</button>
       <button type="button" style={btn} onClick={() => { setValue(initial); setEditing(false); }}>Cancel</button>
-    </div> : sec.key === "rationale" ? <ul>{(sec.bullets ?? []).map((item) => <li key={item}>{item}</li>)}</ul>
-      : sec.key === "risks" ? <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th style={th}>Risk</th><th style={th}>Mitigant</th></tr></thead><tbody>{(sec.risks ?? []).map((item) => <tr key={item.risk}><td style={td}>{item.risk}</td><td style={td}>{item.mitigant}</td></tr>)}</tbody></table>
-        : <div style={{ whiteSpace: "pre-wrap" }}>{sec.text || <em style={{ color: "#94a3b8" }}>Nothing written yet.</em>}</div>}
+    </div> : sec.key === "rationale" ? <ul>{(sec.bullets ?? []).map((item) => <li key={item}>{renderInlineMarkdown(item)}</li>)}</ul>
+      : sec.key === "risks" ? <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th style={th}>Risk</th><th style={th}>Mitigant</th></tr></thead><tbody>{(sec.risks ?? []).map((item) => <tr key={item.risk}><td style={td}>{renderInlineMarkdown(item.risk)}</td><td style={td}>{renderInlineMarkdown(item.mitigant)}</td></tr>)}</tbody></table>
+        : <div style={{ whiteSpace: "pre-wrap" }}>{sec.text ? renderInlineMarkdown(sec.text) : <em style={{ color: "#94a3b8" }}>Nothing written yet.</em>}</div>}
   </div>;
 }
 
 export default function CreditSummaryV2({ applicationId }: { applicationId: string }) {
   const id = encodeURIComponent(applicationId);
   const [row, setRow] = useState<SummaryRow>(null);
+  // v884: the sign-off names a person - the server's signed_by (v885), else the submitter, else whoever is signed in.
+  const user = (useContext(AuthContext) as { user?: unknown } | null)?.user ?? null; // no throw outside AuthProvider
+  const viewerName = (user as { name?: string | null; email?: string | null } | null)?.name || (user as { email?: string | null } | null)?.email || null;
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [table, setTable] = useState<Record<string, string>>({});
@@ -82,6 +88,7 @@ export default function CreditSummaryV2({ applicationId }: { applicationId: stri
     } catch (e) { setMessage((e as Error).message); } finally { setBusy(null); }
   };
   const submitted = row?.status === "submitted";
+  const signer = row?.signed_by || (submitted ? row?.submitted_by_name : null) || viewerName || "(the staff member who submits)";
   const saveSection = (key: string) => async (body: unknown) => run("Save", `/api/credit-summary-v2/${id}/sections/${key}`, "PUT", body, () => "Saved.");
   const setFact = (factId: string, status: "confirmed" | "rejected") => run(status === "confirmed" ? "Confirm" : "Reject", `/api/credit-research/${id}/facts/${encodeURIComponent(factId)}`, "PUT", { status }, () => { setDecided((d) => ({ ...d, [factId]: status })); return status === "confirmed" ? "Confirmed - press Generate again to use it." : "Removed."; });
 
@@ -112,9 +119,9 @@ export default function CreditSummaryV2({ applicationId }: { applicationId: stri
       </div>
       {doc.sections.filter(({ key }) => ["transaction", "overview", "deal_section"].includes(key)).map((section) => <SectionEditor key={section.key} sec={section} disabled={!!busy} onSave={saveSection(section.key)} />)}
       {doc.equipment && !!doc.equipment.items.length && <div style={card} data-testid="cs2-equipment"><h3>Equipment</h3><div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>{["Year", "Make", "Model", "Hours", "Price"].map((heading) => <th key={heading} style={th}>{heading}</th>)}</tr></thead><tbody>{doc.equipment.items.map((item: any, index: number) => <tr key={index}><td style={td}>{item.year ?? ""}</td><td style={td}>{item.make ?? ""}</td><td style={td}>{item.model ?? item.description ?? ""}</td><td style={td}>{item.hours ?? "NA"}</td><td style={td}>{money(item.price)}</td></tr>)}<tr><th style={th} colSpan={4}>Total</th><th style={th}>{money(doc.equipment.total)}</th></tr></tbody></table></div></div>}
-      <div style={card} data-testid="cs2-financials"><h3>Financial Summary</h3>{!doc.financials.periods.length ? <div>No financials read yet.</div> : <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th style={th} />{doc.financials.periods.map((period) => <th key={period.label} style={th}>{period.label}</th>)}</tr></thead><tbody>{doc.financials.rows.map((financialRow) => <tr key={financialRow.item}><th style={th}>{ROW_LABELS[financialRow.item] ?? financialRow.item}</th>{financialRow.values.map((value, index) => <td key={index} style={td}>{cell(financialRow.item, value)}</td>)}</tr>)}</tbody></table></div>}</div>
+      <div style={card} data-testid="cs2-financials"><h3>Financial Summary</h3>{!doc.financials.periods.length ? <div>No financials read yet.</div> : <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th style={th} />{doc.financials.periods.map((period) => <th key={period.label} style={th}>{period.label}</th>)}</tr></thead><tbody>{doc.financials.rows.map((financialRow) => <tr key={financialRow.item}><th style={th}>{ROW_LABELS[financialRow.item] ?? humanizeCode(financialRow.item)}</th>{financialRow.values.map((value, index) => <td key={index} style={td}>{cell(financialRow.item, value)}</td>)}</tr>)}</tbody></table></div>}</div>
       {doc.sections.filter(({ key }) => ["financial_commentary", "rationale", "risks"].includes(key)).map((section) => <SectionEditor key={section.key} sec={section} disabled={!!busy} onSave={saveSection(section.key)} />)}
-      <div style={card} data-testid="cs2-signature"><div>If you have any questions, please give me a call.</div><div>Thanks,</div><div><strong>{submitted ? row?.submitted_by_name : "(the staff member who submits)"}</strong></div><div>Boreal Financial</div></div>
+      <div style={card} data-testid="cs2-signature"><div>If you have any questions, please give me a call.</div><div>Thanks,</div><div><strong data-testid="cs2-signer">{signer}</strong></div><div>Boreal Financial</div></div>
     </>}
   </div>;
 }

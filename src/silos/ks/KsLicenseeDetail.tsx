@@ -12,6 +12,7 @@ import {
   PageTitle, Section, Table, td,
 } from "./ksUi";
 import { OpsKeyNotice } from "./KsOpsKeyNotice";
+import { isInternalCode } from "@/utils/labels";
 
 type FieldSpec = { key: keyof KsLicensee & string; name: string; kind: "text" | "number" | "select" | "bool"; options?: readonly string[] };
 
@@ -249,7 +250,7 @@ export default function KsLicenseeDetail() {
     <div>
       <p style={{ margin: "0 0 8px" }}><Link to="/silo/ks/licensees" style={linkStyle}>Back to licensees</Link></p>
       <PageTitle actions={<Badge value={l.status} />}>
-        {l.company_name} <span style={{ fontWeight: 400, color: "var(--ui-text-muted)", fontSize: 16 }}>({l.company_code})</span>
+        {l.company_name} {l.company_code && !isInternalCode(l.company_code) ? <span style={{ fontWeight: 400, color: "var(--ui-text-muted)", fontSize: 16 }}>({l.company_code})</span> : null}
       </PageTitle>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>

@@ -393,9 +393,10 @@ export default function RequestItemsTab({ applicationId }: Props) {
           style={{
             padding: "10px 18px",
             borderRadius: 8,
-            border: "none",
-            background: busy || total === 0 ? "#93c5fd" : "var(--ui-accent-blue)",
-            color: "#fff",
+            // v884: the disabled state was white on light blue (unreadable); it now uses the muted surface and text tokens.
+            border: busy || total === 0 ? "1px solid var(--ui-border)" : "none",
+            background: busy || total === 0 ? "var(--ui-surface-muted)" : "var(--ui-accent-blue)",
+            color: busy || total === 0 ? "var(--ui-text-muted)" : "#fff",
             fontWeight: 600,
             cursor: busy || total === 0 ? "default" : "pointer",
           }}

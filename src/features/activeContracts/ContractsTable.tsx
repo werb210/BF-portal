@@ -4,6 +4,7 @@ import { Fragment, useMemo, useState } from "react";
 import type { Contract } from "./api";
 import { balanceSource, Btn, day, input, money, Pill, Progress, table, td, th } from "./ui";
 import ContractDetail from "./ContractDetail";
+import { humanizeCode } from "@/utils/labels";
 
 export default function ContractsTable({ contracts, title, onChanged, onAdd, openId, setOpenId, showCompany }: {
   contracts: Contract[]; title: string; onChanged: () => void; onAdd?: () => void;
@@ -43,7 +44,7 @@ export default function ContractsTable({ contracts, title, onChanged, onAdd, ope
                 <tr data-testid={`ac-row-${c.id}`} style={{ background: openId === c.id ? "var(--ui-surface, transparent)" : undefined }}>
                   <td style={td}><div style={{ fontWeight: 600 }}>{c.lender_name ?? "Lender not set"}</div><div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{c.product_name ?? c.facility_type ?? "-"}</div></td>
                   {showCompany ? <td style={td}>{c.company_name ?? "-"}</td> : null}
-                  <td style={td}><span style={{ border: "1px solid var(--ui-border)", borderRadius: 4, padding: "1px 6px", fontSize: 12 }}>{c.product_category ?? "-"}</span></td>
+                  <td style={td}><span style={{ border: "1px solid var(--ui-border)", borderRadius: 4, padding: "1px 6px", fontSize: 12 }}>{c.product_category ? humanizeCode(c.product_category) : "-"}</span></td>
                   <td style={td}>{money(c.original_amount)}</td>
                   <td style={td}><div>{money(c.balance.balance)}</div><div style={{ fontSize: 11, color: "var(--ui-text-muted)" }}>{balanceSource(c.balance)}</div></td>
                   <td style={td}><Progress pct={c.balance.percent_paid} /></td>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ksApi } from "./ksApi";
 import { Badge, Button, confirmAction, date, ErrorBox, linkStyle, Loading, money, PageTitle, Section, Stat, Table, td } from "./ksUi";
+import { isInternalCode } from "@/utils/labels";
 
 export default function KsDashboard() {
   const dash = useQuery({ queryKey: ["ks", "dashboard"], queryFn: ksApi.dashboard });
@@ -56,7 +57,7 @@ export default function KsDashboard() {
           {(d.data_purges ?? []).map((p) => (
             <tr key={p.id}>
               <td style={td}>
-                <Link to={`/silo/ks/licensees/${p.id}`} style={linkStyle}>{p.company_name}</Link> ({p.company_code})
+                <Link to={`/silo/ks/licensees/${p.id}`} style={linkStyle}>{p.company_name}</Link>{p.company_code && !isInternalCode(p.company_code) ? ` (${p.company_code})` : ""}
               </td>
               <td style={td}>{date(p.cancelled_at)}</td>
               <td style={td}>{p.data_purge_on}</td>

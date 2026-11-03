@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { KS_PRIORITIES, KS_TICKET_STATUSES, ksApi, KsOpsError } from "./ksApi";
 import { Badge, Button, date, ErrorBox, Field, input, label, linkStyle, Loading, PageTitle, Section, Table, td } from "./ksUi";
+import { isInternalCode } from "@/utils/labels";
 
 function NewTicketForm({ onDone, licenseeId }: { onDone: () => void; licenseeId: string }) {
   const qc = useQueryClient();
@@ -38,7 +39,7 @@ function NewTicketForm({ onDone, licenseeId }: { onDone: () => void; licenseeId:
           <Field name="Licensee">
             <select aria-label="Licensee" style={input} value={form.licensee_id} onChange={set("licensee_id")}>
               <option value="">No licensee</option>
-              {(licensees.data?.licensees ?? []).map((l) => <option key={l.id} value={l.id}>{l.company_name} ({l.company_code})</option>)}
+              {(licensees.data?.licensees ?? []).map((l) => <option key={l.id} value={l.id}>{l.company_name}{l.company_code && !isInternalCode(l.company_code) ? ` (${l.company_code})` : ""}</option>)}
             </select>
             {fieldErr("licensee_id")}
           </Field>
@@ -117,7 +118,7 @@ export default function KsTickets() {
           {rows.map((t) => (
             <tr key={t.id}>
               <td style={td}><Link to={`/silo/ks/tickets/${t.id}`} style={linkStyle}>{t.subject}</Link></td>
-              <td style={td}>{t.company_name ? `${t.company_name} (${t.company_code})` : "-"}</td>
+              <td style={td}>{t.company_name ? `${t.company_name}${t.company_code && !isInternalCode(t.company_code) ? ` (${t.company_code})` : ""}` : "-"}</td>
               <td style={td}><Badge value={t.status} /></td>
               <td style={td}><Badge value={t.priority} /></td>
               <td style={td}>{t.assigned_to ?? "-"}</td>

@@ -80,12 +80,13 @@ function readFlatPartner(applicant: AnyRecord, fdApplicant: AnyRecord): AnyRecor
 // BF_PORTAL_BLOCK_v_SIGNING_INDICATOR_v1 — staff-facing signing-state chip in the
 // application header, driven by the server's derived /details `signing.status`:
 //   signed | started (SignNow group minted) | ready (lender finalized, awaiting) | not_started.
-const SIGNING_FALLBACK = { label: "Sign: not started", bg: "var(--ui-surface-muted)", fg: "var(--ui-text-muted)" };
+// v884: every chip reads at 7:1 or better (the grey "not started" chip used muted text on a muted surface).
+const SIGNING_FALLBACK = { label: "Sign: not started", bg: "var(--ui-surface-muted)", fg: "var(--ui-text)" };
 export function signingBadgeView(status?: string): { label: string; bg: string; fg: string } {
   const map: Record<string, { label: string; bg: string; fg: string }> = {
-    signed: { label: "Signed", bg: "#dcfce7", fg: "#166534" },
-    started: { label: "Signing started", bg: "#fef3c7", fg: "#92400e" },
-    ready: { label: "Ready to sign", bg: "#e0e7ff", fg: "#3730a3" },
+    signed: { label: "Signed", bg: "#dcfce7", fg: "#14532d" },
+    started: { label: "Signing started", bg: "#fef3c7", fg: "#78350f" },
+    ready: { label: "Ready to sign", bg: "#e0e7ff", fg: "#312e81" },
     not_started: SIGNING_FALLBACK,
   };
   return map[String(status ?? "not_started")] ?? SIGNING_FALLBACK;
@@ -97,7 +98,7 @@ function SigningBadge({ status }: { status?: string }) {
     <span
       data-testid="signing-badge"
       data-status={String(status ?? "not_started")}
-      style={{ background: v.bg, color: v.fg, borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap" }}
+      style={{ background: v.bg, color: v.fg, border: "1px solid rgba(15, 23, 42, 0.18)", borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap" }}
     >
       {v.label}
     </span>
@@ -866,7 +867,9 @@ const styles: Record<string, CSSProperties> = {
     // BF_PORTAL_BLOCK_v_DOC_NAME_CONTRAST_v1 — was faint green bg + blue text (washed
     // out + mismatched). Use a readable accent-tinted chip.
     background: "color-mix(in srgb, var(--ui-accent-blue) 16%, transparent)",
-    color: "var(--ui-accent-fg)",
+    // v884: the stage chip text is the body text colour, so it reads in both themes and every silo.
+    color: "var(--ui-text)",
+    border: "1px solid var(--ui-border)",
     borderRadius: 999,
     padding: "4px 12px",
     fontSize: 12,

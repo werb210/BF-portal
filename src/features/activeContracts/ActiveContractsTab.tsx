@@ -6,6 +6,7 @@ import { acApi, errorText, type Contract, type Summary } from "./api";
 import { KpiTiles, RightRail } from "./Summary";
 import ContractsTable from "./ContractsTable";
 import { Btn, card, ErrorLine, Field, h3, input } from "./ui";
+import { humanizeCode } from "@/utils/labels";
 
 /** Right rail beside the table on wide screens, under it on narrow ones. */
 export const AC_GRID_CSS = ".ac-main-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start}@media (min-width:1280px){.ac-main-grid{grid-template-columns:minmax(0,1fr) 300px}}";
@@ -72,7 +73,7 @@ function AddContract({ companyId, contactId, onDone }: { companyId: string | nul
       <div style={{ color: "var(--ui-text-muted)", fontSize: 12, marginBottom: 6 }}>Funded applications become contracts automatically. Use this for facilities arranged outside the system, or link a funded application by its id.</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 }}>
         {fld("application_id", "Funded application id (optional)")}{fld("lender_name", "Lender")}{fld("product_name", "Product")}
-        <Field label="Product type"><select style={input} value={f.product_category} onChange={(e) => setF({ ...f, product_category: e.target.value })}>{["TERM", "EQUIPMENT", "LOC", "MCA", "FACTORING", "ABL", "SBA", "PO", "MEDIA"].map((x) => <option key={x}>{x}</option>)}</select></Field>
+        <Field label="Product type"><select style={input} value={f.product_category} onChange={(e) => setF({ ...f, product_category: e.target.value })}>{["TERM", "EQUIPMENT", "LOC", "MCA", "FACTORING", "ABL", "SBA", "PO", "MEDIA"].map((x) => <option key={x} value={x}>{humanizeCode(x)}</option>)}</select></Field>
         {fld("facility_type", "Facility type")}{fld("original_amount", "Original amount", "number")}{fld("funded_at", "Funding date", "date")}{fld("term_months", "Term (months)", "number")}
         {fld("interest_rate", "Rate % / yr", "number")}{fld("factor_rate", "Factor rate (MCA)", "number")}{fld("payment_amount", "Payment amount", "number")}
         <Field label="Payment frequency"><select style={input} value={f.payment_frequency ?? ""} onChange={(e) => setF({ ...f, payment_frequency: e.target.value })}><option value="">-</option>{["daily", "weekly", "biweekly", "semi_monthly", "monthly", "quarterly", "annually"].map((x) => <option key={x} value={x}>{x.replace("_", "-")}</option>)}</select></Field>

@@ -8,6 +8,8 @@ import { fraudApi, type FraudSettingsView, type StaffAlert } from "@/fraud/fraud
 import { StatusChip } from "@/fraud/FraudTab";
 import { noticeStyle } from "@/fraud/status";
 import { card, muted } from "@/fraud/ui";
+import { TechnicalDetails, settingNamesIn, withoutSettingNames } from "@/components/SetupNotice";
+import { formatDateTimeShort, humanizeCode } from "@/utils/labels";
 
 const row: CSSProperties = { display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 0", borderTop: "1px solid var(--ui-border)", flexWrap: "wrap" };
 const toggle: CSSProperties = { display: "flex", gap: 6, alignItems: "center", fontSize: 14, whiteSpace: "nowrap", color: "var(--ui-text)" };
@@ -66,7 +68,10 @@ export default function FraudProtectionCard() {
         <div style={{ flex: 1, minWidth: 240 }}>
           <strong style={{ fontSize: 14, color: "var(--ui-text)" }}>Share confirmed fraud with the Keystone watchlist</strong>
           <p style={muted}>When a file is marked as fraud, scrambled codes of its phone, email, business number, address and bank account are shared with other brokerages in the Keystone network - never the details themselves. New applicants are checked against what they reported. Turning this off removes everything Boreal shared.</p>
-          {!watchReady && <p data-testid="watchlist-not-set-up" style={noticeStyle("warning")}>Not set up: the server needs the Keystone watchlist link (KS_OPS_URL, KS_LICENSEE_ID, KS_OPS_KEY and KS_WATCHLIST_PEPPER) before this can be turned on.</p>}
+          {!watchReady && <div data-testid="watchlist-not-set-up" style={noticeStyle("warning")}>
+            <p style={{ margin: 0 }}>Not set up yet: the server needs the link to the Keystone watchlist before this can be turned on.</p>
+            <TechnicalDetails names={["KS_OPS_URL", "KS_LICENSEE_ID", "KS_OPS_KEY", "KS_WATCHLIST_PEPPER"]} />
+          </div>}
         </div>
         <label style={toggle}>
           <input type="checkbox" data-testid="watchlist-opt-in" checked={view.settings.watchlist_opt_in} disabled={saving || (!watchReady && !view.settings.watchlist_opt_in)} onChange={(e) => void save({ watchlist_opt_in: e.target.checked })} />
@@ -92,11 +97,14 @@ export default function FraudProtectionCard() {
             <li key={s.key} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", padding: "4px 0", fontSize: 13 }}>
               <StatusChip status={s.configured ? "green" : "not_configured"} />
               <span style={{ color: "var(--ui-text)" }}>{s.label}</span>
-              {!s.configured && <span style={{ color: "var(--ui-text-muted)" }}>({s.setting})</span>}
+              {!s.configured && (settingNamesIn(s.setting).length
+                ? <span style={{ color: "var(--ui-text-muted)" }}>(not set up yet{withoutSettingNames(s.setting) ? `; ${withoutSettingNames(s.setting)}` : ""})</span>
+                : <span style={{ color: "var(--ui-text-muted)" }}>({s.setting})</span>)}
             </li>
           ))}
         </ul>
         <p style={muted}>A check whose service is not set up says so on the application; it never counts as a pass.</p>
+        <TechnicalDetails names={view.services.filter((x) => !x.configured).flatMap((x) => settingNamesIn(x.setting))} />
       </details>
 
       <div style={{ borderTop: "1px solid var(--ui-border)", paddingTop: 10, marginTop: 10 }} data-testid="staff-alerts">
@@ -105,7 +113,7 @@ export default function FraudProtectionCard() {
           <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 13, lineHeight: 1.6 }}>
             {alerts.slice(0, 10).map((a) => (
               <li key={a.id} style={{ color: "var(--ui-text)" }}>
-                {new Date(a.created_at).toLocaleString()} - {a.staff_name ?? "A staff member"} {ALERT_TEXT[a.kind] ?? a.kind.replace(/_/g, " ")}
+                {formatDateTimeShort(a.created_at)} - {a.staff_name ?? "A staff member"} {ALERT_TEXT[a.kind] ?? humanizeCode(a.kind).toLowerCase()}
                 {a.application_id && <> (<a href={`/applications/${encodeURIComponent(a.application_id)}/fraud`} style={{ color: "inherit", fontWeight: 700 }}>open file</a>)</>}
               </li>
             ))}

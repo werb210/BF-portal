@@ -12,6 +12,7 @@ import KsMktTemplates from "./KsMktTemplates";
 import KsMktCampaigns, { KsMktCampaignDetail } from "./KsMktCampaigns";
 import KsMktSequences, { KsMktSequenceDetail } from "./KsMktSequences";
 import KsMktSuppressions from "./KsMktSuppressions";
+import { TechnicalDetails, settingNamesIn, settingNamesToWords } from "@/components/SetupNotice";
 
 export const KS_MKT_BASE = "/silo/ks/marketing";
 
@@ -59,10 +60,11 @@ export function SenderWarnings({ compact = false }: { compact?: boolean }) {
       </div>
       <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.5 }}>
         {(compact ? w.slice(0, 2) : w).map((x) => (
-          <li key={x}>{x}</li>
+          <li key={x}>{settingNamesToWords(x)}</li>
         ))}
         {compact && w.length > 2 ? <li>... and {w.length - 2} more on the Overview tab.</li> : null}
       </ul>
+      {compact ? null : <TechnicalDetails names={w.flatMap((x) => settingNamesIn(x)).filter((n, i, all) => all.indexOf(n) === i)} />}
     </div>
   );
 }
@@ -80,12 +82,12 @@ function Overview() {
       <Section title="Sender" actions={<Button onClick={() => setRefresh((n) => n + 1)}>Check again</Button>}>
         <KeyValues
           rows={[
-            ["Can send", s.can_send ? "Yes" : `No - ${s.sending_problem ?? ""}`],
-            ["From", `${s.sender.from_name} <${s.sender.from || "not set"}>${s.sender.from_configured ? "" : " (KS_MARKETING_FROM not set yet)"}`],
+            ["Can send", s.can_send ? "Yes" : `No - ${settingNamesToWords(s.sending_problem ?? "")}`],
+            ["From", `${s.sender.from_name} <${s.sender.from || "not set"}>${s.sender.from_configured ? "" : " (the Keystone sender address is not set yet)"}`],
             ["Domain authenticated in SendGrid", `${s.domain.domain || "-"}: ${yes(s.domain.authenticated)}${s.domain.error ? ` (${s.domain.error})` : ""}`],
             ["Replies go to", s.sender.reply_to],
             ["Sender shown in the footer", `${s.sender.business_name} (${s.sender.legal_name})`],
-            ["Mailing address in the footer", `${s.sender.address}${s.sender.address_is_default ? " (default - set KS_MARKETING_ADDRESS)" : ""}`],
+            ["Mailing address in the footer", `${s.sender.address}${s.sender.address_is_default ? " (the default - Keystone's own address is not set yet)" : ""}`],
             ["Open / click / bounce tracking", s.tracking_configured ? "On" : "Off - set up the SendGrid Event Webhook"],
             ["Reply detection", s.reply_detection.mailbox ? `Checks ${s.reply_detection.mailbox}` : "Off - use Mark replied on the prospect"],
           ]}

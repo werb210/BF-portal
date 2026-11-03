@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { KsOpsError } from "./ksApi";
 import { KS_ACCENT } from "./ksAccess"; // white text on it: 7.1:1
+import { humanizeCode } from "@/utils/labels";
 
 export const card: CSSProperties = {
   background: "var(--ui-surface-strong)",
@@ -71,8 +72,7 @@ const BADGE: Record<string, string> = {
 
 export function label(value: string | null | undefined): string {
   if (!value) return "-";
-  const s = String(value).replace(/_/g, " ");
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return humanizeCode(value); // v884: shared helper (pending_payment -> "Waiting for payment", canceled -> "Cancelled")
 }
 
 export function Badge({ value }: { value: string | null | undefined }) {

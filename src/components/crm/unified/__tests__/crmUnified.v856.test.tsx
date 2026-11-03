@@ -50,7 +50,7 @@ describe("tags", () => {
     const onChange = vi.fn();
     wrap(<CrmTagViewBy backend={BF} entity="contact" value={["lender"]} onChange={onChange} catalogue={catalogue} />);
     const bar = screen.getByTestId("crm-view-by");
-    for (const name of ["All", "Untagged", "Lender (3)", "Broker (0)", "Lawyer (0)", "Accountant/Bookkeeper (0)", "Referrer (0)", "Active (0)", "VIP (0)", "application_started (9)"]) {
+    for (const name of ["All", "Untagged", "Lender (3)", "Broker (0)", "Lawyer (0)", "Accountant/Bookkeeper (0)", "Referrer (0)", "Active (0)", "VIP (0)", "Application started (9)"]) {
       expect(within(bar).getByRole("button", { name })).toBeInTheDocument();
     }
     fireEvent.click(within(bar).getByRole("button", { name: "Untagged" }));
@@ -88,7 +88,7 @@ describe("tags", () => {
 
   it("list chips: staff tags first, automatic tags after, old free text as written", () => {
     wrap(<CrmTagChips tags={["application_started", "country:CA", "active"]} catalogue={catalogue} />);
-    expect(screen.getAllByTestId("crm-tag-chip").map((c) => c.textContent)).toEqual(["country:CA", "Active", "application_started"]);
+    expect(screen.getAllByTestId("crm-tag-chip").map((c) => c.textContent)).toEqual(["country:CA", "Active", "Application started"]);
   });
 });
 

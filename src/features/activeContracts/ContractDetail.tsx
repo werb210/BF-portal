@@ -9,6 +9,7 @@ import CommissionPanel from "./CommissionPanel";
 import DocumentsPanel from "./DocumentsPanel";
 import RulesPanel from "./RulesPanel";
 import RelatedPanel from "./RelatedPanel";
+import { humanizeCode } from "@/utils/labels";
 
 const TABS = [
   ["details", "Contract Details"], ["ledger", "Payments & Ledger"], ["commission", "Commission"],
@@ -41,7 +42,7 @@ export default function ContractDetail({ contractId, onChanged, initialTab = "de
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ui-text)" }}>{c.lender_name ?? "Lender not set"}</div>
-        <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>{c.product_name ?? c.product_category ?? ""}</div>
+        <div style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>{c.product_name ?? (c.product_category ? humanizeCode(c.product_category) : "")}</div>
         <Pill kind={c.status}>{c.status_label}</Pill>
         {c.renewal.eligibility === "eligible" && !c.is_history ? <Pill kind="renewal_eligible">Renewal Eligible</Pill> : null}
         {c.outcome_required ? <Pill kind="default">Outcome required</Pill> : null}

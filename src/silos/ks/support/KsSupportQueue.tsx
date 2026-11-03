@@ -204,7 +204,7 @@ export default function KsSupportQueue({ isAdmin }: { isAdmin: boolean }) {
       </PageTitle>
       {creating ? <NewTicketForm staff={staff} onDone={() => { setCreating(false); void load({ ...filters, q: search.trim() || undefined }); }} /> : null}
       <Section title={overdue ? `Queue - ${overdue} overdue` : "Queue"}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12, marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12, marginBottom: 12 }}>{/* v884: wide enough that no filter or placeholder is cut off */}
           <Field name="Status">
             <select aria-label="Status" style={input} value={filters.status ?? ""} onChange={set("status")}>
               <option value="active">Active (new, open, waiting)</option>
@@ -233,7 +233,7 @@ export default function KsSupportQueue({ isAdmin }: { isAdmin: boolean }) {
             </select>
           </Field>
           <Field name="Search">
-            <input aria-label="Search tickets" placeholder="Subject, licensee, contact, #1001" style={input} value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input aria-label="Search tickets" title="Subject, licensee, contact, #1001" placeholder="Subject, licensee, contact, #1001" style={input} value={search} onChange={(e) => setSearch(e.target.value)} />
           </Field>
         </div>
         {error ? <p role="alert" style={{ color: "var(--ui-text-danger)" }}>{error}</p> : null}

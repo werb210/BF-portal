@@ -4,6 +4,7 @@
 // media fee agreements then become QuickBooks invoices, marked paid when the deal funds.
 import { useEffect, useState, type CSSProperties } from "react";
 import { quickbooksApi, type QboStatus } from "./quickbooksApi";
+import { TechnicalDetails, settingNamesIn, withoutSettingNames } from "@/components/SetupNotice";
 
 const NAVY = "#0B1F3A";
 const MUTED = "#475569";
@@ -85,9 +86,11 @@ export default function QuickBooksCard({ navigateTo = (url: string) => { window.
       </p>
 
       {!status.configured && (
-        <p data-testid="quickbooks-reason" style={{ margin: 0, color: "#334155", fontSize: 14, background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 8, padding: "8px 10px" }}>
-          {status.reason || "QuickBooks is not set up on the server."} Ask whoever manages the server settings to add {status.missing.join(", ")}.
-        </p>
+        <div data-testid="quickbooks-reason" style={{ margin: 0, color: "#334155", fontSize: 14, background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 8, padding: "8px 10px" }}>
+          {/* v884: plain sentence first; the server setting names sit under "Technical details". */}
+          <p style={{ margin: 0 }}>{withoutSettingNames(status.reason) || "QuickBooks is not set up on the server."} The person who manages the server adds the QuickBooks keys there.</p>
+          <TechnicalDetails names={[...status.missing, ...settingNamesIn(status.reason)].filter((n, i, all) => all.indexOf(n) === i)} />
+        </div>
       )}
 
       {status.configured && status.connected && conn && (

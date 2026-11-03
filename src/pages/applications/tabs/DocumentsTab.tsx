@@ -27,6 +27,7 @@ import DocumentSplitView, { type SplitViewDoc } from "@/components/applications/
 import AcceptNameDialog from "@/components/applications/AcceptNameDialog"; // BF_PORTAL_ACCEPT_NAME_v266
 import RetentionLock from "@/retention/RetentionLock"; // BF_PORTAL_v855_RETENTION
 import { fetchApplicationRetention, refusedDeleteMessage, type RetentionStatus } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
+import { humanizeCode } from "@/utils/labels";
 
 interface Props { applicationId?: string }
 
@@ -355,7 +356,7 @@ export default function DocumentsTab({ applicationId }: Props) {
 
   // BF_PORTAL_DOC_UPLOAD_MOVE_v316 - move a document filed under the wrong category.
   async function handleMove(docId: string, filename: string | null, category: string): Promise<boolean> {
-    if (typeof window !== "undefined" && !window.confirm(`Move "${filename ?? "this document"}" to ${category}?`)) return false;
+    if (typeof window !== "undefined" && !window.confirm(`Move "${filename ?? "this document"}" to ${humanizeCode(category)}?`)) return false;
     setActionError(null);
     try {
       await api.post(`/api/documents/${encodeURIComponent(docId)}/category`, { category });
@@ -631,7 +632,7 @@ function DocRow(props: {
       || /^att\./i.test(fn)
       || (!/\.[a-z0-9]{2,5}$/i.test(fn) && fn.length > 24)
       || /^[A-Za-z0-9_-]{24,}$/.test(fn);
-    if (looksBlob) return (d.title || d.category || "Document").trim();
+    if (looksBlob) return (d.title || (d.category ? humanizeCode(d.category) : "") || "Document").trim();
     return fn;
   }
 
@@ -676,7 +677,7 @@ function DocRow(props: {
         </div>
         <div style={styles.docMeta}>
           {fmtSize(doc.size)} · uploaded {fmtDate(doc.createdAt)}
-          {doc.category ? <> · <span style={styles.categoryTag}>{doc.category}</span></> : null}
+          {doc.category ? <> · <span style={styles.categoryTag}>{humanizeCode(doc.category)}</span></> : null}
         </div>
         {isRejected && doc.rejectionReason ? (
           <div style={styles.rejectionReason}>
@@ -741,7 +742,7 @@ function DocRow(props: {
             style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, maxWidth: 190 }}
           >
             <option value="">Move to…</option>
-            {moveTargets(doc.category).map((c) => <option key={c} value={c}>{c}</option>)}
+            {moveTargets(doc.category).map((c) => <option key={c} value={c}>{humanizeCode(c)}</option>)}
           </select>
         )}
         {props.isAdmin && props.retention?.locked && <RetentionLock status={props.retention} />}
@@ -923,7 +924,7 @@ const styles: Record<string, CSSProperties> = {
   docRow: { display: "grid", gridTemplateColumns: "1fr auto", gap: 16, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, alignItems: "center", background: "var(--ui-surface-strong)" },
   docMain: { minWidth: 0 },
   docTopLine: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" as const },
-  filename: { fontWeight: 600, color: "var(--ui-text)", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, maxWidth: 380 },
+  filename: { fontWeight: 600, color: "var(--ui-text)", fontSize: 14, overflowWrap: "anywhere" as const, wordBreak: "break-word" as const, whiteSpace: "normal" as const, minWidth: 0 }, // v884: wraps instead of clipping
   docMeta: { fontSize: 12, color: "var(--ui-text-muted)", marginTop: 4 },
   categoryTag: { background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", padding: "2px 6px", borderRadius: 4, fontWeight: 600, fontSize: 11 },
   rejectionReason: { marginTop: 8, padding: "6px 10px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 12, color: "#7f1d1d" },

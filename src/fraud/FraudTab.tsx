@@ -8,6 +8,8 @@ import { fraudApi, type FraudCheck, type FraudDocument, type FraudOverview, type
 import { BAND_STYLE, chipStyle, noticeStyle } from "@/fraud/status";
 import NetworkGraph from "@/fraud/NetworkGraph";
 import { card, muted, secondaryButton } from "@/fraud/ui";
+import { plainSetupText } from "@/components/SetupNotice";
+import { formatDateTimeShort } from "@/utils/labels";
 
 const h3: CSSProperties = { margin: "0 0 8px", fontSize: 16, color: "var(--ui-text)" };
 
@@ -29,7 +31,7 @@ function Reasons({ reasons, quietInfo = false }: { reasons: Reason[] | undefined
     <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 13, lineHeight: 1.5 }}>
       {list.map((r, i) => (
         <li key={`${r.code}-${i}`} style={{ color: "var(--ui-text)", fontWeight: r.severity === "red" ? 700 : 400 }}>
-          {r.severity === "red" ? "Concern: " : r.severity === "amber" ? "Check: " : ""}{r.text}
+          {r.severity === "red" ? "Concern: " : r.severity === "amber" ? "Check: " : ""}{plainSetupText(r.text)}
         </li>
       ))}
     </ul>
@@ -47,13 +49,15 @@ function ScoreCard({ score }: { score: FraudScore }) {
         </div>
         <div style={{ flex: 1, minWidth: 220 }}>
           <h3 style={{ ...h3, margin: 0 }}>Fraud score: {s.label}</h3>
-          <p style={muted}>0 means no signs were found; 100 means very likely fraud. Based on {score.covered.length} check(s) that ran.</p>
+          <p style={muted} data-testid="fraud-score-basis">0 means no signs were found; 100 means very likely fraud. {typeof score.checks_run === "number" && typeof score.checks_total === "number"
+            ? `Based on ${score.checks_run} of ${score.checks_total} checks${score.checks_run < score.checks_total ? `; ${score.checks_total - score.checks_run} could not run yet, so a low score does not clear the file` : ""}.`
+            : `Based on ${score.covered.length} of ${score.covered.length + score.not_covered.length} check(s).`}</p>
         </div>
       </div>
       {score.reasons.length > 0 && (
         <ul style={{ margin: "12px 0 0", paddingLeft: 18, fontSize: 14, lineHeight: 1.55 }}>
           {score.reasons.slice(0, 6).map((r, i) => (
-            <li key={i} style={{ color: "var(--ui-text)" }}><strong>{r.label}:</strong> {r.text}</li>
+            <li key={i} style={{ color: "var(--ui-text)" }}><strong>{r.label}:</strong> {plainSetupText(r.text)}</li>
           ))}
         </ul>
       )}
@@ -61,7 +65,7 @@ function ScoreCard({ score }: { score: FraudScore }) {
         <details style={{ marginTop: 10, fontSize: 13 }}>
           <summary style={{ cursor: "pointer", color: "var(--ui-text)", fontWeight: 600 }}>{score.not_covered.length} check(s) not covered</summary>
           <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-            {score.not_covered.map((c) => <li key={c.check} style={{ color: "var(--ui-text)" }}>{c.label}: {c.why}</li>)}
+            {score.not_covered.map((c) => <li key={c.check} style={{ color: "var(--ui-text)" }}>{c.label}: {plainSetupText(c.why)}</li>)}
           </ul>
         </details>
       )}
@@ -165,7 +169,14 @@ export default function FraudTab({ applicationId }: { applicationId: string }) {
   const copyPrescreen = () => {
     try { void navigator.clipboard?.writeText((prescreen ?? []).join("\n")); say("success", "Copied."); } catch { /* clipboard unavailable */ }
   };
-  const lastChecked = data.queue.done_at ? new Date(data.queue.done_at).toLocaleString() : null;
+  // v884: with BF-Server v885 the queue says what the results on screen are (the last finished run) instead of
+  // "Checks are running…" next to a score that reads as final.
+  const resultsAt = data.queue.results_from ?? data.queue.done_at;
+  const lastChecked = resultsAt ? formatDateTimeShort(resultsAt) : null;
+  const statusLine = data.queue.message
+    ? `${data.queue.message}${lastChecked ? ` Results from ${lastChecked}.` : ""}`
+    : data.queue.queued ? (data.score && lastChecked ? `A new run is queued. Results below are from ${lastChecked}.` : "Checks are running…")
+    : lastChecked ? `Last checked ${lastChecked}` : "Not checked yet";
 
   return (
     <div style={{ maxWidth: 980, color: "var(--ui-text)" }} data-testid="fraud-tab">
@@ -173,7 +184,7 @@ export default function FraudTab({ applicationId }: { applicationId: string }) {
         <h2 style={{ fontSize: 18, margin: 0, color: "var(--ui-text)" }}>Fraud check</h2>
         <span style={{ flex: 1 }} />
         <span role="status" style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>
-          {data.queue.queued ? "Checks are running…" : lastChecked ? `Last checked ${lastChecked}` : "Not checked yet"}
+          {statusLine}
         </span>
         <button type="button" style={secondaryButton} disabled={busy} onClick={() => void runAgain()}>{busy ? "Starting…" : "Run checks again"}</button>
       </div>

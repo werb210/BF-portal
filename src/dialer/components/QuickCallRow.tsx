@@ -60,10 +60,10 @@ export default function QuickCallRow() {
   return (
     <div style={{ padding: "2px 24px 8px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ fontSize: 10, letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,0.45)" }}>Quick call</span>
+        <span style={{ fontSize: 10, letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,0.75)" }}>Quick call</span>
         <button
           onClick={() => setEditing((e) => !e)}
-          style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.55)", fontSize: 11, cursor: "pointer", padding: "2px 4px" }}
+          style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.8)", fontSize: 11, cursor: "pointer", padding: "2px 4px" }}
         >
           {editing ? "Done" : "Edit"}
         </button>
@@ -92,7 +92,7 @@ export default function QuickCallRow() {
                 key={i}
                 onClick={() => setEditing(true)}
                 title="Assign a staff member"
-                style={{ width: 48, height: 48, borderRadius: "50%", border: "1.5px dashed rgba(255,255,255,0.3)", background: "transparent", color: "rgba(255,255,255,0.45)", fontSize: 22, cursor: "pointer" }}
+                style={{ width: 48, height: 48, borderRadius: "50%", border: "1.5px dashed rgba(255,255,255,0.3)", background: "transparent", color: "rgba(255,255,255,0.75)", fontSize: 22, cursor: "pointer" }}
               >
                 +
               </button>
@@ -105,13 +105,15 @@ export default function QuickCallRow() {
               onClick={() => call(s)}
               disabled={!callable}
               title={callable ? `Call ${s.name}` : `${s.name} (offline)`}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "transparent", border: "none", cursor: callable ? "pointer" : "not-allowed", opacity: callable ? 1 : 0.5, padding: 0 }}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "transparent", border: "none", cursor: callable ? "pointer" : "not-allowed", padding: 0 }}
             >
               <span
                 style={{
                   position: "relative", width: 48, height: 48, borderRadius: "50%", overflow: "hidden", display: "grid", placeItems: "center",
                   background: s.avatarUrl ? "transparent" : "linear-gradient(135deg, hsl(210 65% 55%), hsl(250 75% 45%))",
                   color: "white", fontWeight: 600, fontSize: 16, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)",
+                  // v884: only the picture dims when someone is offline; their name stays readable.
+                  opacity: callable ? 1 : 0.55,
                 }}
               >
                 {s.avatarUrl
@@ -119,8 +121,8 @@ export default function QuickCallRow() {
                   : initialsOf(s.name)}
                 <span style={{ position: "absolute", right: 1, bottom: 1, width: 11, height: 11, borderRadius: "50%", background: s.online ? "#10b981" : "#6b7280", border: "2px solid #0b1320" }} />
               </span>
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", maxWidth: 64, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {s.name.split(/\s+/)[0]}
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", maxWidth: 72, overflowWrap: "anywhere", textAlign: "center", lineHeight: 1.2 }}>
+                {s.name.split(/\s+/)[0]}{callable ? "" : " (offline)"}
               </span>
             </button>
           );

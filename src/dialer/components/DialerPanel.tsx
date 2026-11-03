@@ -32,8 +32,8 @@ const T = {
   border: "rgba(255,255,255,0.08)",
   borderStrong: "rgba(255,255,255,0.16)",
   text: "#f5f5f7",
-  textMuted: "rgba(245,245,247,0.55)",
-  textDim: "rgba(245,245,247,0.35)",
+  textMuted: "rgba(245,245,247,0.72)", // v884: was 0.55; all dialler text reads at 4.5:1 or better
+  textDim: "rgba(245,245,247,0.62)",
   accent: "var(--ui-accent-blue)",
   green: "#10b981",
   red: "#ef4444",

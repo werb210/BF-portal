@@ -108,7 +108,7 @@ describe("Keystone marketing", () => {
 
   it("warns until the Keystone sender is set up", async () => {
     renderKs("/silo/ks/marketing/overview");
-    expect(await screen.findByTestId("ks-mkt-warnings")).toHaveTextContent("KS_MARKETING_FROM is not set");
+    expect(await screen.findByTestId("ks-mkt-warnings")).toHaveTextContent("The Keystone sender address is not set");
     expect(await screen.findByText(/450 Sparling Crt SW/)).toBeInTheDocument();
     expectOnlyKsOps();
   });

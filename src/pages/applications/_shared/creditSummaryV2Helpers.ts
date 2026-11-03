@@ -6,7 +6,8 @@ export type SummaryDoc = {
   equipment: { items: any[]; total: number | null } | null; receivables: any; sections: Section[];
   missing: string[]; warnings: string[]; unverifiedResearch: { id: string; label: string; value: string; url: string | null }[]; generatedAt: string;
 };
-export type SummaryRow = { doc: SummaryDoc; status: "draft" | "submitted"; submitted_by_name: string | null; submitted_at: string | null } | null;
+// signed_by (BF-Server v885): the name the sign-off shows - the submitter once submitted, otherwise the viewer.
+export type SummaryRow = { doc: SummaryDoc; status: "draft" | "submitted"; submitted_by_name: string | null; submitted_at: string | null; signed_by?: string | null } | null;
 
 export const OVERVIEW_ROWS: [string, string][] = [
   ["applicant_name", "Applicant Name"], ["address", "Address"], ["principals", "Principal(s)"], ["assets", "Assets"],

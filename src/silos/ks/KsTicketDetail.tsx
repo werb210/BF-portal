@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { currentKsUser, KS_PRIORITIES, KS_TICKET_STATUSES, ksApi } from "./ksApi";
 import { Badge, Button, card, date, ErrorBox, Field, input, KeyValues, label, linkStyle, Loading, PageTitle, Section } from "./ksUi";
+import { isInternalCode } from "@/utils/labels";
 
 export default function KsTicketDetail() {
   const { id = "" } = useParams();
@@ -43,7 +44,7 @@ export default function KsTicketDetail() {
       <Section title="Ticket">
         <KeyValues
           rows={[
-            ["Licensee", t.licensee_id ? <Link key="l" to={`/silo/ks/licensees/${t.licensee_id}`} style={linkStyle}>{t.company_name} ({t.company_code})</Link> : "-"],
+            ["Licensee", t.licensee_id ? <Link key="l" to={`/silo/ks/licensees/${t.licensee_id}`} style={linkStyle}>{t.company_name}{t.company_code && !isInternalCode(t.company_code) ? ` (${t.company_code})` : ""}</Link> : "-"],
             ["Requester", [t.requester_name, t.requester_email].filter(Boolean).join(", ") || "-"],
             ["Source", label(t.source)],
             ["Opened", date(t.created_at, true)],

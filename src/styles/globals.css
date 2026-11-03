@@ -30,7 +30,9 @@
      and blue only ever means BF. */
   --ui-accent-blue: var(--accent); /* RESKIN3::ACCENT_VAR — silo-driven via --accent */
   /* BF_PORTAL_v_CONTRAST_PASS2 — readable foreground accent for accent-colored TEXT on dark (brand accent is too dark as text). Buttons keep --ui-accent-blue as BACKGROUND. */
-  --ui-accent-fg: color-mix(in srgb, var(--accent) 50%, white);
+  /* BF_PORTAL_v884_CONTRAST - in the light theme, accent TEXT (selected tabs, links) is the accent darkened, so it reads at
+     4.5:1 or better on white for every silo (BF navy, BI green, SLF amber). The dark theme keeps the lightened mix. */
+  --ui-accent-fg: color-mix(in srgb, var(--accent) 70%, black);
   --accent: #0B1F3A;
   --accent-contrast: #ffffff;
   --accent-neutral: #51617D;
@@ -56,6 +58,7 @@
     --ui-text: var(--text-primary);
     --ui-text-muted: #8B919C;
     --ui-text-soft: #C9CED6;
+    --ui-accent-fg: color-mix(in srgb, var(--accent) 50%, white);
     /* BF_PORTAL_v789_CONTRAST */
     --ui-text-danger: #f87171;
     --ui-text-success: #4ade80;
@@ -78,6 +81,7 @@
   --ui-border-soft: rgba(255, 255, 255, 0.07);
   --ui-text-muted: #8B919C;
   --ui-text-soft: #C9CED6;
+  --ui-accent-fg: color-mix(in srgb, var(--accent) 50%, white);
   /* BF_PORTAL_v789_CONTRAST */
   --ui-text-danger: #f87171;
   --ui-text-success: #4ade80;
@@ -95,6 +99,7 @@
   --ui-border-soft: #E4EAF2;
   --ui-text-muted: #51617D;
   --ui-text-soft: #0B1F3A;
+  --ui-accent-fg: color-mix(in srgb, var(--accent) 70%, black);
   /* BF_PORTAL_v789_CONTRAST - status text that reads at 4.5:1 or better on every surface in this theme. */
   --ui-text-danger: #b91c1c;
   --ui-text-success: #15803d;
@@ -106,6 +111,7 @@
    fixed light surfaces whatever the theme. Inside .ui-surface-light the text tokens take their light
    values, so --ui-text-muted stays at 4.5:1 or better on those surfaces in the dark theme too. */
 .ui-surface-light {
+  --ui-accent-fg: color-mix(in srgb, var(--accent) 70%, black);
   --text-primary: #0B1F3A;
   --ui-bg: #ffffff;
   --ui-surface: #F5F8FC;

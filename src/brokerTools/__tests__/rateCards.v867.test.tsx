@@ -27,7 +27,7 @@ describe("structuring", () => {
     h.get.mockResolvedValue({ defaults: { amount: 86500, province: "AB", tier: "B" }, saved: null });
     h.post.mockResolvedValue({ options: [opt({}), opt({ card_id: "c2", lender_name: "Quick", payment_with_tax: 2900 })] });
     render(<StructuringPanel applicationId="app-1" />);
-    await waitFor(() => expect((screen.getByLabelText("Equipment cost") as HTMLInputElement).value).toBe("86500"));
+    await waitFor(() => expect((screen.getByLabelText("Equipment cost") as HTMLInputElement).value).toBe("86,500"));
     fireEvent.click(screen.getByRole("button", { name: "Compare lenders" }));
     expect((await screen.findByTestId("options-grid")).textContent).toContain("$2,667.11/mo");
     fireEvent.click(screen.getAllByRole("button", { name: "Choose" })[0]!);
