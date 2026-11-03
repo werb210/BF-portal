@@ -73,23 +73,28 @@ describe("BF_PORTAL_BI_SILO_NAV_v56 — Settings tabs by silo", () => {
   it("BI Admin sees only My Profile", () => {
     renderSettings("BI", "Admin");
     expect(screen.getByRole("tab", { name: "My Profile" })).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "Users & roles" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Team and roles" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "AI Knowledge" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "Runtime Verification" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "System check" })).not.toBeInTheDocument();
   });
 
-  it("BF Admin sees all four tabs (unchanged)", () => {
+  // BF_PORTAL_v885_SETTINGS_ROLES - Admins get the grouped list; Staff and Marketing only My Profile and AI Knowledge.
+  it("BF Admin sees the brokerage set-up groups", () => {
     renderSettings("BF", "Admin");
-    expect(screen.getByRole("tab", { name: "Users & roles" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "AI Knowledge" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "My Profile" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Runtime Verification" })).toBeInTheDocument();
+    const names = Array.from(screen.getByRole("tablist", { name: "Settings tabs" }).querySelectorAll('[role="tab"]')).map((t) => t.textContent);
+    expect(names).toEqual(["My Profile", "Team and roles", "CRM set-up", "Phone", "Money", "Risk and ID checks", "Content and AI", "Sign-in and security", "Privacy and records", "Integrations", "Deal tools", "System check"]);
+  });
+
+  it.each(["Staff", "Marketing"])("BF %s sees only My Profile and AI Knowledge", (role) => {
+    renderSettings("BF", role);
+    const names = Array.from(screen.getByRole("tablist", { name: "Settings tabs" }).querySelectorAll('[role="tab"]')).map((t) => t.textContent);
+    expect(names).toEqual(["My Profile", "AI Knowledge"]);
   });
 
   it("BI Staff sees only My Profile", () => {
     renderSettings("BI", "Staff");
     expect(screen.getByRole("tab", { name: "My Profile" })).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "Runtime Verification" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "System check" })).not.toBeInTheDocument();
   });
 });
 

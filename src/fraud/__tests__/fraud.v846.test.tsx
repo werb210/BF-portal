@@ -169,18 +169,21 @@ describe("Settings -> Fraud protection", () => {
 
   it("is a Settings tab for BF Admins only (not Staff, not the BI silo)", async () => {
     renderSettings("BF", "Admin");
-    expect(screen.getByRole("tab", { name: "Fraud protection" })).toBeInTheDocument();
+    // BF_PORTAL_v885_SETTINGS_ROLES - Fraud protection is a section of the "Risk and ID checks" group.
+    expect(screen.getByRole("tab", { name: "Risk and ID checks" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("region", { name: "Fraud protection" })).toBeInTheDocument();
     expect(await screen.findByTestId("settings-section-fraud")).toBeInTheDocument();
   });
 
   it("Staff and BI do not see it", () => {
     renderSettings("BF", "Staff");
-    expect(screen.queryByRole("tab", { name: "Fraud protection" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Risk and ID checks" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Fraud protection" })).toBeNull();
   });
 
   it("BI Admins do not see it", () => {
     renderSettings("BI", "Admin");
-    expect(screen.queryByRole("tab", { name: "Fraud protection" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Fraud protection" })).toBeNull();
   });
 });
 

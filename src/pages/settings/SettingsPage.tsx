@@ -112,7 +112,7 @@ const SettingsPage = () => {
   // and each group opens as one page with its sections stacked. Old addresses (/settings/phone-menu, /settings/fraud ...)
   // still work: they open their group and scroll to that section.
   const visibleSections = tabs.filter((tab) => tab.visible);
-  const groups = SETTINGS_GROUPS.map((g) => ({ ...g, sections: g.sectionIds.map((id) => visibleSections.find((t) => t.id === id)).filter((t): t is (typeof visibleSections)[number] => Boolean(t)) }))
+  const groups = SETTINGS_GROUPS.filter((g) => isAdmin || g.id === "profile").map((g) => ({ ...g, sections: g.sectionIds.map((id) => visibleSections.find((t) => t.id === id)).filter((t): t is (typeof visibleSections)[number] => Boolean(t)) }))
     .filter((g) => g.sections.length > 0)
     // Staff and Marketing get AI Knowledge as its own item (Admins find it inside Content and AI).
     .concat(!isAdmin && visibleSections.some((t) => t.id === "ai-knowledge") ? [{ id: "ai-knowledge", label: "AI Knowledge", heading: "YOU", sectionIds: ["ai-knowledge"], sections: visibleSections.filter((t) => t.id === "ai-knowledge") }] : []);
