@@ -37,7 +37,7 @@ export default function ThreadPanel({ channelId, rootId, nameOf, memberNames, my
   }, [live, rootId]);
 
   useEffect(() => {
-    const raf = requestAnimationFrame(() => end.current?.scrollIntoView({ block: "end" }));
+    const raf = requestAnimationFrame(() => end.current?.scrollIntoView?.({ block: "end" }));
     return () => cancelAnimationFrame(raf);
   }, [replies.length, root]);
 

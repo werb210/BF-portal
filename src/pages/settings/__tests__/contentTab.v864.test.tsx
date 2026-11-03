@@ -49,7 +49,7 @@ describe("Settings > Content (v864)", () => {
     at("/settings/profile");
     const top = screen.getByRole("tablist", { name: "Settings tabs" });
     const names = Array.from(top.querySelectorAll('[role="tab"]')).map((t) => t.textContent);
-    expect(names).toContain("Content");
+    expect(names).toContain("Content and AI"); // BF_PORTAL_v885_SETTINGS_ROLES
     for (const gone of ["Templates", "Snippets", "Collateral", "Library"]) expect(names).not.toContain(gone);
   });
 
@@ -69,13 +69,13 @@ describe("Settings > Content (v864)", () => {
       at(`/settings/${old}`);
       expect(await screen.findByTestId(testId)).toBeInTheDocument();
       expect(screen.getByTestId("where").textContent).toBe(`/settings/content?section=${old}`);
-      expect(screen.getByRole("tab", { name: "Content" })).toHaveAttribute("aria-selected", "true");
+      expect(screen.getByRole("tab", { name: "Content and AI" })).toHaveAttribute("aria-selected", "true");
     });
 
-  it("Staff see the content sections but not the automation builder; BI keeps Snippets and Library", () => {
+  it("Staff do not get Content (BF_PORTAL_v885_SETTINGS_ROLES); BI keeps Snippets and Library", () => {
     useAuthMock.mockReturnValue({ user: { role: "Staff" } });
     const { unmount } = at("/settings/content");
-    expect(screen.queryByRole("tab", { name: "Automations" })).toBeNull();
+    expect(screen.queryByRole("tablist", { name: "Content sections" })).toBeNull();
     unmount();
     useSiloMock.mockReturnValue({ silo: "BI" });
     useAuthMock.mockReturnValue({ user: { role: "Admin" } });
