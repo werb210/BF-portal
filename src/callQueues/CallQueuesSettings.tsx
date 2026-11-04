@@ -13,14 +13,20 @@ const LIVE_POLL_MS = 5000;
 type Draft = Omit<Queue, "id" | "archived_at"> & { id: string | null };
 const blank = (): Draft => ({ id: null, silo: "BF", name: "", greeting: "Thanks for calling. The next available person will be with you shortly.", hold_message: "Thanks for waiting. Someone will be with you soon.", hold_audio_id: null, announce_position: true, max_wait_seconds: 300, ring_seconds: 20, overflow: "ask", overflow_user_id: null, member_ids: [] });
 
-export function MyQueueAvailability() {
+// BF_PORTAL_v887_MY_QUEUE_SWITCH - also on Settings > My Profile (Admin, Staff, Marketing) since v885 hid Call queues
+// from Staff and Marketing. On My Profile ("compact") someone in no queue sees one line instead of the whole section.
+export function MyQueueAvailability({ compact = false }: { compact?: boolean } = {}) {
   const [me, setMe] = useState<{ available: boolean; queues: string[] } | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => { void callQueuesApi.me().then(setMe).catch((e) => setErr(errText(e, "Could not load your queue status."))); }, []);
+  useEffect(() => { void callQueuesApi.me().then((r) => setMe({ available: !!r?.available, queues: Array.isArray(r?.queues) ? r.queues : [] })).catch((e) => setErr(errText(e, "Could not load your queue status."))); }, []);
   const set = async (available: boolean) => {
     setErr(null);
     try { await callQueuesApi.setMe(available); setMe((m) => (m ? { ...m, available } : m)); } catch (e) { setErr(errText(e, "Could not change your status.")); }
   };
+  if (compact && me && me.queues.length === 0) {
+    return <p data-testid="my-queue-none" style={muted}>You&apos;re not in any call queue.</p>;
+  }
+  if (compact && !me && !err) return null;
   return (
     <Section id="my-queue" title="My queue calls" intro="While you are available, callers waiting in your queues ring your app in turn, longest free first.">
       <Notice error={err} />

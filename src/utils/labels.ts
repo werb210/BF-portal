@@ -60,6 +60,18 @@ export function humanizeCode(value: unknown): string {
     .join(" ");
 }
 
+/**
+ * BF_PORTAL_v887_PRODUCT_LABELS - a lender product name for staff. Names are mostly words already ("AccordAccess",
+ * "Term Loan A") and stay as they are; a name that is only a code ("TERM_LOAN") or ends in one ("Flexline - LOC")
+ * gets the words from humanizeCode instead.
+ */
+export function productNameWords(value: unknown): string {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  if (/^[A-Z][A-Z0-9_]+$/.test(raw)) return humanizeCode(raw);
+  return raw.replace(/(\s[-–]\s)([A-Z][A-Z_]{1,})$/, (_m, sep: string, code: string) => `${sep}${humanizeCode(code)}`);
+}
+
 /** Money with separators: 2200000 -> "$2,200,000", 230436.87 -> "$230,436.87". Non-numbers come back unchanged. */
 export function formatMoneyValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return "";

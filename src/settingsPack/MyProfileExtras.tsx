@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import { MySessions } from "./SecuritySettings";
+import { MyQueueAvailability } from "@/callQueues/CallQueuesSettings"; // BF_PORTAL_v887_MY_QUEUE_SWITCH
 import { Field, Notice, Section, Toggle, button, errText, input, muted } from "./ui";
 
 type Defaults = { prompt_after_call: boolean; prompt_after_email: boolean; prompt_after_meeting: boolean; due_in_days: number; due_time: string; task_type: string; reminder_minutes: number | null };
@@ -62,6 +63,7 @@ export default function MyProfileExtras() {
     <div data-testid="my-profile-extras">
       <FollowUpDefaults />
       <MyLeadRotation />
+      <MyQueueAvailability compact />{/* BF_PORTAL_v887_MY_QUEUE_SWITCH - "available for queue calls" for everyone */}
       <MySessions />
     </div>
   );

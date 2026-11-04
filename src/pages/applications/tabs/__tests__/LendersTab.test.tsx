@@ -76,7 +76,9 @@ describe("LendersTab", () => {
     expect(screen.getByText("87%")).toBeInTheDocument();
     expect(screen.getByText("64%")).toBeInTheDocument();
     expect(screen.getByText("Term loan")).toBeInTheDocument();
-    expect(screen.getByText("Line of credit")).toBeInTheDocument();
+    // BF_PORTAL_v887_PRODUCT_LABELS - the product named only "LOC" also reads "Line of credit" now (name and category).
+    expect(screen.getAllByText("Line of credit")).toHaveLength(2);
+    expect(screen.queryByText("LOC")).toBeNull();
     // BF_PORTAL_BLOCK_v186a_LENDERS_TAB_POLISH_TEST_FIXUP_v1
     // v186 moved Upload Term Sheet inside a closed dropdown — assert the
     // files-count buttons (one per match) instead.
