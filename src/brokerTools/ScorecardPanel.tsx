@@ -5,6 +5,7 @@ import { api } from "@/api";
 import { Chip, ErrorLine, card, h3, muted, primaryButton, row, table, td, th } from "./ui";
 import { useRun } from "./useRun";
 import { OUTCOME_LABEL, OUTCOME_TONE } from "./scorecardView";
+import { productNameWords } from "@/utils/labels"; // BF_PORTAL_v887_PRODUCT_LABELS
 
 type Result = {
   score: number | null; grade: string | null; outcome: string; coverage: number; computed_at: string;
@@ -58,7 +59,7 @@ export default function ScorecardPanel({ applicationId }: { applicationId: strin
                   <thead><tr>{["Lender", "Product", "Fit", "Why"].map((x) => <th key={x} style={th}>{x}</th>)}</tr></thead>
                   <tbody>{result.lenders.map((l) => (
                     <tr key={l.lender_product_id}>
-                      <td style={td}>{l.lender_name ?? "-"}</td><td style={td}>{l.product_name}</td>
+                      <td style={td}>{l.lender_name ?? "-"}</td><td style={td}>{productNameWords(l.product_name)}</td>
                       <td style={td}><Chip tone={l.concerns.length ? "amber" : "green"}>{l.fit}</Chip></td>
                       <td style={td}>{[...l.reasons, ...l.concerns].join(" ")}</td>
                     </tr>))}

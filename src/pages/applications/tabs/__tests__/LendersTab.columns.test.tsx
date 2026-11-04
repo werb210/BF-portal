@@ -50,7 +50,8 @@ describe("BF_LENDERS_TAB_FIX_v55_PORTAL", () => {
     expect(screen.getByText("82%")).toBeTruthy();
   });
 
-  it("renders em-dash when funding range is missing", async () => {
+  // BF_PORTAL_v887_LENDER_RANGE - a lender with no range says so in words instead of a dash.
+  it("says 'No range on file' when funding range is missing", async () => {
     vi.mocked(fetchLenderEnvelope).mockResolvedValueOnce({
       status: "ready",
       outstanding: [],
@@ -63,7 +64,6 @@ describe("BF_LENDERS_TAB_FIX_v55_PORTAL", () => {
     render(wrap(<LendersTab applicationId="app-2" />));
     await waitFor(() => expect(screen.getByText("Beta")).toBeTruthy());
     expect(screen.getByText("Line of credit")).toBeTruthy();
-    // The "—" appears in the funding range column
-    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByTestId("lender-range-p-2").textContent).toBe("No range on file");
   });
 });

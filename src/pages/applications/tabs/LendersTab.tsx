@@ -32,7 +32,7 @@ import ProductCategoryPicker from "@/pages/applications/tabs/ProductCategoryPick
 import BrokerDealPanel from "@/components/applications/BrokerDealPanel"; // BF_PORTAL_BLOCK_v522_BROKER_IMPORT
 import FeeAgreementPanel from "@/components/applications/FeeAgreementPanel"; // BF_PORTAL_FEE_AGREEMENT_v709
 import LenderApiPanel from "./LenderApiPanel"; // BF_PORTAL_v873_LENDER_API
-import { humanizeCode } from "@/utils/labels";
+import { humanizeCode, productNameWords } from "@/utils/labels";
 // BF_PORTAL_PRODUCT_QUESTIONS_v292 - BF-Server v289 refuses to send while product questions are unanswered.
 type ProductQuestionsSummary = { blocking?: boolean; message?: string | null } | null | undefined;
 // BF_PORTAL_RESIGN_REQUEST_v295 - BF-Server v293 flags when the client signed before a switch to Line of Credit.
@@ -104,19 +104,31 @@ function formatAmount(n: number | null | undefined): string {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
-function formatRange(match: LenderMatch): string {
-  const lo = (match as any).amountMin ?? null;
-  const hi = (match as any).amountMax ?? null;
-  if (lo === null && hi === null) return "—";
+// BF_PORTAL_v887_LENDER_RANGE - the min-max amount from the lender's product. Amounts can arrive as text (large
+// numbers from Postgres); a maximum of 0 is an empty box, not $0. With nothing on file it says so in words.
+function rangeAmount(v: unknown, isMax: boolean): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(String(v).replace(/[$,\s]/g, ""));
+  if (!Number.isFinite(n) || n < 0 || (isMax && n === 0)) return null;
+  return n;
+}
+
+export function formatRange(match: Pick<LenderMatch, "amountMin" | "amountMax">): string {
+  const lo = rangeAmount((match as any).amountMin, false);
+  const hi = rangeAmount((match as any).amountMax, true);
+  if (lo === null && hi === null) return "No range on file";
+  if (hi === null) return `From ${formatAmount(lo)}`;
+  if (lo === null) return `Up to ${formatAmount(hi)}`;
   return `${formatAmount(lo)} – ${formatAmount(hi)}`;
 }
 
-function getLikelihoodPercent(match: LenderMatch): number | null {
+export function getLikelihoodPercent(match: LenderMatch): number | null {
   const raw = (match as any).matchPercent ?? (match as any).matchPercentage ?? (match as any).matchScore ?? null;
   if (raw === null || raw === undefined || raw === "") return null;
   const n = typeof raw === "number" ? raw : Number(String(raw).replace("%", ""));
   if (!Number.isFinite(n)) return null;
-  return n > 1 ? Math.round(n) : Math.round(n * 100);
+  // BF_PORTAL_v887_LENDER_RANGE - BF-Server sends whole percents (0-100); only a true fraction (0.82) is scaled.
+  return n > 0 && n < 1 ? Math.round(n * 100) : Math.round(n);
 }
 
 function formatLikelihood(match: LenderMatch): string {
@@ -567,7 +579,7 @@ function describeSendFailure(err: unknown): string {
 
     // BF_PORTAL_SEND_PENDING_CONFIRM_v1 - envelope.outstanding is what the
     // locked state lists; if any remain here the file is going out incomplete.
-    const outstanding = (envelope.outstanding ?? []).map((c) => String(c).replace(/_/g, " "));
+    const outstanding = (envelope.outstanding ?? []).map((c) => humanizeCode(c)); // BF_PORTAL_v887_PRODUCT_LABELS
     if (outstanding.length > 0) {
       const lenderCount = selectedIds.length;
       const proceed = window.confirm(
@@ -681,7 +693,7 @@ function describeSendFailure(err: unknown): string {
             <div style={styles.lockedItem}>(no outstanding categories returned)</div>
           ) : (
             (envelope.outstanding ?? []).map((cat) => (
-              <div key={cat} style={styles.lockedItem}>{String(cat).replace(/_/g, " ")}</div>
+              <div key={cat} style={styles.lockedItem}>{humanizeCode(cat)}</div>
             ))
           )}
         </div>
@@ -875,10 +887,10 @@ function describeSendFailure(err: unknown): string {
                         {v_downloadMap.get(String(m.lenderId))}
                       </div>
                     )}
-                    {m.productName ? <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2 }}>{m.productName.replace(/(\s[-–]\s)([A-Z][A-Z_]{2,})$/, (_m, sep: string, code: string) => `${sep}${humanizeCode(code)}`)}</div> : null}
+                    {m.productName ? <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2 }}>{productNameWords(m.productName)}</div> : null}
                   </td>
-                  <td style={styles.td}>{m.productCategory ? humanizeCode(m.productCategory) : "—"}</td>
-                  <td style={styles.td}>{formatRange(m)}</td>
+                  <td style={styles.td}>{m.productCategory ? humanizeCode(m.productCategory) : "Not set"}</td>
+                  <td style={styles.td} data-testid={`lender-range-${m.id}`}>{formatRange(m)}</td>
                   <td style={styles.td}>
                     <span style={{ ...styles.pill, background: pctColors?.bg ?? "transparent", color: pctColors?.fg ?? "inherit" }}>
                       {formatLikelihood(m)}

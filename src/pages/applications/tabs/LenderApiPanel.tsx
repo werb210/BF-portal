@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   apiMessage, fetchAppLenders, fetchSendableFiles, sendDocument, submitByApi, syncNow, type AppLender, type Bucket,
 } from "@/api/lenderConnections";
+import { humanizeCode } from "@/utils/labels"; // BF_PORTAL_v887_PRODUCT_LABELS
 
 const BUCKET_COLORS: Record<Bucket, { bg: string; fg: string }> = {
   submitted: { bg: "#e0f2fe", fg: "#075985" },
@@ -113,7 +114,7 @@ function LenderCard({ appId, l, buckets, onChanged }: { appId: string; l: AppLen
             <ul style={s.list}>
               {(files.data?.files ?? []).map((f) => (
                 <li key={`${f.category}/${f.filename}`}>
-                  {f.category}: {f.filename}{" "}
+                  {humanizeCode(f.category)}: {f.filename}{" "}
                   <button type="button" style={{ ...s.btn, padding: "2px 8px", fontSize: 12 }} disabled={busy !== null}
                     onClick={() => void run(`doc:${f.filename}`, () => sendDocument(appId, l.lender_id, { category: f.category, filename: f.filename }), `${f.filename} sent.`, `Could not send ${f.filename}.`)}>
                     Send
