@@ -25,9 +25,11 @@ function plugin(): IPadDocumentsPlugin {
   return cached;
 }
 
+// BF_ANDROID_STAFF_v1 - and the Android staff app (MarkupActivity, the phone's document viewer).
 export function isNativeIPad(): boolean {
   try {
-    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+    const platform = Capacitor.getPlatform();
+    return Capacitor.isNativePlatform() && (platform === "ios" || platform === "android");
   } catch {
     return false;
   }

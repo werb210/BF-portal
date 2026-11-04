@@ -1,0 +1,104 @@
+apply plugin: 'com.android.application'
+
+// BF_ANDROID_STAFF_v1 - the Android staff app (phones and tablets): the Boreal staff portal, the Android twin of the
+// iPad app. Calls are made and taken by the Android dialler (boreal-dialer-ios android/), which the portal opens with
+// borealdialer://call?phone=..., so one phone has one calling engine. Same Capacitor Android set-up as BF-client.
+def brand = [
+    applicationId     : 'com.boreal.portal',
+    appName           : 'Boreal Staff Portal',
+    brandColor        : '#0B1F3A', // white text on it is above 15:1 (AA needs 4.5:1)
+    onBrandColor      : '#FFFFFF',
+    launcherBackground: '#FCFBFC', // the app icon's own background
+    versionName       : '1.0.0',
+]
+
+android {
+    namespace = "com.boreal.portal"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId brand.applicationId
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // Google Play needs a higher versionCode for every upload: 1000 + the workflow run number in CI, 1 locally.
+        versionCode(1000 + (System.getenv("GITHUB_RUN_NUMBER") ?: "0").toInteger())
+        versionName brand.versionName
+        resValue "string", "app_name", brand.appName
+        resValue "string", "title_activity_main", brand.appName
+        resValue "color", "bf_brand", brand.brandColor
+        resValue "color", "bf_on_brand", brand.onBrandColor
+        resValue "color", "ic_launcher_background", brand.launcherBackground
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+
+    // Release signing: CI writes the upload key from secrets and passes its location in the environment
+    // (ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD). Without them the
+    // release bundle is built unsigned (the pull-request check), never signed with a made-up key.
+    signingConfigs {
+        upload {
+            def ks = System.getenv("ANDROID_KEYSTORE_FILE")
+            if (ks && file(ks).exists()) {
+                storeFile file(ks)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+    buildTypes {
+        release {
+            // Shrink release builds; keep rules for Capacitor, the plugins and ML Kit are in
+            // proguard-rules.pro (Capacitor finds plugins by reflection, so a missing rule fails only at run time).
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            def ks = System.getenv("ANDROID_KEYSTORE_FILE")
+            if (ks && file(ks).exists()) signingConfig signingConfigs.upload
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "androidx.core:core:$androidxCoreVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+
+    // BF_ANDROID_STAFF_v1
+    // PortalMessagingService extends the push plugin's FirebaseMessagingService; the plugin declares
+    // firebase-messaging as `implementation`, so the app needs it too. The BOM keeps versions in step.
+    implementation platform("com.google.firebase:firebase-bom:$firebaseBomVersion")
+    implementation 'com.google.firebase:firebase-messaging'
+    // Fingerprint / face unlock (the iPad's Face ID lock).
+    implementation "androidx.biometric:biometric:$androidxBiometricVersion"
+    // Business-card scan: on-device text recognition (no upload), the iPad's Vision scan.
+    implementation "com.google.mlkit:text-recognition:$mlkitTextRecognitionVersion"
+}
+
+apply from: 'capacitor.build.gradle'
+
+// Push and incoming calls need the Firebase file of the app being built. CI writes it from the GOOGLE_SERVICES_JSON
+// secret, or writes a build-only placeholder when there is none (the app builds; it cannot receive pushes).
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

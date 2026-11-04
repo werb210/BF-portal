@@ -5,19 +5,12 @@ import path from "node:path";
 const root = process.cwd();
 const read = (p: string) => readFileSync(path.join(root, p), "utf8");
 
-describe("v421 Portal cannot be packaged for Android or iPhone", () => {
-  it("has no android platform directory", () => {
-    expect(existsSync(path.join(root, "android"))).toBe(false);
-  });
-
-  it("does not depend on @capacitor/android", () => {
-    expect(read("package.json")).not.toContain("@capacitor/android");
-  });
-
-  it("the capacitor config declares no android platform", () => {
-    const cfg = read("capacitor.config.ts");
-    expect(cfg).not.toContain("androidScheme");
-    expect(cfg).not.toMatch(/\bandroid:\s*\{/);
+// BF_ANDROID_STAFF_v1 - the Android staff app (phones and tablets) is now a supported build; on iOS the portal stays
+// iPad-only (the iPhone has the dialler app).
+describe("v421 Portal is never packaged for iPhone; Android is the staff app", () => {
+  it("has the Android project and the Capacitor Android platform", () => {
+    expect(existsSync(path.join(root, "android", "app", "build.gradle"))).toBe(true);
+    expect(read("package.json")).toContain('"@capacitor/android"');
   });
 
   it("both iOS targets stay iPad-only", () => {

@@ -1,0 +1,176 @@
+# BF_ANDROID_STAFF_v1 - the Android staff app (phones and tablets): the staff portal. Calls are made and taken by the
+# Android dialler (boreal-dialer-ios android/), which the portal opens with borealdialer://call?phone=...
+#
+#   verify   every pull request and push to main: builds a debug APK (for the Android Studio emulator or a phone)
+#            and an unsigned release bundle (AAB), both kept as run artifacts.
+#   release  Actions > "Android staff app" > Run workflow: builds the signed release bundle (AAB).
+#   upload   after release: sends the bundle to Google Play (internal track by default). Skipped with a notice,
+#            never failed, when GOOGLE_PLAY_SERVICE_ACCOUNT_JSON or the signing key is missing.
+#
+# The Boreal staff portal, same Capacitor Android set-up as BF-client (client-app/android).
+#
+# Secrets (repository settings > Secrets and variables > Actions):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD   upload key
+#   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON                                                             Play upload
+#   GOOGLE_SERVICES_JSON (raw or base64)                                                         Firebase: push alerts
+name: Android staff app
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      play_track:
+        description: Google Play track
+        type: choice
+        default: internal
+        options: [internal, alpha, beta, production]
+      play_status:
+        description: 'Release status ("draft" until the app has passed its first Play review)'
+        type: choice
+        default: draft
+        options: [draft, completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: 8.14.3
+      - run: npm ci --include=optional
+      - run: npm run build
+      - run: npx cap sync android
+      - name: Firebase file (placeholder unless GOOGLE_SERVICES_JSON is set)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: node scripts/android-google-services.mjs
+      - name: Build the debug APK
+        run: gradle assembleDebug
+        working-directory: android
+      - name: Build the release bundle (AAB, unsigned)
+        run: gradle bundleRelease
+        working-directory: android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-staff-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-staff-unsigned-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 14
+
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      signed: ${{ steps.sign.outputs.signed }}
+    env:
+      KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: 8.14.3
+      - run: npm ci --include=optional
+      - run: npm run build
+      - run: npx cap sync android
+      - name: Firebase file
+        run: node scripts/android-google-services.mjs
+      - name: Upload key
+        id: sign
+        run: |
+          missing=""
+          for v in KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Android signing::Missing secrets:${missing/KEYSTORE_BASE64/ANDROID_KEYSTORE_BASE64} - building an unsigned bundle (Google Play will not accept it)."
+            exit 0
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+      - name: Build the release bundle (AAB)
+        run: gradle bundleRelease
+        working-directory: android
+      - name: Check the signature
+        if: steps.sign.outputs.signed == 'true'
+        run: jarsigner -verify android/app/build/outputs/bundle/release/app-release.aab > /dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-staff-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+      - name: Remove the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks"
+      - name: Summary
+        run: |
+          {
+            echo "### Android staff app"
+            echo "- Version code: $((1000 + GITHUB_RUN_NUMBER))"
+            echo "- Signed: ${{ steps.sign.outputs.signed }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  upload:
+    needs: release
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    env:
+      PLAY_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - name: Google Play credentials
+        id: creds
+        run: |
+          if [ "${{ needs.release.outputs.signed }}" != "true" ]; then
+            echo "upload=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Google Play::The bundle is unsigned (no upload key) - not uploaded."
+          elif [ -z "$PLAY_JSON" ]; then
+            echo "upload=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Google Play::No GOOGLE_PLAY_SERVICE_ACCOUNT_JSON secret - not uploaded. The bundle is kept as the run artifact android-staff-aab."
+          else
+            echo "upload=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/download-artifact@v4
+        if: steps.creds.outputs.upload == 'true'
+        with:
+          name: android-staff-aab
+          path: aab
+      - name: Upload to Google Play
+        if: steps.creds.outputs.upload == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ env.PLAY_JSON }}
+          packageName: com.boreal.portal
+          releaseFiles: aab/*.aab
+          track: ${{ inputs.play_track }}
+          status: ${{ inputs.play_status }}
