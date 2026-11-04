@@ -18,7 +18,7 @@ const blank = (): Draft => ({ id: null, silo: "BF", name: "", greeting: "Thanks 
 export function MyQueueAvailability({ compact = false }: { compact?: boolean } = {}) {
   const [me, setMe] = useState<{ available: boolean; queues: string[] } | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => { void callQueuesApi.me().then(setMe).catch((e) => setErr(errText(e, "Could not load your queue status."))); }, []);
+  useEffect(() => { void callQueuesApi.me().then((r) => setMe({ available: !!r?.available, queues: Array.isArray(r?.queues) ? r.queues : [] })).catch((e) => setErr(errText(e, "Could not load your queue status."))); }, []);
   const set = async (available: boolean) => {
     setErr(null);
     try { await callQueuesApi.setMe(available); setMe((m) => (m ? { ...m, available } : m)); } catch (e) { setErr(errText(e, "Could not change your status.")); }
