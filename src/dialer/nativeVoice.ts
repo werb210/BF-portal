@@ -12,6 +12,7 @@ import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import {
   BorealVoice,
+  dialerAppTakesIncoming,
   PORTAL_VOIP_APP,
   jsDeviceRegistersForIncoming,
   nativeVoiceAvailable,
@@ -39,7 +40,8 @@ export async function fetchVoiceToken(native: boolean): Promise<string | null> {
 
 /** True when incoming calls are handled natively; false = the JS Device must register for them. */
 export async function setupIncoming(native: boolean, token: string): Promise<boolean> {
-  if (!native) return false;
+  // BF_ANDROID_STAFF_v1 - the Android staff app: the Android dialler rings, the page does not.
+  if (!native) return dialerAppTakesIncoming();
   const ok = await registerNativeIncoming(token);
   ringPush("native.register", ok);
   useDialer.getState().setNativeVoice(ok);

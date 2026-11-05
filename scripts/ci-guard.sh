@@ -30,22 +30,11 @@ if grep -r "networkGuard" src; then
   exit 1
 fi
 
-# BF-Portal is an iPad application that may also run unmodified on Apple-silicon
-# Mac using Apple's Designed-for-iPad compatibility destination. The legacy
-# android/ generated directory is intentionally ignored; only active
-# dependencies and automation are prohibited.
-if grep -q '"@capacitor/android"' package.json; then
-  echo "Forbidden dependency detected: @capacitor/android"
-  exit 1
-fi
-
-if grep -Eq '^[[:space:]]*android[[:space:]]*:' capacitor.config.ts; then
-  echo "Active Android configuration detected in capacitor.config.ts"
-  exit 1
-fi
-
-if grep -R -E 'cap (sync|add) android|assembleDebug|assembleRelease' .github/workflows; then
-  echo "Active Android build command detected in GitHub Actions"
+# BF_ANDROID_STAFF_v1 - the portal ships as the iPad app (iOS: iPad only, below) AND as the Android staff app for
+# phones and tablets (android/, .github/workflows/android.yml). Calls on Android belong to the Android dialler
+# (boreal-dialer-ios android/), so the portal's Android project must not carry a calling engine of its own.
+if grep -rqE 'com\.twilio|ConnectionService|MANAGE_OWN_CALLS' android/app/src android/app/build.gradle; then
+  echo "The Android portal must hand calls to the Android dialler, not place them itself"
   exit 1
 fi
 

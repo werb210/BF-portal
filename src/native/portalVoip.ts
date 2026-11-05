@@ -81,6 +81,23 @@ export function jsDeviceRegistersForIncoming(opts: {
   return !(nativeIos && opts.nativeRegistered);
 }
 
+/**
+ * BF_ANDROID_STAFF_v1 - in the Android staff app the Android dialler (a separate app, boreal-dialer-ios android/) rings for
+ * incoming calls, so the page's Twilio Device never registers for them there: one phone never rings twice. Outgoing
+ * calls go to the dialler too (dialerLauncher), with the page's Device only as the fallback when it is not installed.
+ */
+export function dialerAppTakesIncoming(platform: string = safePlatformName(), nativeShell: boolean = safeIsNative()): boolean {
+  return nativeShell && platform === "android";
+}
+
+function safePlatformName(): string {
+  try { return Capacitor.getPlatform(); } catch { return "web"; }
+}
+
+function safeIsNative(): boolean {
+  try { return Capacitor.isNativePlatform(); } catch { return false; }
+}
+
 /** Registers this iPad for incoming VoIP calls. False when the native side could not (no push credential, no VoIP token). */
 export async function registerNativeIncoming(accessToken: string): Promise<boolean> {
   if (!accessToken || !nativeVoiceAvailable()) return false;

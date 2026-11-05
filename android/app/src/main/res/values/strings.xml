@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- app_name and title_activity_main are set in app/build.gradle. -->
+    <string name="package_name">com.boreal.portal</string>
+    <string name="custom_url_scheme">com.boreal.portal</string>
+
+    <!-- BF_ANDROID_STAFF_v1 - alerts (calls themselves are in the Android dialler) -->
+    <string name="bf_channel_missed_calls">Missed calls and voicemail</string>
+    <string name="bf_channel_messages">Client messages and texts</string>
+    <string name="bf_channel_tasks">Tasks</string>
+
+    <!-- BF_ANDROID_STAFF_v1 - documents and other -->
+    <string name="bf_cancel">Cancel</string>
+    <string name="bf_done">Done</string>
+    <string name="bf_undo">Undo</string>
+    <string name="bf_previous_page">Previous page</string>
+    <string name="bf_next_page">Next page</string>
+    <string name="bf_page_of">Page %1$d of %2$d</string>
+    <string name="bf_open_with">Open with</string>
+    <string name="bf_markup_cannot_open">This document could not be opened for mark-up.</string>
+    <string name="bf_markup_cannot_save">The marked-up copy could not be saved. Try again.</string>
+
+    <!-- BF_ANDROID_STAFF_v1 - long-press shortcuts -->
+    <string name="bf_shortcut_messages">Messages</string>
+    <string name="bf_shortcut_messages_long">Client messages and texts</string>
+    <string name="bf_shortcut_tasks">Tasks</string>
+    <string name="bf_shortcut_tasks_long">Your tasks for today</string>
+</resources>

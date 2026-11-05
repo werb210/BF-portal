@@ -17,6 +17,7 @@
     "test": "vitest run",
     "test:ci": "vitest run",
     "ci:verify": "npm run build && npm run test:ci",
+    "android:sync": "npx cap sync android",
     "scope:check": "node scripts/enforce-silo-scope.mjs --base=origin/main"
   },
   "dependencies": {
@@ -25,6 +26,7 @@
     "@azure/communication-common": "^2.5.0",
     "@azure/msal-browser": "^3.30.0",
     "@boreal/shared-contract": "file:shared-contract",
+    "@capacitor/android": "8.5.2",
     "@capacitor/app": "^8.1.0",
     "@capacitor/app-launcher": "^8.0.1",
     "@capacitor/core": "8.5.2",

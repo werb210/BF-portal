@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BF_ANDROID_STAFF_v1 - launch screen: the brand colour with the app icon in the middle (no third-party logo). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/bf_brand" />
+    <item android:width="144dp" android:height="144dp" android:gravity="center"
+        android:drawable="@mipmap/ic_launcher_foreground" />
+</layer-list>

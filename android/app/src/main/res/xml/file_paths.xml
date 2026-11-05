@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BF_ANDROID_STAFF_v1 - files the app hands to other apps: the camera (business-card photo, cache/cardscan) and
+     the document viewer (cache/documents). Shared-in files stay private in files/Shared. -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="cache" path="." />
+    <files-path name="shared" path="Shared/" />
+</paths>

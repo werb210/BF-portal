@@ -5,7 +5,8 @@
 // so no new npm/SPM dependency is needed.
 import { Capacitor, registerPlugin } from "@capacitor/core";
 
-export type BiometryStatus = { available: boolean; biometryType: "faceID" | "touchID" | "opticID" | "none" };
+// BF_ANDROID_STAFF_v1 - Android reports "biometric" (BiometricPrompt: fingerprint or face, whichever the phone has).
+export type BiometryStatus = { available: boolean; biometryType: "faceID" | "touchID" | "opticID" | "biometric" | "none" };
 
 export interface BiometricUnlockPlugin {
   status(): Promise<BiometryStatus>;
@@ -31,9 +32,11 @@ export function shouldLock(input: {
   return input.now - input.backgroundedAt >= LOCK_AFTER_MS;
 }
 
+/** The iPad or Android staff app (both have the BiometricUnlock plugin). */
 export function isNativeIos(): boolean {
   try {
-    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+    const platform = Capacitor.getPlatform();
+    return Capacitor.isNativePlatform() && (platform === "ios" || platform === "android");
   } catch {
     return false;
   }
@@ -42,5 +45,6 @@ export function isNativeIos(): boolean {
 export function biometryLabel(type: BiometryStatus["biometryType"]): string {
   if (type === "touchID") return "Touch ID";
   if (type === "opticID") return "Optic ID";
+  if (type === "biometric") return "fingerprint or face";
   return "Face ID";
 }

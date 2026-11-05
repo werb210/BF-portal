@@ -7,9 +7,18 @@
 | Web / PWA | Ready |
 | iPadOS native app | Ready |
 | iPhone native app | Unsupported |
-| Android native app | Unsupported |
+| Android staff app (phones and tablets) | Built in CI (BF_ANDROID_STAFF_v1) |
 
-The tracked `android/` directory is inert historical generated output. BF-Portal does not install the Capacitor Android platform, synchronize that directory, or provide an Android build or release path.
+`android/` is the Android staff app (BF_ANDROID_STAFF_v1) for phones and tablets: the staff portal with fingerprint/face lock, business-card scan, PDF mark-up, Share -> deal and push alerts, on the same Capacitor Android set-up as BF-client. Calls are made and taken by the Android dialler (boreal-dialer-ios `android/`): the portal's Call buttons open it with `borealdialer://call?phone=...`, and the portal never rings itself, so one phone has one calling engine. With the dialler on the same phone, call and message alerts show from the dialler and task alerts from the portal. `.github/workflows/android.yml` builds a debug APK and an unsigned release bundle (AAB) on every pull request and, run by hand, a signed release bundle that it uploads to Google Play's internal track when the secrets are set (it skips the upload with a notice otherwise).
+
+Local build (Android Studio or the Android SDK installed):
+
+```sh
+npm ci && npm run build
+npm run android:sync                       # npx cap sync android
+node scripts/android-google-services.mjs   # placeholder unless GOOGLE_SERVICES_JSON is set
+cd android && gradle assembleDebug          # Gradle 8.14 (the wrapper jar is not committed)
+```
 
 ## Local iPadOS build
 

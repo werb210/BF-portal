@@ -10,7 +10,11 @@ export function borealDialerUrl(target: NativeDialerTarget): string {
   return `borealdialer://call?${params.toString()}`;
 }
 
-/** Returns false so callers can retain the existing web/Twilio flow as fallback. */
+/**
+ * Returns false so callers can retain the existing web/Twilio flow as fallback.
+ * BF_ANDROID_STAFF_v1 - on Android this opens the Android dialler (boreal-dialer-ios android/), which owns calls on
+ * the phone; the portal app's manifest lists the borealdialer scheme under <queries> so canOpenUrl can see it.
+ */
 export async function launchNativeBorealDialer(target: NativeDialerTarget): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
   const url = borealDialerUrl(target);

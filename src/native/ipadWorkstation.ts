@@ -13,8 +13,11 @@ export interface IPadWorkstationPlugin {
 
 const native = registerPlugin<IPadWorkstationPlugin>("IPadWorkstation");
 
+// BF_ANDROID_STAFF_v1 - the Android staff app has the same plugin (WorkstationPlugin.java): the phone's document
+// viewer, finger/stylus mark-up and an on-device business-card scan.
 export function isNativeWorkstation(): boolean {
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  const platform = Capacitor.getPlatform();
+  return Capacitor.isNativePlatform() && (platform === "ios" || platform === "android");
 }
 
 export async function toBase64(file: Blob): Promise<string> {

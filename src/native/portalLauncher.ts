@@ -12,8 +12,11 @@ export const PortalLauncherPlugin = registerPlugin<PortalLauncher>("PortalLaunch
 export const MAYA_EVENT = "boreal:maya-command";
 let pendingMaya: string | null = null;
 
+// BF_ANDROID_STAFF_v1 - the Android staff app has the plugin too: its long-press shortcuts (Messages, Tasks) and
+// tapped staff alerts arrive as routes.
 export function launcherAvailable(): boolean {
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios" && Capacitor.isPluginAvailable("PortalLauncher");
+  const platform = Capacitor.getPlatform();
+  return Capacitor.isNativePlatform() && (platform === "ios" || platform === "android") && Capacitor.isPluginAvailable("PortalLauncher");
 }
 export function parseLaunchRoute(raw: unknown): { path: string } | { maya: string } | null {
   const route = typeof raw === "string" ? raw.trim() : "";
