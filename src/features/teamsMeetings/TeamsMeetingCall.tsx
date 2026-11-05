@@ -12,7 +12,7 @@ import {
 } from "@azure/communication-calling";
 import { AzureCommunicationTokenCredential } from "@azure/communication-common";
 
-export type CallTicket = { token: string; acsUserId: string; displayName: string; joinUrl: string; subject?: string | null };
+export type CallTicket = { token: string; acsUserId: string; displayName: string; joinUrl: string; subject?: string | null; identity?: "teams" | "guest" }; // BF_PORTAL_v890_TEAMS_IDENTITY
 type Phase = "starting" | "lobby" | "connected" | "ended" | "error";
 type Person = { key: string; name: string; muted: boolean };
 
@@ -107,7 +107,13 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
 
     (async () => {
       try {
-        agent = await client.createCallAgent(new AzureCommunicationTokenCredential(ticket.token), { displayName: ticket.displayName });
+        // BF_PORTAL_v890_TEAMS_IDENTITY - a Teams-identity token joins with the Teams call agent (the person's own
+        // Teams name, admitted like any colleague); a guest token joins as a named guest through the lobby.
+        const credential = new AzureCommunicationTokenCredential(ticket.token);
+        const created: CallAgent = ticket.identity === "teams"
+          ? (await client.createTeamsCallAgent(credential)) as unknown as CallAgent // same join/call surface for these controls
+          : await client.createCallAgent(credential, { displayName: ticket.displayName });
+        agent = created;
         const devices = await client.getDeviceManager();
         const access = await devices.askDevicePermission({ audio: true, video: true });
         if (!access.audio) {
@@ -118,7 +124,7 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
         const camera = cameras[0] ? new LocalVideoStream(cameras[0]) : null;
         cameraRef.current = camera;
         if (gone) return;
-        const call = agent.join({ meetingLink: ticket.joinUrl }, {
+        const call = created.join({ meetingLink: ticket.joinUrl }, {
           audioOptions: { muted: false },
           ...(camera ? { videoOptions: { localVideoStreams: [camera] } } : {}),
         });
@@ -158,7 +164,7 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
       void agent?.dispose().catch((): void => undefined);
       void client.dispose().catch((): void => undefined);
     };
-  }, [ticket.token, ticket.displayName, ticket.joinUrl, showSelf]);
+  }, [ticket.token, ticket.displayName, ticket.joinUrl, ticket.identity, showSelf]);
 
   const toggleMute = async () => {
     const call = callRef.current;

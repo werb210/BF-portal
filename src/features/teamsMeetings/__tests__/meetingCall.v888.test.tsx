@@ -18,6 +18,10 @@ const h = vi.hoisted(() => {
 vi.mock("@azure/communication-common", () => ({ AzureCommunicationTokenCredential: class { constructor(public token: string) {} dispose() {} } }));
 vi.mock("@azure/communication-calling", () => ({
   CallClient: class {
+    async createTeamsCallAgent(_c: unknown) {
+      h.state.agentOptions = "teams";
+      return { join: (locator: unknown, opts: unknown) => { h.state.joined.push([locator, opts]); h.state.call = new h.FakeCall(); return h.state.call; }, dispose: async () => undefined };
+    }
     async createCallAgent(_c: unknown, options: unknown) {
       h.state.agentOptions = options;
       return { join: (locator: unknown, opts: unknown) => { h.state.joined.push([locator, opts]); h.state.call = new h.FakeCall(); return h.state.call; }, dispose: async () => undefined };
@@ -64,6 +68,13 @@ describe("the in-app Teams meeting screen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Leave" }));
     await waitFor(() => expect(onEnded).toHaveBeenCalled());
     expect(h.state.call!.hangUp).toHaveBeenCalled();
+  });
+
+  it("a Teams-identity ticket joins with the Teams call agent (BF_PORTAL_v890_TEAMS_IDENTITY)", async () => {
+    render(<TeamsMeetingCall ticket={{ ...ticket, identity: "teams" }} onEnded={() => undefined} />);
+    await waitFor(() => expect(h.state.call).not.toBeNull());
+    expect(h.state.agentOptions).toBe("teams");
+    expect(h.state.joined[0][0]).toEqual({ meetingLink: JOIN });
   });
 
   it("without the microphone it explains how to fix it and does not join", async () => {
