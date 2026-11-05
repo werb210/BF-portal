@@ -110,7 +110,6 @@ import IncomingCallToast from "@/dialer/components/IncomingCallToast";
 import NativeCallBanner from "@/dialer/components/NativeCallBanner"; // BF_PORTAL_v817_IPAD_VOIP
 import ShareToDealProvider from "@/native/ShareToDealProvider"; // BF_PORTAL_BLOCK_v594
 import TeamNotifier from "@/components/team/TeamNotifier"; // BF_PORTAL_TEAM_NOTIFY_v644
-import { CallScriptDock } from "@/callScripts/CallScriptDock"; // BF_PORTAL_v871_CALL_SCRIPTS
 
 // VoiceBootstrap removed in v225. The in-portal Twilio Voice SDK dialer
 // was ripped in v224; the no-op bootstrap stub had no remaining purpose.
@@ -128,7 +127,6 @@ function AppShell() {
       <ShareToDealProvider />{/* BF_PORTAL_BLOCK_v594 */}
       <TeamNotifier />{/* BF_PORTAL_TEAM_NOTIFY_v644 */}
       <DialerPanel />
-      <CallScriptDock />{/* BF_PORTAL_v871_CALL_SCRIPTS - the script beside a live call */}
       <FloatingDialerButton />
       <IncomingCallToast />
       <NativeCallBanner />{/* BF_PORTAL_v817_IPAD_VOIP */}

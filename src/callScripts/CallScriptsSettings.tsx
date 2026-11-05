@@ -8,7 +8,7 @@ import { callScriptsApi, type Question, type QuestionType, type Script, type Scr
 const newId = () => Math.random().toString(36).slice(2, 10);
 const blankQuestion = (): Question => ({ id: newId(), label: "", type: "text", options: [], required: false, help: "", maps_to: null });
 const blankSection = (): ScriptSection => ({ id: newId(), title: "", body: "", questions: [blankQuestion()] });
-type Draft = { id: string | null; name: string; description: string; use_for: string; sections: ScriptSection[] };
+type Draft = { id: string | null; name: string; description: string; use_for: string; dialer_default: boolean; sections: ScriptSection[] };
 
 function Editor({ draft, setDraft, meta, onSave, onCancel, busy }: {
   draft: Draft; setDraft: (d: Draft) => void; meta: ScriptsList; onSave: () => void; onCancel: () => void; busy: boolean;
@@ -21,6 +21,9 @@ function Editor({ draft, setDraft, meta, onSave, onCancel, busy }: {
       <input id="cs-name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} style={{ ...input, margin: "4px 0 8px" }} />
       <label htmlFor="cs-desc" style={{ fontSize: 13 }}>When to use it</label>
       <input id="cs-desc" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} style={{ ...input, margin: "4px 0 8px" }} />
+      {/* BF_PORTAL_v891_ONE_CALL_SCRIPT - the script the dialler opens during a call (one per silo). */}
+      <Toggle id="cs-dialer" label="Open this script in the dialler during calls (replaces the current dialler script)" checked={draft.dialer_default}
+        onChange={(v) => setDraft({ ...draft, dialer_default: v })} />
       {draft.sections.map((s, si) => (
         <fieldset key={s.id} style={{ border: "1px solid var(--ui-border)", borderRadius: 10, padding: 12, margin: "10px 0" }}>
           <legend style={{ fontSize: 13, fontWeight: 700, color: "var(--ui-text)" }}>Section {si + 1}</legend>
@@ -102,13 +105,13 @@ export default function CallScriptsSettings() {
 
   const edit = (s: Script | null) => {
     setErr(null); setOk(null);
-    setDraft(s ? { id: s.id, name: s.name, description: s.description ?? "", use_for: s.use_for, sections: s.sections }
-      : { id: null, name: "", description: "", use_for: "any", sections: [blankSection()] });
+    setDraft(s ? { id: s.id, name: s.name, description: s.description ?? "", use_for: s.use_for, dialer_default: s.dialer_default === true, sections: s.sections }
+      : { id: null, name: "", description: "", use_for: "any", dialer_default: false, sections: [blankSection()] });
   };
   const save = async () => {
     if (!draft) return;
     setBusy(true); setErr(null);
-    const body = { name: draft.name, description: draft.description, use_for: draft.use_for,
+    const body = { name: draft.name, description: draft.description, use_for: draft.use_for, dialer_default: draft.dialer_default,
       sections: draft.sections.map((s) => ({ ...s, questions: s.questions.map((q) => ({ ...q, options: q.options.map((o) => o.trim()).filter(Boolean) })) })) };
     try {
       if (draft.id) await callScriptsApi.update(draft.id, body); else await callScriptsApi.create(body);
@@ -129,7 +132,7 @@ export default function CallScriptsSettings() {
 
   return (
     <div data-testid="call-scripts-settings">
-      <Section id="call-scripts-admin" title="Call scripts" intro={`Scripts show beside the dialler during a call and on contacts and applications. Staff fill in the answers; finished scripts go on the contact's timeline, and answers can fill your custom fields.${meta?.silo ? ` These are the ${meta.silo} scripts; switch the silo in the top bar for the others.` : ""}`}>
+      <Section id="call-scripts-admin" title="Call scripts" intro={`The dialler script opens in the dialler during a call (staff can switch to another), and every script can be opened on contacts and applications. Staff fill in the answers; finished scripts go on the contact's timeline, and answers can fill your custom fields.${meta?.silo ? ` These are the ${meta.silo} scripts; switch the silo in the top bar for the others.` : ""}`}>
         <Notice error={err} ok={ok} />
         {draft && meta ? <Editor draft={draft} setDraft={setDraft} meta={meta} onSave={() => void save()} onCancel={() => setDraft(null)} busy={busy} /> : <>
           {meta && meta.scripts.length === 0 && <p style={muted}>No scripts yet. Start with the intake scripts and change them to suit you, or build your own.</p>}
@@ -138,7 +141,7 @@ export default function CallScriptsSettings() {
               <tbody>
                 {meta.scripts.map((s) => (
                   <tr key={s.id} data-testid={`script-${s.id}`}>
-                    <td style={cell}><strong>{s.name}</strong>{s.archived_at ? " (archived)" : ""}<div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{s.description ?? ""} {s.sections.length} sections, {s.sections.reduce((n, x) => n + x.questions.length, 0)} questions</div></td>
+                    <td style={cell}><strong>{s.name}</strong>{s.archived_at ? " (archived)" : ""}{s.dialer_default && !s.archived_at ? <span data-testid="dialer-script-tag" style={{ marginLeft: 8, fontSize: 12, fontWeight: 600 }}>Dialler script</span> : null}<div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{s.description ?? ""} {s.sections.length} sections, {s.sections.reduce((n, x) => n + x.questions.length, 0)} questions</div></td>
                     <td style={{ ...cell, whiteSpace: "nowrap" }}>
                       {!s.archived_at && <button type="button" style={quiet} onClick={() => edit(s)}>Edit</button>}{" "}
                       <button type="button" style={quiet} onClick={() => void act(s, "duplicate")}>Duplicate</button>{" "}
