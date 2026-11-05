@@ -49,7 +49,8 @@ describe("Settings > Content (v864)", () => {
     at("/settings/profile");
     const top = screen.getByRole("tablist", { name: "Settings tabs" });
     const names = Array.from(top.querySelectorAll('[role="tab"]')).map((t) => t.textContent);
-    expect(names).toContain("Content and AI"); // BF_PORTAL_v885_SETTINGS_ROLES
+    expect(names).toContain("Content"); // BF_PORTAL_v892_SETTINGS_YOU
+    expect(names).not.toContain("Content and AI");
     for (const gone of ["Templates", "Snippets", "Collateral", "Library"]) expect(names).not.toContain(gone);
   });
 
@@ -64,18 +65,26 @@ describe("Settings > Content (v864)", () => {
     expect(screen.getByTestId("where").textContent).toBe("/settings/content?section=automations");
   });
 
+  it("the old Content and AI address opens Content (v892)", async () => {
+    at("/settings/content-ai");
+    expect(await screen.findByTestId("templates-mock")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Content" })).toHaveAttribute("aria-selected", "true");
+  });
+
   it.each([["templates", "templates-mock"], ["snippets", "snippets-mock"], ["collateral", "collateral-mock"], ["library", "library-mock"]])(
     "the old /settings/%s address forwards to its Content section", async (old, testId) => {
       at(`/settings/${old}`);
       expect(await screen.findByTestId(testId)).toBeInTheDocument();
       expect(screen.getByTestId("where").textContent).toBe(`/settings/content?section=${old}`);
-      expect(screen.getByRole("tab", { name: "Content and AI" })).toHaveAttribute("aria-selected", "true");
+      expect(screen.getByRole("tab", { name: "Content" })).toHaveAttribute("aria-selected", "true");
     });
 
-  it("Staff do not get Content (BF_PORTAL_v885_SETTINGS_ROLES); BI keeps Snippets and Library", () => {
+  it("Staff (Brokers) and Marketing get Content too (BF_PORTAL_v892_SETTINGS_YOU); BI keeps Snippets and Library", () => {
     useAuthMock.mockReturnValue({ user: { role: "Staff" } });
     const { unmount } = at("/settings/content");
-    expect(screen.queryByRole("tablist", { name: "Content sections" })).toBeNull();
+    const brokerSections = screen.getByRole("tablist", { name: "Content sections" });
+    // Brokers get no automations (Admin and Marketing only).
+    expect(Array.from(brokerSections.querySelectorAll('[role="tab"]')).map((t) => t.textContent)).toEqual(["Templates", "Snippets", "Collateral", "Library"]);
     unmount();
     useSiloMock.mockReturnValue({ silo: "BI" });
     useAuthMock.mockReturnValue({ user: { role: "Admin" } });
