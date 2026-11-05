@@ -54,6 +54,7 @@ export const KS_NAV = [
   // BF_PORTAL_v865_KS_MARKETING - email marketing to prospective licensees (KS-Ops)
   { label: "Marketing", path: "/silo/ks/marketing", roles: ["Admin"] },
   // BF_PORTAL_v850_KS_CRM - the Keystone CRM
+  { label: "Inbox", path: "/silo/ks/crm/inbox", roles: ["Admin", "Staff", "Marketing"] }, // BF_PORTAL_v895_KS_INBOX - Keystone's shared mailboxes only
   { label: "Contacts", path: "/silo/ks/crm/contacts", roles: ["Admin", "Staff", "Marketing"] },
   { label: "Companies", path: "/silo/ks/crm/companies", roles: ["Admin", "Staff", "Marketing"] },
   { label: "Sales pipeline", path: "/silo/ks/crm/pipeline", roles: ["Admin", "Staff", "Marketing"] },

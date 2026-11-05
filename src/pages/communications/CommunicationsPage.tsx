@@ -1501,7 +1501,7 @@ function MessagesTab({ onStartConversation }: { onStartConversation: (contact: C
 }
 
 // ── Inbox tab ─────────────────────────────────────────────────────────────────
-function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
+function InboxTab({ unreadOnly = false, sharedOnly = false }: { unreadOnly?: boolean; sharedOnly?: boolean }) {
   const [composeOpen, setComposeOpen] = useState(false);
   // v702: reply prefill (to / "Re:" subject / quoted body) for the open email.
   const [replyCtx, setReplyCtx] = useState<{ to: string; subject: string; body: string }>({
@@ -1575,14 +1575,16 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
         if (cancelled) return;
         // Normalise before storing, so every consumer of `mailboxes.shared`
         // downstream can map over it without its own guard.
-        setMailboxes({ mine: r?.mine ?? null, shared: Array.isArray(r?.shared) ? r.shared : [] });
+        // BF_PORTAL_v895_KS_INBOX - the Keystone inbox shows only Keystone's shared mailboxes, never your own.
+        const mine = sharedOnly ? null : (r?.mine ?? null);
+        setMailboxes({ mine, shared: Array.isArray(r?.shared) ? r.shared : [] });
         // BF_PORTAL_BLOCK_v_INBOX_DEFAULT_UNIFIED_v1 - default to the unified
         // "All Mailboxes" view so staff don't have to switch to it each time.
         // BF_PORTAL_COMMS_TABS_v39 - r.shared was read unguarded. Any response
         // without it (partial payload, older server, error body returned with
         // a 200) threw here, inside render, and blanked the tab. The catch
         // below only covers a thrown request, not a malformed success.
-        setActive((r?.mine || (r?.shared?.length ?? 0) > 0) ? ALL_MAILBOXES : "");
+        setActive((mine || (r?.shared?.length ?? 0) > 0) ? ALL_MAILBOXES : "");
         setNeedsReconnect(false);
       } catch (e: unknown) {
         if (cancelled) return;
@@ -1645,6 +1647,9 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
           setMessages(merged);
           reconcileSelection(merged); // BF_PORTAL_v791
           setNeedsReconnect(false);
+        } else if (sharedOnly && !active) {
+          // BF_PORTAL_v895_KS_INBOX - never fall back to your own mailbox in the Keystone inbox.
+          setMessages([]);
         } else {
           const params = { ...(active ? { mailbox: active } : {}), sort: sortDir, ...(browseFolderId ? { folderId: browseFolderId } : { folder }), ...(query ? { q: query } : {}) };
           const r = await withMailScopes(() =>
@@ -2452,7 +2457,7 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
         initialBody={replyCtx.body}
         initialAttachments={replyAttachments}
         fromOptions={mailboxOptions.filter((o) => o.value !== ALL_MAILBOXES)}
-        defaultFrom={active === ALL_MAILBOXES ? "" : active}
+        defaultFrom={active === ALL_MAILBOXES ? (sharedOnly ? (mailboxes.shared[0]?.address ?? "") : "") : active}
         appOptions={appOptions}
         onClose={() => {
           setComposeOpen(false);
@@ -2609,6 +2614,16 @@ function IssuesTab() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 // BF_PORTAL_COMMS_TABS_v39 - initialTab lets a caller, and the test suite,
 // open a specific tab. Defaults to the first tab in TABS.
+/** BF_PORTAL_v895_KS_INBOX - Keystone's shared mailboxes (sales@, support@, accounting@, info@keystonecrm.online).
+ *  Opened under /silo/ks/crm, so its calls carry X-Silo: KS and the server lists only KS mailboxes. */
+export function KsSharedInbox() {
+  return (
+    <div data-testid="ks-inbox" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", minHeight: 420 }}>
+      <InboxTab sharedOnly />
+    </div>
+  );
+}
+
 export default function CommunicationsPage({ initialTab }: { initialTab?: Tab } = {}) {
   const initialParams = new URLSearchParams(window.location.search);
   const urlTab = initialParams.get("tab");
