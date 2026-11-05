@@ -56,8 +56,8 @@ const SettingsPage = () => {
   const isStaff = user?.role === "Staff"; // BF_PORTAL_BLOCK_v526
   const isBI = String(silo ?? "").toUpperCase() === "BI";
   const isMarketing = user?.role === "Marketing"; // BF_PORTAL_v864_CONTENT_TAB
-  // BF_PORTAL_v885_SETTINGS_ROLES - Admins see every setting (brokerage set-up). Staff and Marketing see only My Profile
-  // and AI Knowledge (Marketing's extra is the Marketing tab in the sidebar, not more settings).
+  // BF_PORTAL_v885_SETTINGS_ROLES - Admins see every setting (brokerage set-up). Staff and Marketing see the YOU items:
+  // My Profile, Content and AI Knowledge (v892; Marketing's extra is the Marketing tab in the sidebar).
   const isTeamMember = (isStaff || isMarketing) && !isBI;
 
   const tabs = useMemo(
@@ -80,7 +80,9 @@ const SettingsPage = () => {
       { id: "runtime", label: "Runtime Verification", visible: isAdmin && !isBI, content: <RuntimeSettings /> },
       // BF_PORTAL_v864_CONTENT_TAB - Templates, Snippets, Collateral, the Library and the automations are sections of
       // one Content tab (see tabs/ContentSettings.tsx). Snippets and the Library still show in BI.
-      { id: "content", label: "Content", visible: isAdmin, content: <ContentSettings isBI={isBI} canAutomate={isAdmin || isMarketing} /> },
+      // BF_PORTAL_v892_SETTINGS_YOU - Content is under YOU for every Broker (Staff), Marketing and Admin user. Each screen
+      // keeps its own limits (collateral uploads and deletes stay Admin; automations are Admin and Marketing).
+      { id: "content", label: "Content", visible: isAdmin || isStaff || isMarketing, content: <ContentSettings isBI={isBI} canAutomate={isAdmin || isMarketing} /> },
       { id: "deal-tools", label: "Deal tools", visible: isAdmin && !isBI, content: <DealToolsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v865_BROKER_TOOLS
       // BF_PORTAL_v855_RETENTION - 7-year record retention: legal holds and the eligible-for-deletion report.
       { id: "retention", label: "Retention & legal holds", visible: isAdmin, content: isAdmin ? <RetentionSettings /> : null },
@@ -105,22 +107,23 @@ const SettingsPage = () => {
       { id: "survey", label: "Client survey", visible: isAdmin && !isBI, content: isAdmin ? <SurveySettings /> : null },
       // BF_PORTAL_PARTNERS_TABS_v720 - Broker Files moved to Marketing > Referrers > Brokers.
     ],
-    [isAdmin, isTeamMember, isBI, isMarketing, canUsers]
+    [isAdmin, isTeamMember, isBI, isMarketing, isStaff, canUsers]
   );
 
   // BF_PORTAL_v885_SETTINGS_ROLES - the ~30 tabs are grouped (Option A of the settings redesign): a list on the left,
   // and each group opens as one page with its sections stacked. Old addresses (/settings/phone-menu, /settings/fraud ...)
   // still work: they open their group and scroll to that section.
   const visibleSections = tabs.filter((tab) => tab.visible);
-  const groups = SETTINGS_GROUPS.filter((g) => isAdmin || g.id === "profile").map((g) => ({ ...g, sections: g.sectionIds.map((id) => visibleSections.find((t) => t.id === id)).filter((t): t is (typeof visibleSections)[number] => Boolean(t)) }))
-    .filter((g) => g.sections.length > 0)
-    // Staff and Marketing get AI Knowledge as its own item (Admins find it inside Content and AI).
-    .concat(!isAdmin && visibleSections.some((t) => t.id === "ai-knowledge") ? [{ id: "ai-knowledge", label: "AI Knowledge", heading: "YOU", sectionIds: ["ai-knowledge"], sections: visibleSections.filter((t) => t.id === "ai-knowledge") }] : []);
+  // BF_PORTAL_v892_SETTINGS_YOU - everyone gets the YOU groups (My Profile, Content, AI Knowledge); Admins also get
+  // the brokerage set-up groups.
+  const groups = SETTINGS_GROUPS.filter((g) => isAdmin || g.heading === "YOU").map((g) => ({ ...g, sections: g.sectionIds.map((id) => visibleSections.find((t) => t.id === id)).filter((t): t is (typeof visibleSections)[number] => Boolean(t)) }))
+    .filter((g) => g.sections.length > 0);
   const requestedTabId = tabParam ?? searchParams.get("tab");
   // BF_PORTAL_v864_CONTENT_TAB - the old tabs (/settings/templates, /settings/snippets, /settings/collateral,
   // /settings/library) forward to their section of Content, so links and bookmarks keep working.
   const legacySection = isContentSection(requestedTabId) ? requestedTabId : null;
-  const activeId = legacySection ? "content" : requestedTabId;
+  // BF_PORTAL_v892_SETTINGS_YOU - the old "Content and AI" address opens Content.
+  const activeId = legacySection ? "content" : requestedTabId === "content-ai" ? "content" : requestedTabId;
   const groupOf = (id: string | null | undefined) => groups.find((g) => g.id === id) ?? groups.find((g) => g.sections.some((t) => t.id === id));
   const fallbackGroup = groups.find((g) => g.id === "profile") ?? groups[0];
   const activeGroup = groupOf(activeId) ?? fallbackGroup;
@@ -194,12 +197,14 @@ const SettingsPage = () => {
 // BF_PORTAL_v885_SETTINGS_ROLES - the groups and which sections each holds, in order.
 export const SETTINGS_GROUPS: Array<{ id: string; label: string; heading: string; sectionIds: string[] }> = [
   { id: "profile", label: "My Profile", heading: "YOU", sectionIds: ["profile"] },
+  // BF_PORTAL_v892_SETTINGS_YOU - Content and AI Knowledge are their own items under YOU (were "Content and AI").
+  { id: "content", label: "Content", heading: "YOU", sectionIds: ["content"] },
+  { id: "ai-knowledge", label: "AI Knowledge", heading: "YOU", sectionIds: ["ai-knowledge"] },
   { id: "team", label: "Team and roles", heading: "BROKERAGE SET-UP", sectionIds: ["users", "teams"] },
   { id: "crm", label: "CRM set-up", heading: "BROKERAGE SET-UP", sectionIds: ["properties", "pipelines"] },
   { id: "phone", label: "Phone", heading: "BROKERAGE SET-UP", sectionIds: ["phone", "phone-menu", "call-queues", "call-scripts", "lead-rotation", "blocked-numbers", "never-log"] },
   { id: "money", label: "Money", heading: "BROKERAGE SET-UP", sectionIds: ["quickbooks", "payments"] },
   { id: "risk", label: "Risk and ID checks", heading: "BROKERAGE SET-UP", sectionIds: ["fraud", "id-verification"] },
-  { id: "content-ai", label: "Content and AI", heading: "BROKERAGE SET-UP", sectionIds: ["content", "ai-knowledge"] },
   { id: "sign-in", label: "Sign-in and security", heading: "BROKERAGE SET-UP", sectionIds: ["security", "microsoft-sign-in"] },
   { id: "records", label: "Privacy and records", heading: "BROKERAGE SET-UP", sectionIds: ["retention", "privacy", "survey"] },
   { id: "integrations", label: "Integrations", heading: "BROKERAGE SET-UP", sectionIds: ["webhooks", "api-keys"] },
