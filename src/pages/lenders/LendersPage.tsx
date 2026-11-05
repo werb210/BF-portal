@@ -21,6 +21,7 @@ import SbaIvesFields, { EMPTY_SBA, sbaMissing, type LenderSba } from "./componen
 import { phoneInputHandler, formatDollar, formatRate, unformatDollar } from "@/utils/format";
 import { CATEGORY_ORDER, CATEGORY_LABELS, CREDIT_SCORE_BANDS, bfBandFromMin, bfMinFromBand, ProductCoreFields } from "./productFormShared"; // PRODUCT_CORE_FIELDS_SHARED_v1
 import RenewalRulesEditor from "@/features/activeContracts/RenewalRulesEditor"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
+import MayaLenderSuggestions from "./components/MayaLenderSuggestions"; // BF_PORTAL_v890_MAYA_LENDER_UPDATES
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1511,12 +1512,16 @@ export default function LendersPage() {
       </div>
 
       {/* ── Right panel — always visible ── */}
-      <ProductsPanel
-        lender={selected}
-        lenders={lenders}
-        onAddProduct={() => setShowCreateProduct(true)}
-        onEditProduct={(product) => setEditingProduct(product)}
-      />
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--ui-surface-muted)" }}>
+        {/* BF_PORTAL_v890_MAYA_LENDER_UPDATES - Maya's suggested changes for the selected lender */}
+        {selected && <MayaLenderSuggestions lenderId={selected.id} />}
+        <ProductsPanel
+          lender={selected}
+          lenders={lenders}
+          onAddProduct={() => setShowCreateProduct(true)}
+          onEditProduct={(product) => setEditingProduct(product)}
+        />
+      </div>
 
       {/* Modals */}
       {showCreateLender && (
