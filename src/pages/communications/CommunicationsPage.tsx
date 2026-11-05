@@ -2107,7 +2107,8 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
     // minHeight: 0 on the column restores the scroll.
     <div style={{ display: "flex", flexDirection: "column", flex: 1, width: "100%", height: "100%", minHeight: 0, background: "var(--ui-surface-strong)", color: "var(--ui-text)", position: "relative" }}>
       {/* BF_PORTAL_INBOX_FULLWIDTH_TOOLBAR_v1 - every inbox control in one full-width row across the top */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid var(--ui-border)", overflowX: "auto" }}>
+      {/* BF_PORTAL_v893_PORTAL_FIXES - the row wraps instead of running off the right edge on small screens */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid var(--ui-border)" }}>
         <button type="button" onClick={() => setComposeOpen(true)} style={{ padding: "8px 12px", border: "none", borderRadius: 4, background: "var(--ui-accent-blue)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>+ Compose</button>
         <select value={active} onChange={(e) => setActive(e.target.value)} style={{ minWidth: 150, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}>
           {mailboxOptions.map(o => <option key={o.value || "self"} value={o.value}>{o.label}</option>)}
@@ -2126,8 +2127,10 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
         </select>
         <span style={{ fontSize: 12, color: "var(--ui-text-muted)", whiteSpace: "nowrap" }}>{unreadCount > 0 ? `${unreadCount} unread` : "All read"}</span>
         <button type="button" onClick={() => { setBulkMode((v) => !v); setSelectedIds(new Set()); }} style={{ fontSize: 12, padding: "6px 10px", borderRadius: 4, border: "1px solid var(--ui-border)", background: bulkMode ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-strong)", cursor: "pointer", whiteSpace: "nowrap" }}>{bulkMode ? "Cancel" : "Select"}</button>
+        <button type="button" onClick={() => setReconnectAttempts((n) => n + 1)} disabled={loading} style={{ marginLeft: "auto", padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", fontSize: 12, cursor: loading ? "default" : "pointer", whiteSpace: "nowrap" }}>{loading ? "Refreshing..." : "↻ Refresh"}</button>
+        {/* BF_PORTAL_v893_PORTAL_FIXES - the Select options sit on their own row underneath, never off to the right */}
         {bulkMode && (
-          <>
+          <div data-testid="inbox-bulk-actions" style={{ flexBasis: "100%", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 12, color: "var(--ui-text-muted)", whiteSpace: "nowrap" }}>{selectedIds.size} selected</span>
             <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(true)} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer", whiteSpace: "nowrap" }}>Mark read</button>
             <button type="button" disabled={bulkBusy || selectedIds.size === 0} onClick={() => void bulkMarkRead(false)} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 4, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", cursor: bulkBusy || selectedIds.size === 0 ? "default" : "pointer", whiteSpace: "nowrap" }}>Mark unread</button>
@@ -2137,9 +2140,8 @@ function InboxTab({ unreadOnly = false }: { unreadOnly?: boolean }) {
               <option value="">Move to...</option>
               {folders.map((fd) => (<option key={fd.id} value={fd.id}>{fd.name}</option>))}
             </select>
-          </>
+          </div>
         )}
-        <button type="button" onClick={() => setReconnectAttempts((n) => n + 1)} disabled={loading} style={{ marginLeft: "auto", padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)", fontSize: 12, cursor: loading ? "default" : "pointer", whiteSpace: "nowrap" }}>{loading ? "Refreshing..." : "↻ Refresh"}</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gridTemplateRows: "minmax(0, 1fr)", gap: 0, flex: 1, width: "100%", minHeight: 0, position: "relative" }}>
       {/* BF_PORTAL_BLOCK_v213_INBOX_RECONNECT_M365_v2 — reconnect banner */}
