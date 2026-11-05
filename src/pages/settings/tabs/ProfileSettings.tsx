@@ -462,7 +462,8 @@ const ProfileSettings = () => {
       {/* BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — email signature editor.
           GET/PUT /api/o365/me/signature (server-side shipped in v635). */}
       <EmailSignaturePanel />
-      <SharedMailboxSignaturePanel /> {/* BF_PORTAL_BLOCK_v826_PER_MAILBOX_SIGNATURE_UI */}
+      {/* BF_PORTAL_v893_PORTAL_FIXES - shared mailbox signatures are set by Admins; everyone else sets only their own. */}
+      {String((user as { role?: string } | null)?.role ?? "").toUpperCase() === "ADMIN" && <SharedMailboxSignaturePanel />} {/* BF_PORTAL_BLOCK_v826_PER_MAILBOX_SIGNATURE_UI */}
 
       {/* BF_PORTAL_BLOCK_v694_COMMS — per-user booking URL.
           GET/PUT /api/o365/me/booking-url (server v693). */}

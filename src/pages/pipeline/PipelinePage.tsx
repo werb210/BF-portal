@@ -268,8 +268,8 @@ export default function PipelinePage() {
       </div>
       <CustomFieldFilters fields={appFields} value={cfFilters} onChange={setCfFilters} />{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       <LenderReferralIssues />{/* BF_PORTAL_v827_REFERRAL_PIPELINE_CARD - lender files still importing or that could not be read */}
-      {/* v884: the stage columns wrap onto a new row instead of the right-most one being cut off at the screen edge. */}
-      <div data-testid="pipeline-board" style={{ display: "flex", flexWrap: "wrap", gap: 14, paddingBottom: 16, alignItems: "flex-start" }}>
+      {/* BF_PORTAL_v893_PORTAL_FIXES - every stage side by side in one row; scroll right to see the rest (replaces the v884 wrap). */}
+      <div data-testid="pipeline-board" style={{ display: "flex", flexWrap: "nowrap", gap: 14, paddingBottom: 16, alignItems: "flex-start", overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
         {STAGES.map((stage) => {
           const col = cards.filter((c) => effectiveStage(c) === stage);
           const isTarget = dragOver === stage && dragging !== null;
