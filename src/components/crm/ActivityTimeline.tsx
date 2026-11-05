@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { crmApi, type Scope, type TimelineItem } from "@/api/crm";
 import ContractTimelineLink from "@/features/activeContracts/ContractTimelineLink"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
+import { JoinTeamsButton } from "@/features/teamsMeetings/JoinTeamsButton"; // BF_PORTAL_v888_TEAMS_IN_APP
 
 type FilterTab = "all" | "note" | "email" | "call" | "task" | "meeting";
 
@@ -16,6 +17,10 @@ function MeetingLink({ url }: { url: string }): JSX.Element | null {
   const isJoin = lower.includes("teams.microsoft.com") || lower.includes("meetup-join") || lower.includes("teams.live.com");
   const isRecording = lower.includes("sharepoint.com") || lower.includes("stream.") || lower.includes("/recording") || lower.includes("recordingcontenturl");
   const label = isJoin ? "Join Teams meeting" : isRecording ? "View recording" : "Open link";
+  // BF_PORTAL_v888_TEAMS_IN_APP - a Teams link joins inside the portal (with Open in Teams beside it).
+  if (isJoin && /^https:\/\/teams\.(microsoft|live)\.com\//i.test(u)) {
+    return <div style={{ marginTop: 6 }}><JoinTeamsButton joinUrl={u} compact /></div>;
+  }
   return (
     <a
       href={u}

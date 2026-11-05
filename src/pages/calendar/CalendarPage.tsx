@@ -15,6 +15,7 @@ import FindATimePanel from "@/components/o365/FindATimePanel"; // BF_PORTAL_O365
 import DateTimePicker from "@/components/ui/DateTimePicker"; // BF_PORTAL_CAL_DATETIMEPICKER_v1
 import { startOutboundPstn, joinMeetingRoom } from "@/dialer/actions"; // BF_PORTAL_CALENDAR_CALL_v745 / BF_PORTAL_JOIN_ROOM_v750
 import { phoneFromEvent, prettyPhone, roomSlugFromEvent } from "./eventPhone";
+import { JoinTeamsButton } from "@/features/teamsMeetings/JoinTeamsButton"; // BF_PORTAL_v888_TEAMS_IN_APP
 
 type ApiCalendarEvent = {
   id?: string;
@@ -354,11 +355,12 @@ function CalendarContent() {
             })()}
             {(selectedEvent.resource.teams_link || selectedEvent.resource.teamsLink) && (
               <p style={{ margin: "10px 0" }}>
-                <a target="_blank" rel="noreferrer"
-                   href={selectedEvent.resource.teams_link ?? selectedEvent.resource.teamsLink}
-                   style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#5b5fc7", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, textDecoration: "none" }}>
-                  Join Teams meeting
-                </a>
+                {/* BF_PORTAL_v888_TEAMS_IN_APP - join inside the portal (web and iPad); Open in Teams stays beside it. */}
+                <JoinTeamsButton
+                  joinUrl={String(selectedEvent.resource.teams_link ?? selectedEvent.resource.teamsLink ?? "")}
+                  calendarEventId={selectedEvent.resource.id ?? null}
+                  title={selectedEvent.title ?? null}
+                />
               </p>
             )}
             {/* BF_PORTAL_BLOCK_v712 — Teams invites stuff raw HTML into notes; strip tags to readable text. */}

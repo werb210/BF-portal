@@ -68,9 +68,9 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>Boreal Portal uses Face ID to unlock your signed-in session.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Boreal Staff Portal uses the camera to capture documents and photos you attach to records, messages, and your profile.</string>
+	<string>Boreal Staff Portal uses the camera to capture documents and photos you attach to records, messages, and your profile, and for your video in Teams meetings you join in the app.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Boreal uses the microphone for staff phone calls placed through the in-app dialer.</string>
+	<string>Boreal uses the microphone for staff phone calls placed through the in-app dialer and for Teams meetings you join in the app.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Boreal Staff Portal saves annotated documents and scanned cards to your photo library when you choose to export them.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

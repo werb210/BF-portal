@@ -30,7 +30,10 @@ export default defineConfig({
       includeAssets: ["icons/**/*", "images/**/*", "favicon.ico"],
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,webp,woff,woff2,json}"],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // BF_PORTAL_v888_TEAMS_IN_APP - the in-app Teams meeting (Azure Communication Services, about 7 MB)
+        // only works online, so it is downloaded when someone joins a meeting rather than kept offline.
+        globIgnores: ["**/TeamsMeetingCall-*.js"]
       },
       devOptions: { enabled: false, type: "module" }
     }),
