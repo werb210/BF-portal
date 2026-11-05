@@ -10,6 +10,7 @@ import CrmListPage from "@/pages/crm/CrmListPage";
 import ContactDetailPage from "@/pages/crm/contacts/ContactDetailPage";
 import CompanyDetailPage from "@/pages/crm/companies/CompanyDetailPage";
 import TasksPage from "@/pages/tasks/TasksPage";
+import { KsSharedInbox } from "@/pages/communications/CommunicationsPage"; // BF_PORTAL_v895_KS_INBOX
 import { KS_ACCENT } from "../ksAccess";
 import KsPipeline from "./KsPipeline";
 import KsSupport from "../support/KsSupport"; // BF_PORTAL_v853_KS_PHONE_SUPPORT
@@ -53,6 +54,7 @@ export default function KsCrm() {
           <Route path="companies/:id" element={<CompanyDetailPage />} />
           <Route path="pipeline" element={<KsPipeline />} />
           <Route path="tasks" element={<TasksPage />} />
+          <Route path="inbox" element={<KsSharedInbox />} />{/* BF_PORTAL_v895_KS_INBOX */}
           <Route path="support/*" element={<KsSupport />} />{/* BF_PORTAL_v853_KS_PHONE_SUPPORT */}
           <Route path="*" element={<Navigate to="contacts" replace />} />
         </Routes>
