@@ -36,6 +36,7 @@ import CallScriptsSettings from "@/callScripts/CallScriptsSettings"; // BF_PORTA
 import CallQueuesSettings from "@/callQueues/CallQueuesSettings"; // BF_PORTAL_v871_CALL_QUEUES
 import PaymentsSettings from "@/payments/PaymentsSettings"; // BF_PORTAL_v872_PAYMENTS
 import IdVerificationSettings from "@/kyc/IdVerificationSettings"; // BF_PORTAL_v872_KYC
+import VendorKeysSettings from "@/integrations/VendorKeysSettings"; // BF_PORTAL_v898_YOUR_SERVICES
 // BF_PORTAL_v875_INTEGRATIONS - outgoing webhooks and API keys (per silo), Microsoft sign-in (all of Boreal).
 import WebhooksSettings from "@/integrations/WebhooksSettings";
 import ApiKeysSettings from "@/integrations/ApiKeysSettings";
@@ -76,6 +77,7 @@ const SettingsPage = () => {
       // BF_PORTAL_v872_DEAL_TOOLS - Stripe payment links for broker fees (Boreal's own account) and ID verification (Admins).
       { id: "payments", label: "Payments", visible: isAdmin && !isBI, content: isAdmin ? <PaymentsSettings /> : null },
       { id: "id-verification", label: "ID verification", visible: isAdmin && !isBI, content: isAdmin ? <IdVerificationSettings /> : null },
+      { id: "your-services", label: "Your services", visible: isAdmin && !isBI, content: isAdmin ? <VendorKeysSettings /> : null }, // BF_PORTAL_v898_YOUR_SERVICES
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: isAdmin && !isBI, content: <RuntimeSettings /> },
       // BF_PORTAL_v864_CONTENT_TAB - Templates, Snippets, Collateral, the Library and the automations are sections of
@@ -204,7 +206,7 @@ export const SETTINGS_GROUPS: Array<{ id: string; label: string; heading: string
   { id: "crm", label: "CRM set-up", heading: "BROKERAGE SET-UP", sectionIds: ["properties", "pipelines"] },
   { id: "phone", label: "Phone", heading: "BROKERAGE SET-UP", sectionIds: ["phone", "phone-menu", "call-queues", "call-scripts", "lead-rotation", "blocked-numbers", "never-log"] },
   { id: "money", label: "Money", heading: "BROKERAGE SET-UP", sectionIds: ["quickbooks", "payments"] },
-  { id: "risk", label: "Risk and ID checks", heading: "BROKERAGE SET-UP", sectionIds: ["fraud", "id-verification"] },
+  { id: "risk", label: "Risk and ID checks", heading: "BROKERAGE SET-UP", sectionIds: ["fraud", "id-verification", "your-services"] },
   { id: "sign-in", label: "Sign-in and security", heading: "BROKERAGE SET-UP", sectionIds: ["security", "microsoft-sign-in"] },
   { id: "records", label: "Privacy and records", heading: "BROKERAGE SET-UP", sectionIds: ["retention", "privacy", "survey"] },
   { id: "integrations", label: "Integrations", heading: "BROKERAGE SET-UP", sectionIds: ["webhooks", "api-keys"] },
