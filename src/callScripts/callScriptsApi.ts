@@ -8,7 +8,9 @@ export type Question = {
   maps_to: { object: "contact" | "application"; field: string } | null;
 };
 export type Section = { id: string; title: string; body: string; questions: Question[] };
-export type Script = { id: string; silo?: string; name: string; description: string | null; use_for: string; sections: Section[]; position: number; archived_at: string | null };
+export type Script = { id: string; silo?: string; name: string; description: string | null; use_for: string; sections: Section[]; position: number; archived_at: string | null;
+  /** BF_PORTAL_v891_ONE_CALL_SCRIPT - the script the dialler opens first (one per silo). */
+  dialer_default?: boolean };
 export type Run = {
   id: string; script_id: string; script_name: string; sections: Section[]; contact_id: string | null; application_id: string | null;
   answers: { [id: string]: unknown }; status: "in_progress" | "completed"; field_updates: Array<{ object: string; field: string }>;

@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { Notice, button, errText, input, muted, quiet } from "@/settingsPack/ui";
 import { answerText, callScriptsApi, type Question, type Run, type RunTarget, type Script } from "./callScriptsApi";
 
-type Props = RunTarget & { compact?: boolean; onFinished?: (run: Run) => void };
+/** inDialer (v891): the runner in the dialler opens the silo's dialler script, else the first call script, by itself. */
+type Props = RunTarget & { compact?: boolean; inDialer?: boolean; onFinished?: (run: Run) => void };
 type Answers = { [id: string]: unknown };
 
 const label: CSSProperties = { display: "block", fontSize: 14, fontWeight: 600, margin: "10px 0 4px", color: "var(--ui-text)" };
@@ -50,7 +51,7 @@ function QuestionField({ q, value, onChange }: { q: Question; value: unknown; on
   );
 }
 
-export default function CallScriptRunner({ contact_id, application_id, call_sid, compact, onFinished }: Props) {
+export default function CallScriptRunner({ contact_id, application_id, call_sid, compact, inDialer, onFinished }: Props) {
   const [scripts, setScripts] = useState<Script[] | null>(null);
   const [script, setScript] = useState<Script | null>(null);
   const [run, setRun] = useState<Run | null>(null);
@@ -68,9 +69,16 @@ export default function CallScriptRunner({ contact_id, application_id, call_sid,
   }, [contact_id, application_id, hasRecord]);
 
   useEffect(() => {
-    void callScriptsApi.list().then((r) => setScripts(r.scripts)).catch((e) => setErr(errText(e, "Could not load call scripts.")));
+    void callScriptsApi.list().then((r) => {
+      setScripts(r.scripts);
+      // BF_PORTAL_v891_ONE_CALL_SCRIPT - in the dialler, open the script an Admin chose for calls without a click.
+      if (inDialer) {
+        const first = r.scripts.find((s) => s.dialer_default) ?? r.scripts.find((s) => s.use_for === "calls" || s.use_for === "any") ?? null;
+        setScript((cur) => cur ?? first);
+      }
+    }).catch((e) => setErr(errText(e, "Could not load call scripts.")));
     void loadPast();
-  }, [loadPast]);
+  }, [loadPast, inDialer]);
 
   const pick = (id: string) => {
     setScript(scripts?.find((s) => s.id === id) ?? null); setRun(null); setAnswers({}); setOk(null); setErr(null);
