@@ -28,6 +28,8 @@ export type FraudScore = {
   not_covered: Array<{ check: string; label: string; status: FraudStatus; why: string }>;
   // BF-Server v885 (optional so the portal works before and after that deploy).
   checks_run?: number; checks_total?: number; summary?: string;
+  // BF-Server v906: false while checks run or documents wait for their tamper scan; the tamper floor on bank statements.
+  complete?: boolean; pending_reason?: string | null; floor?: { applied: boolean; reason: string | null };
 };
 
 export type FraudOverview = {

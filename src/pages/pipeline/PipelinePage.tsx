@@ -149,9 +149,17 @@ export default function PipelinePage() {
   const [cfFilters, setCfFilters] = useState<CustomFilter[]>([]);
   const { fields: appFields } = useCustomFields("application");
   const cfKey = JSON.stringify(cfFilters);
+  // BF_PORTAL_v906_PIPELINE_SEARCH - search every deal across all stages on the server (business name, contact name,
+  // email, phone, application id). The board shows at most 500 cards, so filtering only what is loaded misses deals.
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const load = useCallback(() => {
-    const params: Record<string, string | number> = { ...filterParams(cfFilters), ...(teamId ? { team_id: teamId } : {}), ...(showDrafts ? { include_drafts: 1 } : {}) };
+    const params: Record<string, string | number> = { ...filterParams(cfFilters), ...(teamId ? { team_id: teamId } : {}), ...(showDrafts ? { include_drafts: 1 } : {}), ...(search ? { q: search } : {}) };
     api<{ items: Card[] }>("/api/portal/applications", {
       params: Object.keys(params).length ? params : undefined,
     })
@@ -160,7 +168,7 @@ export default function PipelinePage() {
       ))
       .catch(() => setCards([]))
       .finally(() => setLoading(false));
-  }, [showDrafts, teamId, cfKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [showDrafts, teamId, cfKey, search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load(); }, [load]);
 
@@ -255,16 +263,29 @@ export default function PipelinePage() {
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--ui-text)", margin: 0 }}>Sales Pipeline</h1>
           <label style={{ fontSize: 13, color: "var(--ui-text)", display: "inline-flex", alignItems: "center", gap: 6 }}>
             <input type="checkbox" checked={showDrafts} onChange={(event) => setShowDrafts(event.target.checked)} />
             Show drafts
           </label>
           <TeamFilter value={teamId} onChange={setTeamId} />
+          {/* BF_PORTAL_v906_PIPELINE_SEARCH */}
+          <input
+            type="search"
+            aria-label="Search all deals"
+            data-testid="pipeline-search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") setSearchInput(""); }}
+            placeholder="Search deals: business, contact, email, phone or ID"
+            style={{ width: 320, maxWidth: "100%", padding: "7px 10px", borderRadius: 8, border: "1px solid var(--ui-border)", fontSize: 13 }}
+          />
         </div>
-        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{cards.length} applications</span>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }} data-testid="pipeline-count">
+          {search ? `${cards.length} match${cards.length === 1 ? "" : "es"} for "${search}"` : `${cards.length} applications`}
+        </span>
       </div>
       <CustomFieldFilters fields={appFields} value={cfFilters} onChange={setCfFilters} />{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       <LenderReferralIssues />{/* BF_PORTAL_v827_REFERRAL_PIPELINE_CARD - lender files still importing or that could not be read */}

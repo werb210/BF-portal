@@ -129,8 +129,32 @@ export const STAFF_DOC_CATEGORIES: string[] = [ // exported for BF_PORTAL_BLOCK_
   "Corporate structure / org chart",
   "Business plan / projections",
   "Lease agreement (if applicable)",
+  // BF_PORTAL_v906_UPLOAD_CATEGORIES - required on equipment, media and A/R deals but missing from the picker.
+  "Equipment invoice / quote",
+  "Media invoice",
+  "Purchase order",
+  "A/R aging report",
+  "A/P aging report",
   "Other",
 ];
+
+// BF_PORTAL_v906_UPLOAD_CATEGORIES - the upload picker lists every document this file asks for (the same list as the
+// Request Items tab: the deal's required documents), plus the standard staff categories, with "Other" last.
+export function uploadCategories(required: Array<{ label?: string | null; document_type?: string | null }>): string[] {
+  const norm = (v: string) => v.trim().toLowerCase().replace(/[\s_–-]+/g, " ");
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const add = (label: string | null | undefined) => {
+    const v = String(label ?? "").trim();
+    if (!v || norm(v) === "other" || seen.has(norm(v))) return;
+    seen.add(norm(v));
+    out.push(v);
+  };
+  for (const r of required) add(r.label || r.document_type);
+  for (const c of STAFF_DOC_CATEGORIES) add(c);
+  out.push("Other");
+  return out;
+}
 
 export default function DocumentsTab({ applicationId }: Props) {
   const { user } = useAuth();
@@ -153,6 +177,17 @@ export default function DocumentsTab({ applicationId }: Props) {
   // BF_PORTAL_BLOCK_v820_STAFF_UPLOAD
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadCat, setUploadCat] = useState<string>(STAFF_DOC_CATEGORIES[0] ?? "Other");
+  // BF_PORTAL_v906_UPLOAD_CATEGORIES - this file's required documents come first in the picker.
+  const [requiredDocs, setRequiredDocs] = useState<Array<{ label?: string | null; document_type?: string | null }>>([]);
+  useEffect(() => {
+    if (!applicationId) return;
+    let cancelled = false;
+    api.get<{ required?: Array<{ label?: string | null; document_type?: string | null }> }>(`/api/portal/applications/${applicationId}/request-items`)
+      .then((r) => { if (!cancelled) setRequiredDocs(Array.isArray(r?.required) ? r.required : []); })
+      .catch(() => { if (!cancelled) setRequiredDocs([]); });
+    return () => { cancelled = true; };
+  }, [applicationId]);
+  const pickerCategories = useMemo(() => uploadCategories(requiredDocs), [requiredDocs]);
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
   const uploadFileRef = useRef<HTMLInputElement | null>(null);
@@ -438,7 +473,7 @@ export default function DocumentsTab({ applicationId }: Props) {
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ui-text)", marginBottom: 12 }}>Upload document</div>
             <label style={{ fontSize: 12, fontWeight: 600, color: "var(--ui-text-muted)" }}>Category</label>
             <select value={uploadCat} onChange={(e) => setUploadCat(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--ui-border)", margin: "4px 0 12px", fontSize: 14 }}>
-              {STAFF_DOC_CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
+              {pickerCategories.map((c) => (<option key={c} value={c}>{c}</option>))}
             </select>
             <input ref={uploadFileRef} type="file" multiple accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.numbers,.xls,.csv,.doc,.heic" style={{ display: "block", marginBottom: 12 }} />
             {droppedFiles.length > 0 && (

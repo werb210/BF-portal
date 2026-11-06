@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 // BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
 import { api } from "@/api";
 import { formatMoneyValue } from "@/utils/labels";
+import { FINANCIAL_LINES, financialLineFor } from "./financialLines"; // BF_PORTAL_v906_FINANCIAL_LINES
 
 interface Props { applicationId?: string }
 
@@ -55,7 +56,7 @@ function normalizeFieldLabel(label: string): string {
   return label.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 }
 
-function renderFinancialValue(labelKey: string, rawValue: unknown): ReactNode {
+function renderFinancialValue(labelKey: string, rawValue: unknown, forceNumeric = false): ReactNode {
   // v695: financial/OCR values can arrive as numbers (or null), not just
   // strings — coerce before any string ops so `.split` can't throw
   // "(t || "").split is not a function".
@@ -63,7 +64,7 @@ function renderFinancialValue(labelKey: string, rawValue: unknown): ReactNode {
   // v884: a bare amount (230436.87) reads as money ($230,436.87) unless the field is a name, number, date or count.
   const key = normalizeFieldLabel(labelKey);
   const money = BARE_AMOUNT_RE.test(text.trim()) && !NOT_MONEY_RE.test(key) ? formatMoneyValue(text.trim()) : text;
-  if (!NUMERIC_FIELD_LABELS.has(key)) return money || "—";
+  if (!forceNumeric && !NUMERIC_FIELD_LABELS.has(key)) return money || "—";
   const nonNumericTokens = text.split(/\s+/).filter(Boolean).filter((token) => !NUMERIC_TOKEN_RE.test(token)).length;
   if (nonNumericTokens <= 3) return money || "—";
   return (
@@ -96,18 +97,18 @@ export default function FinancialsTab({ applicationId }: Props) {
       return aTs - bTs;
     });
 
-    const rowsByKey = new Map<string, string>();
-    const rowEntries: Array<{ key: string; label: string }> = [];
+    // BF_PORTAL_v906_FINANCIAL_LINES - one row per standard financial line, in statement order; everything else
+    // (email, invoice date, terms, names, dates) goes to "Document details".
     const matrix = new Map<string, Map<string, FinancialField>>();
+    const details: FinancialField[] = [];
     for (const field of data.fields) {
-      const normalized = field.displayLabel.trim().toLocaleLowerCase();
-      if (!normalized) continue;
-      if (!rowsByKey.has(normalized)) {
-        rowsByKey.set(normalized, field.displayLabel.trim());
-        rowEntries.push({ key: normalized, label: field.displayLabel.trim() });
+      const line = financialLineFor(field.displayLabel, field.fieldKey);
+      if (!line) {
+        if (String(field.value ?? "").trim()) details.push(field);
+        continue;
       }
-      if (!matrix.has(normalized)) matrix.set(normalized, new Map());
-      const row = matrix.get(normalized)!;
+      if (!matrix.has(line.key)) matrix.set(line.key, new Map());
+      const row = matrix.get(line.key)!;
       const existing = row.get(field.documentId);
       if (!existing) {
         row.set(field.documentId, field);
@@ -117,8 +118,8 @@ export default function FinancialsTab({ applicationId }: Props) {
         if (incomingConfidence > existingConfidence) row.set(field.documentId, field);
       }
     }
-    const sortedRows = rowEntries.sort((a, b) => a.label.localeCompare(b.label));
-    return { sortedDocs, sortedRows, matrix };
+    const sortedRows = FINANCIAL_LINES.filter((l) => matrix.has(l.key)).map((l) => ({ key: l.key, label: l.label }));
+    return { sortedDocs, sortedRows, matrix, details };
   }, [data]);
 
   if (!applicationId) return <div style={styles.placeholder}>Select an application to view financials.</div>;
@@ -163,14 +164,14 @@ export default function FinancialsTab({ applicationId }: Props) {
           <div style={styles.docNote}>
             {anyPending
               ? "OCR processing - extracted fields will appear here when ready."
-              : "OCR completed but found no fields matching this category."}
+              : "OCR finished but found no financial statement lines (revenue, assets, liabilities...) in these documents."}
           </div>
         ) : (
           <div style={pivotStyles.wrapper}>
             <table style={{ ...pivotStyles.table, minWidth: sortedDocs.length > 4 ? 720 : "100%" }}>
               <thead>
                 <tr>
-                  <th style={{ ...pivotStyles.thBase, ...pivotStyles.fieldHeader }}>Field</th>
+                  <th style={{ ...pivotStyles.thBase, ...pivotStyles.fieldHeader }}>Line</th>
                   {sortedDocs.map((doc) => {
                     const hasFields = data?.fields.some((f) => f.documentId === doc.documentId) ?? false;
                     return (
@@ -198,7 +199,7 @@ export default function FinancialsTab({ applicationId }: Props) {
                         <td key={`${row.key}-${doc.documentId}`} style={pivotStyles.tdBase}>
                           {field ? (
                             <div style={pivotStyles.valueWrap}>
-                              <span style={pivotStyles.valueText}>{renderFinancialValue(row.key, field.value)}</span>
+                              <span style={pivotStyles.valueText}>{renderFinancialValue(row.key, field.value, true)}</span>
                               <ConfidencePill confidence={field.confidence} />
                             </div>
                           ) : (
@@ -214,6 +215,30 @@ export default function FinancialsTab({ applicationId }: Props) {
           </div>
         )}
       </section>
+
+      {/* BF_PORTAL_v906_FINANCIAL_LINES - non-financial fields OCR found, per document. */}
+      {(pivot?.details ?? []).length > 0 && (
+        <section style={styles.section} data-testid="financials-document-details">
+          <h3 style={styles.sectionTitle}>Document details <span style={styles.sectionCount}>(not financial figures)</span></h3>
+          {sortedDocs.map((doc) => {
+            const list = (pivot?.details ?? []).filter((f) => f.documentId === doc.documentId);
+            if (!list.length) return null;
+            return (
+              <div key={doc.documentId} style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ui-text-muted)", marginBottom: 4 }}>{doc.filename ?? "(untitled)"}</div>
+                <dl style={{ display: "grid", gridTemplateColumns: "max-content 1fr", gap: "2px 16px", margin: 0, fontSize: 12 }}>
+                  {list.map((f, i) => (
+                    <div key={`${f.fieldKey}-${i}`} style={{ display: "contents" }}>
+                      <dt style={{ color: "var(--ui-text-muted)" }}>{f.displayLabel}</dt>
+                      <dd style={{ margin: 0, color: "var(--ui-text)", overflowWrap: "anywhere" }}>{String(f.value)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }

@@ -12,6 +12,11 @@ const card: CSSProperties = { padding: 16, border: "1px solid var(--ui-border)",
 const muted: CSSProperties = { fontSize: 13, color: "var(--ui-text-muted)", margin: "4px 0 0" };
 const input: CSSProperties = { padding: "6px 8px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface)", color: "var(--ui-text)", fontSize: 13, width: "100%", boxSizing: "border-box" };
 const label: CSSProperties = { display: "block", fontSize: 12, fontWeight: 600, color: "var(--ui-text)", marginBottom: 3 };
+// BF_PORTAL_v906_QUOTE_LAYOUT - each field is its own column: label above, input below, and the column may shrink
+// (minWidth 0) so an input's default width never pushes it over the next field. That overflow is what made the
+// option fields overlap.
+const field: CSSProperties = { display: "flex", flexDirection: "column", gap: 2, minWidth: 0 };
+const fieldGrid: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px 14px", alignItems: "end" };
 const small: CSSProperties = { ...secondaryButton, padding: "4px 10px", fontSize: 12 };
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "");
 const errText = (e: unknown, fallback: string) => (e as { data?: { message?: string } })?.data?.message || (e instanceof Error && e.message ? e.message : fallback);
@@ -28,32 +33,32 @@ const numOrNull = (v: string) => (v.trim() === "" ? null : Number(v));
 function OptionEditor({ o, i, onChange, onRemove, currency }: { o: QuoteOption; i: number; onChange: (o: QuoteOption) => void; onRemove: () => void; currency: string }) {
   const set = (patch: Partial<QuoteOption>) => onChange({ ...o, ...patch });
   const setFee = (k: number, patch: Partial<Fee>) => set({ fees: o.fees.map((f, j) => (j === k ? { ...f, ...patch } : f)) });
-  const grid: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 };
+  const grid: CSSProperties = fieldGrid;
   return (
     <fieldset data-testid={`quote-option-${i}`} style={{ border: "1px solid var(--ui-border)", borderRadius: 10, padding: 12, margin: "0 0 12px" }}>
       <legend style={{ fontWeight: 700, fontSize: 13, color: "var(--ui-text)" }}>Option {i + 1}{o.offer_id ? " (from a lender offer)" : ""}</legend>
       <div style={grid}>
-        <label><span style={label}>Lender</span><input aria-label={`Option ${i + 1} lender`} style={input} value={o.lender_name} onChange={(e) => set({ lender_name: e.target.value })} /></label>
-        <label><span style={label}>Product (optional)</span><input style={input} value={o.product_name ?? ""} onChange={(e) => set({ product_name: e.target.value || null })} /></label>
-        <label><span style={label}>Amount</span><input aria-label={`Option ${i + 1} amount`} style={input} inputMode="decimal" value={o.amount || ""} onChange={(e) => set({ amount: Number(e.target.value) || 0 })} /></label>
-        <label><span style={label}>Term (months)</span><input aria-label={`Option ${i + 1} term`} style={input} inputMode="decimal" value={o.term_months ?? ""} onChange={(e) => set({ term_months: numOrNull(e.target.value) })} /></label>
-        <label><span style={label}>Rate type</span>
+        <label style={field}><span style={label}>Lender</span><input aria-label={`Option ${i + 1} lender`} style={input} value={o.lender_name} onChange={(e) => set({ lender_name: e.target.value })} /></label>
+        <label style={field}><span style={label}>Product (optional)</span><input style={input} value={o.product_name ?? ""} onChange={(e) => set({ product_name: e.target.value || null })} /></label>
+        <label style={field}><span style={label}>Amount</span><input aria-label={`Option ${i + 1} amount`} style={input} inputMode="decimal" value={o.amount || ""} onChange={(e) => set({ amount: Number(e.target.value) || 0 })} /></label>
+        <label style={field}><span style={label}>Term (months)</span><input aria-label={`Option ${i + 1} term`} style={input} inputMode="decimal" value={o.term_months ?? ""} onChange={(e) => set({ term_months: numOrNull(e.target.value) })} /></label>
+        <label style={field}><span style={label}>Rate type</span>
           <select aria-label={`Option ${i + 1} rate type`} style={input} value={o.rate_kind} onChange={(e) => set({ rate_kind: e.target.value as QuoteOption["rate_kind"] })}>
             <option value="interest_rate">Interest rate (% a year)</option><option value="factor_rate">Factor rate</option>
           </select></label>
-        <label><span style={label}>{o.rate_kind === "factor_rate" ? "Factor (e.g. 1.30)" : "Rate (% a year)"}</span><input aria-label={`Option ${i + 1} rate`} style={input} inputMode="decimal" value={o.rate ?? ""} onChange={(e) => set({ rate: numOrNull(e.target.value) })} /></label>
-        <label><span style={label}>Payments</span>
+        <label style={field}><span style={label}>{o.rate_kind === "factor_rate" ? "Factor (e.g. 1.30)" : "Rate (% a year)"}</span><input aria-label={`Option ${i + 1} rate`} style={input} inputMode="decimal" value={o.rate ?? ""} onChange={(e) => set({ rate: numOrNull(e.target.value) })} /></label>
+        <label style={field}><span style={label}>Payments</span>
           <select style={input} value={o.payment_frequency} onChange={(e) => set({ payment_frequency: e.target.value as Frequency })}>
             {(Object.keys(FREQ_LABEL) as Frequency[]).map((f) => <option key={f} value={f}>{FREQ_LABEL[f]}</option>)}
           </select></label>
-        <label><span style={label}>Lender's payment (optional)</span><input aria-label={`Option ${i + 1} lender payment`} style={input} inputMode="decimal" placeholder="Worked out for you" value={o.payment_overridden ? o.payment_amount ?? "" : ""} onChange={(e) => { const v = numOrNull(e.target.value); set({ payment_amount: v, payment_overridden: v !== null && v > 0 }); }} /></label>
+        <label style={field}><span style={label}>Lender's payment (optional)</span><input aria-label={`Option ${i + 1} lender payment`} style={input} inputMode="decimal" placeholder="Worked out for you" value={o.payment_overridden ? o.payment_amount ?? "" : ""} onChange={(e) => { const v = numOrNull(e.target.value); set({ payment_amount: v, payment_overridden: v !== null && v > 0 }); }} /></label>
       </div>
       <div style={{ marginTop: 10 }}>
         <span style={label}>Fees</span>
         {o.fees.map((f, k) => (
           <div key={k} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
-            <input aria-label="Fee name" placeholder="Fee name" style={{ ...input, width: 180 }} value={f.label} onChange={(e) => setFee(k, { label: e.target.value })} />
-            <input aria-label="Fee amount" placeholder="Amount" style={{ ...input, width: 110 }} inputMode="decimal" value={f.amount || ""} onChange={(e) => setFee(k, { amount: Number(e.target.value) || 0 })} />
+            <input aria-label="Fee name" placeholder="Fee name" style={{ ...input, flex: "1 1 180px", width: "auto", minWidth: 0 }} value={f.label} onChange={(e) => setFee(k, { label: e.target.value })} />
+            <input aria-label="Fee amount" placeholder="Amount" style={{ ...input, flex: "0 1 120px", width: "auto", minWidth: 0 }} inputMode="decimal" value={f.amount || ""} onChange={(e) => setFee(k, { amount: Number(e.target.value) || 0 })} />
             <label style={{ fontSize: 12, color: "var(--ui-text)" }}><input type="checkbox" checked={f.deducted} onChange={(e) => setFee(k, { deducted: e.target.checked })} /> Taken from the funds</label>
             <label style={{ fontSize: 12, color: "var(--ui-text)" }}><input type="checkbox" checked={f.taxable === true} onChange={(e) => setFee(k, { taxable: e.target.checked })} /> Sales tax applies</label>
             <button type="button" style={small} onClick={() => set({ fees: o.fees.filter((_, j) => j !== k) })}>Remove</button>
@@ -61,7 +66,7 @@ function OptionEditor({ o, i, onChange, onRemove, currency }: { o: QuoteOption; 
         ))}
         <button type="button" style={small} onClick={() => set({ fees: [...o.fees, { label: "", amount: 0, deducted: true, taxable: false }] })}>Add a fee</button>
       </div>
-      <label style={{ display: "block", marginTop: 10 }}><span style={label}>Note for the client (optional)</span><input style={input} value={o.notes ?? ""} onChange={(e) => set({ notes: e.target.value || null })} /></label>
+      <label style={{ ...field, marginTop: 10 }}><span style={label}>Note for the client (optional)</span><input style={input} value={o.notes ?? ""} onChange={(e) => set({ notes: e.target.value || null })} /></label>
       <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
         <label style={{ fontSize: 13, color: "var(--ui-text)" }}><input type="checkbox" checked={o.recommended} onChange={(e) => set({ recommended: e.target.checked })} /> Recommended</label>
         <button type="button" style={small} onClick={onRemove}>Remove option</button>
@@ -107,17 +112,17 @@ function Editor({ quote, provinces, onSaved, onDirty }: { quote: Quote; province
   return (
     <section style={card} data-testid="quote-editor">
       <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>Edit quote {quote.quote_number}</h3>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-        <label><span style={label}>Title</span><input style={input} value={title} onChange={(e) => setTitle(e.target.value)} /></label>
-        <label><span style={label}>Valid until</span><input aria-label="Valid until" type="date" style={input} value={expires} onChange={(e) => setExpires(e.target.value)} /></label>
-        <label><span style={label}>Sales tax on fees</span>
+      <div style={fieldGrid}>
+        <label style={field}><span style={label}>Title</span><input style={input} value={title} onChange={(e) => setTitle(e.target.value)} /></label>
+        <label style={field}><span style={label}>Valid until</span><input aria-label="Valid until" type="date" style={input} value={expires} onChange={(e) => setExpires(e.target.value)} /></label>
+        <label style={field}><span style={label}>Sales tax on fees</span>
           <select aria-label="Sales tax province" style={input} value={province} onChange={(e) => setProvince(e.target.value)}>
             <option value="">No sales tax</option>
             {provinces.map((p) => <option key={p.code} value={p.code}>{p.name}</option>)}
           </select></label>
       </div>
       <p style={muted}>Only the fees ticked "Sales tax applies" are taxed, at the province's rate in Settings &gt; Deal tools. Interest and factor cost are never taxed.</p>
-      <label style={{ display: "block", margin: "10px 0" }}><span style={label}>Message to the client (optional)</span><textarea style={{ ...input, minHeight: 60 }} value={message} onChange={(e) => setMessage(e.target.value)} /></label>
+      <label style={{ ...field, margin: "10px 0" }}><span style={label}>Message to the client (optional)</span><textarea style={{ ...input, minHeight: 60 }} value={message} onChange={(e) => setMessage(e.target.value)} /></label>
       {options.map((o, i) => (
         <OptionEditor key={o.id ?? `new-${i}`} o={o} i={i} currency={quote.currency} onChange={(n) => setOptions(options.map((x, j) => (j === i ? n : x)))} onRemove={() => setOptions(options.filter((_, j) => j !== i))} />
       ))}

@@ -38,8 +38,31 @@ function Reasons({ reasons, quietInfo = false }: { reasons: Reason[] | undefined
   );
 }
 
-function ScoreCard({ score }: { score: FraudScore }) {
+// BF_PORTAL_v906_FRAUD_RUNNING - while checks still run (or documents wait for their tamper scan) the number is not
+// final: a file with tampered statements read 45 on its first run and 85 after "Run again". Show that the checks are
+// running instead of a number that reads as the result.
+// BF-Server v906 decides (complete: false while queued or while documents wait for their tamper scan); an older server
+// sends no flag, and the queue message above the card already says the results are from the last finished run.
+export function scoreIsFinal(score: FraudScore, _queued = false): boolean {
+  return score.complete !== false;
+}
+
+function ScoreCard({ score, queued = false }: { score: FraudScore; queued?: boolean }) {
   const s = BAND_STYLE[score.band];
+  if (!scoreIsFinal(score, queued)) {
+    return (
+      <section style={card} data-testid="fraud-score">
+        <div role="status" data-testid="fraud-score-running" style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ minWidth: 92, textAlign: "center", padding: "8px 12px", borderRadius: 12, background: "#e0f2fe", color: "#0c4a6e", border: "2px solid #7dd3fc", fontWeight: 800 }}>…</div>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <h3 style={{ ...h3, margin: 0 }}>Checks still running…</h3>
+            <p style={muted}>{plainSetupText(score.pending_reason ?? "The score will show when every check has finished.")} This page updates by itself.</p>
+            {score.floor?.applied && <p style={{ ...muted, color: "var(--ui-text)", fontWeight: 700 }}>Already High risk: {score.floor.reason}</p>}
+          </div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section style={card} data-testid="fraud-score">
       <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
@@ -137,6 +160,13 @@ export default function FraudTab({ applicationId }: { applicationId: string }) {
   }, [applicationId]);
 
   useEffect(() => { void load(); }, [load]);
+  // BF_PORTAL_v906_FRAUD_RUNNING - refresh while checks run, so the final score appears without a reload.
+  const stillRunning = Boolean(data && data.score && !scoreIsFinal(data.score, Boolean(data.queue.queued)));
+  useEffect(() => {
+    if (!stillRunning) return;
+    const t = setInterval(() => { void load(); }, 10000);
+    return () => clearInterval(t);
+  }, [stillRunning, load]);
 
   if (error) return <p role="alert" style={noticeStyle("error")}>{error}</p>;
   if (!data) return <p role="status" style={{ color: "var(--ui-text)" }}>Loading fraud checks…</p>;
@@ -190,7 +220,7 @@ export default function FraudTab({ applicationId }: { applicationId: string }) {
       </div>
       <p style={{ ...muted, margin: "0 0 14px" }}>These are signs worth a closer look, not a finding of fraud. Always review the documents yourself.</p>
 
-      {data.score && <ScoreCard score={data.score} />}
+      {data.score && <ScoreCard score={data.score} queued={Boolean(data.queue.queued)} />}
 
       <DocumentsCard documents={data.documents} />
 

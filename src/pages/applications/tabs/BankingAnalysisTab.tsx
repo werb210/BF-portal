@@ -1,6 +1,6 @@
 // BF_PORTAL_BLOCK_1_31C_TAB_TEST_ALIGNMENT
 // BF_PORTAL_BLOCK_1_31B_BANKING_TAB_RICH_UI
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 // BF_PORTAL_BLOCK_v191a_OCR_DIAGNOSTIC_PANEL_FIX_v1
 import { api } from "@/api";
 import { fetchBankingAnalysis, type BankingAnalysis } from "@/api/banking";
@@ -67,7 +67,43 @@ type RichAnalysis = BankingAnalysis & {
     error?: string;
   }>;
   lastError?: string | null;
+  // BF_PORTAL_v906_BANKING_INSIGHTS - from BF-Server v906.
+  running?: boolean;
+  monthsSource?: "monthly_summaries" | "transactions" | "none";
+  insights?: {
+    nsfCount?: number;
+    daysNegative?: number;
+    transactionCount?: number;
+    topPayees?: Array<{ name: string; total: number; count: number }>;
+    topPayors?: Array<{ name: string; total: number; count: number }>;
+    lenderPayments?: Array<{ name: string; total: number; count: number; months: number; averagePayment: number }>;
+  } | null;
+  statements?: StatementRead[];
 };
+
+// BF_PORTAL_v906_BANKING_INSIGHTS - "What the OCR read" for one statement.
+type StatementRead = {
+  document_id: string;
+  filename?: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  openingBalance: number | null;
+  closingBalance: number | null;
+  deposits: number;
+  withdrawals: number;
+  transactionCount: number;
+  nsfCount: number;
+};
+type ParsedTx = { document_id: string | null; date: string; description: string | null; amount: number; balance: number | null; is_nsf: boolean };
+type TrendMonth = BankingTrendMonth & { averageBalance?: number | null; daysNegative?: number };
+
+// Poll every few seconds while the analysis is queued or running, so staff never have to reload the tab.
+export const BANKING_POLL_MS = 8000;
+export function bankingIsRunning(d: { status?: string; running?: boolean } | null | undefined): boolean {
+  if (!d) return false;
+  if (d.running) return true;
+  return ["pending", "queued", "in_progress", "analysis_in_progress"].includes(String(d.status ?? ""));
+}
 
 interface Props {
   applicationId?: string;
@@ -199,43 +235,55 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
   const [error, setError] = useState<string | null>(null);
   // BF_PORTAL_BANKING_RERUN_v33
   const [rerunning, setRerunning] = useState(false);
+  // BF_PORTAL_v906_BANKING_INSIGHTS - the tab refreshes itself while the analysis is queued or running.
+  const [queuedAt, setQueuedAt] = useState<number | null>(null);
+  const [rerunError, setRerunError] = useState<string | null>(null);
+
+  const refetch = useCallback(async (initial = false) => {
+    if (!applicationId) return;
+    if (initial) setLoading(true);
+    try {
+      const res = await fetchBankingAnalysis(applicationId);
+      setData(res as RichAnalysis);
+      setError(null);
+    } catch (err) {
+      if (initial) setError(err instanceof Error ? err.message : "Unable to load banking analysis");
+    } finally {
+      if (initial) setLoading(false);
+    }
+  }, [applicationId]);
 
   useEffect(() => {
     if (!applicationId) {
       setLoading(false);
       return;
     }
-    let cancelled = false;
-    setLoading(true);
-    fetchBankingAnalysis(applicationId)
-      .then((res) => {
-        if (cancelled) return;
-        setData(res as RichAnalysis);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Unable to load banking analysis");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [applicationId]);
+    void refetch(true);
+  }, [applicationId, refetch]);
+
+  const running = bankingIsRunning(data) || queuedAt !== null;
+  useEffect(() => {
+    if (!running || !applicationId) return;
+    const t = setInterval(() => { void refetch(false); }, BANKING_POLL_MS);
+    return () => clearInterval(t);
+  }, [running, applicationId, refetch]);
+  // A queued re-run counts as running until the server reports a status change (or two minutes pass).
+  useEffect(() => {
+    if (queuedAt === null) return;
+    if (data && !bankingIsRunning(data) && Date.now() - queuedAt > BANKING_POLL_MS * 2) { setQueuedAt(null); setRerunning(false); }
+    if (Date.now() - queuedAt > 120_000 && !bankingIsRunning(data)) { setQueuedAt(null); setRerunning(false); }
+  }, [data, queuedAt]);
 
   // BF_PORTAL_BANKING_RERUN_v33 - queues a fresh pipeline run. The server sets
   // the row back to pending; the banking worker picks it up on its next tick.
   const onRerun = () => {
     setRerunning(true);
+    setRerunError(null);
     api.post("/api/applications/" + applicationId + "/banking-analysis/retry", {})
-      .then(() => {
-        window.alert("Banking analysis queued. It takes a few minutes; reload this tab to see the new figures.");
-      })
+      .then(() => { setQueuedAt(Date.now()); void refetch(false); })
       .catch((e) => {
         setRerunning(false);
-        window.alert("Could not queue the analysis: " + (e instanceof Error ? e.message : String(e)));
+        setRerunError("Could not queue the analysis: " + (e instanceof Error ? e.message : String(e)));
       });
   };
 
@@ -245,22 +293,21 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
   if (!data) return <DiagnosticPanel applicationId={applicationId} />;
   if ((data as any).status === "failed") {
     const d: any = data;
-    const onRetry = () => {
-      api.post("/api/applications/" + applicationId + "/banking-analysis/retry", {})
-        .then(() => { window.location.reload(); })
-        .catch((e) => { window.alert("Retry failed: " + (e instanceof Error ? e.message : String(e))); });
-    };
+    const onRetry = () => onRerun(); // BF_PORTAL_v906_BANKING_INSIGHTS - re-run and refresh in place, no page reload
     return (
       <div style={{ border: "1px solid #fecaca", background: "#fef2f2", color: "#7f1d1d", padding: 16, borderRadius: 8, margin: 16 }}>
         <div style={{ fontWeight: 700, marginBottom: 6 }}>Banking analysis failed.</div>
         <div style={{ fontSize: 13, marginBottom: 8, fontFamily: "monospace", whiteSpace: "pre-wrap" }}>{d.lastError || "No error message recorded."}</div>
         <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 12 }}>Attempts: {d.attemptCount || 0} of {d.maxAttempts || 3}</div>
-        <button onClick={onRetry} style={{ background: "#7f1d1d", color: "white", border: "none", padding: "8px 16px", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Retry analysis</button>
+        <button onClick={onRetry} disabled={rerunning} style={{ background: "#7f1d1d", color: "white", border: "none", padding: "8px 16px", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>{running ? "Analysis running…" : "Re-run analysis"}</button>
+        {rerunError ? <div role="alert" style={{ marginTop: 8, fontSize: 13 }}>{rerunError}</div> : null}
       </div>
     );
   }
 
-  const months = ((data.monthGroups ?? []) as unknown) as BankingTrendMonth[];
+  const months = ((data.monthGroups ?? []) as unknown) as TrendMonth[];
+  const ins = data.insights ?? null;
+  const statements = data.statements ?? [];
   const unusual = data.riskFlags?.unusualTransactions ?? [];
   const vendors = data.topVendors ?? [];
   const period =
@@ -301,7 +348,7 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
           <button
             type="button"
             onClick={onRerun}
-            disabled={rerunning}
+            disabled={rerunning || running}
             title="Recompute every figure on this page from the uploaded statements"
             data-testid="banking-rerun"
             style={{
@@ -316,9 +363,15 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
               opacity: rerunning ? 0.6 : 1,
             }}
           >
-            {rerunning ? "Queued - this takes a few minutes" : "Re-run analysis"}
+            {running ? "Analysis running…" : "Re-run analysis"}
           </button>
         </div>
+        {running && (
+          <div role="status" data-testid="banking-running" style={bannerStyle("wait")}>
+            The analysis is running. This page updates by itself when it finishes; you do not need to reload it.
+          </div>
+        )}
+        {rerunError && <div role="alert" style={bannerStyle("missing")}>{rerunError}</div>}
 
         <StatusBanner status={data.status} autoSkip={Boolean((data as any)?.banking_auto_skip ?? (data as any)?.bankingAutoSkip)} />
 
@@ -374,6 +427,11 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
                 <span style={styles.metricValue}>{d.error ? "Not counted" : "Counted"}</span>
               </div>
             ))}
+            {/* BF_PORTAL_v906_BANKING_INSIGHTS */}
+            {docs.map((d, i) => {
+              const st = statements.find((x) => x.document_id === d.document_id);
+              return d.document_id ? <OcrReadDetails key={`ocr-${d.document_id ?? i}`} applicationId={applicationId} documentId={d.document_id} filename={d.filename ?? null} statement={st ?? null} /> : null;
+            })}
             {skipped.length > 0 ? (
               <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
                 {skipped.length} document(s) were left out of the totals for the reasons above.
@@ -424,14 +482,21 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
 
         <div style={styles.panel}>
           <div style={styles.panelTitle}>{months.length}-Month Trend</div>
-          <BankingTrendChart months={months} />
+          {months.length === 0 ? (
+            <div style={{ color: C.muted, fontSize: 13 }}>{running ? "The analysis is running; the trend appears when it finishes." : "No monthly data yet."}</div>
+          ) : <BankingTrendChart months={months} />}
         </div>
 
-        <div style={styles.panel}>
+        <div style={styles.panel} data-testid="banking-monthly">
           <div style={styles.panelTitle}>Monthly Cash Flow Summary</div>
           {months.length === 0 ? (
-            <div style={{ color: C.muted, fontSize: 13 }}>No monthly data yet.</div>
+            <div style={{ color: C.muted, fontSize: 13 }}>
+              {running ? "The analysis is running; the monthly figures appear when it finishes."
+                : (ins?.transactionCount ?? 0) > 0 ? "Monthly figures could not be worked out from the statements. Re-run the analysis."
+                : "No monthly data yet."}
+            </div>
           ) : (
+            <div style={{ overflowX: "auto" }}>
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -439,6 +504,10 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
                   <th style={{ ...styles.th, textAlign: "right" }}>Deposits</th>
                   <th style={{ ...styles.th, textAlign: "right" }}>Withdrawals</th>
                   <th style={{ ...styles.th, textAlign: "right" }}>Net Cash Flow</th>
+                  <th style={{ ...styles.th, textAlign: "right" }}>Average balance</th>
+                  <th style={{ ...styles.th, textAlign: "right" }}>Ending balance</th>
+                  <th style={{ ...styles.th, textAlign: "right" }}>NSFs</th>
+                  <th style={{ ...styles.th, textAlign: "right" }}>Days negative</th>
                 </tr>
               </thead>
               <tbody>
@@ -454,11 +523,37 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
                     <td style={{ ...styles.td, textAlign: "right", fontWeight: 600 }}>
                       {fmtMoney(m.net)}
                     </td>
+                    <td style={{ ...styles.td, textAlign: "right" }}>{fmtMoney(m.averageBalance ?? null)}</td>
+                    <td style={{ ...styles.td, textAlign: "right" }}>{fmtMoney(m.endingBalance ?? null)}</td>
+                    <td style={{ ...styles.td, textAlign: "right" }}>{m.nsfCount ?? 0}</td>
+                    <td style={{ ...styles.td, textAlign: "right" }}>{m.daysNegative ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           )}
+        </div>
+
+        {/* BF_PORTAL_v906_BANKING_INSIGHTS - lender and MCA payments, payees and payors. */}
+        <div style={styles.panel} data-testid="banking-lender-payments">
+          <div style={styles.panelTitle}>Lender and MCA payments detected</div>
+          {(ins?.lenderPayments ?? []).length === 0 ? (
+            <div style={{ color: C.muted, fontSize: 13 }}>{(ins?.transactionCount ?? 0) > 0 ? "No regular lender, loan, lease or cash-advance payments were recognised." : "Appears once the statements are analyzed."}</div>
+          ) : (
+            <table style={styles.table}>
+              <thead><tr><th style={styles.th}>Paid to</th><th style={{ ...styles.th, textAlign: "right" }}>Payments</th><th style={{ ...styles.th, textAlign: "right" }}>Months</th><th style={{ ...styles.th, textAlign: "right" }}>Average payment</th><th style={{ ...styles.th, textAlign: "right" }}>Total</th></tr></thead>
+              <tbody>{(ins?.lenderPayments ?? []).map((l) => (
+                <tr key={l.name}><td style={styles.td}>{l.name}</td><td style={{ ...styles.td, textAlign: "right" }}>{l.count}</td><td style={{ ...styles.td, textAlign: "right" }}>{l.months}</td><td style={{ ...styles.td, textAlign: "right" }}>{fmtMoney(l.averagePayment)}</td><td style={{ ...styles.td, textAlign: "right" }}>{fmtMoney(l.total)}</td></tr>
+              ))}</tbody>
+            </table>
+          )}
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>Recognised from the transaction descriptions. A hint to check against the statements, not a finding.</div>
+        </div>
+
+        <div style={styles.twoUp}>
+          <PartyPanel title="Top payees (money out)" rows={ins?.topPayees ?? []} testId="banking-payees" />
+          <PartyPanel title="Top payors (money in)" rows={ins?.topPayors ?? []} testId="banking-payors" />
         </div>
 
         <div style={styles.panel}>
@@ -510,6 +605,14 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
             </span>
           </div>
           <div style={styles.metric}>
+            <span style={styles.metricLabel}>NSF / returned items</span>
+            <span style={styles.metricValue} data-testid="banking-nsf-count">{ins ? ins.nsfCount ?? 0 : "—"}</span>
+          </div>
+          <div style={styles.metric}>
+            <span style={styles.metricLabel}>Days below zero</span>
+            <span style={styles.metricValue} data-testid="banking-days-negative">{ins ? ins.daysNegative ?? 0 : "—"}</span>
+          </div>
+          <div style={styles.metric}>
             <span style={styles.metricLabel}>Months Profitable</span>
             <span style={styles.metricValue}>{monthsProfitableLabel}</span>
           </div>
@@ -546,6 +649,72 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
       </div>
     </div>
   );
+}
+
+// BF_PORTAL_v906_BANKING_INSIGHTS
+function PartyPanel({ title, rows, testId }: { title: string; rows: Array<{ name: string; total: number; count: number }>; testId: string }) {
+  return (
+    <div style={styles.panel} data-testid={testId}>
+      <div style={styles.panelTitle}>{title}</div>
+      {rows.length === 0 ? <div style={{ color: C.muted, fontSize: 13 }}>Appears once the statements are analyzed.</div> : rows.map((r) => (
+        <div key={r.name} style={styles.metric}>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }} title={r.name}>{r.name} <span style={{ color: C.muted, fontSize: 11 }}>({r.count})</span></span>
+          <span style={styles.metricValue}>{fmtMoney(r.total)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// BF_PORTAL_v906_BANKING_INSIGHTS - "What the OCR read" from one statement: its period, opening and closing balance,
+// totals, the number of transactions, and (on demand) every parsed transaction.
+export function OcrReadDetails({ applicationId, documentId, filename, statement }: { applicationId: string; documentId: string; filename: string | null; statement: StatementRead | null }) {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<ParsedTx[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    if (!open || rows) return;
+    let cancelled = false;
+    api.get<{ transactions?: ParsedTx[] }>(`/api/applications/${applicationId}/banking-analysis/transactions`, { params: { document_id: documentId } })
+      .then((r) => { if (!cancelled) setRows(Array.isArray(r?.transactions) ? r.transactions : []); })
+      .catch((e) => { if (!cancelled) setErr(e instanceof Error ? e.message : "Could not load the transactions."); });
+    return () => { cancelled = true; };
+  }, [open, rows, applicationId, documentId]);
+  return (
+    <details data-testid={`ocr-read-${documentId}`} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)} style={{ borderTop: "1px solid var(--ui-border)", padding: "8px 0", fontSize: 13 }}>
+      <summary style={{ cursor: "pointer", fontWeight: 600, color: C.text }}>What the OCR read: {filename ?? "statement"}</summary>
+      {statement ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, margin: "8px 0" }}>
+          <Fact label="Statement period" value={statement.periodStart && statement.periodEnd ? `${statement.periodStart} to ${statement.periodEnd}` : "—"} />
+          <Fact label="Opening balance" value={fmtMoney(statement.openingBalance)} />
+          <Fact label="Closing balance" value={fmtMoney(statement.closingBalance)} />
+          <Fact label="Total deposits" value={fmtMoney(statement.deposits)} />
+          <Fact label="Total withdrawals" value={fmtMoney(statement.withdrawals)} />
+          <Fact label="Transactions" value={String(statement.transactionCount)} />
+          <Fact label="NSF items" value={String(statement.nsfCount)} />
+        </div>
+      ) : <div style={{ color: C.muted, margin: "6px 0" }}>No transactions were read from this statement.</div>}
+      {open && (err ? <div role="alert" style={{ color: "#b91c1c" }}>{err}</div> : !rows ? <div style={{ color: C.muted }}>Loading transactions…</div> : rows.length === 0 ? null : (
+        <div style={{ maxHeight: 320, overflow: "auto", border: "1px solid var(--ui-border)", borderRadius: 6 }}>
+          <table style={styles.table}>
+            <thead><tr><th style={styles.th}>Date</th><th style={styles.th}>Description</th><th style={{ ...styles.th, textAlign: "right" }}>Amount</th><th style={{ ...styles.th, textAlign: "right" }}>Balance</th></tr></thead>
+            <tbody>{rows.map((t, i) => (
+              <tr key={i}>
+                <td style={styles.td}>{t.date}</td>
+                <td style={styles.td}>{t.description ?? "—"}{t.is_nsf ? <strong style={{ color: "#991b1b" }}> (NSF)</strong> : null}</td>
+                <td style={{ ...styles.td, textAlign: "right" }}>{fmtMoney(t.amount)}</td>
+                <td style={{ ...styles.td, textAlign: "right" }}>{fmtMoney(t.balance)}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      ))}
+    </details>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return <div><div style={{ fontSize: 11, color: C.muted }}>{label}</div><div style={{ fontWeight: 600, color: C.text }}>{value}</div></div>;
 }
 
 // BF_PORTAL_BLOCK_v191a_OCR_DIAGNOSTIC_PANEL_FIX_v1

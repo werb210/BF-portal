@@ -29,6 +29,11 @@ export default function PaymentLinksPanel({ applicationId, contactId }: Props) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  // BF_PORTAL_v906_PAYMENT_BASIS - a payment request starts from what the client owes: the signed fee agreement on
+  // the file, or an invoice (amount and what it is for) typed here. Nothing can be sent until one is chosen.
+  const [basis, setBasis] = useState<"agreement" | "invoice" | null>(null);
+  const [agreementFee, setAgreementFee] = useState<{ amount: number; description: string } | null>(null);
+  const [checkedAgreement, setCheckedAgreement] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -40,24 +45,36 @@ export default function PaymentLinksPanel({ applicationId, contactId }: Props) {
   useEffect(() => { void load(); }, [load]);
 
   const startNew = async () => {
-    setOpen(true); setErr(null); setOk(null);
-    if (applicationId && !amount) {
+    setOpen(true); setErr(null); setOk(null); setBasis(null); setAmount(""); setDescription("");
+    let fee: { amount: number; description: string } | null = null;
+    if (applicationId) {
       try {
         const s = await paymentsApi.feeSuggestion(applicationId);
-        if (s.fee) { setAmount(String(s.fee.amount)); setDescription(s.fee.description); }
-      } catch { /* no suggestion: the broker types the amount */ }
+        fee = s.fee ?? null;
+      } catch { /* no signed fee agreement to start from: the broker enters an invoice */ }
     }
+    setAgreementFee(fee);
+    setCheckedAgreement(true);
+    if (!fee) setBasis("invoice");
   };
+
+  const chooseBasis = (b: "agreement" | "invoice") => {
+    setBasis(b);
+    if (b === "agreement" && agreementFee) { setAmount(String(agreementFee.amount)); setDescription(agreementFee.description); }
+    if (b === "invoice") { setAmount(""); setDescription(""); }
+  };
+  const amountOk = Number(String(amount).replace(/[$,\s]/g, "")) >= 1;
+  const ready = basis !== null && amountOk && description.trim().length > 0;
 
   const create = async () => {
     setBusy(true); setErr(null); setOk(null);
     try {
       const methods = [card ? "card" : null, debit ? "acss_debit" : null].filter(Boolean);
-      const r = await paymentsApi.create({ ...rec, amount, description, methods, send: { email: byEmail, sms: byText } });
+      const r = await paymentsApi.create({ ...rec, amount, description: description.trim(), methods, send: { email: byEmail, sms: byText } });
       const refused = Object.values(r.refused ?? {});
       setOk(r.sent.length ? `Payment link sent by ${r.sent.map((c) => (c === "sms" ? "text" : c)).join(" and ")}.` : "Payment link created. Copy it to share it.");
       if (refused.length) setErr(refused.join(" "));
-      setOpen(false); setAmount("");
+      setOpen(false); setAmount(""); setBasis(null);
       await load();
     } catch (e) { setErr(errText(e, "Could not create the payment link.")); } finally { setBusy(false); }
   };
@@ -79,7 +96,7 @@ export default function PaymentLinksPanel({ applicationId, contactId }: Props) {
   };
 
   return (
-    <Section id="payment-links" title="Payments" intro="Ask the client to pay a fee online by card or pre-authorized debit. The money goes to Boreal's Stripe account.">
+    <Section id="payment-links" title="Payments" intro="Send the client a secure link to pay a fee they owe Boreal: start from their signed fee agreement, or enter an invoice (amount and what it is for). They pay by card or pre-authorized debit into Boreal's Stripe account.">
       {problem && <p style={muted} data-testid="payments-problem">{withoutSettingNames(problem) || "Online payments are not set up yet."} Ask an Admin to set this up in Settings &gt; Payments.</p>}
       <Notice error={err} ok={ok} />
       {links && links.length > 0 && (
@@ -112,19 +129,35 @@ export default function PaymentLinksPanel({ applicationId, contactId }: Props) {
         </table>
       )}
       {links && links.length === 0 && !open && <p style={muted}>No payment requests yet.</p>}
-      {!open && connected && !problem && <button type="button" style={button} onClick={() => void startNew()}>Request a payment</button>}
+      {!open && connected && !problem && <button type="button" style={button} onClick={() => void startNew()}>Request a fee payment</button>}
       {open && (
         <div data-testid="payment-form" style={{ marginTop: 8 }}>
+          <fieldset style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: "8px 12px", margin: "0 0 10px" }} data-testid="payment-basis">
+            <legend style={{ fontSize: 13, fontWeight: 700, color: "var(--ui-text)" }}>1. What is the client paying?</legend>
+            {applicationId && checkedAgreement && (
+              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, color: agreementFee ? "var(--ui-text)" : "var(--ui-text-muted)", padding: "4px 0" }}>
+                <input type="radio" name="pl-basis" disabled={!agreementFee} checked={basis === "agreement"} onChange={() => chooseBasis("agreement")} />
+                <span>{agreementFee ? <>The fee in the signed fee agreement: <strong>{money(agreementFee.amount)}</strong> ({agreementFee.description})</> : "The signed fee agreement (none signed on this file yet)"}</span>
+              </label>
+            )}
+            <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, color: "var(--ui-text)", padding: "4px 0" }}>
+              <input type="radio" name="pl-basis" checked={basis === "invoice"} onChange={() => chooseBasis("invoice")} />
+              <span>An invoice: enter the amount and what it is for</span>
+            </label>
+          </fieldset>
+          {basis && <>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ui-text)", margin: "0 0 6px" }}>2. Check the amount</div>
           <label htmlFor="pl-amount" style={{ fontSize: 13 }}>Amount (CAD)</label>
           <input id="pl-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} style={{ ...input, maxWidth: 180, display: "block", margin: "4px 0 8px" }} />
-          <label htmlFor="pl-desc" style={{ fontSize: 13 }}>What it is for</label>
-          <input id="pl-desc" value={description} onChange={(e) => setDescription(e.target.value)} style={{ ...input, display: "block", margin: "4px 0 8px" }} />
+          <label htmlFor="pl-desc" style={{ fontSize: 13 }}>What it is for (shown to the client)</label>
+          <input id="pl-desc" value={description} placeholder="For example: Broker fee - invoice 1042" onChange={(e) => setDescription(e.target.value)} style={{ ...input, display: "block", margin: "4px 0 8px" }} />
+          </>}
           <Toggle id="pl-card" label="Card" checked={card} onChange={setCard} />
           <Toggle id="pl-debit" label="Bank debit (pre-authorized debit, clears in 3 to 5 business days)" checked={debit} onChange={setDebit} />
           <Toggle id="pl-email" label="Send by email" checked={byEmail} onChange={setByEmail} />
           <Toggle id="pl-text" label="Send by text (only if the client agreed to texts)" checked={byText} onChange={setByText} />
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button type="button" style={button} disabled={busy} onClick={() => void create()}>{byEmail || byText ? "Create and send" : "Create link"}</button>
+            <button type="button" style={button} disabled={busy || !ready} onClick={() => void create()}>{byEmail || byText ? "Create and send" : "Create link"}</button>
             <button type="button" style={quiet} onClick={() => setOpen(false)}>Cancel</button>
           </div>
         </div>

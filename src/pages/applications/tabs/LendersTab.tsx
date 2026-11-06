@@ -17,6 +17,8 @@ import {
   type LenderMatch,
 } from "@/api/lenders";
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v_SIGNING_RESEND_v1 — collateral-required signal
+import { applyReadToOption, readOfferFile, readOfferOnFile, termSheetFields, type ReadOffer } from "@/quotes/offerReaderApi"; // BF_PORTAL_v906_OFFER_READER
+import { quotesApi } from "@/quotes/quotesApi"; // BF_PORTAL_v906_OFFER_READER
 import { RejectReasonsModal } from "@/components/applications/RejectReasonsModal";
 import { getErrorMessage } from "@/utils/errors";
 import toast from "react-hot-toast"; // BF_PORTAL_BLOCK_v488_MARK_SENT_FEEDBACK
@@ -403,6 +405,13 @@ export default function LendersTab({ applicationId }: Props) {
   const [tsPayment, setTsPayment] = useState("");
   const [tsExpiry, setTsExpiry] = useState("");
   const [tsNotes, setTsNotes] = useState("");
+  // BF_PORTAL_v906_OFFER_READER - read the term sheet to fill the form, then offer "Create quote from this term sheet".
+  const [tsReading, setTsReading] = useState(false);
+  const [tsRead, setTsRead] = useState<ReadOffer | null>(null);
+  const [tsReadMsg, setTsReadMsg] = useState<string | null>(null);
+  const [savedTermSheet, setSavedTermSheet] = useState<{ offerId: string; lenderName: string; read: ReadOffer | null } | null>(null);
+  const [quoteBusy, setQuoteBusy] = useState(false);
+  const [quoteMsg, setQuoteMsg] = useState<string | null>(null);
   const filesRootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -640,6 +649,8 @@ function describeSendFailure(err: unknown): string {
   const resetTermSheet = () => {
     setTermSheetFor(null);
     setTsFile(null);
+    setTsRead(null);
+    setTsReadMsg(null);
     setTsAmount("");
     setTsRate("");
     setTsTerm("");
@@ -653,7 +664,7 @@ function describeSendFailure(err: unknown): string {
     setUploadingFor(termSheetFor.matchId);
     setUploadError(null);
     try {
-      await uploadLenderTermSheet(id, termSheetFor.matchId, tsFile, {
+      const uploaded = await uploadLenderTermSheet(id, termSheetFor.matchId, tsFile, {
         amount: tsAmount,
         rate_factor: tsRate,
         term: tsTerm,
@@ -662,12 +673,56 @@ function describeSendFailure(err: unknown): string {
         notes: tsNotes,
       });
       await queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
+      const offerId = (uploaded as { offer_id?: string } | null)?.offer_id ?? null; // BF_PORTAL_v906_OFFER_READER
+      if (offerId) { setSavedTermSheet({ offerId, lenderName: termSheetFor.lenderName, read: tsRead }); setQuoteMsg(null); }
       resetTermSheet();
     } catch (err) {
       setUploadError(getErrorMessage(err, "Term sheet upload failed."));
     } finally {
       setUploadingFor(null);
     }
+  };
+
+  // BF_PORTAL_v906_OFFER_READER - fill the term sheet form from the file (staff check every value before saving).
+  const readTermSheet = async () => {
+    if (!tsFile || !id) return;
+    setTsReading(true); setTsReadMsg(null);
+    try {
+      const r = await readOfferFile(id, tsFile);
+      const read = r?.read ?? null;
+      setTsRead(read);
+      if (read) {
+        const f = termSheetFields(read);
+        if (f.amount) setTsAmount(f.amount);
+        if (f.rate) setTsRate(f.rate);
+        if (f.term) setTsTerm(f.term);
+        if (f.payment) setTsPayment(f.payment);
+        if (f.expiry) setTsExpiry(f.expiry);
+        setTsReadMsg("Filled in from the term sheet. Check each value before saving.");
+      }
+    } catch (err) {
+      setTsReadMsg(getErrorMessage(err, "The term sheet could not be read. Type the terms in."));
+    } finally { setTsReading(false); }
+  };
+
+  const createQuoteFromTermSheet = async () => {
+    if (!savedTermSheet || !id) return;
+    setQuoteBusy(true); setQuoteMsg(null);
+    try {
+      let read = savedTermSheet.read;
+      if (!read) { try { read = (await readOfferOnFile(id, savedTermSheet.offerId))?.read ?? null; } catch { read = null; } }
+      const created = await quotesApi.create(id, [savedTermSheet.offerId]);
+      const quote = created?.quote;
+      if (quote && read) {
+        const options = quote.options.map((o) => (o.offer_id === savedTermSheet.offerId || quote.options.length === 1 ? applyReadToOption(o, read!) : o));
+        await quotesApi.save(quote.id, { options });
+      }
+      setSavedTermSheet(null);
+      // A plain redirect (see the park action above): open the Quotes tab, where the new draft is ready to check and send.
+      window.location.assign(window.location.pathname.replace(/\/lenders\/?$/, "") + "/quotes");
+    } catch (err) {
+      setQuoteMsg(getErrorMessage(err, "Could not start the quote."));
+    } finally { setQuoteBusy(false); }
   };
 
   if (!id) return <div style={styles.empty}>Select an application to view lenders.</div>;
@@ -1066,6 +1121,18 @@ function describeSendFailure(err: unknown): string {
         </button>
       </div>
 
+      {/* BF_PORTAL_v906_OFFER_READER - after a term sheet is saved, offer to turn it into a quote for the client. */}
+      {savedTermSheet && (
+        <div data-testid="term-sheet-quote" role="status" style={{ marginTop: 12, padding: 12, border: "1px solid #86efac", background: "#f0fdf4", color: "#14532d", borderRadius: 8, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ flex: 1, minWidth: 220 }}>Term sheet from <strong>{savedTermSheet.lenderName}</strong> saved as an offer.</span>
+          <button type="button" data-testid="term-sheet-create-quote" disabled={quoteBusy} onClick={() => void createQuoteFromTermSheet()} style={styles.btnPrimary}>
+            {quoteBusy ? "Starting the quote…" : "Create quote from this term sheet"}
+          </button>
+          <button type="button" onClick={() => setSavedTermSheet(null)} style={styles.btn}>Not now</button>
+          {quoteMsg ? <span role="alert" style={{ width: "100%", color: "#7f1d1d" }}>{quoteMsg}</span> : null}
+        </div>
+      )}
+
       {passModalFor && (
         <RejectReasonsModal
           mode="lender"
@@ -1092,6 +1159,13 @@ function describeSendFailure(err: unknown): string {
           <div style={styles.modalCard}>
             <div style={styles.modalTitle}>Term sheet — {termSheetFor.lenderName}</div>
             <div style={styles.modalHint}>{tsFile ? tsFile.name : "No file selected"}</div>
+            {/* BF_PORTAL_v906_OFFER_READER */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+              <button type="button" data-testid="term-sheet-read" onClick={() => void readTermSheet()} disabled={!tsFile || tsReading} style={styles.btn}>
+                {tsReading ? "Reading the term sheet…" : "Read the term sheet to fill these in"}
+              </button>
+              {tsReadMsg ? <span role="status" style={{ fontSize: 12, color: "var(--ui-text)" }}>{tsReadMsg}</span> : null}
+            </div>
             <label style={styles.modalLabel}>Offer amount ($)
               <input type="number" value={tsAmount} onChange={(e) => setTsAmount(e.target.value)} style={styles.modalInput} placeholder="250000" />
             </label>
