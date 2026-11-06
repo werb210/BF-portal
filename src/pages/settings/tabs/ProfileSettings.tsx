@@ -14,7 +14,10 @@ import UserDetailsFields from "../components/UserDetailsFields";
 import { logger } from "@/utils/logger";
 import { bfLogMsalPhase, pickLoginStrategy } from "@/auth/msalLoginStrategy";
 import { registerPasskey, passkeysSupported } from "@/auth/passkey"; // BF_PORTAL_WEBAUTHN_v1
-import MyProfileExtras from "@/settingsPack/MyProfileExtras"; // BF_PORTAL_v869_SETTINGS_PACK
+import { FollowUpDefaults, MyLeadRotation } from "@/settingsPack/MyProfileExtras"; // BF_PORTAL_v869_SETTINGS_PACK
+import { MySessions } from "@/settingsPack/SecuritySettings"; // BF_PORTAL_v909_PROFILE_TABS
+import { MyQueueAvailability } from "@/callQueues/CallQueuesSettings"; // BF_PORTAL_v909_PROFILE_TABS
+import { publishMyAvatar } from "@/components/ui/UserAvatar"; // BF_PORTAL_v909_AVATARS
 import OutOfOfficePanel from "@/components/o365/OutOfOfficePanel"; // BF_PORTAL_O365_UI_v1
 import ContactsSyncButton from "@/components/o365/ContactsSyncButton"; // BF_PORTAL_CONTACTS_PULL_TRIGGER_v1
 import SignatureBuilder from "@/components/signature/SignatureBuilder"; // BF_PORTAL_v864_SIGNATURE_BUILDER
@@ -37,31 +40,6 @@ type MeResponse = {
   profile_image_url?: string | null; // BF_PORTAL_AVATAR_PREVIEW_v1
 };
 
-// BF_PORTAL_AVATAR_FIX_v1 — downscale a chosen avatar to a small JPEG data URL so
-// it can be stored as profile_image_url without a blob pipeline.
-async function fileToAvatarDataUrl(file: File, size = 256): Promise<string> {
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(new Error("read failed"));
-    r.readAsDataURL(file);
-  });
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image();
-    i.onload = () => resolve(i);
-    i.onerror = () => reject(new Error("image failed"));
-    i.src = dataUrl;
-  });
-  const scale = Math.min(1, size / Math.max(img.width || size, img.height || size));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round((img.width || size) * scale));
-  canvas.height = Math.max(1, Math.round((img.height || size) * scale));
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return dataUrl;
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.85);
-}
-
 function normalizeMeProfile(data: MeResponse | null | undefined) {
   return {
     firstName: data?.first_name ?? data?.firstName ?? "",
@@ -71,6 +49,16 @@ function normalizeMeProfile(data: MeResponse | null | undefined) {
     profileImage: data?.profile_image_url ?? "" // BF_PORTAL_AVATAR_PREVIEW_v1
   };
 }
+
+// BF_PORTAL_v909_PROFILE_TABS
+type ProfileTab = "profile" | "signature" | "booking" | "security" | "notifications";
+const PROFILE_TABS: Array<[ProfileTab, string]> = [
+  ["profile", "Profile & photo"],
+  ["signature", "Email signature"],
+  ["booking", "Booking & follow-ups"],
+  ["security", "Devices & security"],
+  ["notifications", "Notifications & out of office"],
+];
 
 const ProfileSettings = () => {
   const { user } = useAuth();
@@ -88,10 +76,14 @@ const ProfileSettings = () => {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [microsoftError, setMicrosoftError] = useState<string | null>(null);
   const [isLinkingMicrosoft, setIsLinkingMicrosoft] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [hideMicrosoftButton, setHideMicrosoftButton] = useState(false);
   const [msalReady, setMsalReady] = useState(false);
   const [passkeyStatus, setPasskeyStatus] = useState<string | null>(null);
+  // BF_PORTAL_v909_PROFILE_TABS - My Profile in five parts instead of one long page.
+  const [profileTab, setProfileTab] = useState<ProfileTab>("profile");
+  const [avatarStatus, setAvatarStatus] = useState<string | null>(null);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const isAdminUser = String((user as { role?: string } | null)?.role ?? "").toUpperCase() === "ADMIN";
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const redirectHandledRef = useRef(false);
 
@@ -196,19 +188,8 @@ const ProfileSettings = () => {
       };
       if (localProfile.phone?.trim()) payload.phone = localProfile.phone.trim();
       await api.patch("/api/users/me", payload);
-      if (avatarFile) {
-        // BF_PORTAL_AVATAR_FIX_v1 — send a downscaled data URL as profileImage (JSON).
-        const profileImage = await fileToAvatarDataUrl(avatarFile);
-        await api.patch("/api/users/me", { profileImage });
-      }
+      // BF_PORTAL_v909_AVATARS - the photo is saved the moment it is chosen (onFileChange), not with this button.
       await fetchProfile();
-      // BF_PORTAL_AVATAR_PREVIEW_v1 — pull the stored avatar back so the preview persists after save.
-      if (avatarFile) {
-        try {
-          const me2 = await api.get<MeResponse>("/api/users/me");
-          setLocalProfile((prev) => ({ ...prev, profileImage: me2?.profile_image_url ?? prev.profileImage }));
-        } catch { /* keep local preview */ }
-      }
       setStatusMessage("Profile updated");
     } catch (error) {
       setFormError(getErrorMessage(error, "Unable to save profile."));
@@ -258,13 +239,28 @@ const ProfileSettings = () => {
           throw new Error("Unable to prepare image preview.");
         }
         context.drawImage(image, cropX, cropY, squareSize, squareSize, 0, 0, outputSize, outputSize);
-        const previewUrl = canvas.toDataURL("image/png");
-        setLocalProfile((prev) => ({ ...prev, profileImage: previewUrl }));
-        setAvatarFile(file);
+        // BF_PORTAL_v909_AVATARS - "Upload does nothing": choosing a photo only changed the preview, and it was saved
+        // only if Save changes was pressed afterwards (and then shown nowhere else). It is now saved straight away as a
+        // small JPEG and shown in the top bar, the Team list and Team chat.
+        const photo = canvas.toDataURL("image/jpeg", 0.85);
+        setLocalProfile((prev) => ({ ...prev, profileImage: photo }));
         setAvatarError(null);
+        setAvatarSaving(true);
+        setAvatarStatus("Saving your photo…");
+        try {
+          await api.patch("/api/users/me", { profileImage: photo });
+          publishMyAvatar(photo);
+          setAvatarStatus("Photo saved.");
+        } catch (err) {
+          setAvatarStatus(null);
+          setAvatarError(getErrorMessage(err, "Could not save the photo. Try a JPEG or PNG under 2 MB."));
+        } finally {
+          setAvatarSaving(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }
       } catch (error) {
         logger.error("Profile settings update failed", { error });
-        setAvatarError("Unable to process that image. Please try a different file.");
+        setAvatarError("Unable to read that image. Choose a JPEG or PNG photo (iPhone HEIC photos may need to be exported as JPEG).");
       }
     }
   };
@@ -433,10 +429,20 @@ const ProfileSettings = () => {
         <h2>My profile</h2>
         <p>Update your name, phone, and avatar. OAuth connections open in a new window.</p>
       </header>
-      <ThemeToggle />
       {formError && <ErrorBanner message={formError} />}
       {microsoftError && <ErrorBanner message={microsoftError} />}
+      {/* BF_PORTAL_v909_PROFILE_TABS */}
+      <div role="tablist" aria-label="My profile sections" data-testid="profile-tabs" style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 0 16px" }}>
+        {PROFILE_TABS.map(([id, label]) => (
+          <button key={id} type="button" role="tab" aria-selected={profileTab === id} onClick={() => setProfileTab(id)}
+            style={{ padding: "6px 12px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "1px solid var(--ui-border)", background: profileTab === id ? "#1e3a8a" : "var(--ui-surface-strong)", color: profileTab === id ? "#ffffff" : "var(--ui-text)" }}>
+            {label}
+          </button>
+        ))}
+      </div>
 
+      {profileTab === "profile" && (<>
+      <ThemeToggle />
       <div className="profile-summary">
         <div>
           <p className="ui-field__label">Signed in as</p>
@@ -459,17 +465,6 @@ const ProfileSettings = () => {
         />
       </div>
 
-      {/* BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — email signature editor.
-          GET/PUT /api/o365/me/signature (server-side shipped in v635). */}
-      <EmailSignaturePanel />
-      {/* BF_PORTAL_v893_PORTAL_FIXES - shared mailbox signatures are set by Admins; everyone else sets only their own. */}
-      {String((user as { role?: string } | null)?.role ?? "").toUpperCase() === "ADMIN" && <SharedMailboxSignaturePanel />} {/* BF_PORTAL_BLOCK_v826_PER_MAILBOX_SIGNATURE_UI */}
-
-      {/* BF_PORTAL_BLOCK_v694_COMMS — per-user booking URL.
-          GET/PUT /api/o365/me/booking-url (server v693). */}
-      <BookingUrlPanel />
-      <MyProfileExtras />{/* BF_PORTAL_v869_SETTINGS_PACK - my booking page, follow-up defaults, lead rotation away, my devices */}
-
       <div className="avatar-upload">
         <div>
           <p className="ui-field__label">Profile image</p>
@@ -480,12 +475,22 @@ const ProfileSettings = () => {
         <div className="avatar-actions">
           <input
             type="file"
-            accept="image/*"
+            disabled={avatarSaving}
+            accept="image/jpeg,image/png,image/webp,image/gif,image/*"
             ref={fileInputRef}
             onChange={onFileChange}
             aria-label="Upload profile image"
           />
-          <p className="avatar-helper">Square crop enforced, max 256×256px, 2MB limit.</p>
+          <p className="avatar-helper">Choose a JPEG or PNG under 2 MB. It is cropped square and saved straight away; it shows in the top bar, the Team list and Team chat.</p>
+          {avatarStatus && <p role="status" data-testid="avatar-status" style={{ fontSize: 13 }}>{avatarStatus}</p>}
+          {localProfile.profileImage && (
+            <button type="button" disabled={avatarSaving} onClick={async () => {
+              setAvatarSaving(true); setAvatarError(null);
+              try { await api.patch("/api/users/me", { profileImage: null }); setLocalProfile((prev) => ({ ...prev, profileImage: "" })); publishMyAvatar(null); setAvatarStatus("Photo removed."); }
+              catch (err) { setAvatarError(getErrorMessage(err, "Could not remove the photo.")); }
+              finally { setAvatarSaving(false); }
+            }} style={{ marginTop: 6, padding: "4px 10px", fontSize: 12, borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", cursor: "pointer" }}>Remove photo</button>
+          )}
           {avatarError && <p className="ui-field__error">{avatarError}</p>}
         </div>
       </div>
@@ -558,6 +563,48 @@ const ProfileSettings = () => {
         </div>
       </div>
 
+      <div className="settings-actions">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onLoadProfile}
+          disabled={isLoadingProfile}
+          title={isLoadingProfile ? "Profile is refreshing." : undefined}
+        >
+          {isLoadingProfile ? "Refreshing..." : "Refresh profile"}
+        </Button>
+        <Button
+          type="submit"
+          disabled={isLoadingProfile}
+          title={isLoadingProfile ? "Profile is saving." : undefined}
+        >
+          {isLoadingProfile ? "Saving..." : "Save changes"}
+        </Button>
+        {statusMessage && <span role="status">{statusMessage}</span>}
+      </div>
+      </>)}
+
+      {profileTab === "signature" && (<>
+      {/* BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — email signature editor.
+          GET/PUT /api/o365/me/signature (server-side shipped in v635). */}
+      <EmailSignaturePanel />
+      {/* BF_PORTAL_v893_PORTAL_FIXES - shared mailbox signatures are set by Admins; everyone else sets only their own. */}
+      {isAdminUser ? <SharedMailboxSignaturePanel /> : <p data-testid="shared-signature-admin-only" style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Shared mailbox signatures (for example info@) are set by an Admin.</p>} {/* BF_PORTAL_BLOCK_v826_PER_MAILBOX_SIGNATURE_UI */}
+      <ContactsSyncButton />
+      </>)}
+
+      {profileTab === "booking" && (<>
+      {/* BF_PORTAL_BLOCK_v694_COMMS — per-user booking URL.
+          GET/PUT /api/o365/me/booking-url (server v693). */}
+      <BookingUrlPanel />
+      <div data-testid="my-profile-extras">
+        <FollowUpDefaults />
+        <MyLeadRotation />
+        <MyQueueAvailability compact />
+      </div>
+      </>)}
+
+      {profileTab === "security" && (<>
       <section style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #eaf0f6" }}>
         <h3 style={{ marginTop: 0 }}>Passkeys</h3>
         <p style={{ color: "#516f90", fontSize: 13, marginBottom: 12 }}>
@@ -595,6 +642,11 @@ const ProfileSettings = () => {
         {passkeyStatus && <p style={{ marginTop: 10, fontSize: 13, color: "#516f90" }}>{passkeyStatus}</p>}
       </section>
 
+
+      <MySessions />
+      </>)}
+
+      {profileTab === "notifications" && (<>
       <section style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #eaf0f6" }}>
         <h3 style={{ marginTop: 0 }}>Push notifications</h3>
         <p style={{ color: "#516f90", fontSize: 13, marginBottom: 12 }}>
@@ -642,30 +694,9 @@ const ProfileSettings = () => {
         </button>
       </section>
 
-      <OutOfOfficePanel />
-      {/* BF_PORTAL_v864_NO_ONEDRIVE_SECTION - the "OneDrive files" search left My Profile; the Staff Library
-          (Settings > Content > Library) replaces it. OneDrive folders on CRM records are unchanged. */}
-      <ContactsSyncButton />
 
-      <div className="settings-actions">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onLoadProfile}
-          disabled={isLoadingProfile}
-          title={isLoadingProfile ? "Profile is refreshing." : undefined}
-        >
-          {isLoadingProfile ? "Refreshing..." : "Refresh profile"}
-        </Button>
-        <Button
-          type="submit"
-          disabled={isLoadingProfile}
-          title={isLoadingProfile ? "Profile is saving." : undefined}
-        >
-          {isLoadingProfile ? "Saving..." : "Save changes"}
-        </Button>
-        {statusMessage && <span role="status">{statusMessage}</span>}
-      </div>
+      <OutOfOfficePanel />
+      </>)}
     </form>
   );
 };

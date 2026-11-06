@@ -23,6 +23,7 @@ import SiloContext from "@/context/SiloContext"; // BF_PORTAL_v811_MOBILE_APPS
 import CampaignReportPanel from "@/components/marketing/CampaignReportPanel";
 import WebsiteKitPanel from "@/components/marketing/WebsiteKitPanel";
 import LeadScoringPanel from "@/components/marketing/LeadScoringPanel";
+import MetaAdsPanel from "@/components/marketing/MetaAdsPanel"; // BF_PORTAL_v909_META_ADS
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
@@ -31,8 +32,8 @@ type MarketingTab = "analytics" | "referrers" | "sequences" | "sms" | "email" | 
 // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 // BF_PORTAL_ADS_SERVICES_v709 - "Ads" section: one sub-tab per ad service
 // (Google, Microsoft, LinkedIn); every Google report sits under Google.
-type AdsService = "google" | "microsoft" | "linkedin";
-const ADS_SERVICES: Array<[AdsService, string]> = [["google", "Google"], ["microsoft", "Microsoft"], ["linkedin", "LinkedIn"]];
+type AdsService = "google" | "microsoft" | "linkedin" | "meta"; // BF_PORTAL_v909_META_ADS
+const ADS_SERVICES: Array<[AdsService, string]> = [["google", "Google"], ["meta", "Meta"], ["microsoft", "Microsoft"], ["linkedin", "LinkedIn"]];
 type AdsTab = "story" | "campaigns" | "negatives" | "visitors" | "dropoff" | "audiences" | "website" | "health";
 const ADS_TABS: Array<[AdsTab, string]> = [
   ["story", "Story"], ["campaigns", "Campaigns & Keywords"], ["negatives", "Search Terms & Negatives"], ["visitors", "Visitors"],
@@ -1470,13 +1471,20 @@ const MarketingDashboard = () => {
           )}
           {adsService === "linkedin" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}
           {adsService === "microsoft" && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Microsoft Ads - coming soon.</div>}
+          {adsService === "meta" && <MetaAdsPanel />}{/* BF_PORTAL_v909_META_ADS */}
         </div>
       )}
       {tab === "apps" && isBf && <MobileAppsPanel />}{/* BF_PORTAL_v811_MOBILE_APPS */}
       {/* BF_PORTAL_v874_MARKETING_TOOLS */}
       {tab === "report" && marketingSilo && <CampaignReportPanel />}
       {tab === "scoring" && marketingSilo && <LeadScoringPanel />}
-      {tab === "kit" && marketingSilo && <WebsiteKitPanel />}
+      {tab === "kit" && marketingSilo && (
+        <div className="space-y-2">
+          {/* BF_PORTAL_v909_WEBSITE_KIT_LINE */}
+          <p data-testid="website-kit-explainer" style={{ margin: 0, fontSize: 14, color: "var(--ui-text)" }}>Add forms and chat to other websites so their leads land in this CRM.</p>
+          <WebsiteKitPanel />
+        </div>
+      )}
       {tab === "email" && <BrandedEmailComposer />}
       {tab === "links" && <LinkClicksPanel />}{/* BF_PORTAL_BF_LINKS_TAB_v15 */}
       {tab === "sms" && <SmsComposerPanel />}

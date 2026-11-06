@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core"; // BF_PORTAL_ONEDRIVE_ATTACHMENTS_v648
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { UserAvatar } from "@/components/ui/UserAvatar"; // BF_PORTAL_v909_AVATARS
 import { api } from "@/api";
 import { contactDisplayName } from "@/utils/contactName";
 import { getAuthToken } from "@/lib/authToken"; // BF_PORTAL_BLOCK_v752_TEAM_TAB
@@ -2981,7 +2982,7 @@ export function TeamStatusEditor({ current, onDone }: { current?: TeamStatusRow;
     </div>
   );
 }
-type TeamUser = { id: string; name: string; email: string | null };
+type TeamUser = { id: string; name: string; email: string | null; avatar_url?: string | null }; // BF_PORTAL_v909_AVATARS
 
 function teamCurrentUserId(): string | null {
   try {
@@ -3543,7 +3544,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
                 const mine = m.sender_id === myId;
                 return (
                   <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "70%" }}>
-                    {!mine && <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginBottom: 2 }}>{m.bot || userName(m.sender_id)}</div>}
+                    {!mine && <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginBottom: 2, display: "flex", alignItems: "center", gap: 6 }}>{!m.bot && <UserAvatar name={userName(m.sender_id)} url={users.find((x) => x.id === m.sender_id)?.avatar_url ?? null} size={20} />}{m.bot || userName(m.sender_id)}</div>}{/* BF_PORTAL_v909_AVATARS */}
                     {m.reply_to && (
                       <div style={{ fontSize: 12, color: "var(--ui-text-muted)", borderLeft: "2px solid var(--ui-border)", paddingLeft: 8, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 260 }}>
                         {userName(m.reply_to.sender_id)}: {m.reply_to.body || "\u2026"}

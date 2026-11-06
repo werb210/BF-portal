@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { api } from "@/api";
 
 export type Outcome = "open" | "won" | "lost";
-export type Stage = { id: string; name: string; position: number; color: string; probability: number; outcome: Outcome; locked: boolean; deals?: number };
+export type Stage = { id: string; name: string; position: number; color: string; probability: number; outcome: Outcome; locked: boolean; deals?: number; key?: string; label?: string; hidden?: boolean };
+// BF_PORTAL_v909_LENDING_STAGE_DISPLAY - how the lending board shows each stage (the stage's key never changes).
+export type LendingStageDisplay = { label: string | null; hidden: boolean; position: number };
 export type Pipeline = { id: string; name: string; system: boolean; position: number; stages: Stage[]; archived_at: string | null };
 export type PipelineList = { silo?: string; limit: number | null; can_create: boolean; pipelines: Pipeline[] };
 export type BoardCard = {
@@ -25,6 +27,7 @@ export const pipelinesApi = {
   update: (id: string, body: unknown) => api.put<{ pipeline: Pipeline }>(`/api/pipelines/${id}`, body),
   archive: (id: string) => api.post(`/api/pipelines/${id}/archive`, {}),
   lendingProbabilities: (body: { [stage: string]: number }) => api.put<{ pipeline: Pipeline }>("/api/pipelines/lending/probabilities", body),
+  lendingDisplay: (body: { [stage: string]: LendingStageDisplay }) => api.put<{ pipeline: Pipeline }>("/api/pipelines/lending/display", body),
   board: (id: string, teamId = "") => api.get<{ pipeline: Pipeline; cards: BoardCard[] }>(`/api/pipelines/${id}/board`, teamId ? { params: { team_id: teamId } } : undefined),
   where: (applicationId: string) => api.get<{ pipeline_id: string; stage_id: string | null; stage: string | null }>(`/api/pipelines/application/${applicationId}`),
   move: (applicationId: string, pipelineId: string, stageId?: string | null) =>
