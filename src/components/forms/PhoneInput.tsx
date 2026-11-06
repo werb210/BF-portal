@@ -11,7 +11,9 @@ type PhoneInputProps = {
   placeholder?: string;
 };
 
-const onlyDigits = (value: string) => value.replace(/\D/g, "").slice(0, 10);
+// PHONE_LEADING_ONE_v1 - a leading 1 is the country code (area codes never start with 1); keeping the first 10
+// digits turned "15406930536" into +11540693053.
+const onlyDigits = (value: string) => value.replace(/\D/g, "").replace(/^1/, "").slice(0, 10);
 
 const formatDisplay = (value: string) => {
   const digits = onlyDigits(value);

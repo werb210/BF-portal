@@ -60,7 +60,7 @@ function authHeader() {
 
 // Format a North-American number as (XXX) XXX-XXXX while typing.
 function formatPhone(v: string): string {
-  const d = v.replace(/\D/g, "").slice(0, 10);
+  const d = v.replace(/\D/g, "").replace(/^1/, "").slice(0, 10); // PHONE_LEADING_ONE_v1 - leading 1 = country code
   if (d.length <= 3) return d;
   if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
   return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
