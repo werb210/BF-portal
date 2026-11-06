@@ -5,7 +5,7 @@
 
 /** Format as (###) ###-#### */
 export function formatPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 10);
+  const digits = raw.replace(/\D/g, "").replace(/^1/, "").slice(0, 10); // PHONE_LEADING_ONE_v1 - leading 1 = country code
   if (digits.length <= 3) return digits;
   if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
