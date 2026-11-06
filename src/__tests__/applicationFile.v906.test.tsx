@@ -219,7 +219,7 @@ describe("fraud score while checks run", () => {
   it("is not final while checks run or documents wait", () => {
     const score = { score: 45, band: "medium" as const, reasons: [], covered: [], not_covered: [] };
     expect(scoreIsFinal({ ...score, complete: false }, false)).toBe(false);
-    expect(scoreIsFinal(score, true)).toBe(false);
+    expect(scoreIsFinal({ ...score, complete: false, pending_reason: "2 document(s) are still waiting" }, true)).toBe(false);
     expect(scoreIsFinal({ ...score, complete: true }, false)).toBe(true);
   });
 });

@@ -41,9 +41,10 @@ function Reasons({ reasons, quietInfo = false }: { reasons: Reason[] | undefined
 // BF_PORTAL_v906_FRAUD_RUNNING - while checks still run (or documents wait for their tamper scan) the number is not
 // final: a file with tampered statements read 45 on its first run and 85 after "Run again". Show that the checks are
 // running instead of a number that reads as the result.
-export function scoreIsFinal(score: FraudScore, queued: boolean): boolean {
-  if (score.complete === false) return false;
-  return !(queued && score.complete === undefined);
+// BF-Server v906 decides (complete: false while queued or while documents wait for their tamper scan); an older server
+// sends no flag, and the queue message above the card already says the results are from the last finished run.
+export function scoreIsFinal(score: FraudScore, _queued = false): boolean {
+  return score.complete !== false;
 }
 
 function ScoreCard({ score, queued = false }: { score: FraudScore; queued?: boolean }) {
