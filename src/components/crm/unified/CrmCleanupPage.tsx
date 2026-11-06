@@ -60,6 +60,35 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
       setBusy(null);
     }
   }
+  // BF_PORTAL_v907_CLEANUP_IGNORE - an ignored proposal is remembered on the server and not proposed again.
+  async function ignore(list: CleanupChange[]) {
+    if (!list.length) return;
+    setBusy("apply"); setErr(null); setMsg(null);
+    try {
+      const r = await api.cleanupIgnore(list);
+      const gone = new Set(list.map(keyOf));
+      setChanges((cur) => (cur ?? []).filter((c) => !gone.has(keyOf(c))));
+      setTicked((cur) => new Set([...cur].filter((k) => !gone.has(k))));
+      setMsg(`Ignored ${r?.ignored ?? list.length} proposed change(s). They will not be proposed again.`);
+    } catch (e) {
+      setErr(errorText(e, "Could not ignore those changes."));
+    } finally {
+      setBusy(null);
+    }
+  }
+  async function showIgnored() {
+    setBusy("scan"); setErr(null); setMsg(null);
+    try {
+      const r = await api.cleanupIgnoreClear(entity);
+      setMsg(`${r?.cleared ?? 0} ignored change(s) will be proposed again.`);
+    } catch (e) {
+      setErr(errorText(e, "Could not bring the ignored changes back."));
+    } finally {
+      setBusy(null);
+    }
+    await scan();
+  }
+
   async function undo(id: string) {
     if (!window.confirm("Undo this batch? Values are put back unless they were edited since.")) return;
     setBusy("undo"); setErr(null);
@@ -90,6 +119,7 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
           </button>
         ))}
         <button type="button" onClick={() => void scan()} disabled={busy !== null} style={primaryBtn}>{busy === "scan" ? "Scanning..." : "Scan"}</button>
+        <button type="button" onClick={() => void showIgnored()} disabled={busy !== null} style={plainBtn} data-testid="cleanup-show-ignored">Show ignored again</button>
       </div>
       <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 12 }}>
         Nothing changes until you choose. Names in capitals or lower case are proper-cased (Mc, Mac, O' and hyphens kept;
@@ -108,12 +138,13 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
             <span style={{ flex: 1 }} />
             <button type="button" onClick={() => void apply(selected)} disabled={busy !== null || !selected.length} style={primaryBtn}>{busy === "apply" ? "Fixing..." : "Fix selected"}</button>
             <button type="button" onClick={() => void apply(all)} disabled={busy !== null} style={plainBtn}>Fix all</button>
+            <button type="button" onClick={() => void ignore(selected)} disabled={busy !== null || !selected.length} style={plainBtn} data-testid="cleanup-ignore-selected">Ignore selected</button>
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ background: "var(--ui-surface-muted)" }}>
                 <th style={th} />
-                <th style={th}>Record</th><th style={th}>Field</th><th style={th}>Now</th><th style={th}>Proposed</th><th style={th}>Why</th>
+                <th style={th}>Record</th><th style={th}>Field</th><th style={th}>Now</th><th style={th}>Proposed</th><th style={th}>Why</th><th style={th} />
               </tr>
             </thead>
             <tbody>
@@ -128,6 +159,7 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
                     <td style={{ ...td, color: "#991b1b", whiteSpace: "pre-wrap" }}>{JSON.stringify(c.before)}</td>
                     <td style={{ ...td, color: "#14532d", fontWeight: 600 }}>{c.after}</td>
                     <td style={{ ...td, color: "var(--ui-text-muted)" }}>{c.reason}</td>
+                    <td style={td}><button type="button" onClick={() => void ignore([c])} disabled={busy !== null} style={plainBtn} aria-label={`Ignore ${FIELD_LABELS[c.field] ?? c.field} of ${c.record}`}>Ignore</button></td>
                   </tr>
                 );
               })}

@@ -15,6 +15,23 @@ export function CrmAiSummary({ backend, entity, id }: { backend: CrmBackend; ent
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [taskMsg, setTaskMsg] = useState<string | null>(null);
+  // BF_PORTAL_v907_MORE_SOURCES
+  const [moreBusy, setMoreBusy] = useState(false);
+  const [moreMsg, setMoreMsg] = useState<string | null>(null);
+  const [found, setFound] = useState<Array<{ label: string; url: string; detail: string | null }>>([]);
+  const [photo, setPhoto] = useState<string | null>(null);
+  async function findMore() {
+    setMoreBusy(true); setMoreMsg(null);
+    try {
+      const r = await unified.moreSources(entity, id);
+      if (r?.summary && typeof r.summary === "object" && "summary" in r.summary) setData(r.summary);
+      setFound(Array.isArray(r?.sources) ? r.sources : []);
+      setPhoto(r?.photoUrl ?? null);
+      setMoreMsg(r?.sources?.length ? `Found ${r.sources.length} public page(s).` : "No more public pages were found.");
+    } catch (e) {
+      setMoreMsg(errorText(e, "The web search did not answer. Try again in a minute."));
+    } finally { setMoreBusy(false); }
+  }
   useEffect(() => {
     let alive = true;
     setData(null);
@@ -81,6 +98,20 @@ export function CrmAiSummary({ backend, entity, id }: { backend: CrmBackend; ent
               {data.cached ? "Saved summary from " : "Made "}{new Date(data.generatedAt).toLocaleString()}
             </div>
           </div>
+          {/* BF_PORTAL_v907_MORE_SOURCES - public pages only (a public LinkedIn profile, the company's team or about page); nothing behind a login. */}
+          {backend.kind === "bf" && (
+            <div style={{ marginTop: 10 }} data-testid="crm-more-sources">
+              <button type="button" onClick={() => void findMore()} disabled={moreBusy} style={plainBtn}>{moreBusy ? "Searching the web..." : "Find more sources"}</button>
+              <span style={{ fontSize: 12, color: "var(--ui-text-muted)", marginLeft: 8 }}>Public LinkedIn profile, team and about pages. Nothing behind a login.</span>
+              {moreMsg && <div role="status" style={{ fontSize: 12, marginTop: 4 }}>{moreMsg}</div>}
+              {photo && <img src={photo} alt="Public profile" referrerPolicy="no-referrer" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", marginTop: 6 }} />}
+              {found.length > 0 && !data?.sources.some((s) => found.some((f) => f.url === s.url)) && (
+                <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 12 }}>
+                  {found.map((f) => <li key={f.url}><a href={f.url} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8" }}>{f.label}</a>{f.detail ? <span style={{ color: "var(--ui-text-muted)" }}> - {f.detail}</span> : null}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
           {backend.kind === "bf" && (
             <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
               <button type="button" onClick={() => void createTask()} style={plainBtn}>Create follow-up task</button>

@@ -1,7 +1,6 @@
 import { formatDateTimeShort, humanizeCode } from "@/utils/labels";
 import { useEffect, useState, useContext, type CSSProperties } from "react";
 import CustomFieldsPanel from "@/crmFields/CustomFieldsPanel"; // BF_PORTAL_v870_CRM_DATA_MODEL
-import CallScriptsPanel from "@/callScripts/CallScriptDock"; // BF_PORTAL_v871_CALL_SCRIPTS
 import PaymentLinksPanel from "@/payments/PaymentLinksPanel"; // BF_PORTAL_v872_PAYMENTS
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useCrmBase } from "@/pages/crm/crmBase"; // BF_PORTAL_v850_KS_CRM
@@ -146,7 +145,7 @@ export default function ContactDetailPage() {
         <CrmTagEditor backend={crmBackend} entity="contact" id={id} tags={contact.tags} catalogue={tagCatalogue} onSaved={() => setRefreshKey((k) => k + 1)} />{/* BF_PORTAL_v856_CRM_UNIFY */}
         <CustomFieldsPanel object="contact" recordId={id} />{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
         <PaymentLinksPanel contactId={id} />{/* BF_PORTAL_v872_PAYMENTS */}
-        <CallScriptsPanel contactId={id} />{/* BF_PORTAL_v871_CALL_SCRIPTS */}
+        {/* BF_PORTAL_v907_NO_CALL_SCRIPTS_ON_CONTACT - call scripts live in the iOS dialler; the server endpoint stays. */}
       </aside>
 
       <main style={{ minWidth: 0 }}>

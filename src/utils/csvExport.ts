@@ -33,5 +33,6 @@ export function exportRowsToCsv(
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // BF_PORTAL_v907_CRM_EXPORT - releasing the link in the same tick cancels the download in Safari and the iPad app.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
