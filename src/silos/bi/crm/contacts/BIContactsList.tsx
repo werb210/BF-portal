@@ -206,10 +206,11 @@ export default function BIContactsList() {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} />
         <button type="button" onClick={() => exportRowsToCsv("bi-contacts.csv", rows as any)} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">Export</button>
-        <CrmSegmentBar current={{ q, ownerId, tagFilter: Array.from(tagFilter), sort }} onApply={(f) => {
-          if (typeof f.q === "string") setQ(f.q);
-          if (typeof f.ownerId === "string") setOwnerId(f.ownerId);
-          if (Array.isArray(f.tagFilter)) setTagFilter(new Set(f.tagFilter as string[]));
+        {/* BF_PORTAL_v907_SEGMENT_RESET - a segment replaces the view; "All contacts" clears it. */}
+        <CrmSegmentBar allLabel="All contacts" current={{ q, ownerId, tagFilter: Array.from(tagFilter), sort }} onApply={(f) => {
+          setQ(typeof f.q === "string" ? f.q : "");
+          setOwnerId(typeof f.ownerId === "string" ? f.ownerId : "");
+          setTagFilter(new Set(Array.isArray(f.tagFilter) ? (f.tagFilter as string[]) : []));
           if (f.sort && typeof f.sort === "object") setSort(f.sort as { col: SortCol; dir: "asc" | "desc" });
           setCrmPage(1);
         }} />

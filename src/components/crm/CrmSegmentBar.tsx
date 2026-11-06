@@ -6,7 +6,9 @@ import { api } from "@/api";
 type Filters = Record<string, unknown>;
 type Segment = { id: string; name: string; filters: Filters };
 
-export function CrmSegmentBar({ current, onApply }: { current: Filters; onApply: (f: Filters) => void }) {
+// BF_PORTAL_v907_SEGMENT_RESET - the first option is "All contacts" (or allLabel): choosing it applies empty filters, so
+// the list goes back to everything. The page treats any filter a segment does not set as the default.
+export function CrmSegmentBar({ current, onApply, allLabel = "All records" }: { current: Filters; onApply: (f: Filters) => void; allLabel?: string }) {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -22,8 +24,9 @@ export function CrmSegmentBar({ current, onApply }: { current: Filters; onApply:
 
   function apply(id: string) {
     setSelectedId(id);
+    if (!id) { onApply({}); return; }
     const seg = segments.find((s) => s.id === id);
-    if (seg && seg.filters) onApply(seg.filters);
+    if (seg) onApply(seg.filters && typeof seg.filters === "object" ? seg.filters : {});
   }
   async function save() {
     const name = window.prompt("Segment name?");
@@ -55,12 +58,15 @@ export function CrmSegmentBar({ current, onApply }: { current: Filters; onApply:
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <select value={selectedId} onChange={(e) => apply(e.target.value)} style={ctl} aria-label="Segments">
-        <option value="">Segments…</option>
+        <option value="">{allLabel}</option>
         {segments.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
       </select>
       <button type="button" onClick={save} style={{ ...ctl, cursor: "pointer" }}>Save segment</button>
       {selectedId ? (
-        <button type="button" onClick={del} style={{ ...ctl, cursor: "pointer" }} aria-label="Delete segment">Delete</button>
+        <>
+          <button type="button" onClick={() => apply("")} style={{ ...ctl, cursor: "pointer" }} data-testid="segment-clear">Show {allLabel.toLowerCase()}</button>
+          <button type="button" onClick={del} style={{ ...ctl, cursor: "pointer" }} aria-label="Delete segment">Delete</button>
+        </>
       ) : null}
       {msg ? <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{msg}</span> : null}
     </div>

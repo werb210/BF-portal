@@ -13,11 +13,12 @@ import CompaniesImportModal from "./CompaniesImportModal";
 import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
-import { exportRowsToCsv } from "@/utils/csvExport";
+import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } from "@/pages/crm/crmExport"; // BF_PORTAL_v907_CRM_EXPORT
+import { bulkDeleteMessage, skippedFrom } from "@/pages/crm/bulkDeleteResult"; // BF_PORTAL_v907_PARTIAL_BULK_DELETE
 import { refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 import CustomFieldFilters from "@/crmFields/CustomFieldFilters"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { useCustomFieldColumns } from "@/crmFields/useCustomFieldColumns"; // BF_PORTAL_v870_CRM_DATA_MODEL
-import { displayValue, filterParams, rowsWithCustomFields, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import { displayValue, filterParams, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
 
 type SortCol = "name" | "industry" | "owner_name" | "created_at" | `cf_${string}`;
 
@@ -122,10 +123,15 @@ export default function CompaniesPage() {
     if (!window.confirm(`Hard-delete ${selected.size} company(ies)? This cannot be undone. Use only for Apollo imports.`)) return;
     setBusyMass("delete");
     try {
-      await crmApi.bulkDeleteCompanies(Array.from(selected));
+      const r = await crmApi.bulkDeleteCompanies(Array.from(selected));
       setSelected(new Set());
       setRefreshKey((k) => k + 1);
+      // BF_PORTAL_v907_PARTIAL_BULK_DELETE - the deletable ones are gone; say which were left and why.
+      const skipped = skippedFrom(r);
+      if (skipped.length) window.alert(bulkDeleteMessage("company", Number((r as { deleted?: number })?.deleted ?? 0), skipped));
     } catch (err) {
+      const skipped = skippedFrom(err);
+      if (skipped.length && !refusedDeleteMessage(err)) { window.alert(bulkDeleteMessage("company", 0, skipped)); return; }
       window.alert(refusedDeleteMessage(err) ?? `Mass delete failed: ${err instanceof Error ? err.message : String(err)}`); // BF_PORTAL_v855_RETENTION
     } finally { setBusyMass(null); }
   }
@@ -163,6 +169,32 @@ export default function CompaniesPage() {
     } finally { setBusyMass(null); }
   }
 
+  // BF_PORTAL_v907_CRM_EXPORT - every company matching the current view, in the columns shown.
+  const [exporting, setExporting] = useState<string | null>(null);
+  async function exportAll() {
+    setExporting("Preparing…");
+    try {
+      const all = await fetchAllRows<CompanyRow>((p, size) => crmApi.listCompaniesPaged({
+        silo: String(silo).toLowerCase(), q, owner_id: ownerId || undefined, tag: tagFilter || undefined, sort: `${sort.col}:${sort.dir}`,
+        page: p, pageSize: size, ...filterParams(cfFilters),
+      }), (n, t) => setExporting(`Preparing ${n.toLocaleString()} of ${t.toLocaleString()}…`));
+      if (!all.length) { window.alert("No companies match this view, so there is nothing to export."); return; }
+      const cols: ExportColumn<CompanyRow>[] = [
+        { label: "Company name", value: (r) => r.name },
+        { label: "Website / domain", value: (r) => r.domain },
+        { label: "City", value: (r) => r.city },
+        ...(!hiddenCols.has("industry") ? [{ label: "Industry", value: (r: CompanyRow) => r.industry }] : []),
+        ...(!hiddenCols.has("tags") ? [{ label: "Tags", value: (r: CompanyRow) => (r as { tags?: string[] | null }).tags }] : []),
+        ...(!hiddenCols.has("owner_name") ? [{ label: "Owner", value: (r: CompanyRow) => r.owner_name }] : []),
+        ...cf.shown.map((f) => ({ label: f.label, value: (r: CompanyRow) => displayValue(f, (r as { custom_fields?: Record<string, unknown> }).custom_fields?.[f.name]) })),
+        { label: "Create date", value: (r) => r.created_at },
+      ];
+      await saveCsv(exportFileName("companies"), rowsToCsv(all, cols));
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "AbortError") window.alert(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally { setExporting(null); }
+  }
+
   const tableRows = useMemo(() => rows.map(r => (
     <tr key={r.id} style={trStyle}>
       {isAdmin && (
@@ -196,7 +228,7 @@ export default function CompaniesPage() {
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
-        {roleCan.exp && <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-companies.csv", rowsWithCustomFields(rows as any, cf.fields))}>Export</button>}
+        {roleCan.exp && <button style={toolbarBtn} disabled={exporting !== null} onClick={() => void exportAll()} data-testid="companies-export">{exporting ?? "Export"}</button>}
         <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "owner_name", label: "Owner" }, ...cf.columnOptions]} hidden={cf.hiddenWith(hiddenCols)} onToggle={(k) => (cf.isCfKey(k) ? cf.toggle(k) : toggleCol(k))} style={toolbarBtn} />
         {roleCan.create && <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>}
         <button

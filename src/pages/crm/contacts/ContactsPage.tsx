@@ -17,11 +17,12 @@ import CreateContactModal from "./CreateContactModal";
 import ImportContactsModal from "./ImportContactsModal";
 import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
-import { exportRowsToCsv } from "@/utils/csvExport";
+import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } from "@/pages/crm/crmExport"; // BF_PORTAL_v907_CRM_EXPORT
+import { bulkDeleteMessage, skippedFrom } from "@/pages/crm/bulkDeleteResult"; // BF_PORTAL_v907_PARTIAL_BULK_DELETE
 import { refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 import CustomFieldFilters from "@/crmFields/CustomFieldFilters"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { useCustomFieldColumns } from "@/crmFields/useCustomFieldColumns"; // BF_PORTAL_v870_CRM_DATA_MODEL
-import { displayValue, filterParams, rowsWithCustomFields, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import { displayValue, filterParams, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
 
 type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at" | `cf_${string}`;
 
@@ -159,10 +160,15 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
     if (!window.confirm(`Hard-delete ${selected.size} contact(s)? This cannot be undone. Use only for Apollo imports — never for applicants.`)) return;
     setBusyMass("delete");
     try {
-      await crmApi.bulkDeleteContacts(Array.from(selected));
+      const r = await crmApi.bulkDeleteContacts(Array.from(selected));
       setSelected(new Set());
       setRefreshKey((k) => k + 1);
+      // BF_PORTAL_v907_PARTIAL_BULK_DELETE - say which were left and why.
+      const skipped = skippedFrom(r);
+      if (skipped.length) window.alert(bulkDeleteMessage("contact", Number((r as { deleted?: number })?.deleted ?? 0), skipped));
     } catch (err) {
+      const skipped = skippedFrom(err);
+      if (skipped.length && !refusedDeleteMessage(err)) { window.alert(bulkDeleteMessage("contact", 0, skipped)); return; }
       // BF_PORTAL_CONTACT_DELETE_MESSAGE_v689 - the server refuses (409) to delete a contact that is on an
       // application. Say so plainly instead of showing a bare error code.
       const e = err as { status?: number; details?: unknown; message?: string };
@@ -221,6 +227,33 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
   // BF_PORTAL_v874_MARKETING_TOOLS - lead scores next to each name (the silo's rules; only contacts you may see).
   const scoreIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const leadScores = useLeadScores(scoreIds);
+  // BF_PORTAL_v907_CRM_EXPORT - every contact matching the current view, in the columns shown.
+  const [exporting, setExporting] = useState<string | null>(null);
+  async function exportAll() {
+    setExporting("Preparing…");
+    try {
+      const all = await fetchAllRows<ContactRow>((p, size) => crmApi.listContactsPaged({
+        silo: String(silo).toLowerCase(), search: q, q, sort: `${sort.col}:${sort.dir}`, owner_id: ownerId || undefined,
+        tag: tagFilter || undefined, page: p, pageSize: size, ...filterParams(cfFilters),
+      }), (n, t) => setExporting(`Preparing ${n.toLocaleString()} of ${t.toLocaleString()}…`));
+      if (!all.length) { window.alert("No contacts match this view, so there is nothing to export."); return; }
+      const cols: ExportColumn<ContactRow>[] = [
+        { label: "Name", value: (r) => contactDisplayName(r.name, { company: r.company_name, email: r.email }) },
+        { label: "Email", value: (r) => r.email },
+        { label: "Phone", value: (r) => r.phone },
+        ...(!hiddenCols.has("company_name") ? [{ label: "Company", value: (r: ContactRow) => r.company_name }] : []),
+        ...(!hiddenCols.has("tags") ? [{ label: "Tags", value: (r: ContactRow) => r.tags }] : []),
+        ...(!hiddenCols.has("lead_status") ? [{ label: "Lead status", value: (r: ContactRow) => r.lead_status ?? "New" }] : []),
+        ...(!hiddenCols.has("owner_name") ? [{ label: "Owner", value: (r: ContactRow) => r.owner_name }] : []),
+        ...cf.shown.map((f) => ({ label: f.label, value: (r: ContactRow) => displayValue(f, (r as { custom_fields?: Record<string, unknown> }).custom_fields?.[f.name]) })),
+        { label: "Create date", value: (r) => r.created_at },
+      ];
+      await saveCsv(exportFileName("contacts"), rowsToCsv(all, cols));
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "AbortError") window.alert(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally { setExporting(null); }
+  }
+
   const tableRows = useMemo(() => rows.map(r => (
     <tr key={r.id} style={trStyle}>
       {isAdmin && (
@@ -282,16 +315,21 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
             <option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>
           ))}
         </select>
-        {roleCan.exp && <button style={toolbarBtn} onClick={() => exportRowsToCsv("bf-contacts.csv", rowsWithCustomFields(rows as any, cf.fields))}>Export</button>}
+        {roleCan.exp && <button style={toolbarBtn} disabled={exporting !== null} onClick={() => void exportAll()} data-testid="contacts-export">{exporting ?? "Export"}</button>}
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }, ...cf.columnOptions]} hidden={cf.hiddenWith(hiddenCols)} onToggle={(k) => (cf.isCfKey(k) ? cf.toggle(k) : toggleCol(k))} style={toolbarBtn} />
         {roleCan.create && <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>}
-        <CrmSegmentBar current={{ q, ownerId, tagFilter, sort }} onApply={(f) => {
-          if (typeof f.q === "string") setQ(f.q);
-          if (typeof f.ownerId === "string") setOwnerId(f.ownerId);
-          if (typeof f.tagFilter === "string") setTagFilter(f.tagFilter);
-          if (f.sort && typeof f.sort === "object") setSort(f.sort as { col: SortCol; dir: "asc" | "desc" });
+        {/* BF_PORTAL_v907_SEGMENT_RESET - a segment replaces the whole view (anything it does not set goes back to the
+            default), and "All contacts" clears it. Before, filters a segment did not mention stayed on, so choosing
+            another segment or clearing it never returned to all contacts. */}
+        <CrmSegmentBar current={{ q, ownerId, tagFilter, sort, cfFilters }} onApply={(f) => {
+          setQ(typeof f.q === "string" ? f.q : "");
+          setOwnerId(typeof f.ownerId === "string" ? f.ownerId : "");
+          setTagFilter(typeof f.tagFilter === "string" ? f.tagFilter : "");
+          setSort(f.sort && typeof f.sort === "object" ? (f.sort as { col: SortCol; dir: "asc" | "desc" }) : { col: "created_at", dir: "desc" });
+          setCfFilters(Array.isArray(f.cfFilters) ? (f.cfFilters as CustomFilter[]) : []);
+          useCrmStore.setState((state) => ({ ...state, filters: { ...state.filters, owner: (typeof f.ownerId === "string" && f.ownerId) || null } }));
           setCrmPage(1);
-        }} />
+        }} allLabel="All contacts" />
         <button onClick={() => setCreateOpen(true)} style={{ background: "var(--accent)", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
       </div>
       {/* BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips; several tags = any of them. */}
