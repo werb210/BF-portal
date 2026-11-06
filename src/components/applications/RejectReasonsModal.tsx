@@ -22,16 +22,22 @@ const s = {
   card: { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 10, padding: 20, width: 520, maxWidth: "100%", maxHeight: "90vh", overflowY: "auto" as const, boxShadow: "0 12px 40px rgba(0,0,0,0.2)" },
   title: { fontSize: 16, fontWeight: 700, color: "var(--ui-text)", marginBottom: 4 },
   hint: { fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 14, lineHeight: 1.5 },
-  row: { display: "flex", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--ui-border-soft)", alignItems: "flex-start" },
-  label: { fontSize: 13, color: "var(--ui-text)", cursor: "pointer", lineHeight: 1.4 },
-  helps: { fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2, lineHeight: 1.45 },
-  noHelp: { fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2, fontStyle: "italic" as const },
+  // BF_PORTAL_v906_PASS_REASON_CONTRAST - each reason is a clear, bordered choice; the picked ones turn dark red on light
+  // red (8.6:1), and the help text is full-strength text at 12px (was 11px muted grey, hard to read).
+  row: { display: "flex", gap: 10, padding: "10px 12px", margin: "0 0 8px", border: "1px solid var(--ui-border)", borderRadius: 8, background: "var(--ui-surface)", alignItems: "flex-start", cursor: "pointer" },
+  rowPicked: { border: "2px solid #b91c1c", background: "#fef2f2", padding: "9px 11px" },
+  label: { fontSize: 14, fontWeight: 600, color: "var(--ui-text)", cursor: "pointer", lineHeight: 1.4 },
+  labelPicked: { color: "#7f1d1d" },
+  helps: { fontSize: 12, fontWeight: 400, color: "var(--ui-text)", marginTop: 2, lineHeight: 1.45 },
+  helpsPicked: { color: "#7f1d1d" },
+  noHelp: { fontSize: 12, fontWeight: 400, color: "var(--ui-text)", marginTop: 2, fontStyle: "italic" as const },
   input: { display: "block", width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface)", color: "var(--ui-text)", fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" as const, minHeight: 62, resize: "vertical" as const },
   fieldLabel: { display: "block", fontSize: 12, fontWeight: 600, color: "var(--ui-text-muted)", marginTop: 14 },
   actions: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 },
   btn: { border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", padding: "8px 14px", borderRadius: 6, fontSize: 13, cursor: "pointer", color: "var(--ui-text)", fontFamily: "inherit" },
   danger: { border: 0, background: "#b91c1c", color: "#fff", padding: "8px 16px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
-  disabled: { border: 0, background: "var(--ui-surface-muted)", color: "#fff", padding: "8px 16px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" },
+  // BF_PORTAL_v906_PASS_REASON_CONTRAST - was white text on the light grey surface (unreadable).
+  disabled: { border: "1px solid #cbd5e1", background: "#e2e8f0", color: "#334155", padding: "8px 16px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit" },
   warn: { fontSize: 12, color: "#b91c1c", background: "#b91c1c12", border: "1px solid #b91c1c33", borderRadius: 6, padding: "8px 10px", marginBottom: 12, lineHeight: 1.5 },
 };
 
@@ -85,22 +91,25 @@ export function RejectReasonsModal(props: {
         ) : reasons.length === 0 ? (
           <div style={s.hint}>No reasons are configured. Check the rejection_reasons table.</div>
         ) : (
-          reasons.map((r) => (
-            <label key={r.code} style={s.row} data-testid={`reject-reason-${r.code}`}>
-              <input
-                type="checkbox"
-                checked={picked.includes(r.code)}
-                onChange={() => toggle(r.code)}
-                style={{ marginTop: 3 }}
-              />
-              <span style={s.label}>
-                {r.label}
-                {r.what_helps
-                  ? <span style={s.helps}><br />{r.what_helps}</span>
-                  : <span style={s.noHelp}><br />No action the applicant can take — time only.</span>}
-              </span>
-            </label>
-          ))
+          reasons.map((r) => {
+            const on = picked.includes(r.code);
+            return (
+              <label key={r.code} style={{ ...s.row, ...(on ? s.rowPicked : {}) }} data-testid={`reject-reason-${r.code}`} data-picked={on ? "true" : "false"}>
+                <input
+                  type="checkbox"
+                  checked={on}
+                  onChange={() => toggle(r.code)}
+                  style={{ marginTop: 3 }}
+                />
+                <span style={{ ...s.label, ...(on ? s.labelPicked : {}) }}>
+                  {r.label}
+                  {r.what_helps
+                    ? <span style={{ ...s.helps, ...(on ? s.helpsPicked : {}) }}><br />{r.what_helps}</span>
+                    : <span style={{ ...s.noHelp, ...(on ? s.helpsPicked : {}) }}><br />No action the applicant can take — time only.</span>}
+                </span>
+              </label>
+            );
+          })
         )}
 
         <label style={s.fieldLabel}>

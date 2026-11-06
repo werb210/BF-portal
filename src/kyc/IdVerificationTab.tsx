@@ -118,6 +118,20 @@ function VerificationRow({ v, onChanged }: { v: Verification; onChanged: () => v
   );
 }
 
+function PersonPicker({ people, value, onChange }: { people: KycOverview["people"]; value: string; onChange: (v: string) => void }) {
+  return (
+    <label style={{ fontSize: 13, color: "var(--ui-text)" }}>
+      Person{" "}
+      <select aria-label="Person to verify" value={value} onChange={(e) => onChange(e.target.value)} style={input}>
+        <option value="">Applicant</option>
+        {people.slice(1).map((p) => (
+          <option key={p.contact_id} value={p.contact_id}>{p.name} ({p.role})</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export default function IdVerificationTab({ applicationId }: { applicationId: string }) {
   const [data, setData] = useState<KycOverview | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -130,6 +144,10 @@ export default function IdVerificationTab({ applicationId }: { applicationId: st
   }, [applicationId]);
   useEffect(() => { void load(); }, [load]);
 
+  // BF_PORTAL_v906_KYC_NOT_CONNECTED - an ID-check service (vendor) is connected only when it is configured and is not
+  // the manual fallback.
+  const vendorConnected = Boolean(data?.provider.configured && data.provider.key !== "manual");
+  const manualAvailable = Boolean(data && (data.provider.key === "manual" || data.provider.configured === false));
   const send = async () => {
     setBusy(true);
     try {
@@ -149,25 +167,34 @@ export default function IdVerificationTab({ applicationId }: { applicationId: st
           The client takes a photo of their government ID and a selfie in the client app. Results are a guide for a person to review, not a verdict.
           They also feed the Fraud check tab (ID checks).
         </p>
-        {data ? (
-          data.provider.configured ? (
-            <p style={muted}>Using: {data.provider.label}.</p>
-          ) : (
-            <p role="alert" style={{ ...muted, color: "#92400e" }}>ID verification is not set up yet. An Admin can set it up in Settings &gt; ID verification.</p>
-          )
+        {/* BF_PORTAL_v906_KYC_NOT_CONNECTED - say plainly what each check does. */}
+        <p style={muted} data-testid="kyc-vs-tamper">
+          ID verification checks the <strong>person</strong>: that the ID is genuine and the selfie matches it. The document tamper scan on the Fraud
+          check tab checks the <strong>file</strong>: that an uploaded document (a bank statement, an ID photo) was not edited.
+        </p>
+        {data && !vendorConnected ? (
+          <div role="status" data-testid="kyc-not-connected" style={{ marginTop: 10, padding: "10px 12px", borderRadius: 8, background: "#fef3c7", color: "#78350f", border: "1px solid #fcd34d", fontSize: 13, lineHeight: 1.5 }}>
+            <strong>Not connected.</strong> No ID-check service is set up, so the client cannot be sent an ID and selfie check.
+            An Admin can connect one in <strong>Settings → Risk and ID checks</strong>.
+          </div>
+        ) : data ? <p style={muted}>Using: {data.provider.label}.</p> : null}
+        {data && vendorConnected ? (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
+            <PersonPicker people={data.people} value={person} onChange={setPerson} />
+            <button type="button" style={primaryButton} disabled={busy} onClick={() => void send()}>Send verification request</button>
+          </div>
         ) : null}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
-          <label style={{ fontSize: 13, color: "var(--ui-text)" }}>
-            Person{" "}
-            <select aria-label="Person to verify" value={person} onChange={(e) => setPerson(e.target.value)} style={input}>
-              <option value="">Applicant</option>
-              {(data?.people ?? []).slice(1).map((p) => (
-                <option key={p.contact_id} value={p.contact_id}>{p.name} ({p.role})</option>
-              ))}
-            </select>
-          </label>
-          <button type="button" style={primaryButton} disabled={busy || !data?.provider.configured} onClick={() => void send()}>Send verification request</button>
-        </div>
+        {/* Manual review stays available without a service: the client uploads ID photos and staff decide. */}
+        {data && !vendorConnected && manualAvailable ? (
+          <details style={{ marginTop: 10, fontSize: 13, color: "var(--ui-text)" }} data-testid="kyc-manual">
+            <summary style={{ cursor: "pointer", fontWeight: 600 }}>Ask for ID photos for a staff review instead</summary>
+            <p style={muted}>The client uploads photos of their ID in the client app and staff approve or decline them here. No automatic ID or selfie check is done.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
+              <PersonPicker people={data.people} value={person} onChange={setPerson} />
+              <button type="button" style={secondaryButton} disabled={busy} onClick={() => void send()}>Ask for ID photos</button>
+            </div>
+          </details>
+        ) : null}
         {err ? <p role="alert" style={{ ...muted, color: "#b91c1c" }}>{err}</p> : null}
       </section>
       <section style={card}>

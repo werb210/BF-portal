@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { api, rawApiFetch } from "@/api";
 import { Chip, ErrorLine, card, dangerButton, errorText, h3, input, label, muted, primaryButton, row, secondaryButton, type Tone } from "./ui";
 import { OWNER_LABEL, STATUS_LABEL } from "./fundingGate";
-import { quotesApi } from "@/quotes/quotesApi";
+import { quotesApi, type OfferOnFile } from "@/quotes/quotesApi";
+import { readOfferFile, readOfferOnFile, type ReadCondition } from "@/quotes/offerReaderApi"; // BF_PORTAL_v906_OFFER_READER
 
 export type Condition = {
   id: string; title: string; description: string | null; owner: "staff" | "client" | "lender";
@@ -34,6 +35,12 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
   const [titleErr, setTitleErr] = useState<string | null>(null);
   // v884: null = not known yet (the button stays usable); false = no lender offer on the file, so the button is off with a reason.
   const [hasOffer, setHasOffer] = useState<boolean | null>(null);
+  // BF_PORTAL_v906_OFFER_READER - read the lender's offer document and propose its conditions; nothing is added until
+  // the broker ticks them and presses Add.
+  const [offers, setOffers] = useState<OfferOnFile[]>([]);
+  const [proposed, setProposed] = useState<Array<ReadCondition & { pick: boolean }> | null>(null);
+  const [proposedOffer, setProposedOffer] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
   const [form, setForm] = useState({ title: "", owner: "staff", assigned_user_id: "", due_date: "", requires_document: false });
 
   const load = useCallback(async () => {
@@ -50,7 +57,7 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
   useEffect(() => {
     let live = true;
     void quotesApi.list(applicationId)
-      .then((r) => { if (live) setHasOffer(Array.isArray(r?.offers) ? r.offers.length > 0 : null); })
+      .then((r) => { if (live) { setHasOffer(Array.isArray(r?.offers) ? r.offers.length > 0 : null); setOffers(Array.isArray(r?.offers) ? r.offers : []); } })
       .catch(() => { if (live) setHasOffer(null); });
     return () => { live = false; };
   }, [applicationId]);
@@ -85,6 +92,35 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
         if (path === "from-offer" && status === 404) { setHasOffer(false); setErr("There is no lender offer on this file yet."); }
         else setErr(errorText(e));
       } finally { setBusy(false); }
+    })();
+  };
+
+  const readOffer = (source: { file?: File; offerId?: string }) => {
+    setReading(true); setErr(null); setMsg(null); setProposed(null);
+    void (async () => {
+      try {
+        const r = source.file ? await readOfferFile(applicationId, source.file) : await readOfferOnFile(applicationId, source.offerId!);
+        const list = Array.isArray(r?.read?.conditions) ? r.read.conditions : [];
+        setProposedOffer(r?.offer_id ?? source.offerId ?? null);
+        setProposed(list.map((c) => ({ ...c, pick: true })));
+        if (!list.length) setMsg("No funding conditions were found in that document. Add them by hand below.");
+      } catch (e) { setErr(errorText(e, "The document could not be read.")); } finally { setReading(false); }
+    })();
+  };
+  const confirmProposed = () => {
+    const picked = (proposed ?? []).filter((c) => c.pick && c.title.trim());
+    if (!picked.length) { setErr("Tick at least one condition to add."); return; }
+    setBusy(true); setErr(null); setMsg(null);
+    void (async () => {
+      try {
+        const r = await api.post<{ conditions?: Condition[]; added?: number; skipped?: string[] }>(`${base(applicationId)}/confirm`, {
+          offer_id: proposedOffer, conditions: picked.map(({ pick: _pick, ...c }) => c),
+        });
+        if (Array.isArray(r?.conditions)) setList(r.conditions); else await load();
+        const n = r?.added ?? 0;
+        setMsg(`${n} condition${n === 1 ? "" : "s"} added from the offer.${r?.skipped?.length ? ` ${r.skipped.length} already on the file.` : ""}`);
+        setProposed(null);
+      } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
     })();
   };
 
@@ -124,6 +160,40 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
           <button type="button" style={secondaryButton} disabled={busy} onClick={() => bulk("from-templates")}>Add from templates</button>
         </div>
         {hasOffer === false && <p id="conditions-no-offer" data-testid="conditions-no-offer" style={muted}>"Add from the lender's offer" works once a lender has sent an offer on this file (Lenders tab).</p>}
+        {/* BF_PORTAL_v906_OFFER_READER */}
+        <div data-testid="offer-reader" style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--ui-border)" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ui-text)" }}>Read the lender's offer document</div>
+          <p style={muted}>Upload the offer, approval or commitment letter (or read a term sheet already on the file). Its conditions are listed for you to check; nothing is added until you press Add.</p>
+          <div style={{ ...row, marginTop: 8 }}>
+            <label style={{ ...label, flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <span>Upload the offer document</span>
+              <input type="file" aria-label="Offer document" accept=".pdf,.png,.jpg,.jpeg,.heic" disabled={reading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) readOffer({ file: f }); }} />
+            </label>
+            {offers.map((o) => (
+              <button key={o.id} type="button" style={secondaryButton} disabled={reading} onClick={() => readOffer({ offerId: o.id })}>Read {o.lender_name}'s term sheet</button>
+            ))}
+          </div>
+          {reading && <p role="status" style={muted}>Reading the document… this can take up to a minute.</p>}
+          {proposed && proposed.length > 0 && (
+            <div data-testid="proposed-conditions" style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ui-text)", marginBottom: 6 }}>Conditions found. Tick the ones to add and correct the wording if needed:</div>
+              {proposed.map((c, i) => (
+                <div key={i} style={{ ...row, alignItems: "center", marginBottom: 6 }}>
+                  <input type="checkbox" aria-label={`Add ${c.title}`} checked={c.pick} onChange={(e) => setProposed((cur) => (cur ?? []).map((x, j) => (j === i ? { ...x, pick: e.target.checked } : x)))} />
+                  <input aria-label={`Condition ${i + 1}`} style={{ ...input, flex: "1 1 260px" }} value={c.title} onChange={(e) => setProposed((cur) => (cur ?? []).map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} />
+                  <select aria-label={`Condition ${i + 1} owner`} style={input} value={c.owner} onChange={(e) => setProposed((cur) => (cur ?? []).map((x, j) => (j === i ? { ...x, owner: e.target.value as ReadCondition["owner"] } : x)))}>
+                    {(["client", "staff", "lender"] as const).map((o) => <option key={o} value={o}>{OWNER_LABEL[o] ?? o}</option>)}
+                  </select>
+                  {c.requires_document && <Chip tone="blue">Needs a document</Chip>}
+                </div>
+              ))}
+              <div style={{ ...row, marginTop: 8 }}>
+                <button type="button" style={primaryButton} disabled={busy} onClick={confirmProposed}>Add {proposed.filter((c) => c.pick).length} condition{proposed.filter((c) => c.pick).length === 1 ? "" : "s"}</button>
+                <button type="button" style={secondaryButton} onClick={() => setProposed(null)}>Discard</button>
+              </div>
+            </div>
+          )}
+        </div>
         <ErrorLine text={err} />
         {msg && <p role="status" style={{ ...muted, color: "var(--ui-text)" }}>{msg}</p>}
       </section>

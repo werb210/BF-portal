@@ -225,9 +225,11 @@ describe("Payments on a file or contact", () => {
       : { configured: true, problem: null, links: [] });
     h.post.mockResolvedValue({ link: link(), sent: ["email"], refused: { sms: "The contact has not agreed to texts." } });
     render(<PaymentLinksPanel applicationId="app-1" />);
-    fireEvent.click(await screen.findByRole("button", { name: "Request a payment" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Request a fee payment" }));
+    // BF_PORTAL_v906_PAYMENT_BASIS - the request starts from the signed fee agreement (or an invoice).
+    fireEvent.click(await screen.findByLabelText(/The fee in the signed fee agreement/));
     await waitFor(() => expect(screen.getByLabelText("Amount (CAD)")).toHaveValue("2000"));
-    expect(screen.getByLabelText("What it is for")).toHaveValue("Broker fee (2% of funding)");
+    expect(screen.getByLabelText("What it is for (shown to the client)")).toHaveValue("Broker fee (2% of funding)");
     fireEvent.click(screen.getByLabelText(/Send by text/));
     fireEvent.click(screen.getByRole("button", { name: "Create and send" }));
     await waitFor(() => expect(h.post).toHaveBeenCalledWith("/api/payments/links", {
@@ -241,7 +243,25 @@ describe("Payments on a file or contact", () => {
     h.get.mockResolvedValue({ configured: false, problem: "Online payments are not set up on this server yet (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET).", links: [] });
     render(<PaymentLinksPanel contactId="c1" />);
     expect(await screen.findByText(/not set up on this server yet/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Request a payment" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Request a fee payment" })).toBeNull();
+  });
+
+  // BF_PORTAL_v906_PAYMENT_BASIS
+  it("without a signed fee agreement it is an invoice, and nothing is sent until the amount and purpose are in", async () => {
+    h.get.mockImplementation(async (url: string) => url.includes("fee-suggestion") ? { fee: null } : { configured: true, problem: null, links: [] });
+    h.post.mockResolvedValue({ link: link(), sent: [], refused: {} });
+    render(<PaymentLinksPanel applicationId="app-1" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Request a fee payment" }));
+    expect(await screen.findByLabelText(/The signed fee agreement \(none signed/)).toBeDisabled();
+    expect(screen.getByLabelText(/An invoice/)).toBeChecked();
+    const send = screen.getByRole("button", { name: "Create and send" });
+    expect(send).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Amount (CAD)"), { target: { value: "750" } });
+    expect(send).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("What it is for (shown to the client)"), { target: { value: "Broker fee - invoice 1042" } });
+    expect(send).not.toBeDisabled();
+    fireEvent.click(send);
+    await waitFor(() => expect(h.post).toHaveBeenCalledWith("/api/payments/links", expect.objectContaining({ amount: "750", description: "Broker fee - invoice 1042" })));
   });
 
   it("every status pill is readable (4.5:1 or better)", () => {

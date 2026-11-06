@@ -48,6 +48,37 @@ function SectionEditor({ sec, disabled, onSave }: { sec: Section; disabled: bool
   </div>;
 }
 
+// BF_PORTAL_v906_CREDIT_STEPS
+type StepKey = "financials" | "collateral" | "research" | "generate";
+type StepState = { step: StepKey; status: "not_run" | "running" | "done" | "failed"; message: string | null; started_at: string | null; finished_at: string | null };
+function markLocal(cur: StepState[], step: StepKey, status: StepState["status"]): StepState[] {
+  const rest = cur.filter((x) => x.step !== step);
+  return [...rest, { step, status, message: null, started_at: new Date().toISOString(), finished_at: null }];
+}
+function stepRunning(steps: StepState[], step: StepKey): boolean {
+  return steps.find((x) => x.step === step)?.status === "running";
+}
+const STEP_LOOK: Record<StepState["status"], { label: string; bg: string; fg: string }> = {
+  not_run: { label: "Not run", bg: "#f1f5f9", fg: "#334155" },
+  running: { label: "Running…", bg: "#dbeafe", fg: "#1e3a8a" },
+  done: { label: "Done", bg: "#dcfce7", fg: "#14532d" },
+  failed: { label: "Failed", bg: "#fee2e2", fg: "#7f1d1d" },
+};
+function StepButton({ n, step, steps, disabled, onClick, children, strong, testId }: { n: number; step: StepKey; steps: StepState[]; disabled: boolean; onClick: () => void; children: React.ReactNode; strong?: boolean; testId?: string }) {
+  const st = steps.find((x) => x.step === step);
+  const look = STEP_LOOK[st?.status ?? "not_run"];
+  const when = st?.finished_at ? new Date(st.finished_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : null;
+  return (
+    <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-start", marginRight: 8, marginBottom: 8, maxWidth: 280 }} data-testid={`cs2-step-${step}`}>
+      <button type="button" style={{ ...btn, marginRight: 0, marginBottom: 4, ...(strong ? { fontWeight: 600 } : {}) }} disabled={disabled} data-testid={testId} onClick={onClick}>{n}. {children}</button>
+      <span data-testid={`cs2-step-${step}-status`} title={st?.message ?? undefined} style={{ fontSize: 12, fontWeight: 700, padding: "1px 8px", borderRadius: 999, background: look.bg, color: look.fg }}>
+        {look.label}{st?.status === "done" && when ? ` ${when}` : ""}
+      </span>
+      {st?.status === "failed" && st.message ? <span style={{ fontSize: 12, color: "#7f1d1d", marginTop: 2 }}>{st.message}</span> : null}
+    </div>
+  );
+}
+
 export default function CreditSummaryV2({ applicationId }: { applicationId: string }) {
   const id = encodeURIComponent(applicationId);
   const [row, setRow] = useState<SummaryRow>(null);
@@ -64,13 +95,26 @@ export default function CreditSummaryV2({ applicationId }: { applicationId: stri
     try { const json = await call(`/api/credit-summary-v2/${id}`); setRow(json?.summary ?? null); } catch { /* Retain the currently rendered data. */ }
   }, [id]);
   useEffect(() => { void load(); }, [load]);
-  const run = async (label: string, path: string, method = "POST", body?: unknown, done?: (json: any) => string) => {
+  // BF_PORTAL_v906_CREDIT_STEPS - what each button last did (BF-Server v906): not run / running / done / failed.
+  const [steps, setSteps] = useState<StepState[]>([]);
+  const loadSteps = useCallback(async () => {
+    try { const json = await call(`/api/credit-summary-v2/${id}/steps`); setSteps(Array.isArray(json?.steps) ? json.steps : []); } catch { /* older server: no step states */ }
+  }, [id]);
+  useEffect(() => { void loadSteps(); }, [loadSteps]);
+  const anyRunning = steps.some((st) => st.status === "running");
+  useEffect(() => {
+    if (!anyRunning || busy) return;
+    const t = setInterval(() => { void loadSteps(); void load(); }, 5000);
+    return () => clearInterval(t);
+  }, [anyRunning, busy, loadSteps, load]);
+  const run = async (label: string, path: string, method = "POST", body?: unknown, done?: (json: any) => string, step?: StepKey) => {
     setBusy(label); setMessage(null);
+    if (step) setSteps((cur) => markLocal(cur, step, "running"));
     try {
       const json = await call(path, method, body);
       if (json?.summary !== undefined) setRow(json.summary);
       setMessage(done ? done(json) : `${label}: done.`);
-    } catch (error) { setMessage(`${label}: ${(error as Error).message}`); } finally { setBusy(null); }
+    } catch (error) { setMessage(`${label}: ${(error as Error).message}`); } finally { setBusy(null); if (step) void loadSteps(); }
   };
   const doc = row?.doc;
   // BF_PORTAL_BLOCK_v541 - download the write-up as Word or PDF (Boreal template, signed by the submitter).
@@ -95,16 +139,17 @@ export default function CreditSummaryV2({ applicationId }: { applicationId: stri
   return <div data-testid="credit-summary-v2" style={{ maxWidth: 1000, color: "#0f172a" }}>
     <div style={card}>
       <div style={{ display: "flex", flexWrap: "wrap" }}>
-        <button type="button" style={btn} disabled={!!busy} onClick={() => void run("Read financials", `/api/credit-financials/${id}/extract`, "POST", undefined, (json) => `Read ${json?.documents ?? 0} financial document(s).${json?.skipped?.length ? ` Skipped: ${json.skipped.join("; ")}` : ""}`)}>Read financials</button>
-        <button type="button" style={btn} disabled={!!busy} onClick={() => void run("Read collateral", `/api/credit-collateral/${id}/extract`, "POST", undefined, (json) => `Read ${json?.documents ?? 0} aging / equipment / real-estate document(s).${json?.skipped?.length ? ` Skipped: ${json.skipped.join("; ")}` : ""}`)}>Read A/R, equipment &amp; real estate</button>
-        <button type="button" style={btn} disabled={!!busy} onClick={() => void run("Research", `/api/credit-research/${id}/refresh`, "POST", undefined, (json) => `Found ${typeof json?.found === "number" ? json.found : Array.isArray(json?.facts) ? json.facts.length : (json?.facts ?? 0)} fact(s).${json?.notes?.length ? ` ${json.notes.join(" ")}` : ""}`)}>Research company</button>
-        <button type="button" style={{ ...btn, fontWeight: 600 }} disabled={!!busy} data-testid="cs2-generate" onClick={() => void run("Generate", `/api/credit-summary-v2/${id}/generate`, "POST", undefined, () => "Draft ready - review each section.")}>{doc ? "Generate again" : "Generate credit summary"}</button>
+        {/* BF_PORTAL_v906_CREDIT_STEPS - numbered in the order to run them, each with its last result. */}
+        <StepButton n={1} step="financials" steps={steps} disabled={!!busy || stepRunning(steps, "financials")} onClick={() => void run("Read financials", `/api/credit-financials/${id}/extract`, "POST", undefined, (json) => `Read ${json?.documents ?? 0} financial document(s).${json?.skipped?.length ? ` Skipped: ${json.skipped.join("; ")}` : ""}${!json?.documents ? " No accepted financial statements were found on this file: check they are filed under a financial statements category (for example 3 years accountant prepared financials, PnL or Balance Sheet interim, or a compilation engagement report)." : ""}`, "financials")}>Read financials</StepButton>
+        <StepButton n={2} step="collateral" steps={steps} disabled={!!busy || stepRunning(steps, "collateral")} onClick={() => void run("Read collateral", `/api/credit-collateral/${id}/extract`, "POST", undefined, (json) => `Read ${json?.documents ?? 0} aging / equipment / real-estate document(s).${json?.skipped?.length ? ` Skipped: ${json.skipped.join("; ")}` : ""}`, "collateral")}>Read A/R, equipment &amp; real estate</StepButton>
+        <StepButton n={3} step="research" steps={steps} disabled={!!busy || stepRunning(steps, "research")} onClick={() => void run("Research", `/api/credit-research/${id}/refresh`, "POST", undefined, (json) => `Found ${typeof json?.found === "number" ? json.found : Array.isArray(json?.facts) ? json.facts.length : (json?.facts ?? 0)} fact(s).${json?.notes?.length ? ` ${json.notes.join(" ")}` : ""}`, "research")}>Research company</StepButton>
+        <StepButton n={4} step="generate" steps={steps} strong testId="cs2-generate" disabled={!!busy || stepRunning(steps, "generate")} onClick={() => void run("Generate", `/api/credit-summary-v2/${id}/generate`, "POST", undefined, () => "Draft ready - review each section.", "generate")}>{doc ? "Generate again" : "Generate credit summary"}</StepButton>
         {doc && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-download-docx" onClick={() => void download("docx")}>Download Word</button>}
         {doc && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-download-pdf" onClick={() => void download("pdf")}>Download PDF</button>}
         {doc && !submitted && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-submit" onClick={() => { if (window.confirm("Submit this credit summary? It will be signed with your name.")) void run("Submit", `/api/credit-summary-v2/${id}/submit`, "POST", undefined, () => "Submitted."); }}>Submit</button>}
       </div>
       {busy && <div>{busy}... this can take up to a minute.</div>}{message && <div role="status">{message}</div>}
-      <div style={{ color: "#475569" }}>Order: read financials and collateral, run research, then generate. Staff edits are kept when you generate again.</div>
+      <div style={{ color: "#475569" }}>Run them in order: 1 read financials, 2 read collateral, 3 research, 4 generate. Staff edits are kept when you generate again.</div>
     </div>
     {!doc ? <div style={card}>No credit summary yet.</div> : <>
       <div style={card} data-testid="cs2-status">

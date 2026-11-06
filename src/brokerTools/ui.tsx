@@ -47,3 +47,12 @@ export function errorText(e: unknown, fallback = "That did not work. Try again."
   const m = e instanceof Error ? e.message : "";
   return m && m !== "API_ERROR" ? m : fallback;
 }
+
+// BF_PORTAL_v906_DEAL_DESK_HELP - a one-line explanation above a tool, in readable text (not a tooltip).
+export function SectionHelp({ title, text }: { title: string; text: string }) {
+  return (
+    <div data-testid={`section-help-${title.toLowerCase().replace(/[^a-z]+/g, "-")}`} style={{ margin: "4px 0 6px", padding: "6px 10px", borderLeft: "3px solid #1e3a8a", fontSize: 13, color: "var(--ui-text)", lineHeight: 1.45 }}>
+      <strong>{title}:</strong> {text}
+    </div>
+  );
+}
