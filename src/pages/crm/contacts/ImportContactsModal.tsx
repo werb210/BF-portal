@@ -15,7 +15,8 @@ type Field =
   | "phone"
   | "company_name"
   | "job_title"
-  | "lead_status";
+  | "lead_status"
+  | "owner";
 
 const FIELDS: { key: Field; label: string }[] = [
   { key: "email", label: "Email" },
@@ -26,6 +27,8 @@ const FIELDS: { key: Field; label: string }[] = [
   { key: "company_name", label: "Company" },
   { key: "job_title", label: "Job title" },
   { key: "lead_status", label: "Lead status" },
+  // BF_PORTAL_v900_IMPORT_OWNER - staff email or full name; unmatched rows are assigned to you.
+  { key: "owner", label: "Owner (staff email or name)" },
 ];
 
 // Minimal RFC-4180 CSV parser: handles quoted fields, embedded commas/newlines,
@@ -91,6 +94,7 @@ function parseCsv(text: string): string[][] {
 
 function guess(header: string): Field | "" {
   const h = header.toLowerCase().replace(/[^a-z]/g, "");
+  if (h.includes("owner") || h.includes("assignedto") || h === "rep" || h.includes("salesrep")) return "owner";
   if (h.includes("email")) return "email";
   if (h.includes("firstname") || h === "first") return "first_name";
   if (h.includes("lastname") || h === "last" || h.includes("surname")) return "last_name";
@@ -143,6 +147,7 @@ type ImportResult = {
   updated: number;
   skipped: number;
   total: number;
+  owners_unmatched?: string[];
 };
 
 export default function ImportContactsModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
@@ -238,6 +243,11 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
               <div>
                 {result.created} created · {result.updated} updated · {result.skipped} skipped (of {result.total})
               </div>
+              {result.owners_unmatched && result.owners_unmatched.length > 0 ? (
+                <div data-testid="import-owners-unmatched" style={{ marginTop: 8, color: "#78350f", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 6, padding: "6px 8px", fontSize: 13 }}>
+                  These owners did not match a staff member, so those contacts were assigned to you: {result.owners_unmatched.join(", ")}
+                </div>
+              ) : null}
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
               <button style={btnPrimary} onClick={onClose}>Done</button>
@@ -247,7 +257,7 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
           <div>
             <p style={{ color: "var(--ui-text-muted)", fontSize: 14, marginTop: 0 }}>
               In HubSpot: Contacts → Export → CSV. Then choose that file here. We match on email — existing contacts
-              are updated, new ones are created, and they&apos;ll be assigned to you.
+              are updated, new ones are created. An Owner column (staff email or name) assigns each contact; otherwise they&apos;ll be assigned to you.
             </p>
             <input
               ref={fileRef}
