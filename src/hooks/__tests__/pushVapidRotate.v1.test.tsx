@@ -100,6 +100,8 @@ describe("BF_PORTAL_PUSH_VAPID_ROTATE_v1", () => {
     const stale = sub(OLD_KEY);
     current = stale;
     render(<ProfileSettings />);
+    // BF_PORTAL_v909_PROFILE_TABS - push notifications are on the "Notifications & out of office" part of My Profile.
+    fireEvent.click(await screen.findByRole("tab", { name: "Notifications & out of office" }));
     await act(async () => { fireEvent.click(await screen.findByRole("button", { name: "Enable notifications" })); });
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith("Notifications enabled."));
     expect(stale.unsubscribe).toHaveBeenCalledTimes(1);

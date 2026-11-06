@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAuthToken } from "@/lib/authToken";
+import { useMyAvatar } from "@/components/ui/UserAvatar"; // BF_PORTAL_v909_AVATARS
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotificationsStore } from "@/state/notifications.store";
@@ -37,7 +38,10 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
     ?? ((user as { name?: string } | null)?.name?.split(" ")[0] ?? "");
   const greeting = firstName ? `Hello, ${firstName}` : "Hello";
 
-  const avatarUrl = (user as { avatar_url?: string; profileImage?: string; profile_image_url?: string } | null)?.avatar_url
+  // BF_PORTAL_v909_AVATARS - the photo saved on My Profile (the signed-in user object does not carry it).
+  const myAvatar = useMyAvatar();
+  const avatarUrl = myAvatar
+    ?? (user as { avatar_url?: string; profileImage?: string; profile_image_url?: string } | null)?.avatar_url
     ?? (user as { profileImage?: string } | null)?.profileImage
     ?? (user as { profile_image_url?: string } | null)?.profile_image_url; // BF_PORTAL_AVATAR_FIX_v1
   const avatarInitials = useMemo(() => {

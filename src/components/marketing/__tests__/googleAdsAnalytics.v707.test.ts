@@ -5,10 +5,10 @@ import { money, roasText, duration, visitorOutcome } from "../GoogleAdsAnalytics
 import { dedupeByPerson } from "../AbandonedPanel";
 const dash = readFileSync("src/pages/marketing/MarketingDashboard.tsx", "utf8");
 describe("Google Ads & Analytics section", () => {
-  it("is one Ads section: Google, Microsoft and LinkedIn, with every Google report under Google", () => {
-    // BF_PORTAL_ADS_SERVICES_v709
+  it("is one Ads section: Google, Meta, Microsoft and LinkedIn, with every Google report under Google", () => {
+    // BF_PORTAL_ADS_SERVICES_v709 + BF_PORTAL_v909_META_ADS
     expect(dash).toContain('{ id: "ads", label: "Ads" }');
-    expect(dash).toContain('[["google", "Google"], ["microsoft", "Microsoft"], ["linkedin", "LinkedIn"]]');
+    expect(dash).toContain('[["google", "Google"], ["meta", "Meta"], ["microsoft", "Microsoft"], ["linkedin", "LinkedIn"]]');
     for (const t of ['["story", "Story"]', '["campaigns", "Campaigns & Keywords"]', '["negatives", "Search Terms & Negatives"]', '["visitors", "Visitors"]', '["dropoff", "Drop-off"]', '["audiences", "Audiences"]', '["website", "Website (GA4)"]', '["health", "Health"]']) expect(dash).toContain(t);
     expect(dash).toContain('adsService === "linkedin"');
     expect(dash).toContain('adsService === "microsoft"');

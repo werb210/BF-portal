@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { UserAvatar } from "@/components/ui/UserAvatar"; // BF_PORTAL_v909_AVATARS
 import Button from "@/components/ui/Button";
 import ModalFooterWithDelete from "@/components/ModalFooterWithDelete";
 import ErrorBanner from "@/components/ui/ErrorBanner";
@@ -115,6 +116,24 @@ const UserManagement = () => {
     });
   };
 
+  // BF_PORTAL_v909_ADD_USER_DIRECT_NUMBER - optional: give the new person one of the free numbers (Settings > Phone lines).
+  const [directNumber, setDirectNumber] = useState("");
+  const [freeNumbers, setFreeNumbers] = useState<Array<{ number: string; label: string | null }> | null>(null);
+  const [numbersNote, setNumbersNote] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isModalOpen || editingUser) return;
+    let live = true;
+    setDirectNumber(""); setNumbersNote(null);
+    Promise.resolve().then(() => api.get<{ configured?: boolean; numbers?: Array<{ number: string; label: string | null }> }>("/api/voice/available-numbers"))
+      .then((r) => {
+        if (!live) return;
+        setFreeNumbers(Array.isArray(r?.numbers) ? r.numbers : []);
+        if (r && r.configured === false) setNumbersNote("Phone lines are not connected on the server, so no numbers can be assigned yet.");
+      })
+      .catch(() => { if (live) { setFreeNumbers([]); setNumbersNote("The free numbers could not be loaded. You can assign one later in Settings > Phone lines."); } });
+    return () => { live = false; };
+  }, [isModalOpen, editingUser]);
+
   const onSaveUser = async () => {
     setFormError(null);
     const errors = validateUserForm();
@@ -141,7 +160,18 @@ const UserManagement = () => {
         }
         await api.patch(`/api/users/${editingUser.id}`, payload);
       } else {
-        await api.post(`/api/users`, payload);
+        const created = await api.post<{ user?: { id?: string }; data?: { id?: string }; id?: string }>(`/api/users`, payload);
+        // BF_PORTAL_v909_ADD_USER_DIRECT_NUMBER
+        const newId = created?.user?.id ?? created?.data?.id ?? created?.id ?? null;
+        if (directNumber && newId) {
+          try {
+            await api.put(`/api/voice/direct-numbers/${newId}`, { direct_number: directNumber });
+          } catch (e) {
+            setFormError(`The user was added, but the phone number was not assigned: ${getErrorMessage(e, "try again in Settings > Phone lines.")}`);
+            await fetchUsers();
+            return;
+          }
+        }
       }
       await fetchUsers();
       setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "builtin:Staff", silos: ["BF"] });
@@ -277,8 +307,13 @@ const UserManagement = () => {
             return (
               <tr key={rowKey}>
                 <td>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>{/* BF_PORTAL_v909_AVATARS */}
+                  <UserAvatar name={displayName} url={(user as { profile_image_url?: string | null }).profile_image_url ?? null} size={32} />
+                  <div>
                   <div className="user-table__name">{displayName}</div>
                   <div className="user-table__email">{user.email}</div>
+                  </div>
+                  </div>
                 </td>
                 <td>
                   <Select
@@ -450,6 +485,18 @@ const UserManagement = () => {
                 </p>
               )}
             </div>
+            {!editingUser && (
+              <div className="ui-field" data-testid="add-user-direct-number">
+                <label className="ui-field__label" htmlFor="add-user-direct-number">Assign a direct phone number (optional)</label>
+                <select id="add-user-direct-number" value={directNumber} onChange={(e) => setDirectNumber(e.target.value)} style={{ padding: 8, borderRadius: 6, border: "1px solid var(--ui-border)" }}>
+                  <option value="">No direct number</option>
+                  {(freeNumbers ?? []).map((n) => <option key={n.number} value={n.number}>{n.number}{n.label ? ` (${n.label})` : ""}</option>)}
+                </select>
+                <p style={{ fontSize: 12, color: "var(--ui-text-muted)", marginTop: 4 }}>
+                  {numbersNote ?? (freeNumbers === null ? "Loading the free numbers…" : freeNumbers.length === 0 ? "No free numbers. Buy one in Twilio, then assign it in Settings > Phone lines." : "Calls to this number ring only this person, then their voicemail.")}
+                </p>
+              </div>
+            )}
             <Select
               label="Role"
               value={userForm.role}

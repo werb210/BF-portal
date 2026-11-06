@@ -9,6 +9,7 @@ import { patchStatusWithFundingGate } from "@/brokerTools/fundingGate"; // BF_PO
 import TeamFilter from "@/teams/TeamFilter"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import CustomFieldFilters from "@/crmFields/CustomFieldFilters"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { filterParams, useCustomFields, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import { pipelinesApi } from "@/pipelines/pipelinesApi"; // BF_PORTAL_v909_LENDING_STAGE_DISPLAY
 
 // BF_PORTAL_FRAUD_HOLD_v34 - Fraud and Hold are parking columns. Neither
 // deletes anything; both take the file out of the reported numbers (Fraud from
@@ -73,6 +74,15 @@ type Card = {
   productCategory?: string | null;
   product_category?: string | null;
 };
+
+// BF_PORTAL_v909_LENDING_STAGE_DISPLAY - the stages in the order set in Settings (built-in order for any not set).
+export function orderedStages(display: Record<string, { position: number }>): Stage[] {
+  return [...STAGES].sort((a, b) => {
+    const pa = display[a]?.position ?? STAGES.indexOf(a);
+    const pb = display[b]?.position ?? STAGES.indexOf(b);
+    return pa - pb || STAGES.indexOf(a) - STAGES.indexOf(b);
+  });
+}
 
 // v696: every card must land in exactly one column, otherwise it inflates the
 // header count without rendering (the "34 counted, 1 shown" bug). Any card whose
@@ -151,6 +161,22 @@ export default function PipelinePage() {
   const cfKey = JSON.stringify(cfFilters);
   // BF_PORTAL_v906_PIPELINE_SEARCH - search every deal across all stages on the server (business name, contact name,
   // email, phone, application id). The board shows at most 500 cards, so filtering only what is loaded misses deals.
+  // BF_PORTAL_v909_LENDING_STAGE_DISPLAY - Settings > CRM set-up > Pipelines can rename, hide and reorder the lending
+  // stages. Only the board's display changes; cards, moves and reports keep the built-in stage keys.
+  const [stageDisplay, setStageDisplay] = useState<Record<string, { label: string; hidden: boolean; position: number }>>({});
+  useEffect(() => {
+    let live = true;
+    Promise.resolve().then(() => pipelinesApi.list())
+      .then((r) => {
+        const lending = r?.pipelines?.find((p) => p.system);
+        if (!live || !lending) return;
+        setStageDisplay(Object.fromEntries(lending.stages.map((st, i) => [st.key ?? st.name, { label: st.label ?? st.name, hidden: st.hidden === true, position: typeof st.position === "number" ? st.position : i }])));
+      })
+      .catch(() => { /* older server or no access: the built-in names and order */ });
+    return () => { live = false; };
+  }, []);
+  const boardStages = orderedStages(stageDisplay);
+  const stageLabel = (st: Stage) => stageDisplay[st]?.label || st;
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   useEffect(() => {
@@ -291,8 +317,9 @@ export default function PipelinePage() {
       <LenderReferralIssues />{/* BF_PORTAL_v827_REFERRAL_PIPELINE_CARD - lender files still importing or that could not be read */}
       {/* BF_PORTAL_v893_PORTAL_FIXES - every stage side by side in one row; scroll right to see the rest (replaces the v884 wrap). */}
       <div data-testid="pipeline-board" style={{ display: "flex", flexWrap: "nowrap", gap: 14, paddingBottom: 16, alignItems: "flex-start", overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
-        {STAGES.map((stage) => {
+        {boardStages.map((stage) => {
           const col = cards.filter((c) => effectiveStage(c) === stage);
+          if (stageDisplay[stage]?.hidden && col.length === 0) return null; // BF_PORTAL_v909_LENDING_STAGE_DISPLAY
           const isTarget = dragOver === stage && dragging !== null;
           return (
             // BF_PORTAL_PIPELINE_DND_v35 - the column is the drop target.
@@ -311,7 +338,7 @@ export default function PipelinePage() {
               }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
                 padding: "6px 2px", borderBottom: "2px solid var(--ui-text-muted)" }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ui-text-muted)" }}>{stage}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ui-text-muted)" }} title={stageLabel(stage) !== stage ? `Stage: ${stage}` : undefined}>{stageLabel(stage)}</span>
                 <span style={{ fontSize: 11, background: "var(--ui-surface-muted)", color: "var(--ui-text-muted)",
                   borderRadius: 20, padding: "1px 8px", fontWeight: 600 }}>
                   {col.length}

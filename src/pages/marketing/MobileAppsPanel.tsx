@@ -147,6 +147,21 @@ export function MobileAppsSummary({ days }: { days: number }) {
   );
 }
 
+// BF_PORTAL_v909_PLAY_SETUP - what connecting store reporting takes. The keys are server settings: they are never typed
+// into this page, chat or email.
+export const PLAY_SETUP_STEPS: string[] = [
+  "In Google Cloud (signed in as borealfinancial@gmail.com), open the project linked to Play, enable the Google Play Android Developer Reporting API, and create a service account (no roles needed in Cloud).",
+  "Create a JSON key for that service account and keep the file safe.",
+  "In Play Console > Users and permissions, invite the service account's email and give it \"View app information and download bulk reports\" (read-only) for the Boreal app.",
+  "Copy the Cloud Storage bucket name from Play Console > Download reports > Statistics (it starts with pubsite_prod_).",
+  "Give the JSON key and the bucket name to whoever maintains BF-Server to store as server settings. Downloads appear here the day after.",
+];
+export const APPLE_SETUP_STEPS: string[] = [
+  "In App Store Connect > Users and Access > Integrations > App Store Connect API, create a key with the Sales and Reports role.",
+  "Download the .p8 key (it can be downloaded only once) and note the Key ID, the Issuer ID and the vendor number (Payments and Financial Reports).",
+  "Give those to whoever maintains BF-Server to store as server settings. Downloads appear here the day after.",
+];
+
 export default function MobileAppsPanel() {
   const [days, setDays] = useState(30);
   const { data, err } = useMobileAppsReport(days);
@@ -206,9 +221,20 @@ export default function MobileAppsPanel() {
         <div style={card} data-testid="apps-stores">
           <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Store downloads</h3>
           {(["apple", "google"] as const).map((k) => (
-            <div key={k} style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "6px 0", borderTop: "1px solid var(--ui-border)" }}>
-              <strong style={{ minWidth: 150 }}>{k === "apple" ? "Apple App Store" : "Google Play"}</strong>
-              <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{data.stores[k].connected ? "Connected" : "Not connected yet. " + data.stores[k].note}</span>
+            <div key={k} style={{ padding: "6px 0", borderTop: "1px solid var(--ui-border)" }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+                <strong style={{ minWidth: 150 }}>{k === "apple" ? "Apple App Store" : "Google Play"}</strong>
+                <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{data.stores[k].connected ? "Connected" : "Not connected yet. " + data.stores[k].note}</span>
+              </div>
+              {/* BF_PORTAL_v909_PLAY_SETUP - the exact steps, not just "not connected". */}
+              {!data.stores[k].connected && (
+                <details style={{ marginTop: 4, fontSize: 13 }} data-testid={`apps-store-setup-${k}`} open={k === "google"}>
+                  <summary style={{ cursor: "pointer", fontWeight: 600 }}>How to connect {k === "apple" ? "App Store Connect" : "Google Play"}</summary>
+                  <ol style={{ margin: "6px 0 0", paddingLeft: 20, lineHeight: 1.6 }}>
+                    {(k === "google" ? PLAY_SETUP_STEPS : APPLE_SETUP_STEPS).map((step) => <li key={step}>{step}</li>)}
+                  </ol>
+                </details>
+              )}
             </div>
           ))}
         </div>

@@ -53,6 +53,9 @@ export default function PipelinesSettings() {
   const [list, setList] = useState<PipelineList | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [probs, setProbs] = useState<{ [k: string]: number }>({});
+  // BF_PORTAL_v909_LENDING_STAGE_DISPLAY - rename, hide and reorder the lending stages (their keys stay the same).
+  type LendingRow = { key: string; label: string; hidden: boolean; color: string };
+  const [lendingRows, setLendingRows] = useState<LendingRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const load = useCallback(async () => {
@@ -60,6 +63,7 @@ export default function PipelinesSettings() {
       const r = await pipelinesApi.list();
       setList(r);
       setProbs(Object.fromEntries((r.pipelines.find((p) => p.system)?.stages ?? []).map((s) => [s.name, s.probability])));
+      setLendingRows((r.pipelines.find((p) => p.system)?.stages ?? []).map((s) => ({ key: s.key ?? s.name, label: s.label ?? s.name, hidden: s.hidden === true, color: s.color })));
     } catch (e) { setErr(errText(e, "Could not load pipelines.")); }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -80,25 +84,40 @@ export default function PipelinesSettings() {
     try { await pipelinesApi.archive(p.id); setOk(`${p.name} archived.`); await load(); } catch (e) { setErr(errText(e, "Could not archive the pipeline.")); }
   };
   const saveProbs = async () => {
-    try { await pipelinesApi.lendingProbabilities(probs); setOk("Lending probabilities saved."); await load(); } catch (e) { setErr(errText(e, "Could not save the probabilities.")); }
+    setErr(null); setOk(null);
+    try {
+      await pipelinesApi.lendingProbabilities(probs);
+      // BF_PORTAL_v909_LENDING_STAGE_DISPLAY
+      await pipelinesApi.lendingDisplay(Object.fromEntries(lendingRows.map((r, i) => [r.key, { label: r.label.trim() && r.label.trim() !== r.key ? r.label.trim() : null, hidden: r.hidden, position: i }])));
+      setOk("Lending stages saved."); await load();
+    } catch (e) { setErr(errText(e, "Could not save the lending stages.")); }
   };
+  const moveLending = (i: number, d: number) => setLendingRows((rows) => { const next = [...rows]; const [x] = next.splice(i, 1); next.splice(Math.max(0, Math.min(next.length, i + d)), 0, x!); return next; });
+  const setLending = (i: number, patch: Partial<LendingRow>) => setLendingRows((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
   return (
     <div data-testid="pipelines-settings">
       <Notice error={err} ok={ok} />
       {lending && (
-        <Section id="lending-pipeline" title="Lending pipeline" intro="The built-in stages and their rules stay as they are. You can set each stage's probability for the weighted figures in reports.">
-          <table style={{ borderCollapse: "collapse" }}>
+        <Section id="lending-pipeline" title="Lending pipeline" intro="Rename, hide or reorder the built-in stages, and set each stage's probability for the weighted figures in reports. Only what the board shows changes: each stage keeps its built-in name underneath, which reports, lender sending and the stage rules use. A hidden stage's column still shows while it has deals in it.">
+          <table style={{ borderCollapse: "collapse" }} data-testid="lending-stages">
+            <thead><tr><th style={cell}>Built-in stage</th><th style={cell}>Shown as</th><th style={cell}>Probability</th><th style={cell}>Hide</th><th style={cell}>Order</th></tr></thead>
             <tbody>
-              {lending.stages.map((s) => (
-                <tr key={s.id}>
-                  <td style={cell}><span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 6, background: s.color, color: textOn(s.color), fontSize: 12, fontWeight: 700 }}>{s.name}</span> <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>(locked)</span></td>
-                  <td style={cell}><input type="number" min={0} max={100} aria-label={`${s.name} probability`} value={probs[s.name] ?? 0} onChange={(e) => setProbs({ ...probs, [s.name]: Number(e.target.value) })} style={{ ...input, width: 80 }} /> %</td>
+              {lendingRows.map((r, i) => (
+                <tr key={r.key} data-testid={`lending-stage-${r.key}`}>
+                  <td style={cell}><span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 6, background: r.color, color: textOn(r.color), fontSize: 12, fontWeight: 700 }}>{r.key}</span></td>
+                  <td style={cell}><input aria-label={`${r.key} shown as`} value={r.label} maxLength={40} onChange={(e) => setLending(i, { label: e.target.value })} style={{ ...input, width: 200 }} /></td>
+                  <td style={cell}><input type="number" min={0} max={100} aria-label={`${r.key} probability`} value={probs[r.key] ?? 0} onChange={(e) => setProbs({ ...probs, [r.key]: Number(e.target.value) })} style={{ ...input, width: 80 }} /> %</td>
+                  <td style={cell}><input type="checkbox" aria-label={`Hide ${r.key}`} checked={r.hidden} onChange={(e) => setLending(i, { hidden: e.target.checked })} /></td>
+                  <td style={{ ...cell, whiteSpace: "nowrap" }}>
+                    <button type="button" style={quiet} aria-label={`Move ${r.key} up`} disabled={i === 0} onClick={() => moveLending(i, -1)}>Up</button>{" "}
+                    <button type="button" style={quiet} aria-label={`Move ${r.key} down`} disabled={i === lendingRows.length - 1} onClick={() => moveLending(i, 1)}>Down</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void saveProbs()}>Save probabilities</button>
+          <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void saveProbs()}>Save lending stages</button>
         </Section>
       )}
       <Section id="extra-pipelines" title="More pipelines" intro="For renewals, equipment leasing or anything that moves through different steps. Each pipeline belongs to the business line chosen in the top bar.">

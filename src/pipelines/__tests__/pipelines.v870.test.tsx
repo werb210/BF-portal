@@ -63,15 +63,23 @@ describe("the pipeline page", () => {
 });
 
 describe("Settings > Pipelines", () => {
-  it("lending stages are locked (probability only); a new pipeline is built from stages", async () => {
+  // BF_PORTAL_v909_LENDING_STAGE_DISPLAY - lending stages can be renamed, hidden and reordered (keys unchanged), with probabilities.
+  it("lending stages: rename, hide, reorder and probabilities keep the built-in keys; a new pipeline is built from stages", async () => {
     h.get.mockResolvedValue(list({ pipelines: [lending] }));
     h.put.mockResolvedValue({ pipeline: lending });
     h.post.mockResolvedValue({ pipeline: renewals });
     render(<PipelinesSettings />);
-    expect(await screen.findAllByText("(locked)")).toHaveLength(2);
+    await screen.findByTestId("lending-stages");
     fireEvent.change(screen.getByLabelText("Offer probability"), { target: { value: "80" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save probabilities" }));
+    fireEvent.change(screen.getByLabelText("Offer shown as"), { target: { value: "Offer out" } });
+    fireEvent.click(screen.getByLabelText("Hide Received"));
+    fireEvent.click(screen.getByRole("button", { name: "Move Offer up" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save lending stages" }));
     await waitFor(() => expect(h.put).toHaveBeenCalledWith("/api/pipelines/lending/probabilities", { Received: 10, Offer: 80 }));
+    await waitFor(() => expect(h.put).toHaveBeenCalledWith("/api/pipelines/lending/display", {
+      Offer: { label: "Offer out", hidden: false, position: 0 },
+      Received: { label: null, hidden: true, position: 1 },
+    }));
     fireEvent.click(screen.getByRole("button", { name: "New pipeline" }));
     fireEvent.change(screen.getByLabelText("Pipeline name"), { target: { value: "Renewals" } });
     fireEvent.change(screen.getByLabelText("Stage 1 name"), { target: { value: "Due soon" } });
