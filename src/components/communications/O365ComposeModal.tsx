@@ -117,6 +117,15 @@ const tbBtn: CSSProperties = {
   lineHeight: 1.2,
 };
 
+// BF_PORTAL_v908_COMPOSE_LISTS - the portal's base styles remove list bullets and numbers, so a list made in the
+// editor looked like plain lines (the buttons seemed to do nothing). The list gets its own markers and indent, inline
+// so they also show in the recipient's email.
+export function styleLists(root: HTMLElement | null): void {
+  if (!root) return;
+  root.querySelectorAll("ul").forEach((ul) => { ul.style.listStyleType = "disc"; ul.style.paddingLeft = "1.5em"; ul.style.margin = "0 0 0.5em"; });
+  root.querySelectorAll("ol").forEach((ol) => { ol.style.listStyleType = "decimal"; ol.style.paddingLeft = "1.5em"; ol.style.margin = "0 0 0.5em"; });
+}
+
 export default function O365ComposeModal({
   open,
   initialTo = "",
@@ -167,6 +176,7 @@ export default function O365ComposeModal({
   const [composeSending, setComposeSending] = useState(false);
   const [composeError, setComposeError] = useState<string | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const backdropPress = useRef(false); // BF_PORTAL_v908_COMPOSE_SELECT
   const savedRange = useRef<Range | null>(null); // BF_PORTAL_COMPOSE_TOOLBAR_v1
   const [requestReadReceipt, setRequestReadReceipt] = useState(false);
   const [requestDeliveryReceipt, setRequestDeliveryReceipt] = useState(false);
@@ -342,8 +352,26 @@ export default function O365ComposeModal({
   function syncBody() { setComposeBody(bodyRef.current?.innerHTML ?? ""); }
   function exec(cmd: string, value?: string) {
     bodyRef.current?.focus();
+    // BF_PORTAL_v908_COMPOSE_LISTS - a list needs a block to turn into; in an empty editor (or a caret outside it)
+    // insertUnorderedList / insertOrderedList did nothing. Put the caret in a paragraph inside the editor first.
+    if (cmd === "insertUnorderedList" || cmd === "insertOrderedList") ensureCaretInEditor();
     document.execCommand(cmd, false, value);
+    if (cmd === "insertUnorderedList" || cmd === "insertOrderedList") styleLists(bodyRef.current);
     syncBody();
+  }
+  function ensureCaretInEditor() {
+    const el = bodyRef.current;
+    if (!el) return;
+    const sel = window.getSelection();
+    const inside = !!sel && sel.rangeCount > 0 && el.contains(sel.anchorNode);
+    if (inside && el.innerHTML.trim() !== "" && el.innerHTML.trim() !== "<br>") return;
+    if (el.innerHTML.trim() === "" || el.innerHTML.trim() === "<br>") el.innerHTML = "<div><br></div>";
+    const range = document.createRange();
+    const target = el.lastElementChild ?? el;
+    range.selectNodeContents(target);
+    range.collapse(false);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
   }
   // BF_PORTAL_COMPOSE_TOOLBAR_v1 - font/size/color come from <select>/<input> that steal
   // focus from the editor, collapsing its selection. Save the editor range on interaction
@@ -706,7 +734,14 @@ export default function O365ComposeModal({
 
   return (
     <div
-      onClick={() => {
+      // BF_PORTAL_v908_COMPOSE_SELECT - selecting text in the message and letting go of the mouse outside the card fired
+      // a click on this backdrop ("Discard this message?"). Only a press that both starts and ends on the backdrop
+      // closes the composer.
+      onMouseDown={(e) => { backdropPress.current = e.target === e.currentTarget; }}
+      onClick={(e) => {
+        const pressedHere = backdropPress.current;
+        backdropPress.current = false;
+        if (e.target !== e.currentTarget || !pressedHere) return;
         if (composeSending || savingDraft) return;
         const dirty = !!((composeBody || "").replace(/<[^>]*>/g, "").trim() || composeSubject.trim() || composeTo.trim());
         if (dirty && !window.confirm("Discard this message? Use \u201cSave draft\u201d to keep it.")) return;
@@ -805,8 +840,11 @@ export default function O365ComposeModal({
             <EmojiPicker compact onPick={(emoji) => { /* BF_PORTAL_BLOCK_v502 */ const sel = document.getSelection(); if (!bodyRef.current?.contains(sel?.anchorNode ?? null)) bodyRef.current?.focus(); document.execCommand("insertText", false, emoji); syncBody(); }} />
             <button type="button" title="Clear formatting" onMouseDown={(e) => { e.preventDefault(); exec("removeFormat"); }} style={tbBtn}>✕ⁿ</button>
           </div>
+          <style>{`.bf-compose-body ul { list-style: disc; padding-left: 1.5em; } .bf-compose-body ol { list-style: decimal; padding-left: 1.5em; }`}</style>{/* BF_PORTAL_v908_COMPOSE_LISTS */}
           <div
             ref={bodyRef}
+            className="bf-compose-body"
+            data-testid="compose-body"
             contentEditable
             suppressContentEditableWarning
             spellCheck /* BF_PORTAL_SPELLCHECK_v54 */
