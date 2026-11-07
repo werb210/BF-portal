@@ -61,10 +61,31 @@ export function KsSignInGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// BF_PORTAL_v910_KS_PROVISIONING_LINK - opens KS-Ops /ops/provisioning already signed in: the staff token travels in the
+// address fragment (#token=...), which the browser never sends to a server; the page keeps it in that tab only.
+function OpenProvisioningButton() {
+  const open = async () => {
+    const tab = window.open("about:blank", "_blank");
+    try {
+      const t = await ensureKsToken();
+      const url = `${ksOpsBaseUrl()}/ops/provisioning#token=${encodeURIComponent(t.token)}`;
+      if (tab) tab.location.href = url;
+      else window.location.href = url;
+    } catch {
+      tab?.close();
+    }
+  };
+  return (
+    <Button onClick={() => void open()} testId="ks-open-provisioning">
+      Provisioning
+    </Button>
+  );
+}
+
 function KsOperations() {
   return (
     <div data-testid="ks-silo" style={{ color: "var(--ui-text)", maxWidth: 1200 }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}><StartDemoButton compact /></div>{/* BF_PORTAL_v853_KS_PHONE_SUPPORT */}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 8 }}><OpenProvisioningButton /><StartDemoButton compact /></div>{/* BF_PORTAL_v853_KS_PHONE_SUPPORT */}
       <KsSignInGate>
         <Routes>
           <Route index element={<Navigate to="dashboard" replace />} />
