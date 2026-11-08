@@ -232,6 +232,11 @@ export type KsLicensee = KsLicenseeSummary & {
   contact_phone: string;
   country: string;
   province_state: string | null;
+  address_line1?: string | null; // BF_PORTAL_v911_KS_LICENSEE_ADDRESS
+  address_line2?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  business_number?: string | null;
   mailing_address: string | null;
   website: string | null;
   addons?: Record<string, boolean> | null;

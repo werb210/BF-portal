@@ -33,6 +33,13 @@ const CONTACT_FIELDS: FieldSpec[] = [
   { key: "contact_email", name: "Contact email", kind: "text" },
   { key: "contact_phone", name: "Contact phone", kind: "text" },
   { key: "website", name: "Website", kind: "text" },
+  // BF_PORTAL_v911_KS_LICENSEE_ADDRESS - the business address KS-Ops registers with Twilio
+  { key: "address_line1", name: "Street address", kind: "text" },
+  { key: "address_line2", name: "Unit or suite", kind: "text" },
+  { key: "city", name: "City", kind: "text" },
+  { key: "province_state", name: "Province / state", kind: "text" },
+  { key: "postal_code", name: "Postal code", kind: "text" },
+  { key: "business_number", name: "Business number", kind: "text" },
   { key: "server_url", name: "Server address", kind: "text" },
   { key: "portal_url", name: "Staff portal address", kind: "text" },
   { key: "client_url", name: "Client app address", kind: "text" },
@@ -296,7 +303,7 @@ export default function KsLicenseeDetail() {
         title="Plan, seats and status"
         note="Plan, storage, add-on and live status changes are pushed to the licensee's server; plan, billing, seat, support and storage changes also update the Stripe subscription."
       />
-      <EditForm key={`contact-${l.id}-${l.contact_email}-${l.server_url}-${l.portal_url}-${l.client_url}-${l.company_name}`} licensee={l} fields={CONTACT_FIELDS} title="Company, contact and addresses" />
+      <EditForm key={`contact-${l.id}-${l.contact_email}-${l.server_url}-${l.portal_url}-${l.client_url}-${l.company_name}-${(l as Record<string, unknown>).address_line1 ?? ""}`} licensee={l} fields={CONTACT_FIELDS} title="Company, contact and addresses" />
 
       <Section title="Usage reports">
         <Table head={["Month", "Seats", "Minutes", "Texts", "Assistant chats", "Storage (GB)", "Overage min / texts", "Final"]} empty={!usage.length}>
