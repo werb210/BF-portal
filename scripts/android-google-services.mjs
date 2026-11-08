@@ -23,7 +23,7 @@ export function placeholderFor(pkg) {
     client: [{
       client_info: { mobilesdk_app_id: "1:000000000000:android:0000000000000000000000", android_client_info: { package_name: pkg } },
       oauth_client: [],
-      api_key: [{ current_key: "AIzaSyKSANDROIDPLACEHOLDERKEY0000000000" }],
+      api_key: [{ current_key: "placeholder-not-a-real-key" }],
       services: { appinvite_service: { other_platform_oauth_client: [] } },
     }],
     configuration_version: "1",
