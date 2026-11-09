@@ -9,6 +9,7 @@ import { api } from "@/api";
 // BF_PORTAL_v789_AUTHED_MEDIA - recordings load with the Authorization header when played (blob: URL),
 // instead of an <audio> src carrying ?token=<staff JWT>.
 import { AuthedAudio } from "@/components/media/AuthedMedia";
+import TranscriptSearch from "@/components/crm/TranscriptSearch"; // CALL_TRANSCRIPT_SEARCH_v1
 import ContractTimelineLink from "@/features/activeContracts/ContractTimelineLink"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
 
 type EmailRow = {
@@ -251,10 +252,7 @@ function CallCard({ call, isOpen, onToggle }: { call: CallRow; isOpen: boolean; 
         </button>
       )}
       {isOpen && hasTranscript && (
-        <div style={{ marginTop: 6 }}>
-          {call.transcript_summary && <div style={{ fontSize: 13, color: "var(--ui-text-muted)", fontStyle: "italic", marginBottom: 6 }}>{call.transcript_summary}</div>}
-          {call.transcript_text && <div style={{ fontSize: 13, color: "var(--ui-text)", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{call.transcript_text}</div>}
-        </div>
+        <TranscriptSearch summary={call.transcript_summary} text={call.transcript_text} />
       )}
     </div>
   );
