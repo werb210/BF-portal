@@ -38,6 +38,7 @@ const companies = [
 ];
 
 beforeEach(() => {
+    try { sessionStorage.clear(); } catch { /* jsdom */ }
   h.role.current = "Admin";
   for (const m of [h.apiFn, h.apiFn.get, h.apiFn.post, h.biApi]) m.mockReset();
   h.apiFn.get.mockImplementation(async (url: string) => (url === "/api/users" ? { users: [] } : []));

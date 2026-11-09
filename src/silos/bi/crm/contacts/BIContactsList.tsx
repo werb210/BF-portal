@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { listStaffUsers } from "@/api/sharedShell"; // BF_PORTAL_v789_SHARED_SHELL
 import { useAuth } from "@/hooks/useAuth";
-import { exportRowsToCsv } from "@/utils/csvExport";
+import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } from "@/pages/crm/crmExport"; // BF_PORTAL_v914_BI_CRM_PARITY
 import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import ContactCardScanField from "@/components/crm/ContactCardScanField"; // v114-card-scan-mount
@@ -16,6 +16,8 @@ type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created
 type BIContactRow = {
   id: string;
   full_name: string | null;
+  email?: string | null; // BF_PORTAL_v914_BI_CRM_PARITY - for Export
+  phone_e164?: string | null;
   company_name: string | null;
   outreach_status: string | null;
   outreach_owner_id: string | null;
@@ -24,12 +26,18 @@ type BIContactRow = {
 };
 
 
-export default function BIContactsList() {
+// BF_PORTAL_v914_BI_CRM_PARITY - same behaviour as the Financial CRM: real total and "1-200 of N" paging, the tab
+// count, Export of every matching contact, and the view remembered when you open a contact and come back.
+export const BI_CONTACTS_PAGE_SIZE = 200;
+export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTotal?: (n: number) => void } = {}) {
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
   const [rows, setRows] = useState<BIContactRow[]>([]);
-  const [q, setQ] = useState("");
-  const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>({ col: "created_at", dir: "desc" });
+  const saved = useMemo<Record<string, unknown>>(() => { try { return JSON.parse(sessionStorage.getItem("bi.crm.contacts.filters") || "{}") as Record<string, unknown>; } catch { return {}; } }, []); // BF_PORTAL_v914_BI_CRM_PARITY
+  const [q, setQ] = useState(typeof saved.q === "string" ? saved.q : "");
+  const [sort, setSort] = useState<{ col: SortCol; dir: "asc" | "desc" }>(() => { const sv = saved.sort as { col?: SortCol; dir?: "asc" | "desc" } | undefined; return sv && typeof sv.col === "string" ? { col: sv.col, dir: sv.dir === "asc" ? "asc" : "desc" } : { col: "created_at", dir: "desc" }; });
+  const [total, setTotal] = useState(0); // BF_PORTAL_v914_BI_CRM_PARITY
+  const [exporting, setExporting] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -64,10 +72,10 @@ export default function BIContactsList() {
   const [creating, setCreating] = useState(false);
   // BF_PORTAL_BLOCK_v807_BI_OWNER_PARITY — resolve owner UUID -> staff name + owner filter (BF parity).
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
-  const [ownerId, setOwnerId] = useState("");
-  const [crmPage, setCrmPage] = useState(1); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
+  const [ownerId, setOwnerId] = useState(typeof saved.ownerId === "string" ? saved.ownerId : "");
+  const [crmPage, setCrmPage] = useState(typeof saved.crmPage === "number" && saved.crmPage > 0 ? saved.crmPage : 1); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
   const [tagOptions, setTagOptions] = useState<string[]>([]); // BF_PORTAL_BLOCK_v749_VIEWBY
-  const [tagFilter, setTagFilter] = useState<Set<string>>(new Set()); // BF_PORTAL_BLOCK_v749_VIEWBY
+  const [tagFilter, setTagFilter] = useState<Set<string>>(new Set(Array.isArray(saved.tagFilter) ? (saved.tagFilter as string[]) : [])); // BF_PORTAL_BLOCK_v749_VIEWBY
   const tagKey = Array.from(tagFilter).sort().join(","); // BF_PORTAL_BLOCK_v749_VIEWBY
   const chipBtn = (active: boolean): CSSProperties => ({ // BF_PORTAL_BLOCK_v749_VIEWBY
     fontSize: 12, padding: "3px 10px", borderRadius: 999,
@@ -123,12 +131,16 @@ export default function BIContactsList() {
         if (q.trim()) params.set("q", q.trim());
         params.set("sort", `${sort.col}:${sort.dir}`);
         params.set("page", String(crmPage)); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
-        params.set("pageSize", "100");
+        params.set("pageSize", String(BI_CONTACTS_PAGE_SIZE));
         if (tagKey) params.set("tags", tagKey); // BF_PORTAL_BLOCK_v749_VIEWBY
         if (ownerId) params.set("owner_id", ownerId); // BF_PORTAL_BLOCK_v807_BI_OWNER_PARITY
         const r: any = await api(`/api/v1/bi/crm/contacts${params.toString() ? `?${params}` : ""}`);
         const list: BIContactRow[] = Array.isArray(r) ? r : Array.isArray(r?.items) ? r.items : Array.isArray(r?.data) ? r.data : [];
-        if (!cancelled) { setRows(list); setHasNext(list.length >= 100); } // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
+        const t = Number(r?.total ?? list.length); // BF_PORTAL_v914_BI_CRM_PARITY - the server's real total
+        if (!cancelled) {
+          setRows(list); setTotal(t); setHasNext(crmPage * BI_CONTACTS_PAGE_SIZE < t);
+          if (!q.trim() && !ownerId && !tagKey) onUnfilteredTotal?.(t);
+        }
       } catch (e: any) {
         if (!cancelled) { setErr(`Could not load contacts. Please refresh. (${e?.message ?? "unknown_error"})`); setLoadFailed(true); }
       } finally { if (!cancelled) setLoading(false); }
@@ -136,6 +148,40 @@ export default function BIContactsList() {
     return () => { cancelled = true; };
   }, [q, sort.col, sort.dir, refreshKey, crmPage, tagKey, ownerId]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
 
+  useEffect(() => { // BF_PORTAL_v914_BI_CRM_PARITY
+    try { sessionStorage.setItem("bi.crm.contacts.filters", JSON.stringify({ q, ownerId, tagFilter: Array.from(tagFilter), sort, crmPage })); } catch { /* private window */ }
+  }, [q, ownerId, tagFilter, sort, crmPage]);
+  const rangeStart = total === 0 ? 0 : (crmPage - 1) * BI_CONTACTS_PAGE_SIZE + 1;
+  const rangeEnd = Math.min(crmPage * BI_CONTACTS_PAGE_SIZE, total);
+  async function exportAll() { // BF_PORTAL_v914_BI_CRM_PARITY - every contact in this view, not just the page on screen
+    setExporting("Preparing…");
+    try {
+      const all = await fetchAllRows<BIContactRow>(async (p, size) => {
+        const params = new URLSearchParams();
+        if (q.trim()) params.set("q", q.trim());
+        params.set("sort", `${sort.col}:${sort.dir}`); params.set("page", String(p)); params.set("pageSize", String(size));
+        if (tagKey) params.set("tags", tagKey);
+        if (ownerId) params.set("owner_id", ownerId);
+        const r: any = await api(`/api/v1/bi/crm/contacts?${params}`);
+        const list: BIContactRow[] = Array.isArray(r?.data) ? r.data : Array.isArray(r) ? r : [];
+        return { rows: list, total: Number(r?.total ?? list.length) };
+      }, (n, t) => setExporting(`Preparing ${n.toLocaleString()} of ${t.toLocaleString()}…`));
+      if (!all.length) { window.alert("No contacts match this view, so there is nothing to export."); return; }
+      const cols: ExportColumn<BIContactRow>[] = [
+        { label: "Name", value: (r) => r.full_name },
+        { label: "Email", value: (r) => r.email },
+        { label: "Phone", value: (r) => r.phone_e164 },
+        ...(!hiddenCols.has("company_name") ? [{ label: "Company", value: (r: BIContactRow) => r.company_name }] : []),
+        ...(!hiddenCols.has("tags") ? [{ label: "Tags", value: (r: BIContactRow) => r.tags }] : []),
+        ...(!hiddenCols.has("lead_status") ? [{ label: "Lead status", value: (r: BIContactRow) => r.outreach_status }] : []),
+        ...(!hiddenCols.has("owner_name") ? [{ label: "Owner", value: (r: BIContactRow) => ownerName(r.outreach_owner_id) }] : []),
+        { label: "Create date", value: (r) => r.created_at },
+      ];
+      await saveCsv(exportFileName("insurance-contacts"), rowsToCsv(all, cols));
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "AbortError") window.alert(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally { setExporting(null); }
+  }
   const onSort = (col: SortCol) => setSort((s) => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
   const sortIndicator = (col: SortCol) => (sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "");
 
@@ -203,9 +249,9 @@ export default function BIContactsList() {
   return (
     <div style={page} data-testid="bi-contacts-list">
       <div style={toolbar}>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
+        <input value={q} onChange={(e) => { setQ(e.target.value); setCrmPage(1); }} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} />
-        <button type="button" onClick={() => exportRowsToCsv("bi-contacts.csv", rows as any)} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">Export</button>
+        <button type="button" disabled={exporting !== null} onClick={() => void exportAll()} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">{exporting ?? "Export"}</button>
         {/* BF_PORTAL_v907_SEGMENT_RESET - a segment replaces the view; "All contacts" clears it. */}
         <CrmSegmentBar allLabel="All contacts" current={{ q, ownerId, tagFilter: Array.from(tagFilter), sort }} onApply={(f) => {
           setQ(typeof f.q === "string" ? f.q : "");
@@ -218,7 +264,7 @@ export default function BIContactsList() {
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
-        <div style={{ fontSize: 13, color: "var(--ui-text-muted)", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
+        <div style={{ fontSize: 13, color: "var(--ui-text-muted)", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{total.toLocaleString()} {total === 1 ? "contact" : "contacts"}</div>
         <span style={{ flex: 1 }} />
         <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1 }}>{importing ? "Importing…" : "Import"}</button>
         <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-crm-import-input" />
@@ -273,7 +319,7 @@ export default function BIContactsList() {
 
       {/* BF_PORTAL_BLOCK_v698_CRM_PAGER_TOP_v1 — top pager */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginBottom: 12 }}>
-        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Page {crmPage}</span>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{rangeStart.toLocaleString()}-{rangeEnd.toLocaleString()} of {total.toLocaleString()}</span>
         <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
         <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
@@ -302,7 +348,7 @@ export default function BIContactsList() {
       </table>
       {/* BF_PORTAL_BLOCK_v696_CRM_PAGER_v1 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Page {crmPage}</span>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{rangeStart.toLocaleString()}-{rangeEnd.toLocaleString()} of {total.toLocaleString()}</span>
         <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
         <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>

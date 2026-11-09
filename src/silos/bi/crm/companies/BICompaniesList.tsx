@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { importBiCompaniesToBfLenders, listStaffUsers } from "@/api/sharedShell"; // BF_PORTAL_v789_SHARED_SHELL
 import { useAuth } from "@/hooks/useAuth";
-import { exportRowsToCsv } from "@/utils/csvExport";
+import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } from "@/pages/crm/crmExport"; // BF_PORTAL_v914_BI_CRM_PARITY
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
@@ -24,7 +24,9 @@ type BICompanyRow = {
   owner_id?: string | null; // CRM owner parity
 };
 
-export default function BICompaniesList() {
+// BF_PORTAL_v914_BI_CRM_PARITY - real total and "1-200 of N" paging, the tab count, Export of every matching company.
+export const BI_COMPANIES_PAGE_SIZE = 200;
+export default function BICompaniesList({ onUnfilteredTotal }: { onUnfilteredTotal?: (n: number) => void } = {}) {
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
   const [rows, setRows] = useState<BICompanyRow[]>([]);
@@ -85,6 +87,8 @@ export default function BICompaniesList() {
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | "assign" | null>(null);
   const [crmPage, setCrmPage] = useState(1); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
   const [hasNext, setHasNext] = useState(false); // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
+  const [total, setTotal] = useState(0); // BF_PORTAL_v914_BI_CRM_PARITY
+  const [exporting, setExporting] = useState<string | null>(null);
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
   const [ownerFilter, setOwnerFilter] = useState("");
   const [tagFilter, setTagFilter] = useState("");
@@ -106,10 +110,12 @@ export default function BICompaniesList() {
         if (tagFilter) params.set("tag", tagFilter);
         params.set("sort", `${sort.col}:${sort.dir}`);
         params.set("page", String(crmPage)); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
-        params.set("pageSize", "100");
+        params.set("pageSize", String(BI_COMPANIES_PAGE_SIZE));
         const r: any = await api(`/api/v1/bi/crm/companies${params.toString() ? `?${params}` : ""}`);
         const list: BICompanyRow[] = Array.isArray(r) ? r : Array.isArray(r?.data) ? r.data : [];
-        if (!cancelled) { setRows(list); setHasNext(list.length >= 100); setSeenTags((prev) => Array.from(new Set([...prev, ...list.flatMap((c) => c.tags ?? [])])).sort()); } // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
+        const t = Number(r?.total ?? list.length); // BF_PORTAL_v914_BI_CRM_PARITY
+        if (!cancelled && !q.trim() && !ownerFilter && !tagFilter) onUnfilteredTotal?.(t);
+        if (!cancelled) { setRows(list); setTotal(t); setHasNext(crmPage * BI_COMPANIES_PAGE_SIZE < t); setSeenTags((prev) => Array.from(new Set([...prev, ...list.flatMap((c) => c.tags ?? [])])).sort()); } // BF_PORTAL_BLOCK_v697_CRM_PAGER_FIX_v1
       } catch (e: any) {
         if (!cancelled) setErr(e?.message ?? "Could not load companies.");
       } finally { if (!cancelled) setLoading(false); }
@@ -180,7 +186,39 @@ export default function BICompaniesList() {
     } catch (e: any) { window.alert(`Assign failed: ${e?.message ?? String(e)}`); }
     finally { setBusyMass(null); }
   }
-  function exportCsv() { exportRowsToCsv("bi-companies.csv", rows as any); }
+  // BF_PORTAL_v914_BI_CRM_PARITY - every company in this view, not just the page on screen.
+  async function exportCsv() {
+    setExporting("Preparing…");
+    try {
+      const all = await fetchAllRows<BICompanyRow>(async (p, size) => {
+        const params = new URLSearchParams();
+        if (q.trim()) params.set("q", q.trim());
+        if (ownerFilter) params.set("owner_id", ownerFilter);
+        if (tagFilter) params.set("tag", tagFilter);
+        params.set("sort", `${sort.col}:${sort.dir}`); params.set("page", String(p)); params.set("pageSize", String(size));
+        const r: any = await api(`/api/v1/bi/crm/companies?${params}`);
+        const list: BICompanyRow[] = Array.isArray(r?.data) ? r.data : Array.isArray(r) ? r : [];
+        return { rows: list, total: Number(r?.total ?? list.length) };
+      }, (n, t) => setExporting(`Preparing ${n.toLocaleString()} of ${t.toLocaleString()}…`));
+      if (!all.length) { window.alert("No companies match this view, so there is nothing to export."); return; }
+      const cols: ExportColumn<BICompanyRow>[] = [
+        { label: "Company name", value: (r) => r.legal_name },
+        { label: "Operating name", value: (r) => r.operating_name },
+        { label: "Industry", value: (r) => r.industry },
+        { label: "Tags", value: (r) => r.tags ?? [] },
+        { label: "Contacts", value: (r) => r.contact_count },
+        { label: "City", value: (r) => r.city },
+        { label: "Province", value: (r) => r.province },
+        { label: "Owner", value: (r) => ownerName(r.owner_id) },
+        { label: "Create date", value: (r) => r.created_at },
+      ];
+      await saveCsv(exportFileName("insurance-companies"), rowsToCsv(all, cols));
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "AbortError") window.alert(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally { setExporting(null); }
+  }
+  const rangeStart = total === 0 ? 0 : (crmPage - 1) * BI_COMPANIES_PAGE_SIZE + 1;
+  const rangeEnd = Math.min(crmPage * BI_COMPANIES_PAGE_SIZE, total);
 
   const tableRows = useMemo(() => rows.map((r) => (
     <tr key={r.id} style={trStyle} data-testid="bi-company-row">
@@ -211,14 +249,14 @@ export default function BICompaniesList() {
   return (
     <div style={page} data-testid="bi-companies-list">
       <div style={toolbar}>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies" style={searchInput} aria-label="Search companies" />
+        <input value={q} onChange={(e) => { setQ(e.target.value); setCrmPage(1); }} placeholder="Search companies" style={searchInput} aria-label="Search companies" />
         <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "contacts", label: "Contacts" }, { key: "location", label: "Location" }, { key: "owner", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} />
         <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }} aria-label="Filter by owner" data-testid="bi-companies-owner-filter">
           <option value="">All owners</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
-        <button type="button" onClick={exportCsv} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap", marginRight: 8 }} data-testid="bi-companies-export">Export</button>
-        <div style={{ fontSize: 13, color: "var(--ui-text-muted)", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{rows.length} {rows.length === 1 ? "record" : "records"}</div>
+        <button type="button" disabled={exporting !== null} onClick={() => void exportCsv()} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap", marginRight: 8 }} data-testid="bi-companies-export">{exporting ?? "Export"}</button>
+        <div style={{ fontSize: 13, color: "var(--ui-text-muted)", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{total.toLocaleString()} {total === 1 ? "company" : "companies"}</div>
         <span style={{ flex: 1 }} />
         <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1, marginRight: 8 }} data-testid="bi-companies-import">{importing ? "Importing…" : "Import"}</button>
         <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-companies-import-input" />
@@ -254,7 +292,7 @@ export default function BICompaniesList() {
 
       {/* BF_PORTAL_BLOCK_v698_CRM_PAGER_TOP_v1 — top pager */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginBottom: 12 }}>
-        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Page {crmPage}</span>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{rangeStart.toLocaleString()}-{rangeEnd.toLocaleString()} of {total.toLocaleString()}</span>
         <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
         <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
@@ -284,7 +322,7 @@ export default function BICompaniesList() {
       </table>
       {/* BF_PORTAL_BLOCK_v696_CRM_PAGER_v1 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 12 }}>
-        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Page {crmPage}</span>
+        <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{rangeStart.toLocaleString()}-{rangeEnd.toLocaleString()} of {total.toLocaleString()}</span>
         <button type="button" disabled={crmPage <= 1} onClick={() => setCrmPage((p) => Math.max(1, p - 1))} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: crmPage <= 1 ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: crmPage <= 1 ? "default" : "pointer" }}>Prev</button>
         <button type="button" disabled={!hasNext} onClick={() => setCrmPage((p) => p + 1)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-border)", background: !hasNext ? "var(--ui-surface-muted)" : "#fff", color: "var(--ui-accent-blue)", fontWeight: 600, cursor: !hasNext ? "default" : "pointer" }}>Next</button>
       </div>
