@@ -1,9 +1,9 @@
 // BF_PORTAL_v912_EMAIL_CONSENT_RECORD - email campaigns only reach contacts with email consent. Contacts imported
 // from a marketing list carried no recorded email consent, so they were left out. This shows how many are missing
 // and lets an Admin record, once, where their consent came from (an audited, bulk "marketing_list" basis).
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { api } from "@/api";
-import { useAuth } from "@/hooks/useAuth";
+import { AuthContext } from "@/auth/AuthContext";
 
 type Props = { apiBase?: string; tags?: string[]; onRecorded?: (n: number) => void };
 
@@ -16,8 +16,8 @@ export function canRecord(source: string, confirmed: boolean): boolean {
 }
 
 export default function EmailConsentGap({ apiBase = "/api/marketing", tags = [], onRecorded }: Props) {
-  const { user } = useAuth();
-  const isAdmin = String((user as { role?: string } | null)?.role ?? "").toLowerCase() === "admin";
+  const auth = useContext(AuthContext); // optional: the composer also renders outside the provider (tests, embeds)
+  const isAdmin = String(auth?.role ?? (auth?.user as { role?: string } | null)?.role ?? "").toLowerCase() === "admin";
   const [missing, setMissing] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const [source, setSource] = useState("");
