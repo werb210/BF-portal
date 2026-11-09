@@ -5,6 +5,7 @@ import { api } from "@/api";
 import { importBiCompaniesToBfLenders, listStaffUsers } from "@/api/sharedShell"; // BF_PORTAL_v789_SHARED_SHELL
 import { useAuth } from "@/hooks/useAuth";
 import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } from "@/pages/crm/crmExport"; // BF_PORTAL_v914_BI_CRM_PARITY
+import { bulkDeleteMessage, skippedFrom } from "@/pages/crm/bulkDeleteResult"; // BF_PORTAL_v914_BI_CRM_PARITY
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
@@ -154,9 +155,14 @@ export default function BICompaniesList({ onUnfilteredTotal }: { onUnfilteredTot
     if (!window.confirm(`Delete ${selected.size} company(ies)? Contacts are kept; their company link is cleared.`)) return;
     setBusyMass("delete");
     try {
-      await api(`/api/v1/bi/crm/companies/bulk-delete`, { method: "POST", body: { ids: Array.from(selected) } } as any);
+      const r: any = await api(`/api/v1/bi/crm/companies/bulk-delete`, { method: "POST", body: { ids: Array.from(selected) } } as any);
       setSelected(new Set()); setRefreshKey((k) => k + 1);
-    } catch (e: any) { window.alert(`Mass delete failed: ${e?.message ?? String(e)}`); }
+      const skipped = skippedFrom(r); // BF_PORTAL_v914_BI_CRM_PARITY - say which were kept and why
+      if (skipped.length) window.alert(bulkDeleteMessage("company", Number(r?.deleted ?? 0), skipped));
+    } catch (e: any) {
+      const skipped = skippedFrom(e);
+      window.alert(skipped.length ? bulkDeleteMessage("company", 0, skipped) : `Mass delete failed: ${e?.message ?? String(e)}`);
+    }
     finally { setBusyMass(null); }
   }
   async function massTag() {
