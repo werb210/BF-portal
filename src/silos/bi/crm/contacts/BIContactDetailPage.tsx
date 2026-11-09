@@ -29,6 +29,7 @@ import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmTagEditor, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmDuplicatesBanner } from "@/components/crm/unified/CrmDuplicates"; // BF_PORTAL_v856_CRM_UNIFY
+import CustomFieldsPanel from "@/crmFields/CustomFieldsPanel"; // BF_PORTAL_v927_BI_CUSTOM_FIELDS
 import { CrmAiSummary } from "@/components/crm/unified/CrmAiSummary"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmContactApplications } from "@/components/crm/unified/CrmContactPanel"; // BF_PORTAL_v856_CRM_UNIFY
 import { ContactStageHistory } from "@/components/crm/ContactStageHistory";
@@ -509,6 +510,7 @@ export default function BIContactDetailPage() {
 
       <main style={mainCol} data-testid="bi-contact-main">
         <CrmDuplicatesBanner backend={BI_CRM_BACKEND} entity="contact" id={id} onMerged={refresh} />{/* BF_PORTAL_v856_CRM_UNIFY */}
+        {id ? <CustomFieldsPanel object="contact" recordId={String(id)} /> : null}{/* BF_PORTAL_v927_BI_CUSTOM_FIELDS */}
         {/* BF_PORTAL_CONTACT_RECORD_TABS_v272 - BI analytics come from BI-Server (v271). */}
         <ContactRecordTabs
           analytics={
