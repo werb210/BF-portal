@@ -42,6 +42,7 @@ function renderList() {
 
 describe("BF_PORTAL_BLOCK_v206 — BIContactsList", () => {
   beforeEach(() => {
+    try { sessionStorage.clear(); } catch { /* jsdom */ } // BF_PORTAL_v914_BI_CRM_PARITY - the list now remembers its view
     apiMock.mockReset();
     apiMock.get.mockReset();
     apiMock.get.mockResolvedValue({ users: [{ id: "staff-1", first_name: "Jane", last_name: "Owner" }] });

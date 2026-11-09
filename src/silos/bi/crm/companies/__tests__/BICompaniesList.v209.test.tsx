@@ -215,6 +215,7 @@ describe("BF_PORTAL_BLOCK_v209 — Inline Create", () => {
 
 describe("BF_PORTAL_BLOCK_v816 — companies import UI", () => {
   beforeEach(() => {
+    try { sessionStorage.clear(); } catch { /* jsdom */ }
     apiMock.mockReset();
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });

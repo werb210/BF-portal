@@ -5,7 +5,10 @@
 // module per ruling 21. The Overview aggregate view is removed
 // outright; if it surfaces again later it should be a separate
 // page, not a CRM tab.
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { api } from "@/api";
+import { btn, toggleRow } from "@/pages/crm/CrmListPage"; // BF_PORTAL_v914_BI_CRM_PARITY
 import BIContactsList from "./contacts/BIContactsList";
 import BICompaniesList from "./companies/BICompaniesList";
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
@@ -22,37 +25,33 @@ export default function BICRM() {
   const tab: TabKey = rawTab === "companies" || rawTab === "duplicates" || rawTab === "cleanup" ? rawTab : "contacts";
   const setTab = (k: TabKey) => setSearchParams((p) => { p.set("tab", k); return p; }, { replace: true });
 
-  const tabBtn = (k: TabKey, label: string) => (
-    <button
-      key={k}
-      type="button"
-      onClick={() => setTab(k)}
-      className={
-        "px-4 py-2 rounded-md text-sm " +
-        (tab === k
-          ? "bg-white/10 text-white"
-          : "text-white/60 hover:text-white hover:bg-white/5")
-      }
-      aria-pressed={tab === k}
-    >
-      {label}
-    </button>
+  // BF_PORTAL_v914_BI_CRM_PARITY - same tab row as the Financial CRM, with live counts.
+  const [counts, setCounts] = useState<{ contacts: number | null; companies: number | null }>({ contacts: null, companies: null });
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const one = async (path: string) => { try { const r: any = await api(`${path}?page=1&pageSize=1`); return Number.isFinite(Number(r?.total)) ? Number(r.total) : null; } catch (err) { console.warn("[bi-crm] count failed", path, err); return null; } };
+      const [c, co] = await Promise.all([one("/api/v1/bi/crm/contacts"), one("/api/v1/bi/crm/companies")]);
+      if (alive) setCounts({ contacts: c, companies: co });
+    })();
+    return () => { alive = false; };
+  }, []);
+  const label = (base: string, n: number | null) => (n == null ? base : `${base} (${n.toLocaleString()})`);
+  const tabBtn = (k: TabKey, text: string) => (
+    <button key={k} type="button" onClick={() => setTab(k)} style={btn(tab === k)} aria-pressed={tab === k}>{text}</button>
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-semibold">BI CRM</h2>
-        <div className="flex gap-2" role="tablist" aria-label="BI CRM tabs">
-          {tabBtn("contacts", "Contacts")}
-          {tabBtn("companies", "Companies")}
-          {tabBtn("duplicates", "Find duplicates")}
-          {tabBtn("cleanup", "Clean up data")}
-        </div>
+    <div style={{ background: "var(--ui-surface-strong)", color: "var(--ui-text)" }}>
+      <div style={toggleRow} role="tablist" aria-label="Insurance CRM tabs">
+        {tabBtn("contacts", label("Contacts", counts.contacts))}
+        {tabBtn("companies", label("Companies", counts.companies))}
+        {tabBtn("duplicates", "Find duplicates")}
+        {tabBtn("cleanup", "Clean up data")}
       </div>
 
-      {tab === "contacts" && <BIContactsList />}
-      {tab === "companies" && <BICompaniesList />}
+      {tab === "contacts" && <BIContactsList onUnfilteredTotal={(n) => setCounts((p) => ({ ...p, contacts: n }))} />}
+      {tab === "companies" && <BICompaniesList onUnfilteredTotal={(n) => setCounts((p) => ({ ...p, companies: n }))} />}
       {tab === "duplicates" && <CrmDuplicatesPage backend={BI_CRM_BACKEND} />}
       {tab === "cleanup" && <CrmCleanupPage backend={BI_CRM_BACKEND} />}
     </div>

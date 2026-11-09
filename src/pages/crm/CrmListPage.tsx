@@ -49,11 +49,11 @@ export default function CrmListPage({ initialView = "contacts" }: { initialView?
 }
 
 const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
-const toggleRow: CSSProperties = {
+export const toggleRow: CSSProperties = { // BF_PORTAL_v914_BI_CRM_PARITY - shared with the Insurance CRM
   display: "flex", gap: 8, padding: "16px 24px 0 24px",
   borderBottom: "1px solid #eaf0f6",
 };
-function btn(active: boolean): CSSProperties {
+export function btn(active: boolean): CSSProperties {
   return {
     padding: "8px 16px",
     border: "none",
