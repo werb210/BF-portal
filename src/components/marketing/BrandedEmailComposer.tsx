@@ -20,7 +20,7 @@ const EMAIL_PREVIEW_WIDTH = 600;
 const EMAIL_PREVIEW_MAX_SCALE = 2;
 const EMAIL_PREVIEW_HEIGHT = 760;
 
-type Seg = { configured: boolean; all: number; segments: { tag: string; n: number }[] };
+type Seg = { configured: boolean; all: number; with_email?: number; segments: { tag: string; n: number; total?: number }[] };
 type Tpl = {
   headline: string;
   heroUrl: string;
@@ -89,7 +89,7 @@ async function pollComposerJob(apiBase: string, jobId: string, total: number, se
 
 // EMAIL_AUDIENCE_INCL_EXCL_v1 - multi-select tag checkbox list.
 function TagPicker({ title, hint, tags, selected, onToggle }: {
-  title: string; hint: string; tags: { tag: string; n: number }[]; selected: string[]; onToggle: (tag: string) => void;
+  title: string; hint: string; tags: { tag: string; n: number; total?: number }[]; selected: string[]; onToggle: (tag: string) => void;
 }) {
   return (
     <div>
@@ -101,7 +101,7 @@ function TagPicker({ title, hint, tags, selected, onToggle }: {
           <label key={x.tag} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", color: "var(--ui-text)", padding: "2px 0", cursor: "pointer" }}>
             <input type="checkbox" checked={selected.includes(x.tag)} onChange={() => onToggle(x.tag)} />
             <span style={{ flex: 1 }}>{x.tag}</span>
-            <span style={{ color: "var(--ui-text-muted)" }}>({x.n})</span>
+            <span style={{ color: "var(--ui-text-muted)" }} title={x.total && x.total > x.n ? `${x.n} of ${x.total} can be emailed` : undefined}>({x.total && x.total > x.n ? `${x.n} of ${x.total}` : x.n})</span>{/* BF_PORTAL_v912_SEGMENT_TOTALS */}
           </label>
         ))}
       </div>
@@ -427,7 +427,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
       {/* Audience first - you choose who before you write. */}
       <div className="text-sm" style={labelStyle}>Audience
         <div className="grid grid-cols-2 gap-2 mt-1">
-          <TagPicker title="Include tags" hint={`Empty = all contacts (${seg?.all ?? 0})`} tags={seg?.segments ?? []} selected={include}
+          <TagPicker title="Include tags" hint={`Empty = all contacts (${seg?.all ?? 0} can be emailed${seg?.with_email ? ` of ${seg.with_email} with an email` : ""})`} tags={seg?.segments ?? []} selected={include}
             onToggle={(t) => setInclude((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))} />
           <TagPicker title="Exclude tags" hint="Removed even if included" tags={seg?.segments ?? []} selected={exclude}
             onToggle={(t) => setExclude((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))} />
