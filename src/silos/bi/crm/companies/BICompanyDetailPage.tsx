@@ -15,6 +15,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmDuplicatesBanner } from "@/components/crm/unified/CrmDuplicates"; // BF_PORTAL_v856_CRM_UNIFY
+import CustomFieldsPanel from "@/crmFields/CustomFieldsPanel"; // BF_PORTAL_v927_BI_CUSTOM_FIELDS
 import { CrmAiSummary } from "@/components/crm/unified/CrmAiSummary"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmCompanyDetails, CrmCompanyPeople, CrmCompanyTagEditor } from "@/components/crm/unified/CrmCompany"; // BF_PORTAL_v856_CRM_UNIFY
 import { api } from "@/api";
@@ -322,6 +323,7 @@ export default function BICompanyDetailPage() {
       {/* MAIN — applications */}
       <main style={mainCol} data-testid="bi-company-main">
         <CrmDuplicatesBanner backend={BI_CRM_BACKEND} entity="company" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY */}
+        {id ? <CustomFieldsPanel object="company" recordId={String(id)} /> : null}{/* BF_PORTAL_v927_BI_CUSTOM_FIELDS */}
         <CrmAiSummary backend={BI_CRM_BACKEND} entity="company" id={id} />{/* BF_PORTAL_v856_CRM_UNIFY - same spot as on a contact */}
         <BICompanyActivity companyId={co.id} refreshKey={refreshKey} />
         <div style={{ ...panel, marginTop: 16 }}>

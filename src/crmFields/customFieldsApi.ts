@@ -1,5 +1,6 @@
 // BF_PORTAL_v870_CRM_DATA_MODEL - custom fields on contacts, companies and applications (BF-Server /api/custom-fields).
 // The server is the authority on validation; checkValue() here only gives instant feedback while typing.
+import { getActiveSilo } from "@/config/api"; // BF_PORTAL_v927_BI_CUSTOM_FIELDS
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 
@@ -30,20 +31,21 @@ export const FIELD_TYPE_LABEL: Record<FieldType, string> = {
 export const FIELD_TYPES = Object.keys(FIELD_TYPE_LABEL) as FieldType[];
 export const SELECT_TYPES: ReadonlySet<FieldType> = new Set(["single_select", "multi_select"]);
 
-const BASE = "/api/custom-fields";
+// BF_PORTAL_v927_BI_CUSTOM_FIELDS - Insurance records live on BI-Server, which keeps its own fields (same contract).
+const BASE_FOR = (): string => (getActiveSilo() === "BI" ? "/api/v1/bi/custom-fields" : "/api/custom-fields");
 
 export const listFields = async (object: ObjectType, includeArchived = false) =>
-  (await api.get<{ fields: CustomField[] }>(`${BASE}/${object}`, { params: includeArchived ? { include_archived: 1 } : undefined })).fields ?? [];
+  (await api.get<{ fields: CustomField[] }>(`${BASE_FOR()}/${object}`, { params: includeArchived ? { include_archived: 1 } : undefined })).fields ?? [];
 export type FieldInput = { label: string; name?: string; field_type: FieldType; options?: Array<string | FieldOption>; required?: boolean; group_name?: string; description?: string };
-export const createField = async (object: ObjectType, body: FieldInput) => (await api.post<{ field: CustomField }>(`${BASE}/${object}`, body)).field;
-export const updateField = async (object: ObjectType, id: string, body: Partial<FieldInput>) => (await api.patch<{ field: CustomField }>(`${BASE}/${object}/${id}`, body)).field;
+export const createField = async (object: ObjectType, body: FieldInput) => (await api.post<{ field: CustomField }>(`${BASE_FOR()}/${object}`, body)).field;
+export const updateField = async (object: ObjectType, id: string, body: Partial<FieldInput>) => (await api.patch<{ field: CustomField }>(`${BASE_FOR()}/${object}/${id}`, body)).field;
 export const setFieldArchived = async (object: ObjectType, id: string, archived: boolean) =>
-  (await api.post<{ field: CustomField }>(`${BASE}/${object}/${id}/${archived ? "archive" : "unarchive"}`)).field;
-export const reorderFields = (object: ObjectType, ids: string[]) => api.put(`${BASE}/${object}/order`, { ids });
+  (await api.post<{ field: CustomField }>(`${BASE_FOR()}/${object}/${id}/${archived ? "archive" : "unarchive"}`)).field;
+export const reorderFields = (object: ObjectType, ids: string[]) => api.put(`${BASE_FOR()}/${object}/order`, { ids });
 export const getRecordValues = (object: ObjectType, id: string) =>
-  api.get<{ fields: CustomField[]; values: Values }>(`${BASE}/${object}/records/${encodeURIComponent(id)}`);
+  api.get<{ fields: CustomField[]; values: Values }>(`${BASE_FOR()}/${object}/records/${encodeURIComponent(id)}`);
 export const saveRecordValues = async (object: ObjectType, id: string, values: Values) =>
-  (await api.put<{ values: Values }>(`${BASE}/${object}/records/${encodeURIComponent(id)}`, { values })).values;
+  (await api.put<{ values: Values }>(`${BASE_FOR()}/${object}/records/${encodeURIComponent(id)}`, { values })).values;
 
 /** Active fields of an object for list columns and filters. Empty while loading or when the server has none. */
 export function useCustomFields(object: ObjectType): { fields: CustomField[]; reload: () => void } {
