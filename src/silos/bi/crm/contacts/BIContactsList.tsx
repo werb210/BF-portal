@@ -1,7 +1,7 @@
 // BF_PORTAL_BLOCK_v664_BI_CONTACTS_BULK
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
-import { api } from "@/api";
+import { api, apiGetEnvelope } from "@/api";
 import { listStaffUsers } from "@/api/sharedShell"; // BF_PORTAL_v789_SHARED_SHELL
 import { useAuth } from "@/hooks/useAuth";
 import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } from "@/pages/crm/crmExport"; // BF_PORTAL_v914_BI_CRM_PARITY
@@ -135,7 +135,7 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
         params.set("pageSize", String(BI_CONTACTS_PAGE_SIZE));
         if (tagKey) params.set("tags", tagKey); // BF_PORTAL_BLOCK_v749_VIEWBY
         if (ownerId) params.set("owner_id", ownerId); // BF_PORTAL_BLOCK_v807_BI_OWNER_PARITY
-        const r: any = await api(`/api/v1/bi/crm/contacts${params.toString() ? `?${params}` : ""}`);
+        const r: any = await apiGetEnvelope(`/api/v1/bi/crm/contacts${params.toString() ? `?${params}` : ""}`) /* BF_PORTAL_v921_BI_TOTALS - envelope keeps the real total */;
         const list: BIContactRow[] = Array.isArray(r) ? r : Array.isArray(r?.items) ? r.items : Array.isArray(r?.data) ? r.data : [];
         const t = Number(r?.total ?? list.length); // BF_PORTAL_v914_BI_CRM_PARITY - the server's real total
         if (!cancelled) {
@@ -163,7 +163,7 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
         params.set("sort", `${sort.col}:${sort.dir}`); params.set("page", String(p)); params.set("pageSize", String(size));
         if (tagKey) params.set("tags", tagKey);
         if (ownerId) params.set("owner_id", ownerId);
-        const r: any = await api(`/api/v1/bi/crm/contacts?${params}`);
+        const r: any = await apiGetEnvelope(`/api/v1/bi/crm/contacts?${params}`) /* BF_PORTAL_v921_BI_TOTALS - envelope keeps the real total */;
         const list: BIContactRow[] = Array.isArray(r?.data) ? r.data : Array.isArray(r) ? r : [];
         return { rows: list, total: Number(r?.total ?? list.length) };
       }, (n, t) => setExporting(`Preparing ${n.toLocaleString()} of ${t.toLocaleString()}…`));

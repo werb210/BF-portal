@@ -16,7 +16,7 @@ const h = vi.hoisted(() => {
 vi.mock("@/api", () => ({
   api: h.apiFn,
   default: h.apiFn,
-  apiGetEnvelope: vi.fn(),
+  apiGetEnvelope: h.apiFn, // BF_PORTAL_v921_BI_TOTALS - the lists read the envelope
   rawApiFetch: vi.fn(),
   apiForSilo: () => h.biApi,
 }));

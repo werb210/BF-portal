@@ -11,6 +11,7 @@ const apiMock = vi.hoisted(() => {
 });
 vi.mock("@/api", () => ({
   api: apiMock,
+  apiGetEnvelope: apiMock, // BF_PORTAL_v921_BI_TOTALS
 }));
 
 import BIContactsList from "@/silos/bi/crm/contacts/BIContactsList";
