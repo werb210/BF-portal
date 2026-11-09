@@ -2,7 +2,7 @@
 // ./ksApi; none of them calls BF-Server or sends X-Silo.
 // BF_PORTAL_v850_KS_CRM - /silo/ks/crm/* is the Keystone CRM: the BF CRM screens on BF-Server with X-Silo: KS (no KS-Ops
 // sign-in needed). Admins and KS-enabled staff; the operations screens stay Admin only.
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
 import { canUseKeystone, canUseKeystoneCrm } from "./ksAccess";
@@ -11,8 +11,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ensureKsToken, isKsAccessDenied, ksOpsBaseUrl, KsOpsError } from "./ksApi";
 import { Button, card, errorText } from "./ksUi";
 import KsDashboard from "./KsDashboard";
-import KsLicensees from "./KsLicensees";
-import KsLicenseeDetail from "./KsLicenseeDetail";
 import KsTickets from "./KsTickets";
 import KsTicketDetail from "./KsTicketDetail";
 import KsRequests from "./KsRequests";
@@ -82,6 +80,11 @@ function OpenProvisioningButton() {
   );
 }
 
+function LicenseeRedirect() { // BF_PORTAL_v916_KS_NAV
+  const { id } = useParams();
+  return <Navigate to={`/silo/ks/crm/licensees/${encodeURIComponent(id ?? "")}`} replace />;
+}
+
 function KsOperations() {
   return (
     <div data-testid="ks-silo" style={{ color: "var(--ui-text)", maxWidth: 1200 }}>
@@ -90,9 +93,10 @@ function KsOperations() {
         <Routes>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<KsDashboard />} />
-          <Route path="licensees" element={<KsLicensees />} />
-          <Route path="licensees/:id" element={<KsLicenseeDetail />} />
-          <Route path="tickets" element={<KsTickets />} />
+          {/* BF_PORTAL_v916_KS_NAV - Licensees live in the CRM now; the Support queue holds every ticket. Old links still work. */}
+          <Route path="licensees" element={<Navigate to="/silo/ks/crm/licensees" replace />} />
+          <Route path="licensees/:id" element={<LicenseeRedirect />} />
+          <Route path="tickets" element={<KsTickets />} />{/* KS-Ops ticket list: off the sidebar (the Support queue holds every ticket), kept for old links */}
           <Route path="tickets/:id" element={<KsTicketDetail />} />
           <Route path="requests" element={<KsRequests />} />
           <Route path="marketing/*" element={<KsMarketing />} />{/* BF_PORTAL_v865_KS_MARKETING */}

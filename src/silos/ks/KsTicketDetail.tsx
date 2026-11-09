@@ -44,7 +44,7 @@ export default function KsTicketDetail() {
       <Section title="Ticket">
         <KeyValues
           rows={[
-            ["Licensee", t.licensee_id ? <Link key="l" to={`/silo/ks/licensees/${t.licensee_id}`} style={linkStyle}>{t.company_name}{t.company_code && !isInternalCode(t.company_code) ? ` (${t.company_code})` : ""}</Link> : "-"],
+            ["Licensee", t.licensee_id ? <Link key="l" to={`/silo/ks/crm/licensees/${t.licensee_id}`} style={linkStyle}>{t.company_name}{t.company_code && !isInternalCode(t.company_code) ? ` (${t.company_code})` : ""}</Link> : "-"],
             ["Requester", [t.requester_name, t.requester_email].filter(Boolean).join(", ") || "-"],
             ["Source", label(t.source)],
             ["Opened", date(t.created_at, true)],

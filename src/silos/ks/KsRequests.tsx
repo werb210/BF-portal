@@ -56,7 +56,7 @@ export default function KsRequests() {
         <Table head={["Licensee", "Kind", "Requested", "By", "Message", "Status", "Created", ""]} empty={!rows.length}>
           {rows.map((r) => (
             <tr key={r.id}>
-              <td style={td}><Link to={`/silo/ks/licensees/${r.licensee_id}`} style={linkStyle}>{r.company_name ?? r.licensee_id}</Link></td>
+              <td style={td}><Link to={`/silo/ks/crm/licensees/${r.licensee_id}`} style={linkStyle}>{r.company_name ?? r.licensee_id}</Link></td>
               <td style={td}>{label(r.kind)}</td>
               <td style={td}>{describe(r)}</td>
               <td style={td}>{r.requested_by ?? "-"}</td>

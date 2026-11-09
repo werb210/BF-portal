@@ -20,8 +20,8 @@ export default function KsDashboard() {
       <PageTitle
         actions={
           <>
-            <Link to="/silo/ks/licensees" style={linkStyle}>Licensees</Link>
-            <Link to="/silo/ks/tickets" style={linkStyle}>Support</Link>
+            <Link to="/silo/ks/crm/licensees" style={linkStyle}>Licensees</Link>
+            <Link to="/silo/ks/crm/support" style={linkStyle}>Support</Link>
             <Link to="/silo/ks/requests" style={linkStyle}>Requests</Link>
           </>
         }
@@ -34,7 +34,7 @@ export default function KsDashboard() {
         <Stat title="Licensees" value={d.licensees} sub={`${d.trials_active} on trial`} />
         <Stat title="Seats" value={d.seats} sub="Trial, active and past due" />
         <Stat title="Past due" value={d.past_due} sub={`${d.overdue_invoices} overdue invoices, ${money(d.overdue_amount, d.currency || "CAD")}`} />
-        <Stat title="Open tickets" value={<Link to="/silo/ks/tickets" style={linkStyle}>{d.open_tickets}</Link>} sub="Open or waiting" />
+        <Stat title="Open tickets" value={<Link to="/silo/ks/crm/support" style={linkStyle}>{d.open_tickets}</Link>} sub="Open or waiting" />
         <Stat title="Open requests" value={<Link to="/silo/ks/requests" style={linkStyle}>{d.open_requests}</Link>} sub="Upgrade and storage" />
       </div>
 
@@ -42,7 +42,7 @@ export default function KsDashboard() {
         {statuses.length ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
             {statuses.map(([status, n]) => (
-              <Link key={status} to={`/silo/ks/licensees?status=${status}`} style={{ textDecoration: "none", display: "inline-flex", gap: 6, alignItems: "center", color: "var(--ui-text)" }}>
+              <Link key={status} to={`/silo/ks/crm/licensees?status=${status}`} style={{ textDecoration: "none", display: "inline-flex", gap: 6, alignItems: "center", color: "var(--ui-text)" }}>
                 <Badge value={status} /> <strong>{n}</strong>
               </Link>
             ))}
@@ -57,7 +57,7 @@ export default function KsDashboard() {
           {(d.data_purges ?? []).map((p) => (
             <tr key={p.id}>
               <td style={td}>
-                <Link to={`/silo/ks/licensees/${p.id}`} style={linkStyle}>{p.company_name}</Link>{p.company_code && !isInternalCode(p.company_code) ? ` (${p.company_code})` : ""}
+                <Link to={`/silo/ks/crm/licensees/${p.id}`} style={linkStyle}>{p.company_name}</Link>{p.company_code && !isInternalCode(p.company_code) ? ` (${p.company_code})` : ""}
               </td>
               <td style={td}>{date(p.cancelled_at)}</td>
               <td style={td}>{p.data_purge_on}</td>

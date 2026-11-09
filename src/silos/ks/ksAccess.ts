@@ -48,19 +48,18 @@ export function isKeystoneCrmPath(pathname: string | null | undefined): boolean 
 
 export const KS_NAV = [
   { label: "Dashboard", path: "/silo/ks/dashboard", roles: ["Admin"] },
-  { label: "Licensees", path: "/silo/ks/licensees", roles: ["Admin"] },
-  { label: "Support", path: "/silo/ks/tickets", roles: ["Admin"] },
   { label: "Requests", path: "/silo/ks/requests", roles: ["Admin"] },
   // BF_PORTAL_v865_KS_MARKETING - email marketing to prospective licensees (KS-Ops)
   { label: "Marketing", path: "/silo/ks/marketing", roles: ["Admin"] },
   // BF_PORTAL_v850_KS_CRM - the Keystone CRM
   { label: "Inbox", path: "/silo/ks/crm/inbox", roles: ["Admin", "Staff", "Marketing"] }, // BF_PORTAL_v895_KS_INBOX - Keystone's shared mailboxes only
-  { label: "Contacts", path: "/silo/ks/crm/contacts", roles: ["Admin", "Staff", "Marketing"] },
-  { label: "Companies", path: "/silo/ks/crm/companies", roles: ["Admin", "Staff", "Marketing"] },
+  // BF_PORTAL_v916_KS_NAV - one CRM entry like the Financial silo: Contacts, Companies (and Licensees for Admins) are
+  // sub-tabs inside it. Support is the one Support queue (KS-Ops tickets already arrive there).
+  { label: "CRM", path: "/silo/ks/crm/contacts", roles: ["Admin", "Staff", "Marketing"] },
   { label: "Sales pipeline", path: "/silo/ks/crm/pipeline", roles: ["Admin", "Staff", "Marketing"] },
   { label: "Tasks", path: "/silo/ks/crm/tasks", roles: ["Admin", "Staff", "Marketing"] },
   // BF_PORTAL_v853_KS_PHONE_SUPPORT - support tickets from the Keystone support line, KS-Ops in-app help and staff
-  { label: "Support queue", path: "/silo/ks/crm/support", roles: ["Admin", "Staff", "Marketing"] },
+  { label: "Support", path: "/silo/ks/crm/support", roles: ["Admin", "Staff", "Marketing"] },
 ];
 
 /** The Keystone sidebar for this user: everything for Admins, the CRM links for KS-enabled staff. */
