@@ -7,6 +7,7 @@ import { MemoryRouter } from "react-router-dom";
 const apiMock = vi.fn();
 vi.mock("@/api", () => ({
   api: (...args: unknown[]) => apiMock(...args),
+  apiGetEnvelope: (...args: unknown[]) => apiMock(...args), // BF_PORTAL_v921_BI_TOTALS
 }));
 
 import BICompaniesList from "@/silos/bi/crm/companies/BICompaniesList";

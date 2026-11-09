@@ -10,6 +10,7 @@ import { MemoryRouter } from "react-router-dom";
 
 vi.mock("@/api", () => ({
   api: vi.fn(async () => []),
+  apiGetEnvelope: vi.fn(async () => []), // BF_PORTAL_v921_BI_TOTALS
 }));
 
 import BICRM from "@/silos/bi/crm/BICRM";

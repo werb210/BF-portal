@@ -7,7 +7,7 @@
 // page, not a CRM tab.
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { api } from "@/api";
+import { api, apiGetEnvelope } from "@/api";
 import { btn, toggleRow } from "@/pages/crm/CrmListPage"; // BF_PORTAL_v914_BI_CRM_PARITY
 import BIContactsList from "./contacts/BIContactsList";
 import BICompaniesList from "./companies/BICompaniesList";
@@ -30,7 +30,7 @@ export default function BICRM() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const one = async (path: string) => { try { const r: any = await api(`${path}?page=1&pageSize=1`); return Number.isFinite(Number(r?.total)) ? Number(r.total) : null; } catch (err) { console.warn("[bi-crm] count failed", path, err); return null; } };
+      const one = async (path: string) => { try { const r: any = await apiGetEnvelope(`${path}?page=1&pageSize=1`) /* BF_PORTAL_v921_BI_TOTALS - envelope keeps the real total */; return Number.isFinite(Number(r?.total)) ? Number(r.total) : null; } catch (err) { console.warn("[bi-crm] count failed", path, err); return null; } };
       const [c, co] = await Promise.all([one("/api/v1/bi/crm/contacts"), one("/api/v1/bi/crm/companies")]);
       if (alive) setCounts({ contacts: c, companies: co });
     })();
