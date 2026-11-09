@@ -8,6 +8,7 @@ import { describeSchedule, localInputMax, localInputMin, toIsoInstant } from "./
 import { formatSendAt, pendingSends, sendJobCancelPath, sendJobsPath, type ScheduledSend } from "./scheduledSends";
 import CampaignSendOptions, { DEFAULT_SEND_OPTIONS, sendOptionsPayload, type SendOptions } from "./CampaignSendOptions"; // BF_PORTAL_v874_MARKETING_TOOLS
 import { serverMessage } from "./marketingTools"; // BF_PORTAL_v874_MARKETING_TOOLS
+import EmailConsentGap from "./EmailConsentGap"; // BF_PORTAL_v912_EMAIL_CONSENT_RECORD
 
 // BF_PORTAL_EMAIL_PREVIEW_WIDTH_v1 - render at the email's desktop width and
 // scale the canvas, rather than triggering its mobile breakpoint in the pane.
@@ -116,6 +117,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
   const [include, setInclude] = useState<string[]>([]);
   const [exclude, setExclude] = useState<string[]>([]);
   const [audCount, setAudCount] = useState<number | null>(null);
+  const [consentTick, setConsentTick] = useState(0); // BF_PORTAL_v912_EMAIL_CONSENT_RECORD - recount after consent is recorded
   const [subject, setSubject] = useState("");
   const [tpl, setTpl] = useState<Tpl>(DEFAULTS);
   const [testTo, setTestTo] = useState("");
@@ -147,6 +149,12 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
       })
       .catch(() => {});
   }, [apiBase]);
+  useEffect(() => {
+    if (!consentTick) return;
+    api.get<{ data?: Seg } & Partial<Seg>>(`${apiBase}/email/segments`)
+      .then((r) => setSeg((r?.data ?? r) as Seg))
+      .catch((err) => console.warn("[email] segment recount failed", err));
+  }, [apiBase, consentTick]);
 
   const set = (k: keyof Tpl, v: string) => setTpl((p) => ({ ...p, [k]: v }));
   const count = include.length === 0 && exclude.length === 0 ? (seg?.all ?? 0) : (audCount ?? 0);
@@ -162,7 +170,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
         .catch(() => { if (alive) setAudCount(0); });
     }, 250);
     return () => { alive = false; clearTimeout(t); };
-  }, [apiBase, include, exclude]);
+  }, [apiBase, include, exclude, consentTick]);
 
   useEffect(() => {
     let alive = true;
@@ -425,6 +433,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
             onToggle={(t) => setExclude((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))} />
         </div>
         <p className="mt-1" style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>Recipients: <strong style={{ color: "var(--ui-text)" }}>{count}</strong></p>
+        <EmailConsentGap apiBase={apiBase} tags={include} onRecorded={() => setConsentTick((x) => x + 1)} />
       </div>
 
       <div className="grid gap-2 md:grid-cols-2 mt-3">
