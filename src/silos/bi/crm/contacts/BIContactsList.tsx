@@ -1,4 +1,5 @@
 // BF_PORTAL_BLOCK_v664_BI_CONTACTS_BULK
+import { LeadScoreBadge, useLeadScores } from "@/components/marketing/LeadScore"; // BF_PORTAL_v929_BI_LEAD_SCORES
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { api, apiGetEnvelope } from "@/api";
@@ -234,6 +235,7 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
     finally { setCreating(false); }
   }
 
+  const leadScores = useLeadScores(useMemo(() => rows.map((r) => r.id), [rows])); // BF_PORTAL_v929_BI_LEAD_SCORES
   const tableRows = useMemo(() => rows.map((r) => (
     <tr key={r.id} style={trStyle} data-testid="bi-contact-row">
       {isAdmin && (
@@ -241,14 +243,14 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
           <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSel(r.id)} />
         </td>
       )}
-      <td style={tdStyle}><Link to={`/silo/bi/crm/contacts/${r.id}`} style={linkStyle}>{r.full_name || "(no name)"}</Link></td>
+      <td style={tdStyle}><Link to={`/silo/bi/crm/contacts/${r.id}`} style={linkStyle}>{r.full_name || "(no name)"}</Link>{leadScores[r.id] && <> <LeadScoreBadge score={leadScores[r.id]!} /></>}</td>
       {!hiddenCols.has("company_name") && <td style={tdStyle}>{r.company_name ?? "—"}</td>}
       {!hiddenCols.has("tags") && <td style={tdStyle}><CrmTagChips tags={r.tags} catalogue={tagCatalogue} /></td>}{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
       {!hiddenCols.has("lead_status") && <td style={tdStyle}>{r.outreach_status ? r.outreach_status.replace(/_/g, " ") : "—"}</td>}
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{ownerName(r.outreach_owner_id)}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
-  )), [rows, isAdmin, selected, ownerName, hiddenCols, tagCatalogue]); // BF_PORTAL_v856_CRM_UNIFY
+  )), [rows, isAdmin, selected, ownerName, hiddenCols, tagCatalogue, leadScores]); // BF_PORTAL_v856_CRM_UNIFY
 
   const colCount = isAdmin ? 7 : 6; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 (+Tags col)
 

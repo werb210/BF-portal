@@ -20,6 +20,7 @@
 // through the shared <ActivityTimeline> tab layout. Behaviour is
 // unchanged: the same merged feed is displayed and the SMS still
 // POSTs { to, body, contact_id, silo:"BI" } to /api/communications/sms.
+import { ContactLeadScore } from "@/components/marketing/LeadScore"; // BF_PORTAL_v929_BI_LEAD_SCORES
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api";
@@ -440,6 +441,7 @@ export default function BIContactDetailPage() {
             {displayContactName(contact)}
           </h2>
           <span style={roleBadge}>{formatStatus(role)}</span>
+          {id && <ContactLeadScore contactId={String(id)} />}{/* BF_PORTAL_v929_BI_LEAD_SCORES */}
         </div>
         {contact.title && !editing && <div style={subtle}>{contact.title}</div>}
         {contact.email && !editing && (

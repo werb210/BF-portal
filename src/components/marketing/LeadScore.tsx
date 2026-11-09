@@ -4,6 +4,7 @@
 // silo without lead scoring (or an error) shows nothing.
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/api";
+import { getActiveSilo } from "@/config/api"; // BF_PORTAL_v929_BI_LEAD_SCORES
 
 export type LeadScore = { score: number; grade: "hot" | "warm" | "cold"; breakdown?: Array<{ label: string; points: number }> };
 
@@ -36,7 +37,10 @@ export function useLeadScores(contactIds: string[]): Record<string, LeadScore> {
   useEffect(() => {
     if (!key) { setScores({}); return; }
     let cancelled = false;
-    api.post<{ enabled?: boolean; scores?: Record<string, LeadScore>; data?: { scores?: Record<string, LeadScore> } }>("/api/lead-scores/lookup", { contact_ids: key.split(",") })
+    // BF_PORTAL_v929_BI_LEAD_SCORES - Insurance contacts are scored by BI-Server (same contract).
+    const url = getActiveSilo() === "BI" ? "/api/v1/bi/lead-scores/lookup" : "/api/lead-scores/lookup";
+    // Started inside a promise so a missing or failing client can never break the page that shows the badges.
+    Promise.resolve().then(() => api.post<{ enabled?: boolean; scores?: Record<string, LeadScore>; data?: { scores?: Record<string, LeadScore> } }>(url, { contact_ids: key.split(",") }))
       .then((r) => { if (!cancelled) setScores(r?.scores ?? r?.data?.scores ?? {}); })
       .catch(() => { if (!cancelled) setScores({}); });
     return () => { cancelled = true; };
