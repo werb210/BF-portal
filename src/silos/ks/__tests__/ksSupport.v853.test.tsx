@@ -144,7 +144,7 @@ describe("Start sales demo", () => {
 describe("Keystone support queue", () => {
   it("is in the Keystone sidebar for everyone who uses the Keystone CRM", () => {
     expect(ksNavFor({ role: "Staff", silos: ["KS"] }).map((n) => n.path)).toContain("/silo/ks/crm/support");
-    expect(ksNavFor({ role: "Admin" }).map((n) => n.label)).toContain("Support queue");
+    expect(ksNavFor({ role: "Admin" }).map((n) => n.label)).toContain("Support"); // BF_PORTAL_v916_KS_NAV
     expect(ksNavFor({ role: "Staff", silos: ["BF"] })).toEqual([]);
   });
 

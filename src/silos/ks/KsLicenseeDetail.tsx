@@ -255,7 +255,7 @@ export default function KsLicenseeDetail() {
 
   return (
     <div>
-      <p style={{ margin: "0 0 8px" }}><Link to="/silo/ks/licensees" style={linkStyle}>Back to licensees</Link></p>
+      <p style={{ margin: "0 0 8px" }}><Link to="/silo/ks/crm/licensees" style={linkStyle}>Back to licensees</Link></p>
       <PageTitle actions={<Badge value={l.status} />}>
         {l.company_name} {l.company_code && !isInternalCode(l.company_code) ? <span style={{ fontWeight: 400, color: "var(--ui-text-muted)", fontSize: 16 }}>({l.company_code})</span> : null}
       </PageTitle>
@@ -337,7 +337,7 @@ export default function KsLicenseeDetail() {
         </Table>
       </Section>
 
-      <Section title="Support tickets" actions={<Link to={`/silo/ks/tickets?licensee_id=${l.id}`} style={linkStyle}>All tickets for this licensee</Link>}>
+      <Section title="Support tickets" actions={<Link to={`/silo/ks/crm/support`} style={linkStyle}>All tickets for this licensee</Link>}>
         <Table head={["Subject", "Status", "Priority", "Updated"]} empty={!tickets.length}>
           {tickets.map((t) => (
             <tr key={t.id}>

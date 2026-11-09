@@ -72,7 +72,7 @@ function NewLicenseeForm({ onDone }: { onDone: () => void }) {
     return (
       <Section title="Licensee created">
         <p style={{ marginTop: 0 }}>
-          <Link to={`/silo/ks/licensees/${create.data.licensee.id}`} style={linkStyle}>{create.data.licensee.company_name}</Link> was created
+          <Link to={`/silo/ks/crm/licensees/${create.data.licensee.id}`} style={linkStyle}>{create.data.licensee.company_name}</Link> was created
           as {label(create.data.licensee.status)}.
         </p>
         {create.data.ops_key ? <OpsKeyNotice opsKey={create.data.ops_key} message={create.data.message} /> : <p>{create.data.message}</p>}
@@ -182,7 +182,7 @@ export default function KsLicensees() {
         <Table head={["Company", "Code", "Plan", "Seats", "Status", "MRR", "Last usage report", "Plan sync"]} empty={!rows.length}>
           {rows.map((l) => (
             <tr key={l.id}>
-              <td style={td}><Link to={`/silo/ks/licensees/${l.id}`} style={linkStyle}>{l.company_name}</Link></td>
+              <td style={td}><Link to={`/silo/ks/crm/licensees/${l.id}`} style={linkStyle}>{l.company_name}</Link></td>
               <td style={td}>{isInternalCode(l.company_code) ? "-" : l.company_code}</td>
               <td style={td}>{label(l.plan)} ({l.billing_interval})</td>
               <td style={td}>{l.seats}</td>

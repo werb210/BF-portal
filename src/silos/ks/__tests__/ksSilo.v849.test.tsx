@@ -207,7 +207,7 @@ describe("Keystone silo visibility", () => {
         <AppLayout><div>page</div></AppLayout>
       </MemoryRouter>,
     );
-    expect(screen.getByRole("link", { name: "Licensees" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "CRM" })).toBeInTheDocument(); // BF_PORTAL_v916_KS_NAV - Licensees is a CRM sub-tab
     expect(screen.getByRole("link", { name: "Support" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sales pipeline" })).toBeInTheDocument(); // BF_PORTAL_v850_KS_CRM
     expect(screen.queryByRole("link", { name: "Pipeline" })).not.toBeInTheDocument();

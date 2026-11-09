@@ -100,8 +100,8 @@ describe("who sees the Keystone CRM", () => {
     expect(canUseKeystoneCrm({ role: "Ops", silos: ["KS"] })).toBe(false);
     expect(ksHomeFor({ role: "Admin" })).toBe("/silo/ks/dashboard");
     expect(ksHomeFor({ role: "Marketing", silos: ["KS"] })).toBe("/silo/ks/crm/contacts");
-    expect(ksNavFor({ role: "Marketing", silos: ["KS"] }).map((n) => n.label)).toEqual(["Inbox", "Contacts", "Companies", "Sales pipeline", "Tasks", "Support queue"]); // BF_PORTAL_v853_KS_PHONE_SUPPORT
-    expect(ksNavFor({ role: "Admin" }).map((n) => n.label)).toContain("Licensees");
+    expect(ksNavFor({ role: "Marketing", silos: ["KS"] }).map((n) => n.label)).toEqual(["Inbox", "CRM", "Sales pipeline", "Tasks", "Support"]); // BF_PORTAL_v916_KS_NAV // BF_PORTAL_v853_KS_PHONE_SUPPORT
+    expect(ksNavFor({ role: "Admin" }).map((n) => n.label)).not.toContain("Licensees"); // BF_PORTAL_v916_KS_NAV - a CRM sub-tab now
     expect(canSeeKeystone({ role: "Staff", silos: ["BF"] })).toBe(false);
   });
 
