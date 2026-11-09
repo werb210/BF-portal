@@ -14,6 +14,7 @@ import DiagnosticsPanel from "@/pages/diagnostics/DiagnosticsPage";
 import NegativesPanel from "@/pages/diagnostics/NegativesPanel";
 import ClicksPanel from "@/pages/diagnostics/ClicksPanel"; // BF_PORTAL_BLOCK_v615_AD_CLICKS
 import AdsConversionStatus from "@/components/marketing/AdsConversionStatus"; // BF_PORTAL_ADS_CONVERSION_STATUS_v401
+import ChatgptAdsPanel from "@/components/marketing/ChatgptAdsPanel"; // BF_PORTAL_v913_CHATGPT_ADS
 import { AdsStoryPanel, VisitorsPanel, DropoffPanel, AudiencesNote } from "@/components/marketing/GoogleAdsAnalytics"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 import CustomerMatchPanel from "@/components/marketing/CustomerMatchPanel"; // BF_PORTAL_CUSTOMER_MATCH_LISTS_v711
 import GoogleHealthPanel from "@/pages/settings/tabs/GoogleHealthPanel"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
@@ -32,8 +33,8 @@ type MarketingTab = "analytics" | "referrers" | "sequences" | "sms" | "email" | 
 // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 // BF_PORTAL_ADS_SERVICES_v709 - "Ads" section: one sub-tab per ad service
 // (Google, Microsoft, LinkedIn); every Google report sits under Google.
-type AdsService = "google" | "microsoft" | "linkedin" | "meta"; // BF_PORTAL_v909_META_ADS
-const ADS_SERVICES: Array<[AdsService, string]> = [["google", "Google"], ["meta", "Meta"], ["microsoft", "Microsoft"], ["linkedin", "LinkedIn"]];
+type AdsService = "google" | "microsoft" | "linkedin" | "meta" | "chatgpt"; // BF_PORTAL_v909_META_ADS // BF_PORTAL_v913_CHATGPT_ADS
+const ADS_SERVICES: Array<[AdsService, string]> = [["google", "Google"], ["meta", "Meta"], ["chatgpt", "ChatGPT"], ["microsoft", "Microsoft"], ["linkedin", "LinkedIn"]];
 type AdsTab = "story" | "campaigns" | "negatives" | "visitors" | "dropoff" | "audiences" | "website" | "health";
 const ADS_TABS: Array<[AdsTab, string]> = [
   ["story", "Story"], ["campaigns", "Campaigns & Keywords"], ["negatives", "Search Terms & Negatives"], ["visitors", "Visitors"],
@@ -1472,6 +1473,7 @@ const MarketingDashboard = () => {
           {adsService === "linkedin" && (<div className="space-y-4"><LinkedInAdsPanel /><LinkedInSuggestionsPanel /><LinkedInConversionsPanel /><LinkedInAudiencePanel /></div>)}
           {adsService === "microsoft" && <div style={{ padding: 16, color: "var(--ui-text-muted)" }}>Microsoft Ads - coming soon.</div>}
           {adsService === "meta" && <MetaAdsPanel />}{/* BF_PORTAL_v909_META_ADS */}
+          {adsService === "chatgpt" && <ChatgptAdsPanel />}{/* BF_PORTAL_v913_CHATGPT_ADS */}
         </div>
       )}
       {tab === "apps" && isBf && <MobileAppsPanel />}{/* BF_PORTAL_v811_MOBILE_APPS */}
