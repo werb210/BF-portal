@@ -28,6 +28,7 @@ export default function SocialPanel() {
   const [body, setBody] = useState("");
   const [link, setLink] = useState("");
   const [image, setImage] = useState("");
+  const [preview, setPreview] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [when, setWhen] = useState("");
   const [busy, setBusy] = useState(false);
@@ -42,6 +43,13 @@ export default function SocialPanel() {
     } catch (e) { setNote({ ok: false, text: errText(e, "Could not load social accounts.") }); }
   }, []);
   useEffect(() => { void load(); }, [load]);
+  // Review fix: while a post is scheduled or going out, check again every 30 seconds so its result shows here.
+  const waiting = posts.some((p) => p.status === "scheduled" || p.status === "publishing");
+  useEffect(() => {
+    if (!waiting) return undefined;
+    const t = setInterval(() => { void load(); }, 30_000);
+    return () => clearInterval(t);
+  }, [waiting, load]);
 
   const providers = useMemo(() => {
     const seen = new Map<string, boolean>();
@@ -73,9 +81,9 @@ export default function SocialPanel() {
     setBusy(true);
     try {
       const res = await rawApiFetch("/api/social/media", { method: "POST", body: fd });
-      const j = (await res.json().catch(() => ({}))) as { url?: string; message?: string };
+      const j = (await res.json().catch(() => ({}))) as { url?: string; preview?: string; message?: string };
       if (!res.ok || !j.url) throw new Error(j.message ?? "The picture did not upload.");
-      setImage(j.url);
+      setImage(j.url); setPreview(j.preview ?? (j.url.startsWith("http") ? j.url : ""));
     } catch (e) { setNote({ ok: false, text: errText(e, "The picture did not upload.") }); }
     finally { setBusy(false); }
   };
@@ -87,7 +95,7 @@ export default function SocialPanel() {
       if (p?.status === "scheduled") setNote({ ok: true, text: `Scheduled for ${new Date(p.scheduled_at!).toLocaleString()}.` });
       else if (p?.status === "published") setNote({ ok: true, text: "Posted to every account." });
       else setNote({ ok: false, text: "Some accounts did not take it. See the list below." });
-      setBody(""); setLink(""); setImage(""); setWhen("");
+      setBody(""); setLink(""); setImage(""); setPreview(""); setWhen("");
       await load();
     } catch (e) { setNote({ ok: false, text: errText(e, "The post did not go out.") }); }
     finally { setBusy(false); }
@@ -143,7 +151,7 @@ export default function SocialPanel() {
           <label className="ui-button ui-button--secondary" style={{ cursor: "pointer" }}>{image ? "Change picture" : "Add a picture"}
             <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadPicture(f); }} />
           </label>
-          {image ? <><img src={image} alt="" style={{ height: 48, borderRadius: 6 }} /><button type="button" className="ui-button ui-button--secondary" onClick={() => setImage("")}>Remove picture</button></> : null}
+          {image ? <>{preview ? <img src={preview} alt="" style={{ height: 48, borderRadius: 6 }} /> : <span style={{ fontSize: 13 }}>Picture added</span>}<button type="button" className="ui-button ui-button--secondary" onClick={() => { setImage(""); setPreview(""); }}>Remove picture</button></> : null}
         </div>
         <label style={{ display: "flex", flexDirection: "column", fontSize: 13, maxWidth: 260 }}>Schedule (leave empty to post now)
           <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />

@@ -32,7 +32,7 @@ describe("Marketing > Social", () => {
     render(<SocialPanel />);
     await screen.findByText("Boreal Financial");
     fireEvent.change(screen.getByTestId("social-body"), { target: { value: "New equipment rates" } });
-    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    fireEvent.click(screen.getAllByRole("checkbox")[0]!);
     expect(screen.getByTestId("social-send").textContent).toBe("Post to 1 account");
     fireEvent.click(screen.getByTestId("social-send"));
     await waitFor(() => expect(h.post).toHaveBeenCalledWith("/api/social/posts", { body: "New equipment rates", link_url: null, image_url: null, account_ids: ["a1"], scheduled_at: null }));
@@ -43,7 +43,7 @@ describe("Marketing > Social", () => {
     render(<SocialPanel />);
     await screen.findByText("@boreal");
     fireEvent.change(screen.getByTestId("social-body"), { target: { value: "Hi" } });
-    fireEvent.click(screen.getAllByRole("checkbox")[1]);
+    fireEvent.click(screen.getAllByRole("checkbox")[1]!);
     expect(screen.getByText("Instagram needs a picture.")).toBeTruthy();
     expect((screen.getByTestId("social-send") as HTMLButtonElement).disabled).toBe(true);
   });
