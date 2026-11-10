@@ -71,4 +71,24 @@ describe("v936 send the term sheet for signature", () => {
     expect(screen.getByTestId("term-sheet-send-signature").textContent).toBe("Send to client for signature");
     expect(screen.queryByTestId("term-sheet-signature-msg")).toBeNull();
   });
+
+  it("an older send finishing late does not replace the newer offer's result", async () => {
+    let finishA!: () => void;
+    h.post.mockImplementation((url: string) => {
+      if (url.includes("off-9/send-for-signature")) return new Promise((res) => { finishA = () => res({ ok: true }); });
+      if (url.includes("off-10/send-for-signature")) return Promise.reject(new Error("The client has no email on file."));
+      return Promise.resolve({});
+    });
+    fireEvent.click(await saveTermSheet());
+    (uploadLenderTermSheet as any).mockResolvedValueOnce({ ok: true, offer_id: "off-10" });
+    fireEvent.change(screen.getByTestId("upload-term-sheet-p1"), { target: { files: [new File(["%PDF-1"], "b.pdf", { type: "application/pdf" })] } });
+    await screen.findByTestId("term-sheet-modal");
+    fireEvent.click(screen.getByTestId("term-sheet-submit"));
+    await waitFor(() => expect(screen.getByTestId("term-sheet-send-signature").textContent).toBe("Send to client for signature"));
+    fireEvent.click(screen.getByTestId("term-sheet-send-signature"));
+    await waitFor(() => expect(screen.getByTestId("term-sheet-signature-msg").textContent).toBe("The client has no email on file."));
+    finishA();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByTestId("term-sheet-signature-msg").textContent).toBe("The client has no email on file.");
+  });
 });
