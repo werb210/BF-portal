@@ -414,16 +414,17 @@ export default function LendersTab({ applicationId }: Props) {
   // signs it in the client app; the signed copy lands in Documents and the card moves to Accepted. Nothing is marked funded.
   const [sigBusyFor, setSigBusy] = useState<string | null>(null);
   const sigBusy = sigBusyFor !== null && sigBusyFor === savedTermSheet?.offerId;
-  const [sigMsgRaw, setSigMsg] = useState<{ offerId: string; ok: boolean; text: string } | null>(null);
-  const sigMsg = sigMsgRaw && savedTermSheet && sigMsgRaw.offerId === savedTermSheet.offerId ? sigMsgRaw : null; // review fix: a result only shows on its own offer
+  const [sigMsgs, setSigMsgs] = useState<Record<string, { ok: boolean; text: string }>>({});
+  const sigMsg = savedTermSheet ? sigMsgs[savedTermSheet.offerId] ?? null : null; // review fix: each offer keeps its own result
+  const setSigMsg = (offerId: string, m: { ok: boolean; text: string } | null) => setSigMsgs((cur) => { const next = { ...cur }; if (m) next[offerId] = m; else delete next[offerId]; return next; });
   const sendForSignature = async (offerId: string) => {
     if (sigBusyFor === offerId) return;
-    setSigBusy(offerId); setSigMsg(null);
+    setSigBusy(offerId); setSigMsg(offerId, null);
     try {
       await api.post(`/api/offers/${encodeURIComponent(offerId)}/send-for-signature`, {});
-      setSigMsg({ offerId, ok: true, text: "Sent. The client has a text and can review and sign it in their app." });
+      setSigMsg(offerId, { ok: true, text: "Sent. The client has a text and can review and sign it in their app." });
     } catch (e) {
-      setSigMsg({ offerId, ok: false, text: getErrorMessage(e, "The term sheet could not be sent for signature. Try again.") });
+      setSigMsg(offerId, { ok: false, text: getErrorMessage(e, "The term sheet could not be sent for signature. Try again.") });
     } finally { setSigBusy((cur) => (cur === offerId ? null : cur)); }
   };
   const [quoteBusy, setQuoteBusy] = useState(false);
@@ -690,7 +691,7 @@ function describeSendFailure(err: unknown): string {
       });
       await queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
       const offerId = (uploaded as { offer_id?: string } | null)?.offer_id ?? null; // BF_PORTAL_v906_OFFER_READER
-      if (offerId) { setSavedTermSheet({ offerId, lenderName: termSheetFor.lenderName, read: tsRead }); setQuoteMsg(null); setSigMsg(null); }
+      if (offerId) { setSavedTermSheet({ offerId, lenderName: termSheetFor.lenderName, read: tsRead }); setQuoteMsg(null); }
       resetTermSheet();
     } catch (err) {
       setUploadError(getErrorMessage(err, "Term sheet upload failed."));
@@ -1147,7 +1148,7 @@ function describeSendFailure(err: unknown): string {
           <button type="button" data-testid="term-sheet-create-quote" disabled={quoteBusy} onClick={() => void createQuoteFromTermSheet()} style={styles.btn}>
             {quoteBusy ? "Starting the quote…" : "Create quote from this term sheet"}
           </button>
-          <button type="button" onClick={() => { setSavedTermSheet(null); setSigMsg(null); }} style={styles.btn}>Not now</button>
+          <button type="button" onClick={() => { setSavedTermSheet(null); }} style={styles.btn}>Not now</button>
           {sigMsg ? <span data-testid="term-sheet-signature-msg" role={sigMsg.ok ? "status" : "alert"} style={{ width: "100%", color: sigMsg.ok ? "#14532d" : "#7f1d1d" }}>{sigMsg.text}</span> : null}
           {quoteMsg ? <span role="alert" style={{ width: "100%", color: "#7f1d1d" }}>{quoteMsg}</span> : null}
         </div>
