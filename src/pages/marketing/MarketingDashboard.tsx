@@ -797,6 +797,21 @@ function SmsComposerPanel() {
   }, [tag]);
   useEffect(() => { loadExact(); }, [loadExact]);
   const count = exact ?? 0;
+  // BF_PORTAL_v935_SMS_COST_PREVIEW - segments and an estimated cost before sending (the server builds the exact text:
+  // plain quotes, short link, opt-out line).
+  type SmsPreview = { segments: number; encoding: string; characters: number; replaced: string[]; nonGsm: string[]; perTextUsd: number; estimatedUsd: number; recipients: number };
+  const [preview, setPreview] = useState<SmsPreview | null>(null);
+  useEffect(() => {
+    setPreview(null); // never show an estimate made for a different message, link or audience
+    if (!body.trim()) return;
+    let live = true;
+    const t = setTimeout(() => {
+      api.post<{ data?: SmsPreview } & Partial<SmsPreview>>("/api/marketing/sms/preview", { body, linkUrl: linkUrl || null, recipients: count })
+        .then((r) => { const d = ((r as any)?.data ?? r) as SmsPreview; if (live && d && typeof d.segments === "number") setPreview(d); })
+        .catch(() => { if (live) setPreview(null); });
+    }, 400);
+    return () => { live = false; clearTimeout(t); };
+  }, [body, linkUrl, count]);
   const post = async (test?: string) => {
     setBusy(true); setMsg(null);
     try {
@@ -848,6 +863,15 @@ function SmsComposerPanel() {
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={400} className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
         </label>
         <p style={{ color: "var(--ui-text-muted)", fontSize: "0.8rem" }}>{body.length} chars. Merge: {"{{first_name}}"}, {"{{name}}"}, {"{{company}}"} all work in SMS. Keep it short. A tracked link is appended if you add a landing page below.</p>
+        {preview && (
+          <p data-testid="sms-cost-preview" style={{ fontSize: "0.85rem", margin: 0, color: preview.segments > 3 || preview.encoding !== "GSM-7" ? "#b45309" : "var(--ui-text)" }}>
+            Each text is <strong>{preview.segments} segment{preview.segments === 1 ? "" : "s"}</strong> (about ${preview.perTextUsd.toFixed(3)}), with the link and opt-out line added.
+            {count > 0 && <> Sending to {count.toLocaleString()} people: about <strong>${(preview.perTextUsd * count).toFixed(2)}</strong>.</>}
+            {preview.replaced.length > 0 && <> Curly quotes and dashes ({preview.replaced.join(" ")}) are sent as plain ones.</>}
+            {preview.encoding !== "GSM-7" && <> Characters {preview.nonGsm.join(" ")} make every segment shorter (67 characters instead of 153); remove them to cut the cost.</>}
+            {preview.segments > 3 && preview.encoding === "GSM-7" && <> Shorten the message to cut the cost.</>}
+          </p>
+        )}
         <label className="text-sm block" style={{ color: "var(--ui-text)" }}>Landing page (optional, tracked)
           <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://boreal.financial/..." className="block border rounded px-2 py-1 text-sm mt-1 w-full" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
         </label>
