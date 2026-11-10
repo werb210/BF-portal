@@ -19,6 +19,7 @@ vi.mock("@/utils/errors", () => ({ getErrorMessage: (e: any, fb: string) => e?.m
 vi.mock("@/api", () => ({ api: { get: (...a: unknown[]) => h.get(...a), post: (...a: unknown[]) => h.post(...a) } }));
 
 import LendersTab from "../LendersTab";
+import { uploadLenderTermSheet } from "@/api/lenders";
 
 async function saveTermSheet() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -53,5 +54,21 @@ describe("v936 send the term sheet for signature", () => {
     expect(msg.getAttribute("role")).toBe("alert");
     expect(msg.textContent).toBe(why);
     expect((screen.getByTestId("term-sheet-send-signature") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("a slow send for one offer does not mark the next saved offer as sent", async () => {
+    let finish!: () => void;
+    h.post.mockImplementation((url: string) => (url.includes("send-for-signature") ? new Promise((res) => { finish = () => res({ ok: true }); }) : Promise.resolve({})));
+    const first = await saveTermSheet();
+    fireEvent.click(first);
+    (uploadLenderTermSheet as any).mockResolvedValueOnce({ ok: true, offer_id: "off-10" });
+    fireEvent.change(screen.getByTestId("upload-term-sheet-p1"), { target: { files: [new File(["%PDF-1"], "b.pdf", { type: "application/pdf" })] } });
+    await screen.findByTestId("term-sheet-modal");
+    fireEvent.click(screen.getByTestId("term-sheet-submit"));
+    await waitFor(() => expect(screen.getByTestId("term-sheet-send-signature").textContent).toBe("Send to client for signature"));
+    finish();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByTestId("term-sheet-send-signature").textContent).toBe("Send to client for signature");
+    expect(screen.queryByTestId("term-sheet-signature-msg")).toBeNull();
   });
 });

@@ -412,17 +412,19 @@ export default function LendersTab({ applicationId }: Props) {
   const [savedTermSheet, setSavedTermSheet] = useState<{ offerId: string; lenderName: string; read: ReadOffer | null } | null>(null);
   // BF_PORTAL_v936_SEND_FOR_SIGNATURE - the broker sends the saved term sheet to the client to sign (SignNow). The client
   // signs it in the client app; the signed copy lands in Documents and the card moves to Accepted. Nothing is marked funded.
-  const [sigBusy, setSigBusy] = useState(false);
-  const [sigMsg, setSigMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [sigBusyFor, setSigBusy] = useState<string | null>(null);
+  const sigBusy = sigBusyFor !== null && sigBusyFor === savedTermSheet?.offerId;
+  const [sigMsgRaw, setSigMsg] = useState<{ offerId: string; ok: boolean; text: string } | null>(null);
+  const sigMsg = sigMsgRaw && savedTermSheet && sigMsgRaw.offerId === savedTermSheet.offerId ? sigMsgRaw : null; // review fix: a result only shows on its own offer
   const sendForSignature = async (offerId: string) => {
-    if (sigBusy) return;
-    setSigBusy(true); setSigMsg(null);
+    if (sigBusyFor === offerId) return;
+    setSigBusy(offerId); setSigMsg(null);
     try {
       await api.post(`/api/offers/${encodeURIComponent(offerId)}/send-for-signature`, {});
-      setSigMsg({ ok: true, text: "Sent. The client has a text and can review and sign it in their app." });
+      setSigMsg({ offerId, ok: true, text: "Sent. The client has a text and can review and sign it in their app." });
     } catch (e) {
-      setSigMsg({ ok: false, text: getErrorMessage(e, "The term sheet could not be sent for signature. Try again.") });
-    } finally { setSigBusy(false); }
+      setSigMsg({ offerId, ok: false, text: getErrorMessage(e, "The term sheet could not be sent for signature. Try again.") });
+    } finally { setSigBusy((cur) => (cur === offerId ? null : cur)); }
   };
   const [quoteBusy, setQuoteBusy] = useState(false);
   const [quoteMsg, setQuoteMsg] = useState<string | null>(null);
