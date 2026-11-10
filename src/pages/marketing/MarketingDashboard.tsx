@@ -802,7 +802,8 @@ function SmsComposerPanel() {
   type SmsPreview = { segments: number; encoding: string; characters: number; replaced: string[]; nonGsm: string[]; perTextUsd: number; estimatedUsd: number; recipients: number };
   const [preview, setPreview] = useState<SmsPreview | null>(null);
   useEffect(() => {
-    if (!body.trim()) { setPreview(null); return; }
+    setPreview(null); // never show an estimate made for a different message, link or audience
+    if (!body.trim()) return;
     let live = true;
     const t = setTimeout(() => {
       api.post<{ data?: SmsPreview } & Partial<SmsPreview>>("/api/marketing/sms/preview", { body, linkUrl: linkUrl || null, recipients: count })
@@ -865,7 +866,7 @@ function SmsComposerPanel() {
         {preview && (
           <p data-testid="sms-cost-preview" style={{ fontSize: "0.85rem", margin: 0, color: preview.segments > 3 || preview.encoding !== "GSM-7" ? "#b45309" : "var(--ui-text)" }}>
             Each text is <strong>{preview.segments} segment{preview.segments === 1 ? "" : "s"}</strong> (about ${preview.perTextUsd.toFixed(3)}), with the link and opt-out line added.
-            {count > 0 && <> Sending to {count.toLocaleString()} people: about <strong>${preview.estimatedUsd.toFixed(2)}</strong>.</>}
+            {count > 0 && <> Sending to {count.toLocaleString()} people: about <strong>${(preview.perTextUsd * count).toFixed(2)}</strong>.</>}
             {preview.replaced.length > 0 && <> Curly quotes and dashes ({preview.replaced.join(" ")}) are sent as plain ones.</>}
             {preview.encoding !== "GSM-7" && <> Characters {preview.nonGsm.join(" ")} make every segment shorter (67 characters instead of 153); remove them to cut the cost.</>}
             {preview.segments > 3 && preview.encoding === "GSM-7" && <> Shorten the message to cut the cost.</>}
