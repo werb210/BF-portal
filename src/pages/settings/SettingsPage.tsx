@@ -32,6 +32,7 @@ import RetentionSettings from "./tabs/RetentionSettings"; // BF_PORTAL_v855_RETE
 import FraudProtectionCard from "@/fraud/FraudProtectionCard"; // BF_PORTAL_v846_FRAUD
 import QuickBooksCard from "@/features/quickbooks/QuickBooksCard"; // BF_PORTAL_v852_CALC_QBO
 import DealToolsSettings from "@/brokerTools/DealToolsSettings"; // BF_PORTAL_v865_BROKER_TOOLS
+import YourDocumentsSettings from "@/licenseeDocs/YourDocumentsSettings"; // BF_PORTAL_v938_OUR_TERM_SHEET
 import CallScriptsSettings from "@/callScripts/CallScriptsSettings"; // BF_PORTAL_v871_CALL_SCRIPTS
 import CallQueuesSettings from "@/callQueues/CallQueuesSettings"; // BF_PORTAL_v871_CALL_QUEUES
 import PaymentsSettings from "@/payments/PaymentsSettings"; // BF_PORTAL_v872_PAYMENTS
@@ -86,6 +87,7 @@ const SettingsPage = () => {
       // keeps its own limits (collateral uploads and deletes stay Admin; automations are Admin and Marketing).
       { id: "content", label: "Content", visible: isAdmin || isStaff || isMarketing, content: <ContentSettings isBI={isBI} canAutomate={isAdmin || isMarketing} /> },
       { id: "deal-tools", label: "Deal tools", visible: isAdmin && !isBI, content: <DealToolsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v865_BROKER_TOOLS
+      { id: "your-documents", label: "Our term sheet", visible: (isAdmin || isStaff) && !isBI, content: <YourDocumentsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v938_OUR_TERM_SHEET
       // BF_PORTAL_v855_RETENTION - 7-year record retention: legal holds and the eligible-for-deletion report.
       { id: "retention", label: "Retention & legal holds", visible: isAdmin, content: isAdmin ? <RetentionSettings /> : null },
       // BF_PORTAL_v869_SETTINGS_PACK - ported from KS-Portal #35. The phone menu is the one 866 menu (every silo); lead
@@ -211,6 +213,7 @@ export const SETTINGS_GROUPS: Array<{ id: string; label: string; heading: string
   { id: "records", label: "Privacy and records", heading: "BROKERAGE SET-UP", sectionIds: ["retention", "privacy", "survey"] },
   { id: "integrations", label: "Integrations", heading: "BROKERAGE SET-UP", sectionIds: ["webhooks", "api-keys"] },
   { id: "deal-tools", label: "Deal tools", heading: "BROKERAGE SET-UP", sectionIds: ["deal-tools"] },
+  { id: "your-documents-group", label: "Our term sheet", heading: "BROKERAGE SET-UP", sectionIds: ["your-documents"] }, // BF_PORTAL_v938_OUR_TERM_SHEET
   { id: "system", label: "System check", heading: "BROKERAGE SET-UP", sectionIds: ["runtime"] },
 ];
 

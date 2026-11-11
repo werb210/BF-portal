@@ -175,3 +175,35 @@ describe("Offer sub-tab", () => {
     expect(await screen.findByTestId("offer-none")).toHaveTextContent("No term sheet yet.");
   });
 });
+
+describe("Offer pricing (OFFER_PRICING_v1)", () => {
+  it("prices an offer we buy: our rate, a set-up fee, then makes our term sheet", async () => {
+    answer({ offers: { items: [
+      { id: "o1", lender_name: "Northern Capital", amount: "100000", rate_factor: "6%", term: "36 months", payment_frequency: "Monthly", expiry_date: null, document_url: null, status: "pending",
+        term_sheet_mode: "lender", revenue: { spread: 0, broker_fee: 0, setup_fee: 0, proceeds_fee: 0, lender_commission: 0, total: 0, funds_to_client: 100000, client_payment: 3042, client_total_repaid: 109519, term_months: 36, note: null } },
+    ] } });
+    h.api.patch.mockResolvedValue({ ok: true, offer: { revenue: { spread: 1658, broker_fee: 0, setup_fee: 500, proceeds_fee: 0, lender_commission: 0, total: 2158, funds_to_client: 100000, client_payment: 3088, client_total_repaid: 111161, term_months: 36, note: null } } });
+    h.api.post.mockResolvedValue({ ok: true, message: "Your Boreal term sheet is now this offer's term sheet." });
+    render(<OfferTab applicationId="app-1" />);
+    fireEvent.click(await screen.findByTestId("offer-pricing-o1"));
+    expect(screen.queryByLabelText("Our rate to the client")).toBeNull();
+    fireEvent.click(screen.getByTestId("mode-ours-o1"));
+    fireEvent.change(screen.getByLabelText("Our rate to the client"), { target: { value: "7" } });
+    fireEvent.change(screen.getByLabelText("Set-up fee"), { target: { value: "500" } });
+    fireEvent.click(screen.getByTestId("pricing-save-o1"));
+    await waitFor(() => expect(h.api.patch).toHaveBeenCalledWith("/api/offers/o1/pricing", expect.objectContaining({ term_sheet_mode: "ours", client_rate: "7", setup_fee: "500", broker_fee: null })));
+    expect(await screen.findByTestId("revenue-o1")).toHaveTextContent("$2,158");
+    fireEvent.click(screen.getByTestId("make-ours-o1"));
+    await waitFor(() => expect(h.api.post).toHaveBeenCalledWith("/api/licensee-documents/offers/o1/term-sheet", {}));
+  });
+
+  it("shows each offer's revenue and marks our term sheet", async () => {
+    answer({ offers: { items: [
+      { id: "o1", lender_name: "Northern Capital", amount: "100000", rate_factor: "6%", term: "36", payment_frequency: null, expiry_date: null, document_url: null, status: "pending",
+        term_sheet_mode: "ours", revenue: { spread: 1658, broker_fee: 0, setup_fee: 500, proceeds_fee: 0, lender_commission: 0, total: 2158, funds_to_client: 100000, client_payment: null, client_total_repaid: null, term_months: 36, note: null } },
+    ] } });
+    render(<OfferTab applicationId="app-1" />);
+    expect(await screen.findByTestId("offer-revenue-o1")).toHaveTextContent("$2,158");
+    expect(screen.getByTestId("offer-row-o1")).toHaveTextContent("client doesn't see the lender");
+  });
+});
