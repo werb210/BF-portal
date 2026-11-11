@@ -49,6 +49,7 @@
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "7.18.4",
+    "read-excel-file": "^5.8.8",
     "recharts": "^3.7.0",
     "workbox-window": "^7.4.0",
     "zod": "^4.6.7",
