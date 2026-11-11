@@ -7,12 +7,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
 type Fn = ReturnType<typeof vi.fn>;
-const h = vi.hoisted(() => ({ api: {} as Record<"importRows" | "channels" | "items" | "saveChannel" | "callList" | "addTouch" | "referrals" | "addReferral" | "saveReferral", Fn> & Record<string, Fn>, dial: vi.fn() }));
+const h = vi.hoisted(() => ({ api: {} as Record<"importRows" | "channels" | "items" | "saveChannel" | "callList" | "addTouch" | "referrals" | "addReferral" | "saveReferral" | "mailReady" | "letter" | "makeMailBatch" | "mailLetters" | "linkedInAudience", Fn> & Record<string, Fn>, dial: vi.fn(), saved: vi.fn() }));
 vi.mock("../marketing/outreach/outreachApi", async (orig) => {
   const real = await orig<Record<string, unknown>>();
   for (const k of Object.keys(real.outreachApi as object)) h.api[k] = vi.fn();
-  return { ...real, outreachApi: h.api };
+  return { ...real, outreachApi: h.api, saveFile: (...a: unknown[]) => h.saved(...a) };
 });
+vi.mock("../ksApi", () => ({ ksOpsBaseUrl: () => "https://ops.keystone.example", ksRequest: vi.fn() }));
 vi.mock("@/dialer/store", () => ({ openDialer: (...a: unknown[]) => h.dial(...a) }));
 
 import { parseCsv, toImportRows } from "../marketing/outreach/listFile";
@@ -25,7 +26,7 @@ const channel = (over: Record<string, unknown>) => ({
   conversations: 0, owner_conversations: 0, demos: 0, signups: 0, clicks: 0, cost_cents: 0, items: 0, test_ends_on: null, test_days_left: null, cost_per_owner_conversation_cents: null, over_budget: false, ...over,
 });
 
-beforeEach(() => { for (const f of Object.values(h.api)) f.mockReset(); h.dial.mockReset(); });
+beforeEach(() => { for (const f of Object.values(h.api)) f.mockReset(); h.dial.mockReset(); h.saved.mockReset(); });
 
 describe("list file", () => {
   it("reads quoted CSV cells and matches the export's column names in any order", () => {
@@ -103,5 +104,40 @@ describe("referrals", () => {
     fireEvent.change(screen.getByLabelText("Reward amount"), { target: { value: "98" } });
     fireEvent.click(screen.getByTestId("referral-add"));
     await waitFor(() => expect(h.api.addReferral).toHaveBeenCalledWith({ referrer_name: "Second Customer", referred_name: null, reward: "One month free per seat", reward_cents: 9800 }));
+  });
+});
+
+// BF_PORTAL_v946_KS_OUTREACH_MAIL
+describe("mail, ads and webinars inside their channels", () => {
+  it("makes a letter batch and downloads the PDF from the batch row", async () => {
+    h.api.channels.mockResolvedValue({ channels: [channel({ key: "mail", name: "Physical mail" })] });
+    h.api.items.mockResolvedValue({ items: [{ id: "i1", channel_key: "mail", kind: "mail_batch", name: "Owner letter, wave 1", url: null, happens_on: "2026-11-11", cost_cents: 0, status: "in_progress", notes: null, touches: 12, wins: 0, clicks: 2 }] });
+    h.api.mailReady.mockResolvedValue({ ready: 14, without_address: 9, first: [] });
+    h.api.letter.mockResolvedValue({ letter: { greeting: "Dear {{first_name}},", body: "Hello", closing: "Sincerely,", signature: "", ps: "", target_url: "" }, merge_fields: [] });
+    h.api.makeMailBatch.mockResolvedValue({ item_id: "i2", count: 10 });
+    h.api.mailLetters.mockResolvedValue({ filename: "Owner-letter-wave-1.pdf", data_base64: "JVBERi0=", letters: 12 });
+    wrap(<KsChannels />);
+    fireEvent.click(await screen.findByTestId("channel-open-mail"));
+    await waitFor(() => expect(screen.getByTestId("mail-ready")).toHaveTextContent("14 firms can get a letter now"));
+    expect(screen.getByTestId("mail-ready")).toHaveTextContent("9 kept firms have no mailing address");
+    fireEvent.change(screen.getByLabelText("Batch name"), { target: { value: "Owner letter, wave 2" } });
+    fireEvent.change(screen.getByLabelText("How many firms"), { target: { value: "10" } });
+    fireEvent.change(screen.getByLabelText("Cost per letter"), { target: { value: "1.50" } });
+    fireEvent.click(screen.getByTestId("mail-make"));
+    await waitFor(() => expect(h.api.makeMailBatch).toHaveBeenCalledWith({ name: "Owner letter, wave 2", limit: 10, cost_per_letter_cents: 150 }));
+    fireEvent.click(await screen.findByTestId("letters-i1"));
+    await waitFor(() => expect(h.saved).toHaveBeenCalledWith("Owner-letter-wave-1.pdf", "JVBERi0=", "application/pdf", true));
+  });
+
+  it("offers the LinkedIn company list on paid ads and a sign-up page link on a webinar", async () => {
+    h.api.channels.mockResolvedValue({ channels: [channel({ key: "paid_ads", name: "Paid ads" }), channel({ key: "podcasts_webinars", name: "Podcasts and webinars" })] });
+    h.api.items.mockResolvedValue({ items: [{ id: "w1", channel_key: "podcasts_webinars", kind: "webinar", name: "How we cut file prep time", url: null, happens_on: "2026-12-10", cost_cents: 0, status: "planned", notes: null, touches: 0, wins: 0, clicks: 0 }] });
+    h.api.linkedInAudience.mockResolvedValue({ filename: "list.csv", csv: "companyname\r\n", count: 27 });
+    wrap(<KsChannels />);
+    fireEvent.click(await screen.findByTestId("channel-open-paid_ads"));
+    fireEvent.click(await screen.findByTestId("linkedin-audience"));
+    await waitFor(() => expect(h.saved).toHaveBeenCalledWith("list.csv", "companyname\r\n", "text/csv"));
+    fireEvent.click(screen.getByTestId("channel-open-podcasts_webinars"));
+    expect((await screen.findByTestId("webinar-page-w1")).getAttribute("href")).toBe("https://ops.keystone.example/api/public/marketing/webinar/w1");
   });
 });
