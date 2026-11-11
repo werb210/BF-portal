@@ -4,7 +4,9 @@
 //                   once ID is requested or uploaded - v941; the ID check service is set up in Settings)
 //   Request Items - unchanged
 //   Notes         - notes, with the questions for the lender beside them
-//   Lenders       - Lenders (match, send, upload a lender's term sheet) · Offer (term sheets, signing, funding conditions)
+//   Lenders       - match and send
+//   Offer         - give the client a term sheet (the lender's, the lender's terms on ours, or ours), conditions, signing
+//   Close         - once a term sheet is signed: what funded and how we are paid (BF_PORTAL_v942_CLOSE_TAB)
 // One slim header on every tab (CardHeader). Removed: Quotes, Deal desk, the forecast panel and the "Where this came from"
 // box (now a chip in the header). The URL stays /applications/:id/<sub-tab>; old links (quotes, deal-desk, funding)
 // land on the nearest new place.
@@ -24,6 +26,7 @@ import FraudTab from "@/fraud/FraudTab";
 import IdVerificationTab from "@/kyc/IdVerificationTab";
 import CardHeader from "./CardHeader";
 import OfferTab from "./OfferTab";
+import CloseTab from "./CloseTab"; // BF_PORTAL_v942_CLOSE_TAB
 
 type SubTab = { key: string; label: string };
 type MainTab = { key: string; label: string; subs: SubTab[] };
@@ -42,10 +45,10 @@ export const CARD_TABS: MainTab[] = [
   ] },
   { key: "request-items-group", label: "Request Items", subs: [{ key: "request-items", label: "Request Items" }] },
   { key: "notes-group", label: "Notes", subs: [{ key: "notes", label: "Notes" }] },
-  { key: "lenders-group", label: "Lenders", subs: [
-    { key: "lenders", label: "Lenders" },
-    { key: "offer", label: "Offer" },
-  ] },
+  // BF_PORTAL_v943_OFFER_OWN_TAB - Todd: "Offer (should be it's own tab)"; Close follows once a term sheet is signed.
+  { key: "lenders-group", label: "Lenders", subs: [{ key: "lenders", label: "Lenders" }] },
+  { key: "offer-group", label: "Offer", subs: [{ key: "offer", label: "Offer" }] },
+  { key: "close-group", label: "Close", subs: [{ key: "close", label: "Close" }] },
 ];
 
 const ALIASES: Record<string, string> = { quotes: "offer", funding: "offer", "deal-desk": "application", "id-verification": "fraud" };
@@ -58,6 +61,28 @@ export function activeSubFromPath(pathname: string): string {
 
 export function mainFor(sub: string): MainTab {
   return CARD_TABS.find((t) => t.subs.some((s) => s.key === sub)) ?? CARD_TABS[0]!;
+}
+
+/** Close shows once the client has signed a term sheet (an accepted offer) or a close was saved. */
+function useShowClose(applicationId: string): boolean {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!applicationId) return;
+    let cancelled = false;
+    setShow(false);
+    void (async () => {
+      try {
+        const c = await api.get<{ saved?: boolean }>(`/api/deals/applications/${encodeURIComponent(applicationId)}/close`);
+        if (!cancelled && c?.saved) { setShow(true); return; }
+      } catch { /* older server */ }
+      try {
+        const o = await api.get<{ items?: Array<{ status?: string }> }>(`/api/offers?applicationId=${encodeURIComponent(applicationId)}`);
+        if (!cancelled && (o?.items ?? []).some((x) => x.status === "accepted")) setShow(true);
+      } catch { /* leave hidden */ }
+    })();
+    return () => { cancelled = true; };
+  }, [applicationId]);
+  return show;
 }
 
 const ID_DOC = /\b(id|government|photo id|driver|passport|identification)\b/i;
@@ -108,6 +133,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
   const activeSub = activeSubFromPath(location.pathname);
   const activeMain = mainFor(activeSub);
   const showId = useShowIdVerification(applicationId);
+  const showClose = useShowClose(applicationId);
 
   // BF_PORTAL_v906_SBA_TAB_ONLY_SBA - SBA signing shows only on an SBA file (BF-Server decides: isSba on /sba-signing).
   const [isSba, setIsSba] = useState(false);
@@ -149,7 +175,8 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     "request-items": <RequestItemsTab applicationId={applicationId} />,
     notes: <NotesTab applicationId={applicationId} />,
     lenders: <LendersTab applicationId={applicationId} hideParkButtons />,
-    offer: <OfferTab applicationId={applicationId} onOpenLenders={() => go("lenders")} />,
+    offer: <OfferTab applicationId={applicationId} />,
+    close: <CloseTab applicationId={applicationId} />,
   };
 
   return (
@@ -161,7 +188,7 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
       )}
       <CardHeader applicationId={applicationId} application={application} onNavigate={(to) => navigate(to)} />
       <nav data-testid="card-tabs" style={{ display: "flex", gap: 18, padding: "0 20px", borderBottom: "1px solid var(--ui-border)", overflowX: "auto", background: "var(--ui-surface-strong)", flexShrink: 0 }}>
-        {CARD_TABS.map((t) => (
+        {CARD_TABS.filter((t) => t.key !== "close-group" || showClose || activeSub === "close").map((t) => (
           <button key={t.key} type="button" style={tabBtn(t.key === activeMain.key)} onClick={() => go(t.subs[0]!.key)}>{t.label}</button>
         ))}
       </nav>

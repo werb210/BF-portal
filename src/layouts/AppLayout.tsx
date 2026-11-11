@@ -51,7 +51,7 @@ const BF_NAV: NavItem[] = [
   { label: "Pipeline",       path: "/pipeline",        roles: ["Admin", "Staff", "Ops"] },
   { label: "CRM",            path: "/crm/contacts",    roles: ["Admin", "Staff"] },
   // BF_PORTAL_v878_NAV_REVENUE - Active Contracts is a tab inside CRM now; Revenue gathers forecast, commission and contracts.
-  { label: "Revenue",        path: "/revenue",         roles: ["Admin"] }, // BF_PORTAL_v885_SETTINGS_ROLES - Admins only
+  { label: "Revenue",        path: "/revenue",         roles: ["Admin", "Staff"] }, // BF_PORTAL_v942_DEALS_AND_PAY - Staff see only their own deals and pay
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
