@@ -8,6 +8,7 @@ const read = (rel: string) =>
 const qa = read("../LenderQaSection.tsx");
 const lenders = read("../LendersTab.tsx");
 const request = read("../RequestItemsTab.tsx");
+const notes = read("../NotesTab.tsx");
 
 describe("lender Q&A move + readability", () => {
   it("question prompt and title have explicit text color", () => {
@@ -17,7 +18,8 @@ describe("lender Q&A move + readability", () => {
   it("builder no longer mounts on the Lenders tab", () => {
     expect(lenders).not.toContain("<LenderQaSection");
   });
-  it("builder now mounts on the Request Items tab", () => {
-    expect(request).toContain("<LenderQaSection applicationId={applicationId} />");
+  it("BF_PORTAL_v938_CARD_REDESIGN: builder now sits beside the notes, not on Request Items", () => {
+    expect(notes).toContain("<LenderQaSection applicationId={applicationId} />");
+    expect(request).not.toContain("<LenderQaSection");
   });
 });

@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { api, rawApiFetch } from "@/api";
 import { Chip, ErrorLine, card, dangerButton, errorText, h3, input, label, muted, primaryButton, row, secondaryButton, type Tone } from "./ui";
 import { OWNER_LABEL, STATUS_LABEL } from "./fundingGate";
-import { quotesApi, type OfferOnFile } from "@/quotes/quotesApi";
-import { readOfferFile, readOfferOnFile, type ReadCondition } from "@/quotes/offerReaderApi"; // BF_PORTAL_v906_OFFER_READER
+import { readOfferFile, readOfferOnFile, type ReadCondition } from "@/offers/offerReaderApi"; // BF_PORTAL_v906_OFFER_READER
+
+type OfferOnFile = { id: string; lender_name: string };
 
 export type Condition = {
   id: string; title: string; description: string | null; owner: "staff" | "client" | "lender";
@@ -56,8 +57,9 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     let live = true;
-    void quotesApi.list(applicationId)
-      .then((r) => { if (live) { setHasOffer(Array.isArray(r?.offers) ? r.offers.length > 0 : null); setOffers(Array.isArray(r?.offers) ? r.offers : []); } })
+    // BF_PORTAL_v938_CARD_REDESIGN - the offers on the file come from /api/offers (the Quotes API is gone).
+    void api.get<{ items?: OfferOnFile[] }>(`/api/offers?applicationId=${encodeURIComponent(applicationId)}`)
+      .then((r) => { if (live) { const items = Array.isArray(r?.items) ? r.items : null; setHasOffer(items ? items.length > 0 : null); setOffers(items ?? []); } })
       .catch(() => { if (live) setHasOffer(null); });
     return () => { live = false; };
   }, [applicationId]);

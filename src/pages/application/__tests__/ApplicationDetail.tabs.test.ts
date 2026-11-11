@@ -5,9 +5,10 @@ import { describe, it, expect } from "vitest";
 
 describe("ApplicationDetail tabs", () => {
   const src = readFileSync(join(process.cwd(), "src/pages/application/ApplicationDetail.tsx"), "utf-8");
-  it("does not list an Overview tab", () => {
-    expect(src).not.toMatch(/key:\s*"overview"/);
-    expect(src).not.toMatch(/label:\s*"Overview"/);
+  // BF_PORTAL_v938_CARD_REDESIGN - Todd and Andrew brought Overview back (Nov 11 2026) as the group holding the
+  // Application, Financials and Banking analysis sub-tabs; the old Overview tab (OverviewTab) must still never return.
+  it("Overview is the group of Application, Financials and Banking analysis", () => {
+    expect(src).toMatch(/key: "overview", label: "Overview", subs: \[/);
   });
   it("does not import OverviewTab", () => {
     expect(src).not.toMatch(/OverviewTab/);

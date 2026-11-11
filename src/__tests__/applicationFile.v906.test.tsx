@@ -1,7 +1,7 @@
 // BF_PORTAL_v906_APPLICATION_FILE - Todd's review of the application file: pipeline search, fee payments from an agreement
 // or invoice, banking analysis polling and insights, standard financial lines, upload categories, credit summary step
-// states, readable pass reasons, quote layout and term sheets, ID verification not connected, offer conditions,
-// deal desk help, SBA tab only on SBA files, and a fraud score that is not shown as final while checks run.
+// states, readable pass reasons, term sheets, ID verification not connected, offer conditions,
+// SBA tab only on SBA files, and a fraud score that is not shown as final while checks run.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
@@ -12,13 +12,6 @@ const h = vi.hoisted(() => {
 });
 vi.mock("@/api", () => ({ api: h.api, rawApiFetch: h.raw, default: h.api }));
 vi.mock("@/api/banking", () => ({ fetchBankingAnalysis: vi.fn() }));
-// The Deal desk's panels load their own data; the test checks only the help text around them.
-vi.mock("@/brokerTools/InvoicesPanel", () => ({ default: () => null }));
-vi.mock("@/brokerTools/CreditLinesPanel", () => ({ default: () => null }));
-vi.mock("@/brokerTools/StructuringPanel", () => ({ default: () => null }));
-vi.mock("@/brokerTools/ScorecardPanel", () => ({ default: () => null }));
-vi.mock("@/brokerTools/ContractsPanel", () => ({ default: () => null }));
-vi.mock("@/brokerTools/CreditBureauPanel", () => ({ default: () => null }));
 
 import PipelinePage from "@/pages/pipeline/PipelinePage";
 import BankingAnalysisTab, { bankingIsRunning } from "@/pages/applications/tabs/BankingAnalysisTab";
@@ -29,9 +22,8 @@ import { uploadCategories } from "@/pages/applications/tabs/DocumentsTab";
 import CreditSummaryV2 from "@/pages/applications/_shared/CreditSummaryV2";
 import { RejectReasonsModal } from "@/components/applications/RejectReasonsModal";
 import { contrast } from "@/fraud/status";
-import { applyReadToOption, termSheetFields, type ReadOffer } from "@/quotes/offerReaderApi";
+import { termSheetFields, type ReadOffer } from "@/offers/offerReaderApi";
 import IdVerificationTab from "@/kyc/IdVerificationTab";
-import DealDeskTab, { DEAL_DESK_HELP } from "@/brokerTools/DealDeskTab";
 import FundingConditionsPanel from "@/brokerTools/FundingConditionsPanel";
 import { scoreIsFinal } from "@/fraud/FraudTab";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -168,13 +160,10 @@ describe("record pass reasons are readable", () => {
   });
 });
 
-describe("quote from a term sheet", () => {
+describe("reading a term sheet", () => {
   const read: ReadOffer = { lender_name: "Acme Capital", product_name: null, amount: 250000, rate_kind: "factor_rate", rate: 1.3, term_months: 12, payment_amount: 1500, payment_frequency: "weekly", expiry_date: "2026-12-01", fees: [{ label: "Admin", amount: 495 }], conditions: [] };
-  it("fills the term sheet form and the quote option's gaps", () => {
+  it("fills the term sheet form", () => {
     expect(termSheetFields(read)).toEqual({ amount: "250000", rate: "1.3 factor", term: "12 months", payment: "Weekly", expiry: "2026-12-01" });
-    const o = applyReadToOption({ offer_id: "o1", lender_name: "Acme", product_name: null, amount: 0, term_months: null, rate_kind: "interest_rate", rate: null, payment_frequency: "monthly", payment_amount: null, payment_overridden: false, fees: [], recommended: false, notes: null }, read);
-    expect(o).toMatchObject({ lender_name: "Acme", amount: 250000, term_months: 12, rate_kind: "factor_rate", rate: 1.3, payment_frequency: "weekly", payment_amount: 1500, payment_overridden: true });
-    expect(o.fees).toEqual([{ label: "Admin", amount: 495, deducted: true, taxable: false }]);
   });
 });
 
@@ -191,7 +180,7 @@ describe("ID verification without a service", () => {
 
 describe("funding conditions from the offer document", () => {
   it("lists the conditions read from the offer and adds only the ticked ones", async () => {
-    h.api.get.mockImplementation(async (url: string) => url.includes("/api/quotes/") ? { quotes: [], offers: [{ id: "o1", lender_name: "Acme" }] } : url.includes("/people") ? { people: [] } : { conditions: [] });
+    h.api.get.mockImplementation(async (url: string) => url.includes("/api/offers?applicationId=") ? { items: [{ id: "o1", lender_name: "Acme" }] } : url.includes("/people") ? { people: [] } : { conditions: [] });
     h.api.post.mockImplementation(async (url: string) => url.endsWith("/offer-document/read")
       ? { ok: true, offer_id: "o1", read: { conditions: [{ title: "Signed guarantee", description: null, owner: "client", requires_document: true }, { title: "Site visit", description: null, owner: "lender", requires_document: false }] } }
       : { conditions: [], added: 1, skipped: [] });
@@ -203,15 +192,6 @@ describe("funding conditions from the offer document", () => {
     await waitFor(() => expect(h.api.post).toHaveBeenCalledWith("/api/broker-tools/applications/app-1/conditions/confirm", {
       offer_id: "o1", conditions: [{ title: "Signed guarantee", description: null, owner: "client", requires_document: true }],
     }));
-  });
-});
-
-describe("deal desk help", () => {
-  it("introduces the tab and explains every section", () => {
-    h.api.get.mockResolvedValue({});
-    render(<DealDeskTab applicationId="app-1" />);
-    expect(screen.getByTestId("deal-desk-intro")).toBeInTheDocument();
-    for (const help of Object.values(DEAL_DESK_HELP)) expect(screen.getByText(help.text)).toBeInTheDocument();
   });
 });
 

@@ -17,8 +17,7 @@ import {
   type LenderMatch,
 } from "@/api/lenders";
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v_SIGNING_RESEND_v1 — collateral-required signal
-import { applyReadToOption, readOfferFile, readOfferOnFile, termSheetFields, type ReadOffer } from "@/quotes/offerReaderApi"; // BF_PORTAL_v906_OFFER_READER
-import { quotesApi } from "@/quotes/quotesApi"; // BF_PORTAL_v906_OFFER_READER
+import { readOfferFile, termSheetFields, type ReadOffer } from "@/offers/offerReaderApi"; // BF_PORTAL_v906_OFFER_READER
 import { RejectReasonsModal } from "@/components/applications/RejectReasonsModal";
 import { getErrorMessage } from "@/utils/errors";
 import toast from "react-hot-toast"; // BF_PORTAL_BLOCK_v488_MARK_SENT_FEEDBACK
@@ -47,7 +46,8 @@ export function productQuestionsBlock(envelope: unknown): string | null {
   return pq?.blocking ? (pq.message ?? "Waiting on the client to answer product questions.") : null;
 }
 
-type Props = { applicationId?: string | null };
+// BF_PORTAL_v938_CARD_REDESIGN - on the card Hold, Reject and Fraud live in the header menu, so the card hides them here.
+type Props = { applicationId?: string | null; hideParkButtons?: boolean };
 // BF_PORTAL_LENDERS_REVIVE_v37
 type ParkedApplication = {
   application?: {
@@ -145,7 +145,7 @@ function likelihoodColors(pct: number | null): { bg: string; fg: string } {
   return { bg: "#fee2e2", fg: "#991b1b" };
 }
 
-export default function LendersTab({ applicationId }: Props) {
+export default function LendersTab({ applicationId, hideParkButtons = false }: Props) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const canManage = canWrite((user as { role?: string | null } | null)?.role ?? null);
@@ -405,7 +405,7 @@ export default function LendersTab({ applicationId }: Props) {
   const [tsPayment, setTsPayment] = useState("");
   const [tsExpiry, setTsExpiry] = useState("");
   const [tsNotes, setTsNotes] = useState("");
-  // BF_PORTAL_v906_OFFER_READER - read the term sheet to fill the form, then offer "Create quote from this term sheet".
+  // BF_PORTAL_v906_OFFER_READER - read the term sheet to fill the form, then send it for signature (quotes removed v938).
   const [tsReading, setTsReading] = useState(false);
   const [tsRead, setTsRead] = useState<ReadOffer | null>(null);
   const [tsReadMsg, setTsReadMsg] = useState<string | null>(null);
@@ -427,8 +427,6 @@ export default function LendersTab({ applicationId }: Props) {
       setSigMsg(offerId, { ok: false, text: getErrorMessage(e, "The term sheet could not be sent for signature. Try again.") });
     } finally { setSigBusy((cur) => (cur === offerId ? null : cur)); }
   };
-  const [quoteBusy, setQuoteBusy] = useState(false);
-  const [quoteMsg, setQuoteMsg] = useState<string | null>(null);
   const filesRootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -691,7 +689,7 @@ function describeSendFailure(err: unknown): string {
       });
       await queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
       const offerId = (uploaded as { offer_id?: string } | null)?.offer_id ?? null; // BF_PORTAL_v906_OFFER_READER
-      if (offerId) { setSavedTermSheet({ offerId, lenderName: termSheetFor.lenderName, read: tsRead }); setQuoteMsg(null); }
+      if (offerId) { setSavedTermSheet({ offerId, lenderName: termSheetFor.lenderName, read: tsRead }); }
       resetTermSheet();
     } catch (err) {
       setUploadError(getErrorMessage(err, "Term sheet upload failed."));
@@ -722,25 +720,6 @@ function describeSendFailure(err: unknown): string {
     } finally { setTsReading(false); }
   };
 
-  const createQuoteFromTermSheet = async () => {
-    if (!savedTermSheet || !id) return;
-    setQuoteBusy(true); setQuoteMsg(null);
-    try {
-      let read = savedTermSheet.read;
-      if (!read) { try { read = (await readOfferOnFile(id, savedTermSheet.offerId))?.read ?? null; } catch { read = null; } }
-      const created = await quotesApi.create(id, [savedTermSheet.offerId]);
-      const quote = created?.quote;
-      if (quote && read) {
-        const options = quote.options.map((o) => (o.offer_id === savedTermSheet.offerId || quote.options.length === 1 ? applyReadToOption(o, read!) : o));
-        await quotesApi.save(quote.id, { options });
-      }
-      setSavedTermSheet(null);
-      // A plain redirect (see the park action above): open the Quotes tab, where the new draft is ready to check and send.
-      window.location.assign(window.location.pathname.replace(/\/lenders\/?$/, "") + "/quotes");
-    } catch (err) {
-      setQuoteMsg(getErrorMessage(err, "Could not start the quote."));
-    } finally { setQuoteBusy(false); }
-  };
 
   if (!id) return <div style={styles.empty}>Select an application to view lenders.</div>;
   if (isLoading) return <div style={styles.empty}>Loading lenders…</div>;
@@ -826,7 +805,7 @@ function describeSendFailure(err: unknown): string {
             </div>
           )}
         </div>
-        {canManage && (
+        {canManage && !hideParkButtons && (
           <div style={styles.parkBtns}>
             {/* BF_PORTAL_LENDERS_REVIVE_v37 - a parked file offers the way out,
                 not the controls that put it there. */}
@@ -1138,19 +1117,15 @@ function describeSendFailure(err: unknown): string {
         </button>
       </div>
 
-      {/* BF_PORTAL_v906_OFFER_READER - after a term sheet is saved, offer to turn it into a quote for the client. */}
+      {/* BF_PORTAL_v906_OFFER_READER - after a term sheet is saved: send it to the client to sign (Quotes removed v938). */}
       {savedTermSheet && (
         <div data-testid="term-sheet-quote" role="status" style={{ marginTop: 12, padding: 12, border: "1px solid #86efac", background: "#f0fdf4", color: "#14532d", borderRadius: 8, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ flex: 1, minWidth: 220 }}>Term sheet from <strong>{savedTermSheet.lenderName}</strong> saved as an offer.</span>
           <button type="button" data-testid="term-sheet-send-signature" disabled={sigBusy || sigMsg?.ok === true} aria-busy={sigBusy} onClick={() => void sendForSignature(savedTermSheet.offerId)} style={styles.btnPrimary}>
             {sigBusy ? "Sending…" : sigMsg?.ok ? "Sent for signature" : "Send to client for signature"}
           </button>
-          <button type="button" data-testid="term-sheet-create-quote" disabled={quoteBusy} onClick={() => void createQuoteFromTermSheet()} style={styles.btn}>
-            {quoteBusy ? "Starting the quote…" : "Create quote from this term sheet"}
-          </button>
           <button type="button" onClick={() => { setSavedTermSheet(null); }} style={styles.btn}>Not now</button>
           {sigMsg ? <span data-testid="term-sheet-signature-msg" role={sigMsg.ok ? "status" : "alert"} style={{ width: "100%", color: sigMsg.ok ? "#14532d" : "#7f1d1d" }}>{sigMsg.text}</span> : null}
-          {quoteMsg ? <span role="alert" style={{ width: "100%", color: "#7f1d1d" }}>{quoteMsg}</span> : null}
         </div>
       )}
 

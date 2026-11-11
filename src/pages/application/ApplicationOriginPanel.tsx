@@ -27,8 +27,9 @@ export function splitText(split: Split | null): string {
   return `Proposed, waiting for the broker: ${pct}`;
 }
 
-export default function ApplicationOriginPanel({ applicationId }: { applicationId: string }) {
-  const [origin, setOrigin] = useState<ApplicationOrigin | null>(null);
+export default function ApplicationOriginPanel({ applicationId, initial }: { applicationId: string; initial?: ApplicationOrigin | null }) {
+  // BF_PORTAL_v938_CARD_REDESIGN - the header chip passes what it already loaded, so the panel opens without a refetch.
+  const [origin, setOrigin] = useState<ApplicationOrigin | null>(initial ?? null);
   const load = useCallback(async () => {
     try {
       const res = await api.get<{ origin?: ApplicationOrigin | null }>(`/api/application-origin/${encodeURIComponent(applicationId)}`);
@@ -37,7 +38,7 @@ export default function ApplicationOriginPanel({ applicationId }: { applicationI
       setOrigin(null);
     }
   }, [applicationId]);
-  useEffect(() => { if (applicationId) void load(); }, [applicationId, load]);
+  useEffect(() => { if (applicationId && initial === undefined) void load(); }, [applicationId, load, initial]);
 
   if (!origin) return null;
   if (origin.kind === "lender") return <LenderReferralPanel applicationId={applicationId} initial={origin.referral} />;

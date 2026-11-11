@@ -9,8 +9,6 @@ vi.mock("@/api", () => ({ api: { get: h.get, post: h.post, put: h.put, patch: h.
 vi.mock("@/utils/api", () => ({ apiBlob: vi.fn(async () => new Blob(["%PDF-"])) }));
 vi.mock("@/dealTools/ui", async (orig) => ({ ...(await orig<any>()), useIsAdmin: () => h.role === "Admin", useRole: () => h.role }));
 
-import QuotesTab from "@/quotes/QuotesTab";
-import type { Quote } from "@/quotes/quotesApi";
 import FundingConditionsPanel from "@/brokerTools/FundingConditionsPanel";
 import CallScriptsSettings from "@/callScripts/CallScriptsSettings";
 import { SetupText, plainSetupText, settingNamesIn, withoutSettingNames } from "@/components/SetupNotice";
@@ -22,53 +20,12 @@ beforeEach(() => {
   vi.spyOn(window, "confirm").mockReturnValue(true);
 });
 
-// ------------------------------------------------------------------------------------------------ 1. quotes
-const blank = (over: Partial<Quote> = {}): Quote => ({ id: "q1", application_id: "app-1", quote_number: "Q-261102-04AD9", status: "draft", title: "Your financing options", message: null, currency: "CAD", tax_province: "ON", expires_on: "2026-11-16", pdf_document_id: null, accepted_option_id: null, accepted_name: null, decline_reason: null, view_count: 0, created_at: "2026-11-02T10:00:00Z", sent_at: null, first_viewed_at: null, last_viewed_at: null, accepted_at: null, declined_at: null, withdrawn_at: null, options: [], ...over });
-
-describe("Quotes tab (v884)", () => {
-  it("counts an option as soon as it is added, keeps it on Edit, and only allows Send with an option", async () => {
-    h.get.mockResolvedValue({ ok: true, quotes: [blank()], offers: [], provinces: [], default_tax_province: "ON" });
-    h.post.mockResolvedValue({ ok: true, quote: blank() });
-    render(<QuotesTab applicationId="app-1" />);
-    fireEvent.click(await screen.findByRole("button", { name: "Start a blank quote" }));
-    expect(await screen.findByTestId("quote-editor")).toBeInTheDocument();
-    // While editing, "Start a blank quote" is out of the way.
-    expect(screen.queryByRole("button", { name: "Start a blank quote" })).toBeNull();
-    // No options yet: Send is off and says why.
-    expect(screen.getByRole("button", { name: "Send to client" })).toBeDisabled();
-    expect(screen.getByTestId("quote-send-reason")).toHaveTextContent("Add at least one option");
-
-    fireEvent.click(screen.getByRole("button", { name: "Add an option" }));
-    expect(screen.getByRole("button", { name: "Send to client" })).toBeEnabled();
-    expect(screen.queryByTestId("quote-send-reason")).toBeNull();
-    const row = await screen.findByTestId("quote-q1");
-    expect(row).toHaveTextContent("1 option(s) (not saved yet)");
-    expect(screen.getByTestId("quote-unsaved")).toBeInTheDocument();
-
-    // Edit on the quote already open keeps the unsaved option.
-    fireEvent.click(within(row).getByRole("button", { name: "Edit" }));
-    expect(screen.getByTestId("quote-option-0")).toBeInTheDocument();
-  });
-
-  it("warns before closing a quote with unsaved changes", async () => {
-    h.get.mockResolvedValue({ ok: true, quotes: [blank()], offers: [], provinces: [] });
-    h.post.mockResolvedValue({ ok: true, quote: blank() });
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
-    render(<QuotesTab applicationId="app-1" />);
-    fireEvent.click(await screen.findByRole("button", { name: "Start a blank quote" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Add an option" }));
-    fireEvent.click(screen.getByRole("button", { name: "Close the editor" }));
-    expect(confirm).toHaveBeenCalled();
-    expect(screen.getByTestId("quote-editor")).toBeInTheDocument();
-  });
-});
-
 // ------------------------------------------------------------------------------------------------ 2. funding conditions
 const condition = { id: "c1", title: "Signed insurance certificate", description: null, owner: "staff", assigned_user_id: null, due_date: null, status: "open", source: "template", requires_document: false, document_id: null, document_url: null, note: null, waived_reason: null, client_submitted_at: null, overdue: false };
 
 describe("Funding conditions (v884)", () => {
   const routes = (offers: unknown[]) => h.get.mockImplementation(async (url: string) => (
-    url.includes("/conditions") ? { conditions: [] } : url.includes("/people") ? { people: [] } : { ok: true, quotes: [], offers, provinces: [] }));
+    url.includes("/conditions") ? { conditions: [] } : url.includes("/people") ? { people: [] } : { items: offers })); // v938: offers come from /api/offers
 
   it("shows the conditions the templates added straight away", async () => {
     routes([{ id: "o1" }]);

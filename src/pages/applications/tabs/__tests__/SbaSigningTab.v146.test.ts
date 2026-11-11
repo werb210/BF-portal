@@ -9,7 +9,7 @@ const detail = readFileSync(resolve(__dirname, "..", "..", "..", "application", 
 describe("the endpoints finally have a caller", () => {
   it("reads the status endpoint", () => expect(tab).toContain("/sba-signing`"));
   it("is registered as a tab", () => {
-    expect(detail).toContain('{ key: "sba-signing", label: "SBA Signing" }');
+    expect(detail).toContain('{ key: "sba-signing", label: "SBA signing" }'); // v938: under Documents
     expect(detail).toContain('"sba-signing": <SbaSigningTab applicationId={applicationId} />');
   });
 });
