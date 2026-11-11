@@ -11,7 +11,7 @@ import { api } from "@/api";
 import { getErrorMessage } from "@/utils/errors";
 import FundingConditionsPanel from "@/brokerTools/FundingConditionsPanel";
 import Gate from "@/brokerTools/gate";
-import PaymentLinksPanel from "@/payments/PaymentLinksPanel"; // BF_PORTAL_v941_CARD_CLEANUP - fee payments live with the offer now
+import IssueTermSheet from "./IssueTermSheet"; // BF_PORTAL_v943_ISSUE_TERM_SHEET
 
 export type FileOffer = {
   id: string; lender_name: string; amount: string | number | null; rate_factor: string | null; term: string | null;
@@ -127,7 +127,7 @@ export function money(v: unknown): string {
   return Number.isFinite(n) && n > 0 ? n.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }) : "—";
 }
 
-export default function OfferTab({ applicationId, onOpenLenders }: { applicationId: string; onOpenLenders?: () => void }) {
+export default function OfferTab({ applicationId }: { applicationId: string }) {
   const [offers, setOffers] = useState<FileOffer[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -155,15 +155,27 @@ export default function OfferTab({ applicationId, onOpenLenders }: { application
     } finally { setBusy(null); }
   }
 
+  // BF_PORTAL_v943_TERM_SHEET_VIEW - a Word term sheet opened as a PDF ("Failed to load PDF document"); the server's
+  // view link shows Word files as a readable page and passes PDFs through.
+  async function viewTermSheet(o: FileOffer) {
+    const w = window.open("", "_blank"); // opened now, before the request, so the browser does not block it
+    try {
+      const r = await api.post<{ url?: string }>(`/api/offers/${encodeURIComponent(o.id)}/term-sheet-link`, {});
+      const url = r?.url ?? o.document_url ?? "";
+      if (w) w.location.href = url; else window.open(url, "_blank");
+    } catch {
+      if (w && o.document_url) w.location.href = o.document_url; else w?.close();
+    }
+  }
+
   return (
     <div data-testid="offer-tab" style={{ maxWidth: 1200 }}>
+      <IssueTermSheet applicationId={applicationId} onSaved={() => void load()} />
       <section style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <h3 style={{ margin: 0, fontSize: 16 }}>Term sheets on this file</h3>
-          <span style={{ flex: 1 }} />
-          {onOpenLenders ? <button type="button" style={btn} onClick={onOpenLenders}>Upload a lender's term sheet</button> : null}
         </div>
-        <p style={muted}>Upload each lender's term sheet beside the lender on the Lenders tab. Two or more offers show side by side in the client portal.</p>
+        <p style={muted}>Two or more offers show side by side in the client portal.</p>
         {error ? <p role="alert" style={{ ...muted, color: "#b91c1c" }}>{error}</p> : null}
         {offers === null ? <p style={muted}>Loading…</p> : offers.length === 0 ? (
           <p data-testid="offer-none" style={{ ...muted, marginTop: 12 }}>No term sheet yet.</p>
@@ -193,7 +205,7 @@ export default function OfferTab({ applicationId, onOpenLenders }: { application
                     <td style={{ padding: "8px 6px" }}><span style={{ padding: "2px 9px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: st.bg, color: st.fg }}>{st.label}</span></td>
                     <td style={{ padding: "8px 6px", whiteSpace: "nowrap" }}>
                       <button type="button" style={{ ...btn, marginRight: 6 }} aria-expanded={pricingOpen === o.id} data-testid={`offer-pricing-${o.id}`} onClick={() => setPricingOpen(pricingOpen === o.id ? null : o.id)}>Pricing</button>
-                      {o.document_url ? <a href={o.document_url} target="_blank" rel="noreferrer" style={{ ...btn, textDecoration: "none", display: "inline-block", marginRight: 6 }}>Term sheet</a> : null}
+                      {o.document_url ? <button type="button" onClick={() => void viewTermSheet(o)} style={{ ...btn, marginRight: 6 }} data-testid={`offer-view-${o.id}`}>Term sheet</button> : null}
                       <button type="button" data-testid={`offer-send-${o.id}`} style={sent ? btn : primary} disabled={busy === o.id || o.status === "accepted"} aria-busy={busy === o.id} onClick={() => void send(o)}>
                         {busy === o.id ? "Sending…" : o.status === "accepted" ? "Signed" : sent ? "Send again" : "Send to client for signature"}
                       </button>
@@ -211,7 +223,6 @@ export default function OfferTab({ applicationId, onOpenLenders }: { application
         )}
       </section>
       <Gate feature="funding_conditions"><FundingConditionsPanel applicationId={applicationId} /></Gate>
-      {applicationId ? <PaymentLinksPanel applicationId={applicationId} /> : null}
     </div>
   );
 }

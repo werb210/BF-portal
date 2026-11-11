@@ -54,11 +54,11 @@ function open(path: string) {
 beforeEach(() => { h.api.get.mockReset(); h.api.post.mockReset(); h.api.patch.mockReset(); });
 
 describe("tabs and sub-tabs", () => {
-  it("has the five main tabs in order, and no Quotes, Deal desk or Funding tab", async () => {
+  it("has the main tabs in order (Offer its own tab, v943), and no Quotes, Deal desk or Funding tab", async () => {
     answer();
     open("/applications/app-1/application");
     const tabs = within(await screen.findByTestId("card-tabs")).getAllByRole("button").map((b) => b.textContent);
-    expect(tabs).toEqual(["Overview", "Documents", "Request Items", "Notes", "Lenders"]);
+    expect(tabs).toEqual(["Overview", "Documents", "Request Items", "Notes", "Lenders", "Offer"]);
     const subs = within(screen.getByTestId("card-subtabs")).getAllByRole("button").map((b) => b.textContent);
     expect(subs).toEqual(["Application", "Financials", "Banking analysis"]);
     expect(screen.queryByText("Quotes")).toBeNull();
@@ -79,11 +79,16 @@ describe("tabs and sub-tabs", () => {
     expect(within(screen.getByTestId("card-subtabs")).queryByRole("button", { name: "ID verification" })).toBeNull();
   });
 
-  it("Lenders holds Lenders and Offer, and the card hides the Lenders tab's own Hold / Reject / Fraud buttons", async () => {
+  it("the card hides the Lenders tab's own Hold / Reject / Fraud buttons", async () => {
     answer();
     open("/applications/app-1/lenders");
-    expect(within(await screen.findByTestId("card-subtabs")).getAllByRole("button").map((b) => b.textContent)).toEqual(["Lenders", "Offer"]);
-    expect(screen.getByTestId("body-LendersTab").getAttribute("data-hide")).toBe("true");
+    expect((await screen.findByTestId("body-LendersTab")).getAttribute("data-hide")).toBe("true");
+  });
+
+  it("Close appears once a term sheet is signed (v942)", async () => {
+    answer({ offers: { items: [{ id: "o1", status: "accepted" }] } });
+    open("/applications/app-1/application");
+    await waitFor(() => expect(within(screen.getByTestId("card-tabs")).getAllByRole("button").map((b) => b.textContent)).toContain("Close"));
   });
 
   it("Notes shows the notes and the questions for the lender side by side", async () => {

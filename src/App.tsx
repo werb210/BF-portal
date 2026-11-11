@@ -232,7 +232,7 @@ const AppRoutes = () => {
         <Route path="/broker-imports" element={<Navigate to="/marketing?tab=referrers&sub=brokers" replace />} /> {/* BF_PORTAL_PARTNERS_TABS_v720 - Broker Files lives in Marketing > Referrers > Brokers */}
         <Route path="/settings/broker-files" element={<Navigate to="/marketing?tab=referrers&sub=brokers" replace />} />
         <Route path="/library" element={<Navigate to="/settings/content?section=library" replace />} /> {/* BF_PORTAL_LIBRARY_IN_SETTINGS_v764, BF_PORTAL_v864_CONTENT_TAB - Settings > Content > Library */}
-        <Route path="/revenue" element={<ProtectedRoute><RequireRole roles={["Admin"]}><RevenuePage /></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_v878_NAV_REVENUE */}
+        <Route path="/revenue" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff"]}><RevenuePage /></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_v878_NAV_REVENUE */}
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing", "Ops"]}><div style={{ padding: 16 }}><h1 style={{ fontSize: 20, margin: "0 0 12px", color: "var(--ui-text)" }}>Reports</h1><ReportsBoard /></div></RequireRole></ProtectedRoute>} /> {/* BF_PORTAL_REPORTS_SECTION_v714 */}
         <Route path="/maya" element={<ProtectedRoute><MayaPage /></ProtectedRoute>} />
         <Route

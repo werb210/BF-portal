@@ -21,6 +21,7 @@ import MayaTuning from "@/features/ai/MayaTuning";
 import SettingsSectionLayout from "./components/SettingsSectionLayout";
 import ProfileSettings from "./tabs/ProfileSettings";
 import RuntimeSettings from "./tabs/RuntimeSettings";
+import BrokerPaySettings from "@/pages/settings/BrokerPaySettings"; // BF_PORTAL_v942_BROKER_PAY
 import UsersAndRoles from "@/roles/UsersAndRoles"; // BF_PORTAL_v870_CRM_DATA_MODEL - people and roles
 import { can, usePermissions } from "@/roles/permissionStore"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import PropertiesSettings from "@/crmFields/PropertiesSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
@@ -87,6 +88,7 @@ const SettingsPage = () => {
       // keeps its own limits (collateral uploads and deletes stay Admin; automations are Admin and Marketing).
       { id: "content", label: "Content", visible: isAdmin || isStaff || isMarketing, content: <ContentSettings isBI={isBI} canAutomate={isAdmin || isMarketing} /> },
       { id: "deal-tools", label: "Deal tools", visible: isAdmin && !isBI, content: <DealToolsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v865_BROKER_TOOLS
+      { id: "broker-pay", label: "Broker pay", visible: isAdmin && !isBI, content: isAdmin ? <BrokerPaySettings /> : null }, // BF_PORTAL_v942_BROKER_PAY
       { id: "your-documents", label: "Our term sheet", visible: (isAdmin || isStaff) && !isBI, content: <YourDocumentsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v938_OUR_TERM_SHEET
       // BF_PORTAL_v855_RETENTION - 7-year record retention: legal holds and the eligible-for-deletion report.
       { id: "retention", label: "Retention & legal holds", visible: isAdmin, content: isAdmin ? <RetentionSettings /> : null },
