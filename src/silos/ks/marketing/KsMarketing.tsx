@@ -12,12 +12,19 @@ import KsMktTemplates from "./KsMktTemplates";
 import KsMktCampaigns, { KsMktCampaignDetail } from "./KsMktCampaigns";
 import KsMktSequences, { KsMktSequenceDetail } from "./KsMktSequences";
 import KsMktSuppressions from "./KsMktSuppressions";
+import KsBrokerages, { KsBrokerageDetail } from "./outreach/KsBrokerages"; // BF_PORTAL_v945_KS_OUTREACH
+import KsChannels, { KsCallList, KsReferrals } from "./outreach/KsChannels";
 import { TechnicalDetails, settingNamesIn, settingNamesToWords } from "@/components/SetupNotice";
 
 export const KS_MKT_BASE = "/silo/ks/marketing";
 
 const TABS: Array<[string, string]> = [
   ["overview", "Overview"],
+  // BF_PORTAL_v945_KS_OUTREACH - the firms, every channel's scoreboard, the owner call list and referrals
+  ["brokerages", "Brokerages"],
+  ["channels", "Channels"],
+  ["call-list", "Call list"],
+  ["referrals", "Referrals"],
   ["prospects", "Prospects"],
   ["templates", "Templates"],
   ["campaigns", "Campaigns"],
@@ -199,6 +206,11 @@ export default function KsMarketing() {
         <Route path="sequences" element={<KsMktSequences />} />
         <Route path="sequences/:id" element={<KsMktSequenceDetail />} />
         <Route path="suppressions" element={<KsMktSuppressions />} />
+        <Route path="brokerages" element={<KsBrokerages />} />
+        <Route path="brokerages/:id" element={<KsBrokerageDetail />} />
+        <Route path="channels" element={<KsChannels />} />
+        <Route path="call-list" element={<KsCallList />} />
+        <Route path="referrals" element={<KsReferrals />} />
         <Route path="*" element={<Navigate to="overview" replace />} />
       </Routes>
     </div>
