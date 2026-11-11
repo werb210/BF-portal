@@ -6,7 +6,8 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-const h = vi.hoisted(() => ({ api: {} as Record<string, ReturnType<typeof vi.fn>>, dial: vi.fn() }));
+type Fn = ReturnType<typeof vi.fn>;
+const h = vi.hoisted(() => ({ api: {} as Record<"importRows" | "channels" | "items" | "saveChannel" | "callList" | "addTouch" | "referrals" | "addReferral" | "saveReferral", Fn> & Record<string, Fn>, dial: vi.fn() }));
 vi.mock("../marketing/outreach/outreachApi", async (orig) => {
   const real = await orig<Record<string, unknown>>();
   for (const k of Object.keys(real.outreachApi as object)) h.api[k] = vi.fn();
