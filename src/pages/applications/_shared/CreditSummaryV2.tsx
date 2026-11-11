@@ -116,6 +116,29 @@ export default function CreditSummaryV2({ applicationId }: { applicationId: stri
       setMessage(done ? done(json) : `${label}: done.`);
     } catch (error) { setMessage(`${label}: ${(error as Error).message}`); } finally { setBusy(null); if (step) void loadSteps(); }
   };
+  // BF_PORTAL_v939_CREDIT_BUILD - run every step in order; a step that fails is reported and the rest still run,
+  // so the summary is written from whatever could be read (it lists what is missing).
+  const buildAll = async () => {
+    const plan: Array<[StepKey, string, string]> = [
+      ["financials", "Reading financials", `/api/credit-financials/${id}/extract`],
+      ["collateral", "Reading A/R, equipment and real estate", `/api/credit-collateral/${id}/extract`],
+      ["research", "Researching the company", `/api/credit-research/${id}/refresh`],
+      ["generate", "Writing the summary", `/api/credit-summary-v2/${id}/generate`],
+    ];
+    const problems: string[] = [];
+    setMessage(null);
+    for (const [step, label, path] of plan) {
+      setBusy(`Build: ${label}`);
+      setSteps((cur) => markLocal(cur, step, "running"));
+      try {
+        const json = await call(path, "POST");
+        if (json?.summary !== undefined) setRow(json.summary);
+      } catch (error) { problems.push(`${label}: ${(error as Error).message}`); }
+    }
+    setBusy(null);
+    void loadSteps();
+    setMessage(problems.length ? `Built, with problems - ${problems.join(" · ")}` : "Draft ready - review each section.");
+  };
   const doc = row?.doc;
   // BF_PORTAL_BLOCK_v541 - download the write-up as Word or PDF (Boreal template, signed by the submitter).
   const download = async (format: "docx" | "pdf") => {
@@ -139,17 +162,26 @@ export default function CreditSummaryV2({ applicationId }: { applicationId: stri
   return <div data-testid="credit-summary-v2" style={{ maxWidth: 1000, color: "#0f172a" }}>
     <div style={card}>
       <div style={{ display: "flex", flexWrap: "wrap" }}>
-        {/* BF_PORTAL_v906_CREDIT_STEPS - numbered in the order to run them, each with its last result. */}
-        <StepButton n={1} step="financials" steps={steps} disabled={!!busy || stepRunning(steps, "financials")} onClick={() => void run("Read financials", `/api/credit-financials/${id}/extract`, "POST", undefined, (json) => `Read ${json?.documents ?? 0} financial document(s).${json?.skipped?.length ? ` Skipped: ${json.skipped.join("; ")}` : ""}${!json?.documents ? " No accepted financial statements were found on this file: check they are filed under a financial statements category (for example 3 years accountant prepared financials, PnL or Balance Sheet interim, or a compilation engagement report)." : ""}`, "financials")}>Read financials</StepButton>
-        <StepButton n={2} step="collateral" steps={steps} disabled={!!busy || stepRunning(steps, "collateral")} onClick={() => void run("Read collateral", `/api/credit-collateral/${id}/extract`, "POST", undefined, (json) => `Read ${json?.documents ?? 0} aging / equipment / real-estate document(s).${json?.skipped?.length ? ` Skipped: ${json.skipped.join("; ")}` : ""}`, "collateral")}>Read A/R, equipment &amp; real estate</StepButton>
-        <StepButton n={3} step="research" steps={steps} disabled={!!busy || stepRunning(steps, "research")} onClick={() => void run("Research", `/api/credit-research/${id}/refresh`, "POST", undefined, (json) => `Found ${typeof json?.found === "number" ? json.found : Array.isArray(json?.facts) ? json.facts.length : (json?.facts ?? 0)} fact(s).${json?.notes?.length ? ` ${json.notes.join(" ")}` : ""}`, "research")}>Research company</StepButton>
-        <StepButton n={4} step="generate" steps={steps} strong testId="cs2-generate" disabled={!!busy || stepRunning(steps, "generate")} onClick={() => void run("Generate", `/api/credit-summary-v2/${id}/generate`, "POST", undefined, () => "Draft ready - review each section.", "generate")}>{doc ? "Generate again" : "Generate credit summary"}</StepButton>
+        {/* BF_PORTAL_v939_CREDIT_BUILD - one button runs the four steps in order (Todd's screenshot review, Nov 11 2026):
+            read financials, read A/R / equipment / real estate, research the company, then write the summary. */}
+        <button type="button" style={{ ...btn, fontWeight: 700 }} data-testid="cs2-generate" disabled={!!busy || anyRunning} onClick={() => void buildAll()}>
+          {busy?.startsWith("Build") ? busy : doc ? "Rebuild credit summary" : "Build credit summary"}
+        </button>
         {doc && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-download-docx" onClick={() => void download("docx")}>Download Word</button>}
         {doc && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-download-pdf" onClick={() => void download("pdf")}>Download PDF</button>}
         {doc && !submitted && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-submit" onClick={() => { if (window.confirm("Submit this credit summary? It will be signed with your name.")) void run("Submit", `/api/credit-summary-v2/${id}/submit`, "POST", undefined, () => "Submitted."); }}>Submit</button>}
       </div>
-      {busy && <div>{busy}... this can take up to a minute.</div>}{message && <div role="status">{message}</div>}
-      <div style={{ color: "#475569" }}>Run them in order: 1 read financials, 2 read collateral, 3 research, 4 generate. Staff edits are kept when you generate again.</div>
+      {busy && <div>{busy}... this can take a few minutes.</div>}{message && <div role="status">{message}</div>}
+      <div style={{ color: "#475569" }}>Reads the financials, A/R, equipment and real estate, researches the company, then writes the summary. Staff edits are kept when you rebuild.</div>
+      <details style={{ marginTop: 8 }} data-testid="cs2-steps">
+        <summary style={{ cursor: "pointer", color: "#475569" }}>Steps and last results</summary>
+        <div style={{ display: "flex", flexWrap: "wrap", marginTop: 8 }}>
+        <StepButton n={1} step="financials" steps={steps} disabled={!!busy || stepRunning(steps, "financials")} onClick={() => void run("Read financials", `/api/credit-financials/${id}/extract`, "POST", undefined, (json) => `Read ${json?.documents ?? 0} financial document(s).${json?.skipped?.length ? ` Skipped: ${json.skipped.join("; ")}` : ""}${!json?.documents ? " No accepted financial statements were found on this file: check they are filed under a financial statements category (for example 3 years accountant prepared financials, PnL or Balance Sheet interim, or a compilation engagement report)." : ""}`, "financials")}>Read financials</StepButton>
+        <StepButton n={2} step="collateral" steps={steps} disabled={!!busy || stepRunning(steps, "collateral")} onClick={() => void run("Read collateral", `/api/credit-collateral/${id}/extract`, "POST", undefined, (json) => `Read ${json?.documents ?? 0} aging / equipment / real-estate document(s).${json?.skipped?.length ? ` Skipped: ${json.skipped.join("; ")}` : ""}`, "collateral")}>Read A/R, equipment &amp; real estate</StepButton>
+        <StepButton n={3} step="research" steps={steps} disabled={!!busy || stepRunning(steps, "research")} onClick={() => void run("Research", `/api/credit-research/${id}/refresh`, "POST", undefined, (json) => `Found ${typeof json?.found === "number" ? json.found : Array.isArray(json?.facts) ? json.facts.length : (json?.facts ?? 0)} fact(s).${json?.notes?.length ? ` ${json.notes.join(" ")}` : ""}`, "research")}>Research company</StepButton>
+        <StepButton n={4} step="generate" steps={steps} disabled={!!busy || stepRunning(steps, "generate")} onClick={() => void run("Generate", `/api/credit-summary-v2/${id}/generate`, "POST", undefined, () => "Draft ready - review each section.", "generate")}>{doc ? "Generate again" : "Generate credit summary"}</StepButton>
+        </div>
+      </details>
     </div>
     {!doc ? <div style={card}>No credit summary yet.</div> : <>
       <div style={card} data-testid="cs2-status">
