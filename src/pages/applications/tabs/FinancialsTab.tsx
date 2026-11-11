@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { api } from "@/api";
 import { formatMoneyValue } from "@/utils/labels";
 import { FINANCIAL_LINES, financialLineFor } from "./financialLines"; // BF_PORTAL_v906_FINANCIAL_LINES
+import StatementFigures from "./StatementFigures"; // BF_PORTAL_v941_FINANCIALS_FROM_STATEMENTS
 
 interface Props { applicationId?: string }
 
@@ -159,6 +160,11 @@ export default function FinancialsTab({ applicationId }: Props) {
         </div>
       </header>
 
+      {applicationId ? <StatementFigures applicationId={applicationId} /> : null}
+
+      {/* BF_PORTAL_v941_FINANCIALS_FROM_STATEMENTS - the quick per-document OCR read stays, folded away. */}
+      <details data-testid="ocr-per-document">
+        <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>What the quick scan read from each document</summary>
       <section style={styles.section}>
         {sortedRows.length === 0 ? (
           <div style={styles.docNote}>
@@ -215,6 +221,7 @@ export default function FinancialsTab({ applicationId }: Props) {
           </div>
         )}
       </section>
+      </details>
 
       {/* BF_PORTAL_v906_FINANCIAL_LINES - non-financial fields OCR found, per document. */}
       {(pivot?.details ?? []).length > 0 && (
@@ -271,7 +278,7 @@ function DocStatusPill({ status }: { status: string | null }) {
   const label =
     s === "accepted" ? "Accepted" :
     s === "rejected" ? "Rejected" :
-                       "Pending";
+                       "Not reviewed"; // v941: the document has not been accepted on the Documents tab yet
   return <span style={{ ...styles.pillBase, ...tone }}>{label}</span>;
 }
 

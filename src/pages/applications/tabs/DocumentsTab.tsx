@@ -15,6 +15,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 // BF_PORTAL_BLOCK_v189_TAB_FIXES_ROUNDUP_v1 — switched off the @/utils/api strict envelope wrapper
 import { api } from "@/api";
 import { tamperBadge, type TamperFields } from "./tamperBadges"; // BF_PORTAL_TAMPER_BADGES_v270
+import { fraudApi } from "@/fraud/fraudApi"; // BF_PORTAL_v941_AUTO_TAMPER
+import { StatusChip } from "@/fraud/FraudTab"; // BF_PORTAL_v941_AUTO_TAMPER
 import { coverageHint, coverageTone, parseBankCoverage, type BankCoverage } from "./bankCoverage"; // BF_PORTAL_BANK_COVERAGE_v268
 import { autoMovedText, misfiledBadgeText, type MisfiledFields } from "./misfiledBadges"; // BF_PORTAL_MISFILED_BADGES_v263
 import { buildDuplicateIndex, duplicateBadgeText, extraCopyIds, parseDuplicateGroups, type DuplicateGroup, type DuplicateRef } from "./documentDuplicates"; // BF_PORTAL_DOCUMENT_DUPLICATE_BADGES_v259
@@ -247,6 +249,24 @@ export default function DocumentsTab({ applicationId }: Props) {
   const [previewing, setPreviewing] = useState<Record<string, boolean>>({});
   // BF_PORTAL_SPLIT_VIEW_v205
   const [splitDoc, setSplitDoc] = useState<SplitViewDoc | null>(null);
+  // BF_PORTAL_v941_AUTO_TAMPER - Todd: "scan for tampering should be automatic on upload by the client or staff and the
+  // indicator shown". The server scans every new document on its own (fraud worker, about a minute after upload); each
+  // row shows that result. The manual button is gone.
+  const [autoTamper, setAutoTamper] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!applicationId) return;
+    let cancelled = false;
+    const load = () => fraudApi.overview(applicationId).then((r) => {
+      if (cancelled) return;
+      const map: Record<string, string> = {};
+      for (const d of r?.documents ?? []) map[d.document_id] = d.tamper?.status ?? "pending";
+      setAutoTamper(map);
+    }).catch(() => { /* fraud checks not available: no chips */ });
+    void load();
+    const timer = setInterval(() => void load(), 30000); // a new upload is scanned within a minute or two
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [applicationId, docs.length]);
+
   // BF_PORTAL_BLOCK_v_DOC_FRAUD_SCAN_v1
   const [scan, setScan] = useState<Record<string, FraudScanState>>({});
   const [scanOpen, setScanOpen] = useState<Record<string, boolean>>({});
@@ -567,6 +587,7 @@ export default function DocumentsTab({ applicationId }: Props) {
                   scan={scan[doc.documentId]}
                   scanOpen={!!scanOpen[doc.documentId]}
                   onScan={() => void handleScan(doc.documentId)}
+                  autoTamper={autoTamper[doc.documentId] ?? null}
                   onToggleScan={() => setScanOpen((o) => ({ ...o, [doc.documentId]: !o[doc.documentId] }))}
                   duplicateOf={duplicateOf[doc.documentId]}
                   onMove={(category) => void handleMove(doc.documentId, doc.filename, category)}
@@ -651,6 +672,7 @@ function DocRow(props: {
   scanOpen: boolean;
   onScan: () => void;
   onToggleScan: () => void;
+  autoTamper?: string | null; // BF_PORTAL_v941_AUTO_TAMPER - the automatic scan's status for this file
   duplicateOf?: DuplicateRef; // v259
   onMove?: (category: string) => void; // v316
 }) {
@@ -685,6 +707,7 @@ function DocRow(props: {
               Received in background
             </span>
           ) : null}
+          {props.autoTamper ? <span title="Checked automatically for signs of editing after upload" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11 }}>Tamper scan <StatusChip status={props.autoTamper} testId="row-tamper-chip" /></span> : null}
           {tamperBadge(doc) ? (
             <span data-testid="tamper-badge" data-tone={tamperBadge(doc)!.tone} title={tamperBadge(doc)!.detail}
               style={{ fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "2px 8px", cursor: "help",
@@ -754,7 +777,7 @@ function DocRow(props: {
           </>
         )}
         {/* BF_PORTAL_v939_DOC_ROW_MENU - Todd's screenshot review (Nov 11 2026): each row carried six or seven buttons.
-            Preview, Accept and Reject stay on the row; Download, Scan for tampering, Move to and Delete are under ⋯. */}
+            Preview, Accept and Reject stay on the row; Download, Move to and Delete are under ⋯ (the tamper scan is automatic, v941). */}
         <details data-testid="doc-row-menu" style={{ position: "relative" }}>
           <summary aria-label="More actions" style={{ listStyle: "none", cursor: "pointer", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, fontWeight: 700 }}>⋯</summary>
           <div role="menu" style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", zIndex: 20, width: 220, padding: 6, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 10, boxShadow: "0 10px 30px rgba(0,0,0,.15)" }}>
@@ -763,16 +786,6 @@ function DocRow(props: {
             Download
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={props.onScan}
-          disabled={props.scan?.loading}
-          title="Check this document's metadata for tamper signals"
-          style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 10px", border: 0, background: "transparent", borderRadius: 6, fontSize: 13, color: "var(--ui-text)", cursor: "pointer" }}
-          data-testid="doc-fraud-scan"
-        >
-          {props.scan?.loading ? "Scanning…" : "Scan for tampering"}
-        </button>
         {canManage && props.onMove && (
           <select
             aria-label="Move to another category"

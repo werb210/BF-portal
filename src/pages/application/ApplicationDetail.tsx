@@ -1,6 +1,7 @@
 // BF_PORTAL_v938_CARD_REDESIGN - the application card, reorganised with Todd and Andrew (Nov 11 2026):
 //   Overview      - Application · Financials · Banking analysis
-//   Documents     - Documents · Credit summary · Fraud check · ID verification (once ID is requested or uploaded)
+//   Documents     - Documents · Credit summary · Fraud check (ID verification results sit at the bottom of Fraud check
+//                   once ID is requested or uploaded - v941; the ID check service is set up in Settings)
 //   Request Items - unchanged
 //   Notes         - notes, with the questions for the lender beside them
 //   Lenders       - Lenders (match, send, upload a lender's term sheet) · Offer (term sheets, signing, funding conditions)
@@ -37,7 +38,6 @@ export const CARD_TABS: MainTab[] = [
     { key: "documents", label: "Documents" },
     { key: "credit-summary", label: "Credit summary" },
     { key: "fraud", label: "Fraud check" },
-    { key: "id-verification", label: "ID verification" },
     { key: "sba-signing", label: "SBA signing" },
   ] },
   { key: "request-items-group", label: "Request Items", subs: [{ key: "request-items", label: "Request Items" }] },
@@ -48,7 +48,7 @@ export const CARD_TABS: MainTab[] = [
   ] },
 ];
 
-const ALIASES: Record<string, string> = { quotes: "offer", funding: "offer", "deal-desk": "application" };
+const ALIASES: Record<string, string> = { quotes: "offer", funding: "offer", "deal-desk": "application", "id-verification": "fraud" };
 
 export function activeSubFromPath(pathname: string): string {
   const seg = pathname.split("/").filter(Boolean).at(-1) ?? "application";
@@ -132,7 +132,6 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
 
   const visibleSubs = useMemo(() => activeMain.subs.filter((s) => {
     if (s.key === "sba-signing") return isSba || activeSub === "sba-signing";
-    if (s.key === "id-verification") return showId || activeSub === "id-verification";
     return true;
   }), [activeMain, isSba, showId, activeSub]);
 
@@ -144,8 +143,8 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
     "banking-analysis": <BankingAnalysisTab applicationId={applicationId} />,
     documents: <DocumentsTab applicationId={applicationId} />,
     "credit-summary": <CreditSummaryTab applicationId={applicationId} />,
-    fraud: <FraudTab applicationId={applicationId} />,
-    "id-verification": <IdVerificationTab applicationId={applicationId} />,
+    // BF_PORTAL_v941_ID_IN_FRAUD - Todd: "the ID verification tab should not exist"; its results show in Fraud check.
+    fraud: <><FraudTab applicationId={applicationId} />{showId ? <div style={{ marginTop: 20 }}><IdVerificationTab applicationId={applicationId} /></div> : null}</>,
     "sba-signing": <SbaSigningTab applicationId={applicationId} />,
     "request-items": <RequestItemsTab applicationId={applicationId} />,
     notes: <NotesTab applicationId={applicationId} />,
