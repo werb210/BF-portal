@@ -26,14 +26,12 @@ import { getFormResponse, type PortalFormResponse } from "@/api/formResponses";
 import { formatMoneyOrRange } from "@/utils/moneyRange"; // BF_PORTAL_BLOCK_v864_MONEY_RANGE
 import { api } from "@/api"; // BF_PORTAL_BLOCK_v817_REMIND_CLIENT
 import ProductQuestionsPanel from "@/pages/applications/tabs/ProductQuestionsPanel"; // BF_PORTAL_PRODUCT_QUESTIONS_v292
-import { placeCall } from "@/native/dialerLauncher";
 import { APPLICANT_NAME_MISSING_NOTE, applicantNameMissing, applicantNameMissingMessage } from "./applicantName"; // BF_PORTAL_v851_APPLICANT_NAME
 import { SigningNotifyCard, readSigningNotify, type SigningNotify } from "./signingNotify"; // BF_PORTAL_v857_SIGNING_NOTIFY
 
 type AnyRecord = Record<string, any>;
 import CustomFieldsPanel from "@/crmFields/CustomFieldsPanel"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import PipelineMover from "@/pipelines/PipelineMover"; // BF_PORTAL_v870_CRM_DATA_MODEL
-import PaymentLinksPanel from "@/payments/PaymentLinksPanel"; // BF_PORTAL_v872_PAYMENTS
 import { maskSin } from "@/lib/sensitive";
 type Props = { application: AnyRecord | null };
 
@@ -429,10 +427,6 @@ export default function ApplicationTab({ application }: Props) {
     }
   }
   const applicationId = String(application.id ?? "");
-  function callClient() {
-    if (!phone) return;
-    void placeCall(phone, applicantContactId ? String(applicantContactId) : undefined);
-  }
 
   return (
     <div style={styles.page}>
@@ -440,17 +434,11 @@ export default function ApplicationTab({ application }: Props) {
       {application.id ? <ProductQuestionsPanel applicationId={String(application.id)} /> : null}
       {application.id ? <PipelineMover applicationId={String(application.id)} /> : null}{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
       {application.id ? <CustomFieldsPanel object="application" recordId={String(application.id)} /> : null}{/* BF_PORTAL_v870_CRM_DATA_MODEL */}
-      {application.id ? <PaymentLinksPanel applicationId={String(application.id)} /> : null}{/* BF_PORTAL_v872_PAYMENTS - broker fee payment links */}
+      {/* BF_PORTAL_v941_CARD_CLEANUP - fee payment links moved to the Offer / Close tab (Todd: "why is the payments there?"). */}
       {/* BF_PORTAL_v906_NO_CALL_SCRIPTS_ON_FILE - call scripts live in the iOS dialler; the server endpoint stays. */}
-      <div style={styles.headerRow}>
-        <div style={{ minWidth: 0 }}>
-          <h2 style={styles.title}>{businessName}</h2>
-          <div style={styles.subtitle}>
-            {/* BF_PORTAL_BLOCK_v490 - the header showed the raw status ("RECEIVED") while
-                the pill and the Stage field showed the pipeline stage ("In Review"). */}
-            {fmt(application.stage ?? application.status, "—")} · Submitted {fmtDate(application.submittedAt)}
-          </div>
-        </div>
+      {/* BF_PORTAL_v941_CARD_CLEANUP - the business name, stage and Call Client were a second copy of the card header.
+          What is left here are the application's own actions (remind the client, signing). */}
+      <div style={{ ...styles.headerRow, justifyContent: "flex-end" }} data-testid="application-actions">
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           {v817_note && <span style={{ fontSize: 12, color: v817_note.startsWith("Could not") ? "#b00020" : "#16a34a", fontWeight: 600 }} role="status">{v817_note}</span>}
           <button
@@ -468,18 +456,6 @@ export default function ApplicationTab({ application }: Props) {
               <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
             </svg>
             <span>{v817_sending ? "Sending…" : v817_note === "Reminder sent ✓" ? "Reminder sent ✓" : "Remind Client"}</span>
-          </button>
-          <button
-            type="button"
-            onClick={callClient}
-            disabled={!phone}
-            title={phone ? `Call ${phone}` : "No phone number on file"}
-            style={phone ? styles.callButton : styles.callButtonDisabled}
-          >
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
-            </svg>
-            <span>Call Client</span>
           </button>
           {v_sign && v_sign.reason !== "signed" && v_sign.reason !== "started" && (
             <button
@@ -532,7 +508,6 @@ export default function ApplicationTab({ application }: Props) {
             </button>
           )} {/* BF_PORTAL_v860_MARK_SIGNED */}
           <SigningBadge status={(application as any)?.signing?.status} />
-          <span style={styles.statusPill}>{fmt(application.stage, "—")}</span>
         </div>
       </div>
 

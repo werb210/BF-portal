@@ -23,7 +23,7 @@ describe("v424 Portal calls route through the Boreal Dialer", () => {
 
   it("no screen hands a call straight to the OS dialer any more", () => {
     for (const p of [
-      "src/pages/applications/tabs/ApplicationTab.tsx",
+      // v941: ApplicationTab no longer has its own Call Client (the card header and dialer do)
       "src/pages/tasks/TaskRunner.tsx",
       "src/pages/diagnostics/DiagnosticsPage.tsx",
     ]) {

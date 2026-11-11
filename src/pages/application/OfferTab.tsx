@@ -11,6 +11,7 @@ import { api } from "@/api";
 import { getErrorMessage } from "@/utils/errors";
 import FundingConditionsPanel from "@/brokerTools/FundingConditionsPanel";
 import Gate from "@/brokerTools/gate";
+import PaymentLinksPanel from "@/payments/PaymentLinksPanel"; // BF_PORTAL_v941_CARD_CLEANUP - fee payments live with the offer now
 
 export type FileOffer = {
   id: string; lender_name: string; amount: string | number | null; rate_factor: string | null; term: string | null;
@@ -210,6 +211,7 @@ export default function OfferTab({ applicationId, onOpenLenders }: { application
         )}
       </section>
       <Gate feature="funding_conditions"><FundingConditionsPanel applicationId={applicationId} /></Gate>
+      {applicationId ? <PaymentLinksPanel applicationId={applicationId} /> : null}
     </div>
   );
 }

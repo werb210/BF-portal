@@ -66,14 +66,17 @@ describe("tabs and sub-tabs", () => {
     expect(screen.queryByText(/Expected close/)).toBeNull();
   });
 
-  it("Documents holds Documents, Credit summary and Fraud check; ID verification only once ID is requested or uploaded", async () => {
+  it("Documents holds Documents, Credit summary and Fraud check; ID results show inside Fraud check once ID is requested or uploaded (v941)", async () => {
     answer();
-    const first = open("/applications/app-1/documents");
+    const first = open("/applications/app-1/fraud");
     await waitFor(() => expect(within(screen.getByTestId("card-subtabs")).getAllByRole("button").map((b) => b.textContent)).toEqual(["Documents", "Credit summary", "Fraud check"]));
+    expect(screen.queryByTestId("body-IdVerificationTab")).toBeNull();
     first.unmount();
     answer({ portal: { documents: [{ category: "2 pieces of Government Issued ID" }] } });
-    open("/applications/app-1/documents");
-    expect(await screen.findByRole("button", { name: "ID verification" })).toBeInTheDocument();
+    open("/applications/app-1/id-verification");
+    expect(await screen.findByTestId("body-IdVerificationTab")).toBeInTheDocument();
+    expect(screen.getByTestId("body-FraudTab")).toBeInTheDocument();
+    expect(within(screen.getByTestId("card-subtabs")).queryByRole("button", { name: "ID verification" })).toBeNull();
   });
 
   it("Lenders holds Lenders and Offer, and the card hides the Lenders tab's own Hold / Reject / Fraud buttons", async () => {
