@@ -143,7 +143,8 @@ describe("credit summary steps", () => {
     expect(screen.getByTestId("cs2-step-collateral-status")).toHaveTextContent("Not run");
     expect(screen.getByTestId("cs2-step-research-status")).toHaveTextContent("Done");
     expect(screen.getByRole("button", { name: "1. Read financials" })).toBeInTheDocument();
-    expect(screen.getByTestId("cs2-generate")).toHaveTextContent("4. Generate credit summary");
+    expect(screen.getByRole("button", { name: "4. Generate credit summary" })).toBeInTheDocument();
+    expect(screen.getByTestId("cs2-generate")).toHaveTextContent("Build credit summary"); // BF_PORTAL_v939_CREDIT_BUILD
   });
 });
 

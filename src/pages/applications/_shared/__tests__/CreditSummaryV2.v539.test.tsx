@@ -41,5 +41,11 @@ describe("v539 credit summary screen", () => {
     expect(screen.queryByText(/the staff member who submits/)).toBeNull();
     expect(screen.getByTestId("cs2-section-overview").textContent).not.toContain("**");
   });
+  it("one Build button runs the four steps in order (v939)", async () => {
+    render(<CreditSummaryV2 applicationId="a1" />); fireEvent.click(await screen.findByTestId("cs2-generate"));
+    expect(await screen.findByText("Pro-Pipe Service & Sales Ltd.")).toBeInTheDocument();
+    const posts = calls.filter((c) => c.method === "POST").map((c) => c.path);
+    expect(posts).toEqual(["/api/credit-financials/a1/extract", "/api/credit-collateral/a1/extract", "/api/credit-research/a1/refresh", "/api/credit-summary-v2/a1/generate"]);
+  });
   it("keeps both screen versions reachable", () => { const tab = fs.readFileSync("src/pages/applications/tabs/CreditSummaryTab.tsx", "utf8"); expect(tab).toContain("CreditSummaryV2"); expect(tab).toContain("CreditSummaryEditor"); });
 });
