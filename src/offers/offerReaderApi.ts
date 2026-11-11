@@ -2,7 +2,8 @@
 // lender's offer or term sheet and returns what it says (nothing is saved). Used by the Lenders tab (fill in the term
 // sheet form, start a quote from it) and the Funding tab (proposed conditions the broker confirms).
 import { api } from "@/api";
-import type { Frequency, QuoteOption } from "@/quotes/quotesApi";
+
+export type Frequency = "daily" | "weekly" | "biweekly" | "semimonthly" | "monthly";
 
 export type ReadCondition = { title: string; description: string | null; owner: "staff" | "client" | "lender"; requires_document: boolean };
 export type ReadOffer = {
@@ -35,19 +36,3 @@ export function termSheetFields(r: ReadOffer): { amount: string; rate: string; t
   };
 }
 
-/** Fills the gaps in a quote option (made from the offer) with what the term sheet says. Typed values win. */
-export function applyReadToOption(o: QuoteOption, r: ReadOffer): QuoteOption {
-  return {
-    ...o,
-    lender_name: o.lender_name || r.lender_name || "",
-    product_name: o.product_name ?? r.product_name,
-    amount: o.amount || r.amount || 0,
-    term_months: o.term_months ?? r.term_months,
-    rate_kind: r.rate !== null && o.rate === null && r.rate_kind ? r.rate_kind : o.rate_kind,
-    rate: o.rate ?? r.rate,
-    payment_frequency: r.payment_frequency ?? o.payment_frequency,
-    payment_amount: o.payment_overridden ? o.payment_amount : r.payment_amount ?? o.payment_amount,
-    payment_overridden: o.payment_overridden || (r.payment_amount !== null && r.payment_amount > 0),
-    fees: o.fees.length ? o.fees : r.fees.map((f) => ({ label: f.label, amount: f.amount, deducted: true, taxable: false })),
-  };
-}

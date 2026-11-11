@@ -1,61 +1,103 @@
-import { useEffect, useState } from "react";
+// BF_PORTAL_v938_CARD_REDESIGN - the application card, reorganised with Todd and Andrew (Nov 11 2026):
+//   Overview      - Application · Financials · Banking analysis
+//   Documents     - Documents · Credit summary · Fraud check · ID verification (once ID is requested or uploaded)
+//   Request Items - unchanged
+//   Notes         - notes, with the questions for the lender beside them
+//   Lenders       - Lenders (match, send, upload a lender's term sheet) · Offer (term sheets, signing, funding conditions)
+// One slim header on every tab (CardHeader). Removed: Quotes, Deal desk, the forecast panel and the "Where this came from"
+// box (now a chip in the header). The URL stays /applications/:id/<sub-tab>; old links (quotes, deal-desk, funding)
+// land on the nearest new place.
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import ApplicationOriginPanel from "./ApplicationOriginPanel"; // BF_PORTAL_v828_APPLICATION_ORIGIN
 import { api } from "@/api";
-// BF_NO_OVERVIEW_v41 — Block 41-C — Overview tab removed from drawer.
 import ApplicationTab from "@/pages/applications/tabs/ApplicationTab";
 import BankingAnalysisTab from "@/pages/applications/tabs/BankingAnalysisTab";
 import FinancialsTab from "@/pages/applications/tabs/FinancialsTab";
 import DocumentsTab from "@/pages/applications/tabs/DocumentsTab";
 import CreditSummaryTab from "@/pages/applications/tabs/CreditSummaryTab";
-import RequestItemsTab from "@/pages/applications/tabs/RequestItemsTab"; // BF_PORTAL_BLOCK_v821_REQUEST_ITEMS_TAB
+import RequestItemsTab from "@/pages/applications/tabs/RequestItemsTab";
 import NotesTab from "@/pages/applications/tabs/NotesTab";
 import LendersTab from "@/pages/applications/tabs/LendersTab";
-import SbaSigningTab from "@/pages/applications/tabs/SbaSigningTab"; // BF_PORTAL_SBA_SIGNING_TAB_v146
-import FraudTab from "@/fraud/FraudTab"; // BF_PORTAL_v846_FRAUD
-import BrokerToolsTab, { BROKER_TOOL_TABS } from "@/brokerTools/BrokerToolsTab"; // BF_PORTAL_v865_BROKER_TOOLS
-import CalculatorButton, { amountFrom } from "@/features/loanCalculator/CalculatorButton"; // BF_PORTAL_v852_CALC_QBO
-import QuickBooksInvoiceBadge from "@/features/quickbooks/QuickBooksInvoiceBadge"; // BF_PORTAL_v852_CALC_QBO
-import { createApplicationNote } from "@/api/applicationNotes"; // BF_PORTAL_v852_CALC_QBO
-import QuotesTab from "@/quotes/QuotesTab"; // BF_PORTAL_v872_QUOTES
-import IdVerificationTab from "@/kyc/IdVerificationTab"; // BF_PORTAL_v872_KYC
-import FileForecastPanel from "@/forecast/FileForecastPanel"; // BF_PORTAL_v872_FORECAST
+import SbaSigningTab from "@/pages/applications/tabs/SbaSigningTab";
+import FraudTab from "@/fraud/FraudTab";
+import IdVerificationTab from "@/kyc/IdVerificationTab";
+import CardHeader from "./CardHeader";
+import OfferTab from "./OfferTab";
 
-const TABS = [
-  { key: "application", label: "Application" },
-  { key: "banking-analysis", label: "Banking Analysis" },
-  { key: "financials", label: "Financials" },
-  { key: "documents", label: "Documents" },
-  { key: "credit-summary", label: "Credit Summary" },
-  { key: "request-items", label: "Request Items" }, // BF_PORTAL_BLOCK_v821_REQUEST_ITEMS_TAB
-  { key: "notes", label: "Notes" },
-  { key: "lenders", label: "Lenders" },
-  { key: "fraud", label: "Fraud check" }, // BF_PORTAL_v846_FRAUD - next to Lenders: review before the file goes out
-  { key: "quotes", label: "Quotes" }, // BF_PORTAL_v872_QUOTES - the lender offers as one quote for the client
-  { key: "id-verification", label: "ID verification" }, // BF_PORTAL_v872_KYC
-  ...BROKER_TOOL_TABS, // BF_PORTAL_v865_BROKER_TOOLS - Funding (conditions)
-  // BF_PORTAL_SBA_SIGNING_TAB_v146 - expose signing status and resend.
-  { key: "sba-signing", label: "SBA Signing" },
-] as const;
+type SubTab = { key: string; label: string };
+type MainTab = { key: string; label: string; subs: SubTab[] };
 
-type TabKey = (typeof TABS)[number]["key"];
+export const CARD_TABS: MainTab[] = [
+  { key: "overview", label: "Overview", subs: [
+    { key: "application", label: "Application" },
+    { key: "financials", label: "Financials" },
+    { key: "banking-analysis", label: "Banking analysis" },
+  ] },
+  { key: "documents-group", label: "Documents", subs: [
+    { key: "documents", label: "Documents" },
+    { key: "credit-summary", label: "Credit summary" },
+    { key: "fraud", label: "Fraud check" },
+    { key: "id-verification", label: "ID verification" },
+    { key: "sba-signing", label: "SBA signing" },
+  ] },
+  { key: "request-items-group", label: "Request Items", subs: [{ key: "request-items", label: "Request Items" }] },
+  { key: "notes-group", label: "Notes", subs: [{ key: "notes", label: "Notes" }] },
+  { key: "lenders-group", label: "Lenders", subs: [
+    { key: "lenders", label: "Lenders" },
+    { key: "offer", label: "Offer" },
+  ] },
+];
 
-function activeTabFromPath(pathname: string): TabKey {
-  const segment = pathname.split("/").filter(Boolean).at(-1) ?? "application";
-  return (TABS.find((tab) => tab.key === segment)?.key ?? "application") as TabKey;
+const ALIASES: Record<string, string> = { quotes: "offer", funding: "offer", "deal-desk": "application" };
+
+export function activeSubFromPath(pathname: string): string {
+  const seg = pathname.split("/").filter(Boolean).at(-1) ?? "application";
+  const key = ALIASES[seg] ?? seg;
+  return CARD_TABS.some((t) => t.subs.some((s) => s.key === key)) ? key : "application";
 }
 
-// BF_PORTAL_BLOCK_v173_TAB_STRIP_OVERLAP_v1
-// BF_PORTAL_BLOCK_v174_APPLICATION_TAB_SEMANTIC_GROUPS_v1
-// Layout fix (v173): drop redundant <header>; pin nav with flex-shrink: 0;
-// give body section flex: 1, min-height: 0, overflow-y: auto so it scrolls
-// in its own region without bleeding into the nav strip.
-// Data wiring (v174): switched to /api/applications/:id/details — that
-// handler flattens metadata into {overview, businessDetails, applicantDetails,
-// owners, financialProfile, rawPayload, ...} which is the shape the new
-// ApplicationTab consumes. The legacy /:id endpoint returned the raw DB row
-// where businessDetails/applicantDetails/etc. don't exist, so the old tab
-// rendered "—" for nearly every field.
+export function mainFor(sub: string): MainTab {
+  return CARD_TABS.find((t) => t.subs.some((s) => s.key === sub)) ?? CARD_TABS[0]!;
+}
+
+const ID_DOC = /\b(id|government|photo id|driver|passport|identification)\b/i;
+
+/** ID verification shows once a check was requested or the client uploaded ID. */
+function useShowIdVerification(applicationId: string): boolean {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!applicationId) return;
+    let cancelled = false;
+    setShow(false);
+    void (async () => {
+      try {
+        const k = await api.get<{ verifications?: unknown[] }>(`/api/kyc/applications/${encodeURIComponent(applicationId)}`);
+        if (!cancelled && Array.isArray(k?.verifications) && k.verifications.length > 0) { setShow(true); return; }
+      } catch { /* not connected or no checks yet */ }
+      try {
+        const r = await api.get<{ documents?: Array<{ category?: string | null; document_type?: string | null }> }>(`/api/portal/applications/${encodeURIComponent(applicationId)}`);
+        const has = (r?.documents ?? []).some((d) => ID_DOC.test(String(d.category ?? d.document_type ?? "")));
+        if (!cancelled && has) setShow(true);
+      } catch { /* leave hidden */ }
+    })();
+    return () => { cancelled = true; };
+  }, [applicationId]);
+  return show;
+}
+
+const tabBtn = (active: boolean, sub = false): CSSProperties => ({
+  border: 0,
+  borderBottom: active ? `${sub ? 2 : 3}px solid var(--ui-accent-fg)` : `${sub ? 2 : 3}px solid transparent`,
+  background: "transparent",
+  color: active ? "var(--ui-accent-fg)" : "var(--ui-text-soft)",
+  fontWeight: active ? 700 : 500,
+  padding: sub ? "6px 4px" : "10px 6px",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  fontSize: sub ? 13 : 15,
+  fontFamily: "inherit",
+});
+
 export default function ApplicationDetail({ applicationId: propId }: { applicationId?: string }) {
   const { id: routeId } = useParams<{ id: string }>();
   const applicationId = propId ?? routeId ?? "";
@@ -63,10 +105,11 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
   const navigate = useNavigate();
   const [application, setApplication] = useState<Record<string, any> | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const activeTab = activeTabFromPath(location.pathname);
+  const activeSub = activeSubFromPath(location.pathname);
+  const activeMain = mainFor(activeSub);
+  const showId = useShowIdVerification(applicationId);
 
-  // BF_PORTAL_v906_SBA_TAB_ONLY_SBA - the SBA Signing tab shows only on an SBA file: an SBA product, or an SBA lender
-  // among the lenders the file went to (BF-Server decides: isSba on /sba-signing). Never on a normal Canadian file.
+  // BF_PORTAL_v906_SBA_TAB_ONLY_SBA - SBA signing shows only on an SBA file (BF-Server decides: isSba on /sba-signing).
   const [isSba, setIsSba] = useState(false);
   useEffect(() => {
     if (!applicationId) return;
@@ -77,7 +120,6 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
       .catch(() => { if (!cancelled) setIsSba(false); });
     return () => { cancelled = true; };
   }, [applicationId]);
-  const visibleTabs = TABS.filter((t) => t.key !== "sba-signing" || isSba || activeTab === "sba-signing");
 
   useEffect(() => {
     if (!applicationId) return;
@@ -88,141 +130,51 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
       .catch((err: any) => setError(err?.message ?? "Could not load application."));
   }, [applicationId]);
 
-  // BF_PORTAL_BLOCK_v187_TABS_PROP_WIRING_v1 — pass applicationId to FinancialsTab and DocumentsTab
-  const tabBody = {
+  const visibleSubs = useMemo(() => activeMain.subs.filter((s) => {
+    if (s.key === "sba-signing") return isSba || activeSub === "sba-signing";
+    if (s.key === "id-verification") return showId || activeSub === "id-verification";
+    return true;
+  }), [activeMain, isSba, showId, activeSub]);
+
+  const go = (sub: string) => navigate(`/applications/${applicationId}/${sub}`);
+
+  const body: Record<string, JSX.Element> = {
     application: <ApplicationTab application={application} />,
-    "banking-analysis": <BankingAnalysisTab applicationId={applicationId} />,
     financials: <FinancialsTab applicationId={applicationId} />,
+    "banking-analysis": <BankingAnalysisTab applicationId={applicationId} />,
     documents: <DocumentsTab applicationId={applicationId} />,
     "credit-summary": <CreditSummaryTab applicationId={applicationId} />,
+    fraud: <FraudTab applicationId={applicationId} />,
+    "id-verification": <IdVerificationTab applicationId={applicationId} />,
+    "sba-signing": <SbaSigningTab applicationId={applicationId} />,
     "request-items": <RequestItemsTab applicationId={applicationId} />,
     notes: <NotesTab applicationId={applicationId} />,
-    lenders: <LendersTab applicationId={applicationId} />,
-    "sba-signing": <SbaSigningTab applicationId={applicationId} />,
-    fraud: <FraudTab applicationId={applicationId} />, // BF_PORTAL_v846_FRAUD
-    quotes: <QuotesTab applicationId={applicationId} />, // BF_PORTAL_v872_QUOTES
-    "id-verification": <IdVerificationTab applicationId={applicationId} />, // BF_PORTAL_v872_KYC
-    funding: <BrokerToolsTab tab="funding" applicationId={applicationId} />, // BF_PORTAL_v865_BROKER_TOOLS
-    "deal-desk": <BrokerToolsTab tab="deal-desk" applicationId={applicationId} />, // BF_PORTAL_v867_BROKER_TOOLS_2
-  }[activeTab];
-
-  // BF_PORTAL_v852_CALC_QBO - the calculator starts from the requested amount; the PDF is titled with the business name.
-  const fp = (application?.financialProfile ?? application?.kyc ?? {}) as Record<string, any>;
-  const calcAmount = amountFrom(application?.overview?.requestedAmount, application?.fundingRequest?.amount, fp.fundingAmount, application?.requestedAmount, application?.requested_amount);
-  const calcTitle = String(application?.businessDetails?.legalName ?? application?.business?.legalName ?? application?.businessDetails?.name ?? application?.business?.name ?? "").trim() || undefined;
-  const saveCalcNote = async (text: string) => { await createApplicationNote(applicationId, text); };
+    lenders: <LendersTab applicationId={applicationId} hideParkButtons />,
+    offer: <OfferTab applicationId={applicationId} onOpenLenders={() => go("lenders")} />,
+  };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        minHeight: 0,
-      }}
-    >
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       {error && (
-        <div
-          style={{
-            margin: 0,
-            padding: "10px 20px",
-            color: "#b91c1c",
-            background: "#fef2f2",
-            borderBottom: "1px solid #fecaca",
-            fontSize: 14,
-            flexShrink: 0,
-          }}
-        >
+        <div style={{ margin: 0, padding: "10px 20px", color: "#b91c1c", background: "#fef2f2", borderBottom: "1px solid #fecaca", fontSize: 14, flexShrink: 0 }}>
           {error}
         </div>
       )}
-
-      {/* BF_PORTAL_BLOCK_v188_PIPELINE_NAV_AND_AUTO_REVIEW_v1 — back to pipeline */}
-      <div
-        style={{
-          padding: "10px 20px",
-          borderBottom: "1px solid var(--ui-border)",
-          background: "var(--ui-surface-strong)",
-          flexShrink: 0,
-          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", // BF_PORTAL_v852_CALC_QBO
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => navigate("/pipeline")}
-          style={{
-            border: 0,
-            background: "transparent",
-            color: "var(--ui-accent-fg)",
-            fontSize: 13,
-            cursor: "pointer",
-            padding: 0,
-            fontFamily: "inherit",
-            fontWeight: 500,
-          }}
-        >
-          ← Back to pipeline
-        </button>
-        {/* BF_PORTAL_v852_CALC_QBO - fee invoice (media deals) and the loan calculator */}
-        <span style={{ flex: 1 }} />
-        {applicationId ? <QuickBooksInvoiceBadge applicationId={applicationId} /> : null}
-        <CalculatorButton requestedAmount={calcAmount} title={calcTitle} onSaveNote={applicationId ? saveCalcNote : undefined} />
-      </div>
-
-      <ApplicationOriginPanel applicationId={applicationId} />{/* BF_PORTAL_v828_APPLICATION_ORIGIN - lender, broker or referrer */}
-      {applicationId ? <FileForecastPanel applicationId={applicationId} /> : null}{/* BF_PORTAL_v872_FORECAST - expected close date and category */}
-
-      <nav
-        style={{
-          display: "flex",
-          gap: 16,
-          padding: "12px 20px",
-          borderBottom: "1px solid var(--ui-border)",
-          overflowX: "auto",
-          background: "var(--ui-surface-strong)",
-          flexShrink: 0,
-          alignItems: "stretch",
-        }}
-      >
-        {visibleTabs.map((tab) => {
-          const active = tab.key === activeTab;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => navigate(`/applications/${applicationId}/${tab.key}`)}
-              style={{
-                border: 0,
-                borderBottom: active ? "2px solid var(--ui-accent-fg)" : "2px solid transparent",
-                background: "transparent",
-                color: active ? "var(--ui-accent-fg)" : "var(--ui-text-soft)",
-                fontWeight: active ? 700 : 500,
-                paddingTop: 6,
-                paddingBottom: 8,
-                paddingLeft: 4,
-                paddingRight: 4,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                fontSize: 14,
-                lineHeight: 1.4,
-                fontFamily: "inherit",
-              }}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+      <CardHeader applicationId={applicationId} application={application} onNavigate={(to) => navigate(to)} />
+      <nav data-testid="card-tabs" style={{ display: "flex", gap: 18, padding: "0 20px", borderBottom: "1px solid var(--ui-border)", overflowX: "auto", background: "var(--ui-surface-strong)", flexShrink: 0 }}>
+        {CARD_TABS.map((t) => (
+          <button key={t.key} type="button" style={tabBtn(t.key === activeMain.key)} onClick={() => go(t.subs[0]!.key)}>{t.label}</button>
+        ))}
       </nav>
-
-      <section
-        style={{
-          flex: 1,
-          minHeight: 0,
-          padding: 20,
-          overflowY: "auto",
-        }}
-      >
-        {tabBody}
+      {visibleSubs.length > 1 ? (
+        <nav data-testid="card-subtabs" style={{ display: "flex", gap: 16, padding: "0 20px", borderBottom: "1px solid var(--ui-border)", overflowX: "auto", background: "var(--ui-surface)", flexShrink: 0 }}>
+          {visibleSubs.map((s) => (
+            <button key={s.key} type="button" style={tabBtn(s.key === activeSub, true)} onClick={() => go(s.key)}>{s.label}</button>
+          ))}
+        </nav>
+      ) : null}
+      <section style={{ flex: 1, minHeight: 0, padding: 20, overflowY: "auto" }}>
+        {body[activeSub]}
       </section>
     </div>
   );

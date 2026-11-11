@@ -20,7 +20,7 @@ describe("Hold and Fraud on the Lenders tab", () => {
   });
 
   it("hides the controls from users who cannot write", () => {
-    expect(src).toContain("{canManage && (");
+    expect(src).toContain("{canManage && !hideParkButtons && ("); // v938: the card shows them in its header menu instead
   });
 });
 

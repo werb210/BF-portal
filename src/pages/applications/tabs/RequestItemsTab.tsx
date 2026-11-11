@@ -10,7 +10,6 @@ import type { CSSProperties } from "react";
 import { api } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveUserRole } from "@/utils/roles";
-import LenderQaSection from "@/pages/applications/tabs/LenderQaSection"; // BF_PORTAL_LENDER_QA_MOVED_v1
 
 interface Props { applicationId?: string }
 type ReqDoc = { document_type: string; label: string };
@@ -406,7 +405,6 @@ export default function RequestItemsTab({ applicationId }: Props) {
       </div>
 
       {/* BF_PORTAL_LENDER_QA_MOVED_v1 - question set builder, moved here from the Lenders tab */}
-      <LenderQaSection applicationId={applicationId} />
     </div>
   );
 }
