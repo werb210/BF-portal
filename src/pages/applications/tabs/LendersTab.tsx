@@ -89,8 +89,9 @@ const styles = {
   lockedTitle: { fontWeight: 700, color: "var(--ui-text)", fontSize: 15, marginBottom: 6 } as const,
   lockedHint: { fontSize: 13, color: "var(--ui-text-muted)", marginBottom: 12 } as const,
   lockedItem: { fontSize: 13, color: "var(--ui-text)", padding: "6px 0", borderBottom: "1px dashed var(--ui-border-soft)" } as const,
-  // v884: the sticky Send bar floats above the table (shadow + border) so it no longer looks like a gap that cuts a row off.
-  footer: { position: "sticky" as const, bottom: 0, zIndex: 5, marginTop: 16, padding: "12px 20px", background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 10, boxShadow: "0 -6px 16px rgba(15, 23, 42, 0.12)", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, flexWrap: "wrap" as const } as const,
+  // BF_PORTAL_v940_LENDERS_SEND_INLINE - Todd: "why is the send button a floating bar? waste of space". A plain row
+  // under the list now (no sticky bar, border or shadow).
+  footer: { marginTop: 12, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, flexWrap: "wrap" as const } as const,
   sendFeedback: { flex: "1 1 auto", alignSelf: "center", whiteSpace: "pre-line" as const, fontSize: 13, fontWeight: 600 } as const,
   modalOverlay: { position: "fixed" as const, inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 } as const,
   modalCard: { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 10, padding: 20, width: 420, maxWidth: "100%", maxHeight: "90vh", overflowY: "auto" as const, boxShadow: "0 12px 40px rgba(0,0,0,0.2)" } as const,
@@ -941,7 +942,11 @@ function describeSendFailure(err: unknown): string {
                     {m.productName ? <div style={{ fontSize: 11, color: "var(--ui-text-muted)", marginTop: 2 }}>{productNameWords(m.productName)}</div> : null}
                   </td>
                   <td style={styles.td}>{m.productCategory ? humanizeCode(m.productCategory) : "Not set"}</td>
-                  <td style={styles.td} data-testid={`lender-range-${m.id}`}>{formatRange(m)}</td>
+                  <td style={styles.td} data-testid={`lender-range-${m.id}`}>
+                    {formatRange(m)}
+                    {/* BF_PORTAL_v940_LENDER_PRODUCT_RULES - the lender funds a multiple of this file's monthly revenue */}
+                    {typeof (m as any).fundsUpTo === "number" ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Up to ${Number((m as any).fundsUpTo).toLocaleString("en-CA")} on this file's revenue</div> : null}
+                  </td>
                   <td style={styles.td}>
                     <span style={{ ...styles.pill, background: pctColors?.bg ?? "transparent", color: pctColors?.fg ?? "inherit" }}>
                       {formatLikelihood(m)}
@@ -1116,6 +1121,18 @@ function describeSendFailure(err: unknown): string {
           {sending ? "Sending…" : `Send (${selectedIds.length})`}
         </button>
       </div>
+
+      {/* BF_PORTAL_v940_LENDER_PRODUCT_RULES - lenders this file is not shown to, and why (their knock-out rules). */}
+      {Array.isArray((envelope as any)?.inputs?.excluded) && (envelope as any).inputs.excluded.length > 0 ? (
+        <details data-testid="lenders-excluded" style={{ marginTop: 12, padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 13 }}>
+          <summary style={{ cursor: "pointer", fontWeight: 600 }}>Not shown to {(envelope as any).inputs.excluded.length} lender product{(envelope as any).inputs.excluded.length === 1 ? "" : "s"} (their rules)</summary>
+          <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+            {((envelope as any).inputs.excluded as Array<{ id: string; lenderName: string; productName: string; reasons: string[] }>).map((x) => (
+              <li key={x.id}><strong>{x.lenderName}</strong> - {x.productName}: {x.reasons.join("; ")}</li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
 
       {/* BF_PORTAL_v906_OFFER_READER - after a term sheet is saved: send it to the client to sign (Quotes removed v938). */}
       {savedTermSheet && (
