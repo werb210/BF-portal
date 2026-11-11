@@ -731,21 +731,6 @@ function DocRow(props: {
         >
           {previewing ? "Opening…" : "Preview"}
         </button>
-        {props.onDownload ? (
-          <button type="button" data-testid="row-download" onClick={props.onDownload} title="Download under the accepted name" style={styles.previewButton}>
-            Download
-          </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={props.onScan}
-          disabled={props.scan?.loading}
-          title="Check this document's metadata for tamper signals"
-          style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, fontWeight: 600, cursor: props.scan?.loading ? "default" : "pointer" }}
-          data-testid="doc-fraud-scan"
-        >
-          {props.scan?.loading ? "Scanning…" : "Scan for tampering"}
-        </button>
         {canManage && !rejectOpen && (
           <>
             <button
@@ -768,13 +753,33 @@ function DocRow(props: {
             </button>
           </>
         )}
+        {/* BF_PORTAL_v939_DOC_ROW_MENU - Todd's screenshot review (Nov 11 2026): each row carried six or seven buttons.
+            Preview, Accept and Reject stay on the row; Download, Scan for tampering, Move to and Delete are under ⋯. */}
+        <details data-testid="doc-row-menu" style={{ position: "relative" }}>
+          <summary aria-label="More actions" style={{ listStyle: "none", cursor: "pointer", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, fontWeight: 700 }}>⋯</summary>
+          <div role="menu" style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", zIndex: 20, width: 220, padding: 6, background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 10, boxShadow: "0 10px 30px rgba(0,0,0,.15)" }}>
+        {props.onDownload ? (
+          <button type="button" data-testid="row-download" onClick={props.onDownload} title="Download under the accepted name" style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 10px", border: 0, background: "transparent", borderRadius: 6, fontSize: 13, color: "var(--ui-text)", cursor: "pointer" }}>
+            Download
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={props.onScan}
+          disabled={props.scan?.loading}
+          title="Check this document's metadata for tamper signals"
+          style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 10px", border: 0, background: "transparent", borderRadius: 6, fontSize: 13, color: "var(--ui-text)", cursor: "pointer" }}
+          data-testid="doc-fraud-scan"
+        >
+          {props.scan?.loading ? "Scanning…" : "Scan for tampering"}
+        </button>
         {canManage && props.onMove && (
           <select
             aria-label="Move to another category"
             data-testid="doc-move"
             value=""
             onChange={(e) => { if (e.target.value) props.onMove!(e.target.value); }}
-            style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", fontSize: 13, maxWidth: 190 }}
+            style={{ display: "block", width: "100%", margin: "4px 0", padding: "6px 8px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface)", color: "var(--ui-text)", fontSize: 13 }}
           >
             <option value="">Move to…</option>
             {moveTargets(doc.category).map((c) => <option key={c} value={c}>{humanizeCode(c)}</option>)}
@@ -786,11 +791,13 @@ function DocRow(props: {
             type="button"
             onClick={props.onDelete}
             title="Permanently delete this document (admin only)"
-            style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #dc2626", background: "var(--ui-surface-strong)", color: "#dc2626", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            style={{ ...{ display: "block", width: "100%", textAlign: "left", padding: "7px 10px", border: 0, background: "transparent", borderRadius: 6, fontSize: 13, color: "var(--ui-text)", cursor: "pointer" }, color: "#dc2626" }}
           >
             Delete
           </button>
         )}
+          </div>
+        </details>
       </div>
       {/* BF_PORTAL_v863_TAMPER_BELOW - the tamper report spans the full row under the file details and buttons, so
           opening it never squeezes the file name, size and category into a narrow column. */}
