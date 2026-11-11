@@ -28,7 +28,7 @@ describe("v863 tamper report under the document row", () => {
   it("opens a full-width report outside the wrapping action column", async () => {
     render(<DocumentsTab applicationId="app-863" />);
     const scan = await screen.findByRole("button", { name: /scan for tampering/i });
-    const actions = scan.parentElement!;
+    const actions = scan.closest("[data-testid=\"doc-row-menu\"]")!.parentElement!; // v939: Scan is under the ⋯ menu
     const documentRow = actions.parentElement!;
     expect(screen.queryByTestId("doc-fraud-row")).toBeNull();
     fireEvent.click(scan);
