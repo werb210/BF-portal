@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth"; // BF_PORTAL_v873_LENDER_API
 import SbaIvesFields, { EMPTY_SBA, sbaMissing, type LenderSba } from "./components/SbaIvesFields"; // BF_PORTAL_LENDER_SBA_IVES_v747
 import { phoneInputHandler, formatDollar, formatRate, unformatDollar } from "@/utils/format";
 import { CATEGORY_ORDER, CATEGORY_LABELS, CREDIT_SCORE_BANDS, bfBandFromMin, bfMinFromBand, ProductCoreFields } from "./productFormShared"; // PRODUCT_CORE_FIELDS_SHARED_v1
+import ProductRulesFields, { rulesFormFrom, rulesPayload, type RulesForm } from "./ProductRulesFields"; // BF_PORTAL_v940_LENDER_PRODUCT_RULES
 import RenewalRulesEditor from "@/features/activeContracts/RenewalRulesEditor"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
 import MayaLenderSuggestions from "./components/MayaLenderSuggestions"; // BF_PORTAL_v890_MAYA_LENDER_UPDATES
 
@@ -581,6 +582,7 @@ function CreateProductModal({
     // BF_PORTAL_BLOCK_v97_LENDER_PRODUCT_COUNTRY_PICKER_v1
     country: ((product as any)?.country as string | undefined) ?? "BOTH",
   });
+  const [rules, setRules] = useState<RulesForm>(() => rulesFormFrom(product as any)); // BF_PORTAL_v940_LENDER_PRODUCT_RULES
   const [checkedDocs, setCheckedDocs] = useState<Set<string>>(() => {
     const initial = new Set<string>([alwaysRequiredDoc.key]);
     if ((product as any)?.category === "EQUIPMENT_FINANCE") {
@@ -736,8 +738,8 @@ function CreateProductModal({
               unit: "months"
             }
           : undefined,
-        commission: form.commission ? Number(form.commission) : null,
         minCreditScore: bfMinFromBand(form.creditBand),
+        ...rulesPayload(rules), // BF_PORTAL_v940_LENDER_PRODUCT_RULES - knock-outs, commission terms (and the older commission %)
         eligibilityRules: form.eligibilityNotes || null,
         requiredDocuments,
         signnowTemplateId: form.signnowTemplateId || null,
@@ -863,7 +865,9 @@ function CreateProductModal({
           </div>
 
           {/* PRODUCT_CORE_FIELDS_SHARED_v1 - shared with the lender self-service portal */}
-          <ProductCoreFields form={form} set={set} errors={errors} showCommission />
+          <ProductCoreFields form={form} set={set} errors={errors} />
+          {/* BF_PORTAL_v940_LENDER_PRODUCT_RULES - who this lender will see, and how it pays us */}
+          <ProductRulesFields form={rules} set={(k, v) => setRules((r) => ({ ...r, [k]: v }))} />
 
           {/* Required Documents */}
           <div>
