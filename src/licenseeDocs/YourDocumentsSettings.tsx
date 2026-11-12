@@ -8,9 +8,9 @@ import { downloadFile, postFile, useRun } from "@/brokerTools/useRun";
 type Kind = { key: string; label: string };
 type DataField = { key: string; label: string };
 type Field = { name: string; label: string; type: "text" | "checkbox" | "choice" | "signature"; options?: string[]; mapped_to: string | null; matched_by: string | null };
-type Doc = { id: string; kind: string; name: string; file_name: string | null; format: string; fields: Field[]; active: boolean };
+type Doc = { id: string; kind: string; name: string; file_name: string | null; format: string; fields: Field[]; active: boolean; financing_type?: string | null };
 type Question = { id: string; document_id: string; key: string; label: string; type: string; options: string[]; required: boolean; active: boolean };
-type Payload = { kinds: Kind[]; dataFields: DataField[]; documents: Doc[]; questions: Question[] };
+type Payload = { kinds: Kind[]; financingTypes?: Kind[]; dataFields: DataField[]; documents: Doc[]; questions: Question[] };
 
 const MATCHED_BY: Record<string, string> = { words: "matched", ai: "suggested", licensee: "set by you" };
 
@@ -18,6 +18,8 @@ export default function YourDocumentsSettings({ isAdmin }: { isAdmin: boolean })
   const [data, setData] = useState<Payload | null>(null);
   const [kind, setKind] = useState("term_sheet");
   const [name, setName] = useState("");
+  // BF_PORTAL_v948_TERM_SHEET_BY_TYPE - "" is the general template, used for any type without its own.
+  const [financingType, setFinancingType] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const load = useCallback(async () => { const r = await api.get<Payload>("/api/licensee-documents").catch(() => null); setData(r ?? { kinds: [], dataFields: [], documents: [], questions: [] }); }, []);
@@ -27,10 +29,13 @@ export default function YourDocumentsSettings({ isAdmin }: { isAdmin: boolean })
 
   const upload = () => run(async () => {
     if (!file) throw new Error("Choose the file.");
-    const r = await postFile<{ document: Doc }>("/api/licensee-documents", file, { kind, name });
+    const r = await postFile<{ document: Doc }>("/api/licensee-documents", file, { kind, name, ...(kind === "term_sheet" && financingType ? { financing_type: financingType } : {}) });
     setFile(null); setName(""); setOpen(r.document.id);
   }, "Uploaded. Check the matches below.");
 
+  const types = data?.financingTypes ?? [];
+  const typeLabel = (t: string | null | undefined): string => (t ? types.find((x) => x.key === t)?.label ?? t : "All types of financing");
+  const inUse = new Set((data?.documents ?? []).filter((d) => d.kind === "term_sheet" && d.active).map((d) => d.financing_type ?? ""));
   if (!data) return <p style={muted}>Loading…</p>;
   return (
     <div data-testid="your-documents">
@@ -42,6 +47,14 @@ export default function YourDocumentsSettings({ isAdmin }: { isAdmin: boolean })
           it in, and the client signs ours instead of the lender&apos;s, with no lender name. Upload a fillable PDF, or a Word file with
           fields written like {"{{business_name}}"}.
         </p>
+        {types.length > 0 ? (
+          <p style={muted} data-testid="term-sheet-by-type-note">
+            You can have one template for each type of financing. A file uses the template for its type; if that type has none, it
+            uses the one marked &quot;All types of financing&quot;.
+            {" "}Types with their own template: {types.filter((t) => inUse.has(t.key)).map((t) => t.label).join(", ") || "none yet"}.
+            {inUse.has("") ? "" : " There is no general template yet, so types without their own cannot make our term sheet."}
+          </p>
+        ) : null}
         {isAdmin ? (
           <div style={{ ...row, marginTop: 12 }}>
             <label style={label}>What it is
@@ -49,6 +62,14 @@ export default function YourDocumentsSettings({ isAdmin }: { isAdmin: boolean })
                 {data.kinds.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
               </select>
             </label>
+            {kind === "term_sheet" && types.length > 0 ? (
+              <label style={label}>For
+                <select style={input} value={financingType} onChange={(e) => setFinancingType(e.target.value)} data-testid="doc-financing-type">
+                  <option value="">All types of financing</option>
+                  {types.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                </select>
+              </label>
+            ) : null}
             <label style={{ ...label, flex: 1, minWidth: 180 }}>Name (optional)
               <input style={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Boreal term sheet" />
             </label>
@@ -64,15 +85,15 @@ export default function YourDocumentsSettings({ isAdmin }: { isAdmin: boolean })
 
       {data.documents.length === 0 ? <p style={muted}>No term sheet uploaded yet.</p> : null}
       {data.documents.map((d) => (
-        <DocCard key={d.id} doc={d} kindLabel={kindLabel[d.kind] ?? d.kind} dataFields={data.dataFields} questions={data.questions.filter((q) => q.document_id === d.id)}
+        <DocCard key={d.id} doc={d} kindLabel={kindLabel[d.kind] ?? d.kind} types={types} typeLabel={typeLabel(d.financing_type)} dataFields={data.dataFields} questions={data.questions.filter((q) => q.document_id === d.id)}
           isAdmin={isAdmin} open={open === d.id} onToggle={() => setOpen(open === d.id ? null : d.id)} reload={load} />
       ))}
     </div>
   );
 }
 
-function DocCard({ doc, kindLabel, dataFields, questions, isAdmin, open, onToggle, reload }: {
-  doc: Doc; kindLabel: string; dataFields: DataField[]; questions: Question[]; isAdmin: boolean; open: boolean; onToggle: () => void; reload: () => Promise<void>;
+function DocCard({ doc, kindLabel, types, typeLabel, dataFields, questions, isAdmin, open, onToggle, reload }: {
+  doc: Doc; kindLabel: string; types: Kind[]; typeLabel: string; dataFields: DataField[]; questions: Question[]; isAdmin: boolean; open: boolean; onToggle: () => void; reload: () => Promise<void>;
 }) {
   const [draft, setDraft] = useState<Record<string, string>>({});
   const { busy, err, msg, run } = useRun(reload);
@@ -90,13 +111,22 @@ function DocCard({ doc, kindLabel, dataFields, questions, isAdmin, open, onToggl
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <h3 style={{ ...h3, margin: 0 }}>{doc.name}</h3>
         <Chip tone="grey">{kindLabel}</Chip>
+        {doc.kind === "term_sheet" && types.length > 0 ? (
+          isAdmin ? (
+            <select aria-label="Type of financing this template is for" style={{ ...input, width: "auto" }} value={doc.financing_type ?? ""} disabled={busy} data-testid={`doc-type-${doc.id}`}
+              onChange={(e) => void run(() => api.patch(`/api/licensee-documents/${doc.id}`, { financing_type: e.target.value || null }), "Saved.")}>
+              <option value="">All types of financing</option>
+              {types.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+            </select>
+          ) : <Chip tone="grey">{typeLabel}</Chip>
+        ) : null}
         {doc.active ? <Chip tone="green">In use</Chip> : <Chip tone="grey">Not in use</Chip>}
         <span style={{ ...muted, margin: 0 }}>{matched} of {fillable.length} fields matched · {extra} extra question{extra === 1 ? "" : "s"} for the client</span>
         <span style={{ flex: 1 }} />
         <button type="button" style={secondaryButton} onClick={onToggle}>{open ? "Close" : "Check matches"}</button>
         <button type="button" style={secondaryButton} onClick={() => void run(() => downloadFile(`/api/licensee-documents/${doc.id}/file`, doc.file_name ?? "document"))}>Download</button>
         {isAdmin ? (
-          <button type="button" style={secondaryButton} disabled={busy} onClick={() => void run(() => api.patch(`/api/licensee-documents/${doc.id}`, { active: !doc.active }), doc.active ? "Switched off. The standard document is used." : "In use.")}>
+          <button type="button" style={secondaryButton} disabled={busy} onClick={() => void run(() => api.patch(`/api/licensee-documents/${doc.id}`, { active: !doc.active }), doc.active ? "Switched off." : "In use.")}>
             {doc.active ? "Stop using" : "Use this"}
           </button>
         ) : null}
