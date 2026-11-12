@@ -21,12 +21,13 @@ vi.mock("@/fraud/FraudTab", () => ({ default: () => <div data-testid="body-Fraud
 vi.mock("@/kyc/IdVerificationTab", () => ({ default: () => <div data-testid="body-IdVerificationTab" /> }));
 vi.mock("@/pages/applications/_shared/NotesEditor", () => ({ default: () => <div data-testid="body-NotesEditor" /> }));
 vi.mock("@/pages/applications/tabs/LenderQaSection", () => ({ default: () => <div data-testid="body-LenderQa" /> }));
-vi.mock("@/brokerTools/FundingConditionsPanel", () => ({ default: () => <div data-testid="body-Funding" /> }));
+vi.mock("../ConditionsChecklist", () => ({ default: () => <div data-testid="body-Conditions" /> }));
+vi.mock("../IssueTermSheet", () => ({ default: (p: { onCancel?: () => void }) => <div data-testid="body-Issue" data-cancel={String(!!p.onCancel)} /> }));
 vi.mock("@/features/quickbooks/QuickBooksInvoiceBadge", () => ({ default: () => null }));
 vi.mock("@/features/loanCalculator/CalculatorButton", () => ({ default: () => <button type="button">Calculator</button>, amountFrom: (...v: unknown[]) => { for (const x of v) { const n = Number(x); if (Number.isFinite(n) && n > 0) return n; } return null; } }));
 
 import ApplicationDetail, { activeSubFromPath, mainFor } from "../ApplicationDetail";
-import { nextStepFor } from "../nextStep";
+import { nextStepFor, offerStateOf } from "../nextStep";
 import OfferTab from "../OfferTab";
 
 const DETAILS = { stage: "Offer", signing: { status: "signed" }, overview: { name: "Maple Ridge Ltd.", requestedAmount: 250000, productCategory: "TERM_LOAN" }, businessDetails: { legalName: "Maple Ridge Landscaping Ltd." }, offerCount: 2, assignedTo: { id: "u1", name: "Andrew P" } };
@@ -155,63 +156,87 @@ describe("next step", () => {
     expect(nextStepFor({ stage: "Documents Required", signing: null, offers: 0 })?.tab).toBe("request-items");
     expect(nextStepFor({ stage: "Off to Lender", signing: "signed", offers: 0 })?.label).toBe("Upload the lender's term sheet");
     expect(nextStepFor({ stage: "Offer", signing: "signed", offers: 1 })).toEqual({ label: "Send term sheet for signature", tab: "offer" });
+    // v946: at the Offer stage the button follows the term sheets on the file.
+    expect(nextStepFor({ stage: "Offer", signing: "signed", offers: 0, offerState: "none" })?.label).toBe("Add the term sheet");
+    expect(nextStepFor({ stage: "Offer", signing: "signed", offers: 1, offerState: "sent" })).toEqual({ label: "Waiting for the client to sign", tab: "offer", waiting: true });
+    expect(nextStepFor({ stage: "Offer", signing: "signed", offers: 1, offerState: "signed" })?.label).toBe("Clear funding conditions");
+    expect(offerStateOf([])).toBe("none");
+    expect(offerStateOf([{ status: "pending" }, { status: "pending_acceptance" }])).toBe("draft");
+    expect(offerStateOf([{ status: "pending_acceptance" }])).toBe("sent");
+    expect(offerStateOf([{ status: "pending_acceptance" }, { status: "accepted" }])).toBe("signed");
     expect(nextStepFor({ stage: "Accepted", signing: "signed", offers: 1 })?.label).toBe("Clear funding conditions");
     expect(nextStepFor({ stage: "Funded", signing: "signed", offers: 1 })).toBeNull();
   });
 });
 
-describe("Offer sub-tab", () => {
-  it("lists every term sheet and sends one to the client to sign", async () => {
-    answer({ offers: { items: [
-      { id: "o1", lender_name: "Northern Capital", amount: "250000", rate_factor: "8.5%", term: "36 months", payment_frequency: "Monthly", expiry_date: "2026-12-01", document_url: "https://x/ts.pdf", status: "pending" },
-      { id: "o2", lender_name: "Prairie Lending", amount: "240000", rate_factor: "1.28", term: "12 months", payment_frequency: "Weekly", expiry_date: null, document_url: null, status: "accepted" },
-    ] } });
-    h.api.post.mockResolvedValue({ ok: true });
-    render(<OfferTab applicationId="app-1" />);
-    expect(await screen.findByTestId("offer-row-o1")).toHaveTextContent("Northern Capital");
-    expect(screen.getByTestId("offer-row-o2")).toHaveTextContent("Signed by the client");
-    expect((screen.getByTestId("offer-send-o2") as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByTestId("offer-send-o1"));
-    await waitFor(() => expect(h.api.post).toHaveBeenCalledWith("/api/offers/o1/send-for-signature", {}));
-    expect(await screen.findByText(/can review and sign it in their app/)).toBeInTheDocument();
-    expect(screen.getByTestId("body-Funding")).toBeInTheDocument();
-  });
+// BF_PORTAL_v946_OFFER_STEPS
+describe("Offer tab: three steps", () => {
+  const OFFER = { id: "o1", lender_name: "Northern Capital", amount: "250000", rate_factor: "11.9%", term: "36 months", payment_frequency: "Monthly", expiry_date: "2026-12-04", document_url: "https://files.test/ts.pdf", status: "pending", term_sheet_mode: "lender", has_lender_term_sheet: true, revenue: { spread: null, broker_fee: 0, setup_fee: 495, proceeds_fee: 0, lender_commission: 2500, total: 2995, funds_to_client: null, client_payment: null, client_total_repaid: null, term_months: 36, note: null } };
 
-  it("says when there is no term sheet yet", async () => {
+  it("with no term sheet, only step 1 is open and it shows the form", async () => {
     answer();
     render(<OfferTab applicationId="app-1" />);
-    expect(await screen.findByTestId("offer-none")).toHaveTextContent("No term sheet yet.");
+    expect(await screen.findByTestId("body-Issue")).toHaveAttribute("data-cancel", "false");
+    expect(screen.getByTestId("offer-step-1")).toHaveAttribute("data-state", "open");
+    expect(screen.getByTestId("offer-step-2")).toHaveAttribute("data-state", "wait");
+    expect(screen.getByTestId("offer-step-3")).toHaveAttribute("data-state", "wait");
+    expect(screen.queryByTestId("body-Conditions")).toBeNull();
+    expect(screen.queryByText(/Read the lender's offer document/)).toBeNull(); // one place to upload, not two
   });
-});
 
-describe("Offer pricing (OFFER_PRICING_v1)", () => {
-  it("prices an offer we buy: our rate, a set-up fee, then makes our term sheet", async () => {
-    answer({ offers: { items: [
-      { id: "o1", lender_name: "Northern Capital", amount: "100000", rate_factor: "6%", term: "36 months", payment_frequency: "Monthly", expiry_date: null, document_url: null, status: "pending",
-        term_sheet_mode: "lender", revenue: { spread: 0, broker_fee: 0, setup_fee: 0, proceeds_fee: 0, lender_commission: 0, total: 0, funds_to_client: 100000, client_payment: 3042, client_total_repaid: 109519, term_months: 36, note: null } },
-    ] } });
-    h.api.patch.mockResolvedValue({ ok: true, offer: { revenue: { spread: 1658, broker_fee: 0, setup_fee: 500, proceeds_fee: 0, lender_commission: 0, total: 2158, funds_to_client: 100000, client_payment: 3088, client_total_repaid: 111161, term_months: 36, note: null } } });
-    h.api.post.mockResolvedValue({ ok: true, message: "Your Boreal term sheet is now this offer's term sheet." });
+  it("a saved term sheet is one summary line; step 2 sends it; step 3 is the checklist", async () => {
+    answer({ offers: { items: [OFFER] } });
+    h.api.post.mockResolvedValue({ ok: true });
     render(<OfferTab applicationId="app-1" />);
-    fireEvent.click(await screen.findByTestId("offer-pricing-o1"));
-    expect(screen.queryByLabelText("Our rate to the client")).toBeNull();
-    fireEvent.click(screen.getByTestId("mode-ours-o1"));
-    fireEvent.change(screen.getByLabelText("Our rate to the client"), { target: { value: "7" } });
-    fireEvent.change(screen.getByLabelText("Set-up fee"), { target: { value: "500" } });
-    fireEvent.click(screen.getByTestId("pricing-save-o1"));
-    await waitFor(() => expect(h.api.patch).toHaveBeenCalledWith("/api/offers/o1/pricing", expect.objectContaining({ term_sheet_mode: "ours", client_rate: "7", setup_fee: "500", broker_fee: null })));
-    expect(await screen.findByTestId("revenue-o1")).toHaveTextContent("$2,158");
-    fireEvent.click(screen.getByTestId("make-ours-o1"));
+    const row = await screen.findByTestId("offer-row-o1");
+    expect(row).toHaveTextContent("Northern Capital · $250,000 · 11.9% · 36 months · Monthly");
+    expect(row).toHaveTextContent("The lender's term sheet · expires 2026-12-04 · we earn $2,995");
+    expect(screen.queryByTestId("body-Issue")).toBeNull();
+    expect(screen.getByTestId("offer-step-1")).toHaveAttribute("data-state", "done");
+    expect(screen.getByTestId("offer-state-o1")).toHaveTextContent("Not sent yet");
+    expect(screen.getByTestId("body-Conditions")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("offer-send-o1"));
+    await waitFor(() => expect(h.api.post).toHaveBeenCalledWith("/api/offers/o1/send-for-signature", {}));
+    expect(await screen.findByText(/The client has a text/)).toBeInTheDocument();
+  });
+
+  it("once sent it says so and offers Send again; once signed there is nothing to send", async () => {
+    answer({ offers: { items: [{ ...OFFER, status: "pending_acceptance" }, { ...OFFER, id: "o2", lender_name: "Second Lender", status: "accepted" }] } });
+    render(<OfferTab applicationId="app-1" />);
+    expect(await screen.findByTestId("offer-state-o1")).toHaveTextContent("Waiting for the client to sign");
+    expect(screen.getByTestId("offer-send-o1")).toHaveTextContent("Send again");
+    expect(screen.getByTestId("offer-step-2")).toHaveAttribute("data-state", "done");
+    expect(screen.getByTestId("offer-state-o2")).toHaveTextContent("Signed by the client");
+    expect(screen.queryByTestId("offer-send-o2")).toBeNull();
+    expect(screen.getByText(/Record the funding on the Close tab/)).toBeInTheDocument();
+  });
+
+  it("Change edits our rate and fees, switches to our template, and fills the template", async () => {
+    answer({ offers: { items: [OFFER] } });
+    h.api.patch.mockResolvedValue({ offer: { revenue: { ...OFFER.revenue, spread: 6408, total: 9403 } } });
+    h.api.post.mockResolvedValue({ ok: true });
+    render(<OfferTab applicationId="app-1" />);
+    fireEvent.click(await screen.findByTestId("offer-change-o1"));
+    expect(screen.queryByLabelText("Our rate to the client")).toBeNull(); // the lender's sheet: its own rate
+    fireEvent.click(screen.getByTestId("change-template-o1"));
+    fireEvent.change(screen.getByLabelText("Our rate to the client"), { target: { value: "13.4" } });
+    fireEvent.change(screen.getByLabelText("Set-up fee"), { target: { value: "495" } });
+    fireEvent.click(screen.getByTestId("change-save-o1"));
+    await waitFor(() => expect(h.api.patch).toHaveBeenCalledWith("/api/offers/o1/pricing", expect.objectContaining({ term_sheet_mode: "template", client_rate: "13.4", setup_fee: "495" })));
     await waitFor(() => expect(h.api.post).toHaveBeenCalledWith("/api/licensee-documents/offers/o1/term-sheet", {}));
+    expect(await screen.findByTestId("revenue-o1")).toHaveTextContent("$9,403");
   });
 
-  it("shows each offer's revenue and marks our term sheet", async () => {
-    answer({ offers: { items: [
-      { id: "o1", lender_name: "Northern Capital", amount: "100000", rate_factor: "6%", term: "36", payment_frequency: null, expiry_date: null, document_url: null, status: "pending",
-        term_sheet_mode: "ours", revenue: { spread: 1658, broker_fee: 0, setup_fee: 500, proceeds_fee: 0, lender_commission: 0, total: 2158, funds_to_client: 100000, client_payment: null, client_total_repaid: null, term_months: 36, note: null } },
-    ] } });
+  it("another term sheet can be added, with a way back", async () => {
+    answer({ offers: { items: [OFFER] } });
     render(<OfferTab applicationId="app-1" />);
-    expect(await screen.findByTestId("offer-revenue-o1")).toHaveTextContent("$2,158");
-    expect(screen.getByTestId("offer-row-o1")).toHaveTextContent("client doesn't see the lender");
+    fireEvent.click(await screen.findByTestId("offer-add-another"));
+    expect(screen.getByTestId("body-Issue")).toHaveAttribute("data-cancel", "true");
+  });
+
+  it("the header button follows the offer: waiting once it is sent", async () => {
+    answer({ offers: { items: [{ ...OFFER, status: "pending_acceptance" }] } });
+    open("/applications/app-1/offer");
+    await waitFor(() => expect(screen.getByTestId("next-step")).toHaveTextContent(/^Waiting for the client to sign$/));
   });
 });

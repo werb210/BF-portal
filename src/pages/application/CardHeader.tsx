@@ -10,7 +10,7 @@ import CalculatorButton, { amountFrom } from "@/features/loanCalculator/Calculat
 import QuickBooksInvoiceBadge from "@/features/quickbooks/QuickBooksInvoiceBadge";
 import { createApplicationNote } from "@/api/applicationNotes";
 import OriginChip from "./OriginChip";
-import { nextStepFor } from "./nextStep";
+import { nextStepFor, offerStateOf, type OfferState } from "./nextStep";
 
 type AnyRecord = Record<string, any>;
 
@@ -69,7 +69,18 @@ export default function CardHeader({ applicationId, application, onNavigate }: {
   const name = businessName(application);
   const stage = String(a.stage ?? "");
   const parked = stage === "Hold" || stage === "Fraud";
-  const next = nextStepFor({ stage, signing: a.signing?.status ?? null, offers });
+  // BF_PORTAL_v946_OFFER_STEPS - at the Offer stage the button follows the term sheets: add, send, waiting, conditions.
+  const [offerState, setOfferState] = useState<OfferState | undefined>(undefined);
+  const atOffer = stage.trim().toLowerCase() === "offer";
+  useEffect(() => {
+    if (!atOffer || !applicationId) { setOfferState(undefined); return; }
+    let cancelled = false;
+    api.get<{ items?: Array<{ status?: string }> }>(`/api/offers?applicationId=${encodeURIComponent(applicationId)}`)
+      .then((r) => { if (!cancelled) setOfferState(offerStateOf(Array.isArray(r?.items) ? r.items : [])); })
+      .catch(() => { if (!cancelled) setOfferState(undefined); });
+    return () => { cancelled = true; };
+  }, [atOffer, applicationId, offers]);
+  const next = nextStepFor({ stage, signing: a.signing?.status ?? null, offers, offerState });
 
   // Parking removes the file from the reported numbers, so it is never one click, and the reason is required
   // (the client is emailed a Hold reason).
@@ -131,7 +142,7 @@ export default function CardHeader({ applicationId, application, onNavigate }: {
         <CalculatorButton requestedAmount={requested} title={name} onSaveNote={applicationId ? async (text: string) => { await createApplicationNote(applicationId, text); } : undefined} />
         {next ? (
           <button type="button" data-testid="next-step" style={primary} onClick={() => onNavigate(`/applications/${applicationId}/${next.tab}`)}>
-            Next: {next.label} →
+            {next.waiting ? next.label : <>Next: {next.label} →</>}
           </button>
         ) : null}
         <div ref={menuRef} style={{ position: "relative" }}>
