@@ -173,7 +173,7 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
       window.setTimeout(() => {
         const el = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
         if (!el) return;
-        el.scrollIntoView({ block: "center", behavior: "smooth" });
+        el.scrollIntoView?.({ block: "center", behavior: "smooth" }); // not every browser (or test) has it
         if (canSend) el.focus();
       }, 60);
     };
