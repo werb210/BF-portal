@@ -7,7 +7,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { openDialer } from "@/dialer/store";
 import { Badge, Button, cents, date, ErrorBox, Field, input, linkStyle, Loading, Section, Stat, Table, td } from "../../ksUi";
 import { LogTouch } from "./KsBrokerages";
-import { CHANNEL_ITEM_KIND, dollarsToCents, ITEM_KIND_LABELS, outreachApi, type Call, type Channel } from "./outreachApi";
+import { CHANNEL_ITEM_KIND, dollarsToCents, ITEM_KIND_LABELS, outreachApi, saveFile, type Call, type Channel, type Letter } from "./outreachApi";
+import { ksOpsBaseUrl } from "../../ksApi";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const useRefresh = () => { const qc = useQueryClient(); return () => void qc.invalidateQueries({ queryKey: ["ks-outreach"] }); };
@@ -17,6 +18,85 @@ function testText(c: Channel): string {
   if (!c.test_started_on) return "Not started";
   if ((c.test_days_left ?? 0) <= 0) return "Test over: decide";
   return `${c.test_days_left} days left`;
+}
+
+// BF_PORTAL_v946_KS_OUTREACH_MAIL - the owner letter: its wording, how many firms can get one now, and making a batch.
+function MailPanel() {
+  const refresh = useRefresh();
+  const ready = useQuery({ queryKey: ["ks-outreach", "mail-ready"], queryFn: outreachApi.mailReady });
+  const saved = useQuery({ queryKey: ["ks-outreach", "letter"], queryFn: outreachApi.letter });
+  const [draft, setDraft] = useState<Letter | null>(null);
+  const [batch, setBatch] = useState({ name: "", limit: "25", cost: "" });
+  const letter = draft ?? saved.data?.letter ?? null;
+  const save = useMutation({ mutationFn: () => outreachApi.saveLetter(letter!), onSuccess: () => { setDraft(null); refresh(); } });
+  const make = useMutation({
+    mutationFn: () => outreachApi.makeMailBatch({ name: batch.name, limit: Math.max(1, Math.min(500, Number(batch.limit) || 25)), cost_per_letter_cents: dollarsToCents(batch.cost) }),
+    onSuccess: () => { setBatch({ name: "", limit: "25", cost: "" }); refresh(); },
+  });
+  const f = (k: keyof Letter, name: string, rows = 1) => (
+    <Field name={name}>
+      {rows > 1
+        ? <textarea aria-label={name} rows={rows} style={{ ...input, width: "100%", minHeight: 150, fontFamily: "inherit" }} value={letter?.[k] ?? ""} onChange={(e) => setDraft({ ...letter!, [k]: e.target.value })} />
+        : <input aria-label={name} style={{ ...input, width: "100%" }} value={letter?.[k] ?? ""} onChange={(e) => setDraft({ ...letter!, [k]: e.target.value })} />}
+    </Field>
+  );
+  return (
+    <div data-testid="mail-panel" style={{ padding: "8px 0" }}>
+      <p style={{ fontSize: 13, margin: "0 0 8px" }} data-testid="mail-ready">
+        <strong>{ready.data?.ready ?? "…"}</strong> firms can get a letter now (a mailing address, a decision-maker, and no letter yet).
+        {ready.data?.without_address ? ` ${ready.data.without_address} kept firms have no mailing address on file.` : ""}
+      </p>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
+        <Field name="Batch name"><input aria-label="Batch name" style={{ ...input, width: 220 }} placeholder="Owner letter, wave 1" value={batch.name} onChange={(e) => setBatch({ ...batch, name: e.target.value })} /></Field>
+        <Field name="How many firms"><input aria-label="How many firms" style={{ ...input, width: 90 }} value={batch.limit} onChange={(e) => setBatch({ ...batch, limit: e.target.value })} /></Field>
+        <Field name="Cost per letter ($)"><input aria-label="Cost per letter" style={{ ...input, width: 110 }} value={batch.cost} onChange={(e) => setBatch({ ...batch, cost: e.target.value })} /></Field>
+        <Button kind="primary" testId="mail-make" disabled={make.isPending || !batch.name.trim() || !ready.data?.ready} onClick={() => make.mutate()}>Make the letters</Button>
+      </div>
+      {make.error ? <ErrorBox error={make.error} /> : null}
+      {make.data ? <p role="status" style={{ fontSize: 13 }}>{make.data.count} letters made. Download them from the batch in the list below.</p> : null}
+      <details style={{ marginTop: 10 }}>
+        <summary style={{ cursor: "pointer", fontWeight: 600, fontSize: 13 }}>The letter's wording</summary>
+        {letter ? (
+          <div style={{ display: "grid", gap: 8, maxWidth: 720, marginTop: 8 }}>
+            <p style={{ margin: 0, fontSize: 12, color: "var(--ui-text-muted)" }}>{"Use {{first_name}}, {{name}}, {{company}} and {{title}}. Each letter gets its own QR code beside the P.S."}</p>
+            {f("greeting", "Greeting")}{f("body", "Letter", 10)}{f("closing", "Closing")}{f("signature", "Signature")}{f("ps", "P.S. (beside the QR code)")}{f("target_url", "Where the QR code goes (https://...; blank = the Keystone website)")}
+            <div><Button kind="primary" testId="letter-save" disabled={!draft || save.isPending} onClick={() => save.mutate()}>Save the wording</Button></div>
+            {save.error ? <ErrorBox error={save.error} /> : null}
+          </div>
+        ) : <Loading what="letter" />}
+      </details>
+    </div>
+  );
+}
+
+function ItemActions({ item }: { item: { id: string; kind: string } }) {
+  const letters = useMutation({ mutationFn: () => outreachApi.mailLetters(item.id), onSuccess: (r) => saveFile(r.filename, r.data_base64, "application/pdf", true) });
+  const labels = useMutation({ mutationFn: () => outreachApi.mailLabels(item.id), onSuccess: (r) => saveFile(r.filename, r.csv, "text/csv") });
+  if (item.kind === "mail_batch") {
+    return (
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        <Button testId={`letters-${item.id}`} disabled={letters.isPending} onClick={() => letters.mutate()}>Letters (PDF)</Button>
+        <Button testId={`labels-${item.id}`} disabled={labels.isPending} onClick={() => labels.mutate()}>Labels</Button>
+        {letters.error || labels.error ? <ErrorBox error={letters.error ?? labels.error} /> : null}
+      </div>
+    );
+  }
+  if (item.kind === "webinar") {
+    const url = `${ksOpsBaseUrl()}/api/public/marketing/webinar/${item.id}`;
+    return <a href={url} target="_blank" rel="noreferrer" style={linkStyle} data-testid={`webinar-page-${item.id}`}>Sign-up page</a>;
+  }
+  return null;
+}
+
+function AudienceExport() {
+  const run = useMutation({ mutationFn: outreachApi.linkedInAudience, onSuccess: (r) => saveFile(r.filename, r.csv, "text/csv") });
+  return (
+    <p style={{ fontSize: 13 }}>
+      <Button testId="linkedin-audience" disabled={run.isPending} onClick={() => run.mutate()}>Download the LinkedIn company list</Button>{" "}
+      {run.data ? `${run.data.count.toLocaleString()} kept firms. ` : ""}Upload it in LinkedIn Campaign Manager under Audiences, as a company list, to show ads only to these firms.
+      {run.error ? <ErrorBox error={run.error} /> : null}
+    </p>
+  );
 }
 
 function ChannelItems({ channel }: { channel: Channel }) {
@@ -31,13 +111,14 @@ function ChannelItems({ channel }: { channel: Channel }) {
   const set = useMutation({ mutationFn: (v: { id: string; status: string }) => outreachApi.saveItem(v.id, { status: v.status }), onSuccess: refresh });
   return (
     <div style={{ padding: "8px 0 4px" }} data-testid={`channel-items-${channel.key}`}>
-      <Table head={["What", "Kind", "Date", "Cost", "Status", "Touches", "Clicks", "Owner talks, demos, sign-ups"]} empty={!items.data?.items.length}>
+      <Table head={["What", "Kind", "Date", "Cost", "Status", "Touches", "Clicks", "Owner talks, demos, sign-ups", ""]} empty={!items.data?.items.length}>
         {items.data?.items.map((i) => (
           <tr key={i.id}>
             <td style={td}>{i.url ? <a href={i.url} target="_blank" rel="noreferrer" style={linkStyle}>{i.name}</a> : i.name}</td>
             <td style={td}>{ITEM_KIND_LABELS[i.kind] ?? i.kind}</td><td style={td}>{i.happens_on ? date(i.happens_on) : "—"}</td><td style={td}>{cents(i.cost_cents)}</td>
             <td style={td}><select aria-label={`Status of ${i.name}`} style={{ ...input, width: 130 }} value={i.status} onChange={(e) => set.mutate({ id: i.id, status: e.target.value })}>{[["planned", "Planned"], ["in_progress", "In progress"], ["live", "Live"], ["done", "Done"], ["dropped", "Dropped"]].map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></td>
             <td style={td}>{i.touches}</td><td style={td}>{i.clicks}</td><td style={td}>{i.wins}</td>
+            <td style={td}><ItemActions item={i} /></td>
           </tr>
         ))}
       </Table>
@@ -105,6 +186,9 @@ export default function KsChannels() {
               {c.key === "phone" ? <p style={{ fontSize: 13 }}>Calls are made from the <Link to="/silo/ks/marketing/call-list" style={linkStyle}>Call list</Link>.</p> : null}
               {c.key === "referrals" ? <p style={{ fontSize: 13 }}>Referrals are tracked on the <Link to="/silo/ks/marketing/referrals" style={linkStyle}>Referrals</Link> tab.</p> : null}
               {c.key === "email" ? <p style={{ fontSize: 13 }}>Email is sent from Campaigns and Sequences; its sends, clicks and replies are counted here.</p> : null}
+              {c.key === "mail" ? <MailPanel /> : null}
+              {c.key === "paid_ads" ? <AudienceExport /> : null}
+              {c.key === "podcasts_webinars" ? <p style={{ fontSize: 13 }}>Add a webinar below (kind: Webinar, with its date) and it gets a public sign-up page. Everyone who registers becomes a prospect and is counted here.</p> : null}
               <ChannelItems channel={c} />
             </td></tr>
           ) : null,

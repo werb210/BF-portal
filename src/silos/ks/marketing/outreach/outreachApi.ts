@@ -46,6 +46,7 @@ export type Item = { id: string; channel_key: string; kind: string; name: string
 export type Call = { person_id: string; name: string; title: string | null; is_owner: boolean; direct_phone: string | null; mobile_phone: string | null; brokerage_id: string; brokerage: string; country: string | null; province_state: string | null; fit_score: number; current_tools: string[]; calls: number };
 export type Referral = { id: string; referrer_name: string; code: string; referred_name: string | null; referred_brokerage: string | null; status: string; reward: string | null; reward_cents: number; reward_applied_at: string | null; notes: string | null; created_at: string };
 export type ImportResult = { rows: number; brokerages_added: number; brokerages_updated: number; people_added: number; people_updated: number; prospects_linked: number; excluded: number; skipped: Array<{ row: number; error: string }> };
+export type Letter = { greeting: string; body: string; closing: string; signature: string; ps: string; target_url: string };
 export type FirmType = { key: string; label: string };
 
 const enc = encodeURIComponent;
@@ -66,9 +67,27 @@ export const outreachApi = {
   addItem: (body: Record<string, unknown>) => ksRequest<{ item: Item }>(`${B}/items`, { method: "POST", body }),
   saveItem: (id: string, body: Record<string, unknown>) => ksRequest<{ item: Item }>(`${B}/items/${enc(id)}`, { method: "PATCH", body }),
   addLink: (body: Record<string, unknown>) => ksRequest<{ link: TrackedLink; url: string }>(`${B}/links`, { method: "POST", body }),
+  // BF_PORTAL_v946_KS_OUTREACH_MAIL - owner letters, the LinkedIn company list
+  letter: () => ksRequest<{ letter: Letter; merge_fields: string[] }>(`${B}/letter`),
+  saveLetter: (body: Letter) => ksRequest<{ letter: Letter }>(`${B}/letter`, { method: "POST", body }),
+  mailReady: () => ksRequest<{ ready: number; without_address: number; first: Array<{ company: string; name: string; city: string }> }>(`${B}/mail/ready`),
+  makeMailBatch: (body: Record<string, unknown>) => ksRequest<{ item_id: string; count: number }>(`${B}/mail/batches`, { method: "POST", body }),
+  mailLetters: (id: string) => ksRequest<{ filename: string; data_base64: string; letters: number }>(`${B}/mail/batches/${enc(id)}/letters`),
+  mailLabels: (id: string) => ksRequest<{ filename: string; csv: string }>(`${B}/mail/batches/${enc(id)}/labels`),
+  linkedInAudience: () => ksRequest<{ filename: string; csv: string; count: number }>(`${B}/ads/linkedin-audience`),
   referrals: () => ksRequest<{ referrals: Referral[]; owed_cents: number }>(`${B}/referrals`),
   addReferral: (body: Record<string, unknown>) => ksRequest<{ referral: Referral }>(`${B}/referrals`, { method: "POST", body }),
   saveReferral: (id: string, body: Record<string, unknown>) => ksRequest<{ referral: Referral }>(`${B}/referrals/${enc(id)}`, { method: "PATCH", body }),
 };
 
 export const dollarsToCents = (v: string): number => { const n = Number(String(v).replace(/[$,\s]/g, "")); return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : 0; };
+
+/** Hands the browser a file to save. */
+export function saveFile(filename: string, content: string, type: string, base64 = false): void {
+  const bytes = base64 ? Uint8Array.from(atob(content), (c) => c.charCodeAt(0)) : content;
+  const url = URL.createObjectURL(new Blob([bytes], { type }));
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
