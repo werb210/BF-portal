@@ -56,13 +56,14 @@ describe("lead scores", () => {
     expect(screen.queryByTestId("lead-score")).toBeNull();
   });
 
-  it("lists the hottest leads and saves changed rules", async () => {
+  it("shows the rules only (no hottest-leads list) and saves changed rules", async () => {
     h.apiFn.get.mockImplementation(async (url: string) => url.startsWith("/api/lead-scores/top")
       ? { contacts: [{ contact_id: "c1", score: 80, name: "Pat Lee", email: null, company_name: "Lee Paving" }], hot: 70, warm: 40 }
       : { settings: { rules: [{ kind: "has_phone", points: 10 }], engagement: { email_open: { points: 2, cap: 20 } }, hot: 70, warm: 40 }, engagement_labels: { email_open: "Opened an email" } });
     h.apiFn.put.mockResolvedValue({ settings: { rules: [{ kind: "has_phone", points: 15 }], engagement: { email_open: { points: 2, cap: 20 } }, hot: 70, warm: 40 } });
     render(<MemoryRouter><LeadScoringPanel /></MemoryRouter>);
-    expect(await screen.findByText("Pat Lee")).toBeTruthy();
+    expect(await screen.findByTestId("lead-scoring-intro")).toBeTruthy();
+    expect(screen.queryByText("Hottest leads")).toBeNull();
     fireEvent.change(await screen.findByLabelText("Points"), { target: { value: "15" } });
     fireEvent.click(screen.getByRole("button", { name: "Save rules" }));
     await waitFor(() => expect(h.apiFn.put).toHaveBeenCalledWith("/api/lead-scores/settings", { settings: expect.objectContaining({ rules: [{ kind: "has_phone", points: 15 }] }) }));
@@ -169,9 +170,10 @@ describe("website kit", () => {
 describe("Marketing tabs per silo", () => {
   const inSilo = (silo: string) => render(<MemoryRouter><SiloContext.Provider value={{ silo, setSilo: () => undefined } as any}><MarketingDashboard /></SiloContext.Provider></MemoryRouter>);
 
-  it.each(["bf", "bi", "slf"])("offers the report, lead scoring and the website kit in %s", (silo) => {
+  it.each(["bf", "bi", "slf"])("offers the report in %s; lead scoring and the website kit live in Settings", (silo) => {
     inSilo(silo);
-    for (const name of ["Campaign report", "Lead scoring", "Website kit"]) expect(screen.getByRole("button", { name })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Campaign report" })).toBeTruthy();
+    for (const name of ["Lead scoring", "Website kit"]) expect(screen.queryByRole("button", { name })).toBeNull();
   });
 
   it("does not offer them in the Keystone operations silo", () => {

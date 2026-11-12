@@ -42,9 +42,10 @@ describe("My Profile tabs", () => {
     expect(screen.getByRole("button", { name: "Enable notifications" })).toBeInTheDocument();
     expect(screen.getByTestId("ooo")).toBeInTheDocument();
   });
-  it("shared mailbox signatures are for Admins only", async () => {
+  it("shared mailbox signatures are brokerage set-up, not in My Profile", async () => {
     render(<ProfileSettings />);
     fireEvent.click(await screen.findByRole("tab", { name: "Email signature" }));
-    expect(screen.getByTestId("shared-signature-admin-only")).toHaveTextContent("set by an Admin");
+    expect(screen.getByTestId("shared-signature-moved")).toHaveTextContent("Brokerage set-up");
+    expect(screen.queryByLabelText("Shared mailbox")).toBeNull();
   });
 });

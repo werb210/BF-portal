@@ -82,7 +82,7 @@ describe("BF_PORTAL_BI_SILO_NAV_v56 — Settings tabs by silo", () => {
   it("BF Admin sees the brokerage set-up groups", () => {
     renderSettings("BF", "Admin");
     const names = Array.from(screen.getByRole("tablist", { name: "Settings tabs" }).querySelectorAll('[role="tab"]')).map((t) => t.textContent);
-    expect(names).toEqual(["My Profile", "Content", "AI Knowledge", "Team and roles", "CRM set-up", "Phone", "Money", "Risk and ID checks", "Sign-in and security", "Privacy and records", "Integrations", "Deal tools", "Our term sheet", "System check"]);
+    expect(names).toEqual(["My Profile", "Content", "AI Knowledge", "Team and roles", "CRM set-up", "Phone", "Email", "Website", "Money", "Risk and ID checks", "Sign-in and security", "Privacy and records", "Integrations", "Deal tools", "Term sheet templates", "System check"]);
   });
 
   it.each(["Staff", "Marketing"])("BF %s sees the YOU items: My Profile, Content and AI Knowledge (v892)", (role) => {

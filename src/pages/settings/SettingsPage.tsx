@@ -43,6 +43,11 @@ import VendorKeysSettings from "@/integrations/VendorKeysSettings"; // BF_PORTAL
 import WebhooksSettings from "@/integrations/WebhooksSettings";
 import ApiKeysSettings from "@/integrations/ApiKeysSettings";
 import MicrosoftSignInSettings from "@/integrations/MicrosoftSignInSettings";
+// BF_PORTAL_v947_BROKERAGE_SETUP - brokerage-wide set-up that used to sit in Marketing and My Profile.
+import WebsiteKitPanel from "@/components/marketing/WebsiteKitPanel";
+import LeadScoringPanel from "@/components/marketing/LeadScoringPanel";
+import SocialPanel from "@/social/SocialPanel";
+import SharedMailboxSignatures from "./tabs/SharedMailboxSignatures";
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
@@ -70,6 +75,11 @@ const SettingsPage = () => {
       { id: "properties", label: "Properties", visible: isAdmin && !isBI, content: <PropertiesSettings /> },
       { id: "teams", label: "Teams", visible: canUsers && !isBI, content: <TeamsSettings /> },
       { id: "pipelines", label: "Pipelines", visible: isAdmin && !isBI, content: <PipelinesSettings /> },
+      // BF_PORTAL_v947_BROKERAGE_SETUP
+      { id: "lead-scoring", label: "Lead scoring", visible: isAdmin, content: isAdmin ? <LeadScoringPanel /> : null },
+      { id: "website-kit", label: "Website kit", visible: isAdmin, content: isAdmin ? (<><p data-testid="website-kit-explainer" style={{ margin: "0 0 12px", fontSize: 14, color: "var(--ui-text)" }}>Add forms and chat to other websites so their leads land in this CRM.</p><WebsiteKitPanel /></>) : null },
+      { id: "shared-signatures", label: "Shared mailbox signatures", visible: isAdmin, content: isAdmin ? <SharedMailboxSignatures /> : null },
+      { id: "social-accounts", label: "Social accounts", visible: isAdmin && !isBI, content: isAdmin ? <SocialPanel mode="accounts" /> : null },
       { id: "phone", label: "Phone lines", visible: isAdmin && !isBI, content: <PhoneLines /> }, // BF_PORTAL_PHONE_LINES_v689
       { id: "ai-knowledge", label: "AI Knowledge", visible: (isAdmin || isTeamMember) && !isBI, content: isAdmin ? (<><KnowledgeManager /><div style={{ height: 28 }} /><MayaTuning /></>) : <KnowledgeManager /> },
       // BF_PORTAL_v846_FRAUD - Admins: Keystone watchlist opt-in, pre-screen default, services, staff alerts.
@@ -89,7 +99,7 @@ const SettingsPage = () => {
       { id: "content", label: "Content", visible: isAdmin || isStaff || isMarketing, content: <ContentSettings isBI={isBI} canAutomate={isAdmin || isMarketing} /> },
       { id: "deal-tools", label: "Deal tools", visible: isAdmin && !isBI, content: <DealToolsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v865_BROKER_TOOLS
       { id: "broker-pay", label: "Broker pay", visible: isAdmin && !isBI, content: isAdmin ? <BrokerPaySettings /> : null }, // BF_PORTAL_v942_BROKER_PAY
-      { id: "your-documents", label: "Our term sheet", visible: (isAdmin || isStaff) && !isBI, content: <YourDocumentsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v938_OUR_TERM_SHEET
+      { id: "your-documents", label: "Term sheet templates", visible: (isAdmin || isStaff) && !isBI, content: <YourDocumentsSettings isAdmin={isAdmin} /> }, // BF_PORTAL_v938_OUR_TERM_SHEET
       // BF_PORTAL_v855_RETENTION - 7-year record retention: legal holds and the eligible-for-deletion report.
       { id: "retention", label: "Retention & legal holds", visible: isAdmin, content: isAdmin ? <RetentionSettings /> : null },
       // BF_PORTAL_v869_SETTINGS_PACK - ported from KS-Portal #35. The phone menu is the one 866 menu (every silo); lead
@@ -207,15 +217,17 @@ export const SETTINGS_GROUPS: Array<{ id: string; label: string; heading: string
   { id: "content", label: "Content", heading: "YOU", sectionIds: ["content"] },
   { id: "ai-knowledge", label: "AI Knowledge", heading: "YOU", sectionIds: ["ai-knowledge"] },
   { id: "team", label: "Team and roles", heading: "BROKERAGE SET-UP", sectionIds: ["users", "teams"] },
-  { id: "crm", label: "CRM set-up", heading: "BROKERAGE SET-UP", sectionIds: ["properties", "pipelines"] },
+  { id: "crm", label: "CRM set-up", heading: "BROKERAGE SET-UP", sectionIds: ["properties", "pipelines", "lead-scoring"] },
   { id: "phone", label: "Phone", heading: "BROKERAGE SET-UP", sectionIds: ["phone", "phone-menu", "call-queues", "call-scripts", "lead-rotation", "blocked-numbers", "never-log"] },
+  { id: "email", label: "Email", heading: "BROKERAGE SET-UP", sectionIds: ["shared-signatures"] }, // BF_PORTAL_v947_BROKERAGE_SETUP
+  { id: "website", label: "Website", heading: "BROKERAGE SET-UP", sectionIds: ["website-kit"] }, // BF_PORTAL_v947_BROKERAGE_SETUP
   { id: "money", label: "Money", heading: "BROKERAGE SET-UP", sectionIds: ["quickbooks", "payments"] },
   { id: "risk", label: "Risk and ID checks", heading: "BROKERAGE SET-UP", sectionIds: ["fraud", "id-verification", "your-services"] },
   { id: "sign-in", label: "Sign-in and security", heading: "BROKERAGE SET-UP", sectionIds: ["security", "microsoft-sign-in"] },
   { id: "records", label: "Privacy and records", heading: "BROKERAGE SET-UP", sectionIds: ["retention", "privacy", "survey"] },
-  { id: "integrations", label: "Integrations", heading: "BROKERAGE SET-UP", sectionIds: ["webhooks", "api-keys"] },
+  { id: "integrations", label: "Integrations", heading: "BROKERAGE SET-UP", sectionIds: ["webhooks", "api-keys", "social-accounts"] },
   { id: "deal-tools", label: "Deal tools", heading: "BROKERAGE SET-UP", sectionIds: ["deal-tools"] },
-  { id: "your-documents-group", label: "Our term sheet", heading: "BROKERAGE SET-UP", sectionIds: ["your-documents"] }, // BF_PORTAL_v938_OUR_TERM_SHEET
+  { id: "your-documents-group", label: "Term sheet templates", heading: "BROKERAGE SET-UP", sectionIds: ["your-documents"] }, // BF_PORTAL_v938_OUR_TERM_SHEET
   { id: "system", label: "System check", heading: "BROKERAGE SET-UP", sectionIds: ["runtime"] },
 ];
 

@@ -20,11 +20,20 @@ beforeEach(() => {
 });
 
 describe("Marketing > Social", () => {
-  it("offers to connect each network and says which are not set up yet", async () => {
+  it("posting screen has no connect or disconnect buttons", async () => {
     render(<SocialPanel />);
+    await screen.findByText("Boreal Financial");
+    expect(screen.queryByTestId("connect-x")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Disconnect" })).toBeNull();
+    expect(screen.getByTestId("social-body")).toBeTruthy();
+  });
+
+  it("set-up screen offers to connect each network and says which are not set up yet", async () => {
+    render(<SocialPanel mode="accounts" />);
     expect(await screen.findByText("Connect Facebook and Instagram")).toBeTruthy();
     expect((screen.getByTestId("connect-x") as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByTestId("connect-x").textContent).toContain("not set up yet");
+    expect(screen.queryByTestId("social-body")).toBeNull();
   });
 
   it("posts one message to the ticked accounts", async () => {

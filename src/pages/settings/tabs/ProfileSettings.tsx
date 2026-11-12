@@ -589,7 +589,8 @@ const ProfileSettings = () => {
           GET/PUT /api/o365/me/signature (server-side shipped in v635). */}
       <EmailSignaturePanel />
       {/* BF_PORTAL_v893_PORTAL_FIXES - shared mailbox signatures are set by Admins; everyone else sets only their own. */}
-      {isAdminUser ? <SharedMailboxSignaturePanel /> : <p data-testid="shared-signature-admin-only" style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Shared mailbox signatures (for example info@) are set by an Admin.</p>} {/* BF_PORTAL_BLOCK_v826_PER_MAILBOX_SIGNATURE_UI */}
+      {/* BF_PORTAL_v947_BROKERAGE_SETUP - shared mailbox signatures are brokerage set-up: Settings > Email. */}
+      <p data-testid="shared-signature-moved" style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Shared mailbox signatures (for example info@) are set by the owner in Settings &gt; Brokerage set-up &gt; Email.</p>
       <ContactsSyncButton />
       </>)}
 
@@ -704,7 +705,7 @@ const ProfileSettings = () => {
 
 // BF_PORTAL_v864_SIGNATURE_BUILDER - the company's brand for signatures: the logo saved in branding settings
 // (else the business's default logo), its colour and website, for the business (silo) in use.
-function useSignatureBrand(): Partial<SignatureFields> {
+export function useSignatureBrand(): Partial<SignatureFields> {
   const silo = useContext(SiloContext)?.silo; // no provider (tests, sign-in) -> Boreal Financial
   const key = String(silo ?? "BF").toUpperCase();
   const base = SILO_BRANDS[key] ?? SILO_BRANDS.BF ?? { company: "", color: "#1E3A8A", website: "", logoUrl: "" };
@@ -783,100 +784,6 @@ function EmailSignaturePanel() {
         )}
         <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
           <Button type="button" onClick={() => void save()} disabled={!loaded || saving}>
-            {saving ? "Saving…" : "Save signature"}
-          </Button>
-          {status && <span style={{ fontSize: 13, color: status === "Saved." ? "#0d9b6c" : "#b00020" }}>{status}</span>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-// BF_PORTAL_BLOCK_v826_PER_MAILBOX_SIGNATURE_UI — per shared-mailbox signature.
-// Emails sent AS a shared mailbox use the mailbox's own signature (server v824).
-function SharedMailboxSignaturePanel() {
-  const [shared, setShared] = useState<Array<{ address: string; display_name: string }>>([]);
-  const [address, setAddress] = useState<string>("");
-  const [html, setHtml] = useState<string>("");
-  const [draft, setDraft] = useState<string>(""); // BF_PORTAL_v864_SIGNATURE_BUILDER
-  const brand = useSignatureBrand();
-  const [loaded, setLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-
-  // Load the shared mailboxes the staff member can send as.
-  useEffect(() => {
-    let cancelled = false;
-    api.get<{ mine: unknown; shared: Array<{ address: string; display_name: string }> }>("/api/crm/shared-mailboxes")
-      .then((r) => {
-        if (cancelled) return;
-        const list = Array.isArray(r?.shared) ? r.shared : [];
-        setShared(list);
-        if (list[0]) setAddress(list[0].address);
-        setLoaded(true);
-      })
-      .catch(() => { if (!cancelled) setLoaded(true); });
-    return () => { cancelled = true; };
-  }, []);
-
-  // Load the selected mailbox's signature.
-  useEffect(() => {
-    if (!address) { setHtml(""); return; }
-    let cancelled = false;
-    setStatus(null);
-    api.get<{ signature_html?: string }>(`/api/crm/shared-mailboxes/${encodeURIComponent(address)}/signature`)
-      .then((r) => { if (!cancelled) { setHtml(r?.signature_html ?? ""); setDraft(r?.signature_html ?? ""); } })
-      .catch(() => { if (!cancelled) { setHtml(""); setDraft(""); } });
-    return () => { cancelled = true; };
-  }, [address]);
-
-  // BF_PORTAL_v864_SIGNATURE_BUILDER - a shared mailbox signs as the mailbox: its name and address, the brand.
-  const mailbox = shared.find((m) => m.address === address);
-  const sharedDefaults = useMemo<Partial<SignatureFields>>(() => ({
-    ...brand,
-    name: mailbox?.display_name ?? "",
-    email: address,
-  }), [brand, mailbox?.display_name, address]);
-
-  async function save() {
-    if (!address) return;
-    setSaving(true); setStatus(null);
-    try {
-      await api.put(`/api/crm/shared-mailboxes/${encodeURIComponent(address)}/signature`, { signature_html: draft });
-      setStatus("Saved.");
-    } catch (e) {
-      setStatus(getErrorMessage(e, "Save failed."));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loaded && shared.length === 0) return null; // no shared mailboxes -> hide panel
-
-  return (
-    <div className="settings-grid" style={{ marginTop: 16 }}>
-      <div style={{ width: "100%" }}>
-        <h3 style={{ margin: "0 0 8px 0" }}>Shared mailbox signature</h3>
-        <p style={{ margin: "0 0 8px 0", fontSize: 13, color: "#6b7280" }}>
-          Each shared mailbox has its own signature, used when you send email as that account.
-        </p>
-        <select
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          disabled={!loaded}
-          aria-label="Shared mailbox"
-          style={{ marginBottom: 8, padding: 6, borderRadius: 6, border: "1px solid var(--ui-border)", fontSize: 13 }}
-        >
-          {shared.map((m) => (
-            <option key={m.address} value={m.address}>{m.display_name} ({m.address})</option>
-          ))}
-        </select>
-        {address ? (
-          <SignatureBuilder key={address} html={html} defaults={sharedDefaults} disabled={!loaded} onChange={setDraft} label="Shared mailbox signature" testIdPrefix="shared-sig" />
-        ) : null}
-        <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
-          <Button type="button" onClick={() => void save()} disabled={!loaded || !address || saving}>
             {saving ? "Saving…" : "Save signature"}
           </Button>
           {status && <span style={{ fontSize: 13, color: status === "Saved." ? "#0d9b6c" : "#b00020" }}>{status}</span>}
