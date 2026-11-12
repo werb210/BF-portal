@@ -10,7 +10,7 @@ import CalculatorButton, { amountFrom } from "@/features/loanCalculator/Calculat
 import QuickBooksInvoiceBadge from "@/features/quickbooks/QuickBooksInvoiceBadge";
 import { createApplicationNote } from "@/api/applicationNotes";
 import OriginChip from "./OriginChip";
-import { nextStepFor, offerStateOf, type OfferState } from "./nextStep";
+import { NEXT_STEP_EVENT, nextStepFor, offerStateOf, type OfferState } from "./nextStep";
 
 type AnyRecord = Record<string, any>;
 
@@ -71,15 +71,17 @@ export default function CardHeader({ applicationId, application, onNavigate }: {
   const parked = stage === "Hold" || stage === "Fraud";
   // BF_PORTAL_v946_OFFER_STEPS - at the Offer stage the button follows the term sheets: add, send, waiting, conditions.
   const [offerState, setOfferState] = useState<OfferState | undefined>(undefined);
+  const [offersTick, setOffersTick] = useState(0);
+  useEffect(() => { const on = () => setOffersTick((n) => n + 1); window.addEventListener("bf:offers-changed", on); return () => window.removeEventListener("bf:offers-changed", on); }, []);
   const atOffer = stage.trim().toLowerCase() === "offer";
   useEffect(() => {
     if (!atOffer || !applicationId) { setOfferState(undefined); return; }
     let cancelled = false;
-    api.get<{ items?: Array<{ status?: string }> }>(`/api/offers?applicationId=${encodeURIComponent(applicationId)}`)
+    api.get<{ items?: Array<{ status?: string; expired?: boolean; has_amount?: boolean }> }>(`/api/offers?applicationId=${encodeURIComponent(applicationId)}`)
       .then((r) => { if (!cancelled) setOfferState(offerStateOf(Array.isArray(r?.items) ? r.items : [])); })
       .catch(() => { if (!cancelled) setOfferState(undefined); });
     return () => { cancelled = true; };
-  }, [atOffer, applicationId, offers]);
+  }, [atOffer, applicationId, offers, offersTick]);
   const next = nextStepFor({ stage, signing: a.signing?.status ?? null, offers, offerState });
 
   // Parking removes the file from the reported numbers, so it is never one click, and the reason is required
@@ -141,7 +143,7 @@ export default function CardHeader({ applicationId, application, onNavigate }: {
         {applicationId ? <QuickBooksInvoiceBadge applicationId={applicationId} /> : null}
         <CalculatorButton requestedAmount={requested} title={name} onSaveNote={applicationId ? async (text: string) => { await createApplicationNote(applicationId, text); } : undefined} />
         {next ? (
-          <button type="button" data-testid="next-step" style={primary} onClick={() => onNavigate(`/applications/${applicationId}/${next.tab}`)}>
+          <button type="button" data-testid="next-step" style={primary} onClick={() => { onNavigate(`/applications/${applicationId}/${next.tab}`); window.setTimeout(() => window.dispatchEvent(new CustomEvent(NEXT_STEP_EVENT, { detail: { tab: next.tab } })), 150); }}>
             {next.waiting ? next.label : <>Next: {next.label} →</>}
           </button>
         ) : null}

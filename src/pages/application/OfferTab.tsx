@@ -7,6 +7,7 @@
 // There is one place to upload the lender's term sheet (step 1); the separate "read the lender's offer document" box and
 // the Pricing panel are gone (rate and fees are part of step 1 and of Change).
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { NEXT_STEP_EVENT } from "./nextStep";
 import { api } from "@/api";
 import { getErrorMessage } from "@/utils/errors";
 import Gate from "@/brokerTools/gate";
@@ -155,6 +156,30 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
     } catch (e) { setError(getErrorMessage(e, "Could not load the term sheets on this file.")); setOffers([]); }
   }, [applicationId]);
   useEffect(() => { if (applicationId) void load(); }, [applicationId, load]);
+  // BF_PORTAL_v950_NEXT_STEP_BLOCKED - the header's "Next" button points at the exact control: the Send button when a
+  // term sheet can be sent, otherwise the first term sheet that needs fixing is opened for change.
+  const [pointAt, setPointAt] = useState<string | null>(null);
+  useEffect(() => { window.dispatchEvent(new Event("bf:offers-changed")); }, [offers]);
+  useEffect(() => {
+    const on = (e: Event) => {
+      if ((e as CustomEvent<{ tab?: string }>).detail?.tab !== "offer") return;
+      const all = offers ?? [];
+      const canSend = all.find((o) => o.status === "pending" && !o.expired && o.has_amount !== false);
+      const broken = all.find((o) => o.status === "pending" && (o.expired || o.has_amount === false));
+      const id = canSend ? `offer-send-${canSend.id}` : broken ? `offer-row-${broken.id}` : null;
+      if (!canSend && broken) setChanging(broken.id);
+      setPointAt(canSend ? null : broken ? (broken.expired ? "This term sheet has expired. Set a new \"Offer expires\" date below and save; then it can be sent." : "This term sheet has no amount. Fill in its terms below and save; then it can be sent.") : null);
+      if (!id) return;
+      window.setTimeout(() => {
+        const el = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+        if (!el) return;
+        el.scrollIntoView({ block: "center", behavior: "smooth" });
+        if (canSend) el.focus();
+      }, 60);
+    };
+    window.addEventListener(NEXT_STEP_EVENT, on);
+    return () => window.removeEventListener(NEXT_STEP_EVENT, on);
+  }, [offers]);
 
   async function send(o: FileOffer) {
     if (busy) return;
@@ -222,6 +247,7 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
               {/* BF_PORTAL_v947 - take a term sheet off the file (uploaded by mistake, replaced). A signed one stays. */}
               {o.status === "accepted" ? null : <button type="button" style={{ ...link, color: "#b91c1c" }} data-testid={`offer-remove-${o.id}`} disabled={busy === o.id} onClick={() => void removeSheet(o)}>Remove</button>}
             </div>
+            {changing === o.id && pointAt && (o.expired || o.has_amount === false) ? <p role="alert" data-testid="offer-point-at" style={{ fontSize: 13, color: "#991b1b", margin: "8px 0 0" }}>{pointAt}</p> : null}
             {changing === o.id ? <ChangeTerms offer={o} onSaved={() => void load()} onClose={() => setChanging(null)} /> : null}
           </div>
         ))}
