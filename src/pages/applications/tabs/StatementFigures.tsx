@@ -26,7 +26,9 @@ export function figure(item: string, v: number | null): string {
   return v < 0 ? `(${s})` : s;
 }
 
-const card: CSSProperties = { border: "1px solid var(--ui-border)", borderRadius: 12, padding: 16, background: "var(--ui-surface-strong)", marginBottom: 16 };
+// BF_PORTAL_v947 - the card sets its own text colour. Without it the figures took the page's white text and vanished
+// on the white card (Todd, Nov 12 2026).
+const card: CSSProperties = { border: "1px solid var(--ui-border)", borderRadius: 12, padding: 16, background: "var(--ui-surface-strong)", marginBottom: 16, color: "var(--ui-text)" };
 const th: CSSProperties = { textAlign: "right", padding: "6px 10px", fontSize: 12, color: "var(--ui-text-muted)", borderBottom: "1px solid var(--ui-border)", whiteSpace: "nowrap" };
 const td: CSSProperties = { textAlign: "right", padding: "6px 10px", borderBottom: "1px solid var(--ui-border)", whiteSpace: "nowrap" };
 const btn: CSSProperties = { padding: "7px 12px", borderRadius: 8, border: "1px solid #1e3a8a", background: "#1e3a8a", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" };
@@ -77,7 +79,7 @@ export default function StatementFigures({ applicationId }: { applicationId: str
         <p style={{ fontSize: 13, color: "var(--ui-text-muted)" }} data-testid="statement-figures-empty">The statements have not been read yet.</p>
       ) : (
         <div style={{ overflowX: "auto", marginTop: 10 }}>
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+          <table data-testid="statement-figures-table" style={{ borderCollapse: "collapse", width: "100%", fontSize: 13, color: "var(--ui-text)" }}>
             <thead><tr><th style={{ ...th, textAlign: "left" }}>Line</th>{table.periods.map((p) => <th key={p.label} style={th}>{p.label}{p.kind !== "annual" ? ` (${p.kind})` : ""}</th>)}</tr></thead>
             <tbody>
               {table.rows.map((row) => (
