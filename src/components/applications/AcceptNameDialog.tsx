@@ -13,6 +13,12 @@ export function buildDocumentName(parts: NameParts, period: string): string {
   return `${pieces.join(" - ")}${parts.extension || ".pdf"}`;
 }
 
+// BF_PORTAL_v953_NO_PERIOD_FOR_ID - a period ("July", "2025") means something on statements, financials and tax
+// documents. An ID, a selfie or a void cheque has none, so the dialog does not ask for one.
+export function hasPeriod(documentType: string | null | undefined, category: string | null | undefined): boolean {
+  return !/identity|identification|\bid\b|selfie|licen[cs]e|passport|void|cheque/i.test(`${documentType ?? ""} ${category ?? ""}`);
+}
+
 export default function AcceptNameDialog(props: {
   documentId: string;
   originalFilename: string | null;
@@ -79,7 +85,8 @@ export default function AcceptNameDialog(props: {
     (editingFull ? fullNameRef : periodRef).current?.focus();
   }, [editingFull, loaded]);
 
-  const preview = parts ? buildDocumentName(parts, period) : null;
+  const asksPeriod = hasPeriod(parts?.documentType, category);
+  const preview = parts ? buildDocumentName(parts, asksPeriod ? period : "") : null;
   const finalName = parts ? (editingFull ? fullName.trim() : preview) : null;
   const confirm = () => { if (!props.working) props.onConfirm(finalName && finalName.length > 0 ? finalName : null); };
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -101,8 +108,8 @@ export default function AcceptNameDialog(props: {
               </>
             ) : (
               <>
-                <label htmlFor="accepted-document-period" style={styles.label}>Period</label>
-                <input ref={periodRef} id="accepted-document-period" value={period} onChange={(event) => setPeriod(event.target.value)} onKeyDown={onKeyDown} style={styles.input} placeholder="e.g. July or 2025" disabled={props.working} />
+                {asksPeriod ? <label htmlFor="accepted-document-period" style={styles.label}>Period</label> : null}
+                <input ref={periodRef} hidden={!asksPeriod} id="accepted-document-period" value={period} onChange={(event) => setPeriod(event.target.value)} onKeyDown={onKeyDown} style={styles.input} placeholder="e.g. July or 2025" disabled={props.working} />
                 <div style={styles.previewLabel}>Document will be named</div>
                 <div style={styles.preview} data-testid="accept-name-preview">{preview}</div>
                 <button type="button" style={styles.linkButton} onClick={() => { setFullName(preview ?? ""); setEditingFull(true); }}>Edit full name</button>
