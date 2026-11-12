@@ -14,7 +14,8 @@ import {
 import { OpsKeyNotice } from "./KsOpsKeyNotice";
 import { isInternalCode } from "@/utils/labels";
 
-type FieldSpec = { key: keyof KsLicensee & string; name: string; kind: "text" | "number" | "select" | "bool"; options?: readonly string[] };
+// BF_PORTAL_v950_KS_MARKETING_ADDON - a field with "addon" set reads and saves licensee.addons[addon] instead of a column.
+type FieldSpec = { key: string; name: string; kind: "text" | "number" | "select" | "bool"; options?: readonly string[]; addon?: string };
 
 const PLAN_FIELDS: FieldSpec[] = [
   { key: "status", name: "Status", kind: "select", options: KS_LICENSEE_STATUSES },
@@ -24,6 +25,7 @@ const PLAN_FIELDS: FieldSpec[] = [
   { key: "seats", name: "Seats", kind: "number" },
   { key: "extra_storage_blocks", name: "Extra storage (50 GB blocks)", kind: "number" },
   { key: "onboarding_fee_paid", name: "Onboarding fee paid", kind: "bool" },
+  { key: "addon_marketing", name: "Marketing add-on ($49 a month)", kind: "bool", addon: "marketing" },
 ];
 
 const CONTACT_FIELDS: FieldSpec[] = [
@@ -46,7 +48,7 @@ const CONTACT_FIELDS: FieldSpec[] = [
 ];
 
 function valueOf(l: KsLicensee, f: FieldSpec): string {
-  const v = (l as Record<string, unknown>)[f.key];
+  const v = f.addon ? (l.addons ?? {})[f.addon] : (l as Record<string, unknown>)[f.key];
   if (f.kind === "bool") return v ? "true" : "false";
   return v === null || v === undefined ? "" : String(v);
 }
@@ -61,6 +63,7 @@ function EditForm({ licensee, fields, title, note }: { licensee: KsLicensee; fie
       const body: Record<string, unknown> = {};
       changed.forEach((f) => {
         const v = form[f.key] ?? "";
+        if (f.addon) { body.addons = { ...((body.addons as Record<string, boolean> | undefined) ?? {}), [f.addon]: v === "true" }; return; }
         body[f.key] = f.kind === "number" ? Number(v) : f.kind === "bool" ? v === "true" : v.trim() === "" ? null : v.trim();
       });
       return ksApi.updateLicensee(licensee.id, body);
@@ -286,6 +289,7 @@ export default function KsLicenseeDetail() {
               ["Ops key", l.has_ops_key ? `Set${l.ops_key_rotated_at ? `, rotated ${date(l.ops_key_rotated_at)}` : ""}` : "Not set"],
               ["PGI referral link", <span key="pgi"><Badge value={l.pgi_link_status ?? "pending"} />{l.pgi_link_error ? ` ${l.pgi_link_error}` : ""}</span>],
               ["Fraud watchlist", l.watchlist_opt_in ? "Sharing" : "Not sharing"],
+              ["Marketing add-on", l.addons?.marketing ? "On" : "Off"],
               ["Bank connect add-on", l.addons?.bank_connect ? "On" : "Off"],
               ["Server", l.server_url ? <a key="s" href={l.server_url} target="_blank" rel="noreferrer" style={linkStyle}>{l.server_url}</a> : "-"],
               ["Staff portal", l.portal_url ? <a key="p" href={l.portal_url} target="_blank" rel="noreferrer" style={linkStyle}>{l.portal_url}</a> : "-"],
@@ -297,7 +301,7 @@ export default function KsLicenseeDetail() {
 
       <Actions l={l} />
       <EditForm
-        key={`plan-${l.id}-${l.plan}-${l.seats}-${l.status}-${l.billing_interval}-${l.support_level}-${l.extra_storage_blocks}-${String(l.onboarding_fee_paid)}`}
+        key={`plan-${l.id}-${l.plan}-${l.seats}-${l.status}-${l.billing_interval}-${l.support_level}-${l.extra_storage_blocks}-${String(l.onboarding_fee_paid)}-${String(l.addons?.marketing === true)}`}
         licensee={l}
         fields={PLAN_FIELDS}
         title="Plan, seats and status"
