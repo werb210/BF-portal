@@ -3,7 +3,7 @@
 //   1. Who is the lender? One of the lenders matched to this file, or "No outside lender: we are funding this ourselves".
 //   2. How will the client get it? Two choices:
 //        The lender's term sheet  - sent as the lender wrote it; the client sees the lender's name.
-//        Our term sheet template  - the terms on the brokerage's own template (Settings > Our term sheet), with our rate
+//        Our term sheet template  - the terms on the brokerage's own template (Settings > Term sheet templates), with our rate
 //                                   and fees. The lender is named when there is one; not when we fund it ourselves.
 //      The template choice is switched off, with a link to Settings, until the brokerage has uploaded its template.
 //   3. The lender's file is read as soon as it is chosen: the figures and the conditions are filled in to check.
@@ -57,7 +57,7 @@ export default function IssueTermSheet({ applicationId, onSaved, onCancel }: { a
   useEffect(() => {
     let cancelled = false;
     fetchLenderEnvelope(applicationId).then((e: any) => { if (!cancelled) setMatches(Array.isArray(e?.matches) ? e.matches : []); }).catch(() => setMatches([]));
-    // Has the brokerage uploaded its term sheet template? (Settings > Our term sheet)
+    // Has the brokerage uploaded its term sheet template? (Settings > Term sheet templates)
     api.get<{ documents?: Array<{ kind?: string; active?: boolean }> }>("/api/licensee-documents")
       .then((r) => { if (!cancelled) setHasTemplate((r?.documents ?? []).some((d) => d.kind === "term_sheet" && d.active !== false)); })
       .catch(() => { if (!cancelled) setHasTemplate(false); });
@@ -96,7 +96,7 @@ export default function IssueTermSheet({ applicationId, onSaved, onCancel }: { a
 
   async function save() {
     if (!lender) { setMsg({ ok: false, text: "Choose the lender." }); return; }
-    if (useTemplate && hasTemplate === false) { setMsg({ ok: false, text: "Upload your term sheet template in Settings > Our term sheet first." }); return; }
+    if (useTemplate && hasTemplate === false) { setMsg({ ok: false, text: "Upload your term sheet template in Settings > Term sheet templates first." }); return; }
     if (!self && !file) { setMsg({ ok: false, text: "Choose the lender's term sheet file." }); return; }
     if (self && (!f.amount.trim() || !f.clientRate.trim())) { setMsg({ ok: false, text: "Enter the amount and our rate." }); return; }
     setBusy(true); setMsg(null);
@@ -122,7 +122,7 @@ export default function IssueTermSheet({ applicationId, onSaved, onCancel }: { a
       if (useTemplate) made = await api.post(`/api/licensee-documents/offers/${encodeURIComponent(offerId)}/term-sheet`, {}).then(() => true).catch(() => false);
       const picked = conds.filter((c) => c.pick).map(({ pick: _p, ...c }) => c);
       if (picked.length) await api.post(`/api/broker-tools/applications/${encodeURIComponent(applicationId)}/conditions/confirm`, { offer_id: offerId, conditions: picked });
-      if (!made) setMsg({ ok: false, text: "Saved, but your template could not be filled in. Check it in Settings > Our term sheet, then press Change on the term sheet and save again." });
+      if (!made) setMsg({ ok: false, text: "Saved, but your template could not be filled in. Check it in Settings > Term sheet templates, then press Change on the term sheet and save again." });
       setFile(null); setF(EMPTY); setConds([]); setLender("");
       onSaved();
     } catch (e) {
@@ -150,7 +150,7 @@ export default function IssueTermSheet({ applicationId, onSaved, onCancel }: { a
               text={self ? "Our layout, our rate and fees. No lender is named." : "Our layout, our rate and fees. The lender is named."}>
               {hasTemplate === false ? (
                 <p data-testid="issue-no-template" style={{ margin: "8px 0 0 26px", fontSize: 13, color: "#92400e" }}>
-                  Your brokerage has not uploaded its template yet. <Link to="/settings/your-documents" style={{ color: "#1e3a8a", fontWeight: 600 }}>Upload it in Settings &gt; Our term sheet</Link>.
+                  Your brokerage has not uploaded its template yet. <Link to="/settings/your-documents" style={{ color: "#1e3a8a", fontWeight: 600 }}>Upload it in Settings &gt; Term sheet templates</Link>.
                 </p>
               ) : null}
             </Choice>

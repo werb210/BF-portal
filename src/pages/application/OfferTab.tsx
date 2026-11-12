@@ -89,7 +89,7 @@ export function ChangeTerms({ offer, onSaved, onClose }: { offer: FileOffer; onS
       setRev(r?.offer?.revenue ?? null);
       if (mode !== "lender") {
         try { await api.post(`/api/licensee-documents/offers/${encodeURIComponent(offer.id)}/term-sheet`, {}); }
-        catch (e) { setMsg({ ok: false, text: getErrorMessage(e, "Saved, but your template could not be filled in. Upload it in Settings > Our term sheet.") }); onSaved(); return; }
+        catch (e) { setMsg({ ok: false, text: getErrorMessage(e, "Saved, but your template could not be filled in. Upload it in Settings > Term sheet templates.") }); onSaved(); return; }
       }
       setMsg({ ok: true, text: "Saved." });
       onSaved();
@@ -183,6 +183,18 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
   const list = offers ?? [];
   const has = list.length > 0;
   const showForm = offers !== null && (!has || adding);
+  const removeSheet = async (o: FileOffer) => {
+    const name = o.term_sheet_mode === "ours" ? "our term sheet" : `the ${o.lender_name} term sheet`;
+    if (!window.confirm(`Remove ${name} from this file? Its conditions that nobody has acted on are removed too. The client will no longer see it.`)) return;
+    setBusy(o.id);
+    try {
+      await api.delete(`/api/offers/${encodeURIComponent(o.id)}`);
+      setConditionsKey((k) => k + 1);
+      await load();
+    } catch (e) {
+      setMsgs((m) => ({ ...m, [o.id]: { ok: false, text: getErrorMessage(e, "The term sheet could not be removed.") } }));
+    } finally { setBusy(null); }
+  };
   const sendable = list.filter((o) => !o.expired && o.has_amount !== false);
   const allSent = has && sendable.length > 0 && sendable.every((o) => o.status !== "pending");
   const signed = list.some((o) => o.status === "accepted");
@@ -207,6 +219,8 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
               </div>
               {o.document_url ? <button type="button" style={link} onClick={() => void viewTermSheet(o)} data-testid={`offer-view-${o.id}`}>View</button> : null}
               <button type="button" style={link} aria-expanded={changing === o.id} data-testid={`offer-change-${o.id}`} onClick={() => setChanging(changing === o.id ? null : o.id)}>Change</button>
+              {/* BF_PORTAL_v947 - take a term sheet off the file (uploaded by mistake, replaced). A signed one stays. */}
+              {o.status === "accepted" ? null : <button type="button" style={{ ...link, color: "#b91c1c" }} data-testid={`offer-remove-${o.id}`} disabled={busy === o.id} onClick={() => void removeSheet(o)}>Remove</button>}
             </div>
             {changing === o.id ? <ChangeTerms offer={o} onSaved={() => void load()} onClose={() => setChanging(null)} /> : null}
           </div>
