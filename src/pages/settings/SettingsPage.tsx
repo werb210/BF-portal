@@ -221,7 +221,7 @@ export const SETTINGS_GROUPS: Array<{ id: string; label: string; heading: string
   { id: "phone", label: "Phone", heading: "BROKERAGE SET-UP", sectionIds: ["phone", "phone-menu", "call-queues", "call-scripts", "lead-rotation", "blocked-numbers", "never-log"] },
   { id: "email", label: "Email", heading: "BROKERAGE SET-UP", sectionIds: ["shared-signatures"] }, // BF_PORTAL_v947_BROKERAGE_SETUP
   { id: "website", label: "Website", heading: "BROKERAGE SET-UP", sectionIds: ["website-kit"] }, // BF_PORTAL_v947_BROKERAGE_SETUP
-  { id: "money", label: "Money", heading: "BROKERAGE SET-UP", sectionIds: ["quickbooks", "payments"] },
+  { id: "money", label: "Money", heading: "BROKERAGE SET-UP", sectionIds: ["broker-pay", "quickbooks", "payments"] }, // BF_PORTAL_v950 - Broker pay was built but in no group, so nobody could reach it
   { id: "risk", label: "Risk and ID checks", heading: "BROKERAGE SET-UP", sectionIds: ["fraud", "id-verification", "your-services"] },
   { id: "sign-in", label: "Sign-in and security", heading: "BROKERAGE SET-UP", sectionIds: ["security", "microsoft-sign-in"] },
   { id: "records", label: "Privacy and records", heading: "BROKERAGE SET-UP", sectionIds: ["retention", "privacy", "survey"] },
