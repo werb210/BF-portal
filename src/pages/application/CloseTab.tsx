@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { api } from "@/api";
 import { getErrorMessage } from "@/utils/errors";
+import InvoicePanel from "./InvoicePanel"; // BF_PORTAL_v952_INVOICE_TEMPLATES
 import PaymentLinksPanel from "@/payments/PaymentLinksPanel";
 
 type Line = {
@@ -201,6 +202,7 @@ export default function CloseTab({ applicationId }: { applicationId: string }) {
         </section>
       ) : null}
 
+      <InvoicePanel applicationId={applicationId} suggestedAmount={lines.filter((l) => l.kind === "broker_fee").reduce((sum, l) => sum + lineAmount(l), 0) || null} />
       <PaymentLinksPanel applicationId={applicationId} />
     </div>
   );

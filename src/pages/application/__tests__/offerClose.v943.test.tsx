@@ -13,6 +13,7 @@ vi.mock("@/api/lenders", () => ({
 }));
 vi.mock("@/offers/offerReaderApi", async (orig) => ({ ...(await orig<Record<string, unknown>>()), readOfferFile: (...a: unknown[]) => h.read(...a) }));
 vi.mock("@/payments/PaymentLinksPanel", () => ({ default: () => <div data-testid="payments" /> }));
+vi.mock("../InvoicePanel", () => ({ default: () => <div data-testid="invoice" /> })); // v952
 
 import { MemoryRouter } from "react-router-dom";
 import IssueTermSheet from "../IssueTermSheet";

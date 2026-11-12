@@ -40,12 +40,16 @@ export default function YourDocumentsSettings({ isAdmin }: { isAdmin: boolean })
   return (
     <div data-testid="your-documents">
       <section style={card}>
-        <h3 style={h3}>Our term sheet</h3>
+        <h3 style={h3}>Our term sheet and invoice templates</h3>
         <p style={muted}>
           Upload our own term sheet, for deals we buy and sell on to a lender. We read every field and match it to the file and the
           offer (business, amount, our rate, term, payment, set-up fee, fee from proceeds). On an offer, &quot;Make our term sheet&quot; fills
           it in, and the client signs ours instead of the lender&apos;s, with no lender name. Upload a fillable PDF, or a Word file with
           fields written like {"{{business_name}}"}.
+        </p>
+        <p style={muted} data-testid="invoice-template-note">
+          An invoice template works the same way: choose "Invoice" under "What it is". Its fields are matched to the invoice number, date,
+          due date, what it is for, amount, tax and total, and to the client's business details. Invoices are made on a file's Close tab.
         </p>
         {types.length > 0 ? (
           <p style={muted} data-testid="term-sheet-by-type-note">
@@ -83,7 +87,7 @@ export default function YourDocumentsSettings({ isAdmin }: { isAdmin: boolean })
         {msg ? <p role="status" style={{ ...muted, color: "var(--ui-text)" }}>{msg}</p> : null}
       </section>
 
-      {data.documents.length === 0 ? <p style={muted}>No term sheet uploaded yet.</p> : null}
+      {data.documents.length === 0 ? <p style={muted}>Nothing uploaded yet.</p> : null}
       {data.documents.map((d) => (
         <DocCard key={d.id} doc={d} kindLabel={kindLabel[d.kind] ?? d.kind} types={types} typeLabel={typeLabel(d.financing_type)} dataFields={data.dataFields} questions={data.questions.filter((q) => q.document_id === d.id)}
           isAdmin={isAdmin} open={open === d.id} onToggle={() => setOpen(open === d.id ? null : d.id)} reload={load} />
