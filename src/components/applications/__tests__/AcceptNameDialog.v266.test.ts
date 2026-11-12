@@ -31,3 +31,16 @@ describe("accept document naming", () => {
     expect(tab).toContain("displayName ? { displayName } : {}");
   });
 });
+
+// BF_PORTAL_v953_NO_PERIOD_FOR_ID
+import { hasPeriod } from "../AcceptNameDialog";
+describe("hasPeriod", () => {
+  it("asks for a period on statements and financials, not on IDs, selfies or void cheques", () => {
+    expect(hasPeriod("Bank Statement", "Bank statements")).toBe(true);
+    expect(hasPeriod("Financial Statements", null)).toBe(true);
+    expect(hasPeriod("ID-front", "Identity verification")).toBe(false);
+    expect(hasPeriod("Selfie", null)).toBe(false);
+    expect(hasPeriod("Government ID", null)).toBe(false);
+    expect(hasPeriod("Void Cheque", null)).toBe(false);
+  });
+});
