@@ -117,7 +117,7 @@ export default function DealsAndPay({ isAdmin }: { isAdmin: boolean }) {
           <label style={{ fontSize: 12 }}>Pay date<br /><input aria-label="Pay date" type="date" style={inp} value={payDate} onChange={(e) => setPayDate(e.target.value)} /></label>
         </div>
         {statements === null ? <p style={{ fontSize: 13 }}>Loading…</p> : statements.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{isAdmin ? "No broker pay plans yet. Set them in Settings > Broker pay." : "No pay statement for this date."}</p>
+          <p style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{isAdmin ? "No broker pay plans yet. Set them in Settings > Money > Broker pay." : "No pay statement for this date."}</p>
         ) : statements.map((s) => (
           <div key={`${s.user_id}-${s.pay_date}`} style={{ borderTop: "1px solid var(--ui-border)", paddingTop: 10, marginTop: 10 }} data-testid={`statement-${s.user_id}`}>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13 }}>
