@@ -56,27 +56,10 @@ export default function LeadScoringPanel() {
 
   return (
     <div className="space-y-4" data-testid="lead-scoring">
-      <section className="drawer-section">
-        <div className="drawer-section__title mb-1">Hottest leads</div>
-        <p style={{ color: "var(--ui-text-muted)", fontSize: 13, marginBottom: 8 }}>
-          Each contact gets a score from 0 to 100: who they are (the rules below) plus what they did in the last 90 days.
-          Hot is {thresholds.hot} and up, warm {thresholds.warm} and up.
-        </p>
-        {top === null && <p style={{ color: "var(--ui-text-muted)" }}>Loading…</p>}
-        {top && top.length === 0 && <p style={{ color: "var(--ui-text-muted)" }}>No scores yet. They are worked out every 30 minutes.</p>}
-        {top && top.length > 0 && (
-          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-            {top.map((t) => (
-              <li key={t.contact_id} className="flex flex-wrap items-center gap-2 py-1" style={{ borderTop: "1px solid var(--ui-border)", color: "var(--ui-text)" }}>
-                <LeadScoreBadge score={{ score: t.score, grade: t.score >= thresholds.hot ? "hot" : t.score >= thresholds.warm ? "warm" : "cold" }} />
-                <Link to={`/crm/contacts/${encodeURIComponent(t.contact_id)}`} style={{ color: "var(--ui-text)", fontWeight: 600 }}>{t.name || t.email || "Contact"}</Link>
-                {t.company_name && <span style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>{t.company_name}</span>}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
+      {/* BF_PORTAL_v947_BROKERAGE_SETUP - rules only. The score itself shows on every contact in the CRM. */}
+      <p data-testid="lead-scoring-intro" style={{ color: "var(--ui-text-muted)", fontSize: 14, margin: 0 }}>
+        Every contact gets a score from 0 to 100, shown beside their name in the CRM: who they are plus what they did in the last 90 days. These rules apply to the whole brokerage.
+      </p>
       <section className="drawer-section">
         <div className="drawer-section__title mb-2">How the score is worked out</div>
         {cfgError && <p style={{ color: "var(--ui-text)", fontSize: 13 }}>{cfgError}</p>}

@@ -14,7 +14,10 @@ const LIMIT: Record<string, number> = { x: 280, bluesky: 300 };
 
 function errText(e: unknown, fallback: string): string { return e instanceof Error && e.message && e.message !== "API_ERROR" ? e.message : fallback; }
 
-export default function SocialPanel() {
+// BF_PORTAL_v947_BROKERAGE_SETUP - "accounts" (Settings > Integrations: connect and disconnect) or "post" (Marketing >
+// Social: pick accounts and post). Connecting the brokerage's accounts is set-up, so it is not on the posting screen.
+export default function SocialPanel({ mode = "post" }: { mode?: "accounts" | "post" }) {
+  const setup = mode === "accounts";
   const [networks, setNetworks] = useState<NetworkInfo[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [ready, setReady] = useState(true);
@@ -108,28 +111,28 @@ export default function SocialPanel() {
       {!ready ? <div role="alert" style={{ color: "var(--ui-text)" }}>Social posting is not switched on for the server yet.</div> : null}
 
       <section className="ui-card" style={{ padding: 16 }}>
-        <h3 style={{ margin: "0 0 8px" }}>Your accounts</h3>
-        {accounts.length === 0 ? <p style={{ color: "var(--ui-text-muted)", margin: "0 0 8px" }}>No accounts connected yet.</p> : (
+        <h3 style={{ margin: "0 0 8px" }}>{setup ? "Connected accounts" : "Post to"}</h3>
+        {accounts.length === 0 ? <p style={{ color: "var(--ui-text-muted)", margin: "0 0 8px" }}>{setup ? "No accounts connected yet." : <>No accounts connected yet. The owner connects them in <a href="/settings/social-accounts">Settings &gt; Integrations</a>.</>}</p> : (
           <ul style={{ listStyle: "none", margin: "0 0 12px", padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
             {accounts.map((a) => (
               <li key={a.id} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <label style={{ display: "flex", gap: 6, alignItems: "center", flex: 1, minWidth: 220 }}>
-                  <input type="checkbox" checked={picked.has(a.id)} onChange={(e) => setPicked((s) => { const n = new Set(s); if (e.target.checked) n.add(a.id); else n.delete(a.id); return n; })} />
+                  {setup ? null : <input type="checkbox" checked={picked.has(a.id)} onChange={(e) => setPicked((s) => { const n = new Set(s); if (e.target.checked) n.add(a.id); else n.delete(a.id); return n; })} />}
                   <strong>{networks.find((n) => n.key === a.network)?.label ?? a.network}</strong> {a.name}
                 </label>
                 {a.status === "needs_reconnect" ? <span style={{ color: "#b45309", fontSize: 13 }}>Connect again{a.last_error ? `: ${a.last_error}` : ""}</span> : null}
-                <button type="button" className="ui-button ui-button--secondary" onClick={() => void disconnect(a)}>Disconnect</button>
+                {setup ? <button type="button" className="ui-button ui-button--secondary" onClick={() => void disconnect(a)}>Disconnect</button> : null}
               </li>
             ))}
           </ul>
         )}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {setup ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {providers.map(([p, configured]) => (
             <button key={p} type="button" className="ui-button ui-button--secondary" disabled={!configured || !ready} title={configured ? undefined : "Not set up on the server yet"} onClick={() => void connect(p)} data-testid={`connect-${p}`}>
               Connect {PROVIDER_LABEL[p] ?? p}{configured ? "" : " (not set up yet)"}
             </button>
           ))}
-        </div>
+        </div> : null}
         {bsky.open ? (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "flex-end" }}>
             <label style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>Bluesky handle<input value={bsky.handle} onChange={(e) => setBsky((b) => ({ ...b, handle: e.target.value }))} placeholder="yourname.bsky.social" /></label>
@@ -140,6 +143,7 @@ export default function SocialPanel() {
         ) : null}
       </section>
 
+      {setup ? null : <>
       <section className="ui-card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
         <h3 style={{ margin: 0 }}>New post</h3>
         <label style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>Post
@@ -189,6 +193,7 @@ export default function SocialPanel() {
           </div>
         ))}
       </section>
+      </>}
     </div>
   );
 }

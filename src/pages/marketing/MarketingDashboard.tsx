@@ -23,8 +23,6 @@ import MobileAppsPanel from "./MobileAppsPanel"; // BF_PORTAL_v811_MOBILE_APPS
 import SiloContext from "@/context/SiloContext"; // BF_PORTAL_v811_MOBILE_APPS
 // BF_PORTAL_v874_MARKETING_TOOLS - the campaign and funded-deal report, the website kit and lead scoring (per silo).
 import CampaignReportPanel from "@/components/marketing/CampaignReportPanel";
-import WebsiteKitPanel from "@/components/marketing/WebsiteKitPanel";
-import LeadScoringPanel from "@/components/marketing/LeadScoringPanel";
 import MetaAdsPanel from "@/components/marketing/MetaAdsPanel"; // BF_PORTAL_v909_META_ADS
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
@@ -54,10 +52,8 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "apps", label: "Mobile apps" }, // BF_PORTAL_v811_MOBILE_APPS - Boreal Financial silo only
   // BF_PORTAL_v874_MARKETING_TOOLS - per silo (BF, BI, SLF); not in the Keystone operations silo.
   { id: "report", label: "Campaign report" },
-  { id: "scoring", label: "Lead scoring" },
-  { id: "kit", label: "Website kit" },
 ];
-const SILO_TOOL_TABS: ReadonlySet<MarketingTab> = new Set<MarketingTab>(["report", "scoring", "kit"]);
+const SILO_TOOL_TABS: ReadonlySet<MarketingTab> = new Set<MarketingTab>(["report"]);
 
 type FunnelStep = {
   key: string;
@@ -1445,7 +1441,7 @@ const MarketingDashboard = () => {
   // BF_PORTAL_PARTNERS_TABS_v720 - ?tab=referrers (old Broker Files links land on Referrers > Brokers).
   const [tab, setTab] = useState<MarketingTab>(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
-    if (t === "report" || t === "kit" || t === "scoring" || t === "social") return t; // BF_PORTAL_v937_SOCIAL_POSTING - ?tab=social (back from a network sign-in) // BF_PORTAL_v874_MARKETING_TOOLS - ?tab=report|kit|scoring
+    if (t === "report" || t === "social") return t; // BF_PORTAL_v937_SOCIAL_POSTING - ?tab=social (back from a network sign-in) // BF_PORTAL_v874_MARKETING_TOOLS - ?tab=report|kit|scoring
     return t === "referrers" ? "referrers" : t === "apps" ? "apps" : "analytics"; // BF_PORTAL_v811_MOBILE_APPS - ?tab=apps
   });
   // BF_PORTAL_v811_MOBILE_APPS - the Mobile apps tab is Boreal Financial's client app, so it shows in the BF silo only.
@@ -1457,6 +1453,12 @@ const MarketingDashboard = () => {
   const [adsService, setAdsService] = useState<AdsService>("google"); // BF_PORTAL_ADS_SERVICES_v709
 
   if (toContent) return <Navigate to="/settings/content?section=automations" replace />;
+  // BF_PORTAL_v947_BROKERAGE_SETUP - website kit, lead scoring rules and connecting social accounts are brokerage
+  // set-up now (Settings). Old links, and the return from a network sign-in, land there.
+  const q = new URLSearchParams(window.location.search);
+  if (q.get("tab") === "kit") return <Navigate to="/settings/website-kit" replace />;
+  if (q.get("tab") === "scoring") return <Navigate to="/settings/lead-scoring" replace />;
+  if (q.get("tab") === "social" && q.get("social")) return <Navigate to={`/settings/social-accounts?${q.toString()}`} replace />;
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -1505,14 +1507,6 @@ const MarketingDashboard = () => {
       {tab === "apps" && isBf && <MobileAppsPanel />}{/* BF_PORTAL_v811_MOBILE_APPS */}
       {/* BF_PORTAL_v874_MARKETING_TOOLS */}
       {tab === "report" && marketingSilo && <CampaignReportPanel />}
-      {tab === "scoring" && marketingSilo && <LeadScoringPanel />}
-      {tab === "kit" && marketingSilo && (
-        <div className="space-y-2">
-          {/* BF_PORTAL_v909_WEBSITE_KIT_LINE */}
-          <p data-testid="website-kit-explainer" style={{ margin: 0, fontSize: 14, color: "var(--ui-text)" }}>Add forms and chat to other websites so their leads land in this CRM.</p>
-          <WebsiteKitPanel />
-        </div>
-      )}
       {tab === "email" && <BrandedEmailComposer />}
       {tab === "links" && <LinkClicksPanel />}{/* BF_PORTAL_BF_LINKS_TAB_v15 */}
       {tab === "sms" && <SmsComposerPanel />}
