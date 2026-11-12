@@ -148,6 +148,8 @@ function Avatar({ name, size = 38 }: { name: string; size?: number }) {
 // ── SMS Tab — iPhone Messages style ──────────────────────────────────────────
 function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact | null; onContactSelected?: (c: Contact) => void }) {
   const [contacts, setContacts] = useState<Contact[]>([]);
+  // BF_PORTAL_v948_SMS_LOADING - the empty message must not show while the list is still loading.
+  const [contactsState, setContactsState] = useState<"loading" | "ready" | "error">("loading");
   const [threads, setThreads] = useState<Record<string, Message[]>>({});
   const [selected, setSelected] = useState<Contact | null>(null);
   const [threadMessages, setThreadMessages] = useState<Array<{
@@ -304,7 +306,9 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
           }
         }
       })
+      .then(() => setContactsState("ready"))
       .catch((error) => {
+        setContactsState("error");
         if (isBadRequest(error)) return;
       })
   }, []);
@@ -662,8 +666,8 @@ function SmsTab({ forcedContact, onContactSelected }: { forcedContact?: Contact 
         {/* Thread list */}
         <div style={{ flex: 1, overflowY: "auto" }}>
           {filtered.length === 0 && (
-            <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--ui-text-muted)", fontSize: 14 }}>
-              {contacts.length === 0 ? "No CRM contacts with phone numbers yet. Add a contact with a phone in CRM to start an SMS thread." : (hasSentMessages ? "No conversations match this filter." : "No conversations yet - click a contact to start one.")}
+            <div data-testid="sms-list-empty" data-state={contactsState} style={{ padding: "20px 16px", textAlign: "center", color: "var(--ui-text-muted)", fontSize: 14 }}>
+              {contactsState === "loading" ? "Loading conversations..." : contactsState === "error" ? "Could not load conversations. Refresh the page to try again." : contacts.length === 0 ? "No CRM contacts with phone numbers yet. Add a contact with a phone in CRM to start an SMS thread." : (hasSentMessages ? "No conversations match this filter." : "No conversations yet - click a contact to start one.")}
             </div>
           )}
           {filtered.map((c) => {
