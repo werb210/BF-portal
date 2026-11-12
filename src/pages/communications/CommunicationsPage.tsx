@@ -14,6 +14,8 @@ import { FILES_READWRITE_SCOPES, MAIL_READWRITE_SCOPES, o365ReasonFrom } from "@
 // BF_PORTAL_v789_INCREMENTAL_CONSENT - reading the inbox is what needs Mail.ReadWrite; it is requested
 // here (silently once granted, by the Reconnect button the first time) rather than at sign-in.
 const withMailScopes = <T,>(call: () => Promise<T>): Promise<T> => withO365Scopes(MAIL_READWRITE_SCOPES, call);
+// BF_PORTAL_v949_INBOX_LIMIT - every inbox list request goes through the two-at-a-time queue.
+const inboxList = <T,>(params: Record<string, string | number | boolean | null | undefined>): Promise<T> => limitedInboxList(params, () => withMailScopes(() => api<T>("/api/crm/inbox", { params })));
 import { ApiError } from "@/api/http";
 import toast from "react-hot-toast"; // BF_PORTAL_COMMS_SMS_ERROR_TOAST_v1
 import { smsSegments } from "@/lib/smsSegments"; // BF_PORTAL_BLOCK_v500
@@ -59,6 +61,7 @@ import { startInternalCall } from "@/dialer/actions";
 import ThreadPanel, { type ThreadEvent, type ThreadSummary } from "@/components/team/ThreadPanel";
 import { useSnippets, useShortcutExpansion } from "@/hooks/useSnippets"; // BF_PORTAL_SNIPPET_TRIGGER_v45
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
+import { limitedInboxList } from "./inboxList";
 import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
 
 // BF_PORTAL_PHONE_TAB_v1 - Voicemail + Recents merged into one "Phone" tab.
@@ -1634,7 +1637,7 @@ function InboxTab({ unreadOnly = false, sharedOnly = false }: { unreadOnly?: boo
           if (mailboxes.mine) targets.push({ addr: "", label: `${mailboxes.mine.display_name} (mine)` });
           for (const mb of mailboxes.shared) targets.push({ addr: mb.address, label: mb.display_name });
           const results = await Promise.allSettled(targets.map((t) =>
-            withMailScopes(() => api<typeof messages>("/api/crm/inbox", { params: { ...(t.addr ? { mailbox: t.addr } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) } }))
+            inboxList<typeof messages>({ ...(t.addr ? { mailbox: t.addr } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) })
               .then((rr) => (Array.isArray(rr) ? rr : []).map((mm) => ({ ...mm, _mailbox: t.addr, _mailboxLabel: t.label })))
           ));
           if (cancelled) return;
@@ -1653,9 +1656,7 @@ function InboxTab({ unreadOnly = false, sharedOnly = false }: { unreadOnly?: boo
           setMessages([]);
         } else {
           const params = { ...(active ? { mailbox: active } : {}), sort: sortDir, ...(browseFolderId ? { folderId: browseFolderId } : { folder }), ...(query ? { q: query } : {}) };
-          const r = await withMailScopes(() =>
-            api<typeof messages>("/api/crm/inbox", { params })
-          );
+          const r = await inboxList<typeof messages>(params);
           if (cancelled) return;
           const list = Array.isArray(r) ? r : [];
           setMessages(list);
@@ -2030,7 +2031,10 @@ function InboxTab({ unreadOnly = false, sharedOnly = false }: { unreadOnly?: boo
 
   useEffect(() => {
     if (needsReconnect) return;
+    let polling = false; // BF_PORTAL_v949_INBOX_LIMIT - a refresh never starts while the last one is still waiting
     const tick = setInterval(() => {
+      if (polling) return;
+      polling = true;
       (async () => {
         try {
           if (active === ALL_MAILBOXES) {
@@ -2038,7 +2042,7 @@ function InboxTab({ unreadOnly = false, sharedOnly = false }: { unreadOnly?: boo
             if (mailboxes.mine) targets.push({ addr: "", label: `${mailboxes.mine.display_name} (mine)` });
             for (const mb of mailboxes.shared) targets.push({ addr: mb.address, label: mb.display_name });
             const results = await Promise.allSettled(targets.map((t) =>
-              withMailScopes(() => api<typeof messages>("/api/crm/inbox", { params: { ...(t.addr ? { mailbox: t.addr } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) } }))
+              inboxList<typeof messages>({ ...(t.addr ? { mailbox: t.addr } : {}), sort: sortDir, folder, ...(query ? { q: query } : {}) })
                 .then((rr) => (Array.isArray(rr) ? rr : []).map((mm) => ({ ...mm, _mailbox: t.addr, _mailboxLabel: t.label })))
             ));
             const merged = results.flatMap((res) => (res.status === "fulfilled" ? res.value : []));
@@ -2047,10 +2051,11 @@ function InboxTab({ unreadOnly = false, sharedOnly = false }: { unreadOnly?: boo
             setMessages(merged);
           } else {
             const params = active ? { mailbox: active } : {};
-            const r = await withMailScopes(() => api<typeof messages>("/api/crm/inbox", { params }));
+            const r = await inboxList<typeof messages>(params);
             if (Array.isArray(r)) setMessages(r);
           }
         } catch { /* background poll: swallow */ }
+        finally { polling = false; }
       })();
     }, 20000);
     return () => clearInterval(tick);
@@ -2066,7 +2071,7 @@ function InboxTab({ unreadOnly = false, sharedOnly = false }: { unreadOnly?: boo
     const run = async (): Promise<void> => {
       const entries = await Promise.allSettled(targets.map(async (addr) => {
         const params = { ...(addr ? { mailbox: addr } : {}), folder: "inbox" as const };
-        const r = await withMailScopes(() => api<Array<{ isRead?: boolean }>>("/api/crm/inbox", { params }));
+        const r = await inboxList<Array<{ isRead?: boolean }>>(params);
         const n = (Array.isArray(r) ? r : []).filter((mm) => mm.isRead === false).length;
         return [addr, n] as const;
       }));
