@@ -180,7 +180,8 @@ export default function ApplicationDetail({ applicationId: propId }: { applicati
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+    // BF_PORTAL_v947 - the whole application card uses the theme's text colour, so no tab inherits the page's white text.
+    <div data-testid="application-detail" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, color: "var(--ui-text)" }}>
       {error && (
         <div style={{ margin: 0, padding: "10px 20px", color: "#b91c1c", background: "#fef2f2", borderBottom: "1px solid #fecaca", fontSize: 14, flexShrink: 0 }}>
           {error}
