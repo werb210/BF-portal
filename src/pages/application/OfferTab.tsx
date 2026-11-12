@@ -21,6 +21,7 @@ export type Revenue = {
 export type FileOffer = {
   id: string; lender_name: string; amount: string | number | null; rate_factor: string | null; term: string | null;
   payment_frequency: string | null; expiry_date: string | null; document_url: string | null; status: string; created_at?: string;
+  expired?: boolean; has_amount?: boolean; // BF_PORTAL_v947 - from the server: past its expiry date / no amount yet
   term_sheet_mode?: Mode | null; client_rate?: string | null; term_months?: number | null; broker_fee?: string | null;
   setup_fee?: string | null; proceeds_fee?: string | null; lender_commission?: string | null; has_lender_term_sheet?: boolean;
   revenue?: Revenue | null;
@@ -182,7 +183,8 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
   const list = offers ?? [];
   const has = list.length > 0;
   const showForm = offers !== null && (!has || adding);
-  const allSent = has && list.every((o) => o.status !== "pending");
+  const sendable = list.filter((o) => !o.expired && o.has_amount !== false);
+  const allSent = has && sendable.length > 0 && sendable.every((o) => o.status !== "pending");
   const signed = list.some((o) => o.status === "accepted");
   const sheetKind = (o: FileOffer) => (o.term_sheet_mode === "ours" ? "Our term sheet, no lender named" : o.term_sheet_mode === "template" ? "On our template" : "The lender's term sheet");
 
@@ -215,7 +217,7 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
               onSaved={() => { setAdding(false); setConditionsKey((k) => k + 1); void load(); }} />
           </div>
         ) : null}
-        {list.length > 1 ? <p style={{ fontSize: 12, color: "var(--ui-text-muted)", margin: "6px 0 0" }}>The client sees these side by side and picks one.</p> : null}
+        {list.filter((o) => !o.expired && o.has_amount !== false).length > 1 ? <p style={{ fontSize: 12, color: "var(--ui-text-muted)", margin: "6px 0 0" }}>The client sees the ones that are complete and not expired side by side, and picks one.</p> : null}
       </Step>
 
       <Step n={2} title="Send to the client" testId="offer-step-2" state={!has ? "wait" : allSent ? "done" : "open"} summary={!has ? "After step 1" : undefined}>
@@ -227,7 +229,10 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
             <div key={o.id} style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", padding: "6px 0" }}>
               {list.length > 1 ? <strong style={{ fontSize: 14, minWidth: 160 }}>{o.term_sheet_mode === "ours" ? "Funded by us" : o.lender_name}</strong> : null}
               <span style={pill(st.bg, st.fg)} data-testid={`offer-state-${o.id}`}>{st.label}</span>
-              {o.status === "accepted" ? null : (
+              {/* BF_PORTAL_v947 - an expired term sheet, or one with no amount, is never sent and the client never sees it. */}
+              {o.status !== "accepted" && o.expired ? <span style={pill("#fee2e2", "#991b1b")} data-testid={`offer-expired-${o.id}`}>Expired: the client does not see it. Change the expiry date in step 1 to send it.</span> : null}
+              {o.status !== "accepted" && !o.expired && o.has_amount === false ? <span style={pill("#fee2e2", "#991b1b")} data-testid={`offer-incomplete-${o.id}`}>No amount yet: fill in its terms in step 1 to send it.</span> : null}
+              {o.status === "accepted" || o.expired || o.has_amount === false ? null : (
                 <button type="button" data-testid={`offer-send-${o.id}`} style={sent ? btn : primary} disabled={busy === o.id} aria-busy={busy === o.id} onClick={() => void send(o)}>
                   {busy === o.id ? "Sending…" : sent ? "Send again" : "Send to the client for signature"}
                 </button>
@@ -241,6 +246,7 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
 
       <Gate feature="funding_conditions">
         <Step n={3} title="Conditions before funding" testId="offer-step-3" state={has ? "open" : "wait"} summary={!has ? "After step 1" : undefined}>
+          {has && !signed && list.length > 1 ? <p data-testid="conditions-before-signing" style={{ fontSize: 13, color: "var(--ui-text-muted)", margin: "0 0 8px" }}>These are the conditions from every term sheet on the file. The client sees none of them yet. Once the client signs one, only that term sheet's conditions stay on this list and show in the client's app.</p> : null}
           {has ? <ConditionsChecklist applicationId={applicationId} reloadKey={conditionsKey} /> : null}
         </Step>
       </Gate>
