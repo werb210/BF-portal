@@ -33,6 +33,23 @@ const th: CSSProperties = { textAlign: "right", padding: "6px 10px", fontSize: 1
 const td: CSSProperties = { textAlign: "right", padding: "6px 10px", borderBottom: "1px solid var(--ui-border)", whiteSpace: "nowrap" };
 const btn: CSSProperties = { padding: "7px 12px", borderRadius: 8, border: "1px solid #1e3a8a", background: "#1e3a8a", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" };
 
+// BF_PORTAL_v947 - plain-language warnings when the figures look wrong, so nobody builds a credit summary on them.
+export function figureWarnings(table: Table): string[] {
+  const out: string[] = [];
+  const row = (item: string) => table.rows.find((r) => r.item === item)?.values ?? [];
+  const rev = row("revenue"); const ni = row("net_income");
+  for (let i = 1; i < table.periods.length; i += 1) {
+    if (rev[i] != null && rev[i] === rev[i - 1] && ni[i] != null && ni[i] === ni[i - 1]) {
+      out.push(`${table.periods[i - 1]!.label} and ${table.periods[i]!.label} show the same revenue and net income. Check that each year's own statement is on file, then read the statements again.`);
+    }
+  }
+  const limits: Array<[string, number, string]> = [["current_ratio", 50, "current ratio"], ["dscr", 20, "DSCR"]];
+  for (const [item, max, name] of limits) {
+    row(item).forEach((v, i) => { if (v != null && Math.abs(v) > max) out.push(`${table.periods[i]!.label}: a ${name} of ${v.toFixed(2)}x is not believable. A figure behind it was probably misread; click it to correct it.`); });
+  }
+  return out;
+}
+
 export default function StatementFigures({ applicationId }: { applicationId: string }) {
   const [table, setTable] = useState<Table | null>(null);
   const [busy, setBusy] = useState(false);
@@ -79,6 +96,7 @@ export default function StatementFigures({ applicationId }: { applicationId: str
         <p style={{ fontSize: 13, color: "var(--ui-text-muted)" }} data-testid="statement-figures-empty">The statements have not been read yet.</p>
       ) : (
         <div style={{ overflowX: "auto", marginTop: 10 }}>
+          {figureWarnings(table).map((w) => <p key={w} role="alert" data-testid="figure-warning" style={{ fontSize: 13, color: "#92400e", background: "#fef3c7", borderRadius: 8, padding: "6px 10px", margin: "0 0 8px" }}>{w}</p>)}
           <table data-testid="statement-figures-table" style={{ borderCollapse: "collapse", width: "100%", fontSize: 13, color: "var(--ui-text)" }}>
             <thead><tr><th style={{ ...th, textAlign: "left" }}>Line</th>{table.periods.map((p) => <th key={p.label} style={th}>{p.label}{p.kind !== "annual" ? ` (${p.kind})` : ""}</th>)}</tr></thead>
             <tbody>

@@ -1,4 +1,4 @@
-// BF_PORTAL_v938_OUR_TERM_SHEET (ported from Keystone) - Settings > Our term sheet: upload Boreal's own term sheet template.
+// BF_PORTAL_v938_OUR_TERM_SHEET (ported from Keystone) - Settings > Term sheet templates: upload Boreal's own term sheet template.
 // Each field is matched to the file and offer data; the admin checks the matches. Offer tab > Make our term sheet fills it.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/api";
