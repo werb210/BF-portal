@@ -266,6 +266,16 @@ describe("Keystone silo screens (mocked KS-Ops)", () => {
     expect(patch.body).toEqual({ seats: 6 });
   });
 
+  it("licensee detail turns the Marketing add-on on with PATCH addons.marketing (v950)", async () => {
+    renderKs(`/silo/ks/licensees/${LIC_ID}`);
+    const addon = await screen.findByLabelText("Marketing add-on ($49 a month)") as HTMLSelectElement;
+    expect(addon.value).toBe("false");
+    fireEvent.change(addon, { target: { value: "true" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save 1 change" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "PATCH")).toBe(true));
+    expect(calls.find((c) => c.method === "PATCH")!.body).toEqual({ addons: { marketing: true } });
+  });
+
   it("support inbox filters by priority and opens the thread; a reply is posted", async () => {
     renderKs("/silo/ks/tickets");
     expect(await screen.findByRole("link", { name: "Cannot upload documents" })).toBeInTheDocument();
