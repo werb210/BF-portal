@@ -48,6 +48,37 @@ describe("Marketing > Social", () => {
     expect(await screen.findByText("Posted to every account.")).toBeTruthy();
   });
 
+  it("takes the picture from the linked article and posts with it (v951)", async () => {
+    h.get.mockImplementation(async (url: string) => (url.includes("/link-preview") ? { preview: { title: "Rates hold", site: "Example News", image_url: "https://cdn.news.example/a.jpg" } }
+      : url.includes("/accounts") ? { networks: NETWORKS, accounts: ACCOUNTS, ready: true } : { posts: [] }));
+    h.post.mockResolvedValue({ post: { id: "p2", status: "published", account_ids: ["a1"], results: {} } });
+    render(<SocialPanel />);
+    await screen.findByText("Boreal Financial");
+    fireEvent.change(screen.getByTestId("social-body"), { target: { value: "Worth a read" } });
+    const link = screen.getByTestId("social-link");
+    fireEvent.change(link, { target: { value: "https://news.example/story" } });
+    fireEvent.blur(link);
+    expect((await screen.findByTestId("social-link-found")).textContent).toContain("Rates hold");
+    expect(h.get).toHaveBeenCalledWith("/api/social/link-preview?url=https%3A%2F%2Fnews.example%2Fstory");
+    fireEvent.click(screen.getAllByRole("checkbox")[0]!);
+    fireEvent.click(screen.getByTestId("social-send"));
+    await waitFor(() => expect(h.post).toHaveBeenCalledWith("/api/social/posts", { body: "Worth a read", link_url: "https://news.example/story", image_url: "https://cdn.news.example/a.jpg", account_ids: ["a1"], scheduled_at: null }));
+  });
+
+  it("says so when the article has no picture, and does not look up a half-typed link (v951)", async () => {
+    h.get.mockImplementation(async (url: string) => (url.includes("/link-preview") ? { preview: { title: "No art", image_url: null } }
+      : url.includes("/accounts") ? { networks: NETWORKS, accounts: ACCOUNTS, ready: true } : { posts: [] }));
+    render(<SocialPanel />);
+    await screen.findByText("Boreal Financial");
+    const link = screen.getByTestId("social-link");
+    fireEvent.change(link, { target: { value: "https://" } });
+    fireEvent.blur(link);
+    expect(h.get.mock.calls.some((c) => String(c[0]).includes("/link-preview"))).toBe(false);
+    fireEvent.change(link, { target: { value: "https://news.example/plain" } });
+    fireEvent.blur(link);
+    expect((await screen.findByTestId("social-link-none")).textContent).toContain("no picture");
+  });
+
   it("won't send to Instagram without a picture", async () => {
     render(<SocialPanel />);
     await screen.findByText("@boreal");

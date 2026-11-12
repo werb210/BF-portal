@@ -32,6 +32,20 @@ export default function SocialPanel({ mode = "post" }: { mode?: "accounts" | "po
   const [link, setLink] = useState("");
   const [image, setImage] = useState("");
   const [preview, setPreview] = useState("");
+  // BF_PORTAL_v951_SOCIAL_LINK_PREVIEW - the linked article's picture and headline are read when the link is entered.
+  const [article, setArticle] = useState<{ state: "idle" | "reading" | "found" | "none"; title?: string | null; site?: string | null; text?: string }>({ state: "idle" });
+  const [imageFromLink, setImageFromLink] = useState(false);
+  const readLink = async (raw: string) => {
+    const url = raw.trim();
+    if (!/^https:\/\/\S+\.\S+/i.test(url)) { setArticle({ state: "idle" }); return; }
+    setArticle({ state: "reading" });
+    try {
+      const r = await api.get<{ preview?: { title?: string | null; site?: string | null; image_url?: string | null } }>(`/api/social/link-preview?url=${encodeURIComponent(url)}`);
+      const p = r?.preview;
+      if (p?.image_url && (!image || imageFromLink)) { setImage(p.image_url); setPreview(p.image_url); setImageFromLink(true); }
+      setArticle(p?.image_url ? { state: "found", title: p.title ?? null, site: p.site ?? null } : { state: "none", title: p?.title ?? null, text: "That page has no picture to use. You can add one yourself." });
+    } catch (e) { setArticle({ state: "none", text: errText(e, "The article's picture could not be read. You can add one yourself.") }); }
+  };
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [when, setWhen] = useState("");
   const [busy, setBusy] = useState(false);
@@ -86,7 +100,7 @@ export default function SocialPanel({ mode = "post" }: { mode?: "accounts" | "po
       const res = await rawApiFetch("/api/social/media", { method: "POST", body: fd });
       const j = (await res.json().catch(() => ({}))) as { url?: string; preview?: string; message?: string };
       if (!res.ok || !j.url) throw new Error(j.message ?? "The picture did not upload.");
-      setImage(j.url); setPreview(j.preview ?? (j.url.startsWith("http") ? j.url : ""));
+      setImage(j.url); setPreview(j.preview ?? (j.url.startsWith("http") ? j.url : "")); setImageFromLink(false);
     } catch (e) { setNote({ ok: false, text: errText(e, "The picture did not upload.") }); }
     finally { setBusy(false); }
   };
@@ -150,12 +164,15 @@ export default function SocialPanel({ mode = "post" }: { mode?: "accounts" | "po
           <textarea rows={4} value={body} onChange={(e) => setBody(e.target.value)} data-testid="social-body" />
         </label>
         <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{body.length} characters</span>
-        <label style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>Link (optional)<input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" /></label>
+        <label style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>Link (optional)<input value={link} onChange={(e) => setLink(e.target.value)} onBlur={(e) => void readLink(e.target.value)} onPaste={(e) => { const t = e.clipboardData?.getData("text") ?? ""; if (t) window.setTimeout(() => void readLink(t), 0); }} placeholder="https://" data-testid="social-link" /></label>
+        {article.state === "reading" ? <span role="status" style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Reading the article's picture...</span> : null}
+        {article.state === "found" ? <span role="status" data-testid="social-link-found" style={{ fontSize: 13, color: "var(--ui-text)" }}>Picture taken from the article{article.title ? `: "${article.title}"` : ""}{article.site ? ` (${article.site})` : ""}. Remove or change it below if you want another.</span> : null}
+        {article.state === "none" ? <span role="status" data-testid="social-link-none" style={{ fontSize: 13, color: "#b45309" }}>{article.text}</span> : null}
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <label className="ui-button ui-button--secondary" style={{ cursor: "pointer" }}>{image ? "Change picture" : "Add a picture"}
             <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadPicture(f); }} />
           </label>
-          {image ? <>{preview ? <img src={preview} alt="" style={{ height: 48, borderRadius: 6 }} /> : <span style={{ fontSize: 13 }}>Picture added</span>}<button type="button" className="ui-button ui-button--secondary" onClick={() => { setImage(""); setPreview(""); }}>Remove picture</button></> : null}
+          {image ? <>{preview ? <img src={preview} alt="" style={{ height: 48, borderRadius: 6 }} /> : <span style={{ fontSize: 13 }}>Picture added</span>}<button type="button" className="ui-button ui-button--secondary" onClick={() => { setImage(""); setPreview(""); setImageFromLink(false); }}>Remove picture</button></> : null}
         </div>
         <label style={{ display: "flex", flexDirection: "column", fontSize: 13, maxWidth: 260 }}>Schedule (leave empty to post now)
           <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
