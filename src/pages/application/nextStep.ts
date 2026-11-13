@@ -7,11 +7,12 @@ export type NextStep = { label: string; tab: string; waiting?: boolean };
 /** Where the file's term sheets stand: none saved, saved but not sent, sent and waiting, or signed. */
 export type OfferState = "none" | "draft" | "blocked" | "sent" | "signed";
 // BF_PORTAL_v950_NEXT_STEP_BLOCKED - "blocked": there are unsent term sheets but none can be sent (expired, or no amount).
-export function offerStateOf(offers: Array<{ status?: string | null; expired?: boolean; has_amount?: boolean }>): OfferState {
+export function offerStateOf(offers: Array<{ status?: string | null; expired?: boolean; has_amount?: boolean; sent_for_signature_at?: string | null }>): OfferState {
   if (!offers.length) return "none";
   if (offers.some((o) => o.status === "accepted")) return "signed";
-  const drafts = offers.filter((o) => o.status === "pending");
-  if (drafts.length) return drafts.some((o) => !o.expired && o.has_amount !== false) ? "draft" : (offers.some((o) => o.status !== "pending") ? "sent" : "blocked");
+  // OFFER_SENT_MARK - a term sheet already sent to the client is not a draft, even though its status has not changed yet.
+  const drafts = offers.filter((o) => o.status === "pending" && !o.sent_for_signature_at);
+  if (drafts.length) return drafts.some((o) => !o.expired && o.has_amount !== false) ? "draft" : (offers.some((o) => o.status !== "pending" || Boolean(o.sent_for_signature_at)) ? "sent" : "blocked");
   return "sent";
 }
 

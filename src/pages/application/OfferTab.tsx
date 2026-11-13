@@ -22,7 +22,7 @@ export type Revenue = {
 export type FileOffer = {
   id: string; lender_name: string; amount: string | number | null; rate_factor: string | null; term: string | null;
   payment_frequency: string | null; expiry_date: string | null; document_url: string | null; status: string; created_at?: string;
-  expired?: boolean; has_amount?: boolean; // BF_PORTAL_v947 - from the server: past its expiry date / no amount yet
+  expired?: boolean; has_amount?: boolean; sent_for_signature_at?: string | null; // BF_PORTAL_v947 - from the server: past its expiry date / no amount yet
   term_sheet_mode?: Mode | null; client_rate?: string | null; term_months?: number | null; broker_fee?: string | null;
   setup_fee?: string | null; proceeds_fee?: string | null; lender_commission?: string | null; has_lender_term_sheet?: boolean;
   revenue?: Revenue | null;
@@ -42,6 +42,11 @@ const link: CSSProperties = { ...btn, border: 0, background: "transparent", colo
 const inp: CSSProperties = { padding: "7px 9px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface)", color: "var(--ui-text)", fontSize: 13, width: 140 };
 const field: CSSProperties = { display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--ui-text-muted)" };
 const pill = (bg: string, fg: string): CSSProperties => ({ padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: bg, color: fg });
+
+/** "9.5000" reads as "9.5"; anything that is not a plain number is left as typed. */
+export function tidyRate(v: string): string {
+  return /^\d+\.\d+$/.test(v) ? v.replace(/\.?0+$/, "") : v;
+}
 
 const SEND_STATE: Record<string, { label: string; bg: string; fg: string }> = {
   pending: { label: "Not sent yet", bg: "#eef0f4", fg: "#4b5563" },
@@ -135,7 +140,7 @@ export function ChangeTerms({ offer, onSaved, onClose }: { offer: FileOffer; onS
 
 /** "Northern Capital · $250,000 · 13.4% · 36 months · Monthly", leaving out what is not known. */
 export function termsLine(o: FileOffer): string {
-  const parts = [money(o.amount), o.client_rate || o.rate_factor || "", o.term || (o.term_months ? `${o.term_months} months` : ""), o.payment_frequency || ""].filter(Boolean);
+  const parts = [money(o.amount), tidyRate(o.client_rate || o.rate_factor || ""), o.term || (o.term_months ? `${o.term_months} months` : ""), o.payment_frequency || ""].filter(Boolean);
   return parts.length ? parts.join(" · ") : "Figures not entered yet: press Change";
 }
 
@@ -221,7 +226,7 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
     } finally { setBusy(null); }
   };
   const sendable = list.filter((o) => !o.expired && o.has_amount !== false);
-  const allSent = has && sendable.length > 0 && sendable.every((o) => o.status !== "pending");
+  const allSent = has && sendable.length > 0 && sendable.every((o) => o.status !== "pending" || Boolean(o.sent_for_signature_at));
   const signed = list.some((o) => o.status === "accepted");
   const sheetKind = (o: FileOffer) => (o.term_sheet_mode === "ours" ? "Our term sheet, no lender named" : o.term_sheet_mode === "template" ? "On our template" : "The lender's term sheet");
 
@@ -262,8 +267,9 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
 
       <Step n={2} title="Send to the client" testId="offer-step-2" state={!has ? "wait" : allSent ? "done" : "open"} summary={!has ? "After step 1" : undefined}>
         {has ? list.map((o) => {
-          const st = SEND_STATE[o.status] ?? { label: o.status, bg: "#eef0f4", fg: "#4b5563" };
-          const sent = o.status !== "pending";
+          // OFFER_SENT_MARK - a term sheet that went to the client reads "Sent" until they sign, also after a reload.
+          const sent = o.status !== "pending" || Boolean(o.sent_for_signature_at);
+          const st = SEND_STATE[o.status === "pending" && sent ? "pending_acceptance" : o.status] ?? { label: o.status, bg: "#eef0f4", fg: "#4b5563" };
           const m = msgs[o.id];
           return (
             <div key={o.id} style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", padding: "6px 0" }}>
