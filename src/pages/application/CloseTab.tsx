@@ -20,6 +20,12 @@ type Close = {
   residual_percent: number | null; residual_months: number | null; notes: string | null; lines?: Line[];
 };
 
+/** CLOSE_FUNDED_MESSAGE - why the file could not move to Funded, in words a broker can act on. */
+export function fundedError(serverMessage: string): string {
+  if (/invalid pipeline transition/i.test(serverMessage)) return "This file is not at the Accepted stage yet, so it cannot be marked funded. It moves to Accepted when the client signs the term sheet; then come back and mark it funded.";
+  return serverMessage || "The file could not move to Funded. Clear or waive the open funding conditions on the Offer tab first.";
+}
+
 export const KIND_LABEL: Record<string, string> = {
   lender_commission: "Lender commission", residual: "Profit share (monthly)", client_fee: "Broker fee (client)", setup_fee: "Set-up fee",
   proceeds_fee: "Fee from proceeds", spread: "Rate difference", referral_fee: "Referral fee owed (money out)", other: "Other revenue",
@@ -80,7 +86,7 @@ export default function CloseTab({ applicationId }: { applicationId: string }) {
     try {
       await api.patch(`/api/portal/applications/${encodeURIComponent(applicationId)}/status`, { status: "Funded", reason: "Closed" });
       setMsg({ ok: true, text: "The file is now Funded." });
-    } catch (e) { setMsg({ ok: false, text: getErrorMessage(e, "The file could not move to Funded. Clear or waive the open funding conditions on the Offer tab first.") }); }
+    } catch (e) { setMsg({ ok: false, text: fundedError(getErrorMessage(e, "")) }); }
     finally { setBusy(null); }
   }
 
