@@ -77,7 +77,7 @@ export default function CardHeader({ applicationId, application, onNavigate }: {
   useEffect(() => {
     if (!atOffer || !applicationId) { setOfferState(undefined); return; }
     let cancelled = false;
-    api.get<{ items?: Array<{ status?: string; expired?: boolean; has_amount?: boolean }> }>(`/api/offers?applicationId=${encodeURIComponent(applicationId)}`)
+    api.get<{ items?: Array<{ status?: string; expired?: boolean; has_amount?: boolean; sent_for_signature_at?: string | null }> }>(`/api/offers?applicationId=${encodeURIComponent(applicationId)}`)
       .then((r) => { if (!cancelled) setOfferState(offerStateOf(Array.isArray(r?.items) ? r.items : [])); })
       .catch(() => { if (!cancelled) setOfferState(undefined); });
     return () => { cancelled = true; };
