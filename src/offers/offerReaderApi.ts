@@ -5,7 +5,7 @@ import { api } from "@/api";
 
 export type Frequency = "daily" | "weekly" | "biweekly" | "semimonthly" | "monthly";
 
-export type ReadCondition = { title: string; description: string | null; owner: "staff" | "client" | "lender"; requires_document: boolean };
+export type ReadCondition = { title: string; description: string | null; owner: "staff" | "client" | "lender"; requires_document: boolean; client_title?: string | null };
 export type ReadOffer = {
   lender_name: string | null; product_name: string | null; amount: number | null; rate_kind: "interest_rate" | "factor_rate" | null; rate: number | null;
   term_months: number | null; payment_amount: number | null; payment_frequency: Frequency | null; expiry_date: string | null;
