@@ -208,7 +208,7 @@ export default function CloseTab({ applicationId }: { applicationId: string }) {
         </section>
       ) : null}
 
-      <InvoicePanel applicationId={applicationId} suggestedAmount={lines.filter((l) => l.kind === "broker_fee").reduce((sum, l) => sum + lineAmount(l), 0) || null} />
+      <InvoicePanel applicationId={applicationId} suggestedAmount={lines.filter((l) => l.kind === "client_fee").reduce((sum, l) => sum + lineAmount(l), 0) || null} />
       <PaymentLinksPanel applicationId={applicationId} />
     </div>
   );
