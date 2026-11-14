@@ -70,6 +70,7 @@ const BI_NAV: NavItem[] = [
   { label: "Lender", path: "/silo/bi/lender", roles: ["Admin", "Staff"] },
   { label: "Marketing", path: "/silo/bi/marketing", roles: ["Admin"] },
   { label: "Outreach", path: "/silo/bi/outreach", roles: ["Admin"] }, // BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_v1
+  { label: "Reps", path: "/silo/bi/reps", roles: ["Admin", "Staff"] }, // BF_PORTAL_BI_FIELD_REPS_v1 - outside reps who collect contacts at events
   { label: "Reports", path: "/reports", roles: ["Admin", "Staff", "Ops", "Marketing"] }, // BF_PORTAL_REPORTS_SECTION_v714
 ];
 
