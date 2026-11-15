@@ -5,7 +5,7 @@ import { useState, type CSSProperties, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api";
 
-export type LenderRep = { id: string; lender_id: string; name: string; position: string | null; email: string; phone: string | null };
+export type LenderRep = { id: string; lender_id: string; name: string; position: string | null; email: string; phone: string | null; phone_extension?: string | null };
 export type FileLender = { lender_id: string; lender_name: string; rep_id: string | null; reps: LenderRep[] };
 type Reply = { ok?: boolean; lenders?: FileLender[]; errors?: Record<string, string>; message?: string };
 
@@ -34,7 +34,7 @@ export default function LenderRepPicker({ applicationId, lenderId, lenderName }:
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", position: "", email: "", phone: "" });
+  const [form, setForm] = useState({ name: "", position: "", email: "", phone: "", phone_extension: "" });
 
   const mine = (data ?? []).find((l) => l.lender_id === lenderId);
   if (!data || !mine) return null;
@@ -61,7 +61,7 @@ export default function LenderRepPicker({ applicationId, lenderId, lenderName }:
     try {
       take((await api.post<Reply>(`/api/portal/lenders/${encodeURIComponent(lenderId)}/reps`, { ...form, application_id: applicationId })) as Reply);
       setAdding(false);
-      setForm({ name: "", position: "", email: "", phone: "" });
+      setForm({ name: "", position: "", email: "", phone: "", phone_extension: "" });
       setMsg("Saved. Everything for this file now goes to this rep only.");
     } catch (err) {
       setMsg(errorOf(err).message);
@@ -85,7 +85,7 @@ export default function LenderRepPicker({ applicationId, lenderId, lenderName }:
         {current && !adding ? (
           <span style={small}>
             <a href={`mailto:${current.email}`} style={{ color: "inherit" }}>{current.email}</a>
-            {current.phone ? <> {" · "} <a href={`tel:${current.phone}`} style={{ color: "inherit" }}>{current.phone}</a></> : null}
+            {current.phone ? <> {" · "} <a href={`tel:${current.phone}`} style={{ color: "inherit" }}>{current.phone}</a>{current.phone_extension ? ` ext. ${current.phone_extension}` : ""}</> : null}
           </span>
         ) : null}
       </div>
@@ -95,6 +95,7 @@ export default function LenderRepPicker({ applicationId, lenderId, lenderName }:
           <input aria-label="Rep's position" placeholder="Position" style={{ ...input, flex: "1 1 130px" }} value={form.position} onChange={set("position")} />
           <input aria-label="Rep's email" placeholder="Email" type="email" style={{ ...input, flex: "1 1 190px" }} value={form.email} onChange={set("email")} />
           <input aria-label="Rep's direct phone" placeholder="Direct phone" type="tel" style={{ ...input, flex: "1 1 140px" }} value={form.phone} onChange={set("phone")} />
+          <input aria-label="Rep's extension" placeholder="Ext." inputMode="numeric" style={{ ...input, flex: "0 1 80px", width: 80 }} value={form.phone_extension} onChange={set("phone_extension")} />
           <button type="submit" style={btn} disabled={busy}>{busy ? "Saving..." : "Save rep"}</button>
           <button type="button" style={btn} onClick={() => { setAdding(false); setMsg(null); }}>Cancel</button>
         </form>
