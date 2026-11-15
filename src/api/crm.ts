@@ -160,6 +160,8 @@ export type ContactRow = {
   lifecycle_stage?: string | null;
   owner_id?: string | null;
   owner_name?: string | null;
+  marketing_contact?: boolean | null; // BF_PORTAL_v958_MARKETING_CONTACTS
+  marketing_opt_out?: boolean | null; // unsubscribed from marketing
   role?: string | null;
   ownership_percent?: number | null;
   is_primary_applicant?: boolean | null;
@@ -250,6 +252,11 @@ export const crmApi = {
   bulkDeleteContacts: (ids: string[]) => api.post("/api/crm/contacts/bulk-delete", { ids }),
   bulkTagContacts: (ids: string[], tag: string) => api.post("/api/crm/contacts/bulk-tag", { ids, tags: [tag], op: "add" }), // BF_PORTAL_BLOCK_v802_ACTIVE_TAG — server expects {tags[],op}, not {tag}
   bulkAssignContacts: (ids: string[], ownerUserId: string) => api.post("/api/crm/contacts/bulk-assign", { ids, ownerUserId }),
+  // BF_PORTAL_v958_MARKETING_CONTACTS
+  bulkMarketingContacts: (sel: { ids?: string[]; tags?: string[] }, marketing: boolean) =>
+    api.post<{ updated: number; skipped_unsubscribed?: number }>("/api/crm/contacts/bulk-marketing", { ...sel, marketing }),
+  marketingSummary: () =>
+    api.get<{ total: number; marketing: number; emailable: number; unsubscribed?: number; budget: { allowance: number; used: number; remaining: number | null; addon: boolean } | null }>("/api/crm/contacts/marketing-summary"),
   bulkDeleteCompanies: (ids: string[]) => api.post("/api/crm/companies/bulk-delete", { ids }),
   bulkTagCompanies: (ids: string[], tag: string) => api.post("/api/crm/companies/bulk-tag", { ids, tags: [tag], op: "add" }), // BF_PORTAL_BLOCK_v802_ACTIVE_TAG
   bulkAssignCompanies: (ids: string[], ownerUserId: string) => api.post("/api/crm/companies/bulk-assign", { ids, ownerUserId }),
