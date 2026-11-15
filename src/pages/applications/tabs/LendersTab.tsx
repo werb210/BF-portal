@@ -33,6 +33,7 @@ import ProductCategoryPicker from "@/pages/applications/tabs/ProductCategoryPick
 import BrokerDealPanel from "@/components/applications/BrokerDealPanel"; // BF_PORTAL_BLOCK_v522_BROKER_IMPORT
 import FeeAgreementPanel from "@/components/applications/FeeAgreementPanel"; // BF_PORTAL_FEE_AGREEMENT_v709
 import LenderApiPanel from "./LenderApiPanel"; // BF_PORTAL_v873_LENDER_API
+import LenderRepPicker from "./LenderRepPicker"; // BF_PORTAL_v960_LENDER_REPS
 import { humanizeCode, productNameWords } from "@/utils/labels";
 // BF_PORTAL_PRODUCT_QUESTIONS_v292 - BF-Server v289 refuses to send while product questions are unanswered.
 type ProductQuestionsSummary = { blocking?: boolean; message?: string | null } | null | undefined;
@@ -1031,6 +1032,8 @@ function describeSendFailure(err: unknown): string {
                           {resendBusy === lenderKey ? "Sending..." : "Resend"}
                         </button>
                       </div>
+                      {/* BF_PORTAL_v960_LENDER_REPS - who at the lender is handling this file; Resend then goes to them only. */}
+                      {id && lenderKey ? <LenderRepPicker applicationId={String(id)} lenderId={lenderKey} lenderName={m.lenderName ?? "the lender"} /> : null}
                     </td>
                   </tr>
                 )}
