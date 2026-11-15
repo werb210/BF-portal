@@ -164,7 +164,20 @@ function DocCard({ doc, kindLabel, types, typeLabel, dataFields, questions, isAd
               </tbody>
             </table>
           </div>
-          {isAdmin ? <div style={{ ...row, marginTop: 10 }}><button type="button" style={primaryButton} disabled={busy || !dirty} onClick={() => void save()}>Save matches</button></div> : null}
+          {/* TEMPLATE_SAVE_FEEDBACK - the button used to look ready and do nothing when there was nothing to save. Now it only
+              shows after a match is changed; otherwise the line says where things stand and what happens next. */}
+          {isAdmin ? (
+            dirty ? (
+              <div style={{ ...row, marginTop: 10 }}><button type="button" style={primaryButton} disabled={busy} onClick={() => void save()} data-testid={`doc-save-${doc.id}`}>Save matches</button></div>
+            ) : (
+              <p style={{ ...muted, marginTop: 10 }} data-testid={`doc-saved-${doc.id}`}>
+                {matched === fillable.length
+                  ? `Every field is matched and saved. ${doc.active ? "This template is in use: nothing more to do here." : "Press Use this to start using it."}`
+                  : `${matched} of ${fillable.length} fields are matched and saved. Change a match above to save it; fields left unmatched are asked in the client's application.`}
+                {doc.kind === "term_sheet" && doc.active && matched === fillable.length ? " To make a term sheet from it, open an application's Offer tab and choose the way that uses your template." : ""}
+              </p>
+            )
+          ) : null}
           {questions.length ? <ExtraQuestions questions={questions} isAdmin={isAdmin} reload={reload} /> : null}
         </>
       ) : null}
