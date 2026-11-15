@@ -2,12 +2,13 @@
 // this to a broker and expect them to know how to use it"). One line per condition with a tick box; grouped by who has
 // to act. Due date, who follows up, attach a document, "not needed" and remove sit behind More on each line.
 // Same server as before (/api/broker-tools/applications/:id/conditions); only the screen changed.
+import { ClientWording } from "@/brokerTools/ClientWording"; // BF_PORTAL_CONDITION_CLIENT_WORDING
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { api, rawApiFetch } from "@/api";
 import { getErrorMessage } from "@/utils/errors";
 
 export type Condition = {
-  id: string; title: string; description: string | null; owner: "staff" | "client" | "lender";
+  id: string; title: string; client_title?: string | null; description: string | null; owner: "staff" | "client" | "lender";
   assigned_user_id: string | null; assigned_name?: string | null; due_date: string | null;
   status: "open" | "received" | "cleared" | "waived"; requires_document: boolean;
   document_id: string | null; document_url: string | null; waived_reason: string | null; client_submitted_at: string | null; overdue: boolean;
@@ -117,6 +118,7 @@ export default function ConditionsChecklist({ applicationId, reloadKey = 0 }: { 
                   <input type="checkbox" aria-label={`Done: ${c.title}`} checked={c.status === "cleared"} disabled={busy || c.status === "waived"} onChange={() => void toggle(c)} style={{ width: 18, height: 18, flex: "none" }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, textDecoration: c.status === "waived" ? "line-through" : undefined }}>{c.title}</div>
+                    {c.owner === "client" && c.client_title ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>The client sees: {c.client_title}</div> : null}
                     {c.status === "waived" && c.waived_reason ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Not needed: {c.waived_reason}</div>
                       : c.client_submitted_at ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Sent by the client {day(c.client_submitted_at)}</div> : null}
                   </div>
@@ -129,6 +131,7 @@ export default function ConditionsChecklist({ applicationId, reloadKey = 0 }: { 
                 {open === c.id ? (
                   <div style={{ margin: "10px 0 4px 30px", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end", fontSize: 12, color: "var(--ui-text-muted)" }}>
                     {c.description ? <p style={{ flexBasis: "100%", margin: 0, fontSize: 13 }}>{c.description}</p> : null}
+                    {c.owner === "client" ? <ClientWording title={c.title} value={c.client_title} disabled={busy} onSave={(t) => void patch(c, { client_title: t })} /> : null}
                     <label>Who does it<br />
                       <select aria-label={`Who does: ${c.title}`} style={inp} value={c.owner} disabled={busy} onChange={(e) => void patch(c, { owner: e.target.value })}>
                         <option value="client">The client</option><option value="staff">Us</option><option value="lender">The lender</option>

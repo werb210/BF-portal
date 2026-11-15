@@ -4,12 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import { api, rawApiFetch } from "@/api";
 import { Chip, ErrorLine, card, dangerButton, errorText, h3, input, label, muted, primaryButton, row, secondaryButton, type Tone } from "./ui";
 import { OWNER_LABEL, STATUS_LABEL } from "./fundingGate";
+import { ClientWording } from "./ClientWording"; // BF_PORTAL_CONDITION_CLIENT_WORDING
 import { readOfferFile, readOfferOnFile, type ReadCondition } from "@/offers/offerReaderApi"; // BF_PORTAL_v906_OFFER_READER
 
 type OfferOnFile = { id: string; lender_name: string };
 
 export type Condition = {
-  id: string; title: string; description: string | null; owner: "staff" | "client" | "lender";
+  id: string; title: string; client_title?: string | null; description: string | null; owner: "staff" | "client" | "lender";
   assigned_user_id: string | null; assigned_name?: string | null; due_date: string | null;
   status: "open" | "received" | "cleared" | "waived"; source: string; requires_document: boolean;
   document_id: string | null; document_url: string | null; note: string | null; waived_reason: string | null;
@@ -187,6 +188,7 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
                     {(["client", "staff", "lender"] as const).map((o) => <option key={o} value={o}>{OWNER_LABEL[o] ?? o}</option>)}
                   </select>
                   {c.requires_document && <Chip tone="blue">Needs a document</Chip>}
+                  {c.owner === "client" && <ClientWording title={c.title} value={c.client_title} onSave={(t) => setProposed((cur) => (cur ?? []).map((x, j) => (j === i ? { ...x, client_title: t } : x)))} />}
                 </div>
               ))}
               <div style={{ ...row, marginTop: 8 }}>
@@ -213,6 +215,7 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
                   <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{c.source === "offer" ? "From the offer" : c.source === "template" ? "From a template" : c.source === "lender_api" ? "From the lender (API)" : "Added by staff"}</span>
                 </div>
                 {c.description && <p style={muted}>{c.description}</p>}
+                {c.owner === "client" && <div style={{ marginTop: 6 }}><ClientWording title={c.title} value={c.client_title} disabled={busy} onSave={(t) => void patch(c, { client_title: t })} /></div>}
                 {c.waived_reason && <p style={muted}>Waived: {c.waived_reason}</p>}
                 <div style={{ ...row, marginTop: 8 }}>
                   <label style={label}>Owner
