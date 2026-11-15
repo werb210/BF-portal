@@ -8,7 +8,7 @@ vi.mock("@/api", () => ({ api: { get: h.get, post: h.post, put: h.put } }));
 
 import LenderRepPicker from "../LenderRepPicker";
 
-const REP = { id: "r1", lender_id: "L1", name: "Pat Sample", position: "Underwriter", email: "pat@lender.example", phone: "403-555-0142" };
+const REP = { id: "r1", lender_id: "L1", name: "Pat Sample", position: "Underwriter", email: "pat@lender.example", phone: "403-555-0142", phone_extension: "106" };
 const lenders = (rep_id: string | null, reps = [REP]) => [{ lender_id: "L1", lender_name: "Sample Lender", rep_id, reps }];
 const show = () => render(
   <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -29,6 +29,7 @@ describe("rep handling this file", () => {
     await waitFor(() => expect(h.put).toHaveBeenCalledWith("/api/portal/applications/app-1/lenders/L1/rep", { rep_id: "r1" }));
     expect(await screen.findByText("Saved. Everything for this file now goes to this rep only.")).toBeTruthy();
     expect(screen.getByText("pat@lender.example")).toBeTruthy();
+    expect(screen.getByText(/ext\. 106/)).toBeTruthy();
   });
 
   it("adds a new rep and sets them on the file in one step", async () => {
@@ -40,8 +41,9 @@ describe("rep handling this file", () => {
     fireEvent.change(screen.getByLabelText("Rep's position"), { target: { value: "Underwriter" } });
     fireEvent.change(screen.getByLabelText("Rep's email"), { target: { value: "pat@lender.example" } });
     fireEvent.change(screen.getByLabelText("Rep's direct phone"), { target: { value: "403-555-0142" } });
+    fireEvent.change(screen.getByLabelText("Rep's extension"), { target: { value: "106" } });
     fireEvent.click(screen.getByRole("button", { name: "Save rep" }));
-    await waitFor(() => expect(h.post).toHaveBeenCalledWith("/api/portal/lenders/L1/reps", { name: "Pat Sample", position: "Underwriter", email: "pat@lender.example", phone: "403-555-0142", application_id: "app-1" }));
+    await waitFor(() => expect(h.post).toHaveBeenCalledWith("/api/portal/lenders/L1/reps", { name: "Pat Sample", position: "Underwriter", email: "pat@lender.example", phone: "403-555-0142", phone_extension: "106", application_id: "app-1" }));
     await waitFor(() => expect((screen.getByLabelText("Rep handling this file") as HTMLSelectElement).value).toBe("r1"));
   });
 

@@ -153,6 +153,7 @@ export type ContactRow = {
   phone?: string;
   secondary_email?: string; // BF_PORTAL_CONTACT_SECONDARY_v1
   secondary_phone?: string;
+  phone_extension?: string | null; // BF_PORTAL_v961_PHONE_EXTENSION
   job_title?: string;
   company_id?: string | null;
   company_name?: string | null;

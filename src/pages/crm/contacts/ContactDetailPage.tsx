@@ -132,7 +132,7 @@ export default function ContactDetailPage() {
         <ContactApplicantFields applicationIds={contact.applicationIds} />
         <div style={fieldsBlock}>
           <Field label="Email"   value={contact.email ?? null} />
-          <Field label="Phone"   value={contact.phone ?? null} />
+          <Field label="Phone"   value={contact.phone ? `${contact.phone}${contact.phone_extension ? ` ext. ${contact.phone_extension}` : ""}` : null} />{/* BF_PORTAL_v961_PHONE_EXTENSION */}
           {/* BF_PORTAL_CONTACT_SECONDARY_v1 - second email/phone, shown only when present */}
           {contact.secondary_email && <Field label="Secondary email" value={contact.secondary_email} />}
           {contact.secondary_phone && <Field label="Secondary phone" value={contact.secondary_phone} />}
@@ -218,6 +218,7 @@ export default function ContactDetailPage() {
           name: contact.name ?? "",
           email: contact.email ?? "",
           phone: contact.phone ?? "",
+          phone_extension: contact.phone_extension ?? "", // BF_PORTAL_v961_PHONE_EXTENSION
           secondary_email: contact.secondary_email ?? "", // BF_PORTAL_CONTACT_SECONDARY_v1
           secondary_phone: contact.secondary_phone ?? "",
           lead_status: contact.lead_status ?? "",
@@ -229,6 +230,7 @@ export default function ContactDetailPage() {
           { key: "name", label: "Name", required: true },
           { key: "email", label: "Email", type: "email" },
           { key: "phone", label: "Phone", type: "tel" },
+          { key: "phone_extension", label: "Extension" },
           { key: "secondary_email", label: "Secondary email", type: "email" },
           { key: "secondary_phone", label: "Secondary phone", type: "tel" },
           { key: "job_title", label: "Job title" },
