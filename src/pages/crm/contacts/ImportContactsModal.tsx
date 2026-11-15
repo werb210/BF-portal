@@ -16,7 +16,8 @@ type Field =
   | "company_name"
   | "job_title"
   | "lead_status"
-  | "owner";
+  | "owner"
+  | "marketing_contact"; // BF_PORTAL_v958_MARKETING_CONTACTS
 
 const FIELDS: { key: Field; label: string }[] = [
   { key: "email", label: "Email" },
@@ -29,6 +30,8 @@ const FIELDS: { key: Field; label: string }[] = [
   { key: "lead_status", label: "Lead status" },
   // BF_PORTAL_v900_IMPORT_OWNER - staff email or full name; unmatched rows are assigned to you.
   { key: "owner", label: "Owner (staff email or name)" },
+  // BF_PORTAL_v958_MARKETING_CONTACTS - Yes / No per row; blank follows the box below.
+  { key: "marketing_contact", label: "Marketing contact (Yes / No)" },
 ];
 
 // Minimal RFC-4180 CSV parser: handles quoted fields, embedded commas/newlines,
@@ -94,6 +97,7 @@ function parseCsv(text: string): string[][] {
 
 function guess(header: string): Field | "" {
   const h = header.toLowerCase().replace(/[^a-z]/g, "");
+  if (h.includes("marketingcontact") || h === "marketing" || h === "marketable") return "marketing_contact"; // BF_PORTAL_v958_MARKETING_CONTACTS
   if (h.includes("owner") || h.includes("assignedto") || h === "rep" || h.includes("salesrep")) return "owner";
   if (h.includes("email")) return "email";
   if (h.includes("firstname") || h === "first") return "first_name";
@@ -161,6 +165,7 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [smsConsent, setSmsConsent] = useState(false); // BF_PORTAL_IMPORT_CONSENT_v1
+  const [marketingContacts, setMarketingContacts] = useState(false); // BF_PORTAL_v958_MARKETING_CONTACTS
   const fileRef = useRef<HTMLInputElement>(null);
 
   const onFile = async (file: File) => {
@@ -205,7 +210,7 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
     setBusy(true);
     setErr(null);
     try {
-      const res = await api.post<ImportResult>("/api/crm/contacts/import", { rows, smsConsentExpress: smsConsent }); // BF_PORTAL_IMPORT_CONSENT_v1
+      const res = await api.post<ImportResult>("/api/crm/contacts/import", { rows, smsConsentExpress: smsConsent, marketingContacts }); // BF_PORTAL_IMPORT_CONSENT_v1
       setResult(res);
       onDone();
     } catch (e) {
@@ -328,6 +333,11 @@ export default function ImportContactsModal({ onClose, onDone }: { onClose: () =
               <label style={{ flexBasis: "100%", display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 6 }}>
                 <input type="checkbox" checked={smsConsent} onChange={(e) => setSmsConsent(e.target.checked)} />
                 These contacts gave express SMS/email consent (application terms) - mark them SMS-marketable
+              </label>
+              {/* BF_PORTAL_v958_MARKETING_CONTACTS - imported contacts are not marketing contacts unless ticked. */}
+              <label style={{ flexBasis: "100%", display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 6 }}>
+                <input type="checkbox" checked={marketingContacts} onChange={(e) => setMarketingContacts(e.target.checked)} data-testid="import-marketing-contacts" />
+                Make these marketing contacts (they get campaign emails and texts). Left unticked, they are kept in the CRM but not marketed to.
               </label>
               <button
                 style={btnGhost}
