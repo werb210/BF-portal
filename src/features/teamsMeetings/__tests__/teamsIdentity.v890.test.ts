@@ -13,4 +13,21 @@ describe("Teams identity token", () => {
     expect(await teamsIdentityToken({ getActiveAccount: () => null, getAllAccounts: () => [], acquireTokenSilent: vi.fn() })).toBeNull();
     expect(await teamsIdentityToken({ getActiveAccount: () => ({}), getAllAccounts: () => [], acquireTokenSilent: async () => { throw new Error("consent_required"); } })).toBeNull();
   });
+
+  // BF_PORTAL_v962_TEAMS_JOIN_AS_YOURSELF
+  it("from the Join click, a Microsoft window is used when the silent request cannot work", async () => {
+    const acquireTokenPopup = vi.fn(async () => ({ accessToken: "aad-popup", account: { username: "alex@boreal.example" } }));
+    const setActiveAccount = vi.fn();
+    const noSession = { getActiveAccount: () => null, getAllAccounts: () => [], setActiveAccount, acquireTokenSilent: vi.fn(), acquireTokenPopup };
+    expect(await teamsIdentityToken(noSession, { interactive: true })).toBe("aad-popup");
+    expect(acquireTokenPopup).toHaveBeenCalledWith({ scopes: ACS_TEAMS_SCOPES, account: undefined });
+    expect(setActiveAccount).toHaveBeenCalledWith({ username: "alex@boreal.example" });
+    expect(noSession.acquireTokenSilent).not.toHaveBeenCalled();
+
+    const consent = { getActiveAccount: () => ({ username: "a" }), getAllAccounts: () => [], acquireTokenSilent: async () => { throw new Error("consent_required"); }, acquireTokenPopup };
+    expect(await teamsIdentityToken(consent, { interactive: true })).toBe("aad-popup");
+    expect(await teamsIdentityToken(consent)).toBeNull(); // not from a click: no window
+    const closed = { ...consent, acquireTokenPopup: async () => { throw new Error("user_cancelled"); } };
+    expect(await teamsIdentityToken(closed, { interactive: true })).toBeNull();
+  });
 });

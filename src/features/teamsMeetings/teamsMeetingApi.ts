@@ -11,14 +11,47 @@ export const ACS_TEAMS_SCOPES = [
   "https://auth.msft.communication.azure.com/Teams.ManageChats",
 ];
 
-export async function teamsIdentityToken(client: { getActiveAccount: () => unknown; getAllAccounts: () => unknown[]; acquireTokenSilent: (r: any) => Promise<{ accessToken?: string }> } = msalClient as any): Promise<string | null> {
+type TeamsMsalClient = {
+  initialize?: () => Promise<void>;
+  getActiveAccount: () => unknown;
+  getAllAccounts: () => unknown[];
+  setActiveAccount?: (a: any) => void;
+  acquireTokenSilent: (r: any) => Promise<{ accessToken?: string }>;
+  acquireTokenPopup?: (r: any) => Promise<{ accessToken?: string; account?: unknown }>;
+};
+
+// BF_PORTAL_v962_TEAMS_JOIN_AS_YOURSELF - "silent only" left the organiser in the Teams lobby as a guest whenever
+// the tab had no Microsoft session (they are kept per tab) or Microsoft wanted the permission confirmed once. With
+// `interactive` (the Join meeting click) a Microsoft window is shown in that case, so staff join as themselves. Every
+// miss is written to the console with its reason instead of being swallowed.
+export async function teamsIdentityToken(client: TeamsMsalClient = msalClient as any, opts: { interactive?: boolean } = {}): Promise<string | null> {
+  let account: unknown = null;
   try {
-    const account = client.getActiveAccount() ?? client.getAllAccounts()[0] ?? null;
-    if (!account) return null;
-    const r = await client.acquireTokenSilent({ account, scopes: ACS_TEAMS_SCOPES });
-    return r?.accessToken ? String(r.accessToken) : null;
-  } catch {
-    return null;
+    if (client.initialize) await client.initialize();
+    account = client.getActiveAccount() ?? client.getAllAccounts()[0] ?? null;
+    if (!account) throw new Error("no_account");
+    const r = await Promise.race([
+      client.acquireTokenSilent({ account, scopes: ACS_TEAMS_SCOPES }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("silent_timeout")), 8000)),
+    ]);
+    if (r?.accessToken) return String(r.accessToken);
+    throw new Error("no_access_token");
+  } catch (err) {
+    const why = (err as { errorCode?: string; message?: string } | null)?.errorCode || (err as Error | null)?.message || String(err);
+    if (!opts.interactive || !client.acquireTokenPopup) {
+      console.warn("[teams-in-app] no Microsoft token for Teams; joining as a guest", { reason: why });
+      return null;
+    }
+    try {
+      const r = await client.acquireTokenPopup({ scopes: ACS_TEAMS_SCOPES, account: account ?? undefined });
+      if (!account && r?.account && client.setActiveAccount) client.setActiveAccount(r.account);
+      if (r?.accessToken) return String(r.accessToken);
+      console.warn("[teams-in-app] Microsoft sign-in returned no token; joining as a guest", { reason: why });
+      return null;
+    } catch (popupErr) {
+      console.warn("[teams-in-app] Microsoft sign-in for Teams failed; joining as a guest", { reason: why, popup: (popupErr as { errorCode?: string; message?: string } | null)?.errorCode || (popupErr as Error | null)?.message || String(popupErr) });
+      return null;
+    }
   }
 }
 
@@ -36,7 +69,7 @@ export async function requestMeetingTicket(ref: MeetingRef): Promise<TicketResul
   const body: Record<string, string> = { joinUrl: ref.joinUrl };
   if (ref.meetingId) body.meetingId = ref.meetingId;
   if (ref.calendarEventId) body.calendarEventId = ref.calendarEventId;
-  const teamsToken = await teamsIdentityToken(); // BF_PORTAL_v890_TEAMS_IDENTITY
+  const teamsToken = await teamsIdentityToken(undefined, { interactive: true }); // BF_PORTAL_v890_TEAMS_IDENTITY + v962: asked from the Join click
   if (teamsToken) body.teamsToken = teamsToken;
   try {
     const t = await apiForSilo("BF")<MeetingTicket>("/api/meetings/acs-token", { method: "POST", body });

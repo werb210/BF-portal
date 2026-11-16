@@ -30,6 +30,22 @@ describe("Add Event modal", () => {
     expect(screen.getByText("End")).toBeInTheDocument();
     expect(screen.getByText("Location")).toBeInTheDocument();
   });
+
+  // BF_PORTAL_v962_CALENDAR_MEETING_TYPE
+  it("offers a Teams meeting or a conference call, and people to invite", () => {
+    render(
+      <MemoryRouter initialEntries={["/calendar"]}>
+        <CalendarPage />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Add Event/i }));
+    const type = screen.getByTestId("event-meeting-type") as HTMLSelectElement;
+    expect(Array.from(type.options).map((o) => o.value)).toEqual(["none", "teams", "conference"]);
+    expect(screen.getByTestId("event-attendees")).toBeInTheDocument();
+    fireEvent.change(type, { target: { value: "conference" } });
+    expect(screen.queryByTestId("event-attendees")).toBeNull();
+    expect(screen.getByText(/phone number and access code\. Add people/)).toBeInTheDocument();
+  });
 });
 
 

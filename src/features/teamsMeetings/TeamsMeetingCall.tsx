@@ -186,7 +186,9 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
   };
 
   const status = phase === "starting" ? "Connecting to the meeting..."
-    : phase === "lobby" ? "You're in the lobby. Someone in the meeting will let you in soon."
+    : phase === "lobby" ? (ticket.identity === "guest" // BF_PORTAL_v962_TEAMS_JOIN_AS_YOURSELF
+      ? "You're in the lobby because Microsoft didn't sign you in for this meeting, so Teams sees a guest. Leave and press Join meeting again (allow the Microsoft window), or use Open in Teams."
+      : "You're in the lobby. Someone in the meeting will let you in soon.")
     : phase === "connected" ? (people.length ? "" : "Waiting for others to join...")
     : message;
 
