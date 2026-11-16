@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
@@ -144,7 +144,9 @@ function CalendarContent() {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
-  const [eventForm, setEventForm] = useState({ title: "", start: "", end: "", attendees: "", location: "", notes: "" });
+  const [eventForm, setEventForm] = useState({ title: "", start: "", end: "", attendees: "", location: "", notes: "", meetingType: "none" });
+  const [roomsVersion, setRoomsVersion] = useState(0); // BF_PORTAL_v962_CALENDAR_MEETING_TYPE
+  const [eventError, setEventError] = useState("");
   const queryClient = useQueryClient();
 
   // BF_PORTAL_BLOCK_v699_CALENDAR_RANGE_v1 — send the visible window to the
@@ -191,6 +193,12 @@ function CalendarContent() {
   const createEventMutation = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
       console.log("[calendar.diag] POST /api/calendar/events body JSON:", JSON.stringify(payload)); // BF_CALENDAR_DIAG_v30
+      // BF_PORTAL_v962_CALENDAR_MEETING_TYPE - a conference call is a Boreal conference room (dial-in number and access
+      // code); the server puts it on the Outlook calendar itself. A Teams meeting is an ordinary event made online.
+      if (payload.meetingType === "conference") {
+        const mins = Math.round((new Date(String(payload.end)).getTime() - new Date(String(payload.start)).getTime()) / 60000);
+        return api.post("/api/meetings", { title: String(payload.title ?? "").trim(), startsAt: payload.start, durationMin: Math.min(Math.max(mins || 60, 15), 480) });
+      }
       const response = await api.post("/api/calendar/events", payload);
       console.log("[calendar.diag] POST /api/calendar/events response JSON:", JSON.stringify(response)); // BF_CALENDAR_DIAG_v30
       return response;
@@ -198,7 +206,13 @@ function CalendarContent() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
       setShowEventForm(false);
-      setEventForm({ title: "", start: "", end: "", attendees: "", location: "", notes: "" });
+      setRoomsVersion((n) => n + 1);
+      setEventError("");
+      setEventForm({ title: "", start: "", end: "", attendees: "", location: "", notes: "", meetingType: "none" });
+    },
+    onError: (err: unknown) => {
+      const d = (err as { details?: { message?: unknown } } | null)?.details;
+      setEventError(typeof d?.message === "string" && d.message ? d.message : "We couldn't save that. Please try again.");
     },
   });
 
@@ -315,7 +329,7 @@ function CalendarContent() {
         {/* BF_PORTAL_CAL_TASKS_HUBSPOT_v1 - full HubSpot-style Tasks panel. */}
         {/* BF_PORTAL_TASKS_ABOVE_ROOMS_v739 - Tasks first, Conference rooms below */}
         <CalendarTasksPanel currentUserId={(user as { id?: string } | null)?.id ?? ""} />
-        <MeetingRoomsPanel />{/* BF_PORTAL_MEETING_ROOMS_v736 */}
+        <Fragment key={roomsVersion}><MeetingRoomsPanel /></Fragment>{/* BF_PORTAL_MEETING_ROOMS_v736 */}
       </div>
 
       {selectedEvent && (
@@ -408,6 +422,37 @@ function CalendarContent() {
               <span style={fieldLabel}>End</span>
               <DateTimePicker value={eventForm.end} onChange={(iso) => setEventForm((prev) => ({ ...prev, end: iso }))} />
             </label>
+            {/* BF_PORTAL_v962_CALENDAR_MEETING_TYPE */}
+            <label style={fieldRow}>
+              <span style={fieldLabel}>Meeting type</span>
+              <select
+                data-testid="event-meeting-type"
+                value={eventForm.meetingType}
+                onChange={(e) => setEventForm((prev) => ({ ...prev, meetingType: e.target.value }))}
+                style={calInputStyle}
+              >
+                <option value="none">No online meeting</option>
+                <option value="teams">Microsoft Teams meeting (link added automatically)</option>
+                <option value="conference">Conference call (phone number and access code)</option>
+              </select>
+            </label>
+            {eventForm.meetingType !== "conference" ? (
+              <label style={fieldRow}>
+                <span style={fieldLabel}>Invite</span>
+                <input
+                  type="text"
+                  data-testid="event-attendees"
+                  value={eventForm.attendees}
+                  onChange={(e) => setEventForm((prev) => ({ ...prev, attendees: e.target.value }))}
+                  placeholder="Email addresses, separated by commas"
+                  style={calInputStyle}
+                />
+              </label>
+            ) : (
+              <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ui-text-muted, #64748b)" }}>
+                The call appears under Conference rooms on this page with its phone number and access code. Add people to it there.
+              </p>
+            )}
             <label style={fieldRow}>
               <span style={fieldLabel}>Location</span>
               <input
@@ -433,6 +478,7 @@ function CalendarContent() {
                 <button onClick={() => createEventMutation.mutate({ ...eventForm, start: localInputToUtcIso(eventForm.start), end: localInputToUtcIso(eventForm.end) })} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--ui-accent-blue)", background: "var(--ui-accent-blue)", color: "#fff" }}>Save</button>
               ) : null}
               <SecondaryButton onClick={() => setShowEventForm(false)}>Cancel</SecondaryButton>
+              {eventError ? <span role="alert" style={{ color: "#dc2626", fontSize: 12 }}>{eventError}</span> : null}
               {!!eventForm.start && !!eventForm.end && new Date(eventForm.end).getTime() <= new Date(eventForm.start).getTime() && (
                 <span style={{ color: "#dc2626", fontSize: 12 }}>End must be after start.</span>
               )}
