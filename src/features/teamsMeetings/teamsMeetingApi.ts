@@ -24,6 +24,16 @@ type TeamsMsalClient = {
 // the tab had no Microsoft session (they are kept per tab) or Microsoft wanted the permission confirmed once. With
 // `interactive` (the Join meeting click) a Microsoft window is shown in that case, so staff join as themselves. Every
 // miss is written to the console with its reason instead of being swallowed.
+// BF_PORTAL_v963_TEAMS_USER_ID - the Microsoft user id goes with the token: the server cannot always read the token
+// itself, and Azure Communication Services needs to know whose it is (it verifies the token against that id).
+const oidOf = (a: unknown): string => {
+  const x = a as { localAccountId?: unknown; idTokenClaims?: { oid?: unknown } } | null;
+  const v = String(x?.idTokenClaims?.oid ?? x?.localAccountId ?? "").trim();
+  return /^[0-9a-f-]{36}$/i.test(v) ? v : "";
+};
+let lastTeamsUserId = "";
+export const teamsUserId = (): string => lastTeamsUserId;
+
 export async function teamsIdentityToken(client: TeamsMsalClient = msalClient as any, opts: { interactive?: boolean } = {}): Promise<string | null> {
   let account: unknown = null;
   try {
@@ -34,7 +44,7 @@ export async function teamsIdentityToken(client: TeamsMsalClient = msalClient as
       client.acquireTokenSilent({ account, scopes: ACS_TEAMS_SCOPES }),
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error("silent_timeout")), 8000)),
     ]);
-    if (r?.accessToken) return String(r.accessToken);
+    if (r?.accessToken) { lastTeamsUserId = oidOf((r as { account?: unknown }).account) || oidOf(account); return String(r.accessToken); }
     throw new Error("no_access_token");
   } catch (err) {
     const why = (err as { errorCode?: string; message?: string } | null)?.errorCode || (err as Error | null)?.message || String(err);
@@ -45,7 +55,7 @@ export async function teamsIdentityToken(client: TeamsMsalClient = msalClient as
     try {
       const r = await client.acquireTokenPopup({ scopes: ACS_TEAMS_SCOPES, account: account ?? undefined });
       if (!account && r?.account && client.setActiveAccount) client.setActiveAccount(r.account);
-      if (r?.accessToken) return String(r.accessToken);
+      if (r?.accessToken) { lastTeamsUserId = oidOf(r.account) || oidOf(account); return String(r.accessToken); }
       console.warn("[teams-in-app] Microsoft sign-in returned no token; joining as a guest", { reason: why });
       return null;
     } catch (popupErr) {
@@ -65,12 +75,19 @@ export function isTeamsJoinUrl(url: unknown): url is string {
 
 const FALLBACK = "We couldn't start the meeting in the portal. Use Open in Teams instead.";
 
+// BF_PORTAL_v963_NO_WEBRTC - the iPad app running on a Mac has no in-app video at all ("Can't find variable:
+// MediaStream" took the whole screen down). Say so and offer Teams instead of starting a call that cannot work.
+export function inAppVideoSupported(g: { MediaStream?: unknown; RTCPeerConnection?: unknown } = globalThis as any): boolean {
+  return typeof g.MediaStream !== "undefined" && typeof g.RTCPeerConnection !== "undefined";
+}
+
 export async function requestMeetingTicket(ref: MeetingRef): Promise<TicketResult> {
+  if (!inAppVideoSupported()) return { ok: false, message: "Video meetings can't run inside this app on this device. Use Open in Teams instead.", joinUrl: ref.joinUrl };
   const body: Record<string, string> = { joinUrl: ref.joinUrl };
   if (ref.meetingId) body.meetingId = ref.meetingId;
   if (ref.calendarEventId) body.calendarEventId = ref.calendarEventId;
   const teamsToken = await teamsIdentityToken(undefined, { interactive: true }); // BF_PORTAL_v890_TEAMS_IDENTITY + v962: asked from the Join click
-  if (teamsToken) body.teamsToken = teamsToken;
+  if (teamsToken) { body.teamsToken = teamsToken; if (teamsUserId()) body.teamsUserId = teamsUserId(); }
   try {
     const t = await apiForSilo("BF")<MeetingTicket>("/api/meetings/acs-token", { method: "POST", body });
     if (!t || typeof t.token !== "string" || !t.token) return { ok: false, message: FALLBACK, joinUrl: ref.joinUrl };
