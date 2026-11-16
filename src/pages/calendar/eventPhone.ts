@@ -2,13 +2,25 @@
 // phone number: booked calls carry it in the location ("Phone call - Boreal calls 5875551234") and the
 // notes ("We will call you at ..."). Boreal's own (866) 631-8939 line is never offered.
 const BOREAL_LINES = ["8666318939"];
-const PHONE_RE = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g;
+// BF_PORTAL_v967_CALL_DIAL_IN - a number must stand on its own. A Teams invite carries a 16-digit meeting id in its
+// link and in "Meeting ID: 211 906 453 ..."; the first ten digits of that were being offered as the number to call.
+const PHONE_RE = /(?<![\d/=])(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}(?!\d)/g;
+const withoutLinks = (t: string) => t.replace(/https?:\/\/\S+/gi, " ").replace(/Meeting ID:\s*[\d\s]+/gi, " ");
+
+/** The "Phone conference ID" a Teams invite asks dial-in callers to enter, e.g. "303 016 444#", or null. */
+export function conferenceIdFromEvent(...texts: Array<string | null | undefined>): string | null {
+  for (const t of texts) {
+    const m = t ? /Phone conference ID:\s*([\d\s]{6,20})#?/i.exec(String(t)) : null;
+    if (m) return m[1]!.trim().replace(/\s+/g, " ") + "#";
+  }
+  return null;
+}
 
 /** First callable 10-digit North American number in the given texts, as +1XXXXXXXXXX, or null. */
 export function phoneFromEvent(...texts: Array<string | null | undefined>): string | null {
   for (const t of texts) {
     if (!t) continue;
-    for (const m of String(t).matchAll(PHONE_RE)) {
+    for (const m of withoutLinks(String(t)).matchAll(PHONE_RE)) {
       let d = m[0].replace(/[^0-9]/g, "");
       if (d.length === 11 && d.startsWith("1")) d = d.slice(1);
       if (d.length !== 10 || BOREAL_LINES.includes(d)) continue;

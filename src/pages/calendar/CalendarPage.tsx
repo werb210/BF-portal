@@ -14,7 +14,7 @@ import MeetingRoomsPanel from "./MeetingRoomsPanel"; // BF_PORTAL_MEETING_ROOMS_
 import FindATimePanel from "@/components/o365/FindATimePanel"; // BF_PORTAL_O365_UI_v1
 import DateTimePicker from "@/components/ui/DateTimePicker"; // BF_PORTAL_CAL_DATETIMEPICKER_v1
 import { startOutboundPstn, joinMeetingRoom } from "@/dialer/actions"; // BF_PORTAL_CALENDAR_CALL_v745 / BF_PORTAL_JOIN_ROOM_v750
-import { phoneFromEvent, prettyPhone, roomSlugFromEvent } from "./eventPhone";
+import { conferenceIdFromEvent, phoneFromEvent, prettyPhone, roomSlugFromEvent } from "./eventPhone";
 import { JoinTeamsButton } from "@/features/teamsMeetings/JoinTeamsButton"; // BF_PORTAL_v888_TEAMS_IN_APP
 
 type ApiCalendarEvent = {
@@ -343,13 +343,15 @@ function CalendarContent() {
             {(() => {
               const callTo = phoneFromEvent(selectedEvent.resource.location, String(selectedEvent.resource.notes ?? "").replace(/<[^>]+>/g, " "));
               if (!callTo) return null;
+              const confId = conferenceIdFromEvent(String(selectedEvent.resource.notes ?? "").replace(/<[^>]+>/g, " ")); // BF_PORTAL_v967_CALL_DIAL_IN
               return (
                 <p style={{ margin: "10px 0" }}>
                   <button type="button" data-testid="calendar-event-call"
                     onClick={() => { void startOutboundPstn(callTo, { contactName: selectedEvent.title, source: "calendar" }); setSelectedEvent(null); }}
                     style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0B5D3B", color: "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer" }}>
-                    Call {prettyPhone(callTo)}
+                    {confId ? "Dial in " : "Call "}{prettyPhone(callTo)}
                   </button>
+                  {confId ? <span data-testid="calendar-event-conference-id" style={{ marginLeft: 10, fontSize: 13 }}>then enter {confId} on the keypad</span> : null}
                 </p>
               );
             })()}
