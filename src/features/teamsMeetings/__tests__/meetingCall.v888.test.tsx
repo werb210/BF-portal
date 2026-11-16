@@ -29,6 +29,7 @@ vi.mock("@azure/communication-calling", () => ({
     async getDeviceManager() { return { askDevicePermission: async () => ({ audio: h.state.audio, video: true }), getCameras: async () => [{ id: "cam-1", name: "Front camera" }] }; }
     async dispose() {}
   },
+  Features: {},
   LocalVideoStream: class { constructor(public source: unknown) {} },
   VideoStreamRenderer: class { async createView() { return { target: document.createElement("div") }; } dispose() {} },
 }));
