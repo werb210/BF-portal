@@ -1,6 +1,6 @@
 // BF_PORTAL_v890_TEAMS_IDENTITY - the Microsoft token for Azure Communication Services, silent only.
 import { describe, expect, it, vi } from "vitest";
-import { ACS_TEAMS_SCOPES, teamsIdentityToken } from "../teamsMeetingApi";
+import { ACS_TEAMS_SCOPES, teamsIdentityToken, teamsUserId, inAppVideoSupported } from "../teamsMeetingApi";
 
 describe("Teams identity token", () => {
   it("asks Microsoft silently for the ACS Teams scopes", async () => {
@@ -29,5 +29,15 @@ describe("Teams identity token", () => {
     expect(await teamsIdentityToken(consent)).toBeNull(); // not from a click: no window
     const closed = { ...consent, acquireTokenPopup: async () => { throw new Error("user_cancelled"); } };
     expect(await teamsIdentityToken(closed, { interactive: true })).toBeNull();
+  });
+
+  // BF_PORTAL_v963_TEAMS_USER_ID + BF_PORTAL_v963_NO_WEBRTC
+  it("remembers whose token it is, and knows when in-app video cannot run", async () => {
+    const OID = "44444444-4444-4444-8444-444444444444";
+    const client = { getActiveAccount: () => ({ username: "a", localAccountId: OID }), getAllAccounts: () => [], acquireTokenSilent: async () => ({ accessToken: "t" }) };
+    expect(await teamsIdentityToken(client)).toBe("t");
+    expect(teamsUserId()).toBe(OID);
+    expect(inAppVideoSupported({})).toBe(false);
+    expect(inAppVideoSupported({ MediaStream: class {}, RTCPeerConnection: class {} })).toBe(true);
   });
 });

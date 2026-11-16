@@ -16,6 +16,10 @@ import { requestMeetingTicket, isTeamsJoinUrl } from "../teamsMeetingApi";
 
 beforeEach(() => { h.call.mockReset(); h.silos.length = 0; });
 
+// BF_PORTAL_v963_NO_WEBRTC - the test browser has no video; these tests are about a device that does.
+(globalThis as any).MediaStream ??= class {};
+(globalThis as any).RTCPeerConnection ??= class {};
+
 describe("join a Teams meeting in the portal", () => {
   it("only Teams links get a Join button", () => {
     expect(isTeamsJoinUrl(JOIN)).toBe(true);
