@@ -11,6 +11,7 @@ import {
   type Call, type CallAgent, type DeviceManager, type RemoteParticipant, type RemoteVideoStream,
 } from "@azure/communication-calling";
 import { AzureCommunicationTokenCredential } from "@azure/communication-common";
+import { chatToken, listChat, sendChat, type ChatMessage } from "./meetingChat";
 
 export type CallTicket = { token: string; acsUserId: string; displayName: string; joinUrl: string; subject?: string | null; identity?: "teams" | "guest" }; // BF_PORTAL_v890_TEAMS_IDENTITY
 type Phase = "starting" | "lobby" | "connected" | "ended" | "error";
@@ -21,7 +22,7 @@ type Person = { key: string; name: string; muted: boolean; speaking?: boolean; h
 // returns null when the feature is missing, so a meeting never fails to open because one extra is unavailable.
 type Waiting = { id: string; name: string };
 type Device = { id: string; name: string };
-type Panel = null | "people" | "devices";
+type Panel = null | "people" | "devices" | "chat";
 export type CaptionLine = { who: string; text: string };
 
 /** One stable text id for a participant, whichever kind of identity Teams gave them. */
@@ -94,6 +95,13 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
   const [chosen, setChosen] = useState<{ mic: string; speaker: string; cam: string }>({ mic: "", speaker: "", cam: "" });
   const [note, setNote] = useState("");
   const [seconds, setSeconds] = useState(0);
+  // BF_PORTAL_v966_MEETING_CHAT
+  const [chat, setChat] = useState<ChatMessage[]>([]);
+  const [chatState, setChatState] = useState<"idle" | "loading" | "ready" | "blocked">("idle");
+  const [chatSeen, setChatSeen] = useState(0);
+  const [draft, setDraft] = useState("");
+  const chatTokenRef = useRef<string>("");
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
   const devicesRef = useRef<DeviceManager | null>(null);
   const rawDevices = useRef<{ mics: any[]; speakers: any[]; cams: any[] }>({ mics: [], speakers: [], cams: [] });
   const callRef = useRef<Call | null>(null);
@@ -321,6 +329,50 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
   const chooseCam = (id: string) => attempt("switch camera", async () => { const d = rawDevices.current.cams.find((x) => String(x.id) === id); if (d && cameraRef.current) await (cameraRef.current as any).switchSource(d); setChosen((c) => ({ ...c, cam: id })); });
   const copyLink = () => attempt("copy the link", async () => { await navigator.clipboard.writeText(ticket.joinUrl); setNote("Invite link copied."); });
 
+  // BF_PORTAL_v966_MEETING_CHAT - the meeting's Teams chat (staff who joined as themselves only).
+  const canChat = ticket.identity === "teams";
+  const myTeamsId = ticket.acsUserId.replace(/^teams:/, "");
+  const threadId = (): string => { try { return String((callRef.current as any)?.info?.threadId ?? ""); } catch { return ""; } };
+  const loadChat = useCallback(async (interactive: boolean) => {
+    const thread = threadId();
+    if (!thread) return;
+    const t = await chatToken(interactive);
+    if ("error" in t) {
+      if (interactive) { console.warn("[teams-in-app] chat is unavailable", { reason: t.error }); setChatState("blocked"); }
+      return;
+    }
+    chatTokenRef.current = t.token;
+    try { setChat(await listChat(thread, t.token, myTeamsId)); setChatState("ready"); }
+    catch (err) { console.warn("[teams-in-app] chat could not be read", err); if (interactive) setChatState("blocked"); }
+  }, [myTeamsId]);
+  const openChat = () => {
+    if (panel === "chat") { setPanel(null); return; }
+    setPanel("chat");
+    if (chatState === "idle" || chatState === "blocked") { setChatState("loading"); void loadChat(true); }
+  };
+  useEffect(() => { // quiet first look, so new messages are counted before Chat is ever opened
+    if (canChat && phase === "connected" && chatState === "idle") void loadChat(false);
+  }, [canChat, phase, chatState, loadChat]);
+  useEffect(() => {
+    if (!canChat || phase !== "connected" || chatState !== "ready") return;
+    const t = setInterval(() => void loadChat(false), panel === "chat" ? 4000 : 12000);
+    return () => clearInterval(t);
+  }, [canChat, phase, chatState, panel, loadChat]);
+  useEffect(() => {
+    if (panel !== "chat") return;
+    setChatSeen(chat.length);
+    chatEndRef.current?.scrollIntoView?.({ block: "end" });
+  }, [panel, chat.length]);
+  const postChat = async () => {
+    const text = draft.trim();
+    const thread = threadId();
+    if (!text || !thread || !chatTokenRef.current) return;
+    setDraft("");
+    try { await sendChat(thread, chatTokenRef.current, text); await loadChat(false); }
+    catch (err) { console.warn("[teams-in-app] chat message was not sent", err); setDraft(text); setNote("Your message wasn't sent. Try again."); }
+  };
+  const unread = panel === "chat" ? 0 : Math.max(0, chat.length - chatSeen);
+
   const leave = async () => {
     const call = callRef.current;
     if (call && call.state !== "Disconnected") await call.hangUp().catch((): void => undefined);
@@ -409,6 +461,27 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
           ))}
         </aside>
       ) : null}
+      {panel === "chat" ? (
+        <aside style={{ ...side, display: "flex", flexDirection: "column", overflow: "hidden" }} data-testid="meeting-chat-panel" aria-label="Chat">
+          <strong style={{ marginBottom: 8 }}>Meeting chat</strong>
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+            {chatState === "loading" ? <p style={{ color: "#c8c6c4" }}>Opening the chat...</p> : null}
+            {chatState === "blocked" ? <p style={{ color: "#ffd166" }} data-testid="meeting-chat-blocked">Microsoft didn't open the chat for this meeting. Close this panel and press Chat again, and allow the Microsoft window if one appears.</p> : null}
+            {chatState === "ready" && !chat.length ? <p style={{ color: "#c8c6c4" }}>No messages yet.</p> : null}
+            {chat.map((m) => (
+              <div key={m.id} data-testid="meeting-chat-message" style={{ margin: "0 0 10px", textAlign: m.mine ? "right" : "left" }}>
+                <div style={{ fontSize: 11, color: "#a19f9d" }}>{m.mine ? "You" : m.from}</div>
+                <div style={{ display: "inline-block", maxWidth: "100%", padding: "6px 10px", borderRadius: 8, background: m.mine ? "#4f52b2" : "#323130", whiteSpace: "pre-wrap", overflowWrap: "anywhere", textAlign: "left" }}>{m.text}</div>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+          <form onSubmit={(e) => { e.preventDefault(); void postChat(); }} style={{ display: "flex", gap: 6, marginTop: 8 }}>
+            <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type a message" aria-label="Message" disabled={chatState !== "ready"} style={{ ...selectStyle, flex: 1 }} />
+            <button type="submit" style={smallBtn} disabled={chatState !== "ready" || !draft.trim()}>Send</button>
+          </form>
+        </aside>
+      ) : null}
       {panel === "devices" ? (
         <aside style={side} data-testid="meeting-devices-panel" aria-label="Devices">
           <label style={{ display: "block", marginBottom: 12 }}>Microphone
@@ -447,6 +520,7 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
                 <button type="button" style={btn(panel === "people")} onClick={() => setPanel(panel === "people" ? null : "people")} aria-pressed={panel === "people"} data-testid="meeting-people-button">
                   People ({people.length + 1}){waiting.length ? " - " + waiting.length + " waiting" : ""}
                 </button>
+                {canChat ? <button type="button" style={btn(panel === "chat")} onClick={openChat} aria-pressed={panel === "chat"} disabled={phase !== "connected"} data-testid="meeting-chat-button">Chat{unread ? " (" + unread + " new)" : ""}</button> : null}
                 <button type="button" style={btn(panel === "devices")} onClick={() => setPanel(panel === "devices" ? null : "devices")} aria-pressed={panel === "devices"}>Devices</button>
               </>
             ) : null}
