@@ -40,6 +40,19 @@ export function clock(seconds: number): string {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
   return (h ? h + ":" + String(m).padStart(2, "0") : String(m)) + ":" + String(r).padStart(2, "0");
 }
+/**
+ * BF_PORTAL_v965_CALL_FIT - what to say when an action did not happen. Closing the browser's "choose what to share"
+ * box is not a refusal by Teams, so it gets no warning; anything else carries the browser's or Teams' own reason so
+ * a real refusal can be told apart from a permission the browser or the Mac is missing.
+ */
+export function failureNote(what: string, err: unknown): string {
+  const e = err as { name?: string; message?: string; code?: number; subCode?: number } | null;
+  const text = String(e?.message ?? err ?? "");
+  const cancelled = /share/.test(what) && (e?.name === "NotAllowedError" || /permission denied|denied by user|cancel|dismiss|abort/i.test(text));
+  if (cancelled) return /system/i.test(text) ? "Your Mac is blocking screen sharing for this browser. Allow it in System Settings, Privacy & Security, Screen Recording, then try again." : "";
+  const detail = [text.replace(/\s+/g, " ").slice(0, 140), e?.code ? "code " + e.code : "", e?.subCode ? "sub " + e.subCode : ""].filter(Boolean).join(", ");
+  return "We couldn't " + what + "." + (detail ? " (" + detail + ")" : " Teams may not allow it in this meeting.");
+}
 const feat = (call: Call | null, name: string): any => {
   try { const f = (Features as unknown as Record<string, unknown> | undefined)?.[name]; return call && f ? (call as any).feature(f) : null; } catch { return null; }
 };
@@ -125,15 +138,16 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
       if (renderers.has(s) || !s.isAvailable || !gridRef.current) return;
       const tile = document.createElement("div");
       tile.setAttribute("data-testid", "meeting-tile");
-      tile.style.cssText = "position:relative;background:#000;border-radius:10px;overflow:hidden;min-height:160px";
+      tile.style.cssText = "position:relative;background:#000;border-radius:10px;overflow:hidden;min-height:0;min-width:0;height:100%"; // BF_PORTAL_v965_CALL_FIT - a tile is as tall as the space it is given, never as tall as the video
       const label = document.createElement("span");
       label.textContent = (p.displayName || "Guest") + (s.mediaStreamType === "ScreenSharing" ? " (screen)" : "");
       label.style.cssText = "position:absolute;left:8px;bottom:8px;color:#fff;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:6px;font-size:12px;z-index:1";
       const renderer = new VideoStreamRenderer(s);
       renderers.set(s, { renderer, tile });
       try {
-        const view = await renderer.createView({ scalingMode: s.mediaStreamType === "ScreenSharing" ? "Fit" : "Crop" });
+        const view = await renderer.createView({ scalingMode: "Fit" }); // the whole person, letterboxed, not a cropped slice
         if (gone) { renderer.dispose(); return; }
+        view.target.style.cssText += ";position:absolute;inset:0;width:100%;height:100%";
         tile.appendChild(view.target);
         tile.appendChild(label);
         gridRef.current?.appendChild(tile);
@@ -273,7 +287,10 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
   }, [phase]);
   const attempt = async (what: string, fn: () => Promise<unknown> | unknown) => {
     try { setNote(""); await fn(); }
-    catch (err) { console.warn("[teams-in-app] " + what + " failed", err); setNote("We couldn't " + what + ". Teams may not allow it in this meeting."); }
+    catch (err) {
+      console.warn("[teams-in-app] " + what + " failed", err);
+      setNote(failureNote(what, err));
+    }
   };
   const lobbyPerson = (id: string) => (((callRef.current as any)?.lobby?.participants ?? []) as any[]).find((p) => participantId(p.identifier) === id);
   const inPerson = (id: string) => (callRef.current?.remoteParticipants ?? []).find((p) => participantId((p as any).identifier) === id) as any;
@@ -335,7 +352,7 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
         </div>
       ) : null}
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
-      <div style={{ flex: 1, minWidth: 0, position: "relative", padding: 12, overflow: "auto" }}>
+      <div style={{ flex: 1, minWidth: 0, minHeight: 0, position: "relative", padding: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
         {status ? <p data-testid="meeting-status" style={{ margin: "8px 0 12px", fontSize: 15 }}>{status}</p> : null}
         {waiting.length && panel !== "people" ? (
           <p data-testid="meeting-waiting-banner" style={{ margin: "0 0 12px", padding: "8px 12px", background: "#3b3a39", borderRadius: 8, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -345,9 +362,9 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
           </p>
         ) : null}
         {note ? <p role="status" data-testid="meeting-note" style={{ margin: "0 0 12px", color: "#ffd166", fontSize: 13 }}>{note}</p> : null}
-        <div ref={gridRef} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }} />
+        <div ref={gridRef} data-testid="meeting-grid" style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gridAutoRows: "minmax(0, 1fr)", gap: 10 }} />
         {people.length ? (
-          <p style={{ marginTop: 12, fontSize: 13, color: "#c8c6c4" }} data-testid="meeting-people">
+          <p style={{ margin: "8px 0 0", fontSize: 13, color: "#c8c6c4", flex: "none" }} data-testid="meeting-people">
             In the meeting: {people.map((p) => p.name + (p.muted ? " (muted)" : "") + (p.hand ? " (hand up)" : "")).join(", ")}
           </p>
         ) : null}

@@ -42,7 +42,7 @@ vi.mock("@azure/communication-calling", () => {
   };
 });
 
-import TeamsMeetingCall, { addCaption, clock, participantId } from "../TeamsMeetingCall";
+import TeamsMeetingCall, { addCaption, clock, failureNote, participantId } from "../TeamsMeetingCall";
 
 const ticket = { token: "t", acsUserId: "teams:x", displayName: "Alex Tester", joinUrl: "https://teams.microsoft.com/l/meetup-join/19%3ameeting_v964%40thread.v2/0", identity: "teams" as const };
 
@@ -119,7 +119,19 @@ describe("meeting controls in the portal", () => {
     const call = await open();
     call.startScreenSharing.mockRejectedValueOnce(new Error("not allowed"));
     fireEvent.click(screen.getByRole("button", { name: "Share screen" }));
-    expect(await screen.findByTestId("meeting-note")).toHaveTextContent("We couldn't share your screen");
+    expect(await screen.findByTestId("meeting-note")).toHaveTextContent("We couldn't share your screen. (not allowed)");
+  });
+
+  // BF_PORTAL_v965_CALL_FIT
+  it("closing the share picker is not reported as Teams refusing; a real failure carries its reason", async () => {
+    const call = await open();
+    call.startScreenSharing.mockRejectedValueOnce(Object.assign(new Error("Permission denied by user"), { name: "NotAllowedError" }));
+    fireEvent.click(screen.getByRole("button", { name: "Share screen" }));
+    await waitFor(() => expect(call.startScreenSharing).toHaveBeenCalled());
+    expect(screen.queryByTestId("meeting-note")).toBeNull();
+    expect(failureNote("share your screen", Object.assign(new Error("Permission denied by system"), { name: "NotAllowedError" }))).toMatch(/Screen Recording/);
+    expect(failureNote("mute them", Object.assign(new Error("Forbidden for this role"), { code: 403 }))).toBe("We couldn't mute them. (Forbidden for this role, code 403)");
+    expect(screen.getByTestId("meeting-grid").style.gridAutoRows).toBe("minmax(0, 1fr)");
   });
 
   it("small helpers", () => {
