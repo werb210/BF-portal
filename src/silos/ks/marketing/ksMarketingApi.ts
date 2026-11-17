@@ -54,6 +54,7 @@ export type ProspectSend = {
 };
 export type Enrollment = {
   id: string; status: string; next_step: number; next_send_at: string | null; stopped_reason: string | null; enrolled_at: string;
+  track?: "none" | "opened" | "clicked"; flow_next?: string | null; flow_sent?: string[]; // BF_PORTAL_KS_EMAIL_FLOW_v1
   finished_at: string | null; sequence_name?: string; sequence_id?: string; email?: string; name?: string | null; company?: string | null;
 };
 
@@ -75,7 +76,7 @@ export type Recipient = {
   clicked_at: string | null; bounced_at: string | null; unsubscribed_at: string | null; name: string | null; company: string | null; prospect_id: string;
 };
 export type SequenceStep = { wait_days: number; template_id: string };
-export type Sequence = { id: string; name: string; status: string; steps: SequenceStep[]; active?: number; enrolled?: number; updated_at: string };
+export type Sequence = { id: string; name: string; status: string; steps: SequenceStep[]; active?: number; enrolled?: number; updated_at: string; kind?: "steps" | "flow"; opened?: number; clicked?: number; from_name?: string | null; daily_new?: number }; // BF_PORTAL_KS_EMAIL_FLOW_v1
 export type Suppression = { email: string; reason: string; source: string | null; note: string | null; created_by: string | null; created_at: string };
 
 export type MarketingStatus = {
@@ -143,6 +144,7 @@ export const mktApi = {
   cancelCampaign: (id: string) => ksRequest<{ ok: true; not_sent: number }>(`/api/ops/marketing/campaigns/${enc(id)}/cancel`, { method: "POST", body: {} }),
 
   sequences: () => ksRequest<{ sequences: Sequence[] }>("/api/ops/marketing/sequences"),
+  createBrokerFlow: () => ksRequest<{ sequence: Sequence; created: boolean }>("/api/ops/marketing/flows/keystone-brokers", { method: "POST", body: {} }), // BF_PORTAL_KS_EMAIL_FLOW_v1
   sequence: (id: string) => ksRequest<{ sequence: Sequence; enrollments: Enrollment[] }>(`/api/ops/marketing/sequences/${enc(id)}`),
   createSequence: (body: { name: string; steps: SequenceStep[] }) => ksRequest<{ sequence: Sequence }>("/api/ops/marketing/sequences", { method: "POST", body }),
   updateSequence: (id: string, body: Partial<{ name: string; steps: SequenceStep[]; status: string }>) =>
