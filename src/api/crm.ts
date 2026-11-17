@@ -257,7 +257,7 @@ export const crmApi = {
   bulkMarketingContacts: (sel: { ids?: string[]; tags?: string[] }, marketing: boolean) =>
     api.post<{ updated: number; skipped_unsubscribed?: number }>("/api/crm/contacts/bulk-marketing", { ...sel, marketing }),
   marketingSummary: () =>
-    api.get<{ total: number; marketing: number; emailable: number; unsubscribed?: number; budget: { allowance: number; used: number; remaining: number | null; addon: boolean } | null }>("/api/crm/contacts/marketing-summary"),
+    api.get<{ total: number; marketing: number; emailable: number; unsubscribed?: number; no_email?: number; budget: { allowance: number; used: number; remaining: number | null; addon: boolean } | null }>("/api/crm/contacts/marketing-summary"),
   bulkDeleteCompanies: (ids: string[]) => api.post("/api/crm/companies/bulk-delete", { ids }),
   bulkTagCompanies: (ids: string[], tag: string) => api.post("/api/crm/companies/bulk-tag", { ids, tags: [tag], op: "add" }), // BF_PORTAL_BLOCK_v802_ACTIVE_TAG
   bulkAssignCompanies: (ids: string[], ownerUserId: string) => api.post("/api/crm/companies/bulk-assign", { ids, ownerUserId }),
