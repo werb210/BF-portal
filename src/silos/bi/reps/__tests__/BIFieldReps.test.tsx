@@ -88,4 +88,12 @@ describe("Insurance: reps", () => {
     fireEvent.click(screen.getByRole("button", { name: "Resend agreement" }));
     await waitFor(() => expect(calls("/api/v1/bi/field-reps/r1/agreement", "POST")).toHaveLength(1));
   });
+
+  it("the Mobile box shapes the number as it is typed", async () => {
+    answer(() => undefined);
+    render(<BIFieldReps />);
+    const mobile = (await screen.findByLabelText("Mobile")) as HTMLInputElement;
+    fireEvent.change(mobile, { target: { value: "15125550142999" } });
+    expect(mobile.value).toBe("(512) 555-0142");
+  });
 });
