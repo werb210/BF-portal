@@ -39,6 +39,9 @@ const PROSPECT = {
 const DRAFT = { id: CAMPAIGN, name: "Launch", subject: "Keystone is here", status: "draft", send_at: null, started_at: null, finished_at: null, template_id: null, fields: { body: "Hi" }, filters: {}, created_by: "todd", created_at: "2026-11-01T00:00:00Z" };
 const STATS = { queued: 0, sent: 0, blocked: 0, failed: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0, spam: 0, unsubscribed: 0, blocked_by_reason: {} };
 
+let flowMade = false;
+const FLOW = { id: "55555555-5555-4555-8555-555555555555", name: "Keystone brokers - email flow", status: "draft", kind: "flow", from_name: "Todd at Keystone", daily_new: 50,
+  steps: ["e1", "n2", "n3", "n4", "o1", "o2", "c1"].map((k) => ({ wait_days: 0, template_id: `t-${k}` })), active: 0, enrolled: 0, opened: 3, clicked: 1, updated_at: "2026-11-18T00:00:00Z" };
 function route(url: string, method: string): Response {
   const path = url.replace(KS_OPS_DEFAULT_URL, "").split("?")[0];
   if (path === "/api/ops/auth/exchange") return json(200, { token: "ops-token", expires_in: 3600, user: { id: "u1", email: "todd@boreal.test", name: "Todd", role: "Admin" } });
@@ -49,6 +52,12 @@ function route(url: string, method: string): Response {
       ? json(400, { error: "validation_error", errors: { "consent.consent_source": "Say where the consent came from (form, call, email, website...)." } })
       : json(201, { prospect: PROSPECT });
   }
+  // BF_PORTAL_KS_EMAIL_FLOW_v1
+  if (path === "/api/ops/marketing/sequences" && method === "GET") return json(200, { sequences: flowMade ? [FLOW] : [] });
+  if (path === "/api/ops/marketing/flows/keystone-brokers") { flowMade = true; return json(201, { sequence: FLOW, created: true }); }
+  if (path === `/api/ops/marketing/sequences/${FLOW.id}` && method === "GET") return json(200, { sequence: FLOW, enrollments: [
+    { id: "en1", status: "active", next_step: 0, next_send_at: "2026-11-20T15:00:00Z", stopped_reason: null, enrolled_at: "2026-11-18T00:00:00Z", track: "opened", flow_next: "o1", email: "pat@brokers.example", name: "Pat Sample" },
+  ] });
   if (path === "/api/ops/marketing/audience") return json(200, { total: 5, eligible: 3, blocked: { no_consent: 1, suppressed_unsubscribed: 1 } });
   if (path === "/api/ops/marketing/templates") return json(200, { templates: [] });
   if (path === "/api/ops/marketing/preview") return json(200, { subject: "s", html: "<p>preview</p>", text: "" });
@@ -61,6 +70,7 @@ function route(url: string, method: string): Response {
 beforeEach(() => {
   calls = [];
   consentRejected = false;
+  flowMade = false;
   clearKsToken();
   window.sessionStorage.clear();
   authUser.mockReturnValue({ role: "Admin", firstName: "Todd" });
@@ -150,5 +160,19 @@ describe("Keystone marketing", () => {
     expect(parseImport("email,name,company\njo@x.example, Jo Smith, Smith Co, ca, ab, Growth\nnot-an-email,x")).toEqual([
       { email: "jo@x.example", name: "Jo Smith", company: "Smith Co", country: "CA", province_state: "AB", plan_interest: "growth" },
     ]);
+  });
+});
+
+// BF_PORTAL_KS_EMAIL_FLOW_v1
+describe("Keystone broker email flow", () => {
+  it("is set up with one button, then listed with its opens and clicks, and shows what each broker did", async () => {
+    renderKs("/silo/ks/marketing/sequences");
+    fireEvent.click(await screen.findByRole("button", { name: "Set up the broker email flow" }));
+    expect(await screen.findByText("Signed Todd at Keystone. Up to 50 people get the first email each day. Change the wording on the Templates tab.", { exact: false })).toBeInTheDocument();
+    expect(calls.some((c) => c.method === "POST" && c.url.endsWith("/api/ops/marketing/flows/keystone-brokers"))).toBe(true);
+    expect(screen.getByText("Clicked: let's talk (and a call task)")).toBeInTheDocument();
+    expect(screen.getByText("Opened")).toBeInTheDocument();
+    expect(screen.getByText(/Opened: more details,/)).toBeInTheDocument();
+    expectOnlyKsOps();
   });
 });

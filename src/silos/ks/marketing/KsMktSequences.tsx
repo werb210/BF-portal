@@ -13,6 +13,13 @@ const STOP_LABELS: Record<string, string> = {
   replied: "Replied", signed_up: "Signed up", demo_booked: "Booked a demo", unsubscribed: "Unsubscribed", suppressed: "Suppressed",
   staff: "Stopped by staff", send_failed: "Email could not be sent", template_missing: "Template missing", missing: "Removed",
 };
+// BF_PORTAL_KS_EMAIL_FLOW_v1 - an email flow: seven fixed emails; opening or clicking picks the next one.
+export const FLOW_LABELS: Record<string, string> = {
+  e1: "First email (everyone)", n2: "Not opened, week 1", n3: "Not opened, week 2", n4: "Not opened, week 3 (last)",
+  o1: "Opened: more details", o2: "Opened: demo invite", c1: "Clicked: let's talk (and a call task)",
+};
+const FLOW_KEYS = ["e1", "n2", "n3", "n4", "o1", "o2", "c1"];
+const TRACK_LABELS: Record<string, string> = { none: "Not opened yet", opened: "Opened", clicked: "Clicked" };
 const stopLabel = (r: string | null) => (r ? STOP_LABELS[r] ?? (r.startsWith("blocked:") ? `Not allowed to email (${r.slice(8)})` : r) : "-");
 
 export default function KsMktSequences() {
@@ -28,6 +35,14 @@ export default function KsMktSequences() {
     },
   });
   const rows = list.data?.sequences ?? [];
+  const flow = useMutation({
+    mutationFn: () => mktApi.createBrokerFlow(),
+    onSuccess: (r) => {
+      void qc.invalidateQueries({ queryKey: ["ks", "mkt", "sequences"] });
+      navigate(`/silo/ks/marketing/sequences/${r.sequence.id}`);
+    },
+  });
+  const hasFlow = rows.some((s) => s.kind === "flow");
   return (
     <>
       <SenderWarnings compact />
@@ -40,17 +55,29 @@ export default function KsMktSequences() {
           <Button kind="primary" onClick={() => create.mutate()} disabled={!name.trim() || create.isPending}>Create</Button>
         </div>
       </Section>
+      {!hasFlow ? (
+        <Section title="Broker email flow">
+          <p style={{ marginTop: 0, fontSize: 14 }}>
+            Seven emails signed by Todd. Everyone gets the first. If they do not open it they get three short ones a week apart; if they open one
+            they get more detail two business days later; if they click a link they get the demo link and a call task is created for Todd.
+          </p>
+          <ErrorBox error={flow.error} />
+          <Button kind="primary" onClick={() => flow.mutate()} disabled={flow.isPending}>Set up the broker email flow</Button>
+        </Section>
+      ) : null}
       <Section title="Sequences">
         {list.isLoading ? <Loading what="sequences" /> : null}
         <ErrorBox error={list.error} />
-        <Table head={["Sequence", "Status", "Steps", "Active", "Enrolled"]} empty={!list.isLoading && rows.length === 0}>
+        <Table head={["Sequence", "Status", "Steps", "Active", "Enrolled", "Opened", "Clicked"]} empty={!list.isLoading && rows.length === 0}>
           {rows.map((s) => (
             <tr key={s.id}>
-              <td style={td}><Link to={`/silo/ks/marketing/sequences/${s.id}`} style={linkStyle}>{s.name}</Link></td>
+              <td style={td}><Link to={`/silo/ks/marketing/sequences/${s.id}`} style={linkStyle}>{s.name}</Link>{s.kind === "flow" ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Email flow</div> : null}</td>
               <td style={td}><Badge value={s.status === "active" ? "active" : s.status === "paused" ? "waiting" : "pending"} /> {s.status}</td>
               <td style={td}>{s.steps.length}</td>
               <td style={td}>{s.active ?? 0}</td>
               <td style={td}>{s.enrolled ?? 0}</td>
+              <td style={td}>{s.kind === "flow" ? s.opened ?? 0 : "-"}</td>
+              <td style={td}>{s.kind === "flow" ? s.clicked ?? 0 : "-"}</td>
             </tr>
           ))}
         </Table>
@@ -101,6 +128,20 @@ export function KsMktSequenceDetail() {
         </p>
       </Section>
 
+      {s.kind === "flow" ? (
+        <Section title="Emails">
+          <p style={{ marginTop: 0, fontSize: 14 }}>
+            Signed {s.from_name || "Keystone"}. Up to {s.daily_new ?? 50} people get the first email each day. Change the wording on the Templates tab.
+          </p>
+          <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
+            {s.steps.map((st, i) => (
+              <li key={i} style={{ fontSize: 14 }}>
+                <strong>{FLOW_LABELS[FLOW_KEYS[i] ?? ""] ?? `Email ${i + 1}`}</strong>: {tpls.find((t) => t.id === st.template_id)?.name ?? "template"}
+              </li>
+            ))}
+          </ol>
+        </Section>
+      ) : (
       <Section title="Steps">
         <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 10 }}>
           {current.map((st, i) => (
@@ -129,6 +170,7 @@ export function KsMktSequenceDetail() {
         </div>
         {tpls.length === 0 ? <p style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>Make a template on the Templates tab first.</p> : null}
       </Section>
+      )}
 
       <Section title="Enrol prospects">
         <SegmentFilterEditor value={filters} onChange={setFilters} />
@@ -153,12 +195,13 @@ export function KsMktSequenceDetail() {
 
       <Section title={`Enrolled (${enrollments.length})`}>
         <ErrorBox error={stop.error} />
-        <Table head={["Prospect", "Status", "Next", "Enrolled", "Stopped because", ""]} empty={enrollments.length === 0}>
+        <Table head={s.kind === "flow" ? ["Prospect", "Status", "Did", "Next", "Enrolled", "Stopped because", ""] : ["Prospect", "Status", "Next", "Enrolled", "Stopped because", ""]} empty={enrollments.length === 0}>
           {enrollments.map((e) => (
             <tr key={e.id}>
               <td style={td}>{e.name || e.email}<div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{e.email}</div></td>
               <td style={td}>{e.status}</td>
-              <td style={td}>{e.status === "active" ? `Step ${e.next_step + 1}, ${date(e.next_send_at, true)}` : "-"}</td>
+              {s.kind === "flow" ? <td style={td}>{TRACK_LABELS[e.track ?? "none"]}</td> : null}
+              <td style={td}>{e.status !== "active" ? "-" : s.kind === "flow" ? `${FLOW_LABELS[e.flow_next ?? ""] ?? "-"}, ${date(e.next_send_at, true)}` : `Step ${e.next_step + 1}, ${date(e.next_send_at, true)}`}</td>
               <td style={td}>{date(e.enrolled_at)}</td>
               <td style={td}>{stopLabel(e.stopped_reason)}</td>
               <td style={td}>{e.status === "active" ? <Button onClick={() => stop.mutate(e.id)}>Stop</Button> : null}</td>
