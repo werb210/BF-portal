@@ -65,4 +65,24 @@ describe("Insurance: reps", () => {
     render(<BIFieldReps />);
     expect((await screen.findByRole("alert")).textContent).toBe("Request failed");
   });
+
+  // BF_PORTAL_BI_REP_AGREEMENT_v1
+  it("adding a rep needs an email, says the agreement was sent, and the table shows where it stands", async () => {
+    answer((path, init) => {
+      if (path === "/api/v1/bi/field-reps" && init?.method === "POST") return { ok: true, rep: { full_name: "New Rep" }, pin: "482913", page_url: "https://www.boreal.insure/rep/zz99yy", agreement: { status: "sent", emailed: true } };
+      if (path === "/api/v1/bi/field-reps" && !init) return { ok: true, reps: [{ ...REP, agreement: "sent" }] };
+      return undefined;
+    });
+    render(<BIFieldReps />);
+    await screen.findByText("Sam Rep");
+    expect(screen.getByTestId("rep-agreement-status").textContent).toBe("Sent, not signed yet");
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "New Rep" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add rep" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("Enter the rep's email address");
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add rep" }));
+    expect((await screen.findByTestId("rep-agreement-sent")).textContent).toContain("Introducer Agreement to sign");
+    fireEvent.click(screen.getByRole("button", { name: "Resend agreement" }));
+    await waitFor(() => expect(calls("/api/v1/bi/field-reps/r1/agreement", "POST")).toHaveLength(1));
+  });
 });
