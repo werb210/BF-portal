@@ -24,7 +24,7 @@ import CustomFieldFilters from "@/crmFields/CustomFieldFilters"; // BF_PORTAL_v8
 import { useCustomFieldColumns } from "@/crmFields/useCustomFieldColumns"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { displayValue, filterParams, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
 
-type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at" | `cf_${string}`;
+type SortCol = "name" | "company_name" | "tags" | "lead_status" | "owner_name" | "marketing_contact" | "created_at" | `cf_${string}`; // BF_PORTAL_CRM_COLUMNS_MATCH_v1
 
 
 // v884: onUnfilteredTotal lets the CRM tab show the same number as the pager. The server's /api/crm/counts also counts
@@ -76,7 +76,7 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
   const [busyMass, setBusyMass] = useState<"delete" | "tag" | "active" | "assign" | "marketing" | null>(null);
   // BF_PORTAL_v958_MARKETING_CONTACTS - only marketing contacts get campaign emails / texts.
   const [marketingFilter, setMarketingFilter] = useState<"" | "yes" | "no">(savedFilters.marketingFilter === "yes" || savedFilters.marketingFilter === "no" ? savedFilters.marketingFilter : "");
-  const [mkSummary, setMkSummary] = useState<{ total: number; marketing: number; emailable: number; unsubscribed: number; budget: { allowance: number; used: number; remaining: number | null; addon: boolean } | null } | null>(null);
+  const [mkSummary, setMkSummary] = useState<{ total: number; marketing: number; emailable: number; unsubscribed: number; noEmail: number; budget: { allowance: number; used: number; remaining: number | null; addon: boolean } | null } | null>(null);
   const [assignOwnerId, setAssignOwnerId] = useState("");
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
   // BF_PORTAL_v870_CRM_DATA_MODEL - custom field columns (chosen in Columns) and filters.
@@ -142,7 +142,7 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
       if (cancelled) return;
       const ok = m && typeof m.total === "number" && typeof m.marketing === "number";
       const b = ok && m.budget && typeof m.budget.allowance === "number" ? { ...m.budget, used: Number(m.budget.used ?? 0) } : null;
-      setMkSummary(ok ? { total: m.total, marketing: m.marketing, emailable: Number(m.emailable ?? 0), unsubscribed: Number(m.unsubscribed ?? 0), budget: b } : null);
+      setMkSummary(ok ? { total: m.total, marketing: m.marketing, emailable: Number(m.emailable ?? 0), unsubscribed: Number(m.unsubscribed ?? 0), noEmail: Number(m.no_email ?? 0), budget: b } : null);
     }).catch(() => { if (!cancelled) setMkSummary(null); });
     return () => { cancelled = true; };
   }, [refreshKey, silo]);
@@ -395,7 +395,7 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
       {/* BF_PORTAL_v958_MARKETING_CONTACTS - who gets marketing. Pick them here: tick rows, or filter by a tag and mark everyone with it. */}
       {mkSummary && (
         <div data-testid="marketing-summary" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", padding: "10px 12px", border: "1px solid var(--ui-border)", borderRadius: 8, marginBottom: 12, fontSize: 13, background: "var(--ui-surface-strong)" }}>
-          <span><strong>{mkSummary.marketing.toLocaleString()}</strong> of {mkSummary.total.toLocaleString()} contacts are marketing contacts ({mkSummary.emailable.toLocaleString()} can get campaign emails{mkSummary.unsubscribed > 0 ? `; ${mkSummary.unsubscribed.toLocaleString()} unsubscribed` : ""}).</span>
+          <span><strong>{mkSummary.marketing.toLocaleString()}</strong> of {mkSummary.total.toLocaleString()} contacts are marketing contacts ({mkSummary.emailable.toLocaleString()} can get campaign emails{mkSummary.noEmail > 0 ? `; ${mkSummary.noEmail.toLocaleString()} have no email address` : ""}{mkSummary.unsubscribed > 0 ? `; ${mkSummary.unsubscribed.toLocaleString()} unsubscribed` : ""}).</span>
           {mkSummary.budget && (
             <span style={{ color: mkSummary.budget.remaining !== null && mkSummary.emailable > mkSummary.budget.remaining ? "#b45309" : "var(--ui-text-muted)" }}>
               {mkSummary.budget.addon
@@ -449,10 +449,10 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
             )}
             <Th onClick={() => onSort("name")}>Name{sortIndicator("name")}</Th>
             {!hiddenCols.has("company_name") && <Th onClick={() => onSort("company_name")}>Company{sortIndicator("company_name")}</Th>}
-            {!hiddenCols.has("tags") && <Th>Tags</Th>}{/* BF_PORTAL_BLOCK_v811_TAGS_COLUMN */}
+            {!hiddenCols.has("tags") && <Th onClick={() => onSort("tags")}>Tags{sortIndicator("tags")}</Th>}{/* BF_PORTAL_BLOCK_v811_TAGS_COLUMN */}
             {!hiddenCols.has("lead_status") && <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>}
             {!hiddenCols.has("owner_name") && <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>}
-            {!hiddenCols.has("marketing_contact") && <Th>Marketing</Th>}
+            {!hiddenCols.has("marketing_contact") && <Th onClick={() => onSort("marketing_contact")}>Marketing{sortIndicator("marketing_contact")}</Th>}
             {cf.shown.map((f) => <Th key={f.name} onClick={() => onSort(`cf_${f.name}`)}>{f.label}{sortIndicator(`cf_${f.name}`)}</Th>)}
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
           </tr>
@@ -495,7 +495,7 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
 }
 
 function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  return <th onClick={onClick} style={thStyle}>{children}</th>;
+  return <th onClick={onClick} style={onClick ? { ...thStyle, cursor: "pointer" } : thStyle}>{children}</th>;
 }
 
 // BF_PORTAL_BF_CONTACTS_PAGER_v1 - matches the server default (max 500).

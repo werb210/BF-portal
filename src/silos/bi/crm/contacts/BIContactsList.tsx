@@ -13,7 +13,7 @@ import ContactCardScanField from "@/components/crm/ContactCardScanField"; // v11
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 
-type SortCol = "name" | "company_name" | "lead_status" | "owner_name" | "created_at";
+type SortCol = "name" | "company_name" | "tags" | "lead_status" | "owner_name" | "marketing_contact" | "created_at"; // BF_PORTAL_CRM_COLUMNS_MATCH_v1
 
 type BIContactRow = {
   id: string;
@@ -24,6 +24,7 @@ type BIContactRow = {
   outreach_status: string | null;
   outreach_owner_id: string | null;
   tags: string[] | null;
+  marketing_contact?: boolean | null; // BF_PORTAL_CRM_COLUMNS_MATCH_v1
   created_at: string;
 };
 
@@ -177,6 +178,7 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
         ...(!hiddenCols.has("tags") ? [{ label: "Tags", value: (r: BIContactRow) => r.tags }] : []),
         ...(!hiddenCols.has("lead_status") ? [{ label: "Lead status", value: (r: BIContactRow) => r.outreach_status }] : []),
         ...(!hiddenCols.has("owner_name") ? [{ label: "Owner", value: (r: BIContactRow) => ownerName(r.outreach_owner_id) }] : []),
+        ...(!hiddenCols.has("marketing_contact") ? [{ label: "Marketing contact", value: (r: BIContactRow) => (r.marketing_contact === false ? "No" : "Yes") }] : []),
         { label: "Create date", value: (r) => r.created_at },
       ];
       await saveCsv(exportFileName("insurance-contacts"), rowsToCsv(all, cols));
@@ -248,17 +250,18 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
       {!hiddenCols.has("tags") && <td style={tdStyle}><CrmTagChips tags={r.tags} catalogue={tagCatalogue} /></td>}{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
       {!hiddenCols.has("lead_status") && <td style={tdStyle}>{r.outreach_status ? r.outreach_status.replace(/_/g, " ") : "—"}</td>}
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{ownerName(r.outreach_owner_id)}</td>}
+      {!hiddenCols.has("marketing_contact") && <td style={tdStyle} data-testid="marketing-cell">{r.marketing_contact === false ? "No" : "Yes"}</td>}
       <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
     </tr>
   )), [rows, isAdmin, selected, ownerName, hiddenCols, tagCatalogue, leadScores]); // BF_PORTAL_v856_CRM_UNIFY
 
-  const colCount = isAdmin ? 7 : 6; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 (+Tags col)
+  const colCount = isAdmin ? 8 : 7; // BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 (+Tags col)
 
   return (
     <div style={page} data-testid="bi-contacts-list">
       <div style={toolbar}>
         <input value={q} onChange={(e) => { setQ(e.target.value); setCrmPage(1); }} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
-        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} />
+        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }, { key: "marketing_contact", label: "Marketing" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} />
         <button type="button" disabled={exporting !== null} onClick={() => void exportAll()} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">{exporting ?? "Export"}</button>
         {/* BF_PORTAL_v907_SEGMENT_RESET - a segment replaces the view; "All contacts" clears it. */}
         <CrmSegmentBar allLabel="All contacts" current={{ q, ownerId, tagFilter: Array.from(tagFilter), sort }} onApply={(f) => {
@@ -341,9 +344,10 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
             )}
             <Th onClick={() => onSort("name")}>Name{sortIndicator("name")}</Th>
             {!hiddenCols.has("company_name") && <Th onClick={() => onSort("company_name")}>Company{sortIndicator("company_name")}</Th>}
-            {!hiddenCols.has("tags") && <th style={thStyle}>Tags</th>}{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
+            {!hiddenCols.has("tags") && <Th onClick={() => onSort("tags")}>Tags{sortIndicator("tags")}</Th>}{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
             {!hiddenCols.has("lead_status") && <Th onClick={() => onSort("lead_status")}>Lead status{sortIndicator("lead_status")}</Th>}
             {!hiddenCols.has("owner_name") && <Th onClick={() => onSort("owner_name")}>Owner{sortIndicator("owner_name")}</Th>}
+            {!hiddenCols.has("marketing_contact") && <Th onClick={() => onSort("marketing_contact")}>Marketing{sortIndicator("marketing_contact")}</Th>}
             <Th onClick={() => onSort("created_at")}>Create date{sortIndicator("created_at")}</Th>
           </tr>
         </thead>
@@ -365,7 +369,7 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
 }
 
 function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  return <th onClick={onClick} style={thStyle}>{children}</th>;
+  return <th onClick={onClick} style={onClick ? { ...thStyle, cursor: "pointer" } : thStyle}>{children}</th>;
 }
 
 const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24, borderRadius: 8 };
