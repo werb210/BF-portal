@@ -5,12 +5,13 @@ import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer";
 import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORTAL_LINK_CLICKS_PANEL_v9
 import SequenceCanvas, { type BISequenceStep, type SequenceQueue, type SequenceStaff, type SequenceTemplate } from "@/components/marketing/SequenceCanvas";
 import SequencesTab from "./tabs/SequencesTab"; // BF_PORTAL_BI_SEQUENCES_v285
+import FlowsTab from "./tabs/FlowsTab"; // BF_PORTAL_BI_EMAIL_FLOWS_v1
 
 // BF_PORTAL_LINK_CLICKS_PANEL_v9 - BI gets the same link report as BF.
 // BF_PORTAL_APOLLO_OFF_v10 - Apollo is retired. APOLLO_SYNC_ENABLED=false on
 // BI-Server, so the tab could only ever show an empty panel - and it was the
 // DEFAULT tab, so BI Marketing opened on dead content.
-type Channel = "email" | "sequences" | "links";
+type Channel = "email" | "flows" | "sequences" | "links";
 
 // BF_PORTAL_SEQUENCE_CANVAS_v1 — BI mounts the shared canvas with its own API.
 export default function BIMarketing() {
@@ -86,10 +87,10 @@ export default function BIMarketing() {
   return <div className="space-y-6">
     <div className="max-w-7xl mx-auto px-6">
       <div className="flex gap-2" role="tablist" aria-label="Marketing channels">
-        {(["email", "sequences", "links"] as const).map((key) => <button key={key} type="button" role="tab" aria-selected={channel === key} onClick={() => setChannel(key)} className={"px-4 py-2 rounded-md text-sm font-medium " + (channel === key ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5")}>{key === "email" ? "Email" : key === "sequences" ? "Sequences" : "Links"}</button>)}
+        {(["email", "flows", "sequences", "links"] as const).map((key) => <button key={key} type="button" role="tab" aria-selected={channel === key} onClick={() => setChannel(key)} className={"px-4 py-2 rounded-md text-sm font-medium " + (channel === key ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5")}>{key === "email" ? "Email" : key === "flows" ? "Flows" : key === "sequences" ? "Sequences" : "Links"}</button>)}
       </div>
     </div>
-    {channel === "email" ? <div className="max-w-7xl mx-auto px-6"><BrandedEmailComposer apiBase="/api/v1/bi/marketing" /></div> : channel === "links" ? <div className="max-w-7xl mx-auto px-6"><LinkClicksPanel apiBase="/api/v1/bi/marketing" /></div> : <div className="max-w-7xl mx-auto px-6">
+    {channel === "email" ? <div className="max-w-7xl mx-auto px-6"><BrandedEmailComposer apiBase="/api/v1/bi/marketing" /></div> : channel === "flows" ? <div className="max-w-7xl mx-auto px-6"><FlowsTab /></div> : channel === "links" ? <div className="max-w-7xl mx-auto px-6"><LinkClicksPanel apiBase="/api/v1/bi/marketing" /></div> : <div className="max-w-7xl mx-auto px-6">
       <div className="mb-8"><SequencesTab hideCreate refreshKey={listVersion} /></div>
       <h3 className="mb-2 text-lg font-medium">Build a new sequence</h3>
       <label className="mb-4 block max-w-xl text-sm text-white/80">Sequence name
