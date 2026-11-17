@@ -2,6 +2,7 @@
 // Staff add a rep here and send them their page link and PIN. Each rep's contacts, and what happened to the
 // information email, are listed under the rep.
 import { useEffect, useState } from "react";
+import { formatPhone } from "@/utils/format";
 import { api } from "@/api";
 
 type Rep = { id: string; code: string; full_name: string; company_name: string | null; email: string | null; phone_e164: string | null; active: boolean; agreement?: string; agreement_signed_at?: string | null; contacts?: number; opened?: number; last_contact_at?: string | null; page_url?: string; share_url?: string };
@@ -9,6 +10,8 @@ type Contact = { id: string; full_name: string | null; company_name: string | nu
 type Issued = { name: string; page_url: string; pin: string | null; agreement?: { status: string; emailed: boolean; error?: string } };
 // BF_PORTAL_BI_REP_AGREEMENT_v1 - what the Agreement column says.
 export const AGREEMENT_LABEL: Record<string, string> = { signed: "Signed", sent: "Sent, not signed yet", not_sent: "Not sent", not_required: "Not asked" };
+// BI_FIELD_REPS_PHONE_FORMAT - "(512) 555-0142" as it is typed and when shown (the portal-wide formatter).
+const shownPhone = (v: string | null | undefined): string => { const m = /^\+?1?(\d{10})$/.exec(String(v ?? "").replace(/[\s().-]/g, "")); return m ? formatPhone(m[1]!) : String(v ?? ""); };
 const EMPTY = { full_name: "", company_name: "", email: "", phone: "" };
 const INPUT = "mt-1 w-full rounded border border-card bg-brand-bg px-3 py-2 text-sm text-white";
 const BTN = "rounded border border-card px-3 py-1 text-sm text-white/80 hover:text-white disabled:opacity-50";
@@ -102,7 +105,7 @@ export default function BIFieldReps() {
         <label className="text-sm">Name<input className={INPUT} value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></label>
         <label className="text-sm">Company<input className={INPUT} value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} /></label>
         <label className="text-sm">Email<input className={INPUT} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
-        <label className="text-sm">Mobile<input className={INPUT} type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
+        <label className="text-sm">Mobile<input className={INPUT} type="tel" placeholder="(512) 555-0142" maxLength={14} value={form.phone} onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })} /></label>
         <div className="flex items-end"><button type="submit" disabled={saving} className="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? "Adding..." : "Add rep"}</button></div>
       </form>
 
@@ -148,9 +151,9 @@ function FragmentRow({ rep, open, contacts, onShow, onAgreement, onPin, onActive
             <ul className="grid gap-2">
               {contacts.map((c) => (
                 <li key={c.id} className="rounded border border-card px-3 py-2">
-                  <span className="font-semibold">{c.full_name || c.email || c.phone_e164}</span>
+                  <span className="font-semibold">{c.full_name || c.email || shownPhone(c.phone_e164)}</span>
                   <span className="text-white/70">{[c.title, c.company_name].filter(Boolean).length ? " - " + [c.title, c.company_name].filter(Boolean).join(", ") : ""}</span>
-                  <div className="text-white/70">{[c.email, c.phone_e164, SOURCE_LABEL[c.source] ?? c.source, when(c.created_at)].filter(Boolean).join(" | ")}</div>
+                  <div className="text-white/70">{[c.email, c.phone_e164 ? shownPhone(c.phone_e164) : null, SOURCE_LABEL[c.source] ?? c.source, when(c.created_at)].filter(Boolean).join(" | ")}</div>
                   <div className="text-emerald-300">{c.status}</div>
                   {c.notes ? <div className="text-white/70">Note: {c.notes}</div> : null}
                 </li>
