@@ -4,9 +4,11 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 
-type Rep = { id: string; code: string; full_name: string; company_name: string | null; email: string | null; phone_e164: string | null; active: boolean; contacts?: number; opened?: number; last_contact_at?: string | null; page_url?: string; share_url?: string };
+type Rep = { id: string; code: string; full_name: string; company_name: string | null; email: string | null; phone_e164: string | null; active: boolean; agreement?: string; agreement_signed_at?: string | null; contacts?: number; opened?: number; last_contact_at?: string | null; page_url?: string; share_url?: string };
 type Contact = { id: string; full_name: string | null; company_name: string | null; title: string | null; email: string | null; phone_e164: string | null; source: string; status: string; created_at: string; notes: string | null };
-type Issued = { name: string; page_url: string; pin: string };
+type Issued = { name: string; page_url: string; pin: string; agreement?: { status: string; emailed: boolean; error?: string } };
+// BF_PORTAL_BI_REP_AGREEMENT_v1 - what the Agreement column says.
+export const AGREEMENT_LABEL: Record<string, string> = { signed: "Signed", sent: "Sent, not signed yet", not_sent: "Not sent", not_required: "Not asked" };
 const EMPTY = { full_name: "", company_name: "", email: "", phone: "" };
 const INPUT = "mt-1 w-full rounded border border-card bg-brand-bg px-3 py-2 text-sm text-white";
 const BTN = "rounded border border-card px-3 py-1 text-sm text-white/80 hover:text-white disabled:opacity-50";
@@ -35,14 +37,20 @@ export default function BIFieldReps() {
   async function add(ev: React.FormEvent) {
     ev.preventDefault();
     if (!form.full_name.trim()) { setError("Enter the rep's name."); return; }
+    if (!form.email.trim()) { setError("Enter the rep's email address. Their agreement is sent there."); return; }
     setSaving(true); setError(null);
     try {
       const r: any = await api<any>("/api/v1/bi/field-reps", { method: "POST", body: JSON.stringify(form) });
-      setIssued({ name: r.rep.full_name, page_url: r.page_url, pin: r.pin });
+      setIssued({ name: r.rep.full_name, page_url: r.page_url, pin: r.pin, agreement: r.agreement });
       setForm(EMPTY);
       void load();
     } catch (e) { setError(failure(e, "Could not add the rep.")); }
     finally { setSaving(false); }
+  }
+  async function sendAgreement(rep: Rep) {
+    setError(null);
+    try { await api<any>(`/api/v1/bi/field-reps/${rep.id}/agreement`, { method: "POST", body: "{}" }); void load(); }
+    catch (e) { setError(failure(e, "Could not send the agreement.")); }
   }
   async function newPin(rep: Rep) {
     try { const r: any = await api<any>(`/api/v1/bi/field-reps/${rep.id}/pin`, { method: "POST", body: "{}" }); setIssued({ name: rep.full_name, page_url: r.page_url, pin: r.pin }); }
@@ -72,7 +80,13 @@ export default function BIFieldReps() {
 
       {issued ? (
         <div role="status" className="mb-6 rounded border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm" data-testid="rep-issued">
-          <p className="font-semibold">Send these to {issued.name}. The PIN is shown once.</p>
+          {issued.agreement?.status === "sent" ? (
+            <p className="font-semibold" data-testid="rep-agreement-sent">{issued.name} has been emailed their page, PIN and the Introducer Agreement to sign{issued.agreement.emailed ? "" : " (the email did not go out - send them the details below)"}. Their page opens once they sign. The PIN is shown once.</p>
+          ) : issued.agreement?.status === "not_sent" ? (
+            <p className="font-semibold text-amber-200" data-testid="rep-agreement-failed">{issued.name} was added, but the agreement could not be sent ({issued.agreement.error ?? "unknown reason"}). Their page stays locked. Use "Send agreement" beside their name to try again.</p>
+          ) : (
+            <p className="font-semibold">Send these to {issued.name}. The PIN is shown once.</p>
+          )}
           <p className="mt-2">Page: <span className="font-mono">{issued.page_url}</span> <button className={BTN} onClick={() => copy(issued.page_url)}>Copy link</button></p>
           <p className="mt-2">PIN: <span className="font-mono text-lg">{issued.pin}</span> <button className={BTN} onClick={() => copy(issued.pin)}>Copy PIN</button></p>
           <button className={`${BTN} mt-3`} onClick={() => setIssued(null)}>Done</button>
@@ -90,11 +104,11 @@ export default function BIFieldReps() {
       {loading ? <p className="text-sm text-white/70">Loading...</p> : reps.length === 0 ? <p className="text-sm text-white/70">No reps yet. Add the first one above.</p> : (
         <div className="overflow-x-auto rounded border border-card">
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-surface text-white/70"><tr><th className="px-3 py-2">Rep</th><th className="px-3 py-2">Code</th><th className="px-3 py-2">Contacts</th><th className="px-3 py-2">Opened</th><th className="px-3 py-2">Last contact</th><th className="px-3 py-2">Status</th><th className="px-3 py-2" /></tr></thead>
+            <thead className="bg-brand-surface text-white/70"><tr><th className="px-3 py-2">Rep</th><th className="px-3 py-2">Code</th><th className="px-3 py-2">Contacts</th><th className="px-3 py-2">Opened</th><th className="px-3 py-2">Last contact</th><th className="px-3 py-2">Agreement</th><th className="px-3 py-2">Status</th><th className="px-3 py-2" /></tr></thead>
             <tbody>
               {reps.map((r) => (
                 <FragmentRow key={r.id} rep={r} open={open === r.id} contacts={open === r.id ? contacts : null}
-                  onShow={() => void show(r)} onPin={() => void newPin(r)} onActive={() => void setActive(r, !r.active)} onCopy={() => copy(r.page_url || "")} />
+                  onShow={() => void show(r)} onAgreement={() => void sendAgreement(r)} onPin={() => void newPin(r)} onActive={() => void setActive(r, !r.active)} onCopy={() => copy(r.page_url || "")} />
               ))}
             </tbody>
           </table>
@@ -104,7 +118,7 @@ export default function BIFieldReps() {
   );
 }
 
-function FragmentRow({ rep, open, contacts, onShow, onPin, onActive, onCopy }: { rep: Rep; open: boolean; contacts: Contact[] | null; onShow: () => void; onPin: () => void; onActive: () => void; onCopy: () => void }) {
+function FragmentRow({ rep, open, contacts, onShow, onAgreement, onPin, onActive, onCopy }: { rep: Rep; open: boolean; contacts: Contact[] | null; onShow: () => void; onAgreement: () => void; onPin: () => void; onActive: () => void; onCopy: () => void }) {
   return (
     <>
       <tr className="border-t border-card">
@@ -113,16 +127,18 @@ function FragmentRow({ rep, open, contacts, onShow, onPin, onActive, onCopy }: {
         <td className="px-3 py-2">{rep.contacts ?? 0}</td>
         <td className="px-3 py-2">{rep.opened ?? 0}</td>
         <td className="px-3 py-2">{when(rep.last_contact_at)}</td>
+        <td className="px-3 py-2" data-testid="rep-agreement-status">{AGREEMENT_LABEL[rep.agreement ?? "not_required"] ?? "-"}{rep.agreement === "signed" && rep.agreement_signed_at ? " " + when(rep.agreement_signed_at) : ""}</td>
         <td className="px-3 py-2">{rep.active ? "On" : "Off"}</td>
         <td className="px-3 py-2"><div className="flex flex-wrap justify-end gap-2">
           <button className={BTN} onClick={onShow}>{open ? "Hide contacts" : "Contacts"}</button>
           <button className={BTN} onClick={onCopy}>Copy page link</button>
+          {rep.agreement !== "signed" ? <button className={BTN} onClick={onAgreement}>{rep.agreement === "sent" ? "Resend agreement" : "Send agreement"}</button> : null}
           <button className={BTN} onClick={onPin}>New PIN</button>
           <button className={BTN} onClick={onActive}>{rep.active ? "Switch off" : "Switch on"}</button>
         </div></td>
       </tr>
       {open ? (
-        <tr className="border-t border-card bg-brand-surface/50"><td colSpan={7} className="px-3 py-3">
+        <tr className="border-t border-card bg-brand-surface/50"><td colSpan={8} className="px-3 py-3">
           {contacts === null ? <p className="text-white/70">Loading...</p> : contacts.length === 0 ? <p className="text-white/70">No contacts yet.</p> : (
             <ul className="grid gap-2">
               {contacts.map((c) => (
