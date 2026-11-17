@@ -6,7 +6,7 @@ import { api } from "@/api";
 
 type Rep = { id: string; code: string; full_name: string; company_name: string | null; email: string | null; phone_e164: string | null; active: boolean; agreement?: string; agreement_signed_at?: string | null; contacts?: number; opened?: number; last_contact_at?: string | null; page_url?: string; share_url?: string };
 type Contact = { id: string; full_name: string | null; company_name: string | null; title: string | null; email: string | null; phone_e164: string | null; source: string; status: string; created_at: string; notes: string | null };
-type Issued = { name: string; page_url: string; pin: string; agreement?: { status: string; emailed: boolean; error?: string } };
+type Issued = { name: string; page_url: string; pin: string | null; agreement?: { status: string; emailed: boolean; error?: string } };
 // BF_PORTAL_BI_REP_AGREEMENT_v1 - what the Agreement column says.
 export const AGREEMENT_LABEL: Record<string, string> = { signed: "Signed", sent: "Sent, not signed yet", not_sent: "Not sent", not_required: "Not asked" };
 const EMPTY = { full_name: "", company_name: "", email: "", phone: "" };
@@ -81,14 +81,19 @@ export default function BIFieldReps() {
       {issued ? (
         <div role="status" className="mb-6 rounded border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm" data-testid="rep-issued">
           {issued.agreement?.status === "sent" ? (
-            <p className="font-semibold" data-testid="rep-agreement-sent">{issued.name} has been emailed their page, PIN and the Introducer Agreement to sign{issued.agreement.emailed ? "" : " (the email did not go out - send them the details below)"}. Their page opens once they sign. The PIN is shown once.</p>
+            <p className="font-semibold" data-testid="rep-agreement-sent">{issued.agreement.emailed ? `${issued.name} has been emailed the Introducer Agreement to sign.` : `${issued.name} was added, but the agreement email did not go out. Use "Resend agreement" beside their name.`} Their welcome email, with their page link and PIN, is sent automatically as soon as they sign.</p>
           ) : issued.agreement?.status === "not_sent" ? (
             <p className="font-semibold text-amber-200" data-testid="rep-agreement-failed">{issued.name} was added, but the agreement could not be sent ({issued.agreement.error ?? "unknown reason"}). Their page stays locked. Use "Send agreement" beside their name to try again.</p>
           ) : (
             <p className="font-semibold">Send these to {issued.name}. The PIN is shown once.</p>
           )}
-          <p className="mt-2">Page: <span className="font-mono">{issued.page_url}</span> <button className={BTN} onClick={() => copy(issued.page_url)}>Copy link</button></p>
-          <p className="mt-2">PIN: <span className="font-mono text-lg">{issued.pin}</span> <button className={BTN} onClick={() => copy(issued.pin)}>Copy PIN</button></p>
+          {/* v2: no page link or PIN is shown while the agreement is out - they go to the rep once it is signed. */}
+          {issued.pin ? (
+            <>
+              <p className="mt-2">Page: <span className="font-mono">{issued.page_url}</span> <button className={BTN} onClick={() => copy(issued.page_url)}>Copy link</button></p>
+              <p className="mt-2">PIN: <span className="font-mono text-lg">{issued.pin}</span> <button className={BTN} onClick={() => copy(issued.pin ?? "")}>Copy PIN</button></p>
+            </>
+          ) : null}
           <button className={`${BTN} mt-3`} onClick={() => setIssued(null)}>Done</button>
         </div>
       ) : null}

@@ -69,7 +69,7 @@ describe("Insurance: reps", () => {
   // BF_PORTAL_BI_REP_AGREEMENT_v1
   it("adding a rep needs an email, says the agreement was sent, and the table shows where it stands", async () => {
     answer((path, init) => {
-      if (path === "/api/v1/bi/field-reps" && init?.method === "POST") return { ok: true, rep: { full_name: "New Rep" }, pin: "482913", page_url: "https://www.boreal.insure/rep/zz99yy", agreement: { status: "sent", emailed: true } };
+      if (path === "/api/v1/bi/field-reps" && init?.method === "POST") return { ok: true, rep: { full_name: "New Rep" }, pin: null, page_url: "https://www.boreal.insure/rep/zz99yy", agreement: { status: "sent", emailed: true } };
       if (path === "/api/v1/bi/field-reps" && !init) return { ok: true, reps: [{ ...REP, agreement: "sent" }] };
       return undefined;
     });
@@ -82,6 +82,9 @@ describe("Insurance: reps", () => {
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Add rep" }));
     expect((await screen.findByTestId("rep-agreement-sent")).textContent).toContain("Introducer Agreement to sign");
+    // v2: the welcome (page link and PIN) goes to the rep only once they sign, so neither is shown here.
+    expect(screen.getByTestId("rep-agreement-sent").textContent).toContain("as soon as they sign");
+    expect(screen.getByTestId("rep-issued").textContent).not.toContain("PIN:");
     fireEvent.click(screen.getByRole("button", { name: "Resend agreement" }));
     await waitFor(() => expect(calls("/api/v1/bi/field-reps/r1/agreement", "POST")).toHaveLength(1));
   });
