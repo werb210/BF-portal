@@ -65,7 +65,10 @@ export default function CardHeader({ applicationId, application, onNavigate }: {
   const requested = amountFrom(a.overview?.requestedAmount, a.fundingRequest?.amount, fp.fundingAmount, a.requestedAmount, a.requested_amount);
   const product = a.overview?.productCategory ?? a.productCategory ?? a.overview?.productType;
   const offers = Number(a.offerCount ?? 0);
-  const broker = a.assignedTo?.name ?? null;
+  // BF_PORTAL_CARD_TIDY_v1 - client-submitted applications are owned by the system user named
+  // "client-submission"; that is not a broker, so show Unassigned.
+  const rawBroker = a.assignedTo?.name ?? null;
+  const broker = rawBroker && !/^(client[-_ ]submission|system)$/i.test(rawBroker.trim()) ? rawBroker : null;
   const name = businessName(application);
   const stage = String(a.stage ?? "");
   const parked = stage === "Hold" || stage === "Fraud";
