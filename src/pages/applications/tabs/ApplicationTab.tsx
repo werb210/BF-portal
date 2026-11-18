@@ -132,6 +132,17 @@ export default function ApplicationTab({ application }: Props) {
   const [v_openForm, v_setOpenForm] = useState<string | null>(null);
   const [v_formData, v_setFormData] = useState<Record<string, PortalFormResponse | null>>({});
   const [v_formLoading, v_setFormLoading] = useState<string | null>(null);
+  // BF_PORTAL_ACCOUNTANT_ON_CARD_v1 - the accountant the client named at Step 5 was saved but shown nowhere.
+  const [v_cpa, v_setCpa] = useState<Record<string, unknown> | null>(null);
+  useEffect(() => {
+    if (!v784_appId) return;
+    let live = true;
+    void getFormResponse(v784_appId, "professional_advisors").then((r) => {
+      const cpa = (r?.data as any)?.advisors?.cpa;
+      if (live) v_setCpa(cpa && typeof cpa === "object" ? (cpa as Record<string, unknown>) : null);
+    });
+    return () => { live = false; };
+  }, [v784_appId]);
   const V_FORM_DOCTYPES: Record<string, string> = {
     debt: "debt_stack", networth: "net_worth_statement", equipment: "equipment_list",
     realestate: "real_estate_collateral_disclosure", cra: "cra_view_only_authorization",
@@ -613,6 +624,15 @@ export default function ApplicationTab({ application }: Props) {
         <Field label="Submitted" value={fmtDate(application.submittedAt)} />
       </SectionGroup>
 
+      {v_cpa && (
+        <SectionGroup title="Accountant (asked to send documents)">
+          <Field label="Firm" value={fmt(v_cpa.firm)} />
+          <Field label="Name" value={fmt(v_cpa.contact)} />
+          <Field label="Email" value={fmt(v_cpa.email)} />
+          <Field label="Phone" value={fmt(v_cpa.phone)} />
+        </SectionGroup>
+      )}
+
       <SectionGroup title="Business">
         <Field label="Legal Business Name" value={fmt(business.legalName ?? business.name)} />
         <Field label="Operating / DBA Name" value={fmt(dba)} />
@@ -623,7 +643,8 @@ export default function ApplicationTab({ application }: Props) {
         <Field label="Phone" value={fmt(business.phone ?? business.phoneNumber)} />
         {/* BF_PORTAL_BLOCK_v608_THREE_FIXES_v1 — Business Email removed per Todd. */}
         <Field label="Website" value={business.website ? <Anchor href={String(business.website)} /> : "—"} />
-        <Field label="Industry" value={fmt(business.industry ?? fp.industry)} />
+        {/* BF_PORTAL_CARD_TIDY_v1 - the Step 1 answer is the current one; business.industry could be a returning client's old value. */}
+        <Field label="Industry" value={fmt(fp.industry ?? business.industry)} />
         <Field label="Entity Type" value={prettyEnum(business.businessStructure ?? business.entityType ?? business.businessType)} />
         <Field label="Start Date" value={fmtDate(business.startDate)} />
         <Field label="Time in Business" value={fmt(business.timeInBusiness ?? fp.yearsInBusiness ?? fp.salesHistory)} />
@@ -744,7 +765,9 @@ function fmtPercent(v: unknown, fallback = "—"): string {
 
 function fmtDate(v: unknown, fallback = "—"): string {
   if (typeof v !== "string" || !v) return fallback;
-  const d = new Date(v);
+  // BF_PORTAL_DATE_ONLY_v1 - "2015-03-01" parsed as UTC midnight showed as Feb 28 in Alberta.
+  const ymd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  const d = ymd ? new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3])) : new Date(v);
   return Number.isNaN(d.getTime())
     ? fallback
     : d.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" });
