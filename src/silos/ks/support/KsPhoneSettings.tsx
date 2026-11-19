@@ -7,6 +7,20 @@ import { Button, Field, input, KeyValues, linkStyle, PageTitle, Section } from "
 import { apiErrorText, ksSupportApi, type KsPhoneInfo, type KsQueueSettings, type KsStaffMember, type KsWeekly } from "./ksSupportApi";
 import { SUPPORT_BASE } from "./KsSupportQueue";
 
+// UI_REVIEW_2026_11_19 - pick a city, not a typed zone code. Alberta is UTC-6 all year since 2026; it is saved as
+// America/Regina (same clock all year) so servers with older time-zone data still open and close on time.
+const PHONE_ZONES: Array<[string, string]> = [
+  ["America/Vancouver", "Vancouver (Pacific)"],
+  ["America/Regina", "Edmonton (Alberta time)"],
+  ["America/Winnipeg", "Winnipeg (Central)"],
+  ["America/Toronto", "Toronto (Eastern)"],
+  ["America/Halifax", "Halifax (Atlantic)"],
+  ["America/St_Johns", "St. John's (Newfoundland)"],
+];
+function phoneZoneValue(tz: string): string {
+  return tz === "America/Edmonton" ? "America/Regina" : tz;
+}
+
 const DAYS: Array<{ key: keyof KsWeekly; label: string }> = [
   { key: "mon", label: "Monday" },
   { key: "tue", label: "Tuesday" },
@@ -70,7 +84,10 @@ function QueueForm({ value, staff }: { value: KsQueueSettings; staff: KsStaffMem
             <input aria-label={`${q.label} ring seconds`} type="number" min={10} max={60} style={{ ...input, width: 110 }} value={q.ringTimeoutSeconds} onChange={(e) => setQ({ ...q, ringTimeoutSeconds: Number(e.target.value) })} />
           </Field>
           <Field name="Time zone">
-            <input aria-label={`${q.label} time zone`} style={{ ...input, width: 200 }} value={q.timezone} onChange={(e) => setQ({ ...q, timezone: e.target.value })} />
+            <select aria-label={`${q.label} time zone`} style={{ ...input, width: 220 }} value={phoneZoneValue(q.timezone)} onChange={(e) => setQ({ ...q, timezone: e.target.value })}>
+              {PHONE_ZONES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              {PHONE_ZONES.some(([v]) => v === phoneZoneValue(q.timezone)) ? null : <option value={q.timezone}>{q.timezone}</option>}
+            </select>
           </Field>
           <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 14, color: "var(--ui-text)" }}>
             <input type="checkbox" aria-label={`${q.label} use opening hours`} checked={q.hoursEnabled} onChange={(e) => setQ({ ...q, hoursEnabled: e.target.checked })} />

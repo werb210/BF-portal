@@ -236,7 +236,9 @@ function CalendarContent() {
 
 
   return (
-    <div className="page" style={{ display: "grid", gridTemplateColumns: "65% 35%", gap: 16, minHeight: "calc(100vh - 160px)" }}>
+    // BF_PORTAL_CALENDAR_FIT_v1 - the tasks panel was 35% of a narrow page, so task titles wrapped one or two words per
+    // line. It now keeps at least 360px; the calendar takes the rest (and never pushes past the screen).
+    <div className="page" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(360px, 34%)", gap: 16, minHeight: "calc(100vh - 160px)" }}>
       <section style={{ background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: 12 }}>
         {/* BF_PORTAL_BLOCK_v610_CALENDAR_FIXES_v1 — the default rbc-toolbar label
             was being suppressed by a global stylesheet. Render the month/year
@@ -271,6 +273,10 @@ function CalendarContent() {
           .rbc-current-time-indicator { background: var(--ui-accent-blue) !important; }
           .rbc-event, .rbc-day-slot .rbc-event { background: var(--ui-accent-blue) !important; color: #fff !important; border: none !important; }
           .rbc-show-more { background: transparent !important; color: var(--ui-accent-fg) !important; }
+          /* BF_PORTAL_CALENDAR_FIT_v1 - long titles stay inside their event block (ellipsis; the full title is on hover). */
+          .rbc-event, .rbc-event-content, .rbc-event-label { overflow: hidden !important; min-width: 0; }
+          .rbc-month-view .rbc-event-content, .rbc-time-header .rbc-event-content { white-space: nowrap !important; text-overflow: ellipsis !important; }
+          .rbc-day-slot .rbc-event-content { word-break: break-word; overflow-wrap: anywhere; line-height: 1.25; }
         `}</style>
         <div style={{ height: 700, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", gap: 8, padding: "0 0 8px 0" }}>

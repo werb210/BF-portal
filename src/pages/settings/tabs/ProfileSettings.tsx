@@ -448,9 +448,11 @@ const ProfileSettings = () => {
           <p className="ui-field__label">Signed in as</p>
           <div className="profile-summary__name">{displayName || user?.name || "—"}</div>
           <div className="profile-summary__email">{localProfile.email}</div>
-          <div className="profile-summary__email">
-            Last login: {localProfile.lastLogin ? new Date(localProfile.lastLogin).toLocaleString() : "Unavailable"}
-          </div>
+          {localProfile.lastLogin ? (
+            <div className="profile-summary__email">
+              Last login: {new Date(localProfile.lastLogin).toLocaleString()}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -480,7 +482,16 @@ const ProfileSettings = () => {
             ref={fileInputRef}
             onChange={onFileChange}
             aria-label="Upload profile image"
+            style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden" }}
           />
+          <button
+            type="button"
+            disabled={avatarSaving}
+            onClick={() => fileInputRef.current?.click()}
+            style={{ padding: "6px 14px", fontSize: 13, borderRadius: 6, border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)", color: "var(--ui-text)", cursor: "pointer" }}
+          >
+            {localProfile.profileImage ? "Change photo" : "Upload photo"}
+          </button>
           <p className="avatar-helper">Choose a JPEG or PNG under 2 MB. It is cropped square and saved straight away; it shows in the top bar, the Team list and Team chat.</p>
           {avatarStatus && <p role="status" data-testid="avatar-status" style={{ fontSize: 13 }}>{avatarStatus}</p>}
           {localProfile.profileImage && (

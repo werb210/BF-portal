@@ -197,7 +197,7 @@ const SettingsPage = () => {
                 {activeGroup && activeGroup.sections.length > 1 && <h2 className="settings-group-title">{activeGroup.label}</h2>}
                 {activeGroup?.sections.map((t) => (
                   <section key={t.id} id={`settings-section-${t.id}`} className="settings-group-section" aria-label={t.label}>
-                    {activeGroup.sections.length > 1 && <h3 className="settings-section-title">{t.label}</h3>}
+                    {activeGroup.sections.length > 1 && !SELF_TITLED_SECTIONS.has(t.id) && <h3 className="settings-section-title">{t.label}</h3>}
                     <ErrorBoundary>{t.content}</ErrorBoundary>
                   </section>
                 ))}
@@ -211,6 +211,12 @@ const SettingsPage = () => {
 };
 
 // BF_PORTAL_v885_SETTINGS_ROLES - the groups and which sections each holds, in order.
+// UI_REVIEW_2026_11_19 - these sections print their own heading, so the page does not print the same words above it.
+export const SELF_TITLED_SECTIONS = new Set([
+  "phone", "retention", "call-scripts", "lead-rotation", "blocked-numbers", "never-log", "payments",
+  "fraud", "id-verification", "your-services",
+]);
+
 export const SETTINGS_GROUPS: Array<{ id: string; label: string; heading: string; sectionIds: string[] }> = [
   { id: "profile", label: "My Profile", heading: "YOU", sectionIds: ["profile"] },
   // BF_PORTAL_v892_SETTINGS_YOU - Content and AI Knowledge are their own items under YOU (were "Content and AI").
