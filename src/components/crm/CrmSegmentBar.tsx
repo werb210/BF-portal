@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
+import { crmButton, crmSelect } from "./crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
 
 // BF_PORTAL_CRM_SEGMENTS_v1 - save the current contact-list filters as a named
 // segment, re-apply a saved one, or delete one. Filters are opaque jsonb.
@@ -54,18 +55,17 @@ export function CrmSegmentBar({ current, onApply, allLabel = "All records" }: { 
     }
     setTimeout(() => setMsg(null), 2000);
   }
-  const ctl: React.CSSProperties = { padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13, background: "var(--ui-surface-strong)", whiteSpace: "nowrap" }; // BF_PORTAL_CRM_TOOLBAR_NOWRAP_v1
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <select value={selectedId} onChange={(e) => apply(e.target.value)} style={ctl} aria-label="Segments">
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
+      <select value={selectedId} onChange={(e) => apply(e.target.value)} style={crmSelect} aria-label="Segments" title="Saved segments">
         <option value="">{allLabel}</option>
         {segments.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
       </select>
-      <button type="button" onClick={save} style={{ ...ctl, cursor: "pointer" }}>Save segment</button>
+      <button type="button" onClick={save} style={crmButton} aria-label="Save segment" title="Save these filters as a segment">Save</button>
       {selectedId ? (
         <>
-          <button type="button" onClick={() => apply("")} style={{ ...ctl, cursor: "pointer" }} data-testid="segment-clear">Show {allLabel.toLowerCase()}</button>
-          <button type="button" onClick={del} style={{ ...ctl, cursor: "pointer" }} aria-label="Delete segment">Delete</button>
+          <button type="button" onClick={() => apply("")} style={crmButton} data-testid="segment-clear" title={`Show ${allLabel.toLowerCase()}`}>Clear</button>
+          <button type="button" onClick={del} style={crmButton} aria-label="Delete segment">Delete</button>
         </>
       ) : null}
       {msg ? <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>{msg}</span> : null}

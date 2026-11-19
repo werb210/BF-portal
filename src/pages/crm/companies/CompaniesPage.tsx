@@ -13,6 +13,7 @@ import CompaniesImportModal from "./CompaniesImportModal";
 import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
+import { crmToolbar, crmSearch, crmSelect, crmButton, crmPrimary } from "@/components/crm/crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
 import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } from "@/pages/crm/crmExport"; // BF_PORTAL_v907_CRM_EXPORT
 import { bulkDeleteMessage, skippedFrom } from "@/pages/crm/bulkDeleteResult"; // BF_PORTAL_v907_PARTIAL_BULK_DELETE
 import { refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
@@ -217,24 +218,26 @@ export default function CompaniesPage() {
 
   return (
     <div style={page}>
-      <div style={toolbar}>
+      <div style={crmToolbar}>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search companies"
-          style={searchInput}
+          aria-label="Search companies"
+          style={crmSearch}
         />
-        <select data-testid="bf-companies-owner-filter" value={ownerId} onChange={(e) => setOwnerId(e.target.value)} style={toolbarBtn} aria-label="Filter by owner">
-          <option value="">All owners</option>
+        <select data-testid="bf-companies-owner-filter" value={ownerId} onChange={(e) => setOwnerId(e.target.value)} style={crmSelect} aria-label="Filter by owner">
+          <option value="">Owner</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
-        {roleCan.exp && <button style={toolbarBtn} disabled={exporting !== null} onClick={() => void exportAll()} data-testid="companies-export">{exporting ?? "Export"}</button>}
-        <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "owner_name", label: "Owner" }, ...cf.columnOptions]} hidden={cf.hiddenWith(hiddenCols)} onToggle={(k) => (cf.isCfKey(k) ? cf.toggle(k) : toggleCol(k))} style={toolbarBtn} />
-        {roleCan.create && <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>}
+        {roleCan.exp && <button style={crmButton} disabled={exporting !== null} onClick={() => void exportAll()} data-testid="companies-export">{exporting ?? "Export"}</button>}
+        <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "owner_name", label: "Owner" }, ...cf.columnOptions]} hidden={cf.hiddenWith(hiddenCols)} onToggle={(k) => (cf.isCfKey(k) ? cf.toggle(k) : toggleCol(k))} style={crmButton} />
+        {roleCan.create && <button onClick={() => setImportOpen(true)} style={crmButton}>Import</button>}
         <button
           onClick={() => setCreateOpen(true)}
-          style={{ background: "var(--accent)", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}
-        >+ Create Company</button>
+          style={crmPrimary}
+          aria-label="Create company"
+        >+ Company</button>
       </div>
       {/* BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips. */}
       <CrmTagViewBy backend={crmBackend} entity="company" value={tagFilter ? tagFilter.split(",") : []}
@@ -321,15 +324,6 @@ function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => 
 const COMPANIES_PAGE_SIZE = 200;
 
 const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24 };
-const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16 };
-const searchInput: CSSProperties = {
-  flex: 1, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4,
-  background: "var(--ui-surface-strong)", color: "var(--ui-text)",
-};
-const toolbarBtn: CSSProperties = {
-  padding: "8px 16px", border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)",
-  borderRadius: 4, cursor: "pointer",
-};
 const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "var(--ui-surface-strong)" };
 const theadRow: CSSProperties = { borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)" };
 const thStyle: CSSProperties = {

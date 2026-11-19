@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } from "@/pages/crm/crmExport"; // BF_PORTAL_v914_BI_CRM_PARITY
 import { bulkDeleteMessage, skippedFrom } from "@/pages/crm/bulkDeleteResult"; // BF_PORTAL_v914_BI_CRM_PARITY
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
+import { crmToolbar, crmSearch, crmSelect, crmButton, crmPrimary } from "@/components/crm/crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 
@@ -254,20 +255,20 @@ export default function BICompaniesList({ onUnfilteredTotal }: { onUnfilteredTot
 
   return (
     <div style={page} data-testid="bi-companies-list">
-      <div style={toolbar}>
-        <input value={q} onChange={(e) => { setQ(e.target.value); setCrmPage(1); }} placeholder="Search companies" style={searchInput} aria-label="Search companies" />
-        <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "contacts", label: "Contacts" }, { key: "location", label: "Location" }, { key: "owner", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} />
-        <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" }} aria-label="Filter by owner" data-testid="bi-companies-owner-filter">
-          <option value="">All owners</option>
+      {/* BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1 - same controls, order and size as the Boreal Financial company list. */}
+      <div style={crmToolbar}>
+        <input value={q} onChange={(e) => { setQ(e.target.value); setCrmPage(1); }} placeholder="Search companies" style={crmSearch} aria-label="Search companies" />
+        <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={crmSelect} aria-label="Filter by owner" data-testid="bi-companies-owner-filter">
+          <option value="">Owner</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
-        <button type="button" disabled={exporting !== null} onClick={() => void exportCsv()} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap", marginRight: 8 }} data-testid="bi-companies-export">{exporting ?? "Export"}</button>
-        <div style={{ fontSize: 13, color: "var(--ui-text-muted)", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{total.toLocaleString()} {total === 1 ? "company" : "companies"}</div>
-        <span style={{ flex: 1 }} />
-        <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1, marginRight: 8 }} data-testid="bi-companies-import">{importing ? "Importing…" : "Import"}</button>
+        <button type="button" disabled={exporting !== null} onClick={() => void exportCsv()} style={crmButton} data-testid="bi-companies-export">{exporting ?? "Export"}</button>
+        <ColumnsMenu options={[{ key: "industry", label: "Industry" }, { key: "tags", label: "Tags" }, { key: "contacts", label: "Contacts" }, { key: "location", label: "Location" }, { key: "owner", label: "Owner" }]} hidden={hiddenCols} onToggle={toggleCol} style={crmButton} />
+        <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ ...crmButton, opacity: importing ? 0.6 : 1 }} data-testid="bi-companies-import">{importing ? "Importing…" : "Import"}</button>
         <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-companies-import-input" />
-        <button type="button" onClick={() => setCreateOpen((v) => !v)} style={{ background: createOpen ? "#fff" : "var(--accent)", color: createOpen ? "var(--accent)" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: createOpen ? "1px solid var(--accent)" : 0, cursor: "pointer" }} data-testid="bi-companies-create-toggle">{createOpen ? "Cancel" : "+ Create Company"}</button>
+        <button type="button" onClick={() => setCreateOpen((v) => !v)} style={createOpen ? { ...crmButton, color: "var(--accent)", border: "1px solid var(--accent)" } : crmPrimary} aria-label={createOpen ? "Cancel" : "Create company"} data-testid="bi-companies-create-toggle">{createOpen ? "Cancel" : "+ Company"}</button>
       </div>
+      <div style={{ fontSize: 13, color: "var(--ui-text-muted)", margin: "-8px 0 8px" }} aria-live="polite">{total.toLocaleString()} {total === 1 ? "company" : "companies"}</div>
 
       {/* BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips (several tags = any of them; "__none__" = untagged). */}
       <CrmTagViewBy backend={BI_CRM_BACKEND} entity="company" value={tagFilter ? tagFilter.split(",") : []}
@@ -345,7 +346,6 @@ function chipBtn(active: boolean): CSSProperties {
 }
 
 const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24, borderRadius: 8 };
-const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16, alignItems: "center" };
 const searchInput: CSSProperties = { flex: 1, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
 const createBar: CSSProperties = { background: "var(--ui-surface-muted)", border: "1px solid var(--ui-border)", borderRadius: 6, padding: 12, marginBottom: 16, display: "flex", gap: 8, alignItems: "flex-end" };
 const massBar: CSSProperties = { display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" };
