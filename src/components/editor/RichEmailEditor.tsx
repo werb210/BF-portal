@@ -3,6 +3,7 @@
 // numbered lists, links, clear formatting, and an "Add meeting button" that inserts the {{meeting_link}} token,
 // which the server turns into each sender's own "Book a meeting" button when the email goes out.
 import { forwardRef, useEffect, useImperativeHandle, useRef, type CSSProperties } from "react";
+import { sanitizeHtml } from "@/lib/sanitizeHtml"; // SECURITY_SWEEP_2026_11_19
 
 export type RichEmailEditorHandle = { insertText: (text: string) => void; focus: () => void };
 
@@ -23,7 +24,9 @@ const looksLikeHtml = (s: string) => /<(br|p|div|ul|ol|li|a|strong|em|b|i|u|h[1-
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
 /** A template saved as plain text (the old textarea) opens with its line breaks kept. */
-export const toEditorHtml = (raw: string): string => (!raw ? "" : looksLikeHtml(raw) ? raw : escapeHtml(raw));
+// SECURITY_SWEEP_2026_11_19 - template HTML is sanitized before it goes into the editable box (innerHTML), so a
+// saved template cannot run script in the portal.
+export const toEditorHtml = (raw: string): string => (!raw ? "" : looksLikeHtml(raw) ? sanitizeHtml(raw) : escapeHtml(raw));
 
 /** Lists get inline markers so they show in the portal (whose base styles hide them) and in the recipient's email. */
 export function styleEditorLists(root: HTMLElement | null): void {
