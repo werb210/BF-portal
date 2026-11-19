@@ -9,6 +9,20 @@ import { crmUnified, errorText, type CleanupBatch, type CleanupChange, type CrmB
 import { plainBtn, primaryBtn } from "./CrmTags";
 import { confirmAction } from "@/lib/confirmAction";
 
+// UI_REVIEW_2026_11_19 - Insurance records the person as an id; show "you" for the signed-in user, never a raw id.
+function actorWords(v: unknown): string {
+  const s = String(v ?? "").trim();
+  if (!s) return "";
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return s;
+  try {
+    const raw = localStorage.getItem("auth_token") ?? sessionStorage.getItem("auth_token") ?? "";
+    const payload = JSON.parse(atob((raw.split(".")[1] ?? "").replace(/-/g, "+").replace(/_/g, "/")));
+    const me = String(payload?.sub ?? payload?.userId ?? payload?.id ?? payload?.staffUserId ?? "");
+    if (me && me.toLowerCase() === s.toLowerCase()) return "you";
+  } catch { /* no token */ }
+  return "staff";
+}
+
 const keyOf = (c: CleanupChange) => `${c.entity}:${c.entityId}:${c.field}`;
 const FIELD_LABELS: Record<string, string> = {
   name: "Name", full_name: "Name", first_name: "First name", last_name: "Last name", email: "Email", secondary_email: "Secondary email",
@@ -174,7 +188,7 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
         <div key={b.id} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13, padding: "4px 0" }}>
           <span>{formatDateTimeShort(b.created_at)}</span>
           <span>{b.change_count} change(s)</span>
-          {b.created_by_name ? <span style={{ color: "var(--ui-text-muted)" }}>by {b.created_by_name}</span> : null}
+          {actorWords(b.created_by_name) ? <span style={{ color: "var(--ui-text-muted)" }}>by {actorWords(b.created_by_name)}</span> : null}
           {b.undone_at
             ? <span style={{ color: "var(--ui-text-muted)" }}>undone {new Date(b.undone_at).toLocaleString()}</span>
             : <button type="button" onClick={() => void undo(b.id)} disabled={busy !== null} style={plainBtn}>Undo</button>}

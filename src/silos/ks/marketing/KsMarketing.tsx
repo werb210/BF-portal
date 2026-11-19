@@ -49,6 +49,14 @@ export function SenderWarnings({ compact = false }: { compact?: boolean }) {
   const w = status.data?.warnings ?? [];
   if (!w.length) return null;
   const blocking = status.data && !status.data.can_send;
+  // UI_REVIEW_2026_11_19 - on the other tabs a non-blocking reminder is one quiet line, not the same box every time.
+  if (compact && !blocking) {
+    return (
+      <p data-testid="ks-mkt-warnings" style={{ margin: "0 0 12px", fontSize: 13, color: "var(--ui-text-muted)" }}>
+        Marketing email set-up is not finished ({w.length} {w.length === 1 ? "item" : "items"}) - see the Overview tab.
+      </p>
+    );
+  }
   return (
     <div
       role="alert"

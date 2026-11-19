@@ -12,9 +12,20 @@ const th: CSSProperties = { textAlign: "left", padding: "4px 8px", color: "var(-
 const td: CSSProperties = { padding: "4px 8px", borderTop: "1px solid var(--ui-border)", color: "var(--ui-text)", fontSize: 13 };
 const money = (v: unknown) => "$" + Math.round(Number(v ?? 0)).toLocaleString("en-CA");
 
-function T({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
+// UI_REVIEW_2026_11_19 - first-column codes read as words: TERM_LOAN -> Term loan, client_direct -> Client direct, and the
+// client-submission system user -> "Client app (no owner)". Test-data rows (staging_smoke, test) are left out.
+const TEST_ROW = /^(staging[_-]?smoke|smoke[_-]?test|test|e2e)$/i;
+function rowLabel(c: ReactNode): ReactNode {
+  if (typeof c !== "string") return c;
+  const v = c.trim();
+  if (/^client[-_]submission$/i.test(v)) return "Client app (no owner)";
+  if (/[A-Za-z]/.test(v) && /^[A-Za-z0-9]+([_-][A-Za-z0-9]+)+$/.test(v)) return humanizeCode(v);
+  return c;
+}
+function T({ headers, rows: raw }: { headers: string[]; rows: ReactNode[][] }) {
+  const rows = raw.filter((r) => !(typeof r[0] === "string" && TEST_ROW.test(String(r[0]).trim())));
   if (!rows.length) return <p style={{ color: "var(--ui-text-muted)", fontSize: 13 }}>Nothing to show yet.</p>;
-  return <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>{headers.map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} style={td}>{c}</td>)}</tr>)}</tbody></table></div>;
+  return <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>{headers.map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} style={td}>{j === 0 ? rowLabel(c) : c}</td>)}</tr>)}</tbody></table></div>;
 }
 
 // BF_PORTAL_REPORTS_BATCH5_v760 - cards for BF-Server v776 reports.
