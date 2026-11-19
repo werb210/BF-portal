@@ -201,7 +201,7 @@ function bannerStyle(kind: "ok" | "wait" | "missing"): React.CSSProperties {
 
 function fmtMoney(v: number | null | undefined): string {
   if (v === null || v === undefined || !Number.isFinite(Number(v))) return "—";
-  const n = Math.round(Number(v));
+  const n = Math.round(Number(v)) || 0; // UI_REVIEW_2026_11_19 - no "$-0"
   if (n < 0) return "($" + Math.abs(n).toLocaleString() + ")";
   return "$" + n.toLocaleString();
 }
@@ -573,8 +573,8 @@ export default function BankingAnalysisTab({ applicationId }: Props) {
               <tbody>
                 {unusual.map((u, i) => (
                   <tr key={i}>
-                    <td style={styles.td}>{u.description ?? "—"}</td>
-                    <td style={styles.td}>{u.date ?? "—"}</td>
+                    <td style={styles.td}>{u.description || (u.type ? String(u.type).replace(/_/g, " ") : "Transaction")}</td>
+                    <td style={{ ...styles.td, whiteSpace: "nowrap" }}>{u.date ?? "—"}</td>
                     <td style={{ ...styles.td, textAlign: "right" }}>{fmtMoney(u.amount)}</td>
                     <td style={styles.td}>{u.type ?? "—"}</td>
                   </tr>

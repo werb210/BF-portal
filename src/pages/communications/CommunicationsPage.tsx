@@ -1,3 +1,4 @@
+import { humanizeCode } from "@/utils/labels";
 import { Capacitor } from "@capacitor/core"; // BF_PORTAL_ONEDRIVE_ATTACHMENTS_v648
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { UserAvatar } from "@/components/ui/UserAvatar"; // BF_PORTAL_v909_AVATARS
@@ -113,6 +114,24 @@ type Issue = {
   created_at: string;
   status: string;
 };
+
+// UI_REVIEW_2026_11_19 - an issue with no title shows the start of what the client wrote, not "Untitled".
+function issueTitle(issue: Pick<Issue, "title" | "description">): string {
+  const t = String(issue.title ?? "").trim();
+  if (t) return t;
+  const d = String(issue.description ?? "").trim().split(/\r?\n/)[0] ?? "";
+  if (!d) return "Issue report";
+  return d.length > 60 ? `${d.slice(0, 57)}…` : d;
+}
+
+// UI_REVIEW_2026_11_19 - Maya conversation rows read "Website chat · Maya answering", not "maya · ai".
+function mayaSessionLabel(source?: string | null, status?: string | null): string {
+  const src = String(source ?? "").trim().toLowerCase();
+  const where = !src || src === "maya" ? "Maya chat" : src === "website" || src === "web" ? "Website chat" : humanizeCode(src);
+  const st = String(status ?? "").trim().toLowerCase();
+  const state = !st ? "" : st === "ai" ? "Maya answering" : st === "human" || st === "staff" ? "Staff took over" : humanizeCode(st);
+  return state ? `${where} · ${state}` : where;
+}
 
 function isBadRequest(error: unknown) {
   return error instanceof ApiError && error.status === 400;
@@ -2570,7 +2589,7 @@ function IssuesTab() {
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-              <span style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)" }}>{issue.title || "Untitled"}</span>
+              <span style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)" }}>{issueTitle(issue)}</span>
               <span
                 style={{
                   fontSize: 10,
@@ -2595,7 +2614,7 @@ function IssuesTab() {
           </div>
         ) : (
           <>
-            <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 700, color: "var(--ui-text)" }}>{selected.title || "Untitled"}</h3>
+            <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 700, color: "var(--ui-text)" }}>{issueTitle(selected)}</h3>
             <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 16 }}>
               {new Date(selected.created_at).toLocaleString()}
             </div>
@@ -2870,7 +2889,7 @@ function MayaTab() {
             style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 14px", border: 0, borderBottom: "1px solid var(--ui-surface-muted)", background: selected === s.id ? "rgba(47, 168, 106, 0.12)" : "var(--ui-surface-strong)", cursor: "pointer" }}
           >
             <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ui-text)" }}>
-              {s.source || "Maya chat"}{s.status ? ` · ${s.status}` : ""}
+              {mayaSessionLabel(s.source, s.status)}
             </div>
             <div style={{ fontSize: 12, color: "var(--ui-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {s.last_message || `${s.message_count} messages`}

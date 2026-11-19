@@ -2908,3 +2908,24 @@ input[type="checkbox"]:disabled {
 }
 @media (max-width: 1024px) { .crm-detail-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 @media (max-width: 768px)  { .crm-detail-layout { grid-template-columns: 1fr; } }
+
+/* UI_REVIEW_2026_11_19: native file pickers look like the portal's buttons. */
+input[type="file"] {
+  font-size: 13px;
+  color: var(--ui-text-muted, #64748b);
+  max-width: 100%;
+}
+input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 6px 14px;
+  font: inherit;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--ui-border, #cbd5e1);
+  background: var(--ui-surface-strong, #f1f5f9);
+  color: var(--ui-text, #0f172a);
+  cursor: pointer;
+}
+input[type="file"]::file-selector-button:hover {
+  background: var(--ui-surface-hover, #e2e8f0);
+}

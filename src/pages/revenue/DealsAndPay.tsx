@@ -3,6 +3,7 @@
 // sees only their numbers. an admin (brokerage owner) sees their numbers and all others." The server enforces it; an
 // Admin can pick one broker or see everyone.
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { monthLabel } from "@/utils/labels"; // BF_PORTAL_MONTH_LABEL_v1
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { getErrorMessage } from "@/utils/errors";
@@ -14,7 +15,7 @@ type StLine = { kind: string; text: string; amount: number };
 type Statement = { user_id: string; pay_date: string; window: { from: string; to: string }; net_revenue: number; funded_volume: number; deals: number; rate_pct: number; lines: StLine[]; total: number; draw_balance_after: number };
 type Person = { id: string; name: string };
 
-const card: CSSProperties = { background: "var(--ui-surface)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: 16, marginBottom: 16 };
+const card: CSSProperties = { background: "var(--ui-surface)", color: "var(--ui-text)", border: "1px solid var(--ui-border)", borderRadius: 12, padding: 16, marginBottom: 16 };
 const th: CSSProperties = { textAlign: "left", padding: "6px 8px", fontSize: 11, color: "var(--ui-text-muted)", borderBottom: "1px solid var(--ui-border)", whiteSpace: "nowrap" };
 const td: CSSProperties = { padding: "6px 8px", borderBottom: "1px solid var(--ui-border)", fontSize: 13, verticalAlign: "top" };
 const inp: CSSProperties = { padding: "6px 8px", borderRadius: 8, border: "1px solid var(--ui-border)", background: "var(--ui-surface)", color: "var(--ui-text)", fontSize: 13 };
@@ -22,7 +23,7 @@ const money = (n: number | null | undefined, cur = "CAD") => (n === null || n ==
 const KIND: Record<string, string> = { lender_commission: "Lender commission", residual: "Profit share", client_fee: "Broker fee", setup_fee: "Set-up fee", proceeds_fee: "Fee from proceeds", spread: "Rate difference", referral_fee: "Referral fee owed", other: "Other" };
 
 function Tile({ label, value }: { label: string; value: string }) {
-  return <div style={{ minWidth: 140 }}><div style={{ fontSize: 11, color: "var(--ui-text-muted)", textTransform: "uppercase", letterSpacing: ".04em" }}>{label}</div><div style={{ fontSize: 18, fontWeight: 700 }}>{value}</div></div>;
+  return <div style={{ minWidth: 140 }}><div style={{ fontSize: 11, color: "var(--ui-text-muted)", textTransform: "uppercase", letterSpacing: ".04em" }}>{label}</div><div style={{ fontSize: 18, fontWeight: 700, color: "var(--ui-text)" }}>{value}</div></div>;
 }
 
 export default function DealsAndPay({ isAdmin }: { isAdmin: boolean }) {
@@ -98,7 +99,7 @@ export default function DealsAndPay({ isAdmin }: { isAdmin: boolean }) {
                     <td style={td}>
                       {data.lines.filter((l) => l.close_id === c.id).map((l) => (
                         <div key={l.id} style={{ whiteSpace: "nowrap" }}>
-                          {KIND[l.kind] ?? l.kind}{l.month ? ` ${l.month.slice(0, 7)}` : ""}: {l.kind === "referral_fee" ? "−" : ""}{money(l.status === "received" ? l.received_amount : l.expected_amount, c.currency)}{" "}
+                          {KIND[l.kind] ?? l.kind}{l.month ? ` ${monthLabel(l.month)}` : ""}: {l.kind === "referral_fee" ? "−" : ""}{money(l.status === "received" ? l.received_amount : l.expected_amount, c.currency)}{" "}
                           <span style={{ color: l.status === "received" ? "#166534" : l.status === "clawed_back" ? "#b91c1c" : "var(--ui-text-muted)" }}>({l.status === "received" ? `received ${l.received_on}` : l.status === "clawed_back" ? "clawed back" : "expected"})</span>
                         </div>
                       ))}

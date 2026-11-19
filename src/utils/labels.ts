@@ -31,7 +31,7 @@ const OVERRIDES: Record<string, string> = {
 };
 
 // Words that keep their capitals once split out of a code.
-const UPPER = new Set(["ar", "ap", "sba", "pgi", "id", "ip", "api", "sms", "pdf", "csv", "url", "crm", "gst", "hst", "pst", "qst", "nda", "loc", "abl", "mca", "po", "ein", "bn", "cra", "kyc", "aml", "otp", "ai", "ok", "us", "ca", "bf", "bi", "slf"]);
+const UPPER = new Set(["ar", "ap", "sba", "pgi", "id", "ip", "api", "sms", "pdf", "csv", "url", "crm", "gst", "hst", "pst", "qst", "nda", "loc", "abl", "mca", "po", "ein", "bn", "cra", "kyc", "aml", "otp", "ai", "ok", "us", "ca", "bf", "bi", "slf", "usa", "uk", "eu", "cad", "usd", "pg"]); // BF_PORTAL_UPPER_USA_v1 - "Accord Financial Corp. - USA", not "Usa"
 
 /** True for a code that is only meaningful to the system (for example Keystone's "exp--..." experiment codes). */
 export function isInternalCode(value: unknown): boolean {
@@ -96,6 +96,14 @@ export function stripIpPort(value: unknown): string {
 }
 
 /** A date and time for lists, without seconds: "Nov 2, 2026, 3:11 PM". Empty or bad values give "". */
+/** BF_PORTAL_MONTH_LABEL_v1 - "2026-11" or "2026-11-01" -> "Nov 2026"; anything else as given. */
+export function monthLabel(value: unknown): string {
+  const m = /^(\d{4})-(\d{2})/.exec(String(value ?? "").trim());
+  if (!m) return String(value ?? "");
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, 15));
+  return d.toLocaleString("en-CA", { month: "short", year: "numeric", timeZone: "UTC" });
+}
+
 export function formatDateTimeShort(value: unknown): string {
   if (value === null || value === undefined || value === "") return "";
   const d = value instanceof Date ? value : new Date(String(value));
