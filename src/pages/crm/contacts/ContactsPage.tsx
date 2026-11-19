@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCrmStore } from "@/state/crm.store";
 import CreateContactModal from "./CreateContactModal";
 import ImportContactsModal from "./ImportContactsModal";
+import { crmToolbar, crmSearch, crmSelect, crmButton, crmPrimary } from "@/components/crm/crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
 import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } from "@/pages/crm/crmExport"; // BF_PORTAL_v907_CRM_EXPORT
@@ -340,12 +341,13 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
 
   return (
     <div style={page}>
-      <div style={toolbar}>
+      <div style={crmToolbar}>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search contacts"
-          style={searchInput}
+          aria-label="Search contacts"
+          style={crmSearch}
         />
         <select
           data-testid="owner-filter"
@@ -358,22 +360,23 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
               filters: { ...state.filters, owner: value || null },
             }));
           }}
-          style={ownerSelect}
+          style={crmSelect}
+          aria-label="Owner"
         >
-          <option value="">All owners</option>
+          <option value="">Owner</option>
           {owners.map((o) => (
             <option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>
           ))}
         </select>
         {/* BF_PORTAL_v958_MARKETING_CONTACTS */}
-        <select data-testid="marketing-filter" value={marketingFilter} onChange={(e) => setMarketingFilter(e.target.value as "" | "yes" | "no")} style={ownerSelect}>
-          <option value="">Marketing: all</option>
+        <select data-testid="marketing-filter" value={marketingFilter} onChange={(e) => setMarketingFilter(e.target.value as "" | "yes" | "no")} style={crmSelect} aria-label="Marketing">
+          <option value="">Marketing</option>
           <option value="yes">Marketing contacts</option>
           <option value="no">Not marketing contacts</option>
         </select>
-        {roleCan.exp && <button style={toolbarBtn} disabled={exporting !== null} onClick={() => void exportAll()} data-testid="contacts-export">{exporting ?? "Export"}</button>}
-        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }, { key: "marketing_contact", label: "Marketing" }, ...cf.columnOptions]} hidden={cf.hiddenWith(hiddenCols)} onToggle={(k) => (cf.isCfKey(k) ? cf.toggle(k) : toggleCol(k))} style={toolbarBtn} />
-        {roleCan.create && <button onClick={() => setImportOpen(true)} style={toolbarBtn}>Import</button>}
+        {roleCan.exp && <button style={crmButton} disabled={exporting !== null} onClick={() => void exportAll()} data-testid="contacts-export">{exporting ?? "Export"}</button>}
+        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }, { key: "marketing_contact", label: "Marketing" }, ...cf.columnOptions]} hidden={cf.hiddenWith(hiddenCols)} onToggle={(k) => (cf.isCfKey(k) ? cf.toggle(k) : toggleCol(k))} style={crmButton} />
+        {roleCan.create && <button onClick={() => setImportOpen(true)} style={crmButton}>Import</button>}
         {/* BF_PORTAL_v907_SEGMENT_RESET - a segment replaces the whole view (anything it does not set goes back to the
             default), and "All contacts" clears it. Before, filters a segment did not mention stayed on, so choosing
             another segment or clearing it never returned to all contacts. */}
@@ -386,7 +389,7 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
           useCrmStore.setState((state) => ({ ...state, filters: { ...state.filters, owner: (typeof f.ownerId === "string" && f.ownerId) || null } }));
           setCrmPage(1);
         }} allLabel="All contacts" />
-        <button onClick={() => setCreateOpen(true)} style={{ background: "var(--accent)", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0 }}>+ Create Contact</button>
+        <button onClick={() => setCreateOpen(true)} style={crmPrimary} aria-label="Create contact">+ Contact</button>
       </div>
       {/* BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips; several tags = any of them. */}
       <CrmTagViewBy backend={crmBackend} entity="contact" value={tagFilter ? tagFilter.split(",") : []}
@@ -521,19 +524,6 @@ function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => 
 const CONTACTS_PAGE_SIZE = 200;
 
 const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24 };
-const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16 };
-const searchInput: CSSProperties = {
-  flex: 1, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4,
-  background: "var(--ui-surface-strong)", color: "var(--ui-text)",
-};
-const ownerSelect: CSSProperties = {
-  minWidth: 180, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4,
-  background: "var(--ui-surface-strong)", color: "var(--ui-text)",
-};
-const toolbarBtn: CSSProperties = {
-  padding: "8px 16px", border: "1px solid var(--ui-border)", background: "var(--ui-surface-strong)",
-  borderRadius: 4, cursor: "pointer",
-};
 const table: CSSProperties = { width: "100%", borderCollapse: "collapse", background: "var(--ui-surface-strong)" };
 const theadRow: CSSProperties = { borderBottom: "1px solid var(--ui-border)", background: "var(--ui-surface-muted)" };
 const thStyle: CSSProperties = {

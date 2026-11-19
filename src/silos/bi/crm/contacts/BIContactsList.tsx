@@ -9,6 +9,7 @@ import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } f
 import { bulkDeleteMessage, skippedFrom } from "@/pages/crm/bulkDeleteResult"; // BF_PORTAL_v914_BI_CRM_PARITY
 import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
+import { crmToolbar, crmSearch, crmSelect, crmButton, crmPrimary } from "@/components/crm/crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
 import ContactCardScanField from "@/components/crm/ContactCardScanField"; // v114-card-scan-mount
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
@@ -259,10 +260,17 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
 
   return (
     <div style={page} data-testid="bi-contacts-list">
-      <div style={toolbar}>
-        <input value={q} onChange={(e) => { setQ(e.target.value); setCrmPage(1); }} placeholder="Search contacts" style={searchInput} aria-label="Search contacts" />
-        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }, { key: "marketing_contact", label: "Marketing" }]} hidden={hiddenCols} onToggle={toggleCol} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} />
-        <button type="button" disabled={exporting !== null} onClick={() => void exportAll()} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: "pointer", whiteSpace: "nowrap" }} data-testid="bi-contacts-export">{exporting ?? "Export"}</button>
+      {/* BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1 - same controls, order and size as the Boreal Financial contact list. */}
+      <div style={crmToolbar}>
+        <input value={q} onChange={(e) => { setQ(e.target.value); setCrmPage(1); }} placeholder="Search contacts" style={crmSearch} aria-label="Search contacts" />
+        <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={crmSelect} aria-label="Filter by owner" data-testid="bi-owner-filter">
+          <option value="">Owner</option>
+          {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
+        </select>
+        <button type="button" disabled={exporting !== null} onClick={() => void exportAll()} style={crmButton} data-testid="bi-contacts-export">{exporting ?? "Export"}</button>
+        <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }, { key: "marketing_contact", label: "Marketing" }]} hidden={hiddenCols} onToggle={toggleCol} style={crmButton} />
+        <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ ...crmButton, opacity: importing ? 0.6 : 1 }}>{importing ? "Importing…" : "Import"}</button>
+        <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-crm-import-input" />
         {/* BF_PORTAL_v907_SEGMENT_RESET - a segment replaces the view; "All contacts" clears it. */}
         <CrmSegmentBar allLabel="All contacts" current={{ q, ownerId, tagFilter: Array.from(tagFilter), sort }} onApply={(f) => {
           setQ(typeof f.q === "string" ? f.q : "");
@@ -271,16 +279,9 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
           if (f.sort && typeof f.sort === "object") setSort(f.sort as { col: SortCol; dir: "asc" | "desc" });
           setCrmPage(1);
         }} />
-        <select value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setCrmPage(1); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--ui-border)", background: "transparent", color: "var(--ui-text)", fontSize: 13 }} aria-label="Filter by owner" data-testid="bi-owner-filter">
-          <option value="">All owners</option>
-          {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
-        </select>
-        <div style={{ fontSize: 13, color: "var(--ui-text-muted)", padding: "6px 10px", whiteSpace: "nowrap" }} aria-live="polite">{total.toLocaleString()} {total === 1 ? "contact" : "contacts"}</div>
-        <span style={{ flex: 1 }} />
-        <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ background: "var(--ui-surface-muted)", color: "var(--ui-text)", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: "1px solid var(--ui-border)", cursor: importing ? "default" : "pointer", whiteSpace: "nowrap", opacity: importing ? 0.6 : 1 }}>{importing ? "Importing…" : "Import"}</button>
-        <input ref={importInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }} onChange={onPickImport} data-testid="bi-crm-import-input" />
-        <button type="button" onClick={() => setCreateOpen(true)} style={{ background: "var(--accent)", color: "white", padding: "8px 14px", borderRadius: 8, fontWeight: 600, border: 0, cursor: "pointer", whiteSpace: "nowrap" }}>+ Create Contact</button>
+        <button type="button" onClick={() => setCreateOpen(true)} style={crmPrimary} aria-label="Create contact">+ Contact</button>
       </div>
+      <div style={{ fontSize: 13, color: "var(--ui-text-muted)", margin: "-8px 0 8px" }} aria-live="polite">{total.toLocaleString()} {total === 1 ? "contact" : "contacts"}</div>
 
       {importMsg && <div style={{ fontSize: 12, color: "#34d399", padding: "0 0 8px" }} role="status">{importMsg}</div>}
       {/* BF_PORTAL_v856_CRM_UNIFY - the shared View-by chips (same in every CRM); "__none__" = untagged. */}
@@ -373,8 +374,6 @@ function Th({ children, onClick }: { children: React.ReactNode; onClick?: () => 
 }
 
 const page: CSSProperties = { background: "var(--ui-surface-strong)", color: "var(--ui-text)", padding: 24, borderRadius: 8 };
-const toolbar: CSSProperties = { display: "flex", gap: 12, marginBottom: 16, alignItems: "center" };
-const searchInput: CSSProperties = { flex: 1, padding: 8, border: "1px solid var(--ui-border)", borderRadius: 4, background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
 const massBar: CSSProperties = { display: "flex", gap: 8, padding: 12, background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 12, alignItems: "center" };
 const delBtn: CSSProperties = { padding: "6px 12px", borderRadius: 6, background: "#dc2626", color: "#fff", border: 0, cursor: "pointer", fontSize: 13 };
 const tagBox: CSSProperties = { padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13 };
