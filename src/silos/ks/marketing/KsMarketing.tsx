@@ -102,7 +102,7 @@ function Overview() {
             ["Domain authenticated in SendGrid", `${s.domain.domain || "-"}: ${yes(s.domain.authenticated)}${s.domain.error ? ` (${s.domain.error})` : ""}`],
             ["Replies go to", s.sender.reply_to],
             ["Sender shown in the footer", `${s.sender.business_name} (${s.sender.legal_name})`],
-            ["Mailing address in the footer", `${s.sender.address}${s.sender.address_is_default ? " (the default - Keystone's own address is not set yet)" : ""}`],
+            ["Mailing address in the footer", `${s.sender.address}${s.sender.address_is_default ? ` (${s.sender.legal_name})` : ""}`],
             ["Open / click / bounce tracking", s.tracking_configured ? "On" : "Off - set up the SendGrid Event Webhook"],
             ["Reply detection", s.reply_detection.mailbox ? `Checks ${s.reply_detection.mailbox}` : "Off - use Mark replied on the prospect"],
           ]}
