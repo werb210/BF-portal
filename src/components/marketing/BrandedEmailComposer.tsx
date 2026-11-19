@@ -576,7 +576,7 @@ export default function BrandedEmailComposer({ apiBase = "/api/marketing" }: { a
       <div ref={previewPaneRef} className="mt-4 min-w-0">
         <div className="text-sm mb-1" style={{ color: "var(--ui-text-muted)" }}>Preview</div>
         <div style={{ width: EMAIL_PREVIEW_WIDTH * previewScale, height: EMAIL_PREVIEW_HEIGHT * previewScale, overflow: "hidden" }}>
-          <iframe title="Email preview" srcDoc={preview} style={{ width: EMAIL_PREVIEW_WIDTH, height: EMAIL_PREVIEW_HEIGHT, border: "1px solid var(--ui-border)", borderRadius: 8, background: "#fff", transform: `scale(${previewScale})`, transformOrigin: "top left" }} />
+          <iframe title="Email preview" sandbox="" srcDoc={preview} style={{ width: EMAIL_PREVIEW_WIDTH, height: EMAIL_PREVIEW_HEIGHT, border: "1px solid var(--ui-border)", borderRadius: 8, background: "#fff", transform: `scale(${previewScale})`, transformOrigin: "top left" }} />
         </div>
       </div>
     </section>
