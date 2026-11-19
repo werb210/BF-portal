@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCrmStore } from "@/state/crm.store";
 import CreateContactModal from "./CreateContactModal";
 import ImportContactsModal from "./ImportContactsModal";
-import { crmToolbar, crmSearch, crmSelect, crmButton, crmPrimary } from "@/components/crm/crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
+import { crmToolbar, crmSearch, crmSelect, crmButton, crmPrimary, crmMarketingSelect } from "@/components/crm/crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
 import { useBfCrmBackend } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
 import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } from "@/pages/crm/crmExport"; // BF_PORTAL_v907_CRM_EXPORT
@@ -370,7 +370,7 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
           ))}
         </select>
         {/* BF_PORTAL_v958_MARKETING_CONTACTS */}
-        <select data-testid="marketing-filter" value={marketingFilter} onChange={(e) => setMarketingFilter(e.target.value as "" | "yes" | "no")} style={crmSelect} aria-label="Marketing">
+        <select data-testid="marketing-filter" value={marketingFilter} onChange={(e) => setMarketingFilter(e.target.value as "" | "yes" | "no")} style={crmMarketingSelect} aria-label="Marketing">
           {/* BF_PORTAL_MARKETING_TWO_OPTIONS_v1 - a contact is a marketing contact or it is not: the list offers just those
               two. "Marketing" is only the label shown until one is picked (hidden from the list); x clears it. */}
           <option value="" hidden>Marketing</option>
