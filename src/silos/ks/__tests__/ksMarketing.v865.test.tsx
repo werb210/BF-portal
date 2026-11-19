@@ -84,6 +84,11 @@ beforeEach(() => {
     }),
   );
   vi.stubGlobal("confirm", vi.fn(() => true));
+  // BF_PORTAL_IN_PAGE_CONFIRM_v1 - answer the in-page confirmation with Confirm, as the old stub answered confirm().
+  new MutationObserver(() => {
+    const ok = document.querySelector<HTMLButtonElement>('[data-testid="confirm-dialog"] button:last-child');
+    if (ok) ok.click();
+  }).observe(document.body, { childList: true, subtree: true });
 });
 afterEach(() => {
   vi.unstubAllGlobals();

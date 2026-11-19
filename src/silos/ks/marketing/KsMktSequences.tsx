@@ -179,7 +179,7 @@ export function KsMktSequenceDetail() {
         <div style={{ marginTop: 12 }}>
           <Button
             kind="primary"
-            onClick={() => confirmAction("Enrol everyone in this segment who can be emailed?") && enroll.mutate()}
+            onClick={() => void confirmAction("Enrol everyone in this segment who can be emailed?").then((ok) => { if (ok) enroll.mutate(); })}
             disabled={enroll.isPending || s.steps.length === 0}
           >
             Enrol segment

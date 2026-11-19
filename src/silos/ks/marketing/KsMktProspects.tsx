@@ -199,7 +199,7 @@ export function KsMktProspectDetail() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Button onClick={() => replied.mutate()} disabled={replied.isPending}>Mark replied</Button>
             {!p.suppressed ? (
-              <Button kind="danger" onClick={() => confirmAction(`Never send marketing email to ${p.email}?`) && suppress.mutate(p.email)}>Suppress</Button>
+              <Button kind="danger" onClick={() => void confirmAction(`Never send marketing email to ${p.email}?`).then((ok) => { if (ok) suppress.mutate(p.email); })}>Suppress</Button>
             ) : null}
           </div>
         }

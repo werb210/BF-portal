@@ -51,7 +51,7 @@ describe("BF_PORTAL_BI_SILO_NAV_v56 -- BI silo nav config", () => {
   it("BI silo Admin sees Pipeline and Lender (singular)", () => {
     renderLayout("BI", "Admin");
     expect(screen.getByRole("link", { name: "Pipeline" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Lender" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lenders" })).toBeInTheDocument();
   });
 
   it("BI silo Admin does not see Communications or Calendar", () => {
@@ -88,7 +88,7 @@ describe("BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_AND_CONTACT_NAME_v1 -- 6-tab BI na
   it("Lender points at /silo/bi/lender (renamed from Lenders, not legacy /bi-lenders)", () => {
     renderLayout("BI", "Admin");
     expect(
-      screen.getByRole("link", { name: "Lender" }).getAttribute("href"),
+      screen.getByRole("link", { name: "Lenders" }).getAttribute("href"),
     ).toBe("/silo/bi/lender");
   });
 
@@ -121,7 +121,7 @@ describe("BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_AND_CONTACT_NAME_v1 -- 6-tab BI na
   // BF_PORTAL_REPORTS_SECTION_v714 - Reports added to the BI sidebar (reports by silo).
   it("BI sidebar has exactly 8 items (Dashboard, Pipeline, CRM, Lender, Marketing, Outreach, Reps, Reports)" /* BF_PORTAL_LIBRARY_IN_SETTINGS_v764 - Library moved to Settings */, () => {
     renderLayout("BI", "Admin");
-    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing", "Outreach", "Reps", "Reports"];
+    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Lenders", "Marketing", "Outreach", "Reps", "Reports"];
     for (const label of expectedLabels) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
@@ -140,12 +140,12 @@ describe("capability-gated BI sidebar", () => {
     expect(screen.getByRole("link", { name: "Marketing" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Outreach" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Pipeline" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Lender" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Lenders" })).not.toBeInTheDocument();
   });
 
   it("Todd sees Dashboard + Pipeline + CRM + Lender + Marketing + Outreach", () => {
     renderLayout("BI", "Admin", ["crm:read", "pipeline:manage", "application:read", "lender:submit", "marketing:admin", "marketing:outreach"]);
-    ["Dashboard", "Pipeline", "CRM", "Lender", "Marketing", "Outreach"].forEach((label) => {
+    ["Dashboard", "Pipeline", "CRM", "Lenders", "Marketing", "Outreach"].forEach((label) => {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     });
   });

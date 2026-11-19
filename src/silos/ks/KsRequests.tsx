@@ -27,7 +27,7 @@ export default function KsRequests() {
   });
   const act = (r: KsRequest, next: string, verb: string) => {
     const extra = next === "done" ? "\n\nThis only closes the request. Change the plan or storage on the licensee's page." : "";
-    if (confirmAction(`${verb} the ${label(r.kind).toLowerCase()} request from ${r.company_name ?? "this licensee"}?${extra}`)) update.mutate({ id: r.id, status: next });
+    void confirmAction(`${verb} the ${label(r.kind).toLowerCase()} request from ${r.company_name ?? "this licensee"}?${extra}`).then((ok) => { if (ok) update.mutate({ id: r.id, status: next }); });
   };
   const rows = list.data?.requests ?? [];
 

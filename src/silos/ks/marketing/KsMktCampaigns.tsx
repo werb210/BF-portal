@@ -117,7 +117,7 @@ function DraftEditor({ id, initial }: { id: string; initial: { name: string; sub
   });
   const go = () => {
     const whenText = when === "later" ? describeSchedule(at) : "now";
-    if (confirmAction(`Send "${subject}" ${when === "later" ? `- ${whenText}` : "now"}? Only prospects with valid consent who are not suppressed will get it.`)) send.mutate();
+    void confirmAction(`Send "${subject}" ${when === "later" ? `- ${whenText}` : "now"}? Only prospects with valid consent who are not suppressed will get it.`).then((ok) => { if (ok) send.mutate(); });
   };
   return (
     <>
@@ -181,7 +181,7 @@ export function KsMktCampaignDetail() {
         title={c.name}
         actions={
           ["scheduled", "sending"].includes(c.status) ? (
-            <Button kind="danger" onClick={() => confirmAction("Cancel this campaign? Emails not sent yet will not go.") && cancel.mutate()}>Cancel campaign</Button>
+            <Button kind="danger" onClick={() => void confirmAction("Cancel this campaign? Emails not sent yet will not go.").then((ok) => { if (ok) cancel.mutate(); })}>Cancel campaign</Button>
           ) : null
         }
       >

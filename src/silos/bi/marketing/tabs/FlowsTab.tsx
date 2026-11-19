@@ -2,6 +2,7 @@
 // A flow sends everyone a first email; whether each person opens or clicks decides the next one. Staff create a flow
 // from a ready-made one, read and change the seven emails, send themselves a test, add the people and start it.
 import { useEffect, useState } from "react";
+import RichEmailEditor from "@/components/editor/RichEmailEditor"; // BF_PORTAL_TEMPLATE_RICH_EDITOR_v1
 import { api } from "@/api";
 import { listStaffUsers } from "@/api/sharedShell";
 
@@ -127,14 +128,15 @@ export default function FlowsTab() {
           <label className="mt-2 block text-xs text-white/70">Subject
             <input aria-label={`${e.label} subject`} value={e.subject} onChange={(ev) => setEmails((all) => all.map((x, j) => (j === i ? { ...x, subject: ev.target.value } : x)))} className={INPUT} />
           </label>
-          <div className="mt-2 grid gap-3 lg:grid-cols-2">
-            <label className="block text-xs text-white/70">Message
-              <textarea aria-label={`${e.label} message`} rows={9} value={e.body} onChange={(ev) => setEmails((all) => all.map((x, j) => (j === i ? { ...x, body: ev.target.value } : x)))} className={INPUT + " font-mono text-xs"} />
-            </label>
-            <div>
-              <p className="text-xs text-white/70">How it reads</p>
-              <iframe title={`${e.label} preview`} sandbox="" srcDoc={`<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5">${e.body}</div>`} className="mt-1 h-56 w-full rounded border border-card bg-white" />
-            </div>
+          <div className="mt-2 rounded bg-white text-slate-900" style={{ ["--ui-surface" as string]: "#ffffff", ["--ui-surface-strong" as string]: "#f8fafc", ["--ui-text" as string]: "#0f172a", ["--ui-text-muted" as string]: "#475569", ["--ui-border" as string]: "#cbd5e1" }}>
+            <RichEmailEditor
+              ariaLabel={`${e.label} message`}
+              docKey={`${flow.id}-${e.key}`}
+              value={e.body}
+              onChange={(html) => setEmails((all) => all.map((x, j) => (j === i ? { ...x, body: html } : x)))}
+              meetingButtonHtml={'<p><a href="{{booking_link}}" style="display:inline-block;padding:10px 18px;background:#0B1F3A;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600">Book a call</a></p>'}
+              note="Merge fields: {{first_name}}, {{company}}, {{link}} (this audience's page), {{booking_link}} (the team calendar)."
+            />
           </div>
         </div>)}
         {emails.length > 0 && <button type="button" className={PRIMARY} disabled={busy !== null} onClick={() => void saveEmails(flow)}>Save emails</button>}
