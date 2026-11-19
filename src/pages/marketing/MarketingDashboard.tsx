@@ -23,7 +23,8 @@ import MobileAppsPanel from "./MobileAppsPanel"; // BF_PORTAL_v811_MOBILE_APPS
 import SiloContext from "@/context/SiloContext"; // BF_PORTAL_v811_MOBILE_APPS
 // BF_PORTAL_v874_MARKETING_TOOLS - the campaign and funded-deal report, the website kit and lead scoring (per silo).
 import CampaignReportPanel from "@/components/marketing/CampaignReportPanel";
-import MetaAdsPanel from "@/components/marketing/MetaAdsPanel"; // BF_PORTAL_v909_META_ADS
+import MetaAdsPanel from "@/components/marketing/MetaAdsPanel";
+import { confirmAction } from "@/lib/confirmAction";
 
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
@@ -740,7 +741,7 @@ function EmailComposerPanel() {
             <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@boreal.financial" className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
           </label>
           <button type="button" disabled={busy || !subject || !html || !testTo} onClick={() => void post(testTo)} className="ui-button ui-button--secondary">Send test</button>
-          <button type="button" disabled={busy || !subject || !html || !count} onClick={() => { if (window.confirm(`Send this email to ${count} recipients? It will hold for 5 minutes and you can cancel.`)) void post(); }} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
+          <button type="button" disabled={busy || !subject || !html || !count} onClick={async () => { if ((await confirmAction(`Send this email to ${count} recipients? It will hold for 5 minutes and you can cancel.`))) void post(); }} className="ui-button ui-button--primary">{busy ? "Sending..." : `Send to ${count}`}</button>
         </div>
         <SendStatus msg={msg} onCancel={(id) => { void cancelSendJob(id).then((ok) => setMsg(ok ? "Canceled - nothing was sent." : "Too late to cancel - already sending.")); }} />
       </div>
@@ -891,7 +892,7 @@ function SmsComposerPanel() {
             <input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="+1..." className="block border rounded px-2 py-1 text-sm mt-1" style={{ color: "var(--ui-text)", background: "var(--ui-surface-strong)", borderColor: "var(--ui-border)" }} />
           </label>
           <button type="button" disabled={busy || !body || !testTo} onClick={() => void post(testTo)} className="ui-button ui-button--secondary">Send test</button>
-          <button type="button" disabled={busy || !body || !count || exact === null} onClick={() => { if (window.confirm(`Send this SMS to ${count} people (one text per phone number)? It goes out in 5 minutes and you can cancel until then.`)) void post(); }} className="ui-button ui-button--primary">{busy ? "Queuing..." : exact === null ? "Counting..." : `Send to ${count}`}</button>
+          <button type="button" disabled={busy || !body || !count || exact === null} onClick={async () => { if ((await confirmAction(`Send this SMS to ${count} people (one text per phone number)? It goes out in 5 minutes and you can cancel until then.`))) void post(); }} className="ui-button ui-button--primary">{busy ? "Queuing..." : exact === null ? "Counting..." : `Send to ${count}`}</button>
         </div>
         <SendStatus msg={msg} onCancel={(id) => { void cancelSendJob(id).then((ok) => setMsg(ok ? "Canceled - nothing was sent." : "Too late to cancel - already sending.")); }} />
       </div>

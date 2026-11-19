@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import { Link } from "react-router-dom";
 import { crmUnified, errorText, type CleanupBatch, type CleanupChange, type CrmBackend, type CrmEntity } from "./crmUnifiedApi";
 import { plainBtn, primaryBtn } from "./CrmTags";
+import { confirmAction } from "@/lib/confirmAction";
 
 const keyOf = (c: CleanupChange) => `${c.entity}:${c.entityId}:${c.field}`;
 const FIELD_LABELS: Record<string, string> = {
@@ -46,7 +47,7 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
 
   async function apply(list: CleanupChange[]) {
     if (!list.length) return;
-    if (!window.confirm(`Apply ${list.length} change(s)? You can undo the whole batch afterwards.`)) return;
+    if (!(await confirmAction(`Apply ${list.length} change(s)? You can undo the whole batch afterwards.`))) return;
     setBusy("apply"); setErr(null); setMsg(null);
     try {
       const r = await api.cleanupApply(list);
@@ -90,7 +91,7 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
   }
 
   async function undo(id: string) {
-    if (!window.confirm("Undo this batch? Values are put back unless they were edited since.")) return;
+    if (!(await confirmAction("Undo this batch? Values are put back unless they were edited since."))) return;
     setBusy("undo"); setErr(null);
     try {
       const r = await api.cleanupUndo(id);

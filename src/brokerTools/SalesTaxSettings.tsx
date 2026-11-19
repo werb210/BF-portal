@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { ErrorLine, card, dangerButton, errorText, h3, input, label, money, muted, primaryButton, row, table, td, th } from "./ui";
 import { rateSummary, taxPreview, type TaxRate } from "./salesTaxView";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Current = TaxRate & { name: string; combined: number };
 type Province = { code: string; name: string };
@@ -38,7 +39,7 @@ export default function SalesTaxSettings({ isAdmin }: { isAdmin: boolean }) {
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
   const remove = async (r: TaxRate) => {
-    if (!window.confirm(`Remove the ${r.province} rate as of ${r.effective_from}?`)) return;
+    if (!(await confirmAction(`Remove the ${r.province} rate as of ${r.effective_from}?`))) return;
     try { await api.delete(`/api/broker-tools/sales-tax/rates/${r.province}/${r.effective_from}`); await load(); } catch (e) { setErr(errorText(e)); }
   };
 

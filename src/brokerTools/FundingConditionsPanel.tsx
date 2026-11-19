@@ -5,7 +5,8 @@ import { api, rawApiFetch } from "@/api";
 import { Chip, ErrorLine, card, dangerButton, errorText, h3, input, label, muted, primaryButton, row, secondaryButton, type Tone } from "./ui";
 import { OWNER_LABEL, STATUS_LABEL } from "./fundingGate";
 import { ClientWording } from "./ClientWording"; // BF_PORTAL_CONDITION_CLIENT_WORDING
-import { readOfferFile, readOfferOnFile, type ReadCondition } from "@/offers/offerReaderApi"; // BF_PORTAL_v906_OFFER_READER
+import { readOfferFile, readOfferOnFile, type ReadCondition } from "@/offers/offerReaderApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 type OfferOnFile = { id: string; lender_name: string };
 
@@ -142,7 +143,7 @@ export default function FundingConditionsPanel({ applicationId }: { applicationI
     if (reason.trim().length < 3) { setErr("Say why this condition is waived."); return; }
     void patch(c, { status: "waived", waived_reason: reason.trim() });
   };
-  const remove = (c: Condition) => { if (window.confirm(`Remove "${c.title}" from this file?`)) void run(() => api.delete(`${base(applicationId)}/${c.id}`)); };
+  const remove = async (c: Condition) => { if ((await confirmAction(`Remove "${c.title}" from this file?`))) void run(() => api.delete(`${base(applicationId)}/${c.id}`)); };
   const uploadDoc = (c: Condition, file: File | undefined) => {
     if (!file) return;
     void run(async () => {

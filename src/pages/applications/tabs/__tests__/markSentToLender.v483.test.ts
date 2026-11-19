@@ -11,7 +11,7 @@ describe("v483 Mark as sent", () => {
   });
   it("offers the button only on lenders not already sent, after a confirm", () => {
     expect(tab).toContain("{lenderKey && !isSent && (");
-    expect(tab).toContain("window.confirm(`Record that you sent this file to ${name} outside the portal?");
+    expect(tab).toContain("confirmAction(`Record that you sent this file to ${name} outside the portal?");
   });
   it("labels hand-recorded sends", () => {
     expect(tab).toContain('" outside portal"');

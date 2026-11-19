@@ -5,6 +5,7 @@ import {
   createField, FIELD_TYPE_LABEL, FIELD_TYPES, listFields, OBJECT_LABEL, reorderFields, SELECT_TYPES, setFieldArchived, updateField,
   type CustomField, type FieldType, type ObjectType,
 } from "./customFieldsApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 export const card: CSSProperties = { padding: 16, border: "1px solid var(--ui-border)", borderRadius: 12, background: "var(--ui-surface-strong)", color: "var(--ui-text)", marginBottom: 16 };
 export const h3: CSSProperties = { margin: "0 0 8px", fontSize: 16, color: "var(--ui-text)" };
@@ -129,7 +130,7 @@ export default function PropertiesSettings() {
 
   const toggleArchive = async (f: CustomField) => {
     setErr(null); setOk(null);
-    if (!f.archived_at && !window.confirm(`Archive "${f.label}"? It disappears from records, lists and imports. Values already saved are kept and come back if you unarchive it.`)) return;
+    if (!f.archived_at && !(await confirmAction(`Archive "${f.label}"? It disappears from records, lists and imports. Values already saved are kept and come back if you unarchive it.`))) return;
     try {
       await setFieldArchived(object, f.id, !f.archived_at);
       setOk(f.archived_at ? `"${f.label}" is back.` : `"${f.label}" archived. Its values are kept.`);

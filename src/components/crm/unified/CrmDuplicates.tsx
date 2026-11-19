@@ -15,6 +15,7 @@ import {
 const PLACEHOLDER_RE = /application started|^\s*unknown\s*$/i;
 export const isPlaceholderName = (name: unknown) => !String(name ?? "").trim() || PLACEHOLDER_RE.test(String(name ?? ""));
 import { dialog, overlay, plainBtn, primaryBtn } from "./CrmTags";
+import { confirmAction } from "@/lib/confirmAction";
 
 const noun = (entity: CrmEntity, n: number) => (entity === "contact" ? (n === 1 ? "contact" : "contacts") : n === 1 ? "company" : "companies");
 const path = (entity: CrmEntity) => (entity === "contact" ? "contacts" : "companies");
@@ -137,7 +138,7 @@ export function CrmMergeDialog({ backend, entity, ids, preferredId, onClose, onM
   async function merge() {
     const losers = records.map((r) => r.id).filter((x) => x !== keepId);
     if (!losers.length) return;
-    if (!window.confirm(`Merge ${losers.length} ${noun(entity, losers.length)} into the kept record? Their timeline, tasks, notes, applications, tags and links move over, then they are deleted.`)) return;
+    if (!(await confirmAction(`Merge ${losers.length} ${noun(entity, losers.length)} into the kept record? Their timeline, tasks, notes, applications, tags and links move over, then they are deleted.`))) return;
     setBusy(true); setErr(null);
     const fieldsOut: Record<string, string | null> = {};
     for (const f of preview?.fields ?? []) fieldsOut[f.key] = value(f.key);
@@ -237,7 +238,7 @@ export function CrmDuplicatesPage({ backend }: { backend: CrmBackend }) {
       const plan = (await crmUnified(backend).mergePlaceholders(true)) as PlaceholderPlan;
       const count = plan?.contacts ?? 0;
       if (!count) { setPhNote("No placeholder copies to merge."); return; }
-      if (!window.confirm(`Merge ${count} "Unknown (application started)" ${count === 1 ? "copy" : "copies"} into the real record with the same phone or email (${plan.groups} ${plan.groups === 1 ? "person" : "people"})? Their history moves over, then the copies are deleted.`)) return;
+      if (!(await confirmAction(`Merge ${count} "Unknown (application started)" ${count === 1 ? "copy" : "copies"} into the real record with the same phone or email (${plan.groups} ${plan.groups === 1 ? "person" : "people"})? Their history moves over, then the copies are deleted.`))) return;
       const done = (await crmUnified(backend).mergePlaceholders(false)) as PlaceholderPlan;
       setPhNote(`Merged ${done?.merged ?? 0} placeholder ${done?.merged === 1 ? "copy" : "copies"}${done?.failed?.length ? `; ${done.failed.length} could not be merged` : ""}.`);
       setTick((t) => t + 1);

@@ -10,6 +10,7 @@ import { triggerSummary } from "@/pages/automations/workflow/graph";
 import type { Catalog, Workflow } from "@/pages/automations/workflow/types";
 import { btn, muted } from "@/pages/automations/workflow/ui";
 import { errorText, toSilo, workflowApi } from "@/pages/automations/workflow/workflowApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 const card: React.CSSProperties = { border: "1px solid var(--ui-border)", borderRadius: 8, padding: 16, marginBottom: 12, background: "var(--ui-surface-strong)", color: "var(--ui-text)" };
 
@@ -37,7 +38,7 @@ export default function AutomationsPage(): JSX.Element {
     setMsg(null);
     void workflowApi.update(r.id, { enabled: !r.enabled }).then(load).catch((e) => setMsg(errorText(e, "Could not turn it " + (r.enabled ? "off" : "on") + ". Open it and use Review issues.")));
   };
-  const del = (r: Workflow) => { if (r.id && window.confirm('Delete "' + r.name + '"?')) void workflowApi.remove(r.id).then(load).catch(() => setMsg("Could not delete it.")); };
+  const del = async (r: Workflow) => { if (r.id && (await confirmAction('Delete "' + r.name + '"?'))) void workflowApi.remove(r.id).then(load).catch(() => setMsg("Could not delete it.")); };
 
   return (
     <div style={{ padding: 24, maxWidth: 900, color: "var(--ui-text)" }}>

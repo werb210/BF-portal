@@ -7,6 +7,7 @@
 import { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { api } from "@/api";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Lender = {
   id: string;
@@ -78,7 +79,7 @@ export default function BILenderManagement() {
   }
 
   async function deactivate(id: string) {
-    if (!confirm("Deactivate this lender? All API keys will be revoked and contacts lose login access.")) return;
+    if (!(await confirmAction("Deactivate this lender? All API keys will be revoked and contacts lose login access."))) return;
     await api(`/api/v1/bi/admin/lenders/${id}`, { method: "DELETE" });
     toast.success("Deactivated");
     await load();
@@ -88,7 +89,7 @@ export default function BILenderManagement() {
     const msg = enabled
       ? "Approve LIVE API key access? The lender will be SMS'd and can mint bk_live_* keys that hit the real carrier."
       : "Revoke LIVE API key access? Existing live keys keep working until manually revoked; only further minting is blocked.";
-    if (!confirm(msg)) return;
+    if (!(await confirmAction(msg))) return;
     try {
       await api(`/api/v1/bi/admin/lenders/${id}/approve-live-keys`, { method: "POST", body: JSON.stringify({ enabled }) });
       toast.success(enabled ? "Live keys approved + SMS sent" : "Live keys revoked");
@@ -378,7 +379,7 @@ function ContactsPanel(props: { lender: Lender; onMutated: () => void | Promise<
   }
 
   async function deactivate(contactId: string) {
-    if (!confirm("Deactivate this contact? They lose login access immediately.")) return;
+    if (!(await confirmAction("Deactivate this contact? They lose login access immediately."))) return;
     try {
       await api(`/api/v1/bi/admin/lenders/${lender.id}/contacts/${contactId}`, { method: "DELETE" });
       toast.success("Contact deactivated");

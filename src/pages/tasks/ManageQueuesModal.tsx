@@ -4,6 +4,7 @@
 // Owner-only edits are enforced server-side; the UI surfaces failures.
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Queue = { id: string; name: string; access_type: string; open_count: number };
 type Staff = { id: string; name: string };
@@ -67,8 +68,8 @@ export default function ManageQueuesModal({ onClose }: { onClose: () => void }) 
       .catch(() => setErr("Change failed (owner only)."));
   };
 
-  const remove = (q: Queue) => {
-    if (!window.confirm(`Delete queue "${q.name}"? Its ${q.open_count} tasks are kept - only the label is removed.`)) return;
+  const remove = async (q: Queue) => {
+    if (!(await confirmAction(`Delete queue "${q.name}"? Its ${q.open_count} tasks are kept - only the label is removed.`))) return;
     api.delete(`/api/tasks/queues/${q.id}`)
       .then(() => { if (sharesFor === q.id) setSharesFor(null); load(); })
       .catch(() => setErr("Delete failed (owner only)."));

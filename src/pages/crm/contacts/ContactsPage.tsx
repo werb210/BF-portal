@@ -23,7 +23,8 @@ import { bulkDeleteMessage, skippedFrom } from "@/pages/crm/bulkDeleteResult"; /
 import { refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 import CustomFieldFilters from "@/crmFields/CustomFieldFilters"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { useCustomFieldColumns } from "@/crmFields/useCustomFieldColumns"; // BF_PORTAL_v870_CRM_DATA_MODEL
-import { displayValue, filterParams, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import { displayValue, filterParams, type CustomFilter } from "@/crmFields/customFieldsApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 type SortCol = "name" | "company_name" | "tags" | "lead_status" | "owner_name" | "marketing_contact" | "created_at" | `cf_${string}`; // BF_PORTAL_CRM_COLUMNS_MATCH_v1
 
@@ -180,7 +181,7 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
   }
   async function massDelete() {
     if (!isAdmin || selected.size === 0) return;
-    if (!window.confirm(`Hard-delete ${selected.size} contact(s)? This cannot be undone. Use only for Apollo imports — never for applicants.`)) return;
+    if (!(await confirmAction(`Hard-delete ${selected.size} contact(s)? This cannot be undone. Use only for Apollo imports — never for applicants.`))) return;
     setBusyMass("delete");
     try {
       const r = await crmApi.bulkDeleteContacts(Array.from(selected));
@@ -204,7 +205,7 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
   }
   async function massTag() {
     if (!isAdmin || selected.size === 0 || !tagInput.trim()) return;
-    if (!window.confirm(`Apply tag "${tagInput.trim()}" to ${selected.size} contact(s)? Tags can trigger background jobs (lender/applicant fan-out).`)) return;
+    if (!(await confirmAction(`Apply tag "${tagInput.trim()}" to ${selected.size} contact(s)? Tags can trigger background jobs (lender/applicant fan-out).`))) return;
     setBusyMass("tag");
     try {
       await crmApi.bulkTagContacts(Array.from(selected), tagInput.trim());

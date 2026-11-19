@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { acApi, errorText, type Detail } from "./api";
 import { Btn, card, day, ErrorLine, Field, h3, input, money, muted, Pill, table, td, th } from "./ui";
+import { confirmAction } from "@/lib/confirmAction";
 
 const ASSET_FIELDS: Array<[string, string, string?]> = [
   ["description", "Description"], ["year", "Year", "number"], ["make", "Make"], ["model", "Model"], ["serial_number", "VIN / serial"],
@@ -34,7 +35,7 @@ export default function AssetsInsurance({ d, onChanged }: { d: Detail; onChanged
                 <tr key={a.id}>
                   <td style={td}>{a.description}</td><td style={td}>{[a.year, a.make, a.model].filter(Boolean).join(" ") || "-"}</td><td style={td}>{a.serial_number ?? "-"}</td>
                   <td style={td}>{a.vendor ?? "-"}</td><td style={td}>{a.cost ? money(Number(a.cost)) : "-"}</td><td style={td}>{a.location ?? "-"}</td>
-                  <td style={td}><Btn disabled={busy} onClick={() => { if (window.confirm("Remove this equipment from the contract?")) void run(() => acApi.removeAsset(c.id, a.id)); }}>Remove</Btn></td>
+                  <td style={td}><Btn disabled={busy} onClick={async () => { if ((await confirmAction("Remove this equipment from the contract?"))) void run(() => acApi.removeAsset(c.id, a.id)); }}>Remove</Btn></td>
                 </tr>
               ))}</tbody>
             </table>

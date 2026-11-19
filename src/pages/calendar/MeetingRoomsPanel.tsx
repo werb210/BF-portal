@@ -4,7 +4,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { joinMeetingRoom } from "@/dialer/actions"; // BF_PORTAL_v827_JOIN_IN_DIALER
-import PeoplePicker, { type Person } from "@/components/meetings/PeoplePicker"; // BF_PORTAL_MEETING_PARTICIPANTS_v737
+import PeoplePicker, { type Person } from "@/components/meetings/PeoplePicker";
+import { confirmAction } from "@/lib/confirmAction";
 
 export type Meeting = { id: string; code: string; title: string; starts_at: string; duration_min: number; joinUrl: string; oneTap: string; invite: string; open: boolean };
 const NAVY = "#0B1F3A", MUTED = "#51617D";
@@ -65,7 +66,7 @@ export default function MeetingRoomsPanel({ initialPeople = [], defaultTitle = "
   };
   const copy = async (text: string) => { try { await navigator.clipboard.writeText(text); setMsg("Invite copied."); } catch { setMsg("Copy failed - select the text and copy it."); } };
   const cancel = async (m: Meeting) => {
-    if (!window.confirm("Cancel " + m.title + "? The access code stops working.")) return;
+    if (!(await confirmAction("Cancel " + m.title + "? The access code stops working."))) return;
     try { const r = await api.post<{ delivery?: MeetingDelivery | null }>("/api/meetings/" + encodeURIComponent(m.id) + "/cancel", {}); const told = describeMeetingDelivery(r?.delivery); setMsgOk(told.ok); setMsg("Meeting cancelled. " + told.text); load(); } catch { setMsgOk(false); setMsg("Could not cancel the meeting."); }
   };
 

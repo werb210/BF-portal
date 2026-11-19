@@ -5,6 +5,7 @@ import { renderInlineMarkdown } from "@/utils/inlineMarkdown";
 import { AuthContext } from "@/auth/AuthContext";
 import { humanizeCode } from "@/utils/labels";
 import { OVERVIEW_ROWS, ROW_LABELS, bulletsToText, cell, money, risksToText, textToBullets, textToRisks, type Section, type SummaryRow } from "./creditSummaryV2Helpers";
+import { confirmAction } from "@/lib/confirmAction";
 
 // BF_PORTAL_CREDIT_SUMMARY_READABLE_v746 - the cards set a white background but no text colour, so text and
 // buttons inherited the portal's light text and were invisible (white on white): the tab looked empty and
@@ -169,7 +170,7 @@ export default function CreditSummaryV2({ applicationId }: { applicationId: stri
         </button>
         {doc && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-download-docx" onClick={() => void download("docx")}>Download Word</button>}
         {doc && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-download-pdf" onClick={() => void download("pdf")}>Download PDF</button>}
-        {doc && !submitted && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-submit" onClick={() => { if (window.confirm("Submit this credit summary? It will be signed with your name.")) void run("Submit", `/api/credit-summary-v2/${id}/submit`, "POST", undefined, () => "Submitted."); }}>Submit</button>}
+        {doc && !submitted && <button type="button" style={btn} disabled={!!busy} data-testid="cs2-submit" onClick={async () => { if ((await confirmAction("Submit this credit summary? It will be signed with your name."))) void run("Submit", `/api/credit-summary-v2/${id}/submit`, "POST", undefined, () => "Submitted."); }}>Submit</button>}
       </div>
       {busy && <div>{busy}... this can take a few minutes.</div>}{message && <div role="status">{message}</div>}
       <div style={{ color: "#475569" }}>Reads the financials, A/R, equipment and real estate, researches the company, then writes the summary. Staff edits are kept when you rebuild.</div>

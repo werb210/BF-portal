@@ -85,7 +85,10 @@ function EditForm({ licensee, fields, title, note }: { licensee: KsLicensee; fie
         onSubmit={(e) => {
           e.preventDefault();
           if (!changed.length) return;
-          const lines = changed.map((f) => `${f.name}: ${initial[f.key] || "(blank)"} -> ${form[f.key] || "(blank)"}`).join("\n");
+          // BF_PORTAL_IN_PAGE_CONFIRM_v1 - plain words ("Waiting for payment to Trial"), not raw values ("pending_payment -> trial").
+          const shown = (f: FieldSpec, v: string | undefined) =>
+            !v ? "(blank)" : f.kind === "bool" ? (v === "true" ? "Yes" : "No") : f.kind === "select" ? label(v) : v;
+          const lines = changed.map((f) => `${f.name}: ${shown(f, initial[f.key])} to ${shown(f, form[f.key])}`).join("\n");
           void confirmAction(`Save these changes to ${licensee.company_name}?\n\n${lines}`).then((ok) => { if (ok) save.mutate(); });
         }}
       >

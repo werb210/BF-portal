@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import Button from "@/components/ui/Button";
+import { confirmAction } from "@/lib/confirmAction";
 
 type KnowledgeDoc = {
   id: string;
@@ -118,7 +119,7 @@ export default function KnowledgeManager() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Remove this entry from the knowledge base?")) return;
+    if (!(await confirmAction("Remove this entry from the knowledge base?"))) return;
     try {
       await api(`/api/settings/ai-knowledge/${id}`, { method: "DELETE" });
       setDocs((prev) => prev.filter((d) => d.id !== id));

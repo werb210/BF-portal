@@ -5,6 +5,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { quickbooksApi, type QboStatus } from "./quickbooksApi";
 import { TechnicalDetails, settingNamesIn, withoutSettingNames } from "@/components/SetupNotice";
+import { confirmAction } from "@/lib/confirmAction";
 
 const NAVY = "#0B1F3A";
 const MUTED = "#475569";
@@ -52,7 +53,7 @@ export default function QuickBooksCard({ navigateTo = (url: string) => { window.
     } finally { setBusy(false); }
   };
   const disconnect = async () => {
-    if (!window.confirm("Disconnect QuickBooks? Fee invoices stop syncing until it is connected again.")) return;
+    if (!(await confirmAction("Disconnect QuickBooks? Fee invoices stop syncing until it is connected again."))) return;
     setBusy(true); setMsg(null);
     try {
       const r = await quickbooksApi.disconnect();

@@ -6,6 +6,7 @@ import { api } from "@/api";
 import { registerPasskey, passkeysSupported } from "@/auth/passkey";
 import { Notice, Section, Toggle, cell, danger, errText, input, muted, quiet, when } from "./ui";
 import { stripIpPort } from "@/utils/labels";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Session = { id: string; device: string; method: string; strong: boolean; ip: string | null; signed_in_at: string; last_active_at: string; current: boolean };
 type User = { id: string; name: string };
@@ -45,7 +46,7 @@ export function MySessions() {
     try { await api.post(`/api/security/me/sessions/${s.id}/sign-out`, {}); setOk(`${s.device} is signed out.`); await load(); } catch (e) { setErr(errText(e, "Could not sign it out.")); }
   };
   const everywhere = async () => {
-    if (!window.confirm("Sign out of every device, including this one?")) return;
+    if (!(await confirmAction("Sign out of every device, including this one?"))) return;
     try { await api.post("/api/security/me/sign-out-everywhere", {}); window.location.assign("/login"); } catch (e) { setErr(errText(e, "Could not sign out everywhere.")); }
   };
   return (
@@ -108,7 +109,7 @@ export default function SecuritySettings() {
         {who && sessions && <>
           <SessionTable sessions={sessions} onSignOut={async (s) => { try { await api.post(`/api/security/users/${who}/sessions/${s.id}/sign-out`, {}); await loadUser(who); } catch (e) { setErr(errText(e, "Could not sign it out.")); } }} />
           <button type="button" style={{ ...danger, marginTop: 8 }} onClick={async () => {
-            if (!window.confirm("Sign this person out of every device?")) return;
+            if (!(await confirmAction("Sign this person out of every device?"))) return;
             try { await api.post(`/api/security/users/${who}/sign-out-everywhere`, {}); setOk("Signed out everywhere."); await loadUser(who); } catch (e) { setErr(errText(e, "Could not sign them out.")); }
           }}>Sign out everywhere</button>
         </>}

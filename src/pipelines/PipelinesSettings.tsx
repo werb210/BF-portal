@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Notice, Section, button, cell, danger, errText, input, muted, quiet } from "@/settingsPack/ui";
 import { pipelinesApi, textOn, type Outcome, type Pipeline, type PipelineList } from "./pipelinesApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 type StageDraft = { id?: string; name: string; color: string; probability: number; outcome: Outcome; deals?: number };
 type Draft = { id: string | null; name: string; stages: StageDraft[] };
@@ -80,7 +81,7 @@ export default function PipelinesSettings() {
     } catch (e) { setErr(errText(e, "Could not save the pipeline.")); }
   };
   const archive = async (p: Pipeline) => {
-    if (!window.confirm(`Archive the ${p.name} pipeline? It must be empty.`)) return;
+    if (!(await confirmAction(`Archive the ${p.name} pipeline? It must be empty.`))) return;
     try { await pipelinesApi.archive(p.id); setOk(`${p.name} archived.`); await load(); } catch (e) { setErr(errText(e, "Could not archive the pipeline.")); }
   };
   const saveProbs = async () => {

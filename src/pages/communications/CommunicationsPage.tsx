@@ -62,7 +62,8 @@ import ThreadPanel, { type ThreadEvent, type ThreadSummary } from "@/components/
 import { useSnippets, useShortcutExpansion } from "@/hooks/useSnippets"; // BF_PORTAL_SNIPPET_TRIGGER_v45
 import O365ComposeModal from "@/components/communications/O365ComposeModal";
 import { limitedInboxList } from "./inboxList";
-import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { confirmAction } from "@/lib/confirmAction";
 
 // BF_PORTAL_PHONE_TAB_v1 - Voicemail + Recents merged into one "Phone" tab.
 type Tab = "messages" | "sms" | "inbox" | "issues" | "maya" | "team" | "phone";
@@ -1819,7 +1820,7 @@ function InboxTab({ unreadOnly = false, sharedOnly = false }: { unreadOnly?: boo
   }, [mailboxForMessage]);
   const handleDelete = useCallback(async (messageId: string): Promise<void> => {
     if (!messageId) return;
-    if (!window.confirm("Move this email to Deleted Items?")) return;
+    if (!(await confirmAction("Move this email to Deleted Items?"))) return;
     setDeletingId(messageId);
     try {
       const mbDel1 = mailboxForMessage(messageId);
@@ -1978,7 +1979,7 @@ function InboxTab({ unreadOnly = false, sharedOnly = false }: { unreadOnly?: boo
   const bulkDelete = useCallback(async (): Promise<void> => {
     const ids = Array.from(selectedIds);
     if (!ids.length) return;
-    if (!window.confirm(`Move ${ids.length} email(s) to Deleted Items?`)) return;
+    if (!(await confirmAction(`Move ${ids.length} email(s) to Deleted Items?`))) return;
     setBulkBusy(true);
     try {
       for (const id of ids) {
@@ -3392,7 +3393,7 @@ function TeamTab({ onUnreadChange }: { onUnreadChange?: (n: number) => void }) {
     setDraft(m.body);
   }
   async function del(m: TeamMessage) {
-    if (!activeId || !window.confirm("Delete this message?")) return;
+    if (!activeId || !(await confirmAction("Delete this message?"))) return;
     try {
       const r = await api.delete<{ message?: TeamMessage }>(`/api/team/channels/${activeId}/messages/${m.id}`);
       const message = r?.message;

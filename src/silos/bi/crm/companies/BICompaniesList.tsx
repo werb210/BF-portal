@@ -9,7 +9,8 @@ import { bulkDeleteMessage, skippedFrom } from "@/pages/crm/bulkDeleteResult"; /
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import { crmToolbar, crmSearch, crmSelect, crmButton, crmPrimary } from "@/components/crm/crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
-import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags";
+import { confirmAction } from "@/lib/confirmAction";
 
 type SortCol = "name" | "industry" | "owner_name" | "created_at";
 
@@ -62,7 +63,7 @@ export default function BICompaniesList({ onUnfilteredTotal }: { onUnfilteredTot
   }
   async function importToBf() {
     if (selected.size === 0 || bfBusy) return;
-    if (!window.confirm(`Import ${selected.size} company(ies) into the BF Lenders list?`)) return;
+    if (!(await confirmAction(`Import ${selected.size} company(ies) into the BF Lenders list?`))) return;
     setBfBusy(true); setBfMsg(null);
     try {
       const r: any = await importBiCompaniesToBfLenders(Array.from(selected));
@@ -153,7 +154,7 @@ export default function BICompaniesList({ onUnfilteredTotal }: { onUnfilteredTot
   }
   async function massDelete() {
     if (!isAdmin || selected.size === 0) return;
-    if (!window.confirm(`Delete ${selected.size} company(ies)? Contacts are kept; their company link is cleared.`)) return;
+    if (!(await confirmAction(`Delete ${selected.size} company(ies)? Contacts are kept; their company link is cleared.`))) return;
     setBusyMass("delete");
     try {
       const r: any = await api(`/api/v1/bi/crm/companies/bulk-delete`, { method: "POST", body: { ids: Array.from(selected) } } as any);

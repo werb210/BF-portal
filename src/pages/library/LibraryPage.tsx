@@ -11,7 +11,8 @@ import { FILES_READWRITE_SCOPES } from "@/auth/o365Scopes";
 import * as L from "./libraryApi";
 import type { Item } from "./libraryApi";
 import { btn, primary, small, humanDate, MoveDialog, PreviewPanel, RequestDialog, SendDialog, ShareDialog, SyncHelp, VersionsDialog } from "./LibraryPanels";
-import { FloatingMenu, type AnchorRect } from "./FloatingMenu"; // BF_PORTAL_v864_LIBRARY_MENU
+import { FloatingMenu, type AnchorRect } from "./FloatingMenu";
+import { confirmAction } from "@/lib/confirmAction";
 
 // BF_PORTAL_LIBRARY_BIG_UPLOAD_v772 - up to 200 MB, sent to OneDrive in pieces through BF-Server v790.
 const MAX_BYTES = 200 * 1024 * 1024;
@@ -229,8 +230,8 @@ export default function LibraryPage() {
     if (!name || !name.trim() || name.trim() === it.name) return;
     void act("rename it", () => L.rename(it.id, name.trim()), "Renamed to " + name.trim() + ".");
   };
-  const doDelete = (it: Item) => {
-    if (!window.confirm("Delete " + it.name + "? You can restore it from the Recycle bin for 30 days.")) return;
+  const doDelete = async (it: Item) => {
+    if (!(await confirmAction("Delete " + it.name + "? You can restore it from the Recycle bin for 30 days."))) return;
     void act("delete it", () => L.remove(it.id), it.name + " is in the Recycle bin for 30 days.");
   };
   const toggleStar = async (it: Item) => {
@@ -383,7 +384,7 @@ export default function LibraryPage() {
       if (view === "trash") return row(r.item_id, (r.is_folder ? "\u{1F4C1} " : "\u{1F4C4} ") + r.item_name, "Deleted " + humanDate(r.deleted_at) + (r.deleted_by_name ? " by " + r.deleted_by_name : "") + " · removed for good " + humanDate(r.purge_at),
         <span style={{ display: "flex", gap: 6 }}>
           <button type="button" style={small} onClick={() => void act("restore it", () => L.restore(r.item_id), r.item_name + " is back.")}>Restore</button>
-          <button type="button" style={{ ...small, color: "#991b1b" }} onClick={() => { if (window.confirm("Delete " + r.item_name + " for good? This can't be undone here.")) void act("delete it", () => L.purge(r.item_id), "Deleted for good."); }}>Delete for good</button>
+          <button type="button" style={{ ...small, color: "#991b1b" }} onClick={async () => { if ((await confirmAction("Delete " + r.item_name + " for good? This can't be undone here."))) void act("delete it", () => L.purge(r.item_id), "Deleted for good."); }}>Delete for good</button>
         </span>);
       return row(r.id, (r.actor_name ?? "Someone") + " " + (ACTIONS[r.action] ?? r.action) + " " + r.item_name, humanDate(r.created_at) + (r.detail ? " · " + r.detail : ""));
     });

@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { startOutboundPstn } from "@/dialer/actions";
 import { Field, Notice, Section, Toggle, button, cell, danger, errText, input, muted, quiet } from "@/settingsPack/ui";
 import { callQueuesApi, duration, type Live, type Queue, type QueueSetup } from "./callQueuesApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 const LIVE_POLL_MS = 5000;
 type Draft = Omit<Queue, "id" | "archived_at"> & { id: string | null };
@@ -173,7 +174,7 @@ export default function CallQueuesSettings() {
     catch (e) { setErr(errText(e, "Could not save the queue.")); }
   };
   const archive = async (q: Queue) => {
-    if (!window.confirm(`Archive the ${q.name} queue? Phone-menu options pointing at it will use the no-answer route.`)) return;
+    if (!(await confirmAction(`Archive the ${q.name} queue? Phone-menu options pointing at it will use the no-answer route.`))) return;
     try { await callQueuesApi.archive(q.id); setOk(`${q.name} archived.`); await load(); } catch (e) { setErr(errText(e, "Could not archive the queue.")); }
   };
   const setMain = async (id: string) => {

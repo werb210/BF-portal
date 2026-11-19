@@ -6,7 +6,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   apiMessage, fetchAppLenders, fetchSendableFiles, sendDocument, submitByApi, syncNow, type AppLender, type Bucket,
 } from "@/api/lenderConnections";
-import { humanizeCode } from "@/utils/labels"; // BF_PORTAL_v887_PRODUCT_LABELS
+import { humanizeCode } from "@/utils/labels";
+import { confirmAction } from "@/lib/confirmAction";
 
 const BUCKET_COLORS: Record<Bucket, { bg: string; fg: string }> = {
   submitted: { bg: "#e0f2fe", fg: "#075985" },
@@ -91,7 +92,7 @@ function LenderCard({ appId, l, buckets, onChanged }: { appId: string; l: AppLen
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {canResubmit && (
             <button type="button" data-testid={`lender-api-submit-${l.lender_id}`} style={s.primary} disabled={busy !== null}
-              onClick={() => { if (window.confirm(`Send the package to ${l.lender_name} through their API?`)) void run("submit", () => submitByApi(appId, l.lender_id), `Sent to ${l.lender_name} by API.`, "Could not send by API."); }}>
+              onClick={async () => { if ((await confirmAction(`Send the package to ${l.lender_name} through their API?`))) void run("submit", () => submitByApi(appId, l.lender_id), `Sent to ${l.lender_name} by API.`, "Could not send by API."); }}>
               {busy === "submit" ? "Sending…" : "Submit by API"}
             </button>
           )}

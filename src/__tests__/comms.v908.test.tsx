@@ -37,7 +37,7 @@ describe("composer", () => {
     expect(confirm).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });
-  it("a real click on the backdrop still asks before discarding a typed message", () => {
+  it("a real click on the backdrop still asks before discarding a typed message", async () => {
     const onClose = vi.fn();
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     const { container } = render(<O365ComposeModal open onClose={onClose} />);
@@ -48,7 +48,7 @@ describe("composer", () => {
     fireEvent.mouseDown(backdrop);
     fireEvent.click(backdrop);
     expect(confirm).toHaveBeenCalled();
-    expect(onClose).toHaveBeenCalled();
+    await waitFor(() => expect(onClose).toHaveBeenCalled()); // BF_PORTAL_IN_PAGE_CONFIRM_v1 - the answer is async now
   });
   it("lists get visible bullets and numbers (also in the sent email)", () => {
     const root = document.createElement("div");

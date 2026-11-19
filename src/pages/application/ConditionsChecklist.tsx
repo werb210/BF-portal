@@ -6,6 +6,7 @@ import { ClientWording } from "@/brokerTools/ClientWording"; // BF_PORTAL_CONDIT
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { api, rawApiFetch } from "@/api";
 import { getErrorMessage } from "@/utils/errors";
+import { confirmAction } from "@/lib/confirmAction";
 
 export type Condition = {
   id: string; title: string; client_title?: string | null; description: string | null; owner: "staff" | "client" | "lender";
@@ -67,7 +68,7 @@ export default function ConditionsChecklist({ applicationId, reloadKey = 0 }: { 
     if (reason.trim().length < 3) { setErr("Say why it is not needed."); return; }
     void patch(c, { status: "waived", waived_reason: reason.trim() });
   };
-  const remove = (c: Condition) => { if (window.confirm(`Remove "${c.title}" from this file?`)) void run(() => api.delete(`${base(applicationId)}/${c.id}`)); };
+  const remove = async (c: Condition) => { if ((await confirmAction(`Remove "${c.title}" from this file?`))) void run(() => api.delete(`${base(applicationId)}/${c.id}`)); };
   const attach = (c: Condition, file: File | undefined) => {
     if (!file) return;
     void run(async () => {

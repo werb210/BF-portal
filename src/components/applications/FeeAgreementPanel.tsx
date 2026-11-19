@@ -3,6 +3,7 @@
 // fee agreement (2% on funding). Shows staff whether it is waiting or signed.
 import { useEffect, useState } from "react";
 import { api } from "@/api";
+import { confirmAction } from "@/lib/confirmAction";
 
 export type FeeAgreementStatus = {
   required: boolean;
@@ -181,7 +182,7 @@ export default function FeeAgreementPanel({ applicationId, productCategory }: { 
   const signed = d.tone === "signed";
   // BF_PORTAL_FEE_MANUAL_SIGN_v759 - undo a manual mark made by mistake.
   const undoManual = async () => {
-    if (!window.confirm("Undo the manual signature? The agreement goes back to waiting for the client.")) return;
+    if (!(await confirmAction("Undo the manual signature? The agreement goes back to waiting for the client."))) return;
     setBusy(true); setNote(null);
     try { await api.post("/api/portal/applications/" + encodeURIComponent(applicationId) + "/fee-agreement/unmark-signed", {}); setReload((n) => n + 1); }
     catch (e: any) { setNoteOk(false); setNote(e?.details?.message ?? e?.message ?? "Could not undo."); }

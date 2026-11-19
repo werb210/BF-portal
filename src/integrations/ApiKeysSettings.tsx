@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api";
 import { API_BASE } from "@/config/api";
 import { useSilo } from "@/hooks/useSilo";
+import { confirmAction } from "@/lib/confirmAction";
 
 export type ApiKeyRow = {
   id: string; name: string; silo: string; scopes: string[]; key_prefix: string; rate_limit_per_minute: number;
@@ -122,8 +123,8 @@ function KeysCard({ siloName }: { siloName: string }) {
     if (!name.trim() || !scopes.length) return;
     create.mutate({ name: name.trim(), scopes, ...(limit.trim() ? { rate_limit_per_minute: Number(limit) } : {}) });
   };
-  const onRevoke = (k: ApiKeyRow) => {
-    const yes = typeof window === "undefined" ? true : window.confirm(`Revoke "${k.name}"? Anything using it stops working straight away.`);
+  const onRevoke = async (k: ApiKeyRow) => {
+    const yes = typeof window === "undefined" ? true : (await confirmAction(`Revoke "${k.name}"? Anything using it stops working straight away.`));
     if (yes) revoke.mutate(k.id);
   };
   const onCopy = async () => {

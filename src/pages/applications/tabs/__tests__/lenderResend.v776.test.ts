@@ -8,7 +8,7 @@ describe("Resend on the Lenders tab", () => {
     expect(src.indexOf("data-testid={`lender-resend-${m.id}`}")).toBeGreaterThan(at);
   });
   it("asks first, then calls the resend route for that lender", () => {
-    expect(src).toContain("window.confirm(`Send the current package to ${lenderName} again?`)");
+    expect(src).toContain("confirmAction(`Send the current package to ${lenderName} again?`)");
     expect(src).toContain("/lenders/${encodeURIComponent(lenderId)}/resend");
   });
   it("explains why a resend did not go out", () => {

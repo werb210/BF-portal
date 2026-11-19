@@ -10,7 +10,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom"; // BF_PORTAL_BLOCK_v744_OUTREACH_CARD_OPENS_CRM
 import { api } from "@/api";
-import EmptyStepsRepair from "./EmptyStepsRepair"; // BF_PORTAL_BLOCK_v462_BI_EMPTY_STEP_REPAIR
+import EmptyStepsRepair from "./EmptyStepsRepair";
+import { confirmAction } from "@/lib/confirmAction";
 
 const PAGE = 100; // BF_PORTAL_BLOCK_v800_OUTREACH_PAGER_AND_BULK
 const STAGES = [
@@ -247,7 +248,7 @@ export default function BIOutreach() {
   const bulkAction = useCallback(async (mode: "remove_from_outreach" | "delete_from_crm") => {
     const ids = Array.from(selectedIds);
     if (!ids.length || bulkBusy) return;
-    if (mode === "delete_from_crm" && !window.confirm(`Permanently delete ${ids.length} contact(s) from the CRM and block re-import? This cannot be undone.`)) return;
+    if (mode === "delete_from_crm" && !(await confirmAction(`Permanently delete ${ids.length} contact(s) from the CRM and block re-import? This cannot be undone.`))) return;
     setBulkBusy(true);
     try {
       await api.post(`/api/v1/bi/crm/outreach/contacts/bulk-action`, { ids, mode });

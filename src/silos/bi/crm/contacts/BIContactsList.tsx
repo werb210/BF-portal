@@ -12,7 +12,8 @@ import ColumnsMenu from "@/components/crm/ColumnsMenu";
 import { crmToolbar, crmSearch, crmSelect, crmButton, crmPrimary } from "@/components/crm/crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
 import ContactCardScanField from "@/components/crm/ContactCardScanField"; // v114-card-scan-mount
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
-import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags"; // BF_PORTAL_v856_CRM_UNIFY
+import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags";
+import { confirmAction } from "@/lib/confirmAction";
 
 type SortCol = "name" | "company_name" | "tags" | "lead_status" | "owner_name" | "marketing_contact" | "created_at"; // BF_PORTAL_CRM_COLUMNS_MATCH_v1
 
@@ -195,7 +196,7 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
   }
   async function massDelete() {
     if (!isAdmin || selected.size === 0) return;
-    if (!window.confirm(`Delete ${selected.size} contact(s)? This cannot be undone.`)) return;
+    if (!(await confirmAction(`Delete ${selected.size} contact(s)? This cannot be undone.`))) return;
     setBusyMass("delete");
     try {
       const r: any = await api(`/api/v1/bi/crm/contacts/bulk-delete`, { method: "POST", body: { ids: Array.from(selected) } } as any);

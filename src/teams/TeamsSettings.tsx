@@ -8,6 +8,7 @@ import {
   createTeam, getTeams, renameTeam, setRoleVisibility, setTeamArchived, setTeamMembers, updateTeamUser, userName,
   VISIBILITY_HELP, VISIBILITY_LABEL, type Team, type TeamsOverview, type Visibility,
 } from "./teamsApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 const VIS: Visibility[] = ["all", "team", "own"];
 const errText = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback);
@@ -61,7 +62,7 @@ function TeamRow({ team, data, onChanged, onError }: { team: Team; data: TeamsOv
     } catch (e) { onError(errText(e, "Could not save the team.")); }
   };
   const archive = async () => {
-    if (!team.archived_at && !window.confirm(`Archive "${team.name}"? Its members stop seeing each other's records through it.`)) return;
+    if (!team.archived_at && !(await confirmAction(`Archive "${team.name}"? Its members stop seeing each other's records through it.`))) return;
     try { await setTeamArchived(team.id, !team.archived_at); onChanged(team.archived_at ? `"${team.name}" is active again.` : `"${team.name}" archived.`); }
     catch (e) { onError(errText(e, "Could not change the team.")); }
   };

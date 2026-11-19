@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { api } from "@/api";
 import { serverMessage, unwrap } from "@/components/marketing/marketingTools";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Field = { key: string; label: string; required: boolean };
 export type KitForm = { id: string; name: string; fields: Field[]; button_label: string; thank_you: string; tag: string | null; active: boolean; submissions: number; live: boolean };
@@ -153,7 +154,7 @@ export default function WebsiteKitPanel() {
         <code style={code} data-testid="kit-script">{kit.snippet.script}</code>
         <div className="flex gap-2 mt-2">
           <CopyButton text={kit.snippet.script} label="Copy script" />
-          <button type="button" className="ui-button ui-button--secondary" disabled={busy} onClick={() => { if (window.confirm("Make a new key? The script already on the website stops working until you paste the new one.")) void run(() => api.post("/api/website-kit/settings/new-key", {}), "New key made. Paste the new script on your website.", "Could not make a new key."); }}>Make a new key</button>
+          <button type="button" className="ui-button ui-button--secondary" disabled={busy} onClick={async () => { if ((await confirmAction("Make a new key? The script already on the website stops working until you paste the new one."))) void run(() => api.post("/api/website-kit/settings/new-key", {}), "New key made. Paste the new script on your website.", "Could not make a new key."); }}>Make a new key</button>
         </div>
       </section>
 
@@ -181,7 +182,7 @@ export default function WebsiteKitPanel() {
                   <span className="text-xs" style={{ color: "var(--ui-text-muted)" }}>{f.submissions} submission{f.submissions === 1 ? "" : "s"}</span>
                   <span className="flex gap-2 ml-auto">
                     <button type="button" className="ui-button ui-button--secondary" onClick={() => setEditing(f.id)}>Edit</button>
-                    <button type="button" className="ui-button ui-button--secondary" disabled={busy} onClick={() => { if (window.confirm(`Delete the form "${f.name}"?`)) void run(() => api.delete(`/api/website-kit/forms/${f.id}`), "Form deleted.", "Could not delete the form."); }}>Delete</button>
+                    <button type="button" className="ui-button ui-button--secondary" disabled={busy} onClick={async () => { if ((await confirmAction(`Delete the form "${f.name}"?`))) void run(() => api.delete(`/api/website-kit/forms/${f.id}`), "Form deleted.", "Could not delete the form."); }}>Delete</button>
                   </span>
                 </div>
                 {snip && (

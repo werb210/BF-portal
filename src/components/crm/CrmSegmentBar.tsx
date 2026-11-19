@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
-import { crmButton, crmSelect } from "./crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
+import { crmButton, crmSelect } from "./crmToolbar";
+import { confirmAction } from "@/lib/confirmAction";
 
 // BF_PORTAL_CRM_SEGMENTS_v1 - save the current contact-list filters as a named
 // segment, re-apply a saved one, or delete one. Filters are opaque jsonb.
@@ -44,7 +45,7 @@ export function CrmSegmentBar({ current, onApply, allLabel = "All records" }: { 
   async function del() {
     if (!selectedId) return;
     const seg = segments.find((s) => s.id === selectedId);
-    if (!window.confirm(`Delete segment "${seg?.name ?? ""}"?`)) return;
+    if (!(await confirmAction(`Delete segment "${seg?.name ?? ""}"?`))) return;
     try {
       await api.delete(`/api/crm/segments/${selectedId}`);
       setSelectedId("");
