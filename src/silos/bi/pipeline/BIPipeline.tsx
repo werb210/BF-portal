@@ -306,10 +306,11 @@ export default function BIPipeline() {
             : <span className="text-[9px] uppercase tracking-wider rounded bg-blue-500/20 text-blue-200 border border-blue-500/40 px-1.5 py-0.5">Carrier</span>;
           return (
           <div key={stageId} className={`bg-brand-bgAlt border border-card rounded-xl p-3 ${ownerClass}`}>
-            <div className="flex items-baseline justify-between mb-3 gap-2">
-              <h3 className="text-xs uppercase tracking-widest text-white/70">{biStageLabel(stageId)}</h3>
-              <div className="flex items-center gap-1.5">
-                {chip}
+            {/* UI_REVIEW_2026_11_19 - the header wraps in narrow columns, and "STAFF" is not repeated beside "Staff action". */}
+            <div className="flex flex-wrap items-baseline justify-between mb-3 gap-2">
+              <h3 className="text-xs uppercase tracking-widest text-white/70 min-w-0">{biStageLabel(stageId)}</h3>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {stageId === "document_review" && staffOnly ? null : chip}
                 {actionChip}
                 <span className="text-xs text-white/40">{counts[stageId] || 0}</span>
               </div>
