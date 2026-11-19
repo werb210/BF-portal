@@ -9,7 +9,9 @@ const base: CSSProperties = {
 };
 
 export const crmToolbar: CSSProperties = { display: "flex", flexWrap: "nowrap", alignItems: "center", gap: 8, marginBottom: 16, minWidth: 0 };
-export const crmSearch: CSSProperties = { ...base, flex: "1 1 160px", minWidth: 120, width: "auto" };
-export const crmSelect: CSSProperties = { ...base, maxWidth: 170, paddingRight: 8, cursor: "pointer" };
+export const crmSearch: CSSProperties = { ...base, flex: "1 1 200px", minWidth: 180, width: "auto" };
+export const crmSelect: CSSProperties = { ...base, maxWidth: 150, paddingRight: 8, cursor: "pointer" };
+/** The Marketing filter: wide enough for "Non-marketing contacts" once chosen. */
+export const crmMarketingSelect: CSSProperties = { ...base, width: 196, paddingRight: 8, cursor: "pointer" };
 export const crmButton: CSSProperties = { ...base, cursor: "pointer" };
 export const crmPrimary: CSSProperties = { ...base, background: "var(--accent)", color: "#fff", border: "1px solid var(--accent)", fontWeight: 600, cursor: "pointer" };

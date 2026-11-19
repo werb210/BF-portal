@@ -9,7 +9,8 @@ import { exportFileName, fetchAllRows, rowsToCsv, saveCsv, type ExportColumn } f
 import { bulkDeleteMessage, skippedFrom } from "@/pages/crm/bulkDeleteResult"; // BF_PORTAL_v914_BI_CRM_PARITY
 import { CrmSegmentBar } from "@/components/crm/CrmSegmentBar"; // BF_PORTAL_CRM_SEGMENTS_v1
 import ColumnsMenu from "@/components/crm/ColumnsMenu";
-import { crmToolbar, crmSearch, crmSelect, crmButton, crmPrimary } from "@/components/crm/crmToolbar"; // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
+import { crmToolbar, crmSearch, crmSelect, crmButton, crmPrimary, crmMarketingSelect } from "@/components/crm/crmToolbar";
+import { formatDateTimeShort, humanizeCode } from "@/utils/labels"; // BF_PORTAL_CRM_CONSISTENCY_v1 // BF_PORTAL_CRM_TOOLBAR_ONE_ROW_v1
 import ContactCardScanField from "@/components/crm/ContactCardScanField"; // v114-card-scan-mount
 import { BI_CRM_BACKEND } from "@/components/crm/unified/crmUnifiedApi"; // BF_PORTAL_v856_CRM_UNIFY
 import { CrmBulkTagActions, CrmTagChips, CrmTagViewBy, useTagCatalogue } from "@/components/crm/unified/CrmTags";
@@ -78,6 +79,8 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
   // BF_PORTAL_BLOCK_v807_BI_OWNER_PARITY — resolve owner UUID -> staff name + owner filter (BF parity).
   const [owners, setOwners] = useState<Array<{ id: string; first_name?: string; last_name?: string }>>([]);
   const [ownerId, setOwnerId] = useState(typeof saved.ownerId === "string" ? saved.ownerId : "");
+  // BF_PORTAL_CRM_CONSISTENCY_v1 - the same Marketing filter as Boreal Financial and Keystone (BI-Server ?marketing=yes|no).
+  const [marketingFilter, setMarketingFilter] = useState<"" | "yes" | "no">(saved.marketingFilter === "yes" || saved.marketingFilter === "no" ? saved.marketingFilter : "");
   const [crmPage, setCrmPage] = useState(typeof saved.crmPage === "number" && saved.crmPage > 0 ? saved.crmPage : 1); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
   const [tagOptions, setTagOptions] = useState<string[]>([]); // BF_PORTAL_BLOCK_v749_VIEWBY
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set(Array.isArray(saved.tagFilter) ? (saved.tagFilter as string[]) : [])); // BF_PORTAL_BLOCK_v749_VIEWBY
@@ -139,6 +142,7 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
         params.set("pageSize", String(BI_CONTACTS_PAGE_SIZE));
         if (tagKey) params.set("tags", tagKey); // BF_PORTAL_BLOCK_v749_VIEWBY
         if (ownerId) params.set("owner_id", ownerId); // BF_PORTAL_BLOCK_v807_BI_OWNER_PARITY
+        if (marketingFilter) params.set("marketing", marketingFilter); // BF_PORTAL_CRM_CONSISTENCY_v1
         const r: any = await apiGetEnvelope(`/api/v1/bi/crm/contacts${params.toString() ? `?${params}` : ""}`) /* BF_PORTAL_v921_BI_TOTALS - envelope keeps the real total */;
         const list: BIContactRow[] = Array.isArray(r) ? r : Array.isArray(r?.items) ? r.items : Array.isArray(r?.data) ? r.data : [];
         const t = Number(r?.total ?? list.length); // BF_PORTAL_v914_BI_CRM_PARITY - the server's real total
@@ -151,11 +155,11 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
       } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [q, sort.col, sort.dir, refreshKey, crmPage, tagKey, ownerId]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
+  }, [q, sort.col, sort.dir, refreshKey, crmPage, tagKey, ownerId, marketingFilter]); // BF_PORTAL_BLOCK_v696_CRM_PAGER_v1
 
   useEffect(() => { // BF_PORTAL_v914_BI_CRM_PARITY
-    try { sessionStorage.setItem("bi.crm.contacts.filters", JSON.stringify({ q, ownerId, tagFilter: Array.from(tagFilter), sort, crmPage })); } catch { /* private window */ }
-  }, [q, ownerId, tagFilter, sort, crmPage]);
+    try { sessionStorage.setItem("bi.crm.contacts.filters", JSON.stringify({ q, ownerId, marketingFilter, tagFilter: Array.from(tagFilter), sort, crmPage })); } catch { /* private window */ }
+  }, [q, ownerId, marketingFilter, tagFilter, sort, crmPage]);
   const rangeStart = total === 0 ? 0 : (crmPage - 1) * BI_CONTACTS_PAGE_SIZE + 1;
   const rangeEnd = Math.min(crmPage * BI_CONTACTS_PAGE_SIZE, total);
   async function exportAll() { // BF_PORTAL_v914_BI_CRM_PARITY - every contact in this view, not just the page on screen
@@ -167,6 +171,7 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
         params.set("sort", `${sort.col}:${sort.dir}`); params.set("page", String(p)); params.set("pageSize", String(size));
         if (tagKey) params.set("tags", tagKey);
         if (ownerId) params.set("owner_id", ownerId);
+        if (marketingFilter) params.set("marketing", marketingFilter);
         const r: any = await apiGetEnvelope(`/api/v1/bi/crm/contacts?${params}`) /* BF_PORTAL_v921_BI_TOTALS - envelope keeps the real total */;
         const list: BIContactRow[] = Array.isArray(r?.data) ? r.data : Array.isArray(r) ? r : [];
         return { rows: list, total: Number(r?.total ?? list.length) };
@@ -250,10 +255,10 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
       <td style={tdStyle}><Link to={`/silo/bi/crm/contacts/${r.id}`} style={linkStyle}>{r.full_name || "(no name)"}</Link>{leadScores[r.id] && <> <LeadScoreBadge score={leadScores[r.id]!} /></>}</td>
       {!hiddenCols.has("company_name") && <td style={tdStyle}>{r.company_name ?? "—"}</td>}
       {!hiddenCols.has("tags") && <td style={tdStyle}><CrmTagChips tags={r.tags} catalogue={tagCatalogue} /></td>}{/* BF_PORTAL_BLOCK_v698_TAGS_COLUMN_v1 */}
-      {!hiddenCols.has("lead_status") && <td style={tdStyle}>{r.outreach_status ? r.outreach_status.replace(/_/g, " ") : "—"}</td>}
+      {!hiddenCols.has("lead_status") && <td style={tdStyle}>{r.outreach_status ? humanizeCode(r.outreach_status) : "New"}</td>}{/* BF_PORTAL_CRM_CONSISTENCY_v1 - "Contacted", like Financial's "New" */}
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{ownerName(r.outreach_owner_id)}</td>}
       {!hiddenCols.has("marketing_contact") && <td style={tdStyle} data-testid="marketing-cell">{r.marketing_contact === false ? "No" : "Yes"}</td>}
-      <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
+      <td style={tdStyle}>{formatDateTimeShort(r.created_at)}</td>{/* BF_PORTAL_CRM_CONSISTENCY_v1 - same date format as Financial */}
     </tr>
   )), [rows, isAdmin, selected, ownerName, hiddenCols, tagCatalogue, leadScores]); // BF_PORTAL_v856_CRM_UNIFY
 
@@ -268,6 +273,14 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
           <option value="">Owner</option>
           {owners.map((o) => (<option key={o.id} value={o.id}>{`${o.first_name ?? ""} ${o.last_name ?? ""}`.trim() || o.id}</option>))}
         </select>
+        <select data-testid="marketing-filter" value={marketingFilter} onChange={(e) => { setMarketingFilter(e.target.value as "" | "yes" | "no"); setCrmPage(1); }} style={crmMarketingSelect} aria-label="Marketing">
+          <option value="" hidden>Marketing</option>
+          <option value="yes">Marketing contacts</option>
+          <option value="no">Non-marketing contacts</option>
+        </select>
+        {marketingFilter && (
+          <button type="button" onClick={() => { setMarketingFilter(""); setCrmPage(1); }} style={{ ...crmButton, padding: "0 10px" }} aria-label="Clear marketing filter" title="Show all contacts" data-testid="marketing-filter-clear">×</button>
+        )}
         <button type="button" disabled={exporting !== null} onClick={() => void exportAll()} style={crmButton} data-testid="bi-contacts-export">{exporting ?? "Export"}</button>
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }, { key: "marketing_contact", label: "Marketing" }]} hidden={hiddenCols} onToggle={toggleCol} style={crmButton} />
         <button type="button" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ ...crmButton, opacity: importing ? 0.6 : 1 }}>{importing ? "Importing…" : "Import"}</button>

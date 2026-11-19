@@ -141,12 +141,12 @@ describe("BF_PORTAL_BLOCK_v206 — BIContactsList", () => {
     });
   });
 
-  it("displays outreach_status with underscores replaced by spaces", async () => {
+  it("displays outreach_status in words, capitalised like Financial", async () => {
     apiMock.mockResolvedValueOnce({ tags: [] }); // BF_PORTAL_BLOCK_v757 — tag-list fires first
     apiMock.mockResolvedValueOnce([rowFixture({ outreach_status: "demo_booked" })]);
     renderList();
     await waitFor(() => {
-      expect(screen.getByText("demo booked")).toBeInTheDocument();
+      expect(screen.getByText("Demo booked")).toBeInTheDocument();
     });
   });
 
@@ -191,5 +191,16 @@ describe("BF_PORTAL_BLOCK_v206 — BIContactsList", () => {
       );
     });
     expect(await screen.findByRole("status")).toHaveTextContent("Imported 1 · updated 2 · suppressed 3 · skipped 4");
+  });
+  // BF_PORTAL_CRM_CONSISTENCY_v1
+  it("has the Marketing filter and sends marketing=yes|no", async () => {
+    apiMock.mockImplementation(async () => []);
+    renderList();
+    const sel = await screen.findByTestId("marketing-filter");
+    expect(Array.from((sel as HTMLSelectElement).options).filter((o) => !o.hidden).map((o) => o.textContent)).toEqual(["Marketing contacts", "Non-marketing contacts"]);
+    fireEvent.change(sel, { target: { value: "no" } });
+    await waitFor(() => expect(apiMock.mock.calls.some((c: unknown[]) => String(c[0]).includes("/api/v1/bi/crm/contacts") && String(c[0]).includes("marketing=no"))).toBe(true));
+    fireEvent.click(screen.getByTestId("marketing-filter-clear"));
+    await waitFor(() => expect((screen.getByTestId("marketing-filter") as HTMLSelectElement).value).toBe(""));
   });
 });
