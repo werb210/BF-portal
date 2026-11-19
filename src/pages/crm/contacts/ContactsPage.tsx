@@ -370,9 +370,10 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
         </select>
         {/* BF_PORTAL_v958_MARKETING_CONTACTS */}
         <select data-testid="marketing-filter" value={marketingFilter} onChange={(e) => setMarketingFilter(e.target.value as "" | "yes" | "no")} style={crmSelect} aria-label="Marketing">
-          <option value="">Marketing</option>
-          <option value="yes">Marketing contacts</option>
-          <option value="no">Not marketing contacts</option>
+          {/* BF_PORTAL_MARKETING_FILTER_LABELS_v1 - "Marketing" and "Marketing contacts" read as the same thing. */}
+          <option value="">Marketing: all</option>
+          <option value="yes">Marketing: yes</option>
+          <option value="no">Marketing: no</option>
         </select>
         {roleCan.exp && <button style={crmButton} disabled={exporting !== null} onClick={() => void exportAll()} data-testid="contacts-export">{exporting ?? "Export"}</button>}
         <ColumnsMenu options={[{ key: "company_name", label: "Company" }, { key: "tags", label: "Tags" }, { key: "lead_status", label: "Lead status" }, { key: "owner_name", label: "Owner" }, { key: "marketing_contact", label: "Marketing" }, ...cf.columnOptions]} hidden={cf.hiddenWith(hiddenCols)} onToggle={(k) => (cf.isCfKey(k) ? cf.toggle(k) : toggleCol(k))} style={crmButton} />
