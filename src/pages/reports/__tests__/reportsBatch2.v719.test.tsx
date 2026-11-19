@@ -17,7 +17,7 @@ describe("batch 2 report cards", () => {
   it("staff activity, cohorts, payouts, media fees, renewals, cross-sell all render", () => {
     const cases: Array<[string, any, string]> = [
       ["staff_activity", { days: 7, own: true, staff: [{ staff: "Andrew P", outbound: 5, inbound: 2, connected: 4, talk_minutes: 30 }] }, "Andrew P"],
-      ["monthly_cohorts", { months: [{ month: "2026-09", started: 10, submitted: 5, funded: 1 }] }, "2026-09"],
+      ["monthly_cohorts", { months: [{ month: "2026-09", started: 10, submitted: 5, funded: 1 }] }, "Sep 2026"],
       ["payouts_owed", { unpaid: 1, items: [{ name: "Acme", broker_name: "Avance", broker_pct: 50, funded_amount: 100000, payout_paid_on: null }] }, "Not paid"],
       ["media_fee_agreements", { signed: 0, waiting: 1, items: [{ name: "Film Co", lender: "Bondit", status: "pending", signer_name: "Jo", fee_2pct: 2000 }] }, "Film Co"],
       ["renewal_opportunities", { items: [{ application_id: "a1", name: "Old Client", product_category: "LOC", funded_amount: 50000, funded_at: "2025-10-01T00:00:00Z" }] }, "Old Client"],
