@@ -67,7 +67,7 @@ const BI_NAV: NavItem[] = [
   { label: "Dashboard", path: "/silo/bi/dashboard", roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline", path: "/silo/bi/pipeline", roles: ["Admin", "Staff", "Ops"] },
   { label: "CRM", path: "/silo/bi/crm", roles: ["Admin", "Staff"] },
-  { label: "Lender", path: "/silo/bi/lender", roles: ["Admin", "Staff"] },
+  { label: "Lenders", path: "/silo/bi/lender", roles: ["Admin", "Staff"] },
   { label: "Marketing", path: "/silo/bi/marketing", roles: ["Admin"] },
   { label: "Outreach", path: "/silo/bi/outreach", roles: ["Admin"] }, // BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_v1
   { label: "Reps", path: "/silo/bi/reps", roles: ["Admin", "Staff"] }, // BF_PORTAL_BI_FIELD_REPS_v1 - outside reps who collect contacts at events
@@ -144,7 +144,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
       if (item.label === "Dashboard") return capabilities.length > 0;
       if (item.label === "CRM") return hasCap("crm:read");
       if (item.label === "Pipeline") return hasCap("pipeline:manage") || hasCap("application:read");
-      if (item.label === "Lender") return hasCap("lender:submit") || hasCap("marketing:admin");
+      if (item.label === "Lenders") return hasCap("lender:submit") || hasCap("marketing:admin");
       if (item.label === "Marketing") return hasCap("marketing:outreach");
       if (item.label === "Outreach") return hasCap("marketing:outreach");
     }

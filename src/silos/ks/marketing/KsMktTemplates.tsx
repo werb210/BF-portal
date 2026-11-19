@@ -146,7 +146,7 @@ export default function KsMktTemplates() {
           </Button>
           {editing ? <Button onClick={() => save.mutate(true)} disabled={save.isPending}>Save as a new template</Button> : null}
           {editing ? (
-            <Button kind="danger" onClick={() => confirmAction(`Archive "${editing.name}"? It leaves this list; sequences already using it keep sending it.`) && archive.mutate(editing.id)}>
+            <Button kind="danger" onClick={() => void confirmAction(`Archive "${editing.name}"? It leaves this list; sequences already using it keep sending it.`).then((ok) => { if (ok) archive.mutate(editing.id); })}>
               Archive
             </Button>
           ) : null}

@@ -1,7 +1,8 @@
 // BF_PORTAL_BLOCK_v694_COMMS — Message Templates tab.
 // CRUD over /api/templates (server v693). Channels: email | message | sms.
 // Tokens {{first_name}} and {{meeting_link}} are substituted at compose time.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import RichEmailEditor, { type RichEmailEditorHandle } from "@/components/editor/RichEmailEditor"; // BF_PORTAL_TEMPLATE_RICH_EDITOR_v1
 import Button from "@/components/ui/Button";
 import api from "@/api";
 import { getErrorMessage } from "@/utils/errors";
@@ -49,6 +50,8 @@ export default function TemplatesSettings() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<(Omit<Template, "id"> & { id?: string }) | null>(null);
   const [saving, setSaving] = useState(false);
+  const editorRef = useRef<RichEmailEditorHandle>(null);
+  const [editorKey, setEditorKey] = useState(0);
 
   const load = useCallback(() => {
     api
@@ -120,7 +123,7 @@ export default function TemplatesSettings() {
       {error && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 12 }}>{error}</div>}
 
       {!editing && (
-        <Button type="button" onClick={() => setEditing({ ...EMPTY })}>
+        <Button type="button" onClick={() => { setEditorKey((k) => k + 1); setEditing({ ...EMPTY }); }}>
           New template
         </Button>
       )}
@@ -133,7 +136,7 @@ export default function TemplatesSettings() {
               <br />
               <select
                 value={editing.channel}
-                onChange={(e) => setEditing({ ...editing, channel: e.target.value as Channel })}
+                onChange={(e) => { setEditorKey((k) => k + 1); setEditing({ ...editing, channel: e.target.value as Channel }); }}
                 style={{ padding: 8, borderRadius: 6, border: "1px solid var(--ui-border)", marginTop: 4 }}
               >
                 <option value="email">Email</option>
@@ -175,6 +178,7 @@ export default function TemplatesSettings() {
                 const tok = e.target.value;
                 e.target.value = "";
                 if (!tok) return;
+                if (editing.channel === "email" && editorRef.current) { editorRef.current.insertText(tok); return; }
                 setEditing((prev) => {
                   if (!prev) return prev;
                   if (prev.channel === "email") {
@@ -194,22 +198,30 @@ export default function TemplatesSettings() {
             </select>
           </label>
 
+          {editing.channel === "email" ? (
+            <div style={{ fontSize: 13 }}>
+              Body
+              <div style={{ marginTop: 4 }}>
+                <RichEmailEditor
+                  ref={editorRef}
+                  docKey={`${editing.id ?? "new"}-${editorKey}`}
+                  value={editing.body_html ?? ""}
+                  onChange={(html) => setEditing((prev) => (prev ? { ...prev, body_html: html } : prev))}
+                />
+              </div>
+            </div>
+          ) : (
           <label style={{ fontSize: 13 }}>
             Body
             <br />
             <textarea
               rows={8}
-              value={(editing.channel === "email" ? editing.body_html : editing.body_text) ?? ""}
-              onChange={(e) =>
-                setEditing(
-                  editing.channel === "email"
-                    ? { ...editing, body_html: e.target.value }
-                    : { ...editing, body_text: e.target.value }
-                )
-              }
+              value={editing.body_text ?? ""}
+              onChange={(e) => setEditing({ ...editing, body_text: e.target.value })}
               style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid var(--ui-border)", marginTop: 4, fontFamily: "inherit", fontSize: 13 }}
             />
           </label>
+          )}
 
           <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
             <input
@@ -258,7 +270,7 @@ export default function TemplatesSettings() {
                   <button
                     type="button"
                     onClick={() =>
-                      setEditing({
+                      (setEditorKey((k) => k + 1), setEditing({
                         id: t.id,
                         channel: t.channel,
                         name: t.name,
@@ -267,7 +279,7 @@ export default function TemplatesSettings() {
                         body_text: t.body_text ?? "",
                         shared: t.shared,
                         owner_user_id: t.owner_user_id,
-                      })
+                      }))
                     }
                     style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", cursor: "pointer", fontSize: 13 }}
                   >

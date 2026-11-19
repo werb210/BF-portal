@@ -18,7 +18,7 @@ export default function ColumnsMenu({
   const [open, setOpen] = useState(false);
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
-      <button type="button" onClick={() => setOpen((v) => !v)} style={style} data-testid="edit-columns">Edit columns</button>
+      <button type="button" onClick={() => setOpen((v) => !v)} style={{ whiteSpace: "nowrap", ...style }} data-testid="edit-columns">Edit columns</button>
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />

@@ -47,7 +47,7 @@ export default function KsMktSuppressions() {
               <td style={td}>{date(s.created_at, true)}</td>
               <td style={td}>
                 {s.reason === "manual" ? (
-                  <Button onClick={() => confirmAction(`Allow marketing email to ${s.email} again (if they have consent)?`) && remove.mutate(s.email)}>Remove</Button>
+                  <Button onClick={() => void confirmAction(`Allow marketing email to ${s.email} again (if they have consent)?`).then((ok) => { if (ok) remove.mutate(s.email); })}>Remove</Button>
                 ) : null}
               </td>
             </tr>

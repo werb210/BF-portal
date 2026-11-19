@@ -86,7 +86,7 @@ function EditForm({ licensee, fields, title, note }: { licensee: KsLicensee; fie
           e.preventDefault();
           if (!changed.length) return;
           const lines = changed.map((f) => `${f.name}: ${initial[f.key] || "(blank)"} -> ${form[f.key] || "(blank)"}`).join("\n");
-          if (confirmAction(`Save these changes to ${licensee.company_name}?\n\n${lines}`)) save.mutate();
+          void confirmAction(`Save these changes to ${licensee.company_name}?\n\n${lines}`).then((ok) => { if (ok) save.mutate(); });
         }}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
@@ -156,7 +156,7 @@ function Actions({ l }: { l: KsLicensee }) {
           testId="ks-rotate-key"
           disabled={rotate.isPending}
           onClick={() => {
-            if (confirmAction(`Make a new ops key for ${l.company_name}? The old key stops working at once; the new key must be set as KS_OPS_KEY on the licensee's server.`)) rotate.mutate();
+            void confirmAction(`Make a new ops key for ${l.company_name}? The old key stops working at once; the new key must be set as KS_OPS_KEY on the licensee's server.`).then((ok) => { if (ok) rotate.mutate(); });
           }}
         >
           Rotate ops key
@@ -164,17 +164,17 @@ function Actions({ l }: { l: KsLicensee }) {
         <Button
           disabled={addon.isPending}
           onClick={() => {
-            if (confirmAction(`${bankConnect ? "Turn OFF" : "Turn ON"} the Bank connect add-on for ${l.company_name}? This is pushed to their server.`)) addon.mutate(!bankConnect);
+            void confirmAction(`${bankConnect ? "Turn OFF" : "Turn ON"} the Bank connect add-on for ${l.company_name}? This is pushed to their server.`).then((ok) => { if (ok) addon.mutate(!bankConnect); });
           }}
         >
           Bank connect add-on: {bankConnect ? "On (turn off)" : "Off (turn on)"}
         </Button>
-        <Button disabled={checkout.isPending} onClick={() => { if (confirmAction("Create a Stripe Checkout link for this licensee's subscription?")) checkout.mutate(); }}>
+        <Button disabled={checkout.isPending} onClick={() => { void confirmAction("Create a Stripe Checkout link for this licensee's subscription?").then((ok) => { if (ok) checkout.mutate(); }); }}>
           Stripe Checkout link
         </Button>
         <Button disabled={pgi.isPending} onClick={() => pgi.mutate()}>Link to PGI now</Button>
         {canPurge ? (
-          <Button kind="danger" disabled={purge.isPending} onClick={() => { if (confirmAction(`Mark ${l.company_name}'s data as purged? This cannot be undone and the licensee can never be reopened.`)) purge.mutate(); }}>
+          <Button kind="danger" disabled={purge.isPending} onClick={() => { void confirmAction(`Mark ${l.company_name}'s data as purged? This cannot be undone and the licensee can never be reopened.`).then((ok) => { if (ok) purge.mutate(); }); }}>
             Mark data purged
           </Button>
         ) : null}

@@ -248,10 +248,37 @@ export function Table({ head, children, empty }: { head: string[]; children: Rea
   );
 }
 
-export function confirmAction(message: string): boolean {
-  try {
-    return window.confirm(message);
-  } catch {
-    return false;
-  }
+// BF_PORTAL_IN_PAGE_CONFIRM_v1 - an in-page confirmation instead of the browser's confirm() pop-up, which froze the
+// tab for anything else running in it and looked nothing like the portal. Resolves true on Confirm, false on Cancel,
+// Escape or a click outside.
+export function confirmAction(message: string): Promise<boolean> {
+  if (typeof document === "undefined") return Promise.resolve(false);
+  return new Promise<boolean>((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.setAttribute("data-testid", "confirm-dialog");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px";
+    const box = document.createElement("div");
+    box.setAttribute("role", "alertdialog");
+    box.setAttribute("aria-modal", "true");
+    box.style.cssText = "background:var(--ui-surface,#fff);color:var(--ui-text,#0f172a);border-radius:12px;max-width:440px;width:100%;padding:20px;box-shadow:0 20px 40px rgba(0,0,0,.25);font-size:14px;line-height:1.5";
+    const text = document.createElement("p");
+    text.style.cssText = "margin:0 0 16px;white-space:pre-wrap";
+    text.textContent = message;
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;justify-content:flex-end;gap:8px";
+    const cancel = document.createElement("button");
+    cancel.type = "button"; cancel.textContent = "Cancel";
+    cancel.style.cssText = "padding:8px 14px;border-radius:8px;border:1px solid var(--ui-border,#cbd5e1);background:transparent;color:inherit;cursor:pointer";
+    const ok = document.createElement("button");
+    ok.type = "button"; ok.textContent = "Confirm";
+    ok.style.cssText = "padding:8px 14px;border-radius:8px;border:0;background:var(--ui-accent,#0b1f3a);color:#fff;font-weight:600;cursor:pointer";
+    const done = (answer: boolean) => { document.removeEventListener("keydown", onKey); overlay.remove(); resolve(answer); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") done(false); };
+    cancel.onclick = () => done(false);
+    ok.onclick = () => done(true);
+    overlay.onclick = (e) => { if (e.target === overlay) done(false); };
+    document.addEventListener("keydown", onKey);
+    row.append(cancel, ok); box.append(text, row); overlay.append(box); document.body.append(overlay);
+    ok.focus();
+  });
 }

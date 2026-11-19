@@ -28,12 +28,9 @@ import BIApplicationDetail from "./pipeline/BIApplicationDetail";
 export default function BISilo() {
   return (
     <div className="min-h-screen bg-brand-bg bi-root">
-      <header className="bg-brand-bg border-b border-subtle">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <h2 className="text-xl font-semibold tracking-tight">Boreal Insurance — Portal</h2>
-        </div>
-      </header>
-      <main className="max-w-7xl mx-auto px-6 py-14 md:py-20">
+      {/* BF_PORTAL_BI_NO_DOUBLE_HEADING_v1 - each BI page has its own heading; the extra "Boreal Insurance — Portal"
+          band above it repeated the silo name and pushed every page down. */}
+      <main className="max-w-7xl mx-auto px-6 py-6 md:py-8">
         <Routes>
           {/* BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 */}
           <Route index element={<Navigate to="dashboard" replace />} />

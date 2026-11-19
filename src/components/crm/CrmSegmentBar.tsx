@@ -54,7 +54,7 @@ export function CrmSegmentBar({ current, onApply, allLabel = "All records" }: { 
     }
     setTimeout(() => setMsg(null), 2000);
   }
-  const ctl: React.CSSProperties = { padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13, background: "var(--ui-surface-strong)" };
+  const ctl: React.CSSProperties = { padding: "6px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13, background: "var(--ui-surface-strong)", whiteSpace: "nowrap" }; // BF_PORTAL_CRM_TOOLBAR_NOWRAP_v1
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <select value={selectedId} onChange={(e) => apply(e.target.value)} style={ctl} aria-label="Segments">

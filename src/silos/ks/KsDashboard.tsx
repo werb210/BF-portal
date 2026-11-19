@@ -85,7 +85,7 @@ export default function KsDashboard() {
           <Button
             disabled={backfill.isPending}
             onClick={() => {
-              if (confirmAction("Link every live licensee to Boreal Insurance again (fresh PGI referral credentials) on the next pass?")) backfill.mutate();
+              void confirmAction("Link every live licensee to Boreal Insurance again (fresh PGI referral credentials) on the next pass?").then((ok) => { if (ok) backfill.mutate(); });
             }}
           >
             Relink all live licensees
