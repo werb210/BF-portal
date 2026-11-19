@@ -15,9 +15,9 @@ describe("LinkClicksPanel", () => {
       { url: "https://www.boreal.financial/contact", clicks: 3, contacts: 3, last_clicked: "2026-08-03T10:00:00Z" },
     ] });
     render(<LinkClicksPanel />);
-    await waitFor(() => expect(screen.getByText("https://client.boreal.financial/apply")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("client.boreal.financial/apply")).toBeTruthy());
     expect(screen.getByText("12")).toBeTruthy();
-    expect(screen.getByText("https://www.boreal.financial/contact")).toBeTruthy();
+    expect(screen.getByText("boreal.financial/contact")).toBeTruthy();
   });
 
   it("queries the silo it was mounted against", async () => {
@@ -39,8 +39,8 @@ describe("LinkClicksPanel", () => {
         : { items: [{ url: "https://x/apply", clicks: 2, contacts: 1, last_clicked: "2026-08-04T10:00:00Z" }] },
     ));
     render(<LinkClicksPanel />);
-    await waitFor(() => expect(screen.getByText("https://x/apply")).toBeTruthy());
-    fireEvent.click(screen.getByText("https://x/apply"));
+    await waitFor(() => expect(screen.getByText("x/apply")).toBeTruthy());
+    fireEvent.click(screen.getByText("x/apply"));
     await waitFor(() => expect(screen.getByText(/someone@example.com/)).toBeTruthy());
   });
 });

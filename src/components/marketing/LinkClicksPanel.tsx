@@ -7,6 +7,18 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 
+// UI_REVIEW_2026_11_19 - show the page, not the tracking codes: "boreal.financial/apply" instead of the full ?utm_... URL.
+export function shortLink(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/+$/, "");
+    const campaign = u.searchParams.get("utm_campaign");
+    return `${u.hostname.replace(/^www\./, "")}${path}${campaign ? ` (${campaign.replace(/[_-]+/g, " ")})` : ""}`;
+  } catch {
+    return url;
+  }
+}
+
 type LinkRow = { url: string; clicks: number; contacts: number; last_clicked: string | null };
 type ClickerRow = {
   id?: string; first_name?: string | null; last_name?: string | null;
@@ -102,7 +114,7 @@ export default function LinkClicksPanel({ apiBase = "/api/marketing" }: { apiBas
                       className="w-full text-left"
                       style={{ display: "grid", gridTemplateColumns: "1fr 90px 90px 120px", gap: 0, padding: "6px", background: "transparent", color: "inherit" }}
                     >
-                      <span style={{ overflowWrap: "anywhere" }}>{r.url}</span>
+                      <span style={{ overflowWrap: "anywhere" }} title={r.url}>{shortLink(r.url)}</span>
                       <span>{r.clicks}</span>
                       <span>{r.contacts}</span>
                       <span>{when(r.last_clicked)}</span>
