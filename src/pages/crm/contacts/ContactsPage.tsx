@@ -461,7 +461,26 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
           {loading && <tr><td colSpan={(isAdmin ? 8 : 7) - (hiddenCols.has("marketing_contact") ? 1 : 0) + cf.shown.length} style={emptyCell}>Loading…</td></tr>}
           {err && <tr><td colSpan={(isAdmin ? 8 : 7) - (hiddenCols.has("marketing_contact") ? 1 : 0) + cf.shown.length} style={{ ...emptyCell, color: "#b00020" }}>{err}</td></tr>}
           {!loading && !err && rows.length === 0 && (
-            <tr><td colSpan={(isAdmin ? 8 : 7) - (hiddenCols.has("marketing_contact") ? 1 : 0) + cf.shown.length} style={emptyCell}>No contacts in this silo.</td></tr>
+            <tr><td colSpan={(isAdmin ? 8 : 7) - (hiddenCols.has("marketing_contact") ? 1 : 0) + cf.shown.length} style={emptyCell}>
+              {/* BF_PORTAL_CRM_EMPTY_SEARCH_v1 - a remembered search made the list look broken ("No contacts in this silo") when
+                  the person searched for is in another business (Insurance or Keystone keep their own contacts). */}
+              {q.trim() || ownerId || tagFilter || marketingFilter || cfFilters.length > 0 ? (
+                <>
+                  No contacts match{q.trim() ? <> &ldquo;{q.trim()}&rdquo;</> : " these filters"} here. Insurance and Keystone keep their own contacts, so
+                  switch business at the top to look there.{" "}
+                  <button
+                    type="button"
+                    data-testid="crm-clear-filters"
+                    onClick={() => { setQ(""); setOwnerId(""); setTagFilter(""); setMarketingFilter(""); setCfFilters([]); }}
+                    style={{ border: 0, background: "none", color: "var(--ui-link, #2563eb)", cursor: "pointer", textDecoration: "underline", padding: 0, font: "inherit" }}
+                  >
+                    Clear search and filters
+                  </button>
+                </>
+              ) : (
+                "No contacts yet."
+              )}
+            </td></tr>
           )}
           {!loading && !err && tableRows}
         </tbody>
