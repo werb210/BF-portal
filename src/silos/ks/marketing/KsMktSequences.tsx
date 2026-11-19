@@ -9,6 +9,15 @@ import { SegmentFilterEditor, SenderWarnings } from "./KsMarketing";
 import { AudienceCount } from "./KsMktCampaigns";
 import { blockedSummary, mktApi, type SegmentFilters, type SequenceStep } from "./ksMarketingApi";
 
+// UI_REVIEW_2026_11_19 - one pill with plain words ("Off - not sending"), not "Pending" next to the raw "draft".
+function seqStatus(status: string) {
+  const st = String(status ?? "");
+  const style = (bg: string) => ({ display: "inline-block", background: bg, color: "#ffffff", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" as const });
+  if (st === "active") return <span data-testid="ks-badge" style={style("#166534")}>On - sending</span>;
+  if (st === "paused") return <span data-testid="ks-badge" style={style("#b45309")}>Paused</span>;
+  return <span data-testid="ks-badge" style={style("#475569")}>Off - not sending yet</span>;
+}
+
 const STOP_LABELS: Record<string, string> = {
   replied: "Replied", signed_up: "Signed up", demo_booked: "Booked a demo", unsubscribed: "Unsubscribed", suppressed: "Suppressed",
   staff: "Stopped by staff", send_failed: "Email could not be sent", template_missing: "Template missing", missing: "Removed",
@@ -72,7 +81,7 @@ export default function KsMktSequences() {
           {rows.map((s) => (
             <tr key={s.id}>
               <td style={td}><Link to={`/silo/ks/marketing/sequences/${s.id}`} style={linkStyle}>{s.name}</Link>{s.kind === "flow" ? <div style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Email flow</div> : null}</td>
-              <td style={td}><Badge value={s.status === "active" ? "active" : s.status === "paused" ? "waiting" : "pending"} /> {s.status}</td>
+              <td style={td}>{seqStatus(s.status)}</td>
               <td style={td}>{s.steps.length}</td>
               <td style={td}>{s.active ?? 0}</td>
               <td style={td}>{s.enrolled ?? 0}</td>
@@ -123,7 +132,7 @@ export function KsMktSequenceDetail() {
       >
         <ErrorBox error={update.error} />
         <p style={{ marginTop: 0, fontSize: 14 }}>
-          <Badge value={s.status === "active" ? "active" : s.status === "paused" ? "waiting" : "pending"} /> {s.status}. Each prospect stops getting
+          {seqStatus(s.status)}. Each prospect stops getting
           this sequence as soon as they reply, sign up for Keystone or book a demo, and whenever they unsubscribe or their consent runs out.
         </p>
       </Section>

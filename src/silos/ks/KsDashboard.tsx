@@ -85,7 +85,7 @@ export default function KsDashboard() {
           <Button
             disabled={backfill.isPending}
             onClick={() => {
-              void confirmAction("Link every live licensee to Boreal Insurance again (fresh PGI referral credentials) on the next pass?").then((ok) => { if (ok) backfill.mutate(); });
+              void confirmAction("Link every live licensee to Boreal Risk Management again (fresh PGI referral credentials) on the next pass?").then((ok) => { if (ok) backfill.mutate(); });
             }}
           >
             Relink all live licensees
@@ -93,7 +93,7 @@ export default function KsDashboard() {
         }
       >
         <p style={{ margin: 0, color: "var(--ui-text-muted)" }}>
-          Every live licensee is a PGI referral source at Boreal Insurance; the link is refreshed automatically every 5 minutes.
+          Every live licensee is a PGI referral source at Boreal Risk Management; the link is refreshed automatically every 5 minutes.
         </p>
         {backfill.error ? <ErrorBox error={backfill.error} /> : null}
         {backfill.data ? <p style={{ margin: "8px 0 0" }}>{backfill.data.queued} licensees queued for relinking.</p> : null}
