@@ -42,8 +42,18 @@ export type BusinessUnitContextValue = {
 
 const BusinessUnitContext = createContext<BusinessUnitContextValue | undefined>(undefined);
 
+// BF_PORTAL_SILO_FROM_URL_v1 - a /silo/bi/... or /silo/slf/... address (a direct link, a refresh, a bookmark) decides
+// the business before anything stored from an earlier visit, so the top bar, sidebar and API calls match the page.
+export const siloFromPath = (pathname?: string): BusinessUnit | null => {
+  const path = pathname ?? (typeof window === "undefined" ? "" : window.location.pathname);
+  const m = /^\/silo\/(bf|bi|slf)(\/|$)/i.exec(String(path ?? ""));
+  return m ? (m[1]!.toUpperCase() as BusinessUnit) : null;
+};
+
 export const getActiveBusinessUnit = (): BusinessUnit => {
   if (typeof window === "undefined") return DEFAULT_BUSINESS_UNIT;
+  const fromPath = siloFromPath();
+  if (fromPath) return fromPath;
   try {
     const fromSession = window.sessionStorage.getItem(STORAGE_KEY);
     if (isBusinessUnit(fromSession)) return fromSession;
@@ -79,7 +89,9 @@ export const BusinessUnitProvider = ({ children }: { children: React.ReactNode }
   const preferredUserBusinessUnit = ((user as { silo?: string } | null)?.silo
     ? String((user as { silo?: string }).silo).toUpperCase()
     : undefined) as BusinessUnit | undefined;
+  const pathBusinessUnit = siloFromPath(); // BF_PORTAL_SILO_FROM_URL_v1
   const initialBusinessUnit =
+    (pathBusinessUnit && normalizedBusinessUnits.includes(pathBusinessUnit) && pathBusinessUnit) ||
     (storedBusinessUnit && normalizedBusinessUnits.includes(storedBusinessUnit) && storedBusinessUnit) ||
     (preferredUserBusinessUnit && normalizedBusinessUnits.includes(preferredUserBusinessUnit)
       ? preferredUserBusinessUnit
