@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { api } from "@/api";
 import { DAY_LABELS, Field, Notice, Section, Toggle, button, cell, danger, errText, input, muted, quiet } from "./ui";
 import { zoneWords } from "@/utils/labels";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Prompt = { mode: "tts" | "audio"; text: string; audioId: string | null };
 type NoChoice = { retry: boolean; optionId: string | null };
@@ -243,7 +244,7 @@ export default function PhoneMenuSettings() {
     } catch (e) { setErr(errText(e, "Could not save the phone menu.")); } finally { setBusy(false); }
   };
   const reset = async () => {
-    if (!window.confirm("Go back to Boreal's default menu (the one callers heard before any change)?")) return;
+    if (!(await confirmAction("Go back to Boreal's default menu (the one callers heard before any change)?"))) return;
     try { await api.post("/api/phone-menu/reset", {}); setOk("Back to the default menu."); await load(); } catch (e) { setErr(errText(e, "Could not reset.")); }
   };
   const upload = async (file: File | null) => {

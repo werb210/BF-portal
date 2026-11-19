@@ -11,6 +11,7 @@ import {
   CORE_TAGS, crmUnified, errorText, normalizeTag, staffTagOptions, tagKindOf, tagLabel,
   type CrmBackend, type CrmEntity, type TagCatalogue,
 } from "./crmUnifiedApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 export const UNTAGGED = "__none__";
 
@@ -213,7 +214,7 @@ export function ManageTags({ backend, catalogue, onClose, onChanged }: { backend
     try { await api.addTagDefinition(label.trim()); setLabel(""); onChanged(); } catch (e) { setErr(errorText(e, "Could not add the tag.")); } finally { setBusy(false); }
   }
   async function remove(slug: string) {
-    if (!window.confirm("Remove this tag from the list? Records keep it until it is removed from them.")) return;
+    if (!(await confirmAction("Remove this tag from the list? Records keep it until it is removed from them."))) return;
     setBusy(true); setErr(null);
     try { await api.removeTagDefinition(slug); onChanged(); } catch (e) { setErr(errorText(e, "Could not remove the tag.")); } finally { setBusy(false); }
   }

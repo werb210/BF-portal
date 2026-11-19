@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties, type Rea
 import { api } from "@/api";
 import { normalizeBiActivity, type BiActivityRow } from "@/api/biCrmActivity";
 import { openAuthedFile } from "@/lib/authedMedia";
+import { confirmAction } from "@/lib/confirmAction";
 
 const base = (contactId: string) => `/api/v1/bi/crm/contacts/${encodeURIComponent(contactId)}`;
 
@@ -230,7 +231,7 @@ export function BIContactDuplicates({ contactId, onMerged }: { contactId: string
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function merge(d: Duplicate) {
-    if (!window.confirm(`Merge ${d.name} into this contact?\n\nTheir activity, documents and applications move here and the other record is removed. This cannot be undone.`)) return;
+    if (!(await confirmAction(`Merge ${d.name} into this contact?\n\nTheir activity, documents and applications move here and the other record is removed. This cannot be undone.`))) return;
     setBusy(d.id);
     setMsg(null);
     try {

@@ -35,6 +35,8 @@ import FeeAgreementPanel from "@/components/applications/FeeAgreementPanel"; // 
 import LenderApiPanel from "./LenderApiPanel"; // BF_PORTAL_v873_LENDER_API
 import LenderRepPicker from "./LenderRepPicker"; // BF_PORTAL_v960_LENDER_REPS
 import { humanizeCode, productNameWords } from "@/utils/labels";
+import { confirmAction } from "@/lib/confirmAction";
+
 // BF_PORTAL_PRODUCT_QUESTIONS_v292 - BF-Server v289 refuses to send while product questions are unanswered.
 type ProductQuestionsSummary = { blocking?: boolean; message?: string | null } | null | undefined;
 // BF_PORTAL_RESIGN_REQUEST_v295 - BF-Server v293 flags when the client signed before a switch to Line of Credit.
@@ -175,7 +177,7 @@ export default function LendersTab({ applicationId, hideParkButtons = false }: P
     // Fall back to In Review only when the server has no record of where the
     // file came from - never silently drop it somewhere arbitrary.
     const back = previousStage || "In Review";
-    if (!window.confirm(`Reactivate this application and return it to "${back}"?`)) return;
+    if (!(await confirmAction(`Reactivate this application and return it to "${back}"?`))) return;
     setParkError(null);
     setParking("revive");
     try {
@@ -495,7 +497,7 @@ export default function LendersTab({ applicationId, hideParkButtons = false }: P
   };
   const resendToLender = async (lenderId: string, lenderName: string) => {
     if (!id || resendBusy) return;
-    if (typeof window !== "undefined" && !window.confirm(`Send the current package to ${lenderName} again?`)) return;
+    if (typeof window !== "undefined" && !(await confirmAction(`Send the current package to ${lenderName} again?`))) return;
     setResendBusy(lenderId);
     setSendError(null);
     setSendSuccess(null);
@@ -608,11 +610,9 @@ function describeSendFailure(err: unknown): string {
     const outstanding = (envelope.outstanding ?? []).map((c) => humanizeCode(c)); // BF_PORTAL_v887_PRODUCT_LABELS
     if (outstanding.length > 0) {
       const lenderCount = selectedIds.length;
-      const proceed = window.confirm(
-        `${outstanding.length} required document${outstanding.length === 1 ? " is" : "s are"} still outstanding:\n\n` +
-        outstanding.map((c) => `  \u2022 ${c}`).join("\n") +
-        `\n\nSend to ${lenderCount} lender${lenderCount === 1 ? "" : "s"} anyway?`
-      );
+      const proceed = (await confirmAction(`${outstanding.length} required document${outstanding.length === 1 ? " is" : "s are"} still outstanding:\n\n` +
+              outstanding.map((c) => `  \u2022 ${c}`).join("\n") +
+              `\n\nSend to ${lenderCount} lender${lenderCount === 1 ? "" : "s"} anyway?`));
       if (!proceed) return;
     }
 
@@ -627,9 +627,7 @@ function describeSendFailure(err: unknown): string {
         (document) => String(document.status ?? "").toLowerCase() !== "accepted",
       ).length;
       if (unacceptedCount > 0) {
-        const confirmed = window.confirm(
-          `${unacceptedCount} document${unacceptedCount === 1 ? " is" : "s are"} not accepted. Send this partial file anyway?`,
-        );
+        const confirmed = (await confirmAction(`${unacceptedCount} document${unacceptedCount === 1 ? " is" : "s are"} not accepted. Send this partial file anyway?`));
         if (!confirmed) return;
       }
       const requestedCount = selectedIds.length;
@@ -790,7 +788,7 @@ function describeSendFailure(err: unknown): string {
                     data-testid="request-resignature"
                     style={styles.btn}
                     onClick={async () => {
-                      if (!window.confirm("Ask the client to sign the updated application? Their earlier signature will be kept on record and a new signing request sent.")) return;
+                      if (!(await confirmAction("Ask the client to sign the updated application? Their earlier signature will be kept on record and a new signing request sent."))) return;
                       try {
                         await api.post(`/api/applications/${encodeURIComponent(id)}/product-questions/request-signature`, {});
                         await queryClient.invalidateQueries({ queryKey: ["lenders", id, "envelope"] });
@@ -988,9 +986,9 @@ function describeSendFailure(err: unknown): string {
                         data-testid={`lender-mark-sent-${m.id}`}
                         disabled={markSentMutation.isPending || isStale}
                         title="Record that you sent this file to the lender yourself (email, lender portal)"
-                        onClick={() => {
+                        onClick={async () => {
                           const name = m.lenderName ?? "this lender";
-                          if (typeof window !== "undefined" && !window.confirm(`Record that you sent this file to ${name} outside the portal? It will show as sent and the file moves to Off to Lender.`)) return;
+                          if (typeof window !== "undefined" && !(await confirmAction(`Record that you sent this file to ${name} outside the portal? It will show as sent and the file moves to Off to Lender.`))) return;
                           markSentMutation.mutate({ lenderId: lenderKey, lenderName: name });
                         }}
                         style={{ ...styles.btn, marginLeft: 6 }}

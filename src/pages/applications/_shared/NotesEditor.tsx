@@ -14,6 +14,7 @@ import {
   type ListResponse,
 } from "@/api/applicationNotes";
 import { getErrorMessage } from "@/utils/errors";
+import { confirmAction } from "@/lib/confirmAction";
 
 interface Props {
   applicationId: string;
@@ -137,8 +138,8 @@ export default function NotesEditor({ applicationId }: Props) {
                   <button
                     type="button"
                     className="text-red-600 hover:underline"
-                    onClick={() => {
-                      if (typeof window !== "undefined" && window.confirm("Delete this note?")) {
+                    onClick={async () => {
+                      if (typeof window !== "undefined" && (await confirmAction("Delete this note?"))) {
                         remove.mutate(n.id);
                       }
                     }}

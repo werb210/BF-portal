@@ -13,6 +13,7 @@ import { getErrorMessage } from "@/utils/errors";
 import Gate from "@/brokerTools/gate";
 import IssueTermSheet from "./IssueTermSheet";
 import ConditionsChecklist from "./ConditionsChecklist";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Mode = "lender" | "template" | "ours";
 export type Revenue = {
@@ -215,7 +216,7 @@ export default function OfferTab({ applicationId }: { applicationId: string }) {
   const showForm = offers !== null && (!has || adding);
   const removeSheet = async (o: FileOffer) => {
     const name = o.term_sheet_mode === "ours" ? "our term sheet" : `the ${o.lender_name} term sheet`;
-    if (!window.confirm(`Remove ${name} from this file? Its conditions that nobody has acted on are removed too. The client will no longer see it.`)) return;
+    if (!(await confirmAction(`Remove ${name} from this file? Its conditions that nobody has acted on are removed too. The client will no longer see it.`))) return;
     setBusy(o.id);
     try {
       await api.delete(`/api/offers/${encodeURIComponent(o.id)}`);

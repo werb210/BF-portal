@@ -17,7 +17,8 @@ import { AuthContext } from "@/auth/AuthContext";
 import { canDelete } from "@/auth/canDelete";
 import { EntityEditModal } from "@/components/EntityEditModal";
 import RetentionLock from "@/retention/RetentionLock"; // BF_PORTAL_v855_RETENTION
-import { refusedDeleteMessage, useRetention } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
+import { refusedDeleteMessage, useRetention } from "@/retention/retention";
+import { confirmAction } from "@/lib/confirmAction";
 
 export default function CompanyDetailPage() {
   const { id = "" } = useParams();
@@ -95,7 +96,7 @@ export default function CompanyDetailPage() {
             <button
               type="button"
               onClick={async () => {
-                if (!window.confirm("Delete this company? This cannot be undone.")) return;
+                if (!(await confirmAction("Delete this company? This cannot be undone."))) return;
                 try {
                   await api.delete(`/api/crm/companies/${id}`);
                   navigate(`${crmBase}/companies`);

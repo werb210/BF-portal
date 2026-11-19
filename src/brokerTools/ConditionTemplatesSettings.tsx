@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { Chip, ErrorLine, card, dangerButton, errorText, h3, input, label, muted, primaryButton, row, secondaryButton, table, td, th } from "./ui";
 import { OWNER_LABEL } from "./fundingGate";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Template = { id: string; title: string; description: string | null; owner: string; due_days: number | null; requires_document: boolean; lender_id: string | null; lender_product_id: string | null; lender_name: string | null; product_name: string | null; active: boolean };
 type Lender = { id: string; name: string };
@@ -39,7 +40,7 @@ export default function ConditionTemplatesSettings({ isAdmin }: { isAdmin: boole
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
   const remove = async (t: Template) => {
-    if (!window.confirm(`Delete the template "${t.title}"? Conditions already on files stay.`)) return;
+    if (!(await confirmAction(`Delete the template "${t.title}"? Conditions already on files stay.`))) return;
     try { await api.delete(`/api/broker-tools/condition-templates/${t.id}`); await load(); } catch (e) { setErr(errorText(e)); }
   };
 

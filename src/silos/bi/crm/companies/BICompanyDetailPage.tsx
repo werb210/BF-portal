@@ -21,6 +21,7 @@ import { CrmCompanyDetails, CrmCompanyPeople, CrmCompanyTagEditor } from "@/comp
 import { api } from "@/api";
 import { ActionBar } from "@/components/crm/ActionBar";
 import { BICompanyActivity } from "./BICompanyActivity";
+import { confirmAction } from "@/lib/confirmAction";
 
 type BICompany = {
   id: string;
@@ -77,7 +78,7 @@ export default function BICompanyDetailPage() {
   // BF_PORTAL_BLOCK_v280_COMPANIES_DELETE_BUTTON_v1
   async function deleteCompany() {
     if (!co?.id) return;
-    if (!confirm(`Delete ${co.legal_name}? This removes the company record. Linked applications and contacts stay but lose the company link.`)) return;
+    if (!(await confirmAction(`Delete ${co.legal_name}? This removes the company record. Linked applications and contacts stay but lose the company link.`))) return;
     setActionError(null);
     try {
       await api(`/api/v1/bi/crm/companies/${co.id}`, { method: "DELETE" });

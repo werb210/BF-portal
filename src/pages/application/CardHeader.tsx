@@ -11,6 +11,7 @@ import QuickBooksInvoiceBadge from "@/features/quickbooks/QuickBooksInvoiceBadge
 import { createApplicationNote } from "@/api/applicationNotes";
 import OriginChip from "./OriginChip";
 import { NEXT_STEP_EVENT, nextStepFor, offerStateOf, type OfferState } from "./nextStep";
+import { confirmAction } from "@/lib/confirmAction";
 
 type AnyRecord = Record<string, any>;
 
@@ -109,7 +110,7 @@ export default function CardHeader({ applicationId, application, onNavigate }: {
 
   async function reactivate() {
     setOpen(false);
-    if (!window.confirm("Reactivate this application and return it to the stage it came from?")) return;
+    if (!(await confirmAction("Reactivate this application and return it to the stage it came from?"))) return;
     setBusy("revive"); setMsg(null);
     try {
       const rec = await api.get<AnyRecord>(`/api/portal/applications/${encodeURIComponent(applicationId)}`);

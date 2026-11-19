@@ -7,6 +7,7 @@
 // applications sitting on the other.
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Candidate = {
   id: string;
@@ -55,11 +56,9 @@ export function ContactDuplicates({ contactId, onMerged }: { contactId?: string;
     if (!contactId || loserIds.length === 0) return;
     // The losing records are archived, so make the user mean it.
     const names = items.filter((i) => loserIds.includes(i.id)).map((i) => i.name ?? i.id).join(", ");
-    if (!window.confirm(
-      `Merge ${loserIds.length} record${loserIds.length === 1 ? "" : "s"} into this contact?\n\n${names}\n\n` +
-      `All their calls, messages, tasks, documents and applications move here. ` +
-      `The other record${loserIds.length === 1 ? " is" : "s are"} archived.`,
-    )) return;
+    if (!(await confirmAction(`Merge ${loserIds.length} record${loserIds.length === 1 ? "" : "s"} into this contact?\n\n${names}\n\n` +
+          `All their calls, messages, tasks, documents and applications move here. ` +
+          `The other record${loserIds.length === 1 ? " is" : "s are"} archived.`))) return;
 
     setBusy(true);
     setMsg("");

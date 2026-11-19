@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { listStaffUsers } from "@/api/sharedShell";
 import { crmUnified, errorText, formatPhone, type CrmBackend, type DetailField, type PeopleResponse, type Person, type TagCatalogue } from "./crmUnifiedApi";
 import { CrmTagEditor, dangerBtn, dialog, overlay, plainBtn, primaryBtn } from "./CrmTags";
+import { confirmAction } from "@/lib/confirmAction";
 
 const GROUPS: Array<[Person["group"], string]> = [
   ["primary", "Primary applicant"], ["partners", "Partners"], ["guarantors", "Guarantors"], ["advisors", "Advisors"], ["other", "Other people"],
@@ -32,7 +33,7 @@ export function CrmCompanyPeople({ backend, companyId, refreshKey = 0 }: { backe
     return () => { alive = false; };
   }, [api, companyId, refreshKey, tick]);
   async function remove(p: Person) {
-    if (!window.confirm(`Remove ${p.name} from this company?`)) return;
+    if (!(await confirmAction(`Remove ${p.name} from this company?`))) return;
     try { await api.removePerson(companyId, p); setTick((t) => t + 1); } catch (e) { window.alert(errorText(e, "Could not remove.")); }
   }
   return (

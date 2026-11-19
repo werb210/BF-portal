@@ -10,6 +10,7 @@ import FileDrop from "@/components/partner/FileDrop";
 import PartnerHeader from "@/components/partner/PartnerHeader";
 import StageTracker, { type TrackerInput } from "@/components/partner/StageTracker";
 import "@/components/partner/partnerPortal.css";
+import { confirmAction } from "@/lib/confirmAction";
 
 type BrokerFile = { import_id:string; application_id:string|null; business_name:string|null; zip_name:string; import_status:string; stage:string|null; created_at:string; boreal_pct:number|null; broker_pct:number|null; terms:string|null; split_status:string|null; broker_counter_pct:number|null; payout_amount:number|null; payout_paid_on:string|null };
 const auth = () => ({ Authorization: `Bearer ${sessionStorage.getItem("referrer_token") ?? ""}` });
@@ -34,7 +35,7 @@ export function SplitBox({f,onDone}:{f:BrokerFile;onDone:()=>void}) {
       <div>Boreal proposes: you {f.broker_pct??"-"}% / Boreal {f.boreal_pct??"-"}%{f.terms?` (${f.terms})`:""}</div>
       {!counter ? (
         <div className="pp-row">
-          <button type="button" className="pp-btn pp-btn--primary" onClick={()=>{if(window.confirm("Accept this split? It locks for this file."))void send({action:"accept"});}}>Accept</button>
+          <button type="button" className="pp-btn pp-btn--primary" onClick={async ()=>{if((await confirmAction("Accept this split? It locks for this file.")))void send({action:"accept"});}}>Accept</button>
           <button type="button" className="pp-btn" onClick={()=>setCounter(true)}>Propose a different split</button>
         </div>
       ) : (

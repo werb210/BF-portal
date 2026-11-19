@@ -11,6 +11,7 @@ import {
   type Action, type Area, type BaseRole, type PermissionSet, type Visibility,
 } from "./permissionStore";
 import { BUILT_IN_ROLES, createRole, getRoles, setRoleArchived, updateRole, type RoleRow, type RolesOverview } from "./rolesApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 const VIS: Visibility[] = ["all", "team", "own"];
 const errText = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback);
@@ -181,7 +182,7 @@ export default function RolesSettings() {
   });
 
   const archive = async (r: RoleRow) => {
-    if (!r.archived_at && !window.confirm(`Archive "${r.name}"? It can no longer be given to anyone.`)) return;
+    if (!r.archived_at && !(await confirmAction(`Archive "${r.name}"? It can no longer be given to anyone.`))) return;
     try { await setRoleArchived(r.id, !r.archived_at); saved(r.archived_at ? `"${r.name}" is active again.` : `"${r.name}" archived.`); }
     catch (e) { failed(errText(e, "Could not change the role.")); }
   };

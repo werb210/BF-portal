@@ -3,6 +3,7 @@
 // "Send selected to Google", and the status of both server-made lists.
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { api } from "@/api";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Row = { contact_id: string; name: string | null; email: string | null; phone: string | null; applied_at: string | null; consented: boolean; bf: boolean; cbf: boolean; sent_at: string | null };
 type ListStatus = { kind: "applicants" | "funded"; name: string; listId: string | null; members: number };
@@ -45,7 +46,7 @@ export default function CustomerMatchPanel() {
   const send = async () => {
     const ids = [...picked];
     if (!ids.length) return;
-    if (!window.confirm(`Send ${ids.length} people to Google's "${lists.find((l) => l.kind === "applicants")?.name ?? "Applicants"}" list? Only hashed email and phone are sent.`)) return;
+    if (!(await confirmAction(`Send ${ids.length} people to Google's "${lists.find((l) => l.kind === "applicants")?.name ?? "Applicants"}" list? Only hashed email and phone are sent.`))) return;
     setBusy(true); setMsg(null);
     try {
       const r = await api.post<{ sent?: number; failed?: number; skipped?: number; detail?: string }>("/api/marketing/customer-match/applicants/send", { contactIds: ids });

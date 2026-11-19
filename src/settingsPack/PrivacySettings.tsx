@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { Field, Notice, Section, button, cell, danger, errText, input, muted, quiet, when } from "./ui";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Req = { id: string; contact_id: string | null; contact_label: string | null; kind: "access" | "correction" | "deletion"; status: string; details: string | null; received_via: string | null; requested_at: string; due_at: string; outcome: any; requester_email?: string | null; requester_phone?: string | null };
 type Kept = { what: string; why: string; until: string | null };
@@ -53,7 +54,7 @@ function RequestPanel({ r, onDone }: { r: Req; onDone: () => void }) {
           ? <p style={muted}>Nothing on this contact is under the 7-year retention or a legal hold. Deleting removes the contact and its notes, calls, emails, texts, meetings, tasks and bookings.</p>
           : <><p style={muted}>These records must be kept, so they will not be deleted. The person will be opted out of marketing email and texts instead:</p>
             <ul>{plan.will_keep.map((k, i) => <li key={i} style={{ fontSize: 13 }}><strong>{k.what}</strong>: {k.why}{k.until ? ` (until ${k.until})` : ""}</li>)}</ul></>}
-        <button type="button" style={danger} onClick={() => { if (window.confirm(plan.can_delete ? "Delete this contact and its activity? This cannot be undone." : "Opt this person out of marketing and close the request?")) void act(() => api.post(`/api/privacy/requests/${r.id}/delete`, {}), plan.can_delete ? "Deleted." : "Records kept; the person is opted out of marketing."); }}>
+        <button type="button" style={danger} onClick={async () => { if ((await confirmAction(plan.can_delete ? "Delete this contact and its activity? This cannot be undone." : "Opt this person out of marketing and close the request?"))) void act(() => api.post(`/api/privacy/requests/${r.id}/delete`, {}), plan.can_delete ? "Deleted." : "Records kept; the person is opted out of marketing."); }}>
           {plan.can_delete ? "Delete the contact" : "Opt out and close the request"}
         </button>
       </>}

@@ -9,6 +9,7 @@ import { api } from "@/api";
 import { getErrorMessage } from "@/utils/errors";
 import InvoicePanel from "./InvoicePanel"; // BF_PORTAL_v952_INVOICE_TEMPLATES
 import PaymentLinksPanel from "@/payments/PaymentLinksPanel";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Line = {
   id?: string; kind: string; description: string | null; basis: "flat" | "percent"; percent: number | null; expected_amount: number | null;
@@ -100,7 +101,7 @@ export default function CloseTab({ applicationId }: { applicationId: string }) {
   }
 
   async function clawback(l: Line) {
-    if (!l.id || !window.confirm("Record that the lender took this money back? The broker's share comes off their next pay statement.")) return;
+    if (!l.id || !(await confirmAction("Record that the lender took this money back? The broker's share comes off their next pay statement."))) return;
     setBusy(`c-${l.id}`);
     try { await api.post(`/api/deals/lines/${encodeURIComponent(l.id)}/clawback`, { on: today() }); await load(); }
     catch (e) { setMsg({ ok: false, text: getErrorMessage(e, "The clawback could not be recorded.") }); }

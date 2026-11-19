@@ -2,6 +2,7 @@
 // members (add people), leave, and archive / unarchive.
 import { useState } from "react";
 import { api } from "@/api";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Channel = { id: string; kind: string; name: string | null; topic?: string | null; is_private?: boolean; archived_at?: string | null; member_ids?: string[] | null };
 type User = { id: string; name: string };
@@ -28,7 +29,7 @@ export default function ChannelSettings({ channel, users, myId, onClose, onChang
   }
   const save = () => run(() => api.patch(`/api/team/channels/${channel.id}`, { name, topic, ...(isChannel ? { is_private: isPrivate } : {}) }));
   const add = () => run(() => api.post(`/api/team/channels/${channel.id}/members`, { member_ids: Array.from(adding) }));
-  const leave = () => { if (window.confirm("Leave " + (isChannel ? "#" + channel.name : "this group") + "?")) void run(() => api.post(`/api/team/channels/${channel.id}/leave`, {}), onLeft); };
+  const leave = async () => { if ((await confirmAction("Leave " + (isChannel ? "#" + channel.name : "this group") + "?"))) void run(() => api.post(`/api/team/channels/${channel.id}/leave`, {}), onLeft); };
   const archive = () => void run(() => api.post(`/api/team/channels/${channel.id}/archive`, { archived: !channel.archived_at }));
   const field = { padding: "8px 10px", border: "1px solid var(--ui-border)", borderRadius: 8, fontSize: 14 } as const;
 

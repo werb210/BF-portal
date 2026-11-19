@@ -9,7 +9,8 @@ import { patchStatusWithFundingGate } from "@/brokerTools/fundingGate"; // BF_PO
 import TeamFilter from "@/teams/TeamFilter"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import CustomFieldFilters from "@/crmFields/CustomFieldFilters"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { filterParams, useCustomFields, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
-import { pipelinesApi } from "@/pipelines/pipelinesApi"; // BF_PORTAL_v909_LENDING_STAGE_DISPLAY
+import { pipelinesApi } from "@/pipelines/pipelinesApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 // BF_PORTAL_FRAUD_HOLD_v34 - Fraud and Hold are parking columns. Neither
 // deletes anything; both take the file out of the reported numbers (Fraud from
@@ -202,7 +203,7 @@ export default function PipelinePage() {
     // BF_PORTAL_v855_RETENTION - a file kept on record shows the lock and the date instead of asking to delete.
     const kept = await fetchRetention("application", cardId);
     if (kept?.locked) { window.alert(lockMessage(kept)); return; }
-    if (!window.confirm("Delete this application card? This cannot be undone.")) return;
+    if (!(await confirmAction("Delete this application card? This cannot be undone."))) return;
     setDeleting(cardId);
     try {
       await api.delete(`/api/portal/applications/${cardId}`);
@@ -577,9 +578,9 @@ function PipeCard({ card, stage, busy, onOpen, onMove, onDelete, onRefresh }: {
           )}
           <button
             disabled={busy}
-            onClick={() => {
+            onClick={async () => {
               const back = card.parked_previous_stage || "In Review";
-              if (!window.confirm(`Reactivate this application and return it to "${back}"?`)) return;
+              if (!(await confirmAction(`Reactivate this application and return it to "${back}"?`))) return;
               onMove(card.id, back);
             }}
             style={{ ...btnBase, width: "100%", flex: "unset",

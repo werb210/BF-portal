@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { BI_VISIBLE_PIPELINE_STAGES, biStageLabel, resolveStageId } from "@/silos/bi/pipeline/biStages";
+import { confirmAction } from "@/lib/confirmAction";
 
 const STAGES: Array<[string, string]> = BI_VISIBLE_PIPELINE_STAGES.map((stageId) => [stageId, biStageLabel(stageId)]);
 
@@ -236,7 +237,7 @@ export default function BIDashboard() {
           const onDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
             e.preventDefault();
             e.stopPropagation();
-            if (!window.confirm(`Delete ${appDisplayTitle(a)}? This cannot be undone.`)) return;
+            if (!(await confirmAction(`Delete ${appDisplayTitle(a)}? This cannot be undone.`))) return;
             try {
               await api(`/api/v1/bi/applications/${a.id}`, { method: "DELETE" });
               setApps((prev) => prev.filter((app) => app?.id !== a.id));

@@ -18,7 +18,8 @@ import {
   resolveStageId,
   type BiStageId,
 } from "./biStages";
-import { biSourceShort } from "./biSource"; // BF_PORTAL_BI_SOURCE_LABEL_v392
+import { biSourceShort } from "./biSource";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Source = "public" | "lender" | "referrer" | "bf_pgi_referral";
 type CarrierEvent = "quoted" | "declined" | "info_required" | "policy_bound" | "none";
@@ -108,7 +109,7 @@ export default function BIPipeline() {
   useEffect(() => { void load(); }, [filters.show_demo]);
 
   async function deleteApplication(app: BIApplication) {
-    if (!window.confirm("Delete this application? This cannot be undone.")) return;
+    if (!(await confirmAction("Delete this application? This cannot be undone."))) return;
     try {
       await api(`/api/v1/bi/applications/${app.id}`, { method: "DELETE" });
       await load();
@@ -264,7 +265,7 @@ export default function BIPipeline() {
         {String((user as { role?: string } | null)?.role ?? "").toLowerCase() === "admin" && (
           <button
             onClick={async () => {
-              if (!window.confirm("Hard-delete ALL demo/test applications? This cannot be undone. Lenders are not affected.")) return;
+              if (!(await confirmAction("Hard-delete ALL demo/test applications? This cannot be undone. Lenders are not affected."))) return;
               try {
                 const r = await api<{ deleted?: number }>("/api/v1/bi/admin/apps/purge-demo", { method: "POST" });
                 window.alert(`Deleted ${r?.deleted ?? 0} demo/test application(s).`);

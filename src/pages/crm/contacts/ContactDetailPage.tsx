@@ -26,7 +26,8 @@ import { CrmAiSummary, CrmKsLicenseeCard } from "@/components/crm/unified/CrmAiS
 import { NotifyContactButton } from "@/components/crm/NotifyContactButton"; // BF_PORTAL_NOTIFY_CONTACT_v627
 import RetentionLock from "@/retention/RetentionLock"; // BF_PORTAL_v855_RETENTION
 import { ContactLeadScore } from "@/components/marketing/LeadScore"; // BF_PORTAL_v874_MARKETING_TOOLS
-import { refusedDeleteMessage, useRetention } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
+import { refusedDeleteMessage, useRetention } from "@/retention/retention";
+import { confirmAction } from "@/lib/confirmAction";
 
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
@@ -106,7 +107,7 @@ export default function ContactDetailPage() {
           <button
             type="button"
             onClick={async () => {
-              if (!window.confirm("Delete this contact? This cannot be undone.")) return;
+              if (!(await confirmAction("Delete this contact? This cannot be undone."))) return;
               try {
                 await api.delete(`/api/crm/contacts/${id}`);
                 navigate(`${crmBase}/contacts`);

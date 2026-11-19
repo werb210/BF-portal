@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { Chip, ErrorLine, card, h3, input, label, money, muted, primaryButton, row, secondaryButton, table, td, th } from "./ui";
 import { useRun } from "./useRun";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Vendor = { user_id: string; company_name: string; contact_name: string | null; email: string | null; phone: string | null; code: string; status: string;
   fee_pct: string | null; fee_flat: string | null; quotes: number; deals: number; fees_expected: string; fees_paid: string; apply_link: string };
@@ -54,7 +55,7 @@ export default function VendorsSettings({ isAdmin }: { isAdmin: boolean }) {
                 <td style={td}>{isAdmin && (
                   <div style={row}>
                     {v.status !== "active" && <button type="button" style={secondaryButton} disabled={busy} onClick={() => void agreement(v)}>Agreement link</button>}
-                    {v.status !== "active" && <button type="button" style={secondaryButton} disabled={busy} onClick={() => { if (window.confirm(`Mark ${v.company_name} active (agreement signed on paper)?`)) void run(() => api.patch(`/api/deal-desk/vendors/${v.user_id}`, { status: "active" })); }}>Mark active</button>}
+                    {v.status !== "active" && <button type="button" style={secondaryButton} disabled={busy} onClick={async () => { if ((await confirmAction(`Mark ${v.company_name} active (agreement signed on paper)?`))) void run(() => api.patch(`/api/deal-desk/vendors/${v.user_id}`, { status: "active" })); }}>Mark active</button>}
                     {v.status === "active" && <button type="button" style={secondaryButton} disabled={busy} onClick={() => void run(() => api.patch(`/api/deal-desk/vendors/${v.user_id}`, { status: "paused" }))}>Pause</button>}
                     {v.status === "paused" && <button type="button" style={secondaryButton} disabled={busy} onClick={() => void run(() => api.patch(`/api/deal-desk/vendors/${v.user_id}`, { status: "active" }))}>Resume</button>}
                   </div>

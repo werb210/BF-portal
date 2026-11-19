@@ -8,7 +8,7 @@ describe("Sign again on a signed SBA file", () => {
     expect(src).toContain('data-testid="sign-again"');
   });
   it("asks first, then sends again: true", () => {
-    expect(src).toContain("window.confirm(");
+    expect(src).toContain("confirmAction(");
     expect(src).toContain("again ? { again: true } : {}");
   });
 });

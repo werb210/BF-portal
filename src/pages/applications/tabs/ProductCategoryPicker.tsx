@@ -4,6 +4,7 @@
 // it here; BF-Server v286 saves it, keeps a history, and re-matches lenders.
 import { useState } from "react";
 import { api } from "@/api";
+import { confirmAction } from "@/lib/confirmAction";
 
 export const PRODUCT_CATEGORY_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: "TERM_LOAN", label: "Term Loan" },
@@ -46,7 +47,7 @@ export default function ProductCategoryPicker(props: {
     if (!next || next === value) return;
     const fromLabel = PRODUCT_CATEGORY_OPTIONS.find((o) => o.value === value)?.label ?? "the current category";
     const toLabel = PRODUCT_CATEGORY_OPTIONS.find((o) => o.value === next)?.label ?? next;
-    if (!window.confirm(`Change this application from ${fromLabel} to ${toLabel}?\n\nLenders will be re-matched for ${toLabel}, and the required documents may change.`)) return;
+    if (!(await confirmAction(`Change this application from ${fromLabel} to ${toLabel}?\n\nLenders will be re-matched for ${toLabel}, and the required documents may change.`))) return;
     setSaving(true);
     setError(null);
     try {

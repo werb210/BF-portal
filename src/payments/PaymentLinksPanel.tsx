@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Notice, Section, Toggle, button, cell, copyText, errText, input, muted, quiet, danger, when } from "@/settingsPack/ui";
 import { QBO_TEXT, STATUS, money, paymentsApi, type PaymentLink } from "./paymentsApi";
 import { withoutSettingNames } from "@/components/SetupNotice";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Props = { applicationId?: string; contactId?: string };
 
@@ -91,7 +92,7 @@ export default function PaymentLinksPanel({ applicationId, contactId }: Props) {
   };
 
   const cancel = async (l: PaymentLink) => {
-    if (!window.confirm(`Cancel the payment link for ${money(l.amount)}? The client will no longer be able to pay with it.`)) return;
+    if (!(await confirmAction(`Cancel the payment link for ${money(l.amount)}? The client will no longer be able to pay with it.`))) return;
     try { await paymentsApi.cancel(l.id); await load(); } catch (e) { setErr(errText(e, "Could not cancel the link.")); }
   };
 

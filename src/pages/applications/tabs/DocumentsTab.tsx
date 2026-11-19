@@ -30,6 +30,7 @@ import AcceptNameDialog from "@/components/applications/AcceptNameDialog"; // BF
 import RetentionLock from "@/retention/RetentionLock"; // BF_PORTAL_v855_RETENTION
 import { fetchApplicationRetention, refusedDeleteMessage, type RetentionStatus } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 import { humanizeCode } from "@/utils/labels";
+import { confirmAction } from "@/lib/confirmAction";
 
 interface Props { applicationId?: string }
 
@@ -413,7 +414,7 @@ export default function DocumentsTab({ applicationId }: Props) {
 
   // BF_PORTAL_DOC_UPLOAD_MOVE_v316 - move a document filed under the wrong category.
   async function handleMove(docId: string, filename: string | null, category: string): Promise<boolean> {
-    if (typeof window !== "undefined" && !window.confirm(`Move "${filename ?? "this document"}" to ${humanizeCode(category)}?`)) return false;
+    if (typeof window !== "undefined" && !(await confirmAction(`Move "${filename ?? "this document"}" to ${humanizeCode(category)}?`))) return false;
     setActionError(null);
     try {
       await api.post(`/api/documents/${encodeURIComponent(docId)}/category`, { category });
@@ -427,7 +428,7 @@ export default function DocumentsTab({ applicationId }: Props) {
 
   async function handleDelete(docId: string) {
     if (!applicationId) return;
-    if (typeof window !== "undefined" && !window.confirm("Delete this document permanently? This also removes the stored file.")) return;
+    if (typeof window !== "undefined" && !(await confirmAction("Delete this document permanently? This also removes the stored file."))) return;
     setActionError(null);
     try {
       await api.delete(`/api/documents/${applicationId}/documents/${docId}`); // BF_PORTAL_DOC_DELETE_PATH_v1 — server route is /api/documents/:appId/documents/:docId
@@ -444,7 +445,7 @@ export default function DocumentsTab({ applicationId }: Props) {
   const copyIds = useMemo(() => extraCopyIds(dupGroups), [dupGroups]);
   async function removeDuplicateCopies() {
     if (!applicationId || copyIds.length === 0) return;
-    if (typeof window !== "undefined" && !window.confirm(`Remove ${copyIds.length} duplicate cop${copyIds.length === 1 ? "y" : "ies"}? The first upload of each file is kept.`)) return;
+    if (typeof window !== "undefined" && !(await confirmAction(`Remove ${copyIds.length} duplicate cop${copyIds.length === 1 ? "y" : "ies"}? The first upload of each file is kept.`))) return;
     setRemovingCopies(true);
     setActionError(null);
     const failed: string[] = [];

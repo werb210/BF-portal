@@ -19,7 +19,8 @@ import { bulkDeleteMessage, skippedFrom } from "@/pages/crm/bulkDeleteResult"; /
 import { refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_RETENTION
 import CustomFieldFilters from "@/crmFields/CustomFieldFilters"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { useCustomFieldColumns } from "@/crmFields/useCustomFieldColumns"; // BF_PORTAL_v870_CRM_DATA_MODEL
-import { displayValue, filterParams, type CustomFilter } from "@/crmFields/customFieldsApi"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import { displayValue, filterParams, type CustomFilter } from "@/crmFields/customFieldsApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 type SortCol = "name" | "industry" | "owner_name" | "created_at" | `cf_${string}`;
 
@@ -121,7 +122,7 @@ export default function CompaniesPage() {
   }
   async function massDelete() {
     if (!isAdmin || selected.size === 0) return;
-    if (!window.confirm(`Hard-delete ${selected.size} company(ies)? This cannot be undone. Use only for Apollo imports.`)) return;
+    if (!(await confirmAction(`Hard-delete ${selected.size} company(ies)? This cannot be undone. Use only for Apollo imports.`))) return;
     setBusyMass("delete");
     try {
       const r = await crmApi.bulkDeleteCompanies(Array.from(selected));
@@ -138,7 +139,7 @@ export default function CompaniesPage() {
   }
   async function massTag() {
     if (!isAdmin || selected.size === 0 || !tagInput.trim()) return;
-    if (!window.confirm(`Apply tag "${tagInput.trim()}" to ${selected.size} company(ies)?`)) return;
+    if (!(await confirmAction(`Apply tag "${tagInput.trim()}" to ${selected.size} company(ies)?`))) return;
     setBusyMass("tag");
     try {
       await crmApi.bulkTagCompanies(Array.from(selected), tagInput.trim());

@@ -42,6 +42,7 @@ import { getCommsTimelineByPhone } from "@/api/sharedShell";
 import { ContactMarketingSource } from "@/components/crm/ContactApplicationDetails"; // BF_PORTAL_AD_ATTRIBUTION_v1
 import type { TimelineItem } from "@/api/crm";
 import toast from "react-hot-toast";
+import { confirmAction } from "@/lib/confirmAction";
 
 // BF_PORTAL_BLOCK_v212_CONTACT_NAME_v1 — surface a clean display name when
 // the persisted full_name is the auto-generated placeholder shape
@@ -405,7 +406,7 @@ export default function BIContactDetailPage() {
   }
 
   async function deleteContact() {
-    if (!window.confirm("Delete this contact? This cannot be undone.")) return;
+    if (!(await confirmAction("Delete this contact? This cannot be undone."))) return;
     setDeleting(true);
     setActionError(null);
     try {

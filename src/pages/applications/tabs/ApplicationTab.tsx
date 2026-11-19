@@ -33,6 +33,8 @@ type AnyRecord = Record<string, any>;
 import CustomFieldsPanel from "@/crmFields/CustomFieldsPanel"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import PipelineMover from "@/pipelines/PipelineMover"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { maskSin } from "@/lib/sensitive";
+import { confirmAction } from "@/lib/confirmAction";
+
 type Props = { application: AnyRecord | null };
 
 function asObject(v: unknown): AnyRecord {
@@ -255,7 +257,7 @@ export default function ApplicationTab({ application }: Props) {
   // can run. Calls the admin reset route; refuses server-side on already-signed apps.
   async function v_resetSigning() {
     if (v_resetBusy || !v784_appId) return;
-    if (!window.confirm("Reset the signing session? This clears the current SignNow session so you can Send for signing again. It does not affect an already-signed application.")) return;
+    if (!(await confirmAction("Reset the signing session? This clears the current SignNow session so you can Send for signing again. It does not affect an already-signed application."))) return;
     v_setResetBusy(true);
     try {
       await api(`/api/admin/applications/${encodeURIComponent(v784_appId)}/reset-signing`, { method: "POST" });
@@ -270,7 +272,7 @@ export default function ApplicationTab({ application }: Props) {
   // reached the server, an Admin files the application as signed, which sends the lender package.
   async function v860_markSigned() {
     if (v860_markBusy || !v784_appId) return;
-    if (!window.confirm("Mark this application as signed? Only do this when every signer has finished signing. It files the signed application and sends the lender package to the lenders you picked.")) return;
+    if (!(await confirmAction("Mark this application as signed? Only do this when every signer has finished signing. It files the signed application and sends the lender package to the lenders you picked."))) return;
     v860_setMarkBusy(true);
     try {
       const r = await api(`/api/admin/applications/${encodeURIComponent(v784_appId)}/mark-signed`, { method: "POST" });
@@ -286,7 +288,7 @@ export default function ApplicationTab({ application }: Props) {
   async function v_resendSigning(again = false) {
     if (v_signBusy || !v784_appId) return;
     // BF_PORTAL_SBA_SIGN_AGAIN_v775 - signing again replaces every owner's signed set.
-    if (again && typeof window !== "undefined" && !window.confirm("Every owner signs the application and SBA forms again. The new signed copies replace the old ones. Continue?")) return;
+    if (again && typeof window !== "undefined" && !(await confirmAction("Every owner signs the application and SBA forms again. The new signed copies replace the old ones. Continue?"))) return;
     v_setSignBusy(true);
     v_setSignNote(null);
     v851_setNameError(null); // BF_PORTAL_v851_APPLICANT_NAME
@@ -415,7 +417,7 @@ export default function ApplicationTab({ application }: Props) {
 
   async function v817_sendReminder() {
     if (!v817_clientEmail || v817_incomplete.length === 0 || v817_sending) return;
-    if (!window.confirm(`Send a reminder email to ${v817_clientFirst || "the client"} (${v817_clientEmail}) now?`)) return;
+    if (!(await confirmAction(`Send a reminder email to ${v817_clientFirst || "the client"} (${v817_clientEmail}) now?`))) return;
 
     v817_setSending(true);
     v817_setNote(null);

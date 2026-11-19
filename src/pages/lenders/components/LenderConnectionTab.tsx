@@ -6,6 +6,7 @@ import {
   apiMessage, deleteConnection, fetchConnection, fetchConnectionLog, fetchConnectors, fetchFieldKeys, rotateWebhookAddress, saveConnection, testConnection,
   type Bucket, type ConnectorInfo, type ConnectorsResponse, type StatusMapEntry,
 } from "@/api/lenderConnections";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Obj = Record<string, unknown>;
 const obj = (v: unknown): Obj => (v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {});
@@ -374,13 +375,13 @@ export function LenderConnectionPanel({ lenderId, lenderName }: { lenderId: stri
   }
 
   async function rotate() {
-    if (!window.confirm("Make a new webhook address? The old one stops working at once; give the lender the new one.")) return;
+    if (!(await confirmAction("Make a new webhook address? The old one stops working at once; give the lender the new one."))) return;
     setBusy("rotate");
     try { setWebhookUrl((await rotateWebhookAddress(lenderId)).webhook_url); } catch (err) { setMsg({ tone: "err", text: apiMessage(err, "Could not make a new address.") }); } finally { setBusy(null); }
   }
 
   async function remove() {
-    if (!window.confirm(`Remove the API connection to ${lenderName}? Packages go back to email; the history stays.`)) return;
+    if (!(await confirmAction(`Remove the API connection to ${lenderName}? Packages go back to email; the history stays.`))) return;
     setBusy("delete");
     try { await deleteConnection(lenderId); await qc.invalidateQueries({ queryKey: ["lender-connection", lenderId] }); setMsg({ tone: "ok", text: "Connection removed." }); }
     catch (err) { setMsg({ tone: "err", text: apiMessage(err, "Could not remove the connection.") }); } finally { setBusy(null); }

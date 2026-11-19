@@ -11,7 +11,8 @@ import { api } from "@/api";
 import EmojiPicker from "@/components/communications/EmojiPicker"; // BF_PORTAL_BLOCK_v502
 import { sanitizeHtml } from "@/lib/sanitizeHtml"; // BF_PORTAL_HTML_SANITIZE_v1
 import { useSnippets, snippetBody } from "@/hooks/useSnippets"; // BF_PORTAL_EMAIL_SNIPPET_v48
-import { RecipientAutocomplete } from "./RecipientAutocomplete"; // BF_PORTAL_RECIPIENT_AUTOSUGGEST_v53
+import { RecipientAutocomplete } from "./RecipientAutocomplete";
+import { confirmAction } from "@/lib/confirmAction";
 
 type MailboxOption = { value: string; label: string };
 type AppOption = { id: string; label: string };
@@ -738,13 +739,13 @@ export default function O365ComposeModal({
       // a click on this backdrop ("Discard this message?"). Only a press that both starts and ends on the backdrop
       // closes the composer.
       onMouseDown={(e) => { backdropPress.current = e.target === e.currentTarget; }}
-      onClick={(e) => {
+      onClick={async (e) => {
         const pressedHere = backdropPress.current;
         backdropPress.current = false;
         if (e.target !== e.currentTarget || !pressedHere) return;
         if (composeSending || savingDraft) return;
         const dirty = !!((composeBody || "").replace(/<[^>]*>/g, "").trim() || composeSubject.trim() || composeTo.trim());
-        if (dirty && !window.confirm("Discard this message? Use \u201cSave draft\u201d to keep it.")) return;
+        if (dirty && !(await confirmAction("Discard this message? Use \u201cSave draft\u201d to keep it."))) return;
         onClose();
       }}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}

@@ -9,6 +9,7 @@ import {
   createEndpoint, deleteEndpoint, getEventsInfo, listDeliveries, listEndpoints, resendDelivery, rotateSecret, sendTest, STATUS_LABEL,
   updateEndpoint, type Delivery, type Endpoint, type EventsInfo,
 } from "./webhooksApi";
+import { confirmAction } from "@/lib/confirmAction";
 
 const errText = (e: unknown, fallback: string) => (e instanceof Error && e.message && e.message !== "API_ERROR" ? e.message : fallback);
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "-");
@@ -296,11 +297,11 @@ export default function WebhooksSettings() {
                         <button type="button" style={quiet} disabled={ep.status !== "active"} onClick={() => void act(() => sendTest(ep.id), "Test event queued. It arrives within a few seconds; check the log.", "Could not send the test.")}>Send test</button>
                         <button type="button" style={quiet} onClick={() => setLog(ep)}>Log</button>
                         <button type="button" style={quiet} onClick={async () => {
-                          if (!window.confirm("Make a new signing secret? The current one stops working at once, so update the receiver straight away.")) return;
+                          if (!(await confirmAction("Make a new signing secret? The current one stops working at once, so update the receiver straight away."))) return;
                           try { setSecret(await rotateSecret(ep.id)); done("New secret made."); } catch (e) { fail(e, "Could not make a new secret."); }
                         }}>New secret</button>
-                        <button type="button" style={{ ...quiet, color: "#991b1b", borderColor: "#fecaca" }} onClick={() => {
-                          if (window.confirm(`Delete the endpoint ${ep.url}? Its delivery log is deleted too.`)) void act(() => deleteEndpoint(ep.id), "Endpoint deleted.", "Could not delete.");
+                        <button type="button" style={{ ...quiet, color: "#991b1b", borderColor: "#fecaca" }} onClick={async () => {
+                          if ((await confirmAction(`Delete the endpoint ${ep.url}? Its delivery log is deleted too.`))) void act(() => deleteEndpoint(ep.id), "Endpoint deleted.", "Could not delete.");
                         }}>Delete</button>
                       </div>
                     </td>

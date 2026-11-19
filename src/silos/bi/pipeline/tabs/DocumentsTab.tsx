@@ -9,7 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { fetchRequiredDocs, type BiRequiredDoc } from "@/silos/bi/api/biRequiredDocs";
 import type { BiStageId } from "../biStages";
 import { biDocSlotLabel, biDocSlotIsCarrierBound } from "../biDocumentSlots"; // BI_DOC_LIST_v61
-import DocumentSplitView, { type SplitViewDoc } from "@/components/applications/DocumentSplitView"; // BF_PORTAL_BI_DOC_VIEWER_v709
+import DocumentSplitView, { type SplitViewDoc } from "@/components/applications/DocumentSplitView";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Doc = {
   id: string;
@@ -178,7 +179,7 @@ export default function DocumentsTab({ applicationId, stage: _stage, onMutated, 
   }
 
   async function del(docId: string) {
-    if (!window.confirm("Delete this document? This cannot be undone.")) return;
+    if (!(await confirmAction("Delete this document? This cannot be undone."))) return;
     try {
       await api(`/api/v1/bi/documents/${docId}`, { method: "DELETE" });
       toast.success("Deleted");

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api";
 import { Chip, ErrorLine, card, dangerButton, h3, input, label, money, muted, primaryButton, row, secondaryButton, table, td, th } from "./ui";
 import { postFile, useRun } from "./useRun";
+import { confirmAction } from "@/lib/confirmAction";
 
 type Cell = { term_months: number; amount_min: number; amount_max: number | null; tier: string; rate: number };
 type Fee = { label: string; amount: number; taxable: boolean; financed: boolean };
@@ -89,7 +90,7 @@ export default function RateCardsSettings({ isAdmin }: { isAdmin: boolean }) {
                 <button type="button" style={primaryButton} disabled={busy || !(csv[c.id] ?? "").trim()} onClick={() => void importCsv(c)}>Load grid</button>
                 <label style={label}>Or a CSV file<input type="file" accept=".csv,text/csv" disabled={busy} style={{ ...input, padding: 4 }} onChange={(e) => importFile(c, e.target.files?.[0])} /></label>
                 <button type="button" style={secondaryButton} onClick={() => edit(c)}>Edit</button>
-                <button type="button" style={dangerButton} disabled={busy} onClick={() => { if (window.confirm(`Delete ${c.name}?`)) void run(() => api.delete(`/api/deal-desk/rate-cards/${c.id}`)); }}>Delete</button>
+                <button type="button" style={dangerButton} disabled={busy} onClick={async () => { if ((await confirmAction(`Delete ${c.name}?`))) void run(() => api.delete(`/api/deal-desk/rate-cards/${c.id}`)); }}>Delete</button>
               </div>
             )}
           </div>
