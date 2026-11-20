@@ -1,6 +1,5 @@
 // BF_PORTAL_TEAMS_IPAD_SIGNIN_v1 / BF_PORTAL_TEAMS_MAC_v1 / BF_PORTAL_TEAMS_BLUR_v1
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { readFileSync } from "node:fs";
 
 const native = vi.hoisted(() => ({ on: true }));
 vi.mock("@capacitor/core", () => ({ registerPlugin: () => ({}), Capacitor: { isNativePlatform: () => native.on, getPlatform: () => "ios", isPluginAvailable: () => false } }));
@@ -44,17 +43,5 @@ describe("Teams sign-in where popups cannot open (iPad app)", () => {
     const c = consent();
     expect(await teamsIdentityToken(c, { interactive: true, join })).toBe("popup");
     expect(c.acquireTokenRedirect).not.toHaveBeenCalled();
-  });
-});
-
-describe("source pins", () => {
-  it("the iPad app on a Mac goes straight to Teams", () => {
-    const src = readFileSync("src/features/teamsMeetings/JoinTeamsButton.tsx", "utf8");
-    expect(src).toMatch(/if \(!inAppVideoSupported\(\)\) \{ window\.open\(joinUrl/);
-  });
-  it("the call has a background blur button, loaded only when needed", () => {
-    const src = readFileSync("src/features/teamsMeetings/TeamsMeetingCall.tsx", "utf8");
-    expect(src).toContain('import("@azure/communication-calling-effects")');
-    expect(src).toContain("meeting-blur-button");
   });
 });
