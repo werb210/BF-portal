@@ -80,6 +80,11 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
   const [message, setMessage] = useState<string>("");
   const [muted, setMuted] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
+  // BF_PORTAL_TEAMS_BLUR_v1 - background blur on the camera (Azure Communication Services video effects). The effects
+  // package is loaded only when the meeting starts with a camera; the button shows only where the device supports it.
+  const [blurOn, setBlurOn] = useState(false);
+  const [blurSupported, setBlurSupported] = useState(false);
+  const blurRef = useRef<unknown>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [waiting, setWaiting] = useState<Waiting[]>([]);
   const [panel, setPanel] = useState<Panel>(null);
@@ -280,6 +285,38 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
     if (call.isMuted) await call.unmute(); else await call.mute();
     setMuted(call.isMuted);
   };
+  const blurEffect = async () => {
+    if (!blurRef.current) {
+      const m = await import("@azure/communication-calling-effects");
+      blurRef.current = new m.BackgroundBlurEffect();
+    }
+    return blurRef.current as any;
+  };
+  const toggleBlur = async () => {
+    const camera = cameraRef.current as any;
+    if (!camera) return;
+    try {
+      const fx = camera.feature(Features.VideoEffects);
+      if (blurOn) { await fx.stopEffects(); setBlurOn(false); }
+      else { await fx.startEffects(await blurEffect()); setBlurOn(true); }
+    } catch (err) {
+      console.warn("[teams-in-app] background blur failed", err);
+      setNote("Background blur isn't available on this device.");
+    }
+  };
+  // Check once the camera exists whether blur can run here.
+  useEffect(() => {
+    const camera = cameraRef.current as any;
+    if (!camera || !cameraOn || blurSupported) return;
+    let gone = false;
+    (async () => {
+      try {
+        const ok = await camera.feature(Features.VideoEffects).isSupported(await blurEffect());
+        if (!gone) setBlurSupported(Boolean(ok));
+      } catch { if (!gone) setBlurSupported(false); }
+    })();
+    return () => { gone = true; };
+  }, [cameraOn, blurSupported]);
   const toggleCamera = async () => {
     const call = callRef.current;
     const camera = cameraRef.current;
@@ -510,6 +547,7 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
           <>
             <button type="button" style={btn(!muted)} onClick={() => void toggleMute()} aria-pressed={muted} disabled={phase === "starting"}>{muted ? "Unmute" : "Mute"}</button>
             <button type="button" style={btn(cameraOn)} onClick={() => void toggleCamera()} aria-pressed={cameraOn} disabled={phase === "starting" || !cameraRef.current}>{cameraOn ? "Camera off" : "Camera on"}</button>
+            {blurSupported && cameraOn ? <button type="button" style={btn(blurOn)} onClick={() => void toggleBlur()} aria-pressed={blurOn} data-testid="meeting-blur-button">{blurOn ? "Blur off" : "Blur background"}</button> : null}
             {live ? (
               <>
                 <button type="button" style={btn(sharing)} onClick={() => void toggleShare()} aria-pressed={sharing} disabled={phase !== "connected"}>{sharing ? "Stop sharing" : "Share screen"}</button>
