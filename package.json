@@ -23,6 +23,7 @@
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8.0.1",
     "@azure/communication-calling": "^2.0.0",
+    "@azure/communication-calling-effects": "^1.3.2",
     "@azure/communication-common": "^2.5.0",
     "@azure/msal-browser": "^3.30.0",
     "@boreal/shared-contract": "file:shared-contract",

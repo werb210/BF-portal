@@ -13,9 +13,11 @@ function directive(csp: string, name: string): string[] {
 describe("Content-Security-Policy", () => {
   const csp = rootConfig.globalHeaders["Content-Security-Policy"];
 
+  // BF_PORTAL_TEAMS_BLUR_v1 - 'wasm-unsafe-eval' lets the Teams background-blur WebAssembly compile. It does not
+  // allow eval() or inline script.
   it("script-src has no 'unsafe-eval' or 'unsafe-inline'", () => {
     const scripts = directive(csp, "script-src");
-    expect(scripts).toEqual(["'self'"]);
+    expect(scripts).toEqual(["'self'", "'wasm-unsafe-eval'"]);
   });
 
   it("the copy Vite ships in dist is the same policy", () => {

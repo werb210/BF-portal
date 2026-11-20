@@ -4,7 +4,7 @@
 // on (or the server refuses), the person is told why and can still open the meeting in Teams.
 import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { requestMeetingTicket, isTeamsJoinUrl, type MeetingRef, type MeetingTicket } from "./teamsMeetingApi";
+import { requestMeetingTicket, isTeamsJoinUrl, inAppVideoSupported, readPendingJoin, clearPendingJoin, type MeetingRef, type MeetingTicket } from "./teamsMeetingApi";
 
 const TeamsMeetingCall = lazy(() => import("./TeamsMeetingCall"));
 
@@ -16,13 +16,25 @@ const teamsLinkStyle: CSSProperties = { marginLeft: 10, fontSize: 13, color: "va
 export function JoinTeamsButton({ joinUrl, meetingId, calendarEventId, title, compact }: MeetingRef & { title?: string | null; compact?: boolean }): JSX.Element | null {
   const [stage, setStage] = useState<Stage>({ kind: "closed" });
   const close = useCallback(() => setStage({ kind: "closed" }), []);
-  if (!isTeamsJoinUrl(joinUrl)) return null;
 
-  const start = async () => {
+  const start = useCallback(async () => {
+    // BF_PORTAL_TEAMS_MAC_v1 - where in-app video cannot run at all (the iPad app on a Mac), go straight to Teams
+    // instead of opening a screen that can only say so.
+    if (!inAppVideoSupported()) { window.open(joinUrl, "_blank", "noopener,noreferrer"); return; }
     setStage({ kind: "loading" });
     const r = await requestMeetingTicket({ joinUrl, meetingId, calendarEventId });
     setStage(r.ok ? { kind: "call", ticket: r.ticket } : { kind: "error", message: r.message, joinUrl: r.joinUrl });
-  };
+  }, [joinUrl, meetingId, calendarEventId]);
+
+  // BF_PORTAL_TEAMS_IPAD_SIGNIN_v1 - back from Microsoft's sign-in: reopen the meeting that was being joined.
+  useEffect(() => {
+    const pending = readPendingJoin();
+    if (!pending || pending.joinUrl !== joinUrl) return;
+    const t = setTimeout(() => { void start().finally(clearPendingJoin); }, 300);
+    return () => clearTimeout(t);
+  }, [joinUrl, start]);
+
+  if (!isTeamsJoinUrl(joinUrl)) return null;
 
   return (
     <span data-testid="join-teams">

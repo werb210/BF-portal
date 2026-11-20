@@ -33,12 +33,24 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // BF_PORTAL_v888_TEAMS_IN_APP - the in-app Teams meeting (Azure Communication Services, about 7 MB)
         // only works online, so it is downloaded when someone joins a meeting rather than kept offline.
-        globIgnores: ["**/TeamsMeetingCall-*.js"]
+        // BF_PORTAL_TEAMS_BLUR_v1 - the background-blur effects (about 12 MB) likewise load only when a meeting uses them.
+        globIgnores: ["**/TeamsMeetingCall-*.js", "**/teams-effects-*.js", "**/teams-effects-*.wasm"]
       },
       devOptions: { enabled: false, type: "module" }
     }),
     tsconfigPaths({ projects: ["./tsconfig.json"] }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // BF_PORTAL_TEAMS_BLUR_v1 - a stable name so the service worker can leave this chunk out of the offline cache.
+        manualChunks(id: string) {
+          if (id.includes("@azure/communication-calling-effects")) return "teams-effects";
+          return undefined;
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

@@ -2,6 +2,8 @@
 // Teams meeting inside the portal. Always BF-Server (meetings live there for every silo).
 import { apiForSilo } from "@/api";
 import { msalClient } from "@/auth/msal";
+import { Capacitor } from "@capacitor/core";
+import { isIOSSafari } from "@/auth/msalLoginStrategy";
 
 // BF_PORTAL_v890_TEAMS_IDENTITY - staff join as themselves (their Teams name, no lobby) when Microsoft gives the portal
 // a token for Azure Communication Services. Silent only: no sign-in window opens just for this. If it is not
@@ -18,7 +20,28 @@ type TeamsMsalClient = {
   setActiveAccount?: (a: any) => void;
   acquireTokenSilent: (r: any) => Promise<{ accessToken?: string }>;
   acquireTokenPopup?: (r: any) => Promise<{ accessToken?: string; account?: unknown }>;
+  acquireTokenRedirect?: (r: any) => Promise<void>;
 };
+
+// BF_PORTAL_TEAMS_IPAD_SIGNIN_v1 - the iPad app (and Safari on iPhone/iPad) cannot open Microsoft's sign-in popup, so
+// the Join click fell back to joining as a guest and Teams put staff in the lobby. There the sign-in goes by redirect:
+// the join is remembered, Microsoft signs the person in, and on return the meeting opens again with their own token.
+export const PENDING_JOIN_KEY = "bf_teams_pending_join";
+const REDIRECT_GUARD_MS = 10 * 60 * 1000;
+export function popupUnusable(): boolean {
+  try { if (Capacitor.isNativePlatform()) return true; } catch { /* not native */ }
+  return isIOSSafari();
+}
+export type PendingJoin = { joinUrl: string; meetingId?: string | null; calendarEventId?: string | null; at: number };
+export function readPendingJoin(now = Date.now()): PendingJoin | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_JOIN_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as PendingJoin;
+    return p && typeof p.joinUrl === "string" && now - Number(p.at) < REDIRECT_GUARD_MS ? p : null;
+  } catch { return null; }
+}
+export function clearPendingJoin(): void { try { sessionStorage.removeItem(PENDING_JOIN_KEY); } catch { /* ignore */ } }
 
 // BF_PORTAL_v962_TEAMS_JOIN_AS_YOURSELF - "silent only" left the organiser in the Teams lobby as a guest whenever
 // the tab had no Microsoft session (they are kept per tab) or Microsoft wanted the permission confirmed once. With
@@ -34,7 +57,7 @@ const oidOf = (a: unknown): string => {
 let lastTeamsUserId = "";
 export const teamsUserId = (): string => lastTeamsUserId;
 
-export async function teamsIdentityToken(client: TeamsMsalClient = msalClient as any, opts: { interactive?: boolean } = {}): Promise<string | null> {
+export async function teamsIdentityToken(client: TeamsMsalClient = msalClient as any, opts: { interactive?: boolean; join?: Omit<PendingJoin, "at"> } = {}): Promise<string | null> {
   let account: unknown = null;
   try {
     if (client.initialize) await client.initialize();
@@ -48,6 +71,23 @@ export async function teamsIdentityToken(client: TeamsMsalClient = msalClient as
     throw new Error("no_access_token");
   } catch (err) {
     const why = (err as { errorCode?: string; message?: string } | null)?.errorCode || (err as Error | null)?.message || String(err);
+    if (opts.interactive && popupUnusable() && client.acquireTokenRedirect && opts.join) {
+      // One redirect per meeting per 10 minutes, so a refused sign-in cannot loop.
+      const before = readPendingJoin();
+      if (before && before.joinUrl === opts.join.joinUrl) {
+        console.warn("[teams-in-app] Microsoft sign-in by redirect already tried; joining as a guest", { reason: why });
+        return null;
+      }
+      try {
+        sessionStorage.setItem(PENDING_JOIN_KEY, JSON.stringify({ ...opts.join, at: Date.now() }));
+        await client.acquireTokenRedirect({ scopes: ACS_TEAMS_SCOPES, account: account ?? undefined });
+        return null; // the page navigates to Microsoft; the join resumes on return
+      } catch (redirectErr) {
+        clearPendingJoin();
+        console.warn("[teams-in-app] Microsoft sign-in by redirect failed; joining as a guest", { reason: why, redirect: (redirectErr as Error | null)?.message || String(redirectErr) });
+        return null;
+      }
+    }
     if (!opts.interactive || !client.acquireTokenPopup) {
       console.warn("[teams-in-app] no Microsoft token for Teams; joining as a guest", { reason: why });
       return null;
@@ -86,7 +126,12 @@ export async function requestMeetingTicket(ref: MeetingRef): Promise<TicketResul
   const body: Record<string, string> = { joinUrl: ref.joinUrl };
   if (ref.meetingId) body.meetingId = ref.meetingId;
   if (ref.calendarEventId) body.calendarEventId = ref.calendarEventId;
-  const teamsToken = await teamsIdentityToken(undefined, { interactive: true }); // BF_PORTAL_v890_TEAMS_IDENTITY + v962: asked from the Join click
+  const teamsToken = await teamsIdentityToken(undefined, { interactive: true, join: { joinUrl: ref.joinUrl, meetingId: ref.meetingId ?? null, calendarEventId: ref.calendarEventId ?? null } }); // BF_PORTAL_v890_TEAMS_IDENTITY + v962: asked from the Join click
+  if (!teamsToken && readPendingJoin()?.joinUrl === ref.joinUrl && popupUnusable()) {
+    // A redirect to Microsoft is under way (or was just tried): don't join as a guest in the meantime.
+    const pending = readPendingJoin();
+    if (pending && Date.now() - pending.at < 5000) return { ok: false, message: "Signing you in to Microsoft...", joinUrl: ref.joinUrl };
+  }
   if (teamsToken) { body.teamsToken = teamsToken; if (teamsUserId()) body.teamsUserId = teamsUserId(); }
   try {
     const t = await apiForSilo("BF")<MeetingTicket>("/api/meetings/acs-token", { method: "POST", body });
