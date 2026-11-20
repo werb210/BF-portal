@@ -117,6 +117,10 @@ export default function NegativesPanel() {
       .then((response) => {
         const list = unwrapCampaigns(response);
         setCampaigns(list);
+        // BF_PORTAL_NEGATIVES_DEFAULT_CAMPAIGN_v1 - the picker sat on "All campaigns" and the Add button stayed greyed
+        // out with no reason. With exactly one live campaign, start on it.
+        const live = list.filter((campaign) => String(campaign.status ?? "").toUpperCase() === "ENABLED");
+        if (live.length === 1) setCampaignId((current) => current || String(live[0]!.id));
         setCampaignsErr(list.length === 0 ? "No campaigns returned - check the Google Ads credentials." : null);
       })
       .catch((error: Error) => setCampaignsErr(error?.message ?? "Could not load campaigns."));
@@ -256,6 +260,7 @@ export default function NegativesPanel() {
           <h2 style={{ fontSize: 15, fontWeight: 600 }}>Spent money, converted nothing — last {days} days</h2>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}><span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{picked.size} selected · {money(wasted)}</span>
             <button type="button" onClick={() => void submit()} disabled={disabled} data-testid="negatives-submit" style={{ padding: "6px 14px", borderRadius: 6, fontSize: 13, cursor: disabled ? "not-allowed" : "pointer", border: "1px solid var(--ui-border)", background: !disabled ? "#0B1F3A" : "var(--ui-surface-strong)", color: !disabled ? "#fff" : "var(--ui-text-muted)" }}>{busy ? "Adding…" : "Add as negatives"}</button>
+            {!busy && picked.size > 0 && !campaignId.trim() && <span data-testid="negatives-need-campaign" style={{ fontSize: 12, color: "#b00020", marginLeft: 8 }}>Pick a campaign above to add these.</span>}
           </div>
         </div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th style={{ ...th, width: 36 }} /><th style={th}>Search term</th><th style={th}>Cost</th><th style={th}>Clicks</th><th style={th}>Impressions</th></tr></thead>
