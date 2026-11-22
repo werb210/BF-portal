@@ -11,6 +11,7 @@ import {
   type Call, type CallAgent, type DeviceManager, type RemoteParticipant, type RemoteVideoStream,
 } from "@azure/communication-calling";
 import { AzureCommunicationTokenCredential } from "@azure/communication-common";
+import { screenShareSupported } from "./screenShare";
 import { chatToken, listChat, sendChat, type ChatMessage } from "./meetingChat";
 
 export type CallTicket = { token: string; acsUserId: string; displayName: string; joinUrl: string; subject?: string | null; identity?: "teams" | "guest" }; // BF_PORTAL_v890_TEAMS_IDENTITY
@@ -550,7 +551,7 @@ export default function TeamsMeetingCall({ ticket, onEnded }: { ticket: CallTick
             {blurSupported && cameraOn ? <button type="button" style={btn(blurOn)} onClick={() => void toggleBlur()} aria-pressed={blurOn} data-testid="meeting-blur-button">{blurOn ? "Blur off" : "Blur background"}</button> : null}
             {live ? (
               <>
-                <button type="button" style={btn(sharing)} onClick={() => void toggleShare()} aria-pressed={sharing} disabled={phase !== "connected"}>{sharing ? "Stop sharing" : "Share screen"}</button>
+                {screenShareSupported() ? <button type="button" style={btn(sharing)} onClick={() => void toggleShare()} aria-pressed={sharing} disabled={phase !== "connected"}>{sharing ? "Stop sharing" : "Share screen"}</button> : null}
                 <button type="button" style={btn(hand)} onClick={() => void toggleHand()} aria-pressed={hand} disabled={phase !== "connected"}>{hand ? "Lower hand" : "Raise hand"}</button>
                 <button type="button" style={btn(false)} onClick={() => void react("like")} disabled={phase !== "connected"} aria-label="Send a thumbs up">{"\uD83D\uDC4D"}</button>
                 <button type="button" style={btn(false)} onClick={() => void react("applause")} disabled={phase !== "connected"} aria-label="Send applause">{"\uD83D\uDC4F"}</button>
