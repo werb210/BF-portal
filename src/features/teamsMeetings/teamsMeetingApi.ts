@@ -35,6 +35,7 @@ export function popupUnusable(): boolean {
 export type PendingJoin = { joinUrl: string; meetingId?: string | null; calendarEventId?: string | null; at: number };
 export function readPendingJoin(now = Date.now()): PendingJoin | null {
   try {
+    try { if (Capacitor.isNativePlatform()) { sessionStorage.removeItem(PENDING_JOIN_KEY); return null; } } catch { /* not native */ } // BF_PORTAL_TEAMS_NATIVE_NO_SIGNIN_v1
     const raw = sessionStorage.getItem(PENDING_JOIN_KEY);
     if (!raw) return null;
     const p = JSON.parse(raw) as PendingJoin;
@@ -57,6 +58,8 @@ const oidOf = (a: unknown): string => {
 let lastTeamsUserId = "";
 export const teamsUserId = (): string => lastTeamsUserId;
 
+const isNativeApp = (): boolean => { try { return Capacitor.isNativePlatform(); } catch { return false; } };
+
 export async function teamsIdentityToken(client: TeamsMsalClient = msalClient as any, opts: { interactive?: boolean; join?: Omit<PendingJoin, "at"> } = {}): Promise<string | null> {
   let account: unknown = null;
   try {
@@ -71,6 +74,16 @@ export async function teamsIdentityToken(client: TeamsMsalClient = msalClient as
     throw new Error("no_access_token");
   } catch (err) {
     const why = (err as { errorCode?: string; message?: string } | null)?.errorCode || (err as Error | null)?.message || String(err);
+    // BF_PORTAL_TEAMS_NATIVE_NO_SIGNIN_v1 (2026-11-22) - in the iPad / Mac app a Microsoft sign-in leaves the app:
+    // the sign-in page opens in Safari and Microsoft returns to the website, not the app (Todd: "it opened up the portal
+    // in the browser"). The server joins staff with their stored Microsoft sign-in instead (BF-Server #3546), so the
+    // app never asks for one.
+    try {
+      if (Capacitor.isNativePlatform()) {
+        console.warn("[teams-in-app] app: no Microsoft sign-in here; the server uses the stored sign-in", { reason: why });
+        return null;
+      }
+    } catch { /* not native */ }
     if (opts.interactive && popupUnusable() && client.acquireTokenRedirect && opts.join) {
       // One redirect per meeting per 10 minutes, so a refused sign-in cannot loop.
       const before = readPendingJoin();
@@ -127,7 +140,7 @@ export async function requestMeetingTicket(ref: MeetingRef): Promise<TicketResul
   if (ref.meetingId) body.meetingId = ref.meetingId;
   if (ref.calendarEventId) body.calendarEventId = ref.calendarEventId;
   const teamsToken = await teamsIdentityToken(undefined, { interactive: true, join: { joinUrl: ref.joinUrl, meetingId: ref.meetingId ?? null, calendarEventId: ref.calendarEventId ?? null } }); // BF_PORTAL_v890_TEAMS_IDENTITY + v962: asked from the Join click
-  if (!teamsToken && readPendingJoin()?.joinUrl === ref.joinUrl && popupUnusable()) {
+  if (!teamsToken && readPendingJoin()?.joinUrl === ref.joinUrl && popupUnusable() && !isNativeApp()) {
     // A redirect to Microsoft is under way (or was just tried): don't join as a guest in the meantime.
     const pending = readPendingJoin();
     if (pending && Date.now() - pending.at < 5000) return { ok: false, message: "Signing you in to Microsoft...", joinUrl: ref.joinUrl };
