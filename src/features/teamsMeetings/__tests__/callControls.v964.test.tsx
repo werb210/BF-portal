@@ -56,7 +56,7 @@ async function open() {
   return call;
 }
 
-beforeEach(() => { h.state.call = null; h.devices.selectMicrophone.mockClear(); h.state.switchSource.mockClear(); });
+beforeEach(() => { Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: { ...(navigator.mediaDevices ?? {}), getDisplayMedia: () => null } }); h.state.call = null; h.devices.selectMicrophone.mockClear(); h.state.switchSource.mockClear(); });
 
 describe("meeting controls in the portal", () => {
   it("shows who is waiting and lets the organiser admit or decline them", async () => {
