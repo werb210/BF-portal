@@ -1354,6 +1354,31 @@ type ClarityMetric = { metricName: string; rows: Record<string, any>[] };
 type ClarityProjectReport = { name: string; dashboardUrl?: string | null; days?: number; cached?: boolean; error?: string; metrics?: ClarityMetric[] };
 type ClarityReport = { configured: boolean; days?: number; projects?: ClarityProjectReport[] };
 
+// BF_PORTAL_CLARITY_LABELS_v1 - Clarity's export names (DeadClickCount, sessionsWithMetricPercentage...) shown in words.
+const CLARITY_METRICS: Record<string, string> = {
+  DeadClickCount: "Dead clicks", ExcessiveScroll: "Excessive scrolling", RageClickCount: "Rage clicks", QuickbackClick: "Quick backs",
+  ScriptErrorCount: "Script errors", ErrorClickCount: "Error clicks", ScrollDepth: "Scroll depth", Traffic: "Traffic",
+  EngagementTime: "Engagement time", Browser: "Browsers", Device: "Devices", OS: "Operating systems", Country: "Countries",
+  PageTitle: "Page titles", ReferrerUrl: "Referrers", PopularPages: "Popular pages",
+};
+const CLARITY_KEYS: Record<string, string> = {
+  sessionsCount: "Sessions", sessionsWithMetricPercentage: "Sessions affected", sessionsWithoutMetricPercentage: "Sessions not affected",
+  pagesViews: "Page views", subTotal: "Count", averageScrollDepth: "Average scroll depth", totalSessionCount: "Sessions",
+  totalBotSessionCount: "Bot sessions", distinctUserCount: "Users", pagesPerSessionPercentage: "Pages per session",
+  totalTime: "Total time (s)", activeTime: "Active time (s)", name: "Name", url: "Page", visitsCount: "Visits",
+};
+function clarityMetricLabel(name: string): string { return CLARITY_METRICS[name] ?? name.replace(/([a-z])([A-Z])/g, "$1 $2"); }
+function clarityRowParts(row: Record<string, unknown>): Array<[string, string]> {
+  return Object.entries(row)
+    .filter(([k]) => k !== "sessionsWithoutMetricPercentage")
+    .map(([k, v]) => {
+      const label = CLARITY_KEYS[k] ?? k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+      const n = typeof v === "number" ? v : Number(v);
+      const text = /Percentage$|averageScrollDepth/.test(k) && Number.isFinite(n) ? `${Math.round(n * 10) / 10}%` : Number.isFinite(n) && String(v).includes(".") ? String(Math.round(n * 100) / 100) : String(v);
+      return [label, text] as [string, string];
+    });
+}
+
 function ClarityPanel() {
   const [report, setReport] = useState<ClarityReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1389,11 +1414,11 @@ function ClarityPanel() {
             <div className="flex flex-wrap gap-3">
               {(proj.metrics ?? []).map((m, i) => (
                 <div key={i} style={{ flex: "1 1 240px", minWidth: 220, border: "1px solid var(--ui-border)", borderRadius: 8, padding: 10 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 6 }}>{m.metricName}</div>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>{clarityMetricLabel(m.metricName)}</div>
                   {(m.rows ?? []).slice(0, 8).map((row, j) => (
                     <div key={j} style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "4px 0", borderTop: j ? "1px solid var(--ui-border)" : "none" }}>
-                      {Object.entries(row).map(([k, v]) => (
-                        <span key={k} style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{k}: <strong style={{ color: "var(--ui-text)" }}>{String(v)}</strong></span>
+                      {clarityRowParts(row).map(([k, v]) => (
+                        <span key={k} style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>{k}: <strong style={{ color: "var(--ui-text)" }}>{v}</strong></span>
                       ))}
                     </div>
                   ))}

@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { BI_VISIBLE_PIPELINE_STAGES, biStageLabel, resolveStageId } from "@/silos/bi/pipeline/biStages";
-import { confirmAction } from "@/lib/confirmAction";
 
 const STAGES: Array<[string, string]> = BI_VISIBLE_PIPELINE_STAGES.map((stageId) => [stageId, biStageLabel(stageId)]);
 
@@ -234,19 +233,7 @@ export default function BIDashboard() {
         {recent.length === 0 ? (
           <div className="p-4 text-sm text-white/40">No recent updates.</div>
         ) : recent.map((a) => {
-          const onDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!(await confirmAction(`Delete ${appDisplayTitle(a)}? This cannot be undone.`))) return;
-            try {
-              await api(`/api/v1/bi/applications/${a.id}`, { method: "DELETE" });
-              setApps((prev) => prev.filter((app) => app?.id !== a.id));
-              window.alert("Application deleted.");
-            } catch (error) {
-              console.error("Failed to delete BI application", error);
-              window.alert("Failed to delete application.");
-            }
-          };
+          // BF_PORTAL_BI_DASH_NO_DELETE_v1 - deleting lives on the application, not one click away on the dashboard.
           const name = appDisplayTitle(a);
           const resolvedStage = resolveStageId(a?.stage) ?? a?.stage;
           const stageMeta = STAGES.find((row) => row[0] === resolvedStage);
@@ -268,7 +255,6 @@ export default function BIDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <button type="button" onClick={onDelete} className="rounded border border-red-500/40 px-2 py-1 text-xs text-red-200 hover:bg-red-500/10">Delete</button>
                 <div className="text-right text-xs text-white/60">
                 <div>{stageMeta ? stageMeta[1] : biStageLabel(a?.stage)}</div>
                 <div className="text-white/40">{relativeFromNow(a?.updated_at)}</div>

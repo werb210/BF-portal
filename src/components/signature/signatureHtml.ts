@@ -30,7 +30,9 @@ export const EMPTY_FIELDS: SignatureFields = {
 /** Brand defaults per business (silo). Colours match the portal's accents and the branded email template. */
 export const SILO_BRANDS: Record<string, { company: string; color: string; website: string; logoUrl: string }> = {
   BF: { company: "Boreal Financial", color: "#1E3A8A", website: "https://boreal.financial", logoUrl: "https://staff.boreal.financial/images/300_300.png" },
-  BI: { company: "Boreal Insurance", color: "#2FA86A", website: "https://boreal.insure", logoUrl: "https://staff.boreal.financial/images/300_300.png" },
+  // BF_PORTAL_KS_SIGNATURES_v1 - BI trades as Boreal Risk Management (never "Boreal Insurance"); Keystone has its own brand.
+  BI: { company: "Boreal Risk Management", color: "#2FA86A", website: "https://www.boreal.insure", logoUrl: "https://staff.boreal.financial/images/300_300.png" },
+  KS: { company: "Keystone", color: "#16263a", website: "https://keystonecrm.online", logoUrl: "https://server.boreal.financial/api/public/email/keystone/signature-logo.png" },
   SLF: { company: "Site Level Financial", color: "#B45309", website: "", logoUrl: "" },
 };
 

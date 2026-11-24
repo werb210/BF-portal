@@ -184,7 +184,7 @@ export default function BIPipeline() {
   const reset = () => setFilters(EMPTY);
 
   return (
-    <div className="max-w-7xl mx-auto px-6">
+    <div className="w-full px-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold">Pipeline</h2>
         <button onClick={() => void load()} className="rounded border border-card px-3 py-1 text-sm text-white/70 hover:text-white">Refresh</button>

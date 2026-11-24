@@ -74,6 +74,7 @@ const KS_SCOPED_API_PREFIXES = [
   "/api/telephony",
   "/api/calls",
   "/api/o365/mail",
+  "/api/o365/me/signature", // BF_PORTAL_KS_SIGNATURES_v1 - Keystone pages edit the Keystone signature
   "/api/companies",
   "/api/contacts",
   "/api/recipients",

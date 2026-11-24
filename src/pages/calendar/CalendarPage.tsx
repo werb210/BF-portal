@@ -269,6 +269,10 @@ function CalendarContent() {
           .rbc-header, .rbc-time-header-gutter { background: var(--ui-surface-strong) !important; color: var(--ui-text-soft) !important; border-color: var(--ui-border) !important; }
           .rbc-time-content > * + * > *, .rbc-timeslot-group, .rbc-day-bg + .rbc-day-bg, .rbc-month-row + .rbc-month-row, .rbc-header + .rbc-header, .rbc-time-content, .rbc-time-header-content { border-color: var(--ui-border) !important; }
           .rbc-today { background: color-mix(in srgb, var(--ui-accent-blue) 14%, transparent) !important; }
+          /* BF_PORTAL_CALENDAR_TODAY_v2 - in Day view the whole grid is "today", so the tint greyed out the entire day;
+             Week view keeps a faint tint and the red now-line marks the time. */
+          .rbc-time-view .rbc-day-slot.rbc-today, .rbc-time-view .rbc-day-bg.rbc-today { background: color-mix(in srgb, var(--ui-accent-blue) 4%, var(--ui-surface-strong)) !important; }
+          .rbc-time-view:not(:has(.rbc-time-header-content .rbc-header + .rbc-header)) .rbc-today { background: var(--ui-surface-strong) !important; }
           .rbc-label { color: var(--ui-text-muted) !important; }
           .rbc-current-time-indicator { background: var(--ui-accent-blue) !important; }
           .rbc-event, .rbc-day-slot .rbc-event { background: var(--ui-accent-blue) !important; color: #fff !important; border: none !important; }
