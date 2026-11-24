@@ -199,7 +199,8 @@ export default function ApplicationTab({ app, onMutated, readOnly }: { app: BIAp
         <h3 className="font-semibold mb-2">Business</h3>
         <Field label="Legal name" value={pick("q15_business_legal_name", "business_name") || "—"} />
         <Field label="Operating address" value={formatAddress(pickRaw("q17_business_operating_address", "business_address"))} />
-        <Field label="Province" value={pick("q_business_province", "business_province") || "—"} />
+        {/* BF_PORTAL_BI_US_LABELS_v1 - a US file has a state, not a province */}
+        <Field label={/^(us|usa|united states)$/i.test(String(pick("q0_country", "country") || "")) ? "State" : "Province"} value={pick("q_business_province", "business_province") || "—"} />
         <Field label="NAICS" value={pick("q25_naics_code", "naics_code") || "—"} />
         <Field label="Formation date" value={fmtDate(pick("q26_formation_date", "formation_date"))} />
       </section>
