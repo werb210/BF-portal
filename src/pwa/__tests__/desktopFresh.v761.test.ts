@@ -12,7 +12,7 @@ describe("the desktop app always shows the live portal", () => {
     expect(main).not.toContain('storages: ["cookies"');
   });
   it("ships as a new version so Windows updates itself", () => {
-    expect(JSON.parse(readFileSync("desktop/package.json", "utf8")).version).toBe("1.0.1");
+    expect(JSON.parse(readFileSync("desktop/package.json", "utf8")).version).toBe("1.0.2");
   });
   it("does not install an offline cache inside the desktop app, and removes an old one", async () => {
     const unregister = vi.fn(async () => true);

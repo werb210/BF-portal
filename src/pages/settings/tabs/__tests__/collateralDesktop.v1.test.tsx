@@ -9,6 +9,7 @@ vi.mock("@/api", () => {
   fn.delete = vi.fn(async () => ({}));
   return { api: fn, default: fn };
 });
+vi.mock("@/components/applications/PdfPages", () => ({ default: () => <div data-testid="pdf-pages" /> }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1", role: "Staff" } }) }));
 
 import CollateralSettings, { isDesktopShell } from "../CollateralSettings";
@@ -26,7 +27,7 @@ describe("collateral in the desktop app", () => {
     render(<CollateralSettings />);
     fireEvent.click(await screen.findByTestId("collateral-view"));
     expect(await screen.findByTestId("collateral-viewer")).toBeInTheDocument();
-    expect(screen.getByTitle("Lender Guide")).toHaveAttribute("src", "blob:https://staff.boreal.financial/x");
+    expect(screen.getByTestId("pdf-pages")).toBeInTheDocument();
     expect(open).not.toHaveBeenCalled();
   });
 });

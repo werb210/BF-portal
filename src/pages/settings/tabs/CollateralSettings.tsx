@@ -9,10 +9,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/utils/errors";
 import { getAuthToken } from "@/lib/authToken";
 import { API_BASE } from "@/config/api";
+import PdfPages from "@/components/applications/PdfPages";
 
 // BF_PORTAL_v_COLLATERAL_VIEW_DOWNLOAD - View opens the PDF in a new tab; Download saves it.
 // BF_PORTAL_DESKTOP_COLLATERAL_v1 - the desktop app (Electron) refuses blank pop-up tabs and blob: pages, so View and
-// Download did nothing there. In the app the PDF opens in a viewer inside the portal instead.
+// Download did nothing there. In the app the PDF is drawn page by page (PdfPages) in a viewer inside the portal.
 export const isDesktopShell = () => typeof window !== "undefined" && !!(window as any).borealDesktop;
 export async function collateralBlob(id: string, fetchImpl: typeof fetch = fetch): Promise<Blob> {
   const token = getAuthToken();
@@ -42,7 +43,7 @@ export default function CollateralSettings() {
   const [uploading, setUploading] = useState(false);
   const [name, setName] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const [viewer, setViewer] = useState<{ url: string; name: string } | null>(null);
+  const [viewer, setViewer] = useState<{ url: string; name: string; blob: Blob } | null>(null);
   const closeViewer = () => { if (viewer) URL.revokeObjectURL(viewer.url); setViewer(null); };
 
   const load = useCallback(() => {
@@ -95,9 +96,10 @@ export default function CollateralSettings() {
     const win = download || desktop ? null : window.open("", "_blank");
     try {
       const blob = await collateralBlob(a.id);
-      const url = URL.createObjectURL(blob.type ? blob : new Blob([blob], { type: "application/pdf" }));
+      const pdf = blob.type ? blob : new Blob([blob], { type: "application/pdf" });
+      const url = URL.createObjectURL(pdf);
       if (desktop && !download) {
-        setViewer({ url, name: a.name });
+        setViewer({ url, name: a.name, blob: pdf });
         return;
       }
       if (download) {
@@ -150,7 +152,9 @@ export default function CollateralSettings() {
               <button type="button" onClick={closeViewer}
                 style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", cursor: "pointer", fontSize: 13 }}>Close</button>
             </div>
-            <iframe title={viewer.name} src={viewer.url} style={{ flex: 1, border: 0, width: "100%" }} />
+            <div title={viewer.name} data-testid="collateral-viewer-pages" style={{ flex: 1, overflow: "auto", background: "#e5e7eb" }}>
+              <PdfPages blob={viewer.blob} fitKey="full" />
+            </div>
           </div>
         </div>
       )}
