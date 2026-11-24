@@ -264,7 +264,7 @@ export default function SharedContactsPanel() {
                   <td style={td}>{(Object.entries(p.brands ?? {}) as Array<[Brand, BrandState]>).map(([b, s]) => <Chip key={b} brand={b} state={s} />)}</td>
                 </tr>
               ))}
-              {data && data.people.length === 0 && <tr><td style={td} colSpan={5}>No one matches. Clear a filter or import a list.</td></tr>}
+              {data && (data.people ?? []).length === 0 && <tr><td style={td} colSpan={5}>No one matches. Clear a filter or import a list.</td></tr>}
             </tbody>
           </table>
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, fontSize: 13, color: "var(--ui-text-muted)" }}>
