@@ -3,7 +3,7 @@
 // BF_PORTAL_BLOCK_v656_BI_APPLICATION_RENDER_v1 — address formatting +
 // carrier-eligibility fallback removal.
 // Renders the Purbeck-aligned application fields with legacy-column fallback.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DeclarationsCard } from "./DeclarationsCard";
 import { CoGuarantorList } from "./CoGuarantorList";
 
@@ -77,6 +77,21 @@ function formatAddress(v: unknown): string {
   const tail = [province, postal].filter(Boolean).join(" ");
   if (tail) parts.push(tail);
   return parts.length ? parts.join(", ") : "—";
+}
+
+// BF_PORTAL_BI_GOVID_MASK_v1 - the guarantor's government ID number shows only its last 4 until staff choose Show.
+export function maskId(v: string): string {
+  const t = String(v ?? "").trim();
+  return t.length <= 4 ? "••••" : "•".repeat(Math.min(8, t.length - 4)) + t.slice(-4);
+}
+function MaskedId({ value }: { value: string }) {
+  const [shown, setShown] = useState(false);
+  return (
+    <span>
+      {shown ? value : maskId(value)}{" "}
+      <button type="button" className="text-xs underline text-gray-500" onClick={() => setShown((s) => !s)}>{shown ? "Hide" : "Show"}</button>
+    </span>
+  );
 }
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -177,7 +192,7 @@ export default function ApplicationTab({ app, onMutated, readOnly }: { app: BIAp
         <Field label="Email" value={pick("guarantor_email") || "—"} />
         <Field label="Phone" value={pick("guarantor_phone") || "—"} />
         <Field label="Gov ID type" value={pick("q_ca_id_type") || <span className="text-amber-600">Not collected yet</span>} />
-        <Field label="Gov ID number" value={pick("q_ca_id_number") || <span className="text-amber-600">Not collected yet</span>} />
+        <Field label="Gov ID number" value={pick("q_ca_id_number") ? <MaskedId value={String(pick("q_ca_id_number"))} /> : <span className="text-amber-600">Not collected yet</span>} />
       </section>
 
       <section>
