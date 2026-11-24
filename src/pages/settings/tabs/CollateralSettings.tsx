@@ -11,6 +11,9 @@ import { getAuthToken } from "@/lib/authToken";
 import { API_BASE } from "@/config/api";
 
 // BF_PORTAL_v_COLLATERAL_VIEW_DOWNLOAD - View opens the PDF in a new tab; Download saves it.
+// BF_PORTAL_DESKTOP_COLLATERAL_v1 - the desktop app (Electron) refuses blank pop-up tabs and blob: pages, so View and
+// Download did nothing there. In the app the PDF opens in a viewer inside the portal instead.
+export const isDesktopShell = () => typeof window !== "undefined" && !!(window as any).borealDesktop;
 export async function collateralBlob(id: string, fetchImpl: typeof fetch = fetch): Promise<Blob> {
   const token = getAuthToken();
   const r = await fetchImpl(`${String(API_BASE).replace(/\/+$/, "")}/api/collateral/${encodeURIComponent(id)}/file`, {
@@ -39,6 +42,8 @@ export default function CollateralSettings() {
   const [uploading, setUploading] = useState(false);
   const [name, setName] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const [viewer, setViewer] = useState<{ url: string; name: string } | null>(null);
+  const closeViewer = () => { if (viewer) URL.revokeObjectURL(viewer.url); setViewer(null); };
 
   const load = useCallback(() => {
     api
@@ -86,10 +91,15 @@ export default function CollateralSettings() {
   async function openFile(a: CollateralAsset, download: boolean) {
     setError(null);
     // Open the tab first so Safari/iPad does not block it as a pop-up.
-    const win = download ? null : window.open("", "_blank");
+    const desktop = isDesktopShell();
+    const win = download || desktop ? null : window.open("", "_blank");
     try {
       const blob = await collateralBlob(a.id);
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob.type ? blob : new Blob([blob], { type: "application/pdf" }));
+      if (desktop && !download) {
+        setViewer({ url, name: a.name });
+        return;
+      }
       if (download) {
         const link = document.createElement("a");
         link.href = url;
@@ -128,6 +138,22 @@ export default function CollateralSettings() {
       </p>
 
       {error && <div style={{ color: "#b00020", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+
+      {viewer && (
+        <div role="dialog" aria-label={`Viewing ${viewer.name}`} data-testid="collateral-viewer"
+          style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "var(--ui-surface-strong, #fff)", borderRadius: 10, width: "min(1000px, 100%)", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--ui-border)" }}>
+              <strong style={{ flex: 1, fontSize: 14 }}>{viewer.name}</strong>
+              <a href={viewer.url} download={/\.pdf$/i.test(viewer.name) ? viewer.name : `${viewer.name}.pdf`}
+                style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, fontSize: 13, textDecoration: "none", color: "inherit" }}>Download</a>
+              <button type="button" onClick={closeViewer}
+                style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", cursor: "pointer", fontSize: 13 }}>Close</button>
+            </div>
+            <iframe title={viewer.name} src={viewer.url} style={{ flex: 1, border: 0, width: "100%" }} />
+          </div>
+        </div>
+      )}
 
       {isAdmin && (
         <div style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: 16, marginBottom: 16, display: "flex", flexDirection: "column", gap: 10 }}>

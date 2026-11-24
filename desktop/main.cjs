@@ -51,6 +51,13 @@ function isPortalUrl(url) {
   try { return new URL(url).origin === APP_ORIGIN; } catch { return false; }
 }
 
+// BF_PORTAL_DESKTOP_FILES_v1 - files the portal opens itself (a PDF it fetched, a blank tab it fills) stay in the app.
+function isPortalFileUrl(url) {
+  if (url === "about:blank" || url === "") return true;
+  if (url.startsWith("blob:")) { try { return new URL(url.slice(5)).origin === APP_ORIGIN; } catch { return false; } }
+  return false;
+}
+
 function isSignInUrl(url) {
   try { return SIGN_IN_HOSTS.has(new URL(url).hostname); } catch { return false; }
 }
@@ -87,13 +94,13 @@ function createWindow(startHidden = false) {
 
   // Microsoft sign-in opens a popup; everything else belongs in the browser.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (isPortalUrl(url) || isSignInUrl(url)) return { action: "allow" };
+    if (isPortalUrl(url) || isSignInUrl(url) || isPortalFileUrl(url)) return { action: "allow" };
     void shell.openExternal(url);
     return { action: "deny" };
   });
 
   mainWindow.webContents.on("will-navigate", (event, url) => {
-    if (isPortalUrl(url) || isSignInUrl(url)) return;
+    if (isPortalUrl(url) || isSignInUrl(url) || isPortalFileUrl(url)) return;
     event.preventDefault();
     void shell.openExternal(url);
   });
@@ -114,6 +121,12 @@ app.whenReady().then(() => {
     } catch { /* older Electron or no camera/mic subsystem: the portal still shows the mic error in the dialler */ }
   }
   // The dialer needs the microphone; nothing outside the portal gets anything.
+  // BF_PORTAL_DESKTOP_FILES_v1 - downloads ask where to save, like a browser.
+  session.defaultSession.on("will-download", (_event, item) => {
+    const { dialog } = require("electron");
+    const target = dialog.showSaveDialogSync({ defaultPath: path.join(app.getPath("downloads"), item.getFilename() || "download.pdf") });
+    if (target) item.setSavePath(target); else item.cancel();
+  });
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback) => {
     callback(isPortalUrl(contents.getURL()) && GRANTED_PERMISSIONS.has(permission));
   });
