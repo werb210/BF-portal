@@ -16,6 +16,11 @@ const PLACEHOLDER_RE = /application started|^\s*unknown\s*$/i;
 export const isPlaceholderName = (name: unknown) => !String(name ?? "").trim() || PLACEHOLDER_RE.test(String(name ?? ""));
 import { dialog, overlay, plainBtn, primaryBtn } from "./CrmTags";
 import { confirmAction } from "@/lib/confirmAction";
+import { listStaffUsers } from "@/api/sharedShell";
+
+const OWNER_KEYS = new Set(["outreach_owner_id", "owner_id", "owner_user_id", "assigned_to"]);
+export const shownValue = (key: string, display: string | null | undefined, staff: Record<string, string>) =>
+  display != null && OWNER_KEYS.has(key) ? (staff[display] ?? "Unknown user") : display ?? null;
 
 const noun = (entity: CrmEntity, n: number) => (entity === "contact" ? (n === 1 ? "contact" : "contacts") : n === 1 ? "company" : "companies");
 const path = (entity: CrmEntity) => (entity === "contact" ? "contacts" : "companies");
@@ -106,6 +111,22 @@ export function CrmMergeDialog({ backend, entity, ids, preferredId, onClose, onM
   const [included, setIncluded] = useState<Set<string>>(new Set(ids));
   const [choice, setChoice] = useState<Record<string, string | null>>({});
   const [busy, setBusy] = useState(false);
+  // BF_PORTAL_MERGE_OWNER_NAME_v1 - owner fields hold a staff user id; show the person's name.
+  const [staff, setStaff] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let alive = true;
+    listStaffUsers()
+      .then((list) => {
+        if (!alive) return;
+        const m: Record<string, string> = {};
+        for (const u of list as Array<{ id?: string; first_name?: string; last_name?: string; name?: string; email?: string }>) {
+          if (u?.id) m[String(u.id)] = `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim() || u.name || u.email || String(u.id);
+        }
+        setStaff(m);
+      })
+      .catch(() => { /* names are optional */ });
+    return () => { alive = false; };
+  }, []);
   useEffect(() => {
     let alive = true;
     crmUnified(backend).mergePreview(entity, ids)
@@ -198,7 +219,7 @@ export function CrmMergeDialog({ backend, entity, ids, preferredId, onClose, onM
                         <label style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
                           <input type="radio" name={`f-${f.key}`} disabled={!included.has(v.id)} checked={value(f.key) === v.value}
                             onChange={() => setChoice((c) => ({ ...c, [f.key]: v.value }))} />
-                          <span style={{ wordBreak: "break-word" }}>{v.display ?? <span style={{ color: "var(--ui-text-muted)" }}>(empty)</span>}</span>
+                          <span style={{ wordBreak: "break-word" }}>{shownValue(f.key, v.display, staff) ?? <span style={{ color: "var(--ui-text-muted)" }}>(empty)</span>}</span>
                         </label>
                       </td>
                     ))}
