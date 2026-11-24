@@ -216,7 +216,7 @@ describe("settings", () => {
     fireEvent.change(screen.getByLabelText("Send from"), { target: { value: "08:00" } });
     expect(settings.quietHours).toEqual({ enabled: true, start: "08:00", end: "20:00", tz: "America/Edmonton" });
     expect(screen.queryByLabelText("Silo")).toBeNull();
-    expect(screen.getByTestId("workflow-silo")).toHaveTextContent("BI - Boreal Insurance");
+    expect(screen.getByTestId("workflow-silo")).toHaveTextContent("BI - Boreal Risk Management");
   });
 });
 

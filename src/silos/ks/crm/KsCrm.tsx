@@ -18,6 +18,7 @@ import TasksPage from "@/pages/tasks/TasksPage";
 import { KsSharedInbox } from "@/pages/communications/CommunicationsPage"; // BF_PORTAL_v895_KS_INBOX
 import { KS_ACCENT, canUseKeystone } from "../ksAccess";
 import KsPipeline from "./KsPipeline";
+import KsSettings from "./KsSettings"; // BF_PORTAL_KS_SIGNATURES_v1
 import KsSupport from "../support/KsSupport"; // BF_PORTAL_v853_KS_PHONE_SUPPORT
 import StartDemoButton from "../StartDemoButton"; // BF_PORTAL_v853_KS_PHONE_SUPPORT
 
@@ -81,6 +82,7 @@ export default function KsCrm() {
           <Route path="pipeline" element={<KsPipeline />} />
           <Route path="tasks" element={<TasksPage />} />
           <Route path="inbox" element={<KsSharedInbox />} />{/* BF_PORTAL_v895_KS_INBOX */}
+          <Route path="settings" element={<KsSettings />} />{/* BF_PORTAL_KS_SIGNATURES_v1 */}
           <Route path="support/*" element={<KsSupport />} />{/* BF_PORTAL_v853_KS_PHONE_SUPPORT */}
           <Route path="*" element={<Navigate to="contacts" replace />} />
         </Routes>

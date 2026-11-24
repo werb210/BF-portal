@@ -24,6 +24,7 @@ import SignatureBuilder from "@/components/signature/SignatureBuilder"; // BF_PO
 import { SILO_BRANDS, type SignatureFields } from "@/components/signature/signatureHtml"; // BF_PORTAL_v864_SIGNATURE_BUILDER
 import SiloContext from "@/context/SiloContext"; // BF_PORTAL_v864_SIGNATURE_BUILDER
 import { registerExistingPushPermission } from "@/hooks/usePushRegistration";
+import { isKsCrmPage } from "@/config/api"; // BF_PORTAL_KS_SIGNATURES_v1
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_DIMENSION = 256;
@@ -718,7 +719,8 @@ const ProfileSettings = () => {
 // (else the business's default logo), its colour and website, for the business (silo) in use.
 export function useSignatureBrand(): Partial<SignatureFields> {
   const silo = useContext(SiloContext)?.silo; // no provider (tests, sign-in) -> Boreal Financial
-  const key = String(silo ?? "BF").toUpperCase();
+  // BF_PORTAL_KS_SIGNATURES_v1 - Keystone pages (/silo/ks/crm/*) sign as Keystone whatever the topbar silo is.
+  const key = isKsCrmPage() ? "KS" : String(silo ?? "BF").toUpperCase();
   const base = SILO_BRANDS[key] ?? SILO_BRANDS.BF ?? { company: "", color: "#1E3A8A", website: "", logoUrl: "" };
   const [logoUrl, setLogoUrl] = useState<string>("");
   useEffect(() => {
@@ -732,14 +734,15 @@ export function useSignatureBrand(): Partial<SignatureFields> {
     company: base.company,
     color: base.color,
     website: base.website,
-    logoUrl: /^https:\/\//i.test(logoUrl) ? logoUrl : base.logoUrl,
-  }), [base, logoUrl]);
+    // The uploaded brand logo is Boreal Financial's; other businesses keep their own.
+    logoUrl: key === "BF" && /^https:\/\//i.test(logoUrl) ? logoUrl : base.logoUrl,
+  }), [base, logoUrl, key]);
 }
 
 // BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — minimal email-signature editor.
 // BF_PORTAL_v864_SIGNATURE_BUILDER - now a builder (brand logo + colour, your details, live preview) that writes
 // email-safe table HTML; pasting your own HTML is the advanced option.
-function EmailSignaturePanel() {
+export function EmailSignaturePanel() {
   const [html, setHtml] = useState<string>("");
   const [draft, setDraft] = useState<string>("");
   const [bookingUrl, setBookingUrl] = useState<string>("");

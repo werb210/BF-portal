@@ -1,5 +1,6 @@
 // BF_PORTAL_BLOCK_v664_BI_COMPANIES_BULK
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
+import { formatDateTimeShort } from "@/utils/labels";
 import { Link } from "react-router-dom";
 import { api, apiGetEnvelope } from "@/api";
 import { importBiCompaniesToBfLenders, listStaffUsers } from "@/api/sharedShell"; // BF_PORTAL_v789_SHARED_SHELL
@@ -248,7 +249,7 @@ export default function BICompaniesList({ onUnfilteredTotal }: { onUnfilteredTot
       {!hiddenCols.has("contacts") && <td style={tdStyle}>{r.contact_count ?? 0}</td>}
       {!hiddenCols.has("location") && <td style={tdStyle}>{[r.city, r.province].filter(Boolean).join(", ") || "—"}</td>}
       {!hiddenCols.has("owner") && <td style={tdStyle}>{ownerName(r.owner_id)}</td>}
-      <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
+      <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>{formatDateTimeShort(r.created_at)}</td>
     </tr>
   )), [rows, isAdmin, selected, ownerName, hiddenCols, tagCatalogue]); // BF_PORTAL_v856_CRM_UNIFY
 

@@ -12,7 +12,7 @@ const panel: React.CSSProperties = { maxWidth: 760, margin: "0 auto", padding: 2
 const section: React.CSSProperties = { background: "var(--ui-surface-strong)", border: "1px solid var(--ui-border)", borderRadius: 8, padding: 16, marginBottom: 16 };
 const h3: React.CSSProperties = { margin: "0 0 10px", fontSize: 15 };
 
-const SILO_NAME: Record<Silo, string> = { BF: "BF - Boreal Financial", BI: "BI - Boreal Insurance", SLF: "SLF" };
+const SILO_NAME: Record<Silo, string> = { BF: "BF - Boreal Financial", BI: "BI - Boreal Risk Management", SLF: "SLF" };
 
 export function SettingsTab({ catalog, silo, settings, goal, onChange, readOnly = false }: { catalog: Catalog; silo: Silo; settings: Settings; goal: Goal; onChange: (change: { settings?: Settings; goal?: Goal }) => void; readOnly?: boolean }) {
   const set = (change: Partial<Settings>) => onChange({ settings: { ...settings, ...change } });

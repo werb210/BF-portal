@@ -258,7 +258,7 @@ export default function BIContactsList({ onUnfilteredTotal }: { onUnfilteredTota
       {!hiddenCols.has("lead_status") && <td style={tdStyle}>{r.outreach_status ? humanizeCode(r.outreach_status) : "New"}</td>}{/* BF_PORTAL_CRM_CONSISTENCY_v1 - "Contacted", like Financial's "New" */}
       {!hiddenCols.has("owner_name") && <td style={tdStyle}>{ownerName(r.outreach_owner_id)}</td>}
       {!hiddenCols.has("marketing_contact") && <td style={tdStyle} data-testid="marketing-cell">{r.marketing_contact === false ? "No" : "Yes"}</td>}
-      <td style={tdStyle}>{formatDateTimeShort(r.created_at)}</td>{/* BF_PORTAL_CRM_CONSISTENCY_v1 - same date format as Financial */}
+      <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>{formatDateTimeShort(r.created_at)}</td>{/* BF_PORTAL_CRM_CONSISTENCY_v1 - same date format as Financial */}
     </tr>
   )), [rows, isAdmin, selected, ownerName, hiddenCols, tagCatalogue, leadScores]); // BF_PORTAL_v856_CRM_UNIFY
 

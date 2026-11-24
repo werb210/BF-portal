@@ -14,7 +14,7 @@ import {
 
 const unitLabels: Record<BusinessUnit, { short: string; full: string }> = {
   BF: { short: "Financial", full: "Boreal Financial" },
-  BI: { short: "Insurance", full: "Boreal Insurance" },
+  BI: { short: "Insurance", full: "Boreal Risk Management" },
   SLF: { short: "SLF", full: "Site Level Financial" },
 };
 

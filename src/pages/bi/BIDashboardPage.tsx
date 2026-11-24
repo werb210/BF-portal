@@ -16,7 +16,7 @@ const BIDashboardPage = () => {
   return (
     <div className="space-y-2">
       <h1 className="text-2xl font-semibold">BI Dashboard</h1>
-      <p className="text-sm text-text-secondary">Boreal Insurance staff dashboard.</p>
+      <p className="text-sm text-text-secondary">Boreal Risk Management staff dashboard.</p>
     </div>
   );
 };

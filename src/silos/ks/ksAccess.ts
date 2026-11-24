@@ -60,6 +60,8 @@ export const KS_NAV = [
   { label: "Tasks", path: "/silo/ks/crm/tasks", roles: ["Admin", "Staff", "Marketing"] },
   // BF_PORTAL_v853_KS_PHONE_SUPPORT - support tickets from the Keystone support line, KS-Ops in-app help and staff
   { label: "Support", path: "/silo/ks/crm/support", roles: ["Admin", "Staff", "Marketing"] },
+  // BF_PORTAL_KS_SIGNATURES_v1 - Keystone email signatures (personal + shared mailboxes)
+  { label: "Settings", path: "/silo/ks/crm/settings", roles: ["Admin", "Staff", "Marketing"] },
 ];
 
 /** The Keystone sidebar for this user: everything for Admins, the CRM links for KS-enabled staff. */

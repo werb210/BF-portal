@@ -30,7 +30,7 @@ export default function BISilo() {
     <div className="min-h-screen bg-brand-bg bi-root">
       {/* BF_PORTAL_BI_NO_DOUBLE_HEADING_v1 - each BI page has its own heading; the extra "Boreal Insurance — Portal"
           band above it repeated the silo name and pushed every page down. */}
-      <main className="max-w-7xl mx-auto px-6 py-6 md:py-8">
+      <main className="w-full px-6 py-6 md:py-8">{/* BF_PORTAL_BI_FULL_WIDTH_v1 - full width like BF */}
         <Routes>
           {/* BF_PORTAL_BLOCK_v200_LIVE_TEST_FIXES_v1 */}
           <Route index element={<Navigate to="dashboard" replace />} />
