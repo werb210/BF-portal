@@ -21,6 +21,7 @@ beforeEach(() => {
     if (url === "/api/v1/bi/flows" && !init?.method) return { flows };
     if (url === "/api/v1/bi/flows/presets") return { presets: [{ key: "lender_us", name: "Lenders - United States" }, { key: "lender_ca", name: "Lenders - Canada" }] };
     if (url === "/api/v1/bi/flows/f1" && !init?.method) return { emails: EMAILS, not_yet_added: 7 };
+    if (url === "/api/v1/bi/flows/collateral") return { items: [{ id: "11111111-1111-4111-8111-111111111111", name: "BI - US - SBA - 1 Pager", size_bytes: 1 }] };
     if (url === "/api/v1/bi/flows/f1/start") { flows = [{ ...FLOW, status: "active" }]; return { ok: true }; }
     return { ok: true, id: "f2", added: 7, sent: 7 };
   });
@@ -63,5 +64,15 @@ describe("the Flows tab", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Start" }));
     expect(await screen.findByText("Running")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+  });
+
+  it("attaches a collateral PDF to an email and saves it", async () => {
+    render(<FlowsTab />);
+    fireEvent.click(await screen.findByRole("button", { name: "Emails and people" }));
+    fireEvent.click(await screen.findByLabelText("BI - US - SBA - 1 Pager"));
+    fireEvent.click(screen.getByRole("button", { name: "Save emails" }));
+    await waitFor(() => expect(calls()).toContain("PATCH /api/v1/bi/flows/f1"));
+    const saved = JSON.parse(String((h.api.mock.calls.find((c) => (c[1] as any)?.method === "PATCH")![1] as any).body));
+    expect(saved.emails.e1.attachments).toEqual(["11111111-1111-4111-8111-111111111111"]);
   });
 });
