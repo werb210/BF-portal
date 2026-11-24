@@ -70,7 +70,21 @@ type FunnelStep = {
 type AdsRow = { name: string; status?: string; cost: number; impressions: number; clicks: number; ctr: number; cpc: number; conversions: number; convValue: number };
 type AdsReport = { configured: boolean; days?: number; cached?: boolean; error?: string; totals?: { cost: number; impressions: number; clicks: number; conversions: number; convValue: number; cpa: number; roas: number }; campaigns?: AdsRow[]; keywords?: AdsRow[]; searchTerms?: AdsRow[] };
 const money = (n: number) => `$${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-function AdsTable({ title, rows }: { title: string; rows: AdsRow[] }) {
+// BF_PORTAL_ADS_KEYWORD_ROLLUP_v1 - Google lists one row per keyword per match type and ad group, so the same words
+// showed several times ("business loans" x3). Same words are one row, totals added up.
+function rollUpAdsRows(rows: AdsRow[]): AdsRow[] {
+  const by = new Map<string, AdsRow>();
+  for (const r of rows ?? []) {
+    const key = String(r.name ?? "").trim().toLowerCase().replace(/[\[\]"+]/g, "").replace(/\s+/g, " ");
+    const prev = by.get(key);
+    if (prev) by.set(key, { ...prev, cost: Number(prev.cost || 0) + Number(r.cost || 0), clicks: Number(prev.clicks || 0) + Number(r.clicks || 0), conversions: Number(prev.conversions || 0) + Number(r.conversions || 0) });
+    else by.set(key, { ...r, name: String(r.name ?? "").replace(/[\[\]"+]/g, "").trim() });
+  }
+  return Array.from(by.values()).sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0) || Number(b.clicks || 0) - Number(a.clicks || 0));
+}
+
+function AdsTable({ title, rows: rawRows }: { title: string; rows: AdsRow[] }) {
+  const rows = rollUpAdsRows(rawRows);
   if (!rows || rows.length === 0) return null;
   return (
     <div className="mt-3">

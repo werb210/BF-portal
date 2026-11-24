@@ -97,12 +97,36 @@ export function VisitorsPanel() {
 type Dropoff = { totals: { started: number; submitted: number }; steps: Array<{ step: number; stopped: number; from_ad: number }>; reasons: Array<{ reason: string; step: number; count: number; latest: string }>; fields: Array<{ step: string; field: string; count: number }>; timing: Array<{ step: string; avg_ms: number }> };
 const STEP_NAMES: Record<string, string> = { "1": "Financial profile", "2": "Product", "3": "Business", "4": "Applicant", "5": "Documents", "6": "Review & submit" };
 
+// BF_PORTAL_DROPOFF_FIELD_LABELS_v1 - the app reports a field by its id ("step1-lookingFor"), its placeholder
+// ("12-3456789", "$") or just "field"; show a readable name and add up rows that read the same.
+export function fieldLabel(raw: unknown): string {
+  const t = String(raw ?? "").trim();
+  if (/^\d{2}-\d{6,}$/.test(t)) return "Business number";
+  if (!t || t === "field" || t === "-" || /^[\s$%#0-9().+-]*$/.test(t)) return "Unlabelled field";
+  const m = /^step\d+[-_.]?(.+)$/i.exec(t);
+  if (m) {
+    const words = m[1]!.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[-_]+/g, " ").toLowerCase().trim();
+    return words.charAt(0).toUpperCase() + words.slice(1);
+  }
+  return t.length > 80 ? t.slice(0, 77) + "..." : t;
+}
+function mergeFields(rows: Array<{ step?: string | null; field?: string | null; count: number }>) {
+  const by = new Map<string, { step?: string | null; field: string; count: number }>();
+  for (const r of rows ?? []) {
+    const field = fieldLabel(r.field);
+    const key = `${r.step ?? ""}|${field}`;
+    const prev = by.get(key);
+    if (prev) prev.count += Number(r.count) || 0; else by.set(key, { step: r.step, field, count: Number(r.count) || 0 });
+  }
+  return Array.from(by.values()).sort((a, b) => b.count - a.count);
+}
+
 export function DropoffPanel() {
   const [days, setDays] = useState(90);
   const { data, err, loading } = useLoad<Dropoff>("/api/marketing/ads-dropoff?days=" + days);
   const started = data?.totals.started ?? 0;
   return <section style={card} data-testid="ads-dropoff"><div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}><h3 style={{ margin: 0, fontSize: 16, color: "var(--ui-text)" }}>Where applications stop, and why</h3><span style={{ marginLeft: "auto" }}><Days value={days} onChange={setDays} /></span></div>{loading && <p style={muted}>Loading...</p>}{err && <p role="alert" style={{ color: "#b3261e" }}>{err}</p>}
-    {!loading && !err && data && <><div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}><Stat label="Started" value={String(started)} /><Stat label="Submitted" value={String(data.totals.submitted)} /><Stat label="Completion" value={started ? Math.round(data.totals.submitted / started * 100) + "%" : "-"} /></div><Table headers={["Step", "Stopped here", "Of those, from an ad", "Average time on step"]} empty={!data.steps.length && "No unfinished applications in this window."}>{data.steps.map((step) => { const timing = data.timing.find((item) => String(item.step) === String(step.step)); return <tr key={step.step}><td style={td}>{step.step} - {STEP_NAMES[String(step.step)] ?? ""}</td><td style={td}>{step.stopped}</td><td style={td}>{step.from_ad}</td><td style={td}>{duration(timing?.avg_ms)}</td></tr>; })}</Table><h4 style={{ fontSize: 14, color: "var(--ui-text)", margin: "16px 0 8px" }}>Why (when the app knows)</h4><Table headers={["Reason", "Step", "Count", "Latest"]} empty={!data.reasons.length && "No recorded reasons in this window."}>{data.reasons.map((reason, index) => <tr key={index}><td style={td}>{reason.reason.replace(/_/g, " ")}</td><td style={td}>{reason.step}</td><td style={td}>{reason.count}</td><td style={td}>{new Date(reason.latest).toLocaleDateString()}</td></tr>)}</Table><h4 style={{ fontSize: 14, color: "var(--ui-text)", margin: "16px 0 8px" }}>The field they were on when they left</h4><Table headers={["Step", "Field", "Count"]} empty={!data.fields.length && "Field tracking starts with the latest client app; nothing recorded yet."}>{data.fields.map((field, index) => <tr key={index}><td style={td}>{field.step ? field.step + " - " + (STEP_NAMES[field.step] ?? "") : "Website form"}</td><td style={td}>{field.field || "-"}</td><td style={td}>{field.count}</td></tr>)}</Table></>}
+    {!loading && !err && data && <><div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}><Stat label="Started" value={String(started)} /><Stat label="Submitted" value={String(data.totals.submitted)} /><Stat label="Completion" value={started ? Math.round(data.totals.submitted / started * 100) + "%" : "-"} /></div><Table headers={["Step", "Stopped here", "Of those, from an ad", "Average time on step"]} empty={!data.steps.length && "No unfinished applications in this window."}>{data.steps.map((step) => { const timing = data.timing.find((item) => String(item.step) === String(step.step)); return <tr key={step.step}><td style={td}>{step.step} - {STEP_NAMES[String(step.step)] ?? ""}</td><td style={td}>{step.stopped}</td><td style={td}>{step.from_ad}</td><td style={td}>{duration(timing?.avg_ms)}</td></tr>; })}</Table><h4 style={{ fontSize: 14, color: "var(--ui-text)", margin: "16px 0 8px" }}>Why (when the app knows)</h4><Table headers={["Reason", "Step", "Count", "Latest"]} empty={!data.reasons.length && "No recorded reasons in this window."}>{data.reasons.map((reason, index) => <tr key={index}><td style={td}>{reason.reason.replace(/_/g, " ")}</td><td style={td}>{reason.step}</td><td style={td}>{reason.count}</td><td style={td}>{new Date(reason.latest).toLocaleDateString()}</td></tr>)}</Table><h4 style={{ fontSize: 14, color: "var(--ui-text)", margin: "16px 0 8px" }}>The field they were on when they left</h4><Table headers={["Step", "Field", "Count"]} empty={!data.fields.length && "Field tracking starts with the latest client app; nothing recorded yet."}>{mergeFields(data.fields).map((field, index) => <tr key={index}><td style={td}>{field.step ? field.step + " - " + (STEP_NAMES[field.step] ?? "") : "Website form"}</td><td style={td}>{field.field}</td><td style={td}>{field.count}</td></tr>)}</Table></>}
   </section>;
 }
 
