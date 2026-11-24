@@ -98,7 +98,7 @@ describe("BF_PORTAL_APOLLO_OFF_v10", () => {
   it("drops the Apollo tab entirely", () => {
     render(<BIMarketing />);
     const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
-    expect(tabs).toEqual(["Email", "Flows", "Sequences", "Links"]);
+    expect(tabs).toEqual(["Email", "Flows", "Sequences", "Links", "Contacts"]);
     expect(screen.queryByText(/apollo/i)).not.toBeInTheDocument();
   });
 
