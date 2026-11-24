@@ -68,7 +68,7 @@ export default function BiLendersPage() {
         <div>
           <h1 style={{ margin: 0 }}>BI Lenders</h1>
           <small style={{ color: "var(--ui-text-muted, var(--ui-text-muted))" }}>
-            Partner banks that submit PGI applications to Boreal Insurance.
+            Partner banks that submit PGI applications to Boreal Risk Management.
           </small>
         </div>
         <button type="button" onClick={() => setShowForm(!showForm)}>

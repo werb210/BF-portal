@@ -88,7 +88,7 @@ const SILO_NAV: Record<string, NavItem[]> = { BF: BF_NAV, BI: BI_NAV, SLF: SLF_N
 // --accent token (set via data-silo on <html>); BI purple retired.
 const SILO_BRAND: Record<string, { label: string; accent: string }> = {
   BF:  { label: "Boreal Financial",    accent: "var(--accent)" },
-  BI:  { label: "Boreal Insurance",    accent: "var(--accent)" },
+  BI:  { label: "Boreal Risk Management",    accent: "var(--accent)" },
   SLF: { label: "Site Level Finance",  accent: "var(--accent)" },
 };
 

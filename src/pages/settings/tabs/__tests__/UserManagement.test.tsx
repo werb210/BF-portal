@@ -30,7 +30,7 @@ describe("UserManagement", () => {
     expect(await screen.findByRole("option", { name: "Marketing" })).toBeInTheDocument();
 
     const bfCheckbox = screen.getByLabelText("BF — Boreal Financial") as HTMLInputElement;
-    const biCheckbox = screen.getByLabelText("BI — Boreal Insurance") as HTMLInputElement;
+    const biCheckbox = screen.getByLabelText("BI — Boreal Risk Management") as HTMLInputElement;
 
     expect(bfCheckbox.checked).toBe(true);
     expect(biCheckbox.checked).toBe(false);

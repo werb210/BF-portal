@@ -110,7 +110,7 @@ function QueueEditor({ draft, setDraft, setup, onSave, onCancel }: { draft: Draf
       <Field id="cq-silo" label="Callers are for">
         <select id="cq-silo" value={draft.silo} onChange={(e) => set({ silo: e.target.value as Draft["silo"] })} style={input}>
           <option value="BF">Boreal Financial</option>
-          <option value="BI">Boreal Insurance</option>
+          <option value="BI">Boreal Risk Management</option>
         </select>
       </Field>
       <Field id="cq-greeting" label="Greeting (said once)"><textarea id="cq-greeting" rows={2} value={draft.greeting} onChange={(e) => set({ greeting: e.target.value })} style={input} /></Field>
@@ -193,7 +193,7 @@ export default function CallQueuesSettings() {
           {draft && setup ? <QueueEditor draft={draft} setDraft={setDraft} setup={setup} onSave={() => void save()} onCancel={() => setDraft(null)} /> : <>
             {active.map((q) => (
               <div key={q.id} data-testid={`queue-${q.id}`} style={{ borderTop: "1px solid var(--ui-border)", padding: "8px 0" }}>
-                <strong>{q.name}</strong> <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{q.silo === "BI" ? "Boreal Insurance" : "Boreal Financial"}, {q.member_ids.length} {q.member_ids.length === 1 ? "person" : "people"}, up to {duration(q.max_wait_seconds)} wait</span>
+                <strong>{q.name}</strong> <span style={{ fontSize: 13, color: "var(--ui-text-muted)" }}>{q.silo === "BI" ? "Boreal Risk Management" : "Boreal Financial"}, {q.member_ids.length} {q.member_ids.length === 1 ? "person" : "people"}, up to {duration(q.max_wait_seconds)} wait</span>
                 <div style={{ marginTop: 4 }}>
                   <button type="button" style={quiet} onClick={() => setDraft({ ...q })}>Edit</button>{" "}
                   <button type="button" style={danger} onClick={() => void archive(q)}>Archive</button>
