@@ -26,6 +26,7 @@ export const CROSS_SILO_ALLOWLIST: readonly RegExp[] = [
   /^\/api\/auth(\/|\?|$)/, // the signed-in user's home silo
   /^\/api\/users(\/|\?|$)/, // staff and their silos (user management, /api/users/me)
   /^\/api\/team(\/|\?|$)/, // team chat is shared by every silo
+  /^\/api\/directory(\/|\?|$)/, // BF_PORTAL_SHARED_CONTACTS_v1 - the shared contact list spans every brand
   /^\/api\/reports(\/|\?|$)/, // the report catalogue lists every silo's reports
   /^\/api\/automations(\/|\?|$)/, // workflows are built for any silo from one editor
   /^\/api\/audit(\/|\?|$|-)/, // audit logs

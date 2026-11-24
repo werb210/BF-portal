@@ -18,6 +18,7 @@ import AdsConversionStatus from "@/components/marketing/AdsConversionStatus"; //
 import ChatgptAdsPanel from "@/components/marketing/ChatgptAdsPanel"; // BF_PORTAL_v913_CHATGPT_ADS
 import { AdsStoryPanel, VisitorsPanel, DropoffPanel, AudiencesNote } from "@/components/marketing/GoogleAdsAnalytics"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 import CustomerMatchPanel from "@/components/marketing/CustomerMatchPanel"; // BF_PORTAL_CUSTOMER_MATCH_LISTS_v711
+import SharedContactsPanel from "./SharedContactsPanel"; // BF_PORTAL_SHARED_CONTACTS_v1
 import GoogleHealthPanel from "@/pages/settings/tabs/GoogleHealthPanel"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 import MobileAppsPanel from "./MobileAppsPanel"; // BF_PORTAL_v811_MOBILE_APPS
 import SiloContext from "@/context/SiloContext"; // BF_PORTAL_v811_MOBILE_APPS
@@ -29,7 +30,7 @@ import { confirmAction } from "@/lib/confirmAction";
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
 // data, two different places to look for it. BF now gets the tab too.
-type MarketingTab = "analytics" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads" | "apps" | "report" | "kit" | "scoring" | "social"; // BF_PORTAL_v937_SOCIAL_POSTING - social // BF_PORTAL_v811_MOBILE_APPS - apps // BF_PORTAL_v874_MARKETING_TOOLS - report, kit, scoring
+type MarketingTab = "analytics" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads" | "apps" | "report" | "kit" | "scoring" | "social" | "contacts"; // BF_PORTAL_v937_SOCIAL_POSTING - social // BF_PORTAL_v811_MOBILE_APPS - apps // BF_PORTAL_v874_MARKETING_TOOLS - report, kit, scoring
 // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 // BF_PORTAL_ADS_SERVICES_v709 - "Ads" section: one sub-tab per ad service
 // (Google, Microsoft, LinkedIn); every Google report sits under Google.
@@ -43,6 +44,7 @@ const ADS_TABS: Array<[AdsTab, string]> = [
 
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "analytics", label: "Analytics" },
+  { id: "contacts", label: "Contacts" }, // BF_PORTAL_SHARED_CONTACTS_v1 - brokers, lenders and banks across every brand
   { id: "referrers", label: "Referrers" },
   { id: "sequences", label: "Sequences" },
   { id: "sms", label: "SMS" },
@@ -1443,6 +1445,7 @@ const MarketingDashboard = () => {
   const [tab, setTab] = useState<MarketingTab>(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
     if (t === "report" || t === "social") return t; // BF_PORTAL_v937_SOCIAL_POSTING - ?tab=social (back from a network sign-in) // BF_PORTAL_v874_MARKETING_TOOLS - ?tab=report|kit|scoring
+    if (t === "contacts") return "contacts"; // BF_PORTAL_SHARED_CONTACTS_v1
     return t === "referrers" ? "referrers" : t === "apps" ? "apps" : "analytics"; // BF_PORTAL_v811_MOBILE_APPS - ?tab=apps
   });
   // BF_PORTAL_v811_MOBILE_APPS - the Mobile apps tab is Boreal Financial's client app, so it shows in the BF silo only.
@@ -1513,6 +1516,7 @@ const MarketingDashboard = () => {
       {tab === "sms" && <SmsComposerPanel />}
       {tab === "social" && <SocialPanel />}{/* BF_PORTAL_v937_SOCIAL_POSTING */}
       {tab === "sequences" && <SequencesPanel />}
+      {tab === "contacts" && <SharedContactsPanel />}{/* BF_PORTAL_SHARED_CONTACTS_v1 */}
       {tab === "analytics" && (
         <div className="space-y-4">
           <AnalyticsFunnel />
