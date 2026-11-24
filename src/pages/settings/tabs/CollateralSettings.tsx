@@ -7,6 +7,18 @@ import Button from "@/components/ui/Button";
 import api from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/utils/errors";
+import { getAuthToken } from "@/lib/authToken";
+import { API_BASE } from "@/config/api";
+
+// BF_PORTAL_v_COLLATERAL_VIEW_DOWNLOAD - View opens the PDF in a new tab; Download saves it.
+export async function collateralBlob(id: string, fetchImpl: typeof fetch = fetch): Promise<Blob> {
+  const token = getAuthToken();
+  const r = await fetchImpl(`${String(API_BASE).replace(/\/+$/, "")}/api/collateral/${encodeURIComponent(id)}/file`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!r.ok) throw new Error(r.status === 404 ? "That file is missing." : "Could not open the file.");
+  return r.blob();
+}
 
 type CollateralAsset = {
   id: string;
@@ -71,6 +83,32 @@ export default function CollateralSettings() {
     }
   }
 
+  async function openFile(a: CollateralAsset, download: boolean) {
+    setError(null);
+    // Open the tab first so Safari/iPad does not block it as a pop-up.
+    const win = download ? null : window.open("", "_blank");
+    try {
+      const blob = await collateralBlob(a.id);
+      const url = URL.createObjectURL(blob);
+      if (download) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = /\.pdf$/i.test(a.name) ? a.name : `${a.name}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } else if (win) {
+        win.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      win?.close();
+      setError(getErrorMessage(e, "Could not open the file."));
+    }
+  }
+
   async function remove(id: string) {
     setError(null);
     try {
@@ -131,6 +169,15 @@ export default function CollateralSettings() {
                     <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>· {Math.round(a.size_bytes / 1024)} KB</span>
                   )}
                 </span>
+                <span style={{ display: "flex", gap: 8 }}>
+                <button type="button" onClick={() => void openFile(a, false)} data-testid="collateral-view"
+                  style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", cursor: "pointer", fontSize: 13 }}>
+                  View
+                </button>
+                <button type="button" onClick={() => void openFile(a, true)} data-testid="collateral-download"
+                  style={{ padding: "4px 10px", border: "1px solid var(--ui-border)", borderRadius: 6, background: "var(--ui-surface-strong)", cursor: "pointer", fontSize: 13 }}>
+                  Download
+                </button>
                 {isAdmin && (
                   <button
                     type="button"
@@ -140,6 +187,7 @@ export default function CollateralSettings() {
                     Delete
                   </button>
                 )}
+                </span>
               </li>
             ))}
           </ul>
