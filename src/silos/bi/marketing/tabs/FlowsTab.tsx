@@ -12,7 +12,9 @@ export type Flow = {
   people: number; waiting: number; emailed: number; not_opened: number; opened: number; clicked: number; stopped: number; emails_sent: number;
 };
 type Preset = { key: string; name: string };
-type FlowEmail = { key: string; label: string; subject: string; body: string };
+type FlowEmail = { key: string; label: string; subject: string; body: string; attachments?: string[] };
+// BI_PORTAL_FLOW_ATTACHMENTS_v1 - collateral PDFs (Settings > Content > Collateral) a flow email can carry.
+type CollateralFile = { id: string; name: string; size_bytes: number | null };
 type Staff = { id: string; name: string };
 
 const BTN = "rounded border border-card px-3 py-1 text-sm text-white/80 hover:text-white disabled:opacity-50";
@@ -39,6 +41,7 @@ export default function FlowsTab() {
   const [emails, setEmails] = useState<FlowEmail[]>([]);
   const [notAdded, setNotAdded] = useState(0);
   const [testTo, setTestTo] = useState("");
+  const [collateral, setCollateral] = useState<CollateralFile[]>([]);
 
   async function load() {
     try {
@@ -71,9 +74,11 @@ export default function FlowsTab() {
     setOpen(flow.id); setEmails([]);
     try { const r: any = await api<any>(`/api/v1/bi/flows/${flow.id}`); setEmails(r?.emails ?? []); setNotAdded(Number(r?.not_yet_added ?? 0)); }
     catch (e) { setError(failure(e, "Could not open the flow.")); }
+    try { const c: any = await api<any>("/api/v1/bi/flows/collateral"); setCollateral(Array.isArray(c?.items) ? c.items : []); }
+    catch { setCollateral([]); /* the PDFs list is optional; the emails still open */ }
   }
   const saveEmails = (flow: Flow) => run(`save:${flow.id}`, async () => {
-    await api<any>(`/api/v1/bi/flows/${flow.id}`, { method: "PATCH", body: JSON.stringify({ emails: Object.fromEntries(emails.map((e) => [e.key, { subject: e.subject, body: e.body }])) }) });
+    await api<any>(`/api/v1/bi/flows/${flow.id}`, { method: "PATCH", body: JSON.stringify({ emails: Object.fromEntries(emails.map((e) => [e.key, { subject: e.subject, body: e.body, attachments: e.attachments ?? [] }])) }) });
     return "Emails saved.";
   });
   const addPeople = (flow: Flow) => run(`add:${flow.id}`, async () => {
@@ -138,6 +143,17 @@ export default function FlowsTab() {
               note="Merge fields: {{first_name}}, {{company}}, {{link}} (this audience's page), {{booking_link}} (the team calendar)."
             />
           </div>
+          {collateral.length > 0 && <fieldset className="mt-2 text-xs text-white/80" data-testid={`attach-${e.key}`}>
+            <legend className="mb-1">Attach PDFs (up to 3)</legend>
+            {collateral.map((c) => {
+              const on = (e.attachments ?? []).includes(c.id);
+              return <label key={c.id} className="mr-4 inline-flex items-center gap-1">
+                <input type="checkbox" checked={on} disabled={!on && (e.attachments ?? []).length >= 3}
+                  onChange={() => setEmails((all) => all.map((x, j) => (j === i ? { ...x, attachments: on ? (x.attachments ?? []).filter((id) => id !== c.id) : [...(x.attachments ?? []), c.id] } : x)))} />
+                {c.name}
+              </label>;
+            })}
+          </fieldset>}
         </div>)}
         {emails.length > 0 && <button type="button" className={PRIMARY} disabled={busy !== null} onClick={() => void saveEmails(flow)}>Save emails</button>}
       </div>}
