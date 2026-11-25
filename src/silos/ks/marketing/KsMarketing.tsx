@@ -1,5 +1,5 @@
 // BF_PORTAL_v865_KS_MARKETING - Keystone silo > Marketing: email marketing to prospective licensees (KS-Ops). Tabs:
-// Overview (sender set-up and compliance warnings), Prospects, Templates, Campaigns, Sequences, Suppression list.
+// Overview (sender set-up and compliance warnings), Prospects, Flows, Suppression list.
 // Keystone branding only; the CASL / CAN-SPAM footer and unsubscribe link are added by KS-Ops to every email.
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
@@ -8,8 +8,7 @@ import { KS_ACCENT } from "../ksAccess";
 import { Button, ErrorBox, input, KeyValues, Loading, PageTitle, Section } from "../ksUi";
 import { KS_PLAN_INTEREST, KS_PROSPECT_SOURCES, KS_PROSPECT_STATUSES, mktApi, SOURCE_LABELS, STATUS_LABELS, type SegmentFilters } from "./ksMarketingApi";
 import KsMktProspects, { KsMktProspectDetail } from "./KsMktProspects";
-import KsMktTemplates from "./KsMktTemplates";
-import KsMktCampaigns, { KsMktCampaignDetail } from "./KsMktCampaigns";
+import CrmFlowsPanel from "@/pages/marketing/CrmFlowsPanel"; // BF_PORTAL_CRM_FLOWS_v1
 import KsMktSequences, { KsMktSequenceDetail } from "./KsMktSequences";
 import KsMktSuppressions from "./KsMktSuppressions";
 import KsBrokerages, { KsBrokerageDetail } from "./outreach/KsBrokerages"; // BF_PORTAL_v945_KS_OUTREACH
@@ -26,9 +25,7 @@ const TABS: Array<[string, string]> = [
   ["call-list", "Call list"],
   ["referrals", "Referrals"],
   ["prospects", "Prospects"],
-  ["templates", "Templates"],
-  ["campaigns", "Campaigns"],
-  ["sequences", "Sequences"],
+  ["flows", "Flows"], // BF_PORTAL_CRM_FLOWS_v1 - one email tool (replaces Templates, Campaigns and Sequences)
   ["suppressions", "Suppression list"],
 ];
 
@@ -192,6 +189,17 @@ export function SegmentFilterEditor({ value, onChange, extra }: { value: Segment
   );
 }
 
+function KsFlows() {
+  return (
+    <div style={{ display: "grid", gap: 12 }}>
+      <CrmFlowsPanel silo="KS" />
+      <p style={{ fontSize: 12, color: "var(--ui-text-muted)", margin: 0 }}>
+        The older Keystone prospect emails are <NavLink to={`${KS_MKT_BASE}/sequences`}>here</NavLink>; pause any that are still running once a flow replaces them.
+      </p>
+    </div>
+  );
+}
+
 export default function KsMarketing() {
   return (
     <div data-testid="ks-marketing">
@@ -208,9 +216,10 @@ export default function KsMarketing() {
         <Route path="overview" element={<Overview />} />
         <Route path="prospects" element={<KsMktProspects />} />
         <Route path="prospects/:id" element={<KsMktProspectDetail />} />
-        <Route path="templates" element={<KsMktTemplates />} />
-        <Route path="campaigns" element={<KsMktCampaigns />} />
-        <Route path="campaigns/:id" element={<KsMktCampaignDetail />} />
+        <Route path="flows" element={<KsFlows />} />
+        <Route path="templates" element={<Navigate to="../flows" replace />} />
+        <Route path="campaigns/*" element={<Navigate to="../flows" replace />} />
+        {/* The older Keystone emails (KS-Ops) stay reachable from Flows so anything still running can be paused. */}
         <Route path="sequences" element={<KsMktSequences />} />
         <Route path="sequences/:id" element={<KsMktSequenceDetail />} />
         <Route path="suppressions" element={<KsMktSuppressions />} />

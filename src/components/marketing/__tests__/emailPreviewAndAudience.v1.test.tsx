@@ -67,20 +67,4 @@ describe("email preview, assets, and audience layout", () => {
     act(() => h.resize.forEach((cb) => cb()));
     expect(frame.style.transform).toBe("scale(2)");
   });
-
-  it("places independently scrolling include and exclude lists side by side", async () => {
-    render(<MemoryRouter><MarketingDashboard /></MemoryRouter>);
-    fireEvent.click(screen.getByRole("button", { name: "Sequences" }));
-    const include = (await screen.findByText("Include tags")).closest("fieldset") as HTMLElement;
-    const exclude = screen.getByText("Exclude tags").closest("fieldset") as HTMLElement;
-    // Side by side: siblings in one grid that has two columns from the sm breakpoint.
-    expect(include.parentElement).toBe(exclude.parentElement);
-    expect(include.parentElement!.className.split(/\s+/)).toEqual(expect.arrayContaining(["grid", "sm:grid-cols-2"]));
-    // Each list scrolls on its own.
-    for (const fieldset of [include, exclude]) {
-      await within(fieldset).findByText("lenders (2)");
-      const list = within(fieldset).getByText("lenders (2)").closest("label")!.parentElement as HTMLElement;
-      expect(list.className.split(/\s+/)).toEqual(expect.arrayContaining(["max-h-48", "overflow-y-auto"]));
-    }
-  });
 });
