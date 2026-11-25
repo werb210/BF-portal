@@ -23,6 +23,7 @@ import { CATEGORY_ORDER, CATEGORY_LABELS, CREDIT_SCORE_BANDS, bfBandFromMin, bfM
 import ProductRulesFields, { rulesFormFrom, rulesPayload, type RulesForm } from "./ProductRulesFields"; // BF_PORTAL_v940_LENDER_PRODUCT_RULES
 import RenewalRulesEditor from "@/features/activeContracts/RenewalRulesEditor"; // BF_PORTAL_v864_ACTIVE_CONTRACTS
 import MayaLenderSuggestions from "./components/MayaLenderSuggestions"; // BF_PORTAL_v890_MAYA_LENDER_UPDATES
+import PartnersTabs, { BF_PARTNER_TABS } from "@/pages/partners/PartnersTabs"; // BF_PORTAL_SAME_MENU_v1
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1405,7 +1406,9 @@ export default function LendersPage() {
   }, [queryClient, selected]);
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 80px)", overflow: "hidden" }}>
+    <>
+    <PartnersTabs tabs={BF_PARTNER_TABS} />{/* BF_PORTAL_SAME_MENU_v1 */}
+    <div style={{ display: "flex", height: "calc(100vh - 124px)", overflow: "hidden" }}>
       {/* ── Left panel — lender list ── */}
       <div style={{ width: 440, minWidth: 340, borderRight: "1px solid var(--ui-border)", display: "flex", flexDirection: "column", background: "var(--ui-surface-strong)" }}>
         {/* Header */}
@@ -1564,5 +1567,6 @@ export default function LendersPage() {
         />
       )}
     </div>
+    </>
   );
 }

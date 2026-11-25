@@ -2,7 +2,7 @@
 // ./ksApi; none of them calls BF-Server or sends X-Silo.
 // BF_PORTAL_v850_KS_CRM - /silo/ks/crm/* is the Keystone CRM: the BF CRM screens on BF-Server with X-Silo: KS (no KS-Ops
 // sign-in needed). Admins and KS-enabled staff; the operations screens stay Admin only.
-import { Navigate, Route, Routes, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
 import { canUseKeystone, canUseKeystoneCrm } from "./ksAccess";
@@ -86,9 +86,11 @@ function LicenseeRedirect() { // BF_PORTAL_v916_KS_NAV
 }
 
 function KsOperations() {
+  // BF_PORTAL_SAME_MENU_v1 - full width like BF; Provisioning and Start sales demo sit on the dashboard only.
+  const onDashboard = /\/silo\/ks\/?(dashboard)?\/?$/.test(useLocation().pathname);
   return (
-    <div data-testid="ks-silo" style={{ color: "var(--ui-text)", maxWidth: 1200 }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 8 }}><OpenProvisioningButton /><StartDemoButton compact /></div>{/* BF_PORTAL_v853_KS_PHONE_SUPPORT */}
+    <div data-testid="ks-silo" style={{ color: "var(--ui-text)" }}>
+      {onDashboard && <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 8 }}><OpenProvisioningButton /><StartDemoButton compact /></div>}{/* BF_PORTAL_v853_KS_PHONE_SUPPORT */}
       <KsSignInGate>
         <Routes>
           <Route index element={<Navigate to="dashboard" replace />} />

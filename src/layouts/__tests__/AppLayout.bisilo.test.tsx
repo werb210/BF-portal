@@ -51,7 +51,7 @@ describe("BF_PORTAL_BI_SILO_NAV_v56 -- BI silo nav config", () => {
   it("BI silo Admin sees Pipeline and Lender (singular)", () => {
     renderLayout("BI", "Admin");
     expect(screen.getByRole("link", { name: "Pipeline" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Lenders" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Partners" })).toBeInTheDocument();
   });
 
   it("BI silo Admin does not see Communications or Calendar", () => {
@@ -69,7 +69,7 @@ describe("BF_PORTAL_BI_SILO_NAV_v56 -- BI silo nav config", () => {
   it("BF silo Admin still sees Pipeline + Lenders (BF sidebar unchanged)", () => {
     renderLayout("BF", "Admin");
     expect(screen.getByRole("link", { name: "Pipeline" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Lenders" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Partners" })).toBeInTheDocument();
   });
 });
 
@@ -88,8 +88,8 @@ describe("BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_AND_CONTACT_NAME_v1 -- 6-tab BI na
   it("Lender points at /silo/bi/lender (renamed from Lenders, not legacy /bi-lenders)", () => {
     renderLayout("BI", "Admin");
     expect(
-      screen.getByRole("link", { name: "Lenders" }).getAttribute("href"),
-    ).toBe("/silo/bi/lender");
+      screen.getByRole("link", { name: "Partners" }).getAttribute("href"),
+    ).toBe("/silo/bi/lender"); // BF_PORTAL_SAME_MENU_v1
   });
 
   it("CRM link replaces the old Contacts link, points at /silo/bi/crm", () => {
@@ -106,11 +106,9 @@ describe("BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_AND_CONTACT_NAME_v1 -- 6-tab BI na
     ).toBe("/silo/bi/marketing");
   });
 
-  it("Outreach points at /silo/bi/outreach (Andrew pipeline surface)", () => {
+  it("Outreach is retired from the BI sidebar (BF_PORTAL_SAME_MENU_v1)", () => {
     renderLayout("BI", "Admin");
-    expect(
-      screen.getByRole("link", { name: "Outreach" }).getAttribute("href"),
-    ).toBe("/silo/bi/outreach");
+    expect(screen.queryByRole("link", { name: "Outreach" })).not.toBeInTheDocument();
   });
 
   it("Referrer is NO LONGER in the BI sidebar (moved into Lender sub-tab)", () => {
@@ -118,14 +116,14 @@ describe("BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_AND_CONTACT_NAME_v1 -- 6-tab BI na
     expect(screen.queryByRole("link", { name: "Referrer" })).not.toBeInTheDocument();
   });
 
-  // BF_PORTAL_REPORTS_SECTION_v714 - Reports added to the BI sidebar (reports by silo).
-  it("BI sidebar has exactly 8 items (Dashboard, Pipeline, CRM, Lender, Marketing, Outreach, Reps, Reports)" /* BF_PORTAL_LIBRARY_IN_SETTINGS_v764 - Library moved to Settings */, () => {
+  // BF_PORTAL_SAME_MENU_v1 - the same menu as Boreal Financial minus Communications and Calendar.
+  it("BI sidebar is Dashboard, Pipeline, CRM, Marketing, Partners, Reports, Settings", () => {
     renderLayout("BI", "Admin");
-    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Lenders", "Marketing", "Outreach", "Reps", "Reports"];
+    const expectedLabels = ["Dashboard", "Pipeline", "CRM", "Marketing", "Partners", "Reports", "Settings"];
     for (const label of expectedLabels) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole("link")).toHaveLength(8);
+    expect(screen.getAllByRole("link")).toHaveLength(7);
   });
 });
 
@@ -133,19 +131,18 @@ describe("BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_AND_CONTACT_NAME_v1 -- 6-tab BI na
 
 
 describe("capability-gated BI sidebar", () => {
-  it("Andrew sees Dashboard + CRM + Marketing + Outreach", () => {
+  it("Andrew sees Dashboard + CRM + Marketing", () => {
     renderLayout("BI", "Staff", ["marketing:outreach", "crm:read"]);
     expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "CRM" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Marketing" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Outreach" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Pipeline" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Lenders" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Partners" })).not.toBeInTheDocument();
   });
 
-  it("Todd sees Dashboard + Pipeline + CRM + Lender + Marketing + Outreach", () => {
+  it("Todd sees Dashboard + Pipeline + CRM + Partners + Marketing", () => {
     renderLayout("BI", "Admin", ["crm:read", "pipeline:manage", "application:read", "lender:submit", "marketing:admin", "marketing:outreach"]);
-    ["Dashboard", "Pipeline", "CRM", "Lenders", "Marketing", "Outreach"].forEach((label) => {
+    ["Dashboard", "Pipeline", "CRM", "Partners", "Marketing"].forEach((label) => {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     });
   });

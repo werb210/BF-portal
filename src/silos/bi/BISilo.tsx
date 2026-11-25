@@ -16,7 +16,7 @@ import BIReferrerManagement from "./referrer/BIReferrerManagement"; // BF_PORTAL
 import BIDashboard from "./dashboard/BIDashboard";
 import BIMarketing from "./marketing/BIMarketing";
 import BISettings from "./settings/BISettings";
-import BIOutreach from "./crm/BIOutreach";
+import PartnersTabs, { BI_PARTNER_TABS } from "@/pages/partners/PartnersTabs"; // BF_PORTAL_SAME_MENU_v1
 // BF_PORTAL_BLOCK_BI_SILO_TRIM_v1 -- Marketing tab consolidated into CRM > Outreach (BIMarketing kept on disk for future reuse).
 // BF_PORTAL_BLOCK_BI_SILO_TRIM_v1 -- Settings tab removed; sign-in lives in BF silo (design note 7).
 import BIApplicationDetail from "./pipeline/BIApplicationDetail";
@@ -42,12 +42,13 @@ export default function BISilo() {
       <Route path="crm/contacts/:id" element={<BIContactDetailPage />} />
       {/* BF_PORTAL_BLOCK_v211_BI_COMPANY_DETAIL_v1 */}
       <Route path="crm/companies/:id" element={<BICompanyDetailPage />} />
-          <Route path="lender" element={<BILender />} /> {/* BF_PORTAL_BLOCK_v125_BI_LENDER_APOLLO_PHASE1_v1 */}
-          <Route path="referrer" element={<BIReferrerManagement />} />
-          <Route path="reps" element={<BIFieldReps />} /> {/* BF_PORTAL_BI_FIELD_REPS_v1 */}
+          <Route path="lender" element={<><PartnersTabs tabs={BI_PARTNER_TABS} /><BILender /></>} /> {/* BF_PORTAL_BLOCK_v125_BI_LENDER_APOLLO_PHASE1_v1 */}
+          <Route path="referrer" element={<><PartnersTabs tabs={BI_PARTNER_TABS} /><BIReferrerManagement /></>} />
+          <Route path="reps" element={<><PartnersTabs tabs={BI_PARTNER_TABS} /><BIFieldReps /></>} /> {/* BF_PORTAL_BI_FIELD_REPS_v1 */}
           {/* BF_PORTAL_BLOCK_BI_SILO_TRIM_v1 -- legacy paths redirect into the consolidated locations */}
           <Route path="marketing" element={<BIMarketing />} />
-          <Route path="outreach" element={<BIOutreach />} /> {/* BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_v1 */}
+          {/* BF_PORTAL_SAME_MENU_v1 - Outreach is retired (Marketing > Flows sends); the old link opens the CRM */}
+          <Route path="outreach" element={<Navigate to="/silo/bi/crm" replace />} /> {/* BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_v1 */}
           <Route path="settings" element={<BISettings />} />
         </Routes>
       </main>

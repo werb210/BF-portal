@@ -100,8 +100,8 @@ describe("who sees the Keystone CRM", () => {
     expect(canUseKeystoneCrm({ role: "Ops", silos: ["KS"] })).toBe(false);
     expect(ksHomeFor({ role: "Admin" })).toBe("/silo/ks/dashboard");
     expect(ksHomeFor({ role: "Marketing", silos: ["KS"] })).toBe("/silo/ks/crm/contacts");
-    expect(ksNavFor({ role: "Marketing", silos: ["KS"] }).map((n) => n.label)).toEqual(["Inbox", "CRM", "Sales pipeline", "Tasks", "Support", "Settings"]); // BF_PORTAL_v916_KS_NAV // BF_PORTAL_v853_KS_PHONE_SUPPORT
-    expect(ksNavFor({ role: "Admin" }).map((n) => n.label)).not.toContain("Licensees"); // BF_PORTAL_v916_KS_NAV - a CRM sub-tab now
+    expect(ksNavFor({ role: "Marketing", silos: ["KS"] }).map((n) => n.label)).toEqual(["Pipeline", "CRM", "Tasks", "Inbox", "Support", "Settings"]); // BF_PORTAL_SAME_MENU_v1 // BF_PORTAL_v916_KS_NAV // BF_PORTAL_v853_KS_PHONE_SUPPORT
+    expect(ksNavFor({ role: "Admin" }).filter((n) => n.section === "Running Keystone").map((n) => n.label)).toEqual(["Licensees", "Support", "Requests"]); // BF_PORTAL_SAME_MENU_v1
     expect(canSeeKeystone({ role: "Staff", silos: ["BF"] })).toBe(false);
   });
 
@@ -124,7 +124,7 @@ describe("who sees the Keystone CRM", () => {
         <AppLayout><div>page</div></AppLayout>
       </MemoryRouter>,
     );
-    expect(screen.getByRole("link", { name: "Sales pipeline" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Pipeline" })).toBeInTheDocument(); // BF_PORTAL_SAME_MENU_v1
     expect(screen.getByRole("link", { name: "Tasks" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Licensees" })).not.toBeInTheDocument();
   });
