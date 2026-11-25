@@ -32,6 +32,12 @@ describe("Contacts panel", () => {
     fireEvent.click(screen.getByTestId("contacts-row"));
     expect(await screen.findByText(/Basis: Published business email/)).toBeTruthy();
   });
+  it("shows the opted-out view on request", async () => {
+    render(<SharedContactsPanel />);
+    await screen.findByText("Evan Sinclair");
+    fireEvent.change(screen.getByLabelText("Opted out"), { target: { value: "only" } });
+    await waitFor(() => expect(h.get.mock.calls.some((c: any[]) => String(c[0]).includes("opted_out=only"))).toBe(true));
+  });
   it("filters go to the server", async () => {
     render(<SharedContactsPanel />);
     await screen.findByText("Evan Sinclair");
@@ -59,5 +65,7 @@ describe("list files", () => {
     expect(statusLabel("loaded")).toBe("Not contacted");
     expect(statusLabel("opted_out", "contacted")).toBe("Unsubscribed");
     expect(statusLabel("loaded", "demo_booked")).toBe("demo booked");
+    expect(statusLabel("loaded", null, "BF")).toBe("In BF CRM");
+    expect(statusLabel("opted_out", null, "BF")).toBe("Unsubscribed");
   });
 });

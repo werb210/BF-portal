@@ -23,9 +23,12 @@ const input: CSSProperties = { padding: "7px 9px", border: "1px solid var(--ui-b
 const th: CSSProperties = { textAlign: "left", padding: "8px 10px", fontSize: 12, color: "var(--ui-text-muted)", borderBottom: "1px solid var(--ui-border)", whiteSpace: "nowrap" };
 const td: CSSProperties = { padding: "8px 10px", fontSize: 13, color: "var(--ui-text)", borderBottom: "1px solid var(--ui-border)", verticalAlign: "top" };
 
-export function statusLabel(s: string | null | undefined, activity?: string | null): string {
+// BF_PORTAL_SHARED_OPTED_OUT_VIEW_v1 - lenders and banks are stored in the Boreal Financial CRM but not marketed BF, so
+// their BF chip reads "In BF CRM" instead of a marketing status.
+export function statusLabel(s: string | null | undefined, activity?: string | null, brand?: Brand): string {
   if (!s) return "";
   if (s === "opted_out") return "Unsubscribed";
+  if (brand === "BF") return "In BF CRM";
   return activity ? activity.replace(/_/g, " ") : STATUS_LABEL[s] ?? s.replace(/_/g, " ");
 }
 
@@ -34,7 +37,7 @@ function Chip({ brand, state }: { brand: Brand; state: BrandState }) {
   return (
     <span data-testid={`chip-${brand}`} style={{ display: "inline-block", padding: "2px 8px", borderRadius: 999, fontSize: 11, marginRight: 4, marginBottom: 2, whiteSpace: "nowrap",
       border: `1px solid ${off ? "#fca5a5" : "var(--ui-border)"}`, color: off ? "#b91c1c" : "var(--ui-text)", background: "var(--ui-surface)" }}>
-      {BRAND_LABEL[brand]}: {statusLabel(state.status, state.last_activity)}
+      {brand === "BF" && state.status !== "opted_out" ? "In BF CRM" : `${BRAND_LABEL[brand]}: ${statusLabel(state.status, state.last_activity, brand)}`}
     </span>
   );
 }
@@ -179,7 +182,7 @@ function PersonPanel({ id, onClose }: { id: string; onClose: () => void }) {
           {p.brands.length === 0 && <div style={{ color: "var(--ui-text-muted)" }}>Not in any brand's list yet.</div>}
           {p.brands.map((b) => (
             <div key={b.brand} style={{ borderTop: "1px solid var(--ui-border)", paddingTop: 6, marginTop: 6 }}>
-              <div><strong>{BRAND_LABEL[b.brand]}</strong>: {statusLabel(b.status, b.last_activity)}{b.last_activity_at ? ` (${new Date(b.last_activity_at).toLocaleDateString()})` : ""}</div>
+              <div><strong>{BRAND_LABEL[b.brand]}</strong>: {statusLabel(b.status, b.last_activity, b.brand)}{b.last_activity_at ? ` (${new Date(b.last_activity_at).toLocaleDateString()})` : ""}</div>
               {b.consent_source && <div style={{ color: "var(--ui-text-muted)", fontSize: 12 }}>Basis: {b.consent_source}</div>}
             </div>
           ))}
@@ -192,7 +195,7 @@ function PersonPanel({ id, onClose }: { id: string; onClose: () => void }) {
 }
 
 export default function SharedContactsPanel() {
-  const [f, setF] = useState({ q: "", kind: "", country: "", region: "", brand: "", status: "", not_brand: "", source: "" });
+  const [f, setF] = useState({ q: "", kind: "", country: "", region: "", brand: "", status: "", not_brand: "", source: "", opted_out: "" });
   const [offset, setOffset] = useState(0);
   const [data, setData] = useState<{ total: number; people: Person[] } | null>(null);
   const [sources, setSources] = useState<Array<{ source: string; people: number }>>([]);
@@ -243,6 +246,7 @@ export default function SharedContactsPanel() {
         <select style={input} value={f.brand} onChange={set("brand")} aria-label="In brand"><option value="">Any brand</option>{(["KS", "BI", "BF"] as Brand[]).map((b) => <option key={b} value={b}>In {BRAND_LABEL[b]}</option>)}</select>
         {f.brand && <select style={input} value={f.status} onChange={set("status")} aria-label="Status"><option value="">Any status</option><option value="loaded">Not contacted</option><option value="opted_out">Unsubscribed</option></select>}
         <select style={input} value={f.not_brand} onChange={set("not_brand")} aria-label="Not in brand"><option value="">—</option>{(["KS", "BI", "BF"] as Brand[]).map((b) => <option key={b} value={b}>Not in {BRAND_LABEL[b]} yet</option>)}</select>
+        <select style={input} value={f.opted_out} onChange={set("opted_out")} aria-label="Opted out" title="People who unsubscribed from every brand that markets to them (Keystone and PGI for a broker, PGI for a lender or bank) leave the main list but stay on file"><option value="">Main list</option><option value="only">Opted out</option><option value="include">Everyone</option></select>
         <select style={{ ...input, maxWidth: 220 }} value={f.source} onChange={set("source")} aria-label="From list"><option value="">Any list</option>{sources.map((s) => <option key={s.source} value={s.source}>{s.source} ({s.people})</option>)}</select>
         <button type="button" className="ui-button ui-button--secondary" onClick={() => setImporting((x) => !x)}>{importing ? "Close import" : "Import a list"}</button>
         <button type="button" className="ui-button ui-button--secondary" disabled={busy} onClick={() => void sync()} title="Read PGI's and Keystone's broker and lender lists into this list now">{busy ? "Reading…" : "Refresh from silos"}</button>
