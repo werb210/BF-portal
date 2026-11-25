@@ -4,6 +4,8 @@
 // callouts, and recent updates. All data from endpoints shipped by
 // v225 / v233 / v234.
 import { useEffect, useMemo, useState } from "react";
+import SiloBoard, { cardLink, FlowsTable, MUTED, Num, numGrid, type BoardSection, type FlowRow } from "@/components/dashboard/SiloBoard"; // BF_PORTAL_SILO_DASHBOARDS_v1
+import TeamMessagesCard from "@/pages/dashboard/TeamMessagesCard";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { BI_VISIBLE_PIPELINE_STAGES, biStageLabel, resolveStageId } from "@/silos/bi/pipeline/biStages";
@@ -50,25 +52,13 @@ function appDisplayTitle(app: any): string {
   );
 }
 
-function StatPill(props: { label: string; value: number | string; tone?: Tone; hint?: string }) {
-  const { label, value, tone = "neutral" as Tone, hint } = props;
-  const toneColor =
-    tone === "good" ? "border-emerald-500/40 bg-emerald-500/5" :
-    tone === "warn" ? "border-amber-500/40 bg-amber-500/5" :
-    tone === "bad"  ? "border-red-500/40 bg-red-500/5" :
-    "border-card bg-brand-surface";
-  return (
-    <div className={`rounded-xl border ${toneColor} p-4`}>
-      <div className="text-xs uppercase tracking-widest text-white/60">{label}</div>
-      <div className="mt-2 text-2xl font-semibold text-white">{value}</div>
-      {hint ? <div className="mt-1 text-xs text-white/50">{hint}</div> : null}
-    </div>
-  );
-}
-
-export default function BIDashboard() {
+// BF_PORTAL_SILO_DASHBOARDS_v1 - the BI Dashboard is a movable board (see SiloBoard). The figures are the same as
+// before; each block is now a card that can be moved, resized, removed and added back. Email flows is new.
+function useBiDashboard() {
   const [apps, setApps] = useState<any[]>([]);
   const [health, setHealth] = useState<any | null>(null);
+  const [flows, setFlows] = useState<FlowRow[] | null>(null);
+  const [flowsError, setFlowsError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hideDemo, setHideDemo] = useState<boolean>(() => {
@@ -76,6 +66,11 @@ export default function BIDashboard() {
   });
 
   useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [hideDemo]);
+  useEffect(() => {
+    api<any>("/api/v1/bi/flows")
+      .then((r) => setFlows(Array.isArray(r?.flows) ? r.flows : []))
+      .catch(() => setFlowsError(true));
+  }, []);
 
   async function load() {
     setLoading(true);
@@ -86,8 +81,7 @@ export default function BIDashboard() {
         api<any>(`/api/v1/bi/applications${qs}`),
         api<any>("/api/v1/bi/carrier-health"),
       ]);
-      const list: any[] = extractListResponse(appList);
-      setApps(list);
+      setApps(extractListResponse(appList));
       setHealth(hData);
     } catch {
       setApps([]);
@@ -106,33 +100,20 @@ export default function BIDashboard() {
   const stageCounts: Record<string, number> = useMemo(() => {
     const out: Record<string, number> = {};
     for (const a of apps) {
-      const s = resolveStageId(a?.stage) ?? String(a?.stage ?? "");
-      out[s] = (out[s] || 0) + 1;
+      const st = resolveStageId(a?.stage) ?? String(a?.stage ?? "");
+      out[st] = (out[st] || 0) + 1;
     }
     return out;
   }, [apps]);
-
-  const awaitingDocs = useMemo(
-    () => apps.filter((a) => !!a?.docs_deferred_at && a?.stage === "in_progress").length,
-    [apps],
-  );
-  const submittedNoCarrier = useMemo(
-    () => apps.filter((a) => a?.stage === "submitted" && !a?.carrier_received_at).length,
-    [apps],
-  );
-  const declinedRecent = useMemo(
-    () => apps.filter((a) => {
-      const stage = a?.stage;
-      if (stage !== "declined" && stage !== "information_required") return false;
-      if (!a?.updated_at) return false;
-      const t = new Date(a.updated_at).getTime();
-      if (!Number.isFinite(t)) return false;
-      return t > Date.now() - 7 * 24 * 60 * 60 * 1000;
-    }).length,
-    [apps],
-  );
+  const awaitingDocs = useMemo(() => apps.filter((a) => !!a?.docs_deferred_at && a?.stage === "in_progress").length, [apps]);
+  const submittedNoCarrier = useMemo(() => apps.filter((a) => a?.stage === "submitted" && !a?.carrier_received_at).length, [apps]);
+  const declinedRecent = useMemo(() => apps.filter((a) => {
+    const stage = a?.stage;
+    if (stage !== "declined" && stage !== "information_required") return false;
+    const t = a?.updated_at ? new Date(a.updated_at).getTime() : NaN;
+    return Number.isFinite(t) && t > Date.now() - 7 * 24 * 60 * 60 * 1000;
+  }).length, [apps]);
   const testCount = useMemo(() => apps.filter((a) => a?.is_demo === true).length, [apps]);
-
   const recent: any[] = useMemo(() => {
     const withDate = apps.filter((a) => !!a?.updated_at);
     withDate.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
@@ -142,7 +123,6 @@ export default function BIDashboard() {
   const total = apps.length;
   const visibleStageTotal = STAGES.reduce((sum, [stage]) => sum + (stageCounts[stage] || 0), 0);
   const prePipelineCount = Math.max(0, total - visibleStageTotal);
-
   const allDemoHidden = apps.length > 0 && apps.every((a) => a?.is_demo === true) && hideDemo;
   const rawHealthStatus: string = String(health?.status ?? "").toLowerCase();
   const healthErrors = Number(health?.errors_24h ?? 0);
@@ -153,117 +133,103 @@ export default function BIDashboard() {
     rawHealthStatus === "healthy" || rawHealthStatus === "active" ? "good" :
     rawHealthStatus === "degraded" ? "warn" : "neutral";
 
+  return { apps, health, flows, flowsError, loading, error, hideDemo, load, onHideDemoChange, stageCounts, awaitingDocs, submittedNoCarrier, declinedRecent, testCount, recent, visibleStageTotal, prePipelineCount, allDemoHidden, healthStatus, healthTone };
+}
+type BiData = ReturnType<typeof useBiDashboard>;
+const toneOf = (t: Tone) => (t === "neutral" ? undefined : t);
+
+function Totals({ d }: { d: BiData }) {
   return (
-    <div className="text-white">
-      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-3xl font-semibold">BI Dashboard</h2>
-        <div className="flex items-center gap-3 text-sm">
-          <label className="flex items-center gap-2 text-white/70">
-            <input type="checkbox" checked={hideDemo} onChange={(e) => onHideDemoChange(e.target.checked)} />
-            Hide demo
-          </label>
-          <button onClick={() => void load()} className="rounded border border-card px-3 py-1 text-white/70 hover:text-white">
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {loading ? <div className="text-white/50 text-sm mb-4">Loading…</div> : null}
-      {error ? <div className="mb-4 rounded border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{error}</div> : null}
-
-      {allDemoHidden ? (
-        <div className="mb-4 rounded border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-100">
-          All applications are currently demos. Toggle Hide Demo to populate dashboard.
-          <label className="ml-2 inline-flex items-center gap-2">
-            <input type="checkbox" checked={hideDemo} onChange={(e) => onHideDemoChange(e.target.checked)} />
-            Hide demo
-          </label>
-        </div>
-      ) : null}
-
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 mb-6">
-        {/* BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 — was `total` (all apps incl. pre-pipeline created/in_progress/ready_for_submission) which inflated the dashboard above what the pipeline view actually showed. */}
-        <StatPill label="Total in pipeline" value={visibleStageTotal} />
-        <StatPill
-          label="Carrier health"
-          value={healthStatus}
-          tone={healthTone}
-          hint={
-            health
-              ? `${health.submissions_24h ?? 0} submitted / ${health.received_24h ?? 0} received / ${health.errors_24h ?? 0} errors (24h)`
-              : "Loading…"
-          }
-        />
-        {!hideDemo && testCount > 0 ? (
-          <StatPill label="TEST submissions" value={testCount} tone="warn" hint="Sandbox-key apps in pipeline" />
-        ) : null}
-        <Link to="/silo/bi/pipeline" className="rounded-xl border border-card bg-brand-surface p-4 hover:bg-white/5">
-          <div className="text-xs uppercase tracking-widest text-white/60">Open pipeline</div>
-          <div className="mt-2 text-2xl font-semibold text-blue-300">→</div>
-          <div className="mt-1 text-xs text-white/50">All stages, all lenders</div>
-        </Link>
-      </div>
-
-      <h3 className="text-lg font-semibold mb-3 text-white/80">Needs attention</h3>
-      <div className="grid gap-4 sm:grid-cols-3 mb-6">
-        <StatPill label="Awaiting docs" value={awaitingDocs} tone={awaitingDocs > 0 ? "warn" : "neutral"} hint="Applicant deferred upload" />
-        <StatPill label="Submitted, no carrier ack" value={submittedNoCarrier} tone={submittedNoCarrier > 0 ? "warn" : "neutral"} hint="Awaiting first carrier event" />
-        <StatPill label="Declined / info req (7d)" value={declinedRecent} tone={declinedRecent > 0 ? "bad" : "neutral"} hint="May need staff follow-up" />
-      </div>
-
-      <h3 className="text-lg font-semibold mb-3 text-white/80">Pipeline stages</h3>
-      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 mb-2">
+    <div style={numGrid}>
+      {/* BF_PORTAL_BLOCK_v609_FOUR_FIXES_v1 - pipeline stages only, as the pipeline view shows. */}
+      <Num label="Total in pipeline" value={d.visibleStageTotal} hint={<Link to="/silo/bi/pipeline" style={cardLink}>Open pipeline</Link>} />
+      <Num label="Carrier health" value={d.healthStatus} tone={toneOf(d.healthTone)}
+        hint={d.health ? `${d.health.submissions_24h ?? 0} submitted / ${d.health.received_24h ?? 0} received / ${d.health.errors_24h ?? 0} errors (24h)` : "Loading…"} />
+      {!d.hideDemo && d.testCount > 0 ? <Num label="TEST submissions" value={d.testCount} tone="warn" hint="Sandbox-key apps in pipeline" /> : null}
+    </div>
+  );
+}
+function Attention({ d }: { d: BiData }) {
+  return (
+    <div style={numGrid}>
+      <Num label="Awaiting docs" value={d.awaitingDocs} tone={d.awaitingDocs > 0 ? "warn" : undefined} hint="Applicant deferred upload" />
+      <Num label="Submitted, no carrier ack" value={d.submittedNoCarrier} tone={d.submittedNoCarrier > 0 ? "warn" : undefined} hint="Awaiting first carrier event" />
+      <Num label="Declined / info req (7d)" value={d.declinedRecent} tone={d.declinedRecent > 0 ? "bad" : undefined} hint="May need staff follow-up" />
+    </div>
+  );
+}
+function Stages({ d }: { d: BiData }) {
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
         {STAGES.map(([stage, label]) => (
-          <Link key={stage} to={`/silo/bi/pipeline?stage=${stage}`} className="rounded-lg border border-card bg-brand-surface p-3 hover:bg-white/5">
-            <div className="text-[10px] uppercase tracking-widest text-white/60">{label}</div>
-            <div className="mt-1 text-xl font-semibold">{stageCounts[stage] || 0}</div>
+          <Link key={stage} to={`/silo/bi/pipeline?stage=${stage}`} style={{ border: "1px solid #E4EAF2", borderRadius: 8, padding: 8, color: "inherit", textDecoration: "none" }}>
+            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".05em", color: MUTED }}>{label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>{d.stageCounts[stage] || 0}</div>
           </Link>
         ))}
       </div>
-      <div className="mb-6">
-        <div className="rounded bg-slate-700/50 p-3 text-sm">
-          <div className="text-slate-300">PRE-PIPELINE (not in columns)</div>
-          <div className="mt-1 text-2xl font-semibold">{prePipelineCount}</div>
-          <div className="text-xs text-slate-400">Drafts, scoring, ready for staff review</div>
-        </div>
-      </div>
+      <p style={{ margin: "8px 0 0", fontSize: 13, color: MUTED }}>Not yet in the pipeline (drafts, scoring, ready for staff review): <strong style={{ color: "inherit" }}>{d.prePipelineCount}</strong></p>
+    </div>
+  );
+}
+function Recent({ d }: { d: BiData }) {
+  if (!d.recent.length) return <p style={{ margin: 0, color: MUTED }}>No recent updates.</p>;
+  return (
+    <div>
+      {d.recent.map((a) => {
+        // BF_PORTAL_BI_DASH_NO_DELETE_v1 - deleting lives on the application, not one click away on the dashboard.
+        const resolvedStage = resolveStageId(a?.stage) ?? a?.stage;
+        const stageMeta = STAGES.find((row) => row[0] === resolvedStage);
+        return (
+          <Link key={a.id} to={`/silo/bi/pipeline/${a.id}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "8px 0", borderTop: "1px solid #E4EAF2", color: "inherit", textDecoration: "none" }}>
+            <div style={{ minWidth: 0 }}>
+              <strong>{appDisplayTitle(a)}</strong>
+              {a?.is_demo === true ? <span style={{ marginLeft: 6, fontSize: 10, color: "#B45309" }}>TEST</span> : null}
+              {a?.carrier_last_event ? <span style={{ marginLeft: 6, fontSize: 11, color: "#1E3A8A" }}>carrier: {String(a.carrier_last_event)}</span> : null}
+              <div style={{ fontSize: 12, color: MUTED }}>{a?.guarantor_name || "—"}{a?.lender_name ? <> · via {String(a.lender_name)}</> : null}</div>
+            </div>
+            <div style={{ textAlign: "right", fontSize: 12, color: MUTED, flexShrink: 0 }}>
+              <div>{stageMeta ? stageMeta[1] : biStageLabel(a?.stage)}</div>
+              <div>{relativeFromNow(a?.updated_at)}</div>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
-      <h3 className="text-lg font-semibold mb-3 text-white/80">Recent updates</h3>
-      <div className="rounded-xl border border-card bg-brand-surface overflow-hidden">
-        {recent.length === 0 ? (
-          <div className="p-4 text-sm text-white/40">No recent updates.</div>
-        ) : recent.map((a) => {
-          // BF_PORTAL_BI_DASH_NO_DELETE_v1 - deleting lives on the application, not one click away on the dashboard.
-          const name = appDisplayTitle(a);
-          const resolvedStage = resolveStageId(a?.stage) ?? a?.stage;
-          const stageMeta = STAGES.find((row) => row[0] === resolvedStage);
-          return (
-            <Link key={a.id} to={`/silo/bi/pipeline/${a.id}`} className="flex items-center justify-between gap-3 border-b border-white/5 p-3 hover:bg-white/5 last:border-b-0">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-sm">{name}</span>
-                  {a?.is_demo === true ? (
-                    <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] tracking-wider text-amber-200 border border-amber-500/30">TEST</span>
-                  ) : null}
-                  {a?.carrier_last_event ? (
-                    <span className="rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] text-blue-200 border border-blue-500/30">carrier: {String(a.carrier_last_event)}</span>
-                  ) : null}
-                </div>
-                <div className="text-xs text-white/50 truncate">
-                  {a?.guarantor_name || "—"}
-                  {a?.lender_name ? <> · via {String(a.lender_name)}</> : null}
-                </div>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="text-right text-xs text-white/60">
-                <div>{stageMeta ? stageMeta[1] : biStageLabel(a?.stage)}</div>
-                <div className="text-white/40">{relativeFromNow(a?.updated_at)}</div>
-              </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+/** The pipeline summary on its own (the "Insurance pipeline" card on the Reports page). */
+export function BIPipelineOverview() {
+  const d = useBiDashboard();
+  return <div style={{ display: "grid", gap: 12 }}><Totals d={d} /><Attention d={d} /><Stages d={d} /></div>;
+}
+
+export default function BIDashboard() {
+  const d = useBiDashboard();
+  const sections: BoardSection[] = [
+    { key: "bi_dash_totals", title: "Pipeline at a glance", size: "full", description: "Total in pipeline, carrier health and test files.", render: () => <Totals d={d} /> },
+    { key: "bi_dash_attention", title: "Needs attention", size: "full", description: "Awaiting documents, no carrier acknowledgement, recent declines.", render: () => <Attention d={d} /> },
+    { key: "bi_dash_stages", title: "Pipeline stages", size: "full", description: "Files in each stage, plus those not yet in the pipeline.", render: () => <Stages d={d} /> },
+    { key: "bi_dash_flows", title: "Email flows", size: "full", description: "People in each email flow, emailed, opened and clicked.", render: () => <FlowsTable flows={d.flows} error={d.flowsError} /> },
+    { key: "bi_dash_recent", title: "Recent updates", size: "full", description: "The latest applications to change.", render: () => <Recent d={d} /> },
+    { key: "dash_team", title: "New team messages", size: "full", description: "Team conversations with unread messages.", standard: false, render: () => <TeamMessagesCard /> },
+  ];
+  const actions = (
+    <>
+      <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={d.hideDemo} onChange={(e) => d.onHideDemoChange(e.target.checked)} /> Hide demo
+      </label>
+      <button type="button" className="ui-button ui-button--secondary" onClick={() => void d.load()}>Refresh</button>
+    </>
+  );
+  return (
+    <div>
+      {d.loading ? <p style={{ fontSize: 13 }}>Loading…</p> : null}
+      {d.error ? <div role="alert" style={{ marginBottom: 12, border: "1px solid #DC2626", borderRadius: 8, padding: 10, color: "#B91C1C", background: "#FEF2F2" }}>{d.error}</div> : null}
+      {d.allDemoHidden ? <div style={{ marginBottom: 12, border: "1px solid #D97706", borderRadius: 8, padding: 10, background: "#FFFBEB", color: "#92400E" }}>All applications are currently demos. Untick Hide demo to fill the dashboard.</div> : null}
+      <SiloBoard silo="BI" title="BI Dashboard" sections={sections} actions={actions} />
     </div>
   );
 }

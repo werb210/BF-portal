@@ -112,7 +112,7 @@ export function builtinBody(key: string, { metrics, analytics, range, isAdmin = 
   return null;
 }
 
-function BoardCard({ card, title, wide, children, onRemove, onSize }: { card: DashCard; title: string; wide: boolean; children: ReactNode; onRemove: () => void; onSize: (size: Size) => void }) {
+export function BoardCard({ card, title, wide, children, onRemove, onSize }: { card: DashCard; title: string; wide: boolean; children: ReactNode; onRemove: () => void; onSize: (size: Size) => void }) {
   const drag = useDraggable({ id: `dash:${card.id}`, data: { id: card.id } });
   const drop = useDroppable({ id: `dashbefore:${card.id}`, data: { id: card.id } });
   const [menu, setMenu] = useState(false);
