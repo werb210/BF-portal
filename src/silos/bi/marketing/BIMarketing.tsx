@@ -2,11 +2,13 @@ import { useState } from "react";
 import LinkClicksPanel from "@/components/marketing/LinkClicksPanel"; // BF_PORTAL_LINK_CLICKS_PANEL_v9
 import FlowsTab from "./tabs/FlowsTab"; // BF_PORTAL_BI_EMAIL_FLOWS_v1
 import SharedContactsPanel from "@/pages/marketing/SharedContactsPanel"; // BF_PORTAL_SHARED_CONTACTS_v1
+import BrandedEmailComposer from "@/components/marketing/BrandedEmailComposer"; // BF_PORTAL_EMAIL_TAB_BACK_v1
 
 // BF_PORTAL_CRM_FLOWS_v1 - Flows are the one way to email a list. The old one-off Email blast and the Sequences
 // builder are retired (they could email the same people twice alongside a flow). Flows open first.
-type Channel = "flows" | "links" | "contacts";
-const LABEL: Record<Channel, string> = { flows: "Flows", links: "Links", contacts: "Contacts" };
+// BF_PORTAL_EMAIL_TAB_BACK_v1 - the one-off email creator is back beside Flows.
+type Channel = "flows" | "email" | "links" | "contacts";
+const LABEL: Record<Channel, string> = { flows: "Flows", email: "Email", links: "Links", contacts: "Contacts" };
 
 export default function BIMarketing() {
   const [channel, setChannel] = useState<Channel>("flows");
@@ -17,7 +19,7 @@ export default function BIMarketing() {
       </div>
     </div>
     <div className="max-w-7xl mx-auto px-6">
-      {channel === "flows" ? <FlowsTab /> : channel === "links" ? <LinkClicksPanel apiBase="/api/v1/bi/marketing" /> : <SharedContactsPanel />}
+      {channel === "flows" ? <FlowsTab /> : channel === "email" ? <BrandedEmailComposer apiBase="/api/v1/bi/marketing" /> : channel === "links" ? <LinkClicksPanel apiBase="/api/v1/bi/marketing" /> : <SharedContactsPanel />}
     </div>
   </div>;
 }
