@@ -102,16 +102,18 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
 }
 
 // BF_PORTAL_WIDGET_SELF_REFRESH_v384
-// Staff token for background widget refresh. Keychain, this app only (no access
-// group, so the widget extension cannot read it), readable after first unlock so
-// a background task can use it, never synced off the device.
+// Staff token for widget refresh. Keychain, readable after first unlock so a background task can use it, never
+// synced off the device. BF_PORTAL_WIDGET_SELF_REFRESH_v2 - kept in a Keychain access group shared only with this
+// app's own widget, so the widget refreshes its figures itself instead of waiting for the app to open.
 enum WidgetRefreshSession {
     static let service = "com.boreal.portal.widget-refresh"
+    static let accessGroup = "76VAY7UJKJ.com.borealfinancial.portal.widget"
 
     private static func query(_ account: String) -> [String: Any] {
         [kSecClass as String: kSecClassGenericPassword,
          kSecAttrService as String: service,
-         kSecAttrAccount as String: account]
+         kSecAttrAccount as String: account,
+         kSecAttrAccessGroup as String: accessGroup]
     }
 
     private static func write(_ value: String, account: String) {
@@ -220,9 +222,10 @@ enum WidgetBackgroundRefresh {
     static func merge(stored: [String: Any], fresh: [String: Any], silo: String) -> [String: Any]? {
         guard !stored.isEmpty else { return nil }
         var out = stored
-        for field in ["tasksDueToday", "unreadMessages"] {
+        for field in ["tasksDueToday", "unreadMessages", "tasksOverdue"] { // BF_PORTAL_WIDGET_SELF_REFRESH_v2 + overdue
             if let value = fresh[field] as? NSNumber { out[field] = value }
         }
+        if silo != "KS", fresh.keys.contains("nextTask") { out["nextTask"] = fresh["nextTask"] ?? NSNull() }
         if silo == "BF", let value = fresh["commissionEarned"] as? NSNumber { out["commissionEarned"] = value }
         // BF_PORTAL_v854_KS_WIDGETS - every Keystone figure comes from this one call, so all of them refresh; a reply that is not
         // a Keystone summary (an older server answers with the caller's own silo) is not written.

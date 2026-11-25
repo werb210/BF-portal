@@ -222,9 +222,12 @@ export async function publishWidgetSnapshot(): Promise<boolean> {
         unreadMessages: safeNumber(summary.unreadMessages),
         commissionEarned: safeNumber(summary.commissionEarned),
         currency: typeof summary.currency === "string" ? summary.currency : "CAD",
-        tasksOverdue: overdue.length,
+        // BF_PORTAL_WIDGET_SELF_REFRESH_v2 - overdue and the next task by the server's rule (mine or unclaimed), the same
+        // figures the widget refreshes on its own, so "Tasks due" and "Overdue" agree.
+        tasksOverdue: typeof summary.tasksOverdue === "number" ? summary.tasksOverdue : overdue.length,
         documentsRequired: stageCount("DOCUMENTS_REQUIRED"), additionalStepsRequired: stageCount("STARTUP"),
-        offersOutstanding: stageCount("OFFER"), nextTask: toWidgetTask(next),
+        offersOutstanding: stageCount("OFFER"),
+        nextTask: "nextTask" in summary ? (summary.nextTask as WidgetTask | null) : toWidgetTask(next),
         nextMeeting: meetings[0] ? { id: meetings[0].id, title: meetings[0].title, start: meetings[0].start } : null,
         asOf: typeof summary.asOf === "string" ? summary.asOf : new Date().toISOString(),
       };

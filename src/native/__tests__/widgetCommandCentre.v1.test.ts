@@ -29,14 +29,16 @@ describe("widget command centre deep links", () => {
     expect(widgetRoute("not a url")).toBeNull();
   });
 
-  it("keeps WidgetKit display-only and contains real link controls", () => {
+  it("contains real link controls and never keeps a token in the App Group", () => {
     const root = join(process.cwd(), "ios", "App", "BorealWidget");
     const source = ["SummaryWidget.swift", "WidgetSummary.swift", "SummaryProvider.swift"].map((file) => readFileSync(join(root, file), "utf8")).join("\n");
     expect(source).toContain("Link(destination:");
     expect(source).toContain(".widgetURL");
     for (const destination of ["pipeline", "tasks", "messages", "commission", "crm"]) expect(source).toContain(`bfportal://${destination}`);
     expect(source).not.toContain("Open the portal to sign in");
-    for (const forbidden of ["Authorization", "Bearer", "widget_auth_token", "URLSession"]) expect(source).not.toContain(forbidden);
+    // BF_PORTAL_WIDGET_SELF_REFRESH_v2 - the widget now refreshes itself, reading the session from the shared Keychain group only.
+    expect(source).not.toContain("widget_auth_token");
+    expect(source).toContain("kSecAttrAccessGroup");
   });
 
   it("keeps the large command centre height-safe without dropping required content", () => {

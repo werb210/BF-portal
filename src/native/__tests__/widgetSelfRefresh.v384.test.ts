@@ -42,9 +42,11 @@ describe("native wiring", () => {
   const plugin = read("ios", "App", "App", "WidgetBridgePlugin.swift");
   const delegate = read("ios", "App", "App", "AppDelegate.swift");
   const plist = read("ios", "App", "App", "Info.plist");
-  it("keeps the token in the app's Keychain, not the App Group", () => {
+  // BF_PORTAL_WIDGET_SELF_REFRESH_v2 - Keychain shared only with this app's own widget (an access group), never the App Group.
+  it("keeps the token in a Keychain group shared only with the widget, not the App Group", () => {
     expect(plugin).toContain("kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly");
-    expect(plugin).not.toMatch(/kSecAttrAccessGroup/);
+    expect(plugin).toContain('static let accessGroup = "76VAY7UJKJ.com.borealfinancial.portal.widget"');
+    for (const f of ["BorealWidget/BorealWidget.entitlements", "App/App.entitlements"]) expect(read("ios", "App", ...f.split("/"))).toContain("$(AppIdentifierPrefix)com.borealfinancial.portal.widget");
     expect(plugin).not.toContain('forKey: "widget_auth_token"');
   });
   it("registers, schedules and permits the refresh task", () => {
@@ -55,14 +57,17 @@ describe("native wiring", () => {
     expect(plugin).toContain('static let taskId = "com.boreal.portal.widget-refresh"');
   });
   it("only refreshes fields the summary call owns and stops on 401", () => {
-    expect(plugin).toContain('for field in ["tasksDueToday", "unreadMessages"]');
+    expect(plugin).toContain('for field in ["tasksDueToday", "unreadMessages", "tasksOverdue"]');
     expect(plugin).toContain('if silo == "BF", let value = fresh["commissionEarned"]');
     expect(plugin).toContain("guard !stored.isEmpty else { return nil }");
     expect(plugin).toContain("http.statusCode == 401 || http.statusCode == 403");
   });
-  it("the widget extension stays display-only", () => {
-    const root = ["ios", "App", "BorealWidget"];
-    const widget = ["SummaryWidget.swift", "WidgetSummary.swift", "SummaryProvider.swift"].map((f) => read(...root, f)).join("\n");
-    for (const forbidden of ["Authorization", "Bearer", "URLSession", "SecItem"]) expect(widget).not.toContain(forbidden);
+  it("the widget refreshes itself every 15 minutes, keeping the app's pipeline count", () => {
+    const widget = read("ios", "App", "BorealWidget", "SummaryProvider.swift");
+    expect(widget).toContain("await WidgetLiveRefresh.refresh(silo: configuration.silo.silo)");
+    expect(widget).toContain("byAdding: .minute, value: 15");
+    expect(widget).toContain('kSecAttrAccessGroup as String: accessGroup');
+    expect(widget).not.toMatch(/"pipelineCount", "tasksDueToday", "unreadMessages"\]/);
+    expect(widget).toContain('guard fresh["kind"] as? String == "keystone" else { return nil }');
   });
 });

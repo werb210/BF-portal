@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
+	<!-- BF_PORTAL_WIDGET_SELF_REFRESH_v2 - the app shares the staff session with the widget so it can refresh itself -->
+	<key>keychain-access-groups</key>
+	<array><string>$(AppIdentifierPrefix)com.borealfinancial.portal.widget</string></array>
 	<key>com.apple.security.application-groups</key>
 	<array><string>group.com.borealfinancial.portal</string></array>
 </dict></plist>
