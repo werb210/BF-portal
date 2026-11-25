@@ -13,10 +13,11 @@ vi.mock("../tabs/FlowsTab", () => ({ default: () => <div>flows tab</div> }));
 import BIMarketing from "../BIMarketing";
 
 describe("BI marketing channel tabs", () => {
-  it("opens on Flows; the one-off Email blast and Sequences are retired", () => {
+  it("opens on Flows; Email is back beside it (BF_PORTAL_EMAIL_TAB_BACK_v1); Sequences stay retired", () => {
     render(<BIMarketing />);
     expect(screen.getByText("flows tab")).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "Email" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Email" }));
+    expect(screen.getByText("email composer: /api/v1/bi/marketing")).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Sequences" })).not.toBeInTheDocument();
   });
 

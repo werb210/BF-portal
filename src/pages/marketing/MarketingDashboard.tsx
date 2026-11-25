@@ -31,7 +31,7 @@ import { confirmAction } from "@/lib/confirmAction";
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
 // data, two different places to look for it. BF now gets the tab too.
-type MarketingTab = "analytics" | "referrers" | "flows" | "sms" | "links" | "ads" | "apps" | "report" | "kit" | "scoring" | "social" | "contacts"; // BF_PORTAL_v937_SOCIAL_POSTING - social // BF_PORTAL_v811_MOBILE_APPS - apps // BF_PORTAL_v874_MARKETING_TOOLS - report, kit, scoring
+type MarketingTab = "analytics" | "referrers" | "flows" | "email" | "sms" | "links" | "ads" | "apps" | "report" | "kit" | "scoring" | "social" | "contacts"; // BF_PORTAL_v937_SOCIAL_POSTING - social // BF_PORTAL_v811_MOBILE_APPS - apps // BF_PORTAL_v874_MARKETING_TOOLS - report, kit, scoring
 // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 // BF_PORTAL_ADS_SERVICES_v709 - "Ads" section: one sub-tab per ad service
 // (Google, Microsoft, LinkedIn); every Google report sits under Google.
@@ -49,6 +49,8 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   // BF_PORTAL_SAME_MENU_v1 - Referrers moved to Partners (old ?tab=referrers links still open them here)
   // BF_PORTAL_CRM_FLOWS_v1 - Flows are the one way to email a list; they replace the Email and Sequences tabs.
   { id: "flows", label: "Flows" },
+  // BF_PORTAL_EMAIL_TAB_BACK_v1 - Todd: the one-off email creator stays, beside Flows (a single email to a list, now).
+  { id: "email", label: "Email" },
   { id: "sms", label: "SMS" },
   { id: "social", label: "Social" }, // BF_PORTAL_v937_SOCIAL_POSTING
   { id: "links", label: "Links" }, // BF_PORTAL_BF_LINKS_TAB_v15
@@ -1486,7 +1488,8 @@ const MarketingDashboard = () => {
     const t = new URLSearchParams(window.location.search).get("tab");
     if (t === "report" || t === "social") return t; // BF_PORTAL_v937_SOCIAL_POSTING - ?tab=social (back from a network sign-in) // BF_PORTAL_v874_MARKETING_TOOLS - ?tab=report|kit|scoring
     if (t === "contacts") return "contacts"; // BF_PORTAL_SHARED_CONTACTS_v1
-    if (t === "flows" || t === "email" || t === "sequences") return "flows"; // BF_PORTAL_CRM_FLOWS_v1 - old Email/Sequences links
+    if (t === "email") return "email"; // BF_PORTAL_EMAIL_TAB_BACK_v1
+    if (t === "flows" || t === "sequences") return "flows"; // BF_PORTAL_CRM_FLOWS_v1 - old Sequences links
     return t === "referrers" ? "referrers" : t === "apps" ? "apps" : "analytics"; // BF_PORTAL_v811_MOBILE_APPS - ?tab=apps
   });
   // BF_PORTAL_v811_MOBILE_APPS - the Mobile apps tab is Boreal Financial's client app, so it shows in the BF silo only.
@@ -1552,6 +1555,9 @@ const MarketingDashboard = () => {
       {tab === "apps" && isBf && <MobileAppsPanel />}{/* BF_PORTAL_v811_MOBILE_APPS */}
       {/* BF_PORTAL_v874_MARKETING_TOOLS */}
       {tab === "report" && marketingSilo && <CampaignReportPanel />}
+      {/* BF_PORTAL_EMAIL_TAB_BACK_v1 - the email creator and, under it, how each template performed */}
+      {tab === "email" && <BrandedEmailComposer />}
+      {tab === "email" && <TemplateAnalyticsPanel />}
       {tab === "links" && <LinkClicksPanel />}{/* BF_PORTAL_BF_LINKS_TAB_v15 */}
       {tab === "sms" && <SmsComposerPanel />}
       {tab === "social" && <SocialPanel />}{/* BF_PORTAL_v937_SOCIAL_POSTING */}
