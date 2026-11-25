@@ -92,10 +92,22 @@ enum WidgetSilo: String, CaseIterable {
         }
     }
     var accent: Color {
-        switch self { case .bf: return Color(red: 0.08, green: 0.27, blue: 0.48); case .bi: return Color(red: 0.12, green: 0.48, blue: 0.29); case .slf: return .teal; case .ks: return Self.keystoneViolet }
+        switch self { case .bf: return Self.financialBlue; case .bi: return Self.riskGreen; case .slf: return .teal; case .ks: return Self.keystoneViolet }
     }
     /// BF_PORTAL_v854_KS_WIDGETS - the Keystone violet of the dialler's KS line: #6D28D9 on light widgets, #C4B5FD on dark ones
     /// (#6D28D9 on a dark widget is about 2.8:1, too faint for the tile icons and the quick links).
+    // BF_PORTAL_WIDGET_SELF_REFRESH_v2 - the Financial navy and Risk Management green were unreadable on the dark widget
+    // (the links and icons almost vanished); dark mode now uses lighter tints of the same colours.
+    static let financialBlue = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0x7D / 255.0, green: 0xB3 / 255.0, blue: 0xF0 / 255.0, alpha: 1)
+            : UIColor(red: 0.08, green: 0.27, blue: 0.48, alpha: 1)
+    })
+    static let riskGreen = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0x6E / 255.0, green: 0xD3 / 255.0, blue: 0x9A / 255.0, alpha: 1)
+            : UIColor(red: 0.12, green: 0.48, blue: 0.29, alpha: 1)
+    })
     static let keystoneViolet = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0xC4 / 255.0, green: 0xB5 / 255.0, blue: 0xFD / 255.0, alpha: 1)
