@@ -20,6 +20,7 @@ import { AdsStoryPanel, VisitorsPanel, DropoffPanel, AudiencesNote } from "@/com
 import CustomerMatchPanel from "@/components/marketing/CustomerMatchPanel"; // BF_PORTAL_CUSTOMER_MATCH_LISTS_v711
 import SharedContactsPanel from "./SharedContactsPanel"; // BF_PORTAL_SHARED_CONTACTS_v1
 import GoogleHealthPanel from "@/pages/settings/tabs/GoogleHealthPanel"; // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
+import CrmFlowsPanel from "./CrmFlowsPanel"; // BF_PORTAL_CRM_FLOWS_v1
 import MobileAppsPanel from "./MobileAppsPanel"; // BF_PORTAL_v811_MOBILE_APPS
 import SiloContext from "@/context/SiloContext"; // BF_PORTAL_v811_MOBILE_APPS
 // BF_PORTAL_v874_MARKETING_TOOLS - the campaign and funded-deal report, the website kit and lead scoring (per silo).
@@ -30,7 +31,7 @@ import { confirmAction } from "@/lib/confirmAction";
 // BF_PORTAL_BF_LINKS_TAB_v15 - the link report was only reachable by scrolling
 // the Analytics tab on BF, while BI had a dedicated Links tab. Same panel, same
 // data, two different places to look for it. BF now gets the tab too.
-type MarketingTab = "analytics" | "referrers" | "sequences" | "sms" | "email" | "links" | "ads" | "apps" | "report" | "kit" | "scoring" | "social" | "contacts"; // BF_PORTAL_v937_SOCIAL_POSTING - social // BF_PORTAL_v811_MOBILE_APPS - apps // BF_PORTAL_v874_MARKETING_TOOLS - report, kit, scoring
+type MarketingTab = "analytics" | "referrers" | "flows" | "sms" | "links" | "ads" | "apps" | "report" | "kit" | "scoring" | "social" | "contacts"; // BF_PORTAL_v937_SOCIAL_POSTING - social // BF_PORTAL_v811_MOBILE_APPS - apps // BF_PORTAL_v874_MARKETING_TOOLS - report, kit, scoring
 // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707
 // BF_PORTAL_ADS_SERVICES_v709 - "Ads" section: one sub-tab per ad service
 // (Google, Microsoft, LinkedIn); every Google report sits under Google.
@@ -46,9 +47,9 @@ const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "analytics", label: "Analytics" },
   { id: "contacts", label: "Contacts" }, // BF_PORTAL_SHARED_CONTACTS_v1 - brokers, lenders and banks across every brand
   // BF_PORTAL_SAME_MENU_v1 - Referrers moved to Partners (old ?tab=referrers links still open them here)
-  { id: "sequences", label: "Sequences" },
+  // BF_PORTAL_CRM_FLOWS_v1 - Flows are the one way to email a list; they replace the Email and Sequences tabs.
+  { id: "flows", label: "Flows" },
   { id: "sms", label: "SMS" },
-  { id: "email", label: "Email" },
   { id: "social", label: "Social" }, // BF_PORTAL_v937_SOCIAL_POSTING
   { id: "links", label: "Links" }, // BF_PORTAL_BF_LINKS_TAB_v15
   { id: "ads", label: "Ads" }, // BF_PORTAL_GOOGLE_ADS_ANALYTICS_v707 + BF_PORTAL_ADS_SERVICES_v709
@@ -1485,6 +1486,7 @@ const MarketingDashboard = () => {
     const t = new URLSearchParams(window.location.search).get("tab");
     if (t === "report" || t === "social") return t; // BF_PORTAL_v937_SOCIAL_POSTING - ?tab=social (back from a network sign-in) // BF_PORTAL_v874_MARKETING_TOOLS - ?tab=report|kit|scoring
     if (t === "contacts") return "contacts"; // BF_PORTAL_SHARED_CONTACTS_v1
+    if (t === "flows" || t === "email" || t === "sequences") return "flows"; // BF_PORTAL_CRM_FLOWS_v1 - old Email/Sequences links
     return t === "referrers" ? "referrers" : t === "apps" ? "apps" : "analytics"; // BF_PORTAL_v811_MOBILE_APPS - ?tab=apps
   });
   // BF_PORTAL_v811_MOBILE_APPS - the Mobile apps tab is Boreal Financial's client app, so it shows in the BF silo only.
@@ -1550,11 +1552,10 @@ const MarketingDashboard = () => {
       {tab === "apps" && isBf && <MobileAppsPanel />}{/* BF_PORTAL_v811_MOBILE_APPS */}
       {/* BF_PORTAL_v874_MARKETING_TOOLS */}
       {tab === "report" && marketingSilo && <CampaignReportPanel />}
-      {tab === "email" && <BrandedEmailComposer />}
       {tab === "links" && <LinkClicksPanel />}{/* BF_PORTAL_BF_LINKS_TAB_v15 */}
       {tab === "sms" && <SmsComposerPanel />}
       {tab === "social" && <SocialPanel />}{/* BF_PORTAL_v937_SOCIAL_POSTING */}
-      {tab === "sequences" && <SequencesPanel />}
+      {tab === "flows" && <CrmFlowsPanel silo={siloName === "SLF" ? "SLF" : "BF"} />}{/* BF_PORTAL_CRM_FLOWS_v1 */}
       {tab === "contacts" && <SharedContactsPanel />}{/* BF_PORTAL_SHARED_CONTACTS_v1 */}
       {tab === "analytics" && (
         <div className="space-y-4">
@@ -1563,9 +1564,6 @@ const MarketingDashboard = () => {
         </div>
       )}
       {tab === "referrers" && <ReferrersAndBrokers initial={(() => { const s = new URLSearchParams(window.location.search).get("sub"); return s === "brokers" ? s : "referrers"; })()} />}{/* BF_PORTAL_PARTNERS_TABS_v720 */}
-      {/* BF_PORTAL_TEMPLATE_PERF_EMAIL_ONLY_v1 - Template performance reports
-          email sends, opens, clicks, and replies, so keep it on the Email tab. */}
-      {tab === "email" && <TemplateAnalyticsPanel />}
     </div>
   );
 };

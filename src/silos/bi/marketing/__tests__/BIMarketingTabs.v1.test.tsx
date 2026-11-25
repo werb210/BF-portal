@@ -8,12 +8,16 @@ vi.mock("@/components/marketing/BrandedEmailComposer", () => ({
   default: ({ apiBase }: { apiBase?: string }) => <div>email composer: {apiBase}</div>,
 }));
 
+vi.mock("../tabs/FlowsTab", () => ({ default: () => <div>flows tab</div> }));
+
 import BIMarketing from "../BIMarketing";
 
 describe("BI marketing channel tabs", () => {
-  it("opens the shared composer against the BI API base by default", () => {
+  it("opens on Flows; the one-off Email blast and Sequences are retired", () => {
     render(<BIMarketing />);
-    expect(screen.getByText("email composer: /api/v1/bi/marketing")).toBeInTheDocument();
+    expect(screen.getByText("flows tab")).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Email" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Sequences" })).not.toBeInTheDocument();
   });
 
   it("offers no Apollo tab", () => {
@@ -21,9 +25,8 @@ describe("BI marketing channel tabs", () => {
     expect(screen.queryByRole("tab", { name: "Apollo" })).not.toBeInTheDocument();
   });
 
-  it("still offers Sequences and Links", () => {
+  it("still offers Links", () => {
     render(<BIMarketing />);
-    expect(screen.getByRole("tab", { name: "Sequences" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "Links" }));
     expect(screen.getByRole("tab", { name: "Links" })).toHaveAttribute("aria-selected", "true");
   });

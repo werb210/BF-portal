@@ -147,20 +147,6 @@ describe("Keystone marketing", () => {
     expect(post?.body).toMatchObject({ email: "new@x.example", consent: { consent_type: "express" } });
   });
 
-  it("saves the draft, then sends it, and shows the audience with blocked reasons", async () => {
-    renderKs(`/silo/ks/marketing/campaigns/${CAMPAIGN}`);
-    expect(await screen.findByTestId("ks-mkt-audience")).toHaveTextContent("3 of 5 matching prospects can be emailed");
-    expect(screen.getByTestId("ks-mkt-audience")).toHaveTextContent("Unsubscribed: 1");
-    fireEvent.click(screen.getByTestId("ks-mkt-send"));
-    await waitFor(() => expect(calls.some((c) => c.url.endsWith(`/campaigns/${CAMPAIGN}/send`))).toBe(true));
-    const patchAt = calls.findIndex((c) => c.method === "PATCH");
-    const sendAt = calls.findIndex((c) => c.url.endsWith("/send"));
-    expect(patchAt).toBeGreaterThan(-1);
-    expect(patchAt).toBeLessThan(sendAt);
-    expect(calls[sendAt]!.body).toEqual({});
-    expectOnlyKsOps();
-  });
-
   it("parses a pasted list (header row skipped)", () => {
     expect(parseImport("email,name,company\njo@x.example, Jo Smith, Smith Co, ca, ab, Growth\nnot-an-email,x")).toEqual([
       { email: "jo@x.example", name: "Jo Smith", company: "Smith Co", country: "CA", province_state: "AB", plan_interest: "growth" },

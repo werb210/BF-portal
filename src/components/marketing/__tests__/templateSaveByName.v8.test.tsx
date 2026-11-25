@@ -15,6 +15,7 @@ const h = vi.hoisted(() => {
 vi.mock("@/api", () => ({ api: h.apiFn, default: h.apiFn, apiGetEnvelope: vi.fn(), rawApiFetch: vi.fn() }));
 
 vi.mock("@/silos/bi/marketing/tabs/SequencesTab", () => ({ default: () => <div>sequence list</div> }));
+vi.mock("@/silos/bi/marketing/tabs/FlowsTab", () => ({ default: () => <div>flows tab</div> }));
 vi.mock("@/components/marketing/LinkClicksPanel", () => ({ default: () => <div>link clicks</div> }));
 
 import BrandedEmailComposer from "../BrandedEmailComposer";
@@ -98,15 +99,13 @@ describe("BF_PORTAL_APOLLO_OFF_v10", () => {
   it("drops the Apollo tab entirely", () => {
     render(<BIMarketing />);
     const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
-    expect(tabs).toEqual(["Email", "Flows", "Sequences", "Links", "Contacts"]);
+    expect(tabs).toEqual(["Flows", "Links", "Contacts"]); // BF_PORTAL_CRM_FLOWS_v1
     expect(screen.queryByText(/apollo/i)).not.toBeInTheDocument();
   });
 
-  it("opens on Email instead of a dead default tab", async () => {
+  it("opens on Flows, the one way to email a list", () => {
     render(<BIMarketing />);
-    expect(screen.getByRole("tab", { name: "Email" })).toHaveAttribute("aria-selected", "true");
-    // The real composer is mounted against the BI API base.
-    await waitFor(() => expect(h.apiFn.get).toHaveBeenCalledWith(`${BASE}/email/segments`));
-    expect(await screen.findByPlaceholderText("Template name")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Flows" })).toHaveAttribute("aria-selected", "true");
   });
+;
 });

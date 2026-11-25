@@ -20,6 +20,7 @@ vi.mock("@/api", () => {
 // BIMarketing mounts the real BrandedEmailComposer, which observes its preview
 // pane with a ResizeObserver that jsdom does not implement. This file tests the
 // T/A toggle, not the composer, so the composer is stubbed.
+vi.mock("@/silos/bi/marketing/tabs/FlowsTab", () => ({ default: () => <div>flows tab</div> }));
 vi.mock("@/components/marketing/BrandedEmailComposer", () => ({
   default: () => <div>email composer</div>,
 }));
@@ -52,6 +53,6 @@ describe("BIMarketing v215 toggle removed", () => {
     useAuthMock.mockReturnValue({ user: { id: "todd", name: "Todd", role: "Admin", capabilities: ["marketing:admin", "marketing:outreach"] } });
     render(<BIMarketing />);
     expect(screen.getByRole("tablist", { name: "Marketing channels" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Email" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Flows" })).toBeInTheDocument();
   });
 });
