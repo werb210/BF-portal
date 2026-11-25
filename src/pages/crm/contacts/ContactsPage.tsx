@@ -24,6 +24,7 @@ import { refusedDeleteMessage } from "@/retention/retention"; // BF_PORTAL_v855_
 import CustomFieldFilters from "@/crmFields/CustomFieldFilters"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { useCustomFieldColumns } from "@/crmFields/useCustomFieldColumns"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import { displayValue, filterParams, type CustomFilter } from "@/crmFields/customFieldsApi";
+import SavedViewsBar, { type ViewFilters } from "./SavedViewsBar"; // BF_PORTAL_CRM_SAVED_VIEWS_v1
 import { confirmAction } from "@/lib/confirmAction";
 
 type SortCol = "name" | "company_name" | "tags" | "lead_status" | "owner_name" | "marketing_contact" | "created_at" | `cf_${string}`; // BF_PORTAL_CRM_COLUMNS_MATCH_v1
@@ -340,8 +341,20 @@ export default function ContactsPage({ onUnfilteredTotal }: { onUnfilteredTotal?
     </tr>
   )), [isAdmin, rows, selected, hiddenCols, crmBase, tagCatalogue, cf.shown, leadScores]); // BF_PORTAL_v856_CRM_UNIFY BF_PORTAL_v874_MARKETING_TOOLS
 
+  // BF_PORTAL_CRM_SAVED_VIEWS_v1 - the filters on screen, and applying a saved view's filters.
+  const currentView: ViewFilters = {
+    ...(q.trim() ? { q: q.trim() } : {}), ...(tagFilter ? { tag: tagFilter } : {}), ...(ownerId ? { ownerId } : {}),
+    ...(marketingFilter ? { marketing: marketingFilter } : {}), ...(cfFilters.length ? { custom: cfFilters } : {}),
+  };
+  const applyView = (f: ViewFilters) => {
+    setQ(f.q ?? ""); setTagFilter(f.tag ?? ""); setOwnerId(f.ownerId ?? "");
+    setMarketingFilter(f.marketing === "yes" || f.marketing === "no" ? f.marketing : "");
+    setCfFilters(Array.isArray(f.custom) ? (f.custom as CustomFilter[]) : []);
+  };
+
   return (
     <div style={page}>
+      <SavedViewsBar current={currentView} onApply={applyView} canRemove={(v) => isAdmin || (!!user?.id && v.created_by === user.id)} />
       <div style={crmToolbar}>
         <input
           value={q}
