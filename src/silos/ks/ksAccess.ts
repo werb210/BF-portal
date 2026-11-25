@@ -46,27 +46,26 @@ export function isKeystoneCrmPath(pathname: string | null | undefined): boolean 
   return p === "/silo/ks/crm" || p.startsWith("/silo/ks/crm/");
 }
 
-export const KS_NAV = [
+// BF_PORTAL_SAME_MENU_v1 (2026-11-24) - the same menu as the other businesses (Dashboard, Pipeline, CRM, Marketing,
+// Partners, Settings), with "Selling Keystone" and "Running Keystone" kept apart: selling is one CRM with stages and
+// the marketing flows; running is licensees, support and upgrade requests.
+export const KS_NAV: Array<{ label: string; path: string; roles: string[]; section?: string }> = [
   { label: "Dashboard", path: "/silo/ks/dashboard", roles: ["Admin"] },
-  { label: "Requests", path: "/silo/ks/requests", roles: ["Admin"] },
-  // BF_PORTAL_v865_KS_MARKETING - email marketing to prospective licensees (KS-Ops)
-  { label: "Marketing", path: "/silo/ks/marketing", roles: ["Admin"] },
-  // BF_PORTAL_v850_KS_CRM - the Keystone CRM
-  { label: "Inbox", path: "/silo/ks/crm/inbox", roles: ["Admin", "Staff", "Marketing"] }, // BF_PORTAL_v895_KS_INBOX - Keystone's shared mailboxes only
-  // BF_PORTAL_v916_KS_NAV - one CRM entry like the Financial silo: Contacts, Companies (and Licensees for Admins) are
-  // sub-tabs inside it. Support is the one Support queue (KS-Ops tickets already arrive there).
-  { label: "CRM", path: "/silo/ks/crm/contacts", roles: ["Admin", "Staff", "Marketing"] },
-  { label: "Sales pipeline", path: "/silo/ks/crm/pipeline", roles: ["Admin", "Staff", "Marketing"] },
-  { label: "Tasks", path: "/silo/ks/crm/tasks", roles: ["Admin", "Staff", "Marketing"] },
-  // BF_PORTAL_v853_KS_PHONE_SUPPORT - support tickets from the Keystone support line, KS-Ops in-app help and staff
-  { label: "Support", path: "/silo/ks/crm/support", roles: ["Admin", "Staff", "Marketing"] },
-  // BF_PORTAL_KS_SIGNATURES_v1 - Keystone email signatures (personal + shared mailboxes)
-  { label: "Settings", path: "/silo/ks/crm/settings", roles: ["Admin", "Staff", "Marketing"] },
+  { label: "Pipeline", path: "/silo/ks/crm/pipeline", roles: ["Admin", "Staff", "Marketing"], section: "Selling Keystone" },
+  { label: "CRM", path: "/silo/ks/crm/contacts", roles: ["Admin", "Staff", "Marketing"], section: "Selling Keystone" },
+  { label: "Marketing", path: "/silo/ks/marketing", roles: ["Admin"], section: "Selling Keystone" },
+  { label: "Partners", path: "/silo/ks/marketing/referrals", roles: ["Admin"], section: "Selling Keystone" },
+  { label: "Tasks", path: "/silo/ks/crm/tasks", roles: ["Admin", "Staff", "Marketing"], section: "Selling Keystone" },
+  { label: "Inbox", path: "/silo/ks/crm/inbox", roles: ["Admin", "Staff", "Marketing"], section: "Selling Keystone" }, // Keystone's shared mailboxes only
+  { label: "Licensees", path: "/silo/ks/crm/licensees", roles: ["Admin"], section: "Running Keystone" },
+  { label: "Support", path: "/silo/ks/crm/support", roles: ["Admin", "Staff", "Marketing"], section: "Running Keystone" },
+  { label: "Requests", path: "/silo/ks/requests", roles: ["Admin"], section: "Running Keystone" },
+  { label: "Settings", path: "/silo/ks/crm/settings", roles: ["Admin", "Staff", "Marketing"] }, // BF_PORTAL_KS_SIGNATURES_v1
 ];
 
 /** The Keystone sidebar for this user: everything for Admins, the CRM links for KS-enabled staff. */
 export function ksNavFor(user: unknown): typeof KS_NAV {
   if (canUseKeystone(user)) return KS_NAV;
-  if (canUseKeystoneCrm(user)) return KS_NAV.filter((item) => isKeystoneCrmPath(item.path));
+  if (canUseKeystoneCrm(user)) return KS_NAV.filter((item) => isKeystoneCrmPath(item.path) && item.roles.some((r) => r !== "Admin"));
   return [];
 }

@@ -45,7 +45,7 @@ const ADS_TABS: Array<[AdsTab, string]> = [
 const MARKETING_TABS: { id: MarketingTab; label: string }[] = [
   { id: "analytics", label: "Analytics" },
   { id: "contacts", label: "Contacts" }, // BF_PORTAL_SHARED_CONTACTS_v1 - brokers, lenders and banks across every brand
-  { id: "referrers", label: "Referrers" },
+  // BF_PORTAL_SAME_MENU_v1 - Referrers moved to Partners (old ?tab=referrers links still open them here)
   { id: "sequences", label: "Sequences" },
   { id: "sms", label: "SMS" },
   { id: "email", label: "Email" },

@@ -8,7 +8,7 @@
 import FollowUpPrompt from "@/settingsPack/FollowUpPrompt"; // BF_PORTAL_v869_SETTINGS_PACK_TASK_DEFAULTS
 import StrongSignInGate from "@/settingsPack/StrongSignInGate"; // BF_PORTAL_v869_SETTINGS_PACK_SECURITY
 import { can, usePermissions, usePermissionsBootstrap, type Area } from "@/roles/permissionStore"; // BF_PORTAL_v870_CRM_DATA_MODEL
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { canSeeKeystone, isKeystonePath, KS_ACCENT, ksNavFor } from "@/silos/ks/ksAccess"; // BF_PORTAL_v849_KS_SILO + BF_PORTAL_v850_KS_CRM
 import { useAuth } from "@/auth/AuthContext";
@@ -41,10 +41,11 @@ const NAV_AREA: Record<string, Area> = {
   outreach: "marketing",
   lenders: "lenders",
   lender: "lenders",
+  partners: "lenders", // BF_PORTAL_SAME_MENU_v1
   reports: "reports",
 };
 
-type NavItem = { label: string; path: string; roles: string[]; capability?: string };
+type NavItem = { label: string; path: string; roles: string[]; capability?: string; section?: string };
 
 const BF_NAV: NavItem[] = [
   { label: "Dashboard",      path: "/portal",         roles: ["Admin", "Staff", "Ops"] },
@@ -55,7 +56,7 @@ const BF_NAV: NavItem[] = [
   { label: "Communications", path: "/communications",  roles: ["Admin", "Staff"] },
   { label: "Calendar",       path: "/calendar",        roles: ["Admin", "Staff", "Ops"] },
   { label: "Marketing",      path: "/marketing",       roles: ["Admin"] },
-  { label: "Lenders",        path: "/lenders",         roles: ["Admin", "Staff"] },
+  { label: "Partners",       path: "/lenders",         roles: ["Admin", "Staff"] }, // BF_PORTAL_SAME_MENU_v1 - lenders and referrers
   { label: "Reports",        path: "/reports",         roles: ["Admin", "Staff", "Ops", "Marketing"] }, // BF_PORTAL_REPORTS_SECTION_v714
   { label: "Settings",       path: "/settings",        roles: ["Admin", "Staff", "Ops", "Marketing"] },
 ];
@@ -64,14 +65,15 @@ const BF_NAV: NavItem[] = [
 // All entries resolve under the BISilo router mounted at /silo/bi/*.
 // Referrer is new in v200.
 const BI_NAV: NavItem[] = [
+  // BF_PORTAL_SAME_MENU_v1 (2026-11-24) - the same menu as Boreal Financial (no Communications or Calendar: BI has no
+  // personal mailboxes). Outreach is retired - Marketing > Flows sends; Lenders, Referrers and Reps are Partners.
   { label: "Dashboard", path: "/silo/bi/dashboard", roles: ["Admin", "Staff", "Ops"] },
   { label: "Pipeline", path: "/silo/bi/pipeline", roles: ["Admin", "Staff", "Ops"] },
   { label: "CRM", path: "/silo/bi/crm", roles: ["Admin", "Staff"] },
-  { label: "Lenders", path: "/silo/bi/lender", roles: ["Admin", "Staff"] },
   { label: "Marketing", path: "/silo/bi/marketing", roles: ["Admin"] },
-  { label: "Outreach", path: "/silo/bi/outreach", roles: ["Admin"] }, // BF_PORTAL_BLOCK_v212_OUTREACH_MOUNT_v1
-  { label: "Reps", path: "/silo/bi/reps", roles: ["Admin", "Staff"] }, // BF_PORTAL_BI_FIELD_REPS_v1 - outside reps who collect contacts at events
+  { label: "Partners", path: "/silo/bi/lender", roles: ["Admin", "Staff"] },
   { label: "Reports", path: "/reports", roles: ["Admin", "Staff", "Ops", "Marketing"] }, // BF_PORTAL_REPORTS_SECTION_v714
+  { label: "Settings", path: "/silo/bi/settings", roles: ["Admin", "Staff", "Ops", "Marketing"] },
 ];
 
 // BF_PORTAL_SLF_SINGLE_NAV_v1 - SLF is a read-only mirror of slf-server with
@@ -144,9 +146,9 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
       if (item.label === "Dashboard") return capabilities.length > 0;
       if (item.label === "CRM") return hasCap("crm:read");
       if (item.label === "Pipeline") return hasCap("pipeline:manage") || hasCap("application:read");
-      if (item.label === "Lenders") return hasCap("lender:submit") || hasCap("marketing:admin");
+      if (item.label === "Partners") return hasCap("lender:submit") || hasCap("marketing:admin");
       if (item.label === "Marketing") return hasCap("marketing:outreach");
-      if (item.label === "Outreach") return hasCap("marketing:outreach");
+      if (item.label === "Settings") return true;
     }
     if (isAdmin || isMarketing || isStaff) return canSee(item);
     return item.roles.some((r) => r.toLowerCase() === role.toLowerCase());
@@ -154,9 +156,14 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
   const NavContent = () => (
     <nav style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, overflowY: "auto" }}>
-      {navItems.map((item) => (
+      {navItems.map((item, i) => (
+        <Fragment key={item.path}>
+        {/* BF_PORTAL_SAME_MENU_v1 - section heading (Keystone: Selling / Running) */}
+        {item.section && item.section !== navItems[i - 1]?.section && (
+          <div style={{ padding: "12px 12px 4px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ui-text-muted)" }}>{item.section}</div>
+        )}
+        {!item.section && i > 0 && navItems[i - 1]?.section && <div style={{ height: 10 }} />}
         <NavLink
-          key={item.path}
           to={item.path}
           onClick={() => setMobileNavOpen(false)}
           style={({ isActive }) => ({
@@ -178,6 +185,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
             </span>
           )}
         </NavLink>
+        </Fragment>
       ))}
     </nav>
   );

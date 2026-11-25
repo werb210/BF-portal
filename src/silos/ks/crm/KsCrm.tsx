@@ -5,7 +5,6 @@
 // /silo/ks/crm (CrmBaseProvider). The Keystone sales pipeline is the one screen of its own.
 import type { CSSProperties, ReactNode } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { btn, toggleRow } from "@/pages/crm/CrmListPage"; // BF_PORTAL_v916_KS_NAV - the Financial CRM's tab row
 import { KsSignInGate } from "../KSSilo";
 import KsLicensees from "../KsLicensees";
@@ -16,7 +15,7 @@ import ContactDetailPage from "@/pages/crm/contacts/ContactDetailPage";
 import CompanyDetailPage from "@/pages/crm/companies/CompanyDetailPage";
 import TasksPage from "@/pages/tasks/TasksPage";
 import { KsSharedInbox } from "@/pages/communications/CommunicationsPage"; // BF_PORTAL_v895_KS_INBOX
-import { KS_ACCENT, canUseKeystone } from "../ksAccess";
+import { KS_ACCENT } from "../ksAccess";
 import KsPipeline from "./KsPipeline";
 import KsSettings from "./KsSettings"; // BF_PORTAL_KS_SIGNATURES_v1
 import KsSupport from "../support/KsSupport"; // BF_PORTAL_v853_KS_PHONE_SUPPORT
@@ -46,8 +45,6 @@ const badge: CSSProperties = {
 // BF_PORTAL_v916_KS_NAV - like the Financial silo: one CRM with sub-tabs. "Contacts & companies" holds the usual
 // Contacts / Companies / Find duplicates / Clean up tabs; "Licensees" (Keystone Admins) is the licensee list from KS-Ops.
 function CrmTabs({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const ops = canUseKeystone(user);
   const tab = (to: string, label: string, match: RegExp) => (
     <NavLink to={to} style={() => ({ ...btn(match.test(window.location.pathname)), textDecoration: "none" })}>{label}</NavLink>
   );
@@ -55,7 +52,7 @@ function CrmTabs({ children }: { children: ReactNode }) {
     <>
       <div style={toggleRow} role="tablist" aria-label="Keystone CRM">
         {tab(`${KS_CRM_BASE}/contacts`, "Contacts & companies", /\/silo\/ks\/crm\/(contacts|companies)/)}
-        {ops && tab(`${KS_CRM_BASE}/licensees`, "Licensees", /\/silo\/ks\/crm\/licensees/)}
+        {/* BF_PORTAL_SAME_MENU_v1 - Licensees moved to the menu under "Running Keystone" */}
       </div>
       {children}
     </>
@@ -69,14 +66,14 @@ export default function KsCrm() {
         <div style={banner}>
           <span style={badge}>Keystone</span>
           <span>Keystone CRM - these contacts, companies and tasks are kept apart from Boreal Financial.</span>
-          <span style={{ marginLeft: "auto" }}><StartDemoButton compact /></span>{/* BF_PORTAL_v853_KS_PHONE_SUPPORT */}
+          {/\/silo\/ks\/crm\/pipeline/.test(window.location.pathname) && <span style={{ marginLeft: "auto" }}><StartDemoButton compact /></span>}{/* BF_PORTAL_v853_KS_PHONE_SUPPORT - BF_PORTAL_SAME_MENU_v1: on the sales pipeline only */}
         </div>
         <Routes>
           <Route index element={<Navigate to="contacts" replace />} />
           <Route path="contacts" element={<CrmTabs><CrmListPage key="contacts" initialView="contacts" /></CrmTabs>} />
           <Route path="contacts/:id" element={<ContactDetailPage />} />
           <Route path="companies" element={<CrmTabs><CrmListPage key="companies" initialView="companies" /></CrmTabs>} />
-          <Route path="licensees" element={<CrmTabs><div style={{ padding: "16px 24px" }}><KsSignInGate><KsLicensees /></KsSignInGate></div></CrmTabs>} />{/* BF_PORTAL_v916_KS_NAV */}
+          <Route path="licensees" element={<div style={{ padding: "16px 24px" }}><KsSignInGate><KsLicensees /></KsSignInGate></div>} />{/* BF_PORTAL_v916_KS_NAV */}
           <Route path="licensees/:id" element={<div style={{ padding: "16px 24px" }}><KsSignInGate><KsLicenseeDetail /></KsSignInGate></div>} />
           <Route path="companies/:id" element={<CompanyDetailPage />} />
           <Route path="pipeline" element={<KsPipeline />} />

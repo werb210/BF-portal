@@ -26,6 +26,7 @@ import Login from "@/pages/Login";
 import Verify from "@/pages/Verify";
 const DashboardHome = lazyWithRetry(() => import("@/pages/dashboard/DashboardHome")); // BF_PORTAL_DASHBOARD_BOARD_v730 (replaces DashboardPage on /portal)
 const LendersPage = lazyWithRetry(() => import("@/pages/lenders/LendersPage"));
+const BfReferrersPage = lazyWithRetry(() => import("@/pages/partners/BfReferrersPage")); // BF_PORTAL_SAME_MENU_v1
 // BF_PORTAL_BLOCK_1_27_PIPELINE_SILO_ROUTE
 const PipelineRouter = lazyWithRetry(() => import("@/pages/pipeline/PipelineRouter"));
 const MayaPage = lazyWithRetry(() => import("@/pages/MayaPage"));
@@ -229,6 +230,8 @@ const AppRoutes = () => {
         {/* BF_PORTAL_BLOCK_v91_BI_LENDERS_PAGE_v1 */}
         <Route path="/bi-lenders" element={<ProtectedRoute><BiLendersPage /></ProtectedRoute>} />
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
+        <Route path="/partners" element={<Navigate to="/lenders" replace />} />{/* BF_PORTAL_SAME_MENU_v1 */}
+        <Route path="/partners/referrers" element={<ProtectedRoute><BfReferrersPage /></ProtectedRoute>} />
         <Route path="/broker-imports" element={<Navigate to="/marketing?tab=referrers&sub=brokers" replace />} /> {/* BF_PORTAL_PARTNERS_TABS_v720 - Broker Files lives in Marketing > Referrers > Brokers */}
         <Route path="/settings/broker-files" element={<Navigate to="/marketing?tab=referrers&sub=brokers" replace />} />
         <Route path="/library" element={<Navigate to="/settings/content?section=library" replace />} /> {/* BF_PORTAL_LIBRARY_IN_SETTINGS_v764, BF_PORTAL_v864_CONTENT_TAB - Settings > Content > Library */}

@@ -214,8 +214,8 @@ describe("Keystone silo visibility", () => {
     );
     expect(screen.getByRole("link", { name: "CRM" })).toBeInTheDocument(); // BF_PORTAL_v916_KS_NAV - Licensees is a CRM sub-tab
     expect(screen.getByRole("link", { name: "Support" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Sales pipeline" })).toBeInTheDocument(); // BF_PORTAL_v850_KS_CRM
-    expect(screen.queryByRole("link", { name: "Pipeline" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Pipeline" })).toHaveAttribute("href", "/silo/ks/crm/pipeline"); // BF_PORTAL_SAME_MENU_v1
+    expect(screen.getByText("Running Keystone")).toBeInTheDocument();
     unmount();
     authUser.mockReturnValue({ role: "Staff", capabilities: [] });
     render(

@@ -45,14 +45,12 @@ describe("BF Referrer Management (v1)", () => {
     expect(allPaths().some((p) => p.includes("/api/v1/bi/"))).toBe(false);
   });
 
-  it("is added as a Referrers tab in Marketing", async () => {
+  it("is no longer a Marketing tab - Referrers live under Partners (BF_PORTAL_SAME_MENU_v1)", () => {
     render(
       <MemoryRouter>
         <MarketingDashboard />
       </MemoryRouter>,
     );
-    expect(screen.queryByText("referrers-and-brokers")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Referrers" }));
-    await waitFor(() => expect(screen.getByText("referrers-and-brokers")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Referrers" })).toBeNull();
   });
 });
