@@ -9,6 +9,9 @@
 	     capability on the App ID in the Apple Developer account. -->
 	<key>com.apple.developer.associated-domains</key>
 	<array><string>webcredentials:staff.boreal.financial</string></array>
+	<!-- BF_PORTAL_WIDGET_SELF_REFRESH_v2 - the app shares the staff session with the widget so it can refresh itself -->
+	<key>keychain-access-groups</key>
+	<array><string>$(AppIdentifierPrefix)com.borealfinancial.portal.widget</string></array>
 	<key>com.apple.security.application-groups</key>
 	<array><string>group.com.borealfinancial.portal</string></array>
 </dict></plist>
