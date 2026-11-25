@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { api } from "@/api";
 import { confirmAction } from "@/lib/confirmAction";
-import { BoardCard, CARD_BG, CARD_TEXT, reorder, type DashCard, type Size } from "@/pages/dashboard/DashboardHome";
+import { BoardCard, CARD_BG, CARD_TEXT, reorder, type DashCard, type Size } from "./DashboardHome";
 
 export type BoardSection = { key: string; title: string; size: Size; description: string; standard?: boolean; render: () => ReactNode };
 

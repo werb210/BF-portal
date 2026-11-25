@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/api";
-import SiloBoard, { cardLink, FlowsTable, MUTED, Num, numGrid, type BoardSection, type FlowRow } from "@/components/dashboard/SiloBoard";
+import SiloBoard, { cardLink, FlowsTable, MUTED, Num, numGrid, type BoardSection, type FlowRow } from "@/pages/dashboard/SiloBoard";
 import TeamMessagesCard from "@/pages/dashboard/TeamMessagesCard";
 import { ksApi } from "./ksApi";
 import { Badge, Button, confirmAction, date, ErrorBox, Loading, money } from "./ksUi";

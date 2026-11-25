@@ -4,7 +4,7 @@
 // callouts, and recent updates. All data from endpoints shipped by
 // v225 / v233 / v234.
 import { useEffect, useMemo, useState } from "react";
-import SiloBoard, { cardLink, FlowsTable, MUTED, Num, numGrid, type BoardSection, type FlowRow } from "@/components/dashboard/SiloBoard"; // BF_PORTAL_SILO_DASHBOARDS_v1
+import SiloBoard, { cardLink, FlowsTable, MUTED, Num, numGrid, type BoardSection, type FlowRow } from "@/pages/dashboard/SiloBoard"; // BF_PORTAL_SILO_DASHBOARDS_v1
 import TeamMessagesCard from "@/pages/dashboard/TeamMessagesCard";
 import { Link } from "react-router-dom";
 import { api } from "@/api";
