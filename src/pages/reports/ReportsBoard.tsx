@@ -5,7 +5,7 @@ import { DndContext, PointerSensor, TouchSensor, useDraggable, useDroppable, use
 import { api } from "@/api";
 import SiloContext from "@/context/SiloContext";
 import { AdsStoryPanel, DropoffPanel, VisitorsPanel } from "@/components/marketing/GoogleAdsAnalytics";
-import BIDashboard from "@/silos/bi/dashboard/BIDashboard";
+import { BIPipelineOverview } from "@/silos/bi/dashboard/BIDashboard"; // BF_PORTAL_SILO_DASHBOARDS_v1 - the board itself is the BI Dashboard
 import BIInsuranceReports from "./BIInsuranceReports"; // BF_PORTAL_REPORTS15_18_v769
 import { ReportDataCard } from "./ReportDataCards";
 import { MobileAppsSummary } from "@/pages/marketing/MobileAppsPanel"; // BF_PORTAL_v819_MOBILE_REPORT
@@ -47,7 +47,7 @@ export function CardBody({ report, days }: { report: string; days?: number }): R
   if (report === "ads_story") return <AdsStoryPanel />;
   if (report === "ads_dropoff") return <DropoffPanel />;
   if (report === "ads_visitors") return <VisitorsPanel />;
-  if (report === "bi_dashboard") return <BIDashboard />;
+  if (report === "bi_dashboard") return <BIPipelineOverview />;
   if (report === "bi_insurance") return <BIInsuranceReports />; // BF_PORTAL_REPORTS15_18_v769
   if (report === ACTIVE_CONTRACTS_KEY) return <PortfolioReport />; // BF_PORTAL_v864_ACTIVE_CONTRACTS
   if (report === PIPELINES_KEY) return <PipelineReportCard />; // BF_PORTAL_v870_CRM_DATA_MODEL

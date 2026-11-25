@@ -241,7 +241,11 @@ describe("Keystone silo screens (mocked KS-Ops)", () => {
     expect(await screen.findByText("$1,234.50")).toBeInTheDocument();
     expect(screen.getByText("7")).toBeInTheDocument();
     expect(await screen.findByText(/2 licensees sharing, 3 files, 9 entries/)).toBeInTheDocument();
-    expectOnlyKsOps();
+    // BF_PORTAL_SILO_DASHBOARDS_v1 - the figures come from KS-Ops; only the saved layout and the Keystone email
+    // flows (BF-Server CRM flows) come from BF-Server.
+    const bf = calls.filter((c) => !c.url.startsWith(KS_OPS_DEFAULT_URL));
+    expect(bf.every((c) => /\/api\/(reports\/layouts|crm\/flows)/.test(c.url))).toBe(true);
+    expect(calls.some((c) => c.url.startsWith(KS_OPS_DEFAULT_URL))).toBe(true);
   });
 
   it("licensees list shows each licensee with its status", async () => {
