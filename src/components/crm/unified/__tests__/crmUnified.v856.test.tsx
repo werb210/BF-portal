@@ -210,4 +210,28 @@ describe("AI summary and Keystone card", () => {
     wrap(<CrmKsLicenseeCard backend={BF} contactId="k2" />);
     expect(await screen.findByText("No Keystone licence details yet.")).toBeInTheDocument();
   });
+  it("shows a person's name once, and fixes its first, last and full name together", async () => {
+    h.get.mockImplementation(async (path: string) => {
+      if (path === "/api/crm/unified/cleanup/scan?entity=contact") {
+        return { entity: "contact", changes: [
+          { entity: "contact", entityId: "c3", record: "kevin behan", field: "first_name", before: "kevin", after: "Kevin", reason: "All lower case" },
+          { entity: "contact", entityId: "c3", record: "kevin behan", field: "last_name", before: "behan", after: "Behan", reason: "All lower case" },
+          { entity: "contact", entityId: "c3", record: "kevin behan", field: "name", before: "kevin behan", after: "Kevin Behan", reason: "All lower case" },
+        ] };
+      }
+      if (path === "/api/crm/unified/cleanup/batches") return [];
+      return {};
+    });
+    h.post.mockResolvedValue({ batchId: "b3", applied: 3, skipped: [] });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    wrap(<CrmCleanupPage backend={BF} />);
+    fireEvent.click(screen.getByRole("button", { name: "Scan" }));
+    await screen.findByText("Kevin Behan");
+    expect(screen.getAllByRole("checkbox", { name: /of kevin behan/ })).toHaveLength(1);
+    expect(screen.getByText("1 of 1 selected")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Fix selected" }));
+    await waitFor(() => expect(h.post).toHaveBeenCalledWith("/api/crm/unified/cleanup/apply", { changes: expect.arrayContaining([
+      expect.objectContaining({ field: "first_name", after: "Kevin" }), expect.objectContaining({ field: "last_name", after: "Behan" }),
+      expect.objectContaining({ field: "name", after: "Kevin Behan" })]) }));
+  });
 });
