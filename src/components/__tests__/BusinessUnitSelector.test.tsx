@@ -74,4 +74,16 @@ describe("BusinessUnitSelector", () => {
     expect(screen.queryByRole("group", { name: /active silo/i })).not.toBeInTheDocument();
     expect(screen.getByText(/Boreal Financial/i)).toBeInTheDocument();
   });
+
+  // BF_PORTAL_SILO_FOLLOWS_PAGE_v1
+  it("shows Insurance on a BI page even when the stored silo says BF", () => {
+    mockUseAuth.mockReturnValue({ user: { role: "admin" } });
+    render(
+      <MemoryRouter initialEntries={["/silo/bi/crm"]}>
+        <BusinessUnitSelector />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: /insurance/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /financial/i })).toHaveAttribute("aria-pressed", "false");
+  });
 });
