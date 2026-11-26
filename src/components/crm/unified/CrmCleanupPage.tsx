@@ -31,6 +31,35 @@ const FIELD_LABELS: Record<string, string> = {
   domain: "Domain", industry: "Industry", address_city: "City", city: "City",
 };
 
+// BF_PORTAL_CLEANUP_ONE_NAME_ROW_v1 (Todd, 2026-11-26: "you list the first name, then the last name then the complete
+// name. why?") - a person's name shows once. Its name, first-name and last-name fixes are one row with one tick box and
+// one Ignore button; they are still saved as separate changes so Undo works as before.
+const NAME_FIELDS = new Set(["name", "full_name", "first_name", "last_name"]);
+type Row = { key: string; record: string; entityId: string; label: string; before: string; after: string; reason: string; parts: CleanupChange[] };
+function rowsOf(list: CleanupChange[]): Row[] {
+  const out: Row[] = [];
+  const byPerson = new Map<string, Row>();
+  for (const c of list) {
+    if (c.entity === "contact" && NAME_FIELDS.has(c.field)) {
+      const gk = `${c.entity}:${c.entityId}:name`;
+      let row = byPerson.get(gk);
+      if (!row) { row = { key: gk, record: c.record, entityId: c.entityId, label: "Name", before: "", after: "", reason: c.reason, parts: [] }; byPerson.set(gk, row); out.push(row); }
+      row.parts.push(c);
+      continue;
+    }
+    out.push({ key: keyOf(c), record: c.record, entityId: c.entityId, label: FIELD_LABELS[c.field] ?? c.field, before: c.before, after: c.after, reason: c.reason, parts: [c] });
+  }
+  for (const row of byPerson.values()) {
+    const full = row.parts.find((p) => p.field === "name" || p.field === "full_name");
+    const first = row.parts.find((p) => p.field === "first_name");
+    const last = row.parts.find((p) => p.field === "last_name");
+    row.before = full?.before ?? [first?.before, last?.before].filter(Boolean).join(" ");
+    row.after = full?.after ?? [first?.after, last?.after].filter(Boolean).join(" ");
+    row.reason = (full ?? first ?? last)!.reason;
+  }
+  return out;
+}
+
 export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
   const [entity, setEntity] = useState<CrmEntity>("contact");
   const [changes, setChanges] = useState<CleanupChange[] | null>(null);
@@ -121,6 +150,9 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
 
   const all = changes ?? [];
   const selected = all.filter((c) => ticked.has(keyOf(c)));
+  const rows = rowsOf(all);
+  const rowTicked = (r: Row) => r.parts.every((p) => ticked.has(keyOf(p)));
+  const selectedRows = rows.filter(rowTicked).length;
   const linkPath = entity === "contact" ? "contacts" : "companies";
   return (
     <div style={{ padding: 24, color: "var(--ui-text)" }} data-testid="crm-cleanup-page">
@@ -147,7 +179,7 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
       {changes && changes.length > 0 && (
         <>
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 13 }}>{selected.length} of {all.length} selected</span>
+            <span style={{ fontSize: 13 }}>{selectedRows} of {rows.length} selected</span>
             <button type="button" onClick={() => setTicked(new Set(all.map(keyOf)))} style={plainBtn}>Select all</button>
             <button type="button" onClick={() => setTicked(new Set())} style={plainBtn}>Select none</button>
             <span style={{ flex: 1 }} />
@@ -163,21 +195,18 @@ export function CrmCleanupPage({ backend }: { backend: CrmBackend }) {
               </tr>
             </thead>
             <tbody>
-              {all.map((c) => {
-                const k = keyOf(c);
-                return (
-                  <tr key={k} style={{ borderBottom: "1px solid var(--ui-border-soft)" }}>
-                    <td style={td}><input type="checkbox" aria-label={`Fix ${FIELD_LABELS[c.field] ?? c.field} of ${c.record}`} checked={ticked.has(k)}
-                      onChange={(e) => setTicked((p) => { const n = new Set(p); if (e.target.checked) n.add(k); else n.delete(k); return n; })} /></td>
-                    <td style={td}><Link to={`${backend.linkBase}/${linkPath}/${c.entityId}`} style={{ color: "#1d4ed8" }}>{c.record}</Link></td>
-                    <td style={td}>{FIELD_LABELS[c.field] ?? c.field}</td>
-                    <td style={{ ...td, color: "#991b1b", whiteSpace: "pre-wrap" }}>{JSON.stringify(c.before)}</td>
-                    <td style={{ ...td, color: "#14532d", fontWeight: 600 }}>{c.after}</td>
-                    <td style={{ ...td, color: "var(--ui-text-muted)" }}>{c.reason}</td>
-                    <td style={td}><button type="button" onClick={() => void ignore([c])} disabled={busy !== null} style={plainBtn} aria-label={`Ignore ${FIELD_LABELS[c.field] ?? c.field} of ${c.record}`}>Ignore</button></td>
-                  </tr>
-                );
-              })}
+              {rows.map((r) => (
+                <tr key={r.key} style={{ borderBottom: "1px solid var(--ui-border-soft)" }}>
+                  <td style={td}><input type="checkbox" aria-label={`Fix ${r.label} of ${r.record}`} checked={rowTicked(r)}
+                    onChange={(e) => setTicked((p) => { const n = new Set(p); for (const c of r.parts) { if (e.target.checked) n.add(keyOf(c)); else n.delete(keyOf(c)); } return n; })} /></td>
+                  <td style={td}><Link to={`${backend.linkBase}/${linkPath}/${r.entityId}`} style={{ color: "#1d4ed8" }}>{r.record}</Link></td>
+                  <td style={td}>{r.label}</td>
+                  <td style={{ ...td, color: "#991b1b", whiteSpace: "pre-wrap" }}>{JSON.stringify(r.before)}</td>
+                  <td style={{ ...td, color: "#14532d", fontWeight: 600 }}>{r.after}</td>
+                  <td style={{ ...td, color: "var(--ui-text-muted)" }}>{r.reason}</td>
+                  <td style={td}><button type="button" onClick={() => void ignore(r.parts)} disabled={busy !== null} style={plainBtn} aria-label={`Ignore ${r.label} of ${r.record}`}>Ignore</button></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </>
