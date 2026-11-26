@@ -4,6 +4,7 @@
 // dropdown so the active silo is visible at a glance.
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { canSeeKeystone, isKeystonePath, KS_ACCENT, ksHomeFor } from "@/silos/ks/ksAccess"; // BF_PORTAL_v849_KS_SILO + BF_PORTAL_v850_KS_CRM
 import {
@@ -44,6 +45,12 @@ const BusinessUnitSelector = () => {
   const location = useLocation();
   const onKeystone = isKeystonePath(location.pathname);
   const showKeystone = canSeeKeystone(user); // BF_PORTAL_v850_KS_CRM
+  // BF_PORTAL_SILO_FOLLOWS_PAGE_v1 - a BI page (/silo/bi/...) is the Insurance silo, however it was reached (a link,
+  // the back button, a bookmark). The buttons showed Financial over BI's CRM; now the silo follows the page.
+  const onBiPage = location.pathname.startsWith("/silo/bi/");
+  useEffect(() => {
+    if (onBiPage && String(silo ?? "").toUpperCase() !== "BI") (setSilo as (v: BusinessUnit) => void)("BI");
+  }, [onBiPage, silo, setSilo]);
 
   const role = (user as { role?: string } | null)?.role?.toLowerCase();
   const userSilos = (user as { silos?: string[] } | null)?.silos ?? [];
@@ -72,7 +79,7 @@ const BusinessUnitSelector = () => {
     );
   }
 
-  const selectedValue = ((silo as string | null | undefined) ?? "BF").toUpperCase() as BusinessUnit;
+  const selectedValue = (onBiPage ? "BI" : ((silo as string | null | undefined) ?? "BF").toUpperCase()) as BusinessUnit;
 
   return (
     <div
