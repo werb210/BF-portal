@@ -33,8 +33,8 @@ describe("Leaderboard report", () => {
   it("ranks brokers with movement and goal progress", async () => {
     render(<LeaderboardReport />);
     const rows = await screen.findAllByTestId("leaderboard-row");
-    expect(rows[0].textContent).toContain("Ann Able");
-    expect(rows[0].textContent).toContain("50%");
+    expect(rows[0]!.textContent).toContain("Ann Able");
+    expect(rows[0]!.textContent).toContain("50%");
     expect(screen.getByLabelText("Up 2")).toBeTruthy();
     expect(screen.getByLabelText("Down 1")).toBeTruthy();
     expect(screen.getByTestId("leaderboard-team").textContent).toContain("Eagles");
