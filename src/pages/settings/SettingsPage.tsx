@@ -26,6 +26,7 @@ import UsersAndRoles from "@/roles/UsersAndRoles"; // BF_PORTAL_v870_CRM_DATA_MO
 import { can, usePermissions } from "@/roles/permissionStore"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import PropertiesSettings from "@/crmFields/PropertiesSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import TeamsSettings from "@/teams/TeamsSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
+import ScreensSettings from "@/scoreboard/ScreensSettings"; // BF_PORTAL_TV_SCOREBOARD_v1
 import PipelinesSettings from "@/pipelines/PipelinesSettings"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import PhoneLines from "./tabs/PhoneLines"; // BF_PORTAL_PHONE_LINES_v689
 import ContentSettings, { isContentSection } from "./tabs/ContentSettings"; // BF_PORTAL_v864_CONTENT_TAB
@@ -74,6 +75,7 @@ const SettingsPage = () => {
       // BF_PORTAL_v870_CRM_DATA_MODEL - custom fields (Properties), teams and record visibility, extra pipelines. Admins.
       { id: "properties", label: "Properties", visible: isAdmin && !isBI, content: <PropertiesSettings /> },
       { id: "teams", label: "Teams", visible: canUsers && !isBI, content: <TeamsSettings /> },
+      { id: "screens", label: "Screens", visible: isAdmin && !isBI, content: isAdmin ? <ScreensSettings /> : null }, // BF_PORTAL_TV_SCOREBOARD_v1 - office TVs
       { id: "pipelines", label: "Pipelines", visible: isAdmin && !isBI, content: <PipelinesSettings /> },
       // BF_PORTAL_v947_BROKERAGE_SETUP
       { id: "lead-scoring", label: "Lead scoring", visible: isAdmin, content: isAdmin ? <LeadScoringPanel /> : null },

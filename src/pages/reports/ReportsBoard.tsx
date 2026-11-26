@@ -9,7 +9,8 @@ import { BIPipelineOverview } from "@/silos/bi/dashboard/BIDashboard"; // BF_POR
 import BIInsuranceReports from "./BIInsuranceReports"; // BF_PORTAL_REPORTS15_18_v769
 import { ReportDataCard } from "./ReportDataCards";
 import { MobileAppsSummary } from "@/pages/marketing/MobileAppsPanel"; // BF_PORTAL_v819_MOBILE_REPORT
-import { ACTIVE_CONTRACTS_KEY, MOBILE_APPS_KEY, PIPELINES_KEY, withPortalReports } from "./reportLibrary"; // BF_PORTAL_v819_MOBILE_REPORT
+import { ACTIVE_CONTRACTS_KEY, LEADERBOARD_KEY, MOBILE_APPS_KEY, PIPELINES_KEY, withPortalReports } from "./reportLibrary";
+import LeaderboardReport from "@/scoreboard/LeaderboardReport"; // BF_PORTAL_TV_SCOREBOARD_v1 // BF_PORTAL_v819_MOBILE_REPORT
 import PipelineReportCard from "@/pipelines/PipelineReportCard"; // BF_PORTAL_v870_CRM_DATA_MODEL
 import PortfolioReport from "@/features/activeContracts/PortfolioReport";
 import { confirmAction } from "@/lib/confirmAction";
@@ -50,6 +51,7 @@ export function CardBody({ report, days }: { report: string; days?: number }): R
   if (report === "bi_dashboard") return <BIPipelineOverview />;
   if (report === "bi_insurance") return <BIInsuranceReports />; // BF_PORTAL_REPORTS15_18_v769
   if (report === ACTIVE_CONTRACTS_KEY) return <PortfolioReport />; // BF_PORTAL_v864_ACTIVE_CONTRACTS
+  if (report === LEADERBOARD_KEY) return <LeaderboardReport />; // BF_PORTAL_TV_SCOREBOARD_v1
   if (report === PIPELINES_KEY) return <PipelineReportCard />; // BF_PORTAL_v870_CRM_DATA_MODEL
   if (report === MOBILE_APPS_KEY) return <MobileAppsSummary days={days ?? 30} />; // BF_PORTAL_v819_MOBILE_REPORT
   return <ReportDataCard report={report} days={days} />;
