@@ -27,7 +27,14 @@ export const PIPELINES_REPORT: LibraryEntry = {
   key: PIPELINES_KEY, title: "Pipelines by stage", silo: "BF", group: "operations", size: "half",
   description: "Open deals, amount and weighted amount by stage for Lending or any other pipeline.",
 };
-const PORTAL_REPORTS: LibraryEntry[] = [PIPELINES_REPORT, MOBILE_APPS_REPORT, ACTIVE_CONTRACTS_REPORT];
+// BF_PORTAL_TV_SCOREBOARD_v1 - this month's funded volume and deals by broker and team (what the office TVs show).
+// Operations group, so brokers see it too (Todd 2026-11-25: "we could make it a report on their portals").
+export const LEADERBOARD_KEY = "leaderboard";
+export const LEADERBOARD_REPORT: LibraryEntry = {
+  key: LEADERBOARD_KEY, title: "Leaderboard", silo: "BF", group: "operations", size: "full",
+  description: "This month's funded volume and deals funded by broker and team, against their funding goals.",
+};
+const PORTAL_REPORTS: LibraryEntry[] = [LEADERBOARD_REPORT, PIPELINES_REPORT, MOBILE_APPS_REPORT, ACTIVE_CONTRACTS_REPORT];
 
 // BF_PORTAL_v819_MOBILE_REPORT - mirrors BF-Server canSee(): Admin sees all, Marketing all but money, others operations.
 export function canSeeReportGroup(role: unknown, group: ReportGroup): boolean {
