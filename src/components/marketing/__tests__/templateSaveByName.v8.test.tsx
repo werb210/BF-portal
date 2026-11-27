@@ -12,6 +12,7 @@ const h = vi.hoisted(() => {
   apiFn.delete = vi.fn();
   return { apiFn };
 });
+vi.mock("@/components/marketing/OutreachPanel", () => ({ default: () => <div>outreach pipeline</div>, PGI_OUTREACH: {} })); // BF_PORTAL_BI_MARKETING_OUTREACH_FIRST_v1
 vi.mock("@/api", () => ({ api: h.apiFn, default: h.apiFn, apiGetEnvelope: vi.fn(), rawApiFetch: vi.fn() }));
 
 vi.mock("@/silos/bi/marketing/tabs/SequencesTab", () => ({ default: () => <div>sequence list</div> }));
@@ -103,9 +104,9 @@ describe("BF_PORTAL_APOLLO_OFF_v10", () => {
     expect(screen.queryByText(/apollo/i)).not.toBeInTheDocument();
   });
 
-  it("opens on Flows, the one way to email a list", () => {
+  it("opens on Outreach (BF_PORTAL_BI_MARKETING_OUTREACH_FIRST_v1)", () => {
     render(<BIMarketing />);
-    expect(screen.getByRole("tab", { name: "Flows" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Outreach" })).toHaveAttribute("aria-selected", "true");
   });
 ;
 });

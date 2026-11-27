@@ -12,6 +12,7 @@ const h = vi.hoisted(() => {
   apiFn.delete = vi.fn();
   return { apiFn };
 });
+vi.mock("@/components/marketing/OutreachPanel", () => ({ default: () => <div>outreach pipeline</div>, PGI_OUTREACH: {} })); // BF_PORTAL_BI_MARKETING_OUTREACH_FIRST_v1
 vi.mock("@/api", () => ({ api: h.apiFn, default: h.apiFn, apiGetEnvelope: vi.fn(), rawApiFetch: vi.fn() }));
 
 vi.mock("@/components/marketing/LinkClicksPanel", () => ({
