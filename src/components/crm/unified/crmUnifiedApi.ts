@@ -83,7 +83,9 @@ export function tagLabel(tag: string, catalogue?: TagCatalogue | null): string {
 /** Staff tags offered in "Tag as..." / "Remove tag": the shared list, the silo's own, then older ones in use. */
 export function staffTagOptions(catalogue?: TagCatalogue | null): Array<{ slug: string; label: string }> {
   const out = new Map<string, string>();
-  for (const t of CORE_TAGS) out.set(t.slug, t.label);
+  // BF_PORTAL_SILO_CORE_TAGS_v1 - each silo's server says which shared tags it offers (BI drops Active, Insurance and
+  // A/R Credit Insurance); the built-in list is only the fallback.
+  for (const t of catalogue?.core?.length ? catalogue.core : CORE_TAGS) out.set(t.slug, t.label);
   for (const t of catalogue?.custom ?? []) out.set(t.slug, t.label);
   // BF_PORTAL_TAG_LABELS_v1 - free-text tags stored as codes (broker_list_nov_2026) read the same on the View-by row as on
   // each contact's chip (Broker list nov 2026), not as raw codes.
