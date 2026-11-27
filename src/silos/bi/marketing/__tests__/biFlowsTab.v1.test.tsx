@@ -49,18 +49,17 @@ describe("the Flows tab", () => {
     expect(body).toMatchObject({ preset: "lender_ca", owner_user_id: "u-1", owner_name: "Sample Owner" });
   });
 
-  it("opens the emails, saves changed wording, adds the people and starts the flow", async () => {
+  it("opens the emails, saves changed wording and starts the flow - the tags decide who is in it", async () => {
     render(<FlowsTab />);
     fireEvent.click(await screen.findByRole("button", { name: "Emails and people" }));
     const subject = await screen.findByLabelText("First email (everyone) subject");
-    expect(screen.getByRole("button", { name: /Add the people \(7 not added yet\)/ })).toBeInTheDocument();
+    expect(screen.getByText(/Everyone tagged for this flow is in it/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Add the people/ })).not.toBeInTheDocument();
     fireEvent.change(subject, { target: { value: "A better subject" } });
     fireEvent.click(screen.getByRole("button", { name: "Save emails" }));
     await waitFor(() => expect(calls()).toContain("PATCH /api/v1/bi/flows/f1"));
     const saved = JSON.parse(String((h.api.mock.calls.find((c) => (c[1] as any)?.method === "PATCH")![1] as any).body));
     expect(saved.emails.e1.subject).toBe("A better subject");
-    fireEvent.click(await screen.findByRole("button", { name: /Add the people/ }));
-    await waitFor(() => expect(calls()).toContain("POST /api/v1/bi/flows/f1/audience"));
     fireEvent.click(await screen.findByRole("button", { name: "Start" }));
     expect(await screen.findByText("Running")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
