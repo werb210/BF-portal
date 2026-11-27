@@ -10,9 +10,10 @@ import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { listStaffUsers } from "@/api/sharedShell";
 import { useAuth } from "@/hooks/useAuth";
+import { PgiPipeline, PgiResults, type PipeMeta } from "./PgiPipeline"; // BF_PORTAL_PGI_PIPELINE_v1
 
-export type OutreachBackend = { base: string; headers?: Record<string, string>; contactLink: (id: string) => string; brand: string };
-export const PGI_OUTREACH: OutreachBackend = { base: "/api/v1/bi/engagement", contactLink: (id) => `/silo/bi/crm/contacts/${id}`, brand: "PGI" };
+export type OutreachBackend = { base: string; headers?: Record<string, string>; contactLink: (id: string) => string; brand: string; pipeline?: boolean };
+export const PGI_OUTREACH: OutreachBackend = { base: "/api/v1/bi/engagement", contactLink: (id) => `/silo/bi/crm/contacts/${id}`, brand: "PGI", pipeline: true };
 export const KS_OUTREACH: OutreachBackend = { base: "/api/crm/engagement", headers: { "X-Silo": "KS" }, contactLink: (id) => `/silo/ks/crm/contacts/${id}`, brand: "Keystone" };
 
 type Card = {
@@ -37,13 +38,16 @@ const who = (c: Card) => c.full_name || c.email || "Unknown";
 const errText = (e: unknown) => (e as { message?: string })?.message || "Something went wrong.";
 
 export default function OutreachPanel({ backend }: { backend: OutreachBackend }) {
-  const [view, setView] = useState<"queue" | "board" | "results" | "settings">("queue");
+  const [view, setView] = useState<"queue" | "board" | "results" | "settings" | "pipeline">(backend.pipeline ? "pipeline" : "queue");
   const [meta, setMeta] = useState<Meta | null>(null);
   const call = useCallback(<T,>(path: string, init: { method?: string; body?: unknown } = {}) =>
     api<T>(`${backend.base}${path}`, { method: init.method ?? "GET", headers: backend.headers, ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}) } as any),
   [backend]);
   useEffect(() => { void call<Meta>("/meta").then(setMeta).catch(() => setMeta(null)); }, [call]);
-  const views: Array<[typeof view, string]> = [["queue", "Follow up"], ["board", "Board"], ["results", "Results"], ["settings", "Settings"]];
+  // BF_PORTAL_PGI_PIPELINE_v1 - PGI: just the pipeline, results and settings.
+  const views: Array<[typeof view, string]> = backend.pipeline
+    ? [["pipeline", "Pipeline"], ["results", "Results"], ["settings", "Settings"]]
+    : [["queue", "Follow up"], ["board", "Board"], ["results", "Results"], ["settings", "Settings"]];
   return (
     <div data-testid={`outreach-${backend.brand}`} style={{ display: "grid", gap: 12, color: "var(--ui-text)" }}>
       <div role="tablist" aria-label={`${backend.brand} outreach`} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -54,7 +58,8 @@ export default function OutreachPanel({ backend }: { backend: OutreachBackend })
       </div>
       {view === "queue" && <Queue call={call} backend={backend} meta={meta} />}
       {view === "board" && <Board call={call} backend={backend} meta={meta} />}
-      {view === "results" && <Results call={call} meta={meta} />}
+      {view === "pipeline" && <PgiPipeline call={call} meta={meta as unknown as PipeMeta | null} contactLink={backend.contactLink} />}
+      {view === "results" && (backend.pipeline ? <PgiResults call={call} meta={meta as unknown as PipeMeta | null} /> : <Results call={call} meta={meta} />)}
       {view === "settings" && <Settings call={call} brand={backend.brand} />}
     </div>
   );

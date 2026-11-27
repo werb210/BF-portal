@@ -7,7 +7,7 @@ const h = vi.hoisted(() => ({ call: vi.fn() }));
 vi.mock("@/api", () => ({ api: h.call }));
 vi.mock("@/api/sharedShell", () => ({ listStaffUsers: async () => [{ id: "u1", first_name: "Andrew", last_name: "P" }] }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1" } }) }));
-import OutreachPanel, { KS_OUTREACH, PGI_OUTREACH } from "../OutreachPanel";
+import OutreachPanel, { KS_OUTREACH } from "../OutreachPanel";
 
 const card = { contact_id: "c1", stage: "replied", stage_at: new Date().toISOString(), flow_name: "Lender PGI", reply_kind: "question", reply_subject: "RE", reply_snippet: "Does it apply to our customers?",
   owner_user_id: "u1", owner_name: "Andrew", follow_up_due_at: new Date(Date.now() - 3_600_000).toISOString(), follow_up_reason: "replied", meeting_at: null, meeting_outcome: null,
@@ -24,13 +24,13 @@ beforeEach(() => {
 });
 
 describe("OutreachPanel", () => {
-  it("lists who is waiting, overdue first, with the reply and one-click outcomes (PGI on BI-Server)", async () => {
-    render(<MemoryRouter><OutreachPanel backend={PGI_OUTREACH} /></MemoryRouter>);
+  it("lists who is waiting, overdue first, with the reply and one-click outcomes (the Follow up list, Keystone)", async () => {
+    render(<MemoryRouter><OutreachPanel backend={KS_OUTREACH} /></MemoryRouter>);
     expect(await screen.findByText("Danny L")).toBeInTheDocument();
     expect(screen.getByText("1 overdue")).toBeInTheDocument();
     expect(screen.getByText("Does it apply to our customers?")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Followed up" }));
-    await waitFor(() => expect(h.call).toHaveBeenCalledWith("/api/v1/bi/engagement/contacts/c1/action", expect.objectContaining({ method: "POST", body: JSON.stringify({ action: "followed_up" }) })));
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith("/api/crm/engagement/contacts/c1/action", expect.objectContaining({ method: "POST", body: JSON.stringify({ action: "followed_up" }) })));
   });
   it("talks to BF-Server as Keystone", async () => {
     render(<MemoryRouter><OutreachPanel backend={KS_OUTREACH} /></MemoryRouter>);
@@ -39,10 +39,10 @@ describe("OutreachPanel", () => {
   });
   // BF_PORTAL_OUTREACH_UNDO_v1
   it("offers Undo after Followed up and puts the person back", async () => {
-    render(<MemoryRouter><OutreachPanel backend={PGI_OUTREACH} /></MemoryRouter>);
+    render(<MemoryRouter><OutreachPanel backend={KS_OUTREACH} /></MemoryRouter>);
     fireEvent.click(await screen.findByRole("button", { name: "Followed up" }));
     expect(await screen.findByText(/Danny L marked followed up/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    await waitFor(() => expect(h.call).toHaveBeenCalledWith("/api/v1/bi/engagement/contacts/c1/action", expect.objectContaining({ body: JSON.stringify({ action: "requeue" }) })));
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith("/api/crm/engagement/contacts/c1/action", expect.objectContaining({ body: JSON.stringify({ action: "requeue" }) })));
   });
 });

@@ -81,11 +81,6 @@ export default function FlowsTab() {
     await api<any>(`/api/v1/bi/flows/${flow.id}`, { method: "PATCH", body: JSON.stringify({ emails: Object.fromEntries(emails.map((e) => [e.key, { subject: e.subject, body: e.body, attachments: e.attachments ?? [] }])) }) });
     return "Emails saved.";
   });
-  const addPeople = (flow: Flow) => run(`add:${flow.id}`, async () => {
-    const r: any = await api<any>(`/api/v1/bi/flows/${flow.id}/audience`, { method: "POST", body: "{}" });
-    setNotAdded(0);
-    return `${r?.added ?? 0} people added.`;
-  });
   const sendTest = (flow: Flow) => run(`test:${flow.id}`, async () => {
     const r: any = await api<any>(`/api/v1/bi/flows/${flow.id}/test`, { method: "POST", body: JSON.stringify({ to: testTo.trim() }) });
     return `${r?.sent ?? 0} test emails sent to ${testTo.trim()}.`;
@@ -114,7 +109,7 @@ export default function FlowsTab() {
           <button type="button" className={BTN} onClick={() => void show(flow)}>{open === flow.id ? "Close" : "Emails and people"}</button>
           {flow.status === "active"
             ? <button type="button" className={BTN} disabled={busy !== null} onClick={() => void setStatus(flow, "pause")}>Pause</button>
-            : <button type="button" className={PRIMARY} disabled={busy !== null || flow.people === 0} title={flow.people === 0 ? "Add the people first" : undefined} onClick={() => void setStatus(flow, "start")}>Start</button>}
+            : <button type="button" className={PRIMARY} disabled={busy !== null} onClick={() => void setStatus(flow, "start")}>Start</button>}
         </span>
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
@@ -122,7 +117,8 @@ export default function FlowsTab() {
       </dl>
       {open === flow.id && <div className="mt-4 space-y-4 border-t border-card pt-4">
         <div className="flex flex-wrap items-end gap-3">
-          <button type="button" className={BTN} disabled={busy !== null} onClick={() => void addPeople(flow)}>Add the people{notAdded ? ` (${notAdded.toLocaleString("en-CA")} not added yet)` : ""}</button>
+          {/* BF_PORTAL_FLOWS_TAGS_ARE_ENOUGH_v1 - no adding step: the tags decide who is in a flow. */}
+          <span className="text-sm text-white/70">Everyone tagged for this flow is in it. New people you tag join by themselves within 15 minutes{notAdded ? ` (${notAdded.toLocaleString("en-CA")} joining now)` : ""}.</span>
           <label className="text-sm text-white/80">Send all seven to
             <input aria-label="Test email address" type="email" value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@example.com" className={INPUT + " w-64"} />
           </label>
