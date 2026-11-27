@@ -11,7 +11,11 @@ import OutreachPanel, { PGI_OUTREACH } from "@/components/marketing/OutreachPane
 // BF_PORTAL_OUTREACH_TRACKING_v1 - Outreach: who replied, booked or clicked and is waiting for a follow-up.
 type Channel = "outreach" | "flows" | "email" | "links" | "contacts";
 const LABEL: Record<Channel, string> = { outreach: "Outreach", flows: "Flows", email: "Email", links: "Links", contacts: "Contacts" };
-const initialChannel = (): Channel => (new URLSearchParams(window.location.search).get("tab") === "outreach" ? "outreach" : "flows");
+// BF_PORTAL_BI_MARKETING_OUTREACH_FIRST_v1 - Todd: Marketing opens on Outreach; ?tab= picks another channel.
+const initialChannel = (): Channel => {
+  const t = new URLSearchParams(window.location.search).get("tab") as Channel | null;
+  return t && t in LABEL ? t : "outreach";
+};
 
 export default function BIMarketing() {
   const [channel, setChannel] = useState<Channel>(initialChannel);

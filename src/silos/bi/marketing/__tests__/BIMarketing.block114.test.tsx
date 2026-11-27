@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const useAuthMock = vi.fn();
+vi.mock("@/components/marketing/OutreachPanel", () => ({ default: () => <div>outreach pipeline</div>, PGI_OUTREACH: {} })); // BF_PORTAL_BI_MARKETING_OUTREACH_FIRST_v1
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => useAuthMock() }));
 // BF_PORTAL_SEQUENCE_CANVAS_v1 - BIMarketing now loads templates and task queues
 // on mount for the sequence canvas, so the mock needs api.get and api.post as

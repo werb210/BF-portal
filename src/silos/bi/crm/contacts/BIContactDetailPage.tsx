@@ -434,7 +434,7 @@ export default function BIContactDetailPage() {
   return (
     <div className="crm-detail-layout" data-testid="bi-contact-detail">
       <aside style={rail} data-testid="bi-contact-rail-left">
-        <Link to={cameFromOutreach ? "/silo/bi/outreach" : "/silo/bi/crm"} style={backLink}>
+        <Link to={cameFromOutreach ? "/silo/bi/marketing?tab=outreach" : "/silo/bi/crm"} style={backLink}>{/* BF_PORTAL_BI_MARKETING_OUTREACH_FIRST_v1 - back to the pipeline */}
           {cameFromOutreach ? "← Back to outreach" : "← Back to contacts"}
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
