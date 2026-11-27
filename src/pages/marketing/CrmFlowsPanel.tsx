@@ -52,6 +52,8 @@ export default function CrmFlowsPanel({ silo }: { silo: Silo }) {
   const [emails, setEmails] = useState<FlowEmail[]>([]);
   const [notAdded, setNotAdded] = useState(0);
   const [testTo, setTestTo] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null); // BF_PORTAL_FLOW_DELETE_RESTORE_v1
+  const [deleted, setDeleted] = useState<{ id: string; name: string; people: number; deleted_at: string }[]>([]);
   const [draft, setDraft] = useState({ name: "", tags: [] as string[], market: "ALL", owner: "", ...DEFAULTS[silo], booking_url: "" });
 
   async function load() {
@@ -60,6 +62,7 @@ export default function CrmFlowsPanel({ silo }: { silo: Silo }) {
       setFlows(Array.isArray(l?.flows) ? l.flows : []);
       setTags(Array.isArray(t?.tags) ? t.tags : []);
       setError(null);
+      call<any>("/deleted/list").then((d) => setDeleted(Array.isArray(d?.flows) ? d.flows : [])).catch(() => setDeleted([]));
     } catch (e) { setError(failure(e, "Could not load the flows.")); }
     finally { setLoading(false); }
   }
@@ -107,7 +110,13 @@ export default function CrmFlowsPanel({ silo }: { silo: Silo }) {
   });
   const setStatus = (flow: CrmFlow, action: "start" | "pause" | "archive") => run(`${action}:${flow.id}`, async () => {
     await call<any>(`/${flow.id}/${action}`, { method: "POST", body: "{}" });
-    return action === "start" ? `${flow.name} is running.` : action === "pause" ? `${flow.name} is paused.` : `${flow.name} is closed.`;
+    setConfirmDelete(null);
+    if (action === "archive") setOpen(null);
+    return action === "start" ? `${flow.name} is running.` : action === "pause" ? `${flow.name} is paused.` : `${flow.name} is deleted. You can bring it back below.`;
+  });
+  const restore = (id: string, name: string) => run(`restore:${id}`, async () => {
+    await call<any>(`/${id}/restore`, { method: "POST", body: "{}" });
+    return `${name} is back, paused. Its emails and people are as they were.`;
   });
   const toggleTag = (t: string) => setDraft((d) => ({ ...d, tags: d.tags.includes(t) ? d.tags.filter((x) => x !== t) : [...d.tags, t] }));
 
@@ -128,7 +137,7 @@ export default function CrmFlowsPanel({ silo }: { silo: Silo }) {
             <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 6, background: flow.status === "active" ? "#047857" : "var(--ui-surface)", color: flow.status === "active" ? "#fff" : "var(--ui-text-muted)", border: "1px solid var(--ui-border)" }}>{STATUS[flow.status] ?? flow.status}</span>
             <span style={{ fontSize: 12, color: "var(--ui-text-muted)" }}>Tags: {(flow.audience_tags ?? []).join(", ") || "—"} · {flow.market === "ALL" ? "all countries" : flow.market} · call tasks to {flow.owner_name || "nobody"}{flow.status === "active" && flow.new_today_limit ? ` · up to ${flow.new_today_limit} new a day` : ""}</span>
             <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-              <button type="button" style={btn} onClick={() => void show(flow)}>{open === flow.id ? "Close" : "Emails and people"}</button>
+              <button type="button" style={btn} onClick={() => void show(flow)}>{open === flow.id ? "Hide emails" : "Emails and people"}</button>
               {flow.status === "active"
                 ? <button type="button" style={btn} disabled={busy !== null} onClick={() => void setStatus(flow, "pause")}>Pause</button>
                 : <button type="button" style={primary} disabled={busy !== null || flow.people === 0} title={flow.people === 0 ? "Add the people first" : undefined} onClick={() => void setStatus(flow, "start")}>Start</button>}
@@ -145,7 +154,11 @@ export default function CrmFlowsPanel({ silo }: { silo: Silo }) {
                   <input aria-label="Test email address" type="email" value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@example.com" style={{ ...input, width: 240 }} />
                 </label>
                 <button type="button" style={btn} disabled={busy !== null || !testTo.trim()} onClick={() => void sendTest(flow)}>Send test</button>
-                {flow.status !== "active" && <button type="button" style={{ ...btn, marginLeft: "auto", color: "#b91c1c" }} disabled={busy !== null} onClick={() => void setStatus(flow, "archive")}>Close this flow</button>}
+                {flow.status !== "active" && (confirmDelete === flow.id
+                  ? <span style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center", fontSize: 13 }}>Delete {flow.name}?
+                      <button type="button" style={{ ...btn, color: "#fff", background: "#b91c1c", borderColor: "#b91c1c" }} disabled={busy !== null} onClick={() => void setStatus(flow, "archive")}>Yes, delete</button>
+                      <button type="button" style={btn} onClick={() => setConfirmDelete(null)}>Keep it</button></span>
+                  : <button type="button" style={{ ...btn, marginLeft: "auto", color: "#b91c1c" }} disabled={busy !== null} onClick={() => setConfirmDelete(flow.id)}>Delete flow</button>)}
               </div>
               {emails.map((e, i) => (
                 <div key={e.key} style={{ border: "1px solid var(--ui-border)", borderRadius: 8, padding: 12 }}>
@@ -211,6 +224,20 @@ export default function CrmFlowsPanel({ silo }: { silo: Silo }) {
         </div>
         <div style={{ marginTop: 12 }}><button type="button" style={primary} disabled={busy !== null} onClick={() => void create()}>Create flow</button></div>
       </section>
+
+      {deleted.length > 0 && (
+        <section style={card} data-testid="crm-flows-deleted">
+          <strong style={{ fontSize: 15 }}>Deleted flows</strong>
+          <p style={{ margin: "4px 0 10px", fontSize: 13, color: "var(--ui-text-muted)" }}>A deleted flow keeps its emails and people. Bring it back and it comes back paused.</p>
+          {deleted.map((d) => (
+            <div key={d.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "6px 0", borderTop: "1px solid var(--ui-border)", fontSize: 13 }}>
+              <span>{d.name}</span>
+              <span style={{ color: "var(--ui-text-muted)" }}>{d.people.toLocaleString("en-CA")} people · deleted {new Date(d.deleted_at).toLocaleDateString("en-CA")}</span>
+              <button type="button" style={{ ...btn, marginLeft: "auto" }} disabled={busy !== null} onClick={() => void restore(d.id, d.name)}>Bring back</button>
+            </div>
+          ))}
+        </section>
+      )}
     </div>
   );
 }

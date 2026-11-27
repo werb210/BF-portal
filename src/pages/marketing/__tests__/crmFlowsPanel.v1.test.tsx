@@ -1,5 +1,5 @@
 // BF_PORTAL_CRM_FLOWS_v1 - the shared Flows panel asks BF-Server for the business it was given (X-Silo).
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({ calls: [] as Array<{ path: string; init: any }> }));
@@ -7,6 +7,7 @@ vi.mock("@/api", () => ({
   api: vi.fn(async (path: string, init: any) => {
     h.calls.push({ path, init });
     if (path === "/api/crm/flows") return { flows: [{ id: "f1", name: "Brokers - Canada", status: "active", audience_tags: ["broker"], market: "CA", daily_new: 50, owner_user_id: null, owner_name: "Todd", from_name: null, from_email: null, reply_to: null, link_url: null, booking_url: null, people: 120, waiting: 20, emailed: 100, not_opened: 60, opened: 30, clicked: 8, stopped: 2, emails_sent: 140 }] };
+    if (path === "/api/crm/flows/deleted/list") return { flows: [{ id: "f9", name: "Old flow", people: 164, deleted_at: "2026-11-27T18:00:00Z" }] };
     if (path === "/api/crm/flows/tags") return { tags: [{ tag: "broker", people: 120, emailable: 118 }] };
     return { items: [] };
   }),
@@ -24,5 +25,14 @@ describe("CrmFlowsPanel", () => {
     expect(screen.getByRole("button", { name: "broker (118)" })).toBeInTheDocument();
     await waitFor(() => expect(h.calls.length).toBeGreaterThanOrEqual(3));
     expect(h.calls.every((c) => c.init?.headers?.["X-Silo"] === "KS")).toBe(true);
+  });
+
+  // BF_PORTAL_FLOW_DELETE_RESTORE_v1
+  it("lists deleted flows and brings one back", async () => {
+    h.calls.length = 0;
+    render(<CrmFlowsPanel silo="KS" />);
+    expect(await screen.findByText("Old flow")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Bring back" }));
+    await waitFor(() => expect(h.calls.some((c) => c.path === "/api/crm/flows/f9/restore" && c.init?.method === "POST")).toBe(true));
   });
 });
