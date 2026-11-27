@@ -234,6 +234,7 @@ export const SETTINGS_GROUPS: Array<{ id: string; label: string; heading: string
   { id: "sign-in", label: "Sign-in and security", heading: "BROKERAGE SET-UP", sectionIds: ["security", "microsoft-sign-in"] },
   { id: "records", label: "Privacy and records", heading: "BROKERAGE SET-UP", sectionIds: ["retention", "privacy", "survey"] },
   { id: "integrations", label: "Integrations", heading: "BROKERAGE SET-UP", sectionIds: ["webhooks", "api-keys", "social-accounts"] },
+  { id: "screens-group", label: "Screens", heading: "BROKERAGE SET-UP", sectionIds: ["screens"] }, // BF_PORTAL_SETTINGS_SCREENS_v1 - the Apple TV app sends people to Settings > Screens; it was in no group
   { id: "deal-tools", label: "Deal tools", heading: "BROKERAGE SET-UP", sectionIds: ["deal-tools"] },
   { id: "your-documents-group", label: "Term sheet templates", heading: "BROKERAGE SET-UP", sectionIds: ["your-documents"] }, // BF_PORTAL_v938_OUR_TERM_SHEET
   { id: "system", label: "System check", heading: "BROKERAGE SET-UP", sectionIds: ["runtime"] },
