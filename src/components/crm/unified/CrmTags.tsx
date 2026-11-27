@@ -224,7 +224,7 @@ export function ManageTags({ backend, catalogue, onClose, onChanged }: { backend
         <h3 style={{ margin: "0 0 8px", fontSize: 16 }}>Tags</h3>
         <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 6 }}>Shared by every silo:</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
-          {CORE_TAGS.map((t) => <CrmTagChip key={t.slug} tag={t.slug} />)}
+          {(catalogue?.core?.length ? catalogue.core : CORE_TAGS).map((t) => <CrmTagChip key={t.slug} tag={t.slug} />)}
         </div>
         <div style={{ fontSize: 12, color: "var(--ui-text-muted)", marginBottom: 6 }}>This silo's own tags:</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
