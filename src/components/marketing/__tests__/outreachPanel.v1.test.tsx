@@ -37,4 +37,12 @@ describe("OutreachPanel", () => {
     await screen.findByText("Danny L");
     expect(h.call).toHaveBeenCalledWith("/api/crm/engagement/queue", expect.objectContaining({ headers: { "X-Silo": "KS" } }));
   });
+  // BF_PORTAL_OUTREACH_UNDO_v1
+  it("offers Undo after Followed up and puts the person back", async () => {
+    render(<MemoryRouter><OutreachPanel backend={PGI_OUTREACH} /></MemoryRouter>);
+    fireEvent.click(await screen.findByRole("button", { name: "Followed up" }));
+    expect(await screen.findByText(/Danny L marked followed up/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith("/api/v1/bi/engagement/contacts/c1/action", expect.objectContaining({ body: JSON.stringify({ action: "requeue" }) })));
+  });
 });
