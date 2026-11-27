@@ -9,6 +9,7 @@ import { Button, ErrorBox, input, KeyValues, Loading, PageTitle, Section } from 
 import { KS_PLAN_INTEREST, KS_PROSPECT_SOURCES, KS_PROSPECT_STATUSES, mktApi, SOURCE_LABELS, STATUS_LABELS, type SegmentFilters } from "./ksMarketingApi";
 import KsMktProspects, { KsMktProspectDetail } from "./KsMktProspects";
 import CrmFlowsPanel from "@/pages/marketing/CrmFlowsPanel"; // BF_PORTAL_CRM_FLOWS_v1
+import OutreachPanel, { KS_OUTREACH } from "@/components/marketing/OutreachPanel"; // BF_PORTAL_OUTREACH_TRACKING_v1
 import KsMktSequences, { KsMktSequenceDetail } from "./KsMktSequences";
 import KsMktSuppressions from "./KsMktSuppressions";
 import KsBrokerages, { KsBrokerageDetail } from "./outreach/KsBrokerages"; // BF_PORTAL_v945_KS_OUTREACH
@@ -19,6 +20,7 @@ export const KS_MKT_BASE = "/silo/ks/marketing";
 
 const TABS: Array<[string, string]> = [
   ["overview", "Overview"],
+  ["outreach", "Outreach"], // BF_PORTAL_OUTREACH_TRACKING_v1 - who is waiting for a follow-up
   // BF_PORTAL_v945_KS_OUTREACH - the firms, every channel's scoreboard, the owner call list and referrals
   ["brokerages", "Brokerages"],
   ["channels", "Channels"],
@@ -217,6 +219,7 @@ export default function KsMarketing() {
         <Route path="prospects" element={<KsMktProspects />} />
         <Route path="prospects/:id" element={<KsMktProspectDetail />} />
         <Route path="flows" element={<KsFlows />} />
+        <Route path="outreach" element={<OutreachPanel backend={KS_OUTREACH} />} />
         <Route path="templates" element={<Navigate to="../flows" replace />} />
         <Route path="campaigns/*" element={<Navigate to="../flows" replace />} />
         {/* The older Keystone emails (KS-Ops) stay reachable from Flows so anything still running can be paused. */}
