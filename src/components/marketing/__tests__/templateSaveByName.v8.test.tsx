@@ -99,7 +99,7 @@ describe("BF_PORTAL_APOLLO_OFF_v10", () => {
   it("drops the Apollo tab entirely", () => {
     render(<BIMarketing />);
     const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
-    expect(tabs).toEqual(["Flows", "Email", "Links", "Contacts"]); // BF_PORTAL_CRM_FLOWS_v1 + BF_PORTAL_EMAIL_TAB_BACK_v1
+    expect(tabs).toEqual(["Outreach", "Flows", "Email", "Links", "Contacts"]); // BF_PORTAL_CRM_FLOWS_v1 + BF_PORTAL_EMAIL_TAB_BACK_v1 + BF_PORTAL_OUTREACH_TRACKING_v1
     expect(screen.queryByText(/apollo/i)).not.toBeInTheDocument();
   });
 
