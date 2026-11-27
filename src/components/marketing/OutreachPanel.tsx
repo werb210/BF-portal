@@ -62,22 +62,24 @@ export default function OutreachPanel({ backend }: { backend: OutreachBackend })
 
 type Call = <T>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
 
-function Actions({ c, call, onDone, meta }: { c: Card; call: Call; onDone: () => void; meta: Meta | null }) {
+// BF_PORTAL_OUTREACH_UNDO_v1 - every action that takes someone off the list can be undone.
+const LEAVES: Record<string, string> = { followed_up: "marked followed up", lost: "marked not interested", met: "marked call held" };
+function Actions({ c, call, onDone, meta }: { c: Card; call: Call; onDone: (left?: { c: Card; what: string }) => void; meta: Meta | null }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const act = async (action: string, extra: Record<string, unknown> = {}) => {
     setBusy(true); setErr(null);
-    try { await call(`/contacts/${c.contact_id}/action`, { method: "POST", body: { action, ...extra } }); onDone(); }
+    try { await call(`/contacts/${c.contact_id}/action`, { method: "POST", body: { action, ...extra } }); onDone(LEAVES[action] ? { c, what: LEAVES[action] } : undefined); }
     catch (e) { setErr(errText(e)); } finally { setBusy(false); }
   };
   const booked = c.stage === "booked";
   return (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-      <button type="button" style={btn} disabled={busy} onClick={() => void act("followed_up")}>Followed up</button>
+      <button type="button" style={btn} disabled={busy} title="You have called or emailed them. Takes them off this list until they do something new." onClick={() => void act("followed_up")}>Followed up</button>
       {!booked && <button type="button" style={btn} disabled={busy} onClick={() => void act("booked")}>Booked</button>}
       <button type="button" style={btn} disabled={busy} onClick={() => void act("met")}>{meta?.stages.find((s) => s.key === "met")?.label ?? "Meeting held"}</button>
       {booked && <button type="button" style={btn} disabled={busy} onClick={() => void act("no_show")}>No-show</button>}
-      <button type="button" style={btn} disabled={busy} onClick={() => void act("lost", { reason: "not_interested" })}>Not interested</button>
+      <button type="button" style={btn} disabled={busy} title="Takes them off this list for good." onClick={() => void act("lost", { reason: "not_interested" })}>Not interested</button>
       {meta && c.reply_kind && (
         <select aria-label="Reply type" value={c.reply_kind} disabled={busy} onChange={(e) => void act("reply_kind", { kind: e.target.value })}
           style={{ ...btn, padding: "3px 6px" }}>
@@ -93,6 +95,7 @@ function Queue({ call, backend, meta }: { call: Call; backend: OutreachBackend; 
   const [items, setItems] = useState<Card[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [mine, setMine] = useState(false);
+  const [left, setLeft] = useState<{ c: Card; what: string } | null>(null);
   const load = useCallback(() => {
     setErr(null);
     call<{ items: Card[] }>("/queue").then((r) => setItems(r.items ?? [])).catch((e) => setErr(errText(e)));
@@ -112,6 +115,16 @@ function Queue({ call, backend, meta }: { call: Call; backend: OutreachBackend; 
         <label style={{ ...muted, display: "flex", gap: 4, alignItems: "center" }}><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} /> Only mine</label>
         <button type="button" style={btn} onClick={load}>Refresh</button>
       </div>
+      {left && (
+        <div role="status" data-testid="outreach-undo" style={{ ...box, display: "flex", gap: 10, alignItems: "center", background: "#ecfdf5", borderColor: "#6ee7b7" }}>
+          <span>{who(left.c)} {left.what} and taken off this list.</span>
+          <button type="button" style={{ ...btn, marginLeft: "auto" }} onClick={() => {
+            const back = left; setLeft(null);
+            call(`/contacts/${back.c.contact_id}/action`, { method: "POST", body: { action: "requeue" } }).then(load).catch((e) => setErr(errText(e)));
+          }}>Undo</button>
+          <button type="button" style={btn} aria-label="Dismiss" onClick={() => setLeft(null)}>×</button>
+        </div>
+      )}
       {!shown.length && <p style={muted}>Nobody is waiting for a follow-up. Replies, bookings and clicks from the {backend.brand} emails show up here by themselves.</p>}
       {shown.map((c) => (
         <div key={c.contact_id} data-testid="outreach-row" style={{ ...box, borderColor: c.overdue ? "#fca5a5" : "var(--ui-border)", display: "grid", gap: 6 }}>
@@ -127,7 +140,7 @@ function Queue({ call, backend, meta }: { call: Call; backend: OutreachBackend; 
           <div style={muted}>
             {[c.flow_name && `Flow: ${c.flow_name}`, c.meeting_at && `Meeting ${when(c.meeting_at)}`, c.phone_e164, c.email, c.owner_name && `Owner: ${c.owner_name}`].filter(Boolean).join(" · ")}
           </div>
-          <Actions c={c} call={call} onDone={load} meta={meta} />
+          <Actions c={c} call={call} onDone={(l) => { setLeft(l ?? null); load(); }} meta={meta} />
         </div>
       ))}
     </div>
